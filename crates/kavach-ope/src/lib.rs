@@ -26,6 +26,7 @@ pub use sample::{Action, LoggedSample};
 mod estimate;
 pub use estimate::Estimate;
 
+pub mod dm;
 pub mod ips;
 pub mod trust;
 
