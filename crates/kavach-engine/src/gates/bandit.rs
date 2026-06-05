@@ -6,3 +6,4 @@
 //! fire-and-forget so a down daemon never blocks a gate.
 
 pub(crate) mod emit;
+pub(crate) mod shadow;

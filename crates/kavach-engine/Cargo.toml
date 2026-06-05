@@ -12,6 +12,7 @@ kavach-types = { path = "../kavach-types" }
 kavach-hook = { path = "../kavach-hook" }
 kavach-session = { path = "../kavach-session" }
 kavach-patterns = { path = "../kavach-patterns" }
+kavach-ope = { path = "../kavach-ope" }
 kavach-chain = { path = "../kavach-chain" }
 kavach-config = { path = "../kavach-config" }
 kavach-rule-engine = { path = "../kavach-rule-engine" }

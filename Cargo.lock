@@ -4397,6 +4397,7 @@ dependencies = [
  "kavach-chain",
  "kavach-config",
  "kavach-hook",
+ "kavach-ope",
  "kavach-patterns",
  "kavach-rag-core",
  "kavach-rpc",
