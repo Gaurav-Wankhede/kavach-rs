@@ -27,6 +27,14 @@ const SOURCE_EXTS: &[&str] = &[".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go"
 /// trip it. A token needing both signals keeps the deny scoped to the
 /// laundering case the gate exists to stop.
 pub(in crate::gates::pre_tool_bash) fn targets_tracked_source(cmd: &str) -> bool {
+    // A `kavach`/`kavach db` invocation is an RPC, never a file write — a source
+    // path inside its `--content "..."` argument is DATA, not a write target.
+    // Exempt it so `kavach db write --content "...crates/x.rs..."` is not a false
+    // positive. (The Python/sed/redirect bypasses this gate exists to catch are
+    // not kavach calls, so detection of the real laundering case is unaffected.)
+    if super::super::quote::is_kavach_cli(cmd) {
+        return false;
+    }
     let lower = cmd.to_lowercase();
     tokenize_paths(&lower).any(|tok| {
         let in_source_tree = tok.contains("crates/")

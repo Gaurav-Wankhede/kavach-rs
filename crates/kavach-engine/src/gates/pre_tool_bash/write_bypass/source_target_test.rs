@@ -41,6 +41,19 @@ fn generated_artifacts_are_not_denied() {
 }
 
 #[test]
+fn a_kavach_db_write_carrying_a_source_path_in_content_is_not_denied() {
+    // REGRESSION: `kavach db write --content "...crates/x/src/y.rs..."` is an RPC,
+    // not a file write — the source path is prose in the --content arg. The gate
+    // must not deny it (this exact shape false-positived after the deny shipped).
+    let cmd = "kavach db write --new --project p --category decision --key k \
+               --title t --content \"shipped crates/kavach-rpc/src/methods/db/ope.rs\"";
+    assert!(!targets_tracked_source(cmd), "a kavach db write is not a source mutation");
+    // Also the chained form actually used (cd then kavach db).
+    let chained = "kavach db write --content \"see crates/foo/src/lib.rs for detail\"";
+    assert!(!targets_tracked_source(chained));
+}
+
+#[test]
 fn a_source_extension_outside_a_source_tree_is_not_denied() {
     // A `.rs` written to /tmp is not a tracked source edit — needs BOTH signals.
     assert!(!targets_tracked_source("echo x > /tmp/throwaway.rs"));
