@@ -1,0 +1,43 @@
+[package]
+name = "kavach-cli"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "kavach"
+path = "src/main.rs"
+
+[dependencies]
+kavach-types = { path = "../kavach-types" }
+kavach-hook = { path = "../kavach-hook" }
+kavach-engine = { path = "../kavach-engine" }
+kavach-session = { path = "../kavach-session" }
+kavach-config = { path = "../kavach-config" }
+kavach-rule-engine = { path = "../kavach-rule-engine" }
+kavach-rule-storage = { path = "../kavach-rule-storage" }
+kavach-rule-generator = { path = "../kavach-rule-generator" }
+kavach-rag-core = { path = "../kavach-rag-core" }
+kavach-surreal = { path = "../kavach-surreal" }
+kavach-rpc = { path = "../kavach-rpc" }
+kavach-patterns = { path = "../kavach-patterns" }
+regex = { workspace = true }
+surrealdb = { workspace = true }
+surrealdb-types = { workspace = true }
+kavach-advisor = { path = "../kavach-advisor" }
+postgres = { workspace = true }
+postgres-native-tls = { workspace = true }
+native-tls = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+blake3 = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+color-eyre = { workspace = true }
+dirs = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

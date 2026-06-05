@@ -1,0 +1,18 @@
+[package]
+name = "kavach-chain"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+kavach-patterns = { path = "../kavach-patterns" }
+kavach-config = { path = "../kavach-config" }
+kavach-dtree = { path = "../kavach-dtree" }
+chrono = { workspace = true }
+dashmap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = "1"
+
+[lints]
+workspace = true

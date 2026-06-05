@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "respectGitignore": true,
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "0",
+    "CLAUDE_CODE_ENABLE_TASKS": "1",
+    "CLAUDE_CODE_TASK_LIST_ID": "tester-windows",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "16000",
+    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "32000",
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "true",
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "true",
+    "CLAUDE_CODE_DISABLE_THINKING": "true",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001",
+    "CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY": "3",
+    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1",
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+    "KAVACH_ALLOW_NEW_CRATE": "1",
+    "KAVACH_SKIP_TS_FRONTEND_PATHS": "workers,edge-cache,durable-objects",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "ANTHROPIC_MODEL": "claude-opus-4-5-20251101",
+    "KAVACH_ADVISORY_MODE": "1",
+    "CLAUDE_LANGUAGE_PREFERENCE": "bilingual"
+  },
+  "includeGitInstructions": false,
+  "permissions": {
+    "allow": [
+      "Bash(kavach db:*)",
+      "Bash(kavach status:*)",
+      "Bash(kavach --version)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:developer.mozilla.org)",
+      "Bash(cargo check:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(bun test:*)",
+      "Bash(bun run:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(psql:*)",
+      "Bash(date:*)",
+      "Read(*)"
+    ],
+    "deny": [
+      "Bash(pkill *)",
+      "Bash(taskkill *)",
+      "Bash(rm *)",
+      "Bash(del *)",
+      "Bash(rmdir *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Write(*)",
+      "Edit(*)",
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(DROP DATABASE *)",
+      "Bash(DROP TABLE *)",
+      "Bash(DELETE FROM *)",
+      "Bash(cargo build --release:*)"
+    ],
+    "defaultMode": "default"
+  },
+  "model": "sonnet",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates session-start --hook",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe session init",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe db find-project --path $PWD",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates intent --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates pre-write --hook",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Skill|Agent|Task|WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates pre-tool --hook",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates post-write --hook",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe db event --type file_write",
+            "timeout": 2000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Read|Glob|Grep|Skill|WebSearch|WebFetch|Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates post-tool --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates post-tool-failure --hook",
+            "timeout": 3000,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates notification --hook",
+            "timeout": 3000,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates subagent-start --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates subagent-stop --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates stop --hook",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe db sync",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates pre-compact --hook",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe session compact",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates instructions-loaded --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates config-change --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates worktree-create --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates worktree-remove --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates post-compact --hook",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates session-end --hook",
+            "timeout": 3000
+          },
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe db sync",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates teammate-idle --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates task-completed --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "Elicitation": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates elicitation --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "ElicitationResult": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates elicitation-result --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates stop-failure --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$LOCALAPPDATA/kavach/kavach.exe gates permission-request --hook",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "searchfit-seo@claude-plugins-official": true,
+    "pg@aiguide": true,
+    "superpowers@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": false,
+    "feature-dev@claude-plugins-official": false,
+    "interface-design@interface-design": false
+  },
+  "alwaysThinkingEnabled": false,
+  "effortLevel": "low",
+  "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true,
+  "showTurnDuration": true,
+  "terminalProgressBarEnabled": true,
+  "teammateMode": "auto"
+}

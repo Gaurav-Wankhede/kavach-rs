@@ -1,0 +1,27 @@
+//! `PreCompact` gate — injects custom instructions context before compaction.
+
+use kavach_types::HookInput;
+
+pub(crate) fn run(input: &HookInput) {
+    let ci = &input.custom_instructions;
+    if ci.is_empty() {
+        drop(kavach_hook::exit_silent());
+    } else {
+        let context = kavach_hook::context_block(
+            "PRE_COMPACT",
+            &[("custom_instructions", ci), ("date", &kavach_hook::today())],
+        );
+        drop(kavach_hook::exit_notification_context(&context));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_empty_instructions_is_silent() {
+        let input = HookInput::default();
+        run(&input);
+    }
+}

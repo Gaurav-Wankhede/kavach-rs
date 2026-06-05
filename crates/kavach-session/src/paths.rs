@@ -1,0 +1,282 @@
+use std::fs;
+use std::io;
+use std::path::{Path, PathBuf};
+
+use chrono::Local;
+// BLAKE3: 4x faster than SHA-256 for path slug hashing.
+
+pub(crate) fn home_dir() -> PathBuf {
+    std::env::var("HOME").map_or_else(
+        |_| std::env::var("USERPROFILE").map_or_else(|_| PathBuf::from("."), PathBuf::from),
+        PathBuf::from,
+    )
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Test-only state-dir override. Thread-local so parallel tests are
+    /// isolated and no `unsafe` env mutation is needed (env::set_var is
+    /// `unsafe` in edition 2024; the workspace is `forbid(unsafe_code)`).
+    static TEST_STATE_DIR: std::cell::RefCell<Option<PathBuf>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Test-only: redirect `state_dir()` for the current thread. Pass `None` to
+/// clear. Used by fault-injection tests that need an unwritable state dir
+/// without touching the real session state or process-global env.
+#[cfg(test)]
+pub(crate) fn set_test_state_dir(dir: Option<PathBuf>) {
+    TEST_STATE_DIR.with(|c| *c.borrow_mut() = dir);
+}
+
+/// Shared state directory (XDG on Linux, Library on macOS, LOCALAPPDATA on Windows).
+#[must_use]
+pub fn state_dir() -> PathBuf {
+    #[cfg(test)]
+    if let Some(d) = TEST_STATE_DIR.with(|c| c.borrow().clone()) {
+        return d;
+    }
+    if cfg!(target_os = "macos") {
+        home_dir()
+            .join("Library")
+            .join("Application Support")
+            .join("SharedAI")
+            .join("state")
+    } else if cfg!(target_os = "windows") {
+        let base = std::env::var("LOCALAPPDATA").map_or_else(|_| home_dir(), PathBuf::from);
+        base.join("SharedAI").join("state")
+    } else {
+        let xdg = std::env::var("XDG_DATA_HOME")
+            .map_or_else(|_| home_dir().join(".local").join("share"), PathBuf::from);
+        xdg.join("shared-ai").join("state")
+    }
+}
+
+/// STM (short-term memory) path -- same as state dir for session files.
+#[must_use]
+pub fn stm_path() -> PathBuf {
+    state_dir()
+}
+
+/// Compute a stable 16-character hex digest of the canonical working directory.
+/// Used to scope session state files per terminal/project so state never
+/// leaks across concurrent Claude Code sessions running in different cwds.
+fn workdir_slug() -> String {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let canonical = fs::canonicalize(&cwd).unwrap_or(cwd);
+    slug_from_path(&canonical)
+}
+
+fn slug_from_path(path: &Path) -> String {
+    let hash = blake3::hash(path.to_string_lossy().as_bytes());
+    let mut hex = String::with_capacity(16);
+    for byte in hash.as_bytes().iter().take(8) {
+        std::fmt::Write::write_fmt(&mut hex, format_args!("{byte:02x}")).ok();
+    }
+    hex
+}
+
+/// Path to the session state file, scoped per working directory.
+///
+/// Each terminal/project gets an isolated file so state never leaks across
+/// concurrent Claude Code sessions. Migrates legacy shared files on first access
+/// into the scoped file for the current cwd.
+#[must_use]
+pub fn state_path() -> PathBuf {
+    let slug = workdir_slug();
+    let target = stm_path().join(format!("session-state-{slug}.kavach"));
+    if target.exists() {
+        return target;
+    }
+    for name in [
+        "session-state.kavach",
+        "session-state.ini",
+        "session-state.toon",
+    ] {
+        let legacy = stm_path().join(name);
+        if legacy.exists() && fs::rename(&legacy, &target).is_ok() {
+            return target;
+        }
+    }
+    target
+}
+
+/// Memory bank directory.
+#[must_use]
+pub fn memory_dir() -> PathBuf {
+    if cfg!(target_os = "macos") {
+        home_dir()
+            .join("Library")
+            .join("Application Support")
+            .join("SharedAI")
+            .join("memory")
+    } else if cfg!(target_os = "windows") {
+        let base = std::env::var("LOCALAPPDATA").map_or_else(|_| home_dir(), PathBuf::from);
+        base.join("SharedAI").join("memory")
+    } else {
+        let xdg = std::env::var("XDG_DATA_HOME")
+            .map_or_else(|_| home_dir().join(".local").join("share"), PathBuf::from);
+        xdg.join("shared-ai").join("memory")
+    }
+}
+
+/// Canonicalize a user-supplied path for filesystem comparison.
+///
+/// Compares filesystem identity, not byte equality. Falls back to
+/// absolute-but-unresolved when the file doesn't yet exist (new file workflow),
+/// then to the raw input as last resort. Used by both `kavach phase iteration-start`
+/// (storage) and the `pre_write` gate (comparison) so relative and absolute
+/// spellings of the same file resolve identically.
+#[must_use]
+pub fn canonicalize_iteration_path(input: &str) -> String {
+    if let Ok(p) = fs::canonicalize(input) {
+        return p.to_string_lossy().into_owned();
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        let joined: PathBuf = if Path::new(input).is_absolute() {
+            PathBuf::from(input)
+        } else {
+            cwd.join(input)
+        };
+        return joined.to_string_lossy().into_owned();
+    }
+    input.to_owned()
+}
+
+pub(crate) fn ensure_parent_dir(path: &Path) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    Ok(())
+}
+
+/// Detect project slug from kavach-rpc daemon using path lookup.
+/// Falls back to directory name if daemon not running or no match.
+pub(crate) fn detect_project() -> String {
+    let Ok(cwd) = std::env::current_dir() else {
+        return "unknown".into();
+    };
+    let cwd_str = cwd.to_string_lossy();
+
+    // Try kavach-rpc lookup first (authoritative source via SurrealDB)
+    let params = serde_json::json!({"path": cwd_str.as_ref()});
+    if let Ok(project) = kavach_rpc::client::call::<_, kavach_surreal::Project>(
+        "projects.find_by_path",
+        Some(params),
+    ) {
+        return project.slug;
+    }
+
+    // Fallback: directory name, normalized to a slug so downstream RPC calls
+    // (roadmap.next_open_task, roadmap.entry_status) hit the same identifier
+    // the kanban tables key on. Without this, "Nicole Carpenter" workdirs
+    // silently return None from every kanban RPC and the stop-hook
+    // AUTO_CONTINUE branch dies (observed 2026-05).
+    // SOURCE: same contract violation class fixed earlier in cmd/harness_loop.rs
+    // RESEARCH: https://docs.rs/slug (canonical algorithm) — std-only impl below
+    cwd.file_name().map_or_else(
+        || "unknown".into(),
+        |n| slugify_project(&n.to_string_lossy()),
+    )
+}
+
+/// Normalize a directory name to a kanban-compatible slug:
+/// ASCII alphanumerics lowercased, all other characters collapsed to '-',
+/// leading/trailing '-' stripped, empty result -> "unknown".
+/// "Nicole Carpenter" -> "nicole-carpenter"
+/// "`iron_will_v2`" -> "iron-will-v2"
+/// "  My Project!  " -> "my-project"
+fn slugify_project(raw: &str) -> String {
+    let mut out = String::with_capacity(raw.len());
+    let mut prev_dash = true;
+    for ch in raw.chars().flat_map(char::to_lowercase) {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch);
+            prev_dash = false;
+        } else if !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    if out.is_empty() {
+        "unknown".into()
+    } else {
+        out
+    }
+}
+
+#[cfg(test)]
+mod slug_tests {
+    use super::slugify_project;
+
+    #[test]
+    fn lowercases_and_dashes() {
+        assert_eq!(slugify_project("Nicole Carpenter"), "nicole-carpenter");
+    }
+
+    #[test]
+    fn underscores_become_dashes() {
+        assert_eq!(slugify_project("iron_will_v2"), "iron-will-v2");
+    }
+
+    #[test]
+    fn punctuation_collapses() {
+        assert_eq!(slugify_project("  My Project!  "), "my-project");
+    }
+
+    #[test]
+    fn already_slug_passes_through() {
+        assert_eq!(slugify_project("kavach-rs"), "kavach-rs");
+    }
+
+    #[test]
+    fn empty_becomes_unknown() {
+        assert_eq!(slugify_project(""), "unknown");
+    }
+}
+
+pub(crate) fn today() -> String {
+    Local::now().format("%Y-%m-%d").to_string()
+}
+
+pub(crate) fn now_datetime() -> String {
+    Local::now().format("%Y-%m-%dT%H:%M:%S").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slug_is_stable_for_same_path() {
+        let p = Path::new("/tmp/kavach-test-a");
+        assert_eq!(slug_from_path(p), slug_from_path(p));
+    }
+
+    #[test]
+    fn slug_differs_across_paths() {
+        let a = slug_from_path(Path::new("/tmp/project-a"));
+        let b = slug_from_path(Path::new("/tmp/project-b"));
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn slug_is_16_hex_chars() {
+        let s = slug_from_path(Path::new("/any/path"));
+        assert_eq!(s.len(), 16);
+        assert!(s.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn state_path_contains_slug() {
+        let p = state_path();
+        let name = p
+            .file_name()
+            .map_or_else(String::new, |n| n.to_string_lossy().to_string());
+        assert!(name.starts_with("session-state-"));
+        assert!(name.ends_with(".kavach"));
+    }
+}

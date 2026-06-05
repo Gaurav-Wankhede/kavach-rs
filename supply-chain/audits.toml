@@ -1,0 +1,14 @@
+
+# cargo-vet audits file
+
+[[audits.rustls]]
+who = "Gaurav Wankhede <gaurav@example.com>"
+criteria = "safe-to-deploy"
+delta = "0.23.37 -> 0.23.38"
+notes = "CVE fix: RUSTSEC-2026-0098 URI name constraint fix. Security patch only."
+
+[[audits.rustls-webpki]]
+who = "Gaurav Wankhede <gaurav@example.com>"
+criteria = "safe-to-deploy"
+delta = "0.103.11 -> 0.103.12"
+notes = "CVE fix: RUSTSEC-2026-0098 URI name constraint fix. Security patch only."

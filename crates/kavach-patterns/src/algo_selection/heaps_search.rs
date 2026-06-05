@@ -1,0 +1,66 @@
+//! Heap, quantile, and string search recommendations.
+
+use super::workload::{AlgoRecommendation, WorkloadClass};
+
+pub(super) const HEAPS_SEARCH: &[AlgoRecommendation] = &[
+    AlgoRecommendation {
+        class: WorkloadClass::TopK,
+        algo: "BinaryHeap (k items) or select_nth_unstable",
+        crate_name: "std::collections::BinaryHeap | std::slice",
+        when: "Need top-k from large stream/Vec; k << n.",
+        avoid_when: "Need full sort (use Driftsort); k ~ n (full sort cheaper).",
+        complexity: "O(n log k) heap-of-k | O(n) avg select_nth_unstable",
+        edge_cases: "k=0; k>n; ties at boundary; streaming vs batch — heap-of-k is streaming-friendly.",
+        source: "https://doc.rust-lang.org/std/slice/fn.select_nth_unstable.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::StreamingQuantile,
+        algo: "t-digest",
+        crate_name: "tdigest",
+        when: "Streaming p50/p95/p99 across a large or unbounded stream.",
+        avoid_when: "Tiny dataset (sort is fine); need exact quantile.",
+        complexity: "O(log n) per insert; merge associative",
+        edge_cases: "Cold start with <100 samples — accuracy suffers; verify compression parameter.",
+        source: "https://arxiv.org/abs/1902.04023",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::PriorityQueue,
+        algo: "BinaryHeap",
+        crate_name: "std::collections::BinaryHeap",
+        when: "Need min/max extraction; pure priority workload.",
+        avoid_when: "Need decrease-key efficiently — use Fibonacci heap (rare in practice).",
+        complexity: "O(log n) push/pop, O(1) peek",
+        edge_cases: "Default is max-heap; use Reverse(T) for min-heap.",
+        source: "https://doc.rust-lang.org/std/collections/struct.BinaryHeap.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::StringSearchSingle,
+        algo: "memchr / two-way (std)",
+        crate_name: "memchr",
+        when: "Needle in haystack; SIMD-accelerated single-pattern.",
+        avoid_when: "Many patterns simultaneously (use Aho-Corasick).",
+        complexity: "O(n) with SIMD constants",
+        edge_cases: "Empty needle; needle longer than haystack; UTF-8 boundary.",
+        source: "https://docs.rs/memchr/latest/memchr/",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::StringSearchMulti,
+        algo: "Aho-Corasick (regex / aho-corasick crate)",
+        crate_name: "aho-corasick",
+        when: "Many patterns scanned over same text; one-shot or repeated scans.",
+        avoid_when: "Single pattern (use memchr); patterns change per query.",
+        complexity: "O(n + m + matches) per text",
+        edge_cases: "DFA build cost; case-insensitive doubles state count.",
+        source: "https://docs.rs/aho-corasick/latest/aho_corasick/",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::PrefixSearch,
+        algo: "Trie / FST",
+        crate_name: "fst | radix_trie",
+        when: "Autocomplete; longest common prefix; ordered key prefix iteration.",
+        avoid_when: "Random access without prefix structure (HashMap wins).",
+        complexity: "O(k) per op (k = key length)",
+        edge_cases: "Empty key; UTF-8 multi-byte at trie boundary; FST is immutable.",
+        source: "https://docs.rs/fst/latest/fst/",
+    },
+];

@@ -1,0 +1,11 @@
+# Restriction lints (unwrap_used, expect_used, panic, indexing_slicing) are
+# denied workspace-wide in Cargo.toml to keep PRODUCTION paths fail-safe.
+# Test code legitimately uses unwrap/expect/indexing to assert invariants and
+# fail loudly on a broken fixture — that is the idiomatic Rust convention, and
+# clippy provides first-class config to scope these allowances to tests only.
+# SOURCE: https://doc.rust-lang.org/clippy/lint_configuration.html
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-dbg-in-tests = true

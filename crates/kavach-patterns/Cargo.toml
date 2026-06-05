@@ -1,0 +1,24 @@
+[package]
+name = "kavach-patterns"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+regex = "1"
+aho-corasick = { workspace = true }
+strsim = "0.11"
+# [CRATE_DECISION adlc-toolbelt-enforcement] quote-aware POSIX.1-2008 shell
+# tokenization for the legacy-tool gate. Over conch-parser/tree-sitter-bash
+# (full AST — overkill for legacy-tool detection scope; cc-toolgate uses
+# that for a full security sandbox, a different scope) and a hand-rolled
+# splitter (rejected: github.com/openclaw#59600 — hand-rolled compound
+# parsing is exploitable). No RustSec advisory; ~4M dl/mo, 2.9k dependents;
+# low-churn = stable fixed POSIX spec. SOURCE: https://crates.io/crates/shell-words
+shell-words = "1.1"
+dirs = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

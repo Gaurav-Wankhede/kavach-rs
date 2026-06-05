@@ -1,0 +1,66 @@
+//! Range query, deduplication, and utility algorithms.
+
+use super::workload::{AlgoRecommendation, WorkloadClass};
+
+pub(super) const RANGE_DEDUP: &[AlgoRecommendation] = &[
+    AlgoRecommendation {
+        class: WorkloadClass::RangeMin,
+        algo: "Sparse Table / Segment Tree",
+        crate_name: "n/a (hand-roll) | segment-tree",
+        when: "Static array, many range-min/max queries.",
+        avoid_when: "Array mutates frequently; Sparse Table is read-only; use Segment Tree.",
+        complexity: "Sparse Table O(1) query / O(n log n) build; Seg Tree O(log n) both",
+        edge_cases: "Empty range; single-element range; idempotent op (min/max/gcd) works for Sparse Table; sum needs Seg Tree.",
+        source: "https://cp-algorithms.com/data_structures/sparse-table.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::PointUpdateRangeQuery,
+        algo: "Fenwick (BIT) / Segment Tree",
+        crate_name: "n/a (hand-roll)",
+        when: "Frequent point updates + range sum queries.",
+        avoid_when: "Range update + point query (use BIT difference trick or lazy Seg Tree).",
+        complexity: "O(log n) per op",
+        edge_cases: "1-indexed convention in most BIT implementations; range update needs auxiliary BIT.",
+        source: "https://cp-algorithms.com/data_structures/fenwick.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::DistinctCount,
+        algo: "HashSet (exact) / HyperLogLog (approx)",
+        crate_name: "std | hyperloglogplus",
+        when: "Exact under ~1M; approximate above.",
+        avoid_when: "Need monotone increment under arbitrary insertion order; use HLL merge.",
+        complexity: "O(n) memory exact; O(1) memory HLL",
+        edge_cases: "Empty input -> 0; HLL standard error ~1.04/sqrt(m).",
+        source: "https://en.wikipedia.org/wiki/HyperLogLog",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::Dedup,
+        algo: "HashSet (small) / Bloom + HashSet (large) / ext-merge sort + uniq (huge)",
+        crate_name: "std | bloomfilter | external-sort",
+        when: "Remove duplicates; size determines structure.",
+        avoid_when: "Stream too large for memory and exact dedup required (need disk-backed).",
+        complexity: "O(n) HashSet; O(n log n) ext-sort",
+        edge_cases: "Hash equality must match Eq impl; floating-point keys are dangerous.",
+        source: "https://doc.rust-lang.org/std/collections/struct.HashSet.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::Pagination,
+        algo: "Keyset pagination (WHERE id > last_id)",
+        crate_name: "sqlx (manual)",
+        when: "DB pagination over indexed monotonic key.",
+        avoid_when: "Random access to page N (rare; admin only; accept the cliff).",
+        complexity: "O(log n + page_size) per page vs OFFSET O(n)",
+        edge_cases: "Composite sort keys need composite cursor; tie-breaking on equal sort key needs id tiebreaker.",
+        source: "https://use-the-index-luke.com/no-offset",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::Recursion,
+        algo: "Iterative + explicit stack (large input) / memoization (overlapping)",
+        crate_name: "std | cached",
+        when: "Adversarial input depth; overlapping subproblems benefit from memoization.",
+        avoid_when: "Tail-recursive and depth bounded; Rust does not guarantee TCO; iterative is safer.",
+        complexity: "Per-call O(1); total depends on memoization hit rate",
+        edge_cases: "Stack overflow at ~100k depth on default stack; memoize with HashMap not Vec when key sparse.",
+        source: "https://doc.rust-lang.org/book/ch03-05-control-flow.html",
+    },
+];

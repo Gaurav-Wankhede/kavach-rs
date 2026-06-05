@@ -1,0 +1,40 @@
+# cargo-nextest configuration — kavach-rs
+# Each #[test] already runs in its own process under nextest; this file tunes
+# that: parallelism, hung-test termination, and a serial group for the tests
+# that mutate process-global env (HOME / KAVACH_* vars).
+# Docs: https://nexte.st/docs/configuration/reference/
+
+[profile.default]
+# One process per test, all logical CPUs in flight.
+test-threads = "num-cpus"
+# Retries off locally — a flake should be seen, not masked.
+retries = 0
+# Mark a test slow at 30s; SIGTERM then SIGKILL after 2 periods (60s total).
+# Bounds a hung test so one stall cannot freeze the whole parallel run.
+slow-timeout = { period = "30s", terminate-after = 2 }
+# Surface the slowest tests so the long-pole gets attention.
+final-status-level = "slow"
+
+[profile.ci]
+inherits = "default"
+# CI runs the whole suite — never stop at the first failure.
+fail-fast = false
+# One retry absorbs genuine CI infra flake without hiding real breakage.
+retries = 1
+slow-timeout = { period = "60s", terminate-after = 3 }
+
+# Logical mutex: tests mutating process-global env (std::env::set_var on HOME /
+# KAVACH_* in kavach-engine) MUST NOT run concurrently with each other — env is
+# process-wide, not per-test. max-threads = 1 makes the runner enforce this in
+# addition to the in-code Mutex, so a future env test added without that lock
+# still cannot race.
+[test-groups]
+serial-env = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'package(kavach-engine) and test(/env|home|cwd|stop_detect/)'
+test-group = 'serial-env'
+
+[[profile.ci.overrides]]
+filter = 'package(kavach-engine) and test(/env|home|cwd|stop_detect/)'
+test-group = 'serial-env'

@@ -1,0 +1,239 @@
+// split: intentional - dynamic graph ops (string rel_type, upsert-by-name) for engine gates
+// SurrealDB-backed dynamic graph helpers — mirror kavach-db graph_entity + graph
+// add_relationship/get_related shapes. The fixed RelationType enum in
+// graph::types::RelationType is preferred for new code; this module exists to
+// migrate engine gates that use dynamic rel_types like "uses_skill",
+// "cross_invoke", "INVOKE" without expanding the typed enum.
+// sql-safe: bound params; rel_type validated against an allowlist before use.
+use crate::error::{Error, Result};
+use crate::graph::types::Entity;
+use serde::{Deserialize, Serialize};
+use surrealdb::Surreal;
+use surrealdb::engine::local::Db;
+use surrealdb_types::{RecordId, SurrealValue};
+
+/// Allowlist of relation names accepted by dynamic helpers.
+/// Adding a new `rel_type` here is the only path for engine gates to introduce one.
+/// Underscored names match the `SurrealDB` graph edge table identifiers.
+const ALLOWED_RELS: &[&str] = &[
+    // Workflow / project-DAG edges (original set)
+    "contains",
+    "depends_on",
+    "modifies",
+    "references",
+    "mentions",
+    "works_on",
+    "owns",
+    "uses_skill",
+    "cross_invoke",
+    "invoke",
+    "uses_pattern",
+    "in_scope",
+    "uses_algorithm",
+    "session_uses_skill",
+    "solves",
+    // Ontology edges (L0 concept <-> L0 concept) — knowledge-graph structure.
+    "is_a",
+    "part_of",
+    "prerequisite_of",
+    "alternative_to",
+    "composes",
+    "mitigates",
+    "instance_of",
+    "subsumes",
+    // Bridge edges (L1 project_entity -> L0 concept) — cross-project glue.
+    "implements",
+    "discusses",
+    "references_concept",
+    "violates",
+    // Mistake-tier edges (L3 mistake_event -> {anti_pattern, gate, session, concept})
+    "fired_gate",
+    "triggered_in_session",
+    "correct_action_ref",
+];
+
+/// Subset of `ALLOWED_RELS` valid for ontology relations (concept <-> concept).
+/// Used by `graph::concepts` to reject workflow edges on concept-only relate calls.
+pub(crate) const ALLOWED_ONTOLOGY_RELS: &[&str] = &[
+    "is_a",
+    "part_of",
+    "prerequisite_of",
+    "alternative_to",
+    "composes",
+    "mitigates",
+    "instance_of",
+    "subsumes",
+];
+
+/// Subset of `ALLOWED_RELS` valid for L1->L0 bridges (`project_entity` -> concept).
+/// Consumed by `graph::concepts::relate` to reject bridge edges on ontology relate.
+pub(crate) const ALLOWED_BRIDGE_RELS: &[&str] =
+    &["implements", "discusses", "references_concept", "violates"];
+
+/// Returns true if `rel` is a bridge edge (L1->L0). Used by concept relate
+/// helpers to produce precise error messages when the caller passes a bridge
+/// edge to an ontology-only function.
+pub(crate) fn is_bridge_rel(rel: &str) -> bool {
+    ALLOWED_BRIDGE_RELS.contains(&rel)
+}
+
+fn validate_rel(rel: &str) -> Result<()> {
+    if ALLOWED_RELS.contains(&rel) {
+        Ok(())
+    } else {
+        Err(Error::Migration(format!(
+            "rel_type '{rel}' not in allowlist; add to graph::dynamic::ALLOWED_RELS"
+        )))
+    }
+}
+
+#[derive(surrealdb_types::SurrealValue)]
+struct EntityIdRow {
+    id: RecordId,
+}
+
+/// Find an entity by (`entity_type`, name); insert it if absent. Returns its id.
+///
+/// # Errors
+/// `Error::Surreal` on SELECT or CREATE failure; `Error::RecordNotFound`
+/// when the CREATE returns no id row.
+pub async fn upsert_entity(db: &Surreal<Db>, entity_type: &str, name: &str) -> Result<RecordId> {
+    let find_q = "SELECT id FROM entity \
+                  WHERE entity_type = $type AND name = $name LIMIT 1";
+    let mut response = db
+        .query(find_q)
+        .bind(("type", entity_type.to_owned()))
+        .bind(("name", name.to_owned()))
+        .await?;
+    let existing: Option<EntityIdRow> = response.take(0)?;
+    if let Some(row) = existing {
+        return Ok(row.id);
+    }
+    let create_q = "CREATE entity SET entity_type = $type, name = $name RETURN id";
+    let mut resp = db
+        .query(create_q)
+        .bind(("type", entity_type.to_owned()))
+        .bind(("name", name.to_owned()))
+        .await?;
+    let row: Option<EntityIdRow> = resp.take(0)?;
+    row.map(|ir| ir.id)
+        .ok_or_else(|| Error::RecordNotFound("entity create returned no id".into()))
+}
+
+/// List entities, optionally filtered by `entity_type`. Caps at `LIST_ENTITIES_MAX`.
+const LIST_ENTITIES_MAX: i64 = 5_000;
+
+/// List entities, optionally filtered by `entity_type`. Caps at `LIST_ENTITIES_MAX`.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from the SELECT.
+pub async fn list_entities(db: &Surreal<Db>, entity_type: Option<&str>) -> Result<Vec<Entity>> {
+    let q = match entity_type {
+        Some(_) => {
+            "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
+                    WHERE entity_type = $type LIMIT $limit"
+        }
+        None => {
+            "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
+                 LIMIT $limit"
+        }
+    };
+    let mut response = match entity_type {
+        Some(et) => {
+            db.query(q)
+                .bind(("type", et.to_owned()))
+                .bind(("limit", LIST_ENTITIES_MAX))
+                .await?
+        }
+        None => db.query(q).bind(("limit", LIST_ENTITIES_MAX)).await?,
+    };
+    let entities: Vec<Entity> = response.take(0)?;
+    Ok(entities)
+}
+
+/// Find an entity by (`entity_type`, name). Returns None if absent.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from the SELECT.
+pub async fn find_entity(
+    db: &Surreal<Db>,
+    entity_type: &str,
+    name: &str,
+) -> Result<Option<Entity>> {
+    let q = "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
+             WHERE entity_type = $type AND name = $name LIMIT 1";
+    let mut response = db
+        .query(q)
+        .bind(("type", entity_type.to_owned()))
+        .bind(("name", name.to_owned()))
+        .await?;
+    let row: Option<Entity> = response.take(0)?;
+    Ok(row)
+}
+
+/// Add a relationship between two entities by string `rel_type`.
+/// `rel_type` must be in `ALLOWED_RELS` — unknown names error to prevent typos.
+///
+/// # Errors
+/// `Error::RecordNotFound` when `rel_type` is not in `ALLOWED_RELS`;
+/// `Error::Surreal` from the RELATE.
+pub async fn relate_dynamic(
+    db: &Surreal<Db>,
+    from: &RecordId,
+    to: &RecordId,
+    rel_type: &str,
+    weight: f64,
+) -> Result<()> {
+    validate_rel(rel_type)?;
+    // SurrealDB RELATE statement requires the rel name as a bare identifier;
+    // we cannot bind it as a parameter. The allowlist check above guarantees
+    // rel_type is one of a fixed set of literals, so format!() is sql-safe.
+    let q = format!("RELATE $from->{rel_type}->$to SET weight = $weight");
+    db.query(q)
+        .bind(("from", from.clone()))
+        .bind(("to", to.clone()))
+        .bind(("weight", weight))
+        .await?;
+    Ok(())
+}
+
+/// One row of the related-entity result set: outgoing edge → target entity.
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[non_exhaustive]
+pub struct RelatedRow {
+    pub rel_type: String,
+    pub weight: f64,
+    pub target: Entity,
+}
+
+/// Return outgoing edges from `from` across all `ALLOWED_RELS`, paired with
+/// the target entity. Limit caps the per-rel-type fan-out.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from any per-relation SELECT.
+pub async fn get_related(
+    db: &Surreal<Db>,
+    from: &RecordId,
+    limit: usize,
+) -> Result<Vec<RelatedRow>> {
+    let mut out: Vec<RelatedRow> = Vec::new();
+    for &rel in ALLOWED_RELS {
+        // sql-safe: rel comes from compile-time const ALLOWED_RELS only.
+        let q = format!(
+            "SELECT '{rel}' AS rel_type, weight, out.* AS target \
+             FROM type::record($tb, $id)->{rel} LIMIT $limit"
+        );
+        let mut response = db
+            .query(q)
+            .bind(("tb", format!("{:?}", &from.table)))
+            .bind(("id", format!("{:?}", &from.key)))
+            .bind(("limit", i64::try_from(limit).unwrap_or(i64::MAX)))
+            .await?;
+        let rows: Vec<RelatedRow> = match response.take(0) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        out.extend(rows);
+    }
+    Ok(out)
+}

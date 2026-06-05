@@ -1,0 +1,18 @@
+[package]
+name = "kavach-session"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+kavach-config = { path = "../kavach-config" }
+kavach-rpc = { path = "../kavach-rpc" }
+kavach-surreal = { path = "../kavach-surreal" }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+chrono = { workspace = true }
+fs2 = { workspace = true }
+tracing = { workspace = true }

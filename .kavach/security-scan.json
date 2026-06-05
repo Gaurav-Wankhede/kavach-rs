@@ -1,0 +1,15 @@
+[
+  {
+    "file": "./crates/kavach-patterns/src/sql_guard.rs",
+    "findings": [
+      {
+        "file": "./crates/kavach-patterns/src/sql_guard.rs",
+        "line": 115,
+        "severity": "Critical",
+        "category": "A03:SQLi",
+        "pattern": "r#\"format!(\"SELECT * FROM {} WHERE id = {}\", table, id)\"#,",
+        "fix": "Use parameterized queries (sqlx::query! with $1). Never interpolate into SQL."
+      }
+    ]
+  }
+]

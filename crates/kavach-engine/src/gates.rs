@@ -1,0 +1,110 @@
+// split: module-tree root — pure `mod X;` routing table, NOT splittable.
+// hub: gate-module dispatch table. This file is intentionally a flat list of
+// `pub(crate) mod X;` declarations — it only routes; all logic lives in the
+// per-gate files below. Rust requires each `mod gate_x;` to live in this parent
+// module file for `gates/gate_x.rs` to resolve, so the declarations cannot move
+// to a sub-file. Per kavach microservice rule, hub files are exempt from the
+// 100-line oversized-file limit; the `// split:` marker tells `kavach oversized
+// scan` to honor that exemption.
+pub(crate) mod api_gateway_guard;
+pub(crate) mod assumption_guard;
+pub(crate) mod attention_guard;
+pub(crate) mod bulk_event;
+pub(crate) mod completion_guard;
+pub mod config_change;
+pub mod cwd_changed;
+pub(crate) mod duplicate_tool_guard;
+pub mod elicitation;
+pub(crate) mod env_guard;
+pub(crate) mod env_guard_dotenv;
+pub(crate) mod env_guard_grep_prefix;
+pub(crate) mod env_guard_safelist;
+pub(crate) mod env_guard_shell_parse;
+pub(crate) mod env_guard_source_extract;
+pub(crate) mod env_guard_sourcing;
+pub mod event_log;
+pub mod file_changed;
+pub(crate) mod fix_actions;
+pub(crate) mod fix_instructions;
+pub(crate) mod grep_guard;
+pub(crate) mod hallucination_guard;
+pub mod instructions_loaded;
+pub mod intent;
+pub(crate) mod intent_context;
+pub(crate) mod loop_guard;
+pub(crate) mod memory_write_guard;
+pub mod message_display;
+pub(crate) mod new_package_guard;
+pub mod notification;
+pub(crate) mod orphan_guard;
+pub mod permission;
+pub mod permission_request;
+pub(crate) mod platform_guard_msg;
+pub(crate) mod platform_guard_paths;
+pub mod post_compact;
+pub mod post_tool;
+pub(crate) mod post_tool_algo_recorder;
+pub(crate) mod post_tool_arch_recorder;
+pub mod post_tool_bash;
+pub mod post_tool_failure;
+pub mod post_tool_lsp;
+pub mod post_tool_read;
+pub mod post_tool_research;
+pub mod post_tool_task;
+pub mod post_write;
+pub mod post_write_checks;
+pub mod pre_compact;
+pub mod pre_tool;
+pub(crate) mod pre_tool_agent;
+pub mod pre_tool_bash;
+pub mod pre_tool_read;
+pub(crate) mod pre_tool_search;
+pub mod pre_tool_skill;
+pub mod pre_tool_task;
+pub mod pre_write;
+pub(crate) mod pre_write_advisory;
+pub(crate) mod pre_write_algo_guard;
+pub(crate) mod pre_write_arch_guard;
+pub mod pre_write_checks;
+pub(crate) mod pre_write_context;
+pub(crate) mod pre_write_enforcement;
+pub(crate) mod pre_write_gnap_advisory;
+pub(crate) mod pre_write_guards;
+pub(crate) mod pre_write_immutable_migration;
+pub(crate) mod pre_write_infra_guard;
+pub(crate) mod pre_write_lsp_first;
+pub(crate) mod pre_write_microservice_guard;
+pub(crate) mod pre_write_patterns;
+pub(crate) mod pre_write_rca_guard;
+pub(crate) mod pre_write_response_guard;
+pub(crate) mod pre_write_rust_guard;
+pub(crate) mod pre_write_security;
+pub(crate) mod pre_write_simplicity_guard;
+pub(crate) mod pre_write_sql_guard;
+pub(crate) mod pre_write_surgical_guard;
+pub(crate) mod pre_write_tailwind_guard;
+pub(crate) mod pre_write_ts_guard;
+pub(crate) mod prod_guard;
+pub(crate) mod rag_router;
+pub(crate) mod result_trim;
+pub(crate) mod router;
+pub mod rule_eval;
+pub(crate) mod rules_manifest;
+pub mod session_end;
+pub mod session_start;
+pub mod stop;
+pub(crate) mod stop_decisions;
+pub(crate) mod stop_dispatch;
+pub mod stop_failure;
+pub mod task_created;
+pub mod teammate;
+pub(crate) mod test_inject;
+pub(crate) mod token_usage;
+pub mod worktree_create;
+pub mod worktree_remove;
+// Staged: implementation + tests ship; wiring into gate_runner pending.
+// Gated behind cfg(test) to suppress dead-code warnings until integrated.
+#[cfg(test)]
+pub(crate) mod duplicate_function_guard;
+pub(crate) mod research_guard;
+pub mod six_file;

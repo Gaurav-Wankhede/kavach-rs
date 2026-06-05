@@ -1,0 +1,29 @@
+# cargo-audit configuration for kavach-rs.
+# The BOUNTY_CVE stop-gate reads `cargo audit`'s denied set; entries here move a
+# CVE into the ALLOWED set so it no longer blocks. Each ignore MUST carry a
+# disposition: dep path, reachability analysis, impact, and a REVISIT trigger.
+
+[advisories]
+ignore = [
+    # RUSTSEC-2023-0071: rsa 0.9.10 — Marvin Attack (timing side-channel, CVE-2023-49092)
+    # STATUS: No patched version exists upstream (RustCrypto/RSA — non-constant-time
+    #         decrypt/sign; advisory still has no fixed release as of 2026-06).
+    # SOURCE: rsa 0.9.10 → jsonwebtoken 10.4.0 → surrealdb-core 3.0.5 → surrealdb
+    #         → all kavach crates. `cargo tree -i rsa@0.9.10` is EMPTY in the
+    #         default graph; only reachable via `--target all`. rsa is NOT a direct
+    #         dependency of any workspace crate.
+    # IMPACT: NONE reachable. The Marvin Attack requires a NETWORK attacker who can
+    #         observe timing of RSA PRIVATE-KEY operations (CVSS AV:N/AC:H). kavach
+    #         uses SurrealDB EMBEDDED (surrealdb::engine::local::Db) — there is no
+    #         network-exposed DB server and no network path to any RSA op. kavach
+    #         never signs/decrypts with RSA: the only JWT references in-tree are
+    #         pattern-detection regexes (kavach-patterns test fixtures), never an
+    #         actual EncodingKey::from_rsa / RS256 sign. The rsa code is compiled
+    #         (transitively) but never executed.
+    # PRECEDENT: Apache Iceberg-Rust + nakago suppress this same transitive advisory
+    #            ("no actions to take") — github.com/rpgp/rpgp#257, iceberg-rust#222.
+    # REVISIT: When jsonwebtoken/surrealdb-core drop the rsa transitive dep, OR
+    #          RustCrypto/RSA ships a constant-time release. Drop this ignore the
+    #          moment `cargo tree -i rsa@0.9.10 --target all` goes empty.
+    "RUSTSEC-2023-0071",
+]

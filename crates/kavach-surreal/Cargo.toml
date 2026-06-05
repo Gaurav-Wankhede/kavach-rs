@@ -1,0 +1,26 @@
+[package]
+name = "kavach-surreal"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bon = { workspace = true }
+itertools = { workspace = true }
+surrealdb = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+dirs = { workspace = true }
+tokio = { workspace = true }
+surrealdb-types = "3.0.5"
+fastembed = { version = "4", default-features = false, features = ["ort-download-binaries", "hf-hub-rustls-tls"] }
+blake3 = { workspace = true }
+kavach-types = { path = "../kavach-types" }
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "1.1", features = ["process"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,32 @@
+# Build artifacts
+target/
+*.rlib
+
+# Editor / merge backups
+*.orig
+*.bak
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cargo lock is committed for binaries
+# Cargo.lock
+
+# Vendored migration tooling (SurrealDB 2.6.x export binary) — not source
+/tools/
+
+# ML embedding model cache (fastembed-rs downloads at runtime — not source)
+.fastembed_cache/
+**/.fastembed_cache/
+
+# Staged sidecar CLI for `dx bundle` external_bin (kavach deploy --bundle).
+# Build artifact: kavach-<target-triple> copied here before bundling.
+/crates/kavach-app/bin/

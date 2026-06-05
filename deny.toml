@@ -1,0 +1,217 @@
+# cargo-deny policy for kavach-rs
+# SOURCE: https://embarkstudios.github.io/cargo-deny/ (v0.18.x schema, May 2026)
+# Adopted per the May 2026 Rust harness reference (doc §5: "the single
+# highest-leverage harness security tool"). Layered with `cargo audit`
+# (RustSec CVE feed, separate config — runs via `cargo audit` direct).
+
+# ─────────────────────────────────────────────────────────────
+# [graph] — what to scan
+# ─────────────────────────────────────────────────────────────
+[graph]
+# Scan the host target plus the common deployment targets we ship to.
+# Conservative: most kavach binaries are local-host only (macOS/Linux);
+# Cloudflare Workers crates target wasm32 separately.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "aarch64-unknown-linux-gnu",
+]
+all-features = false
+no-default-features = false
+
+[output]
+feature-depth = 1
+
+# ─────────────────────────────────────────────────────────────
+# [advisories] — RustSec advisory database integration
+# Wraps the same data cargo-audit consumes; cargo-deny enforces it
+# in the same pass as license/ban policy.
+# ─────────────────────────────────────────────────────────────
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# Vulnerabilities (CVEs) and unsound advisories ALWAYS deny — the
+# cargo-deny default in 0.18.x; not overridable here (severity is
+# fixed by RUSTSEC class, not per-config).
+#
+# yanked: "warn" — enumset 1.1.12 transitive via dioxus 0.7.9 is a
+# known unfixable yank pending the dioxus 0.8 bump.
+yanked = "warn"
+# unmaintained: scope of detection (cargo-deny 0.18+ schema accepts
+# `all | workspace | transitive | none`, NOT severity strings — severity
+# is fixed by RUSTSEC class). "all" scans every crate; specific
+# unmaintained crates are excluded via the `ignore` list below. The
+# gtk-rs GTK3 family, bincode 1.x, paste, proc-macro-error are all
+# transitive-only and individually ignored with decision-row rationale.
+unmaintained = "all"
+# Per-advisory ignore list. Each entry MUST have a paired kavach
+# decision row keyed `crate.<crate>.advisory.<RUSTSEC-id>` explaining
+# WHY this advisory is accepted (typically: unfixable upstream, no
+# patched version available). Empty by default; add only with a row.
+ignore = [
+    # gtk-rs GTK3 bindings family (transitive via dioxus-desktop → wry
+    # → webkit2gtk → gtk). gtk-rs deprecated GTK3 in favour of GTK4;
+    # dioxus-desktop 0.7.9 has not yet migrated. Re-evaluate on each
+    # dioxus bump. Filed: decision crate.gtk-rs.gtk3-unmaintained-transitive.
+    "RUSTSEC-2024-0411", "RUSTSEC-2024-0412", "RUSTSEC-2024-0413",
+    "RUSTSEC-2024-0416", "RUSTSEC-2024-0418",
+    # Proc-macro deps unmaintained — paste, proc-macro-error and related
+    # (transitive via various older derive crates). Each waits on its
+    # consumer to migrate (no kavach-rs direct dep). Filed:
+    # decision crate.proc-macro-deps.unmaintained-transitive.
+    "RUSTSEC-2024-0370", "RUSTSEC-2024-0414", "RUSTSEC-2024-0415",
+    "RUSTSEC-2024-0419", "RUSTSEC-2024-0420", "RUSTSEC-2024-0436",
+    # bincode 1.x unmaintained (2.x is the active line). Transitive via
+    # surrealdb-core; surrealdb has not bumped. Filed:
+    # decision crate.bincode.1x-unmaintained-transitive.
+    "RUSTSEC-2025-0141",
+    # number_prefix 0.4.0 unmaintained. Transitive via
+    # indicatif -> hf-hub -> fastembed -> kavach-surreal. No safe upgrade
+    # path; awaits upstream fastembed/hf-hub migration to a maintained
+    # alternative. Filed: decision crate.number_prefix.unmaintained-transitive.
+    "RUSTSEC-2025-0119",
+]
+
+# ─────────────────────────────────────────────────────────────
+# [licenses] — what licenses are permitted in the dependency tree
+# Allowlist (not denylist) per OSI best practice and the doc §5
+# advice ("the single highest-leverage harness security tool").
+# ─────────────────────────────────────────────────────────────
+[licenses]
+# Strict confidence threshold — a low-confidence detection is treated as
+# uncategorized and requires a clarification or exception, not silent pass.
+confidence-threshold = 0.93
+# Allowlist of OSI-approved permissive + weak-copyleft licenses that are
+# compatible with shipping a binary. Strong copyleft (GPL/AGPL/SSPL) is
+# DELIBERATELY excluded — adding one needs an explicit license-decision row.
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016", # legacy form, some old crates still ship it
+    "CC0-1.0",
+    "0BSD",
+    "BSL-1.0",
+    "MPL-2.0", # weak copyleft: per-file, link-compatible with proprietary
+    "Unlicense", # public-domain dedication (OSI-approved); used by some
+                 # transitive deps (e.g. byteorder). Equivalent to CC0 in
+                 # practice; safe alongside MIT/Apache-2.0 ecosystem.
+    # Custom license-refs for crates that ship non-SPDX licenses.
+    # SPDX 2.1+ allows the `LicenseRef-<name>` form for licenses outside
+    # the standard list; clarify entries below tie a LicenseRef to a
+    # specific crate via its license-file hash.
+    # BUSL-1.1 = SPDX identifier for Business Source License 1.1
+    # (source-available, converts to Apache-2.0 after change date).
+    # Used by surrealdb 3.x via license-file. Acceptable for kavach-rs
+    # internal embedding (we are not redistributing the database).
+    # Decision: crate.surrealdb.busl-1.1-accepted.
+    "BUSL-1.1",
+    # CDLA-Permissive-2.0 — Community Data License Agreement, permissive
+    # variant. Apache-2.0-style license for data + code; OSI-equivalent
+    # permissions. Used by some transitive deps. Safe.
+    "CDLA-Permissive-2.0",
+]
+# Per-crate exception list — overrides the global allow list for one
+# crate. Each entry MUST have a paired kavach decision row.
+exceptions = []
+
+[licenses.private]
+# Don't enforce license rules on workspace-internal crates that aren't
+# published. Catches workspace members with `publish = false` (either
+# explicit or inherited from `[workspace.package]`).
+ignore = true
+
+# ─────────────────────────────────────────────────────────────
+# [[licenses.clarify]] — tell cargo-deny how to interpret crates
+# that ship a non-SPDX or file-only license declaration.
+# Each entry needs the crate name and the SPDX-style expression we
+# assert it satisfies, plus the LICENSE file hash for verification.
+# The hash is computed by cargo-deny on first run and printed in the
+# error — copy it here. Each clarify MUST have a paired decision row.
+# ─────────────────────────────────────────────────────────────
+
+# surrealdb 3.x ships BUSL-1.1 (Business Source License, SPDX
+# identifier) via a LICENSE file (not SPDX `license = "..."` field).
+# BUSL-1.1 is source-available, converts to Apache-2.0 after the
+# change date, and is acceptable for kavach-rs's internal-use
+# embedding (we are not redistributing the database itself).
+# Hash 0xbb1191d7 is the FNV-1a of the LICENSE file shipped in
+# surrealdb 3.0.5 (verified by cargo-deny on first scan). All four
+# surreal crates ship the identical LICENSE file (same hash).
+# Decision: crate.surrealdb.busl-1.1-accepted.
+[[licenses.clarify]]
+crate = "surrealdb"
+expression = "BUSL-1.1"
+license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+
+[[licenses.clarify]]
+crate = "surrealdb-core"
+expression = "BUSL-1.1"
+license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+
+[[licenses.clarify]]
+crate = "surrealdb-types"
+expression = "BUSL-1.1"
+license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+
+[[licenses.clarify]]
+crate = "surrealdb-types-derive"
+expression = "BUSL-1.1"
+license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+
+# ─────────────────────────────────────────────────────────────
+# [bans] — banned crates + duplicate-version detection
+# ─────────────────────────────────────────────────────────────
+[bans]
+# Highlight duplicate dependency versions (bloat + supply-chain risk:
+# more code paths = more audit surface).
+multiple-versions = "warn"
+# Wildcards: workspace-internal crates currently use `version = "*"`
+# alongside `path = "../kavach-foo"` — cargo resolves to the path, the
+# wildcard is cosmetic. Tighten to "deny" once those are converted to
+# `package.version.workspace = true` or explicit semver pins. Filed as
+# hunt.cargo-deny-workspace-wildcard-deps.
+wildcards = "warn"
+# `allow-wildcard-paths` reduces the wildcard warning to workspace
+# crates only (where it's a known false-positive); third-party wildcards
+# still warn loudly.
+allow-wildcard-paths = true
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+
+# Explicit deny list — crates we will NEVER take.
+deny = [
+    # CVE-2025-62518 (TARmageddon RCE) per the bug-bounty skill's
+    # current threat-landscape brief.
+    { name = "async-tar" },
+    # GPL-licensed libgit2 binding — license incompatibility.
+    # Not currently in the tree; the deny prevents silent introduction.
+]
+
+# Allow specific (name, version) pairs that would otherwise hit
+# multiple-versions=warn — used to acknowledge known-irreducible
+# duplicates from upstream transitives.
+skip = []
+
+# Allow whole crates to appear multiple times (use sparingly).
+skip-tree = []
+
+# ─────────────────────────────────────────────────────────────
+# [sources] — where crates may come from
+# Forbids vendor-private registries unless explicitly listed.
+# ─────────────────────────────────────────────────────────────
+[sources]
+# Crates from sources OTHER than the registries below are denied.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# Add explicit git-source allowlist entries here if/when needed (e.g.
+# for a pinned-fork dependency); each entry needs a decision row.
+allow-git = []

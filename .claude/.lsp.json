@@ -1,0 +1,26 @@
+{
+  "lspServers": {
+    "rust-analyzer": {
+      "command": "/Users/gauravwankhede/.cargo/bin/rust-analyzer",
+      "args": [],
+      "transport": "stdio",
+      "extensionToLanguage": {
+        ".rs": "rust"
+      },
+      "initializationOptions": {
+        "cachePriming": { "enable": false },
+        "cargo": {
+          "buildScripts": { "enable": true },
+          "allTargets": false
+        },
+        "procMacro": { "enable": true },
+        "checkOnSave": false,
+        "check": { "workspace": false },
+        "files": {
+          "excludeDirs": ["target", ".git", "node_modules", ".claude"]
+        },
+        "numThreads": 4
+      }
+    }
+  }
+}

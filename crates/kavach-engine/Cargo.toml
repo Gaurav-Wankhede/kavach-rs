@@ -1,0 +1,32 @@
+[package]
+name = "kavach-engine"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+kavach-types = { path = "../kavach-types" }
+kavach-hook = { path = "../kavach-hook" }
+kavach-session = { path = "../kavach-session" }
+kavach-patterns = { path = "../kavach-patterns" }
+kavach-chain = { path = "../kavach-chain" }
+kavach-config = { path = "../kavach-config" }
+kavach-rule-engine = { path = "../kavach-rule-engine" }
+kavach-rule-storage = { path = "../kavach-rule-storage" }
+kavach-rag-core = { path = "../kavach-rag-core" }
+kavach-rpc = { path = "../kavach-rpc" }
+kavach-surreal = { path = "../kavach-surreal" }
+miette = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+blake3 = { workspace = true }
+memchr = "2.7"
+regex = { workspace = true }
+tokio = { workspace = true }
+which = "7.0"
+
+[dev-dependencies]
+temp-env = { workspace = true }

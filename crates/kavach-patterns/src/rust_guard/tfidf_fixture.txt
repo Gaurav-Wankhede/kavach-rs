@@ -1,0 +1,52 @@
+fn tfidf_best_match(
+    candidates: Vec<GatePattern>,
+    query_vec: &[&str],
+    query_tokens: &str,
+) -> Result<Option<GatePattern>> {
+    let n = candidates.len() as f64;
+    let mut df = std::collections::HashMap::new();
+    for token in query_vec {
+        let count = candidates
+            .iter()
+            .filter(|p| p.error_tokens.split_whitespace().any(|t| t == *token))
+            .count() as f64;
+        if count > 0.0 {
+            df.insert(*token, count);
+        }
+    }
+    let idf = |token: &str| -> f64 {
+        df.get(token).map_or(0.0, |&d| (n / d).ln())
+    };
+    let query_norm: f64 = query_vec.iter()
+        .map(|t| { let w = idf(t); w * w })
+        .sum::<f64>()
+        .sqrt();
+    if query_norm == 0.0 {
+        return Ok(None);
+    }
+    const MIN_SIM: f64 = 0.35;
+    let best = candidates
+        .into_iter()
+        .filter(|c| c.bloom_bytes.as_ref().map_or(true, |b| bloom_might_match(b, query_tokens)))
+        .filter_map(|candidate| {
+            let pat_str = candidate.error_tokens.clone();
+            let pat_tokens: Vec<&str> = pat_str.split_whitespace().collect();
+            let dot: f64 = query_vec.iter()
+                .filter(|t| pat_tokens.iter().any(|p| p == *t))
+                .map(|t| { let w = idf(t); w * w })
+                .sum();
+            let pat_sq: f64 = pat_tokens.iter()
+                .filter(|t| query_vec.iter().any(|q| q == *t))
+                .map(|t| { let w = idf(t); w * w })
+                .sum();
+            let pat_norm = pat_sq.sqrt();
+            if pat_norm == 0.0 { return None; }
+            let sim = dot / (query_norm * pat_norm);
+            if sim >= MIN_SIM { Some((sim, candidate)) } else { None }
+        })
+        .reduce(|(best_sim, best_pat), (sim, pat)| {
+            if sim > best_sim { (sim, pat) } else { (best_sim, best_pat) }
+        })
+        .map(|(_, pat)| pat);
+    Ok(best)
+}

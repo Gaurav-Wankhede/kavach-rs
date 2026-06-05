@@ -1,0 +1,17 @@
+[package]
+name = "kavach-rule-engine"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+kavach-rule-ast = { path = "../kavach-rule-ast" }
+kavach-rule-parser = { path = "../kavach-rule-parser" }
+kavach-rule-storage = { path = "../kavach-rule-storage" }
+kavach-patterns = { path = "../kavach-patterns" }
+kavach-config = { path = "../kavach-config" }
+serde = { workspace = true }
+glob-match = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,66 @@
+//! Queue, stack, and set collection recommendations.
+
+use super::workload::{AlgoRecommendation, WorkloadClass};
+
+pub(super) const COLLECTIONS: &[AlgoRecommendation] = &[
+    AlgoRecommendation {
+        class: WorkloadClass::OrderedRangeQuery,
+        algo: "BTreeMap",
+        crate_name: "std::collections::BTreeMap",
+        when: "Need .range(), ordered iteration, predecessor/successor, or first/last key.",
+        avoid_when: "Only point lookups (use HashMap O(1) instead).",
+        complexity: "O(log n) per op; B-tree branching factor 11 = cache-friendly",
+        edge_cases: "Range with exclusive bounds; empty range; cursor invalidation under mutation.",
+        source: "https://doc.rust-lang.org/std/collections/struct.BTreeMap.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::SetMembership,
+        algo: "HashSet",
+        crate_name: "std::collections::HashSet",
+        when: "Need exact 'is X present?' over set built once; n > ~32.",
+        avoid_when: "n < ~16 (Vec::contains wins via cache locality); need ordered iteration.",
+        complexity: "O(1) avg per query",
+        edge_cases: "Hash collisions on adversarial input; iteration order non-deterministic.",
+        source: "https://doc.rust-lang.org/std/collections/struct.HashSet.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::SequentialScan,
+        algo: "Vec",
+        crate_name: "std::vec::Vec",
+        when: "Push-back, sequential iterate, indexed access; n known approximately.",
+        avoid_when: "Frequent front-insertion (use VecDeque).",
+        complexity: "O(1) amortized push; O(n) front-insert",
+        edge_cases: "Pre-allocate with with_capacity to avoid log(n) reallocs.",
+        source: "https://doc.rust-lang.org/std/vec/struct.Vec.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::FifoQueue,
+        algo: "VecDeque",
+        crate_name: "std::collections::VecDeque",
+        when: "FIFO queue; push_back + pop_front; bounded if known.",
+        avoid_when: "Need indexed random access — VecDeque is ring buffer; use Vec.",
+        complexity: "O(1) push/pop both ends",
+        edge_cases: "Capacity must be power of 2 internally — pre-size for predictable layout.",
+        source: "https://doc.rust-lang.org/std/collections/struct.VecDeque.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::LifoStack,
+        algo: "Vec",
+        crate_name: "std::vec::Vec",
+        when: "LIFO stack; push + pop both at end.",
+        avoid_when: "Need front-access (use VecDeque).",
+        complexity: "O(1) amortized",
+        edge_cases: "Pop on empty returns None — never panics.",
+        source: "https://doc.rust-lang.org/std/vec/struct.Vec.html",
+    },
+    AlgoRecommendation {
+        class: WorkloadClass::DequeBoth,
+        algo: "VecDeque",
+        crate_name: "std::collections::VecDeque",
+        when: "Need both ends mutable.",
+        avoid_when: "Single-end use (Vec is faster).",
+        complexity: "O(1) at both ends",
+        edge_cases: "Slicing crosses ring boundary — use make_contiguous().",
+        source: "https://doc.rust-lang.org/std/collections/struct.VecDeque.html",
+    },
+];

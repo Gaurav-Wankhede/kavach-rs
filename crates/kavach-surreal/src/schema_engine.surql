@@ -1,0 +1,53 @@
+DEFINE TABLE algo_decision SCHEMAFULL;
+DEFINE FIELD project ON algo_decision TYPE record<project>;
+DEFINE FIELD problem_class ON algo_decision TYPE string;
+DEFINE FIELD chosen ON algo_decision TYPE string;
+DEFINE FIELD time_complexity ON algo_decision TYPE string;
+DEFINE FIELD space_complexity ON algo_decision TYPE string;
+DEFINE FIELD file_path ON algo_decision TYPE string;
+DEFINE FIELD search_year ON algo_decision TYPE int;
+DEFINE FIELD search_month ON algo_decision TYPE int;
+DEFINE FIELD created_at ON algo_decision TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_algo_unique ON algo_decision FIELDS project, problem_class, file_path UNIQUE;
+DEFINE INDEX idx_algo_project ON algo_decision FIELDS project, created_at;
+
+DEFINE TABLE arch_decision SCHEMAFULL;
+DEFINE FIELD project ON arch_decision TYPE record<project>;
+DEFINE FIELD pattern ON arch_decision TYPE string;
+DEFINE FIELD scope ON arch_decision TYPE string;
+DEFINE FIELD cap_choice ON arch_decision TYPE option<string>;
+DEFINE FIELD failure_mode ON arch_decision TYPE string;
+DEFINE FIELD tradeoff ON arch_decision TYPE string;
+DEFINE FIELD file_path ON arch_decision TYPE string;
+DEFINE FIELD search_year ON arch_decision TYPE int;
+DEFINE FIELD search_month ON arch_decision TYPE int;
+DEFINE FIELD created_at ON arch_decision TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_arch_unique ON arch_decision FIELDS project, pattern, file_path UNIQUE;
+DEFINE INDEX idx_arch_project ON arch_decision FIELDS project, created_at;
+
+DEFINE TABLE gate_pattern SCHEMAFULL;
+DEFINE FIELD project ON gate_pattern TYPE record<project>;
+DEFINE FIELD tool_name ON gate_pattern TYPE string;
+DEFINE FIELD gate_name ON gate_pattern TYPE string;
+DEFINE FIELD error_tokens ON gate_pattern TYPE string;
+DEFINE FIELD fix_strategy ON gate_pattern TYPE string;
+DEFINE FIELD imperative_rewrite ON gate_pattern TYPE string;
+DEFINE FIELD dsa_rationale ON gate_pattern TYPE string;
+DEFINE FIELD occurrence_count ON gate_pattern TYPE int DEFAULT 1;
+DEFINE FIELD bloom_bytes ON gate_pattern TYPE option<bytes>;
+DEFINE FIELD tier ON gate_pattern TYPE string DEFAULT 'research'
+    ASSERT $value IN ['research', 'autonomous'];
+DEFINE FIELD created_at ON gate_pattern TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON gate_pattern TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_gate_pattern_project_tier ON gate_pattern FIELDS project, tier, occurrence_count;
+DEFINE INDEX idx_gate_pattern_tool ON gate_pattern FIELDS tool_name, gate_name;
+
+DEFINE TABLE rag_tree SCHEMAFULL;
+DEFINE FIELD source ON rag_tree TYPE string;
+DEFINE FIELD built_at ON rag_tree TYPE datetime DEFAULT time::now();
+DEFINE FIELD tree_json ON rag_tree TYPE bytes;
+DEFINE FIELD source_hash ON rag_tree TYPE string;
+DEFINE FIELD source_dir ON rag_tree TYPE string DEFAULT '';
+DEFINE FIELD created_at ON rag_tree TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON rag_tree TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_rag_tree_source ON rag_tree FIELDS source UNIQUE;
