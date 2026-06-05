@@ -4,12 +4,18 @@
 //! stateful advisory tail. Ordered so every P0 hard-block precedes advisories.
 mod config;
 
+#[cfg(test)]
+#[path = "blocklist_test.rs"]
+mod tests;
+
 use config::config_blocklists;
 
 use super::advisories::is_git_add_all;
 use super::decision::Decision;
 use super::test_tracker::check_unscoped_test_run;
-use super::write_bypass::{check_psql_blocked, check_sqlx_migrate_requires_rca, is_write_bypass};
+use super::write_bypass::{
+    check_psql_blocked, check_sqlx_migrate_requires_rca, is_write_bypass, targets_tracked_source,
+};
 
 pub(super) fn check(command: &str) -> Option<Decision> {
     destructive_cli(command)
@@ -36,9 +42,26 @@ fn destructive_cli(command: &str) -> Option<Decision> {
     }
 }
 
-/// Write-bypass + `git add .` advisories (allow with context).
+/// Write-bypass guard + `git add .` advisory.
+///
+/// A Bash file-write sidesteps the `pre-write` research / anti-pattern gate
+/// (which fires only on Write/Edit). When the target is a TRACKED SOURCE file
+/// that is capability-laundering — a hand edit dodging the gate — so it is a
+/// P0 DENY. For generated artifacts (configs, `loop.yaml`) the dodge is benign
+/// and stays advisory. The `targets_tracked_source` predicate bounds the deny's
+/// false-positive surface (it requires both a source tree segment AND a source
+/// extension), satisfying the kavach-engine "promote to P0 only with an FP
+/// bound" severity policy.
 fn bypass_advisories(command: &str) -> Option<Decision> {
     if is_write_bypass(command) {
+        if targets_tracked_source(command) {
+            return Some(Decision::Deny(
+                "[BLOCKED:write-bypass] Writing a tracked SOURCE file via Bash bypasses the \
+                 pre-write research / anti-pattern gate. Use the Write or Edit tool so the gate \
+                 can mediate the change — do NOT route source edits through python/sed/redirects."
+                    .to_owned(),
+            ));
+        }
         return Some(Decision::Allow(Some(
             "[ADVISORY:write-bypass] File modification via Bash bypasses Write/Edit hooks. \
              Prefer the Write or Edit tool for file changes."

@@ -10,9 +10,11 @@ mod detect;
 mod psql;
 mod redirect;
 mod segment;
+mod source_target;
 mod sqlx_migrate;
 mod tool_write;
 
 pub(super) use detect::is_write_bypass;
 pub(super) use psql::check_psql_blocked;
+pub(super) use source_target::targets_tracked_source;
 pub(super) use sqlx_migrate::check_sqlx_migrate_requires_rca;

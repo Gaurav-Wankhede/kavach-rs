@@ -684,6 +684,14 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(e.to_string()))?;
 
     module
+        .register_async_method("db.ope_evaluate", |params, ctx, _ext| async move {
+            let p: db::OpeEvaluateParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::ope_evaluate(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
         .register_async_method("db.graph_query", |params, ctx, _ext| async move {
             let p: db::GraphQueryParams =
                 params.parse().map_err(|e| invalid_params(e.to_string()))?;

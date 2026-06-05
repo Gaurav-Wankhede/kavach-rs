@@ -4466,6 +4466,7 @@ dependencies = [
  "futures",
  "http",
  "jsonrpsee",
+ "kavach-ope",
  "kavach-patterns",
  "kavach-surreal",
  "kavach-types",

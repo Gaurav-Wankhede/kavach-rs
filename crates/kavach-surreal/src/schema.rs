@@ -165,6 +165,16 @@ DEFINE INDEX idx_event_session ON event FIELDS session;
 DEFINE INDEX idx_event_type ON event FIELDS event_type;
 DEFINE INDEX idx_event_project ON event FIELDS project, event_type, created_at;
 
+-- Bandit-log store (harness-rl Wave P2): the durable RLVR (x, a, p, r) tuple.
+-- SCHEMALESS because `payload` is an opaque, content-addressed JSON blob the
+-- OPE layer deserializes — the store keeps no typed view of it. Declared (not
+-- left to CREATE auto-creation) so a read of a fresh, never-appended log returns
+-- an empty set, not SurrealDB 3.0's "table does not exist" error.
+-- SOURCE: github.com/surrealdb/surrealdb/issues/139 (3.0 SELECT-on-undefined errors)
+DEFINE TABLE bandit_log SCHEMALESS;
+DEFINE FIELD created_at ON bandit_log TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_bandit_log_created ON bandit_log FIELDS created_at;
+
 -- Project parts (sub-components within a project: backend, frontend, etc.)
 DEFINE TABLE part SCHEMAFULL;
 DEFINE FIELD project ON part TYPE record<project>;

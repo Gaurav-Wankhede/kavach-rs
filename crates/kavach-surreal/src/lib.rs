@@ -109,6 +109,7 @@ pub use schema_v2::apply_agent_memory_schema;
 pub use session_store::{SessionRuntimeRow, session_get_by_id, session_upsert};
 pub use wipe::{WipeReport, preview_wipe, wipe_project};
 pub use write::{
-    ExpireReport, append_bandit_row, append_event, expire_stale, rotate_events, set_priority,
-    update_feedback, update_status, upsert_entry, upsert_entry_full, upsert_entry_with_event,
+    ExpireReport, append_bandit_row, append_event, expire_stale, list_bandit_rows, rotate_events,
+    set_priority, update_feedback, update_status, upsert_entry, upsert_entry_full,
+    upsert_entry_with_event,
 };

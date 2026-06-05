@@ -29,6 +29,16 @@ pub struct FixedPolicy {
     pub block: f64,
 }
 
+impl FixedPolicy {
+    /// Construct a fixed action distribution. The struct is `#[non_exhaustive]`,
+    /// so this is the only way to build one outside the crate — callers (the
+    /// `ope.evaluate` RPC) pass the candidate's three probabilities here.
+    #[must_use]
+    pub const fn new(allow: f64, ask: f64, block: f64) -> Self {
+        Self { allow, ask, block }
+    }
+}
+
 impl TargetPolicy for FixedPolicy {
     fn prob(&self, action: Action) -> f64 {
         match action {

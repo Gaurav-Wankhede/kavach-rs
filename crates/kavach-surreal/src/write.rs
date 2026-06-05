@@ -458,6 +458,37 @@ pub async fn append_bandit_row(db: &Surreal<Db>, payload: &str) -> Result<Record
     }
 }
 
+/// One stored payload row, read back from `bandit_log`. Holds the opaque
+/// `surrealdb_types::Value` (the SDK's `take` needs `SurrealValue`, not serde).
+#[derive(surrealdb_types::SurrealValue)]
+struct BanditPayloadRow {
+    payload: surrealdb_types::Value,
+}
+
+/// Read back the stored bandit-log payloads, newest first, capped at `limit`.
+///
+/// Each returned string is the serialized `BanditRow` JSON the OPE layer
+/// (kavach-ope) deserializes into a `LoggedSample`. The store keeps the payload
+/// as an opaque `SurrealDB` value, so this bridges it to a JSON string at the
+/// boundary (same `Value` -> `serde_json` hop as `db_harness/read.rs`).
+///
+/// # Errors
+/// Returns an error if the `SELECT` fails or a stored payload is malformed.
+pub async fn list_bandit_rows(db: &Surreal<Db>, limit: u32) -> Result<Vec<String>> {
+    let query = "SELECT payload, created_at FROM bandit_log ORDER BY created_at DESC LIMIT $limit";
+    let mut response = db.query(query).bind(("limit", i64::from(limit))).await?;
+    let rows: Vec<BanditPayloadRow> = response.take(0)?;
+    rows.into_iter()
+        .map(|r| {
+            // `into_json_value` emits PLAIN JSON; `serde_json::to_value` would emit
+            // SurrealDB's tagged enum form (`{"Object":{"action":{"String":..}}}`)
+            // that the OPE estimators cannot parse.
+            let json = r.payload.into_json_value();
+            serde_json::to_string(&json).map_err(crate::error::Error::Json)
+        })
+        .collect()
+}
+
 /// Tables that carry an `entry_status` field and are valid targets for
 /// `update_status`. Compile-time list — extending it requires a code change,
 /// preventing typo-driven silent no-ops.

@@ -14,6 +14,7 @@ publish = false
 [dependencies]
 kavach-surreal = { path = "../kavach-surreal" }
 kavach-patterns = { path = "../kavach-patterns" }
+kavach-ope = { path = "../kavach-ope" }
 kavach-types = { path = "../kavach-types" }
 surrealdb = { workspace = true }
 surrealdb-types = { workspace = true }

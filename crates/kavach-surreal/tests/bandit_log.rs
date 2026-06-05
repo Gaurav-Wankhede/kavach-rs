@@ -10,7 +10,17 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_surreal::{append_bandit_row, open_memory};
+use kavach_surreal::{append_bandit_row, apply_schema, list_bandit_rows, open_memory};
+
+/// Open an in-memory db with the production schema applied — the daemon path
+/// (`open_default_daemon`) runs `apply_schema`, so a read of a never-written
+/// `bandit_log` must see a *defined, empty* table, not `SurrealDB` 3.0's
+/// "table does not exist" error. `open_memory` alone skips schema.
+async fn open_with_schema() -> surrealdb::Surreal<surrealdb::engine::local::Db> {
+    let db = open_memory().await.expect("memory db");
+    apply_schema(&db).await.expect("apply schema");
+    db
+}
 
 const PAYLOAD: &str = r#"{"session_id":"sess_x","timestamp_ms":1717,"action":"block","propensity":1.0,"reward":null}"#;
 
@@ -58,4 +68,38 @@ async fn replaying_the_identical_decision_does_not_double_count() {
 fn blake3_key(payload: &str) -> String {
     let digest = blake3::hash(payload.as_bytes()).to_hex();
     digest.as_str().get(..32).unwrap_or(digest.as_str()).to_owned()
+}
+
+#[tokio::test]
+async fn list_bandit_rows_reads_back_appended_payloads() {
+    // The OPE layer (kavach-ope) consumes exactly these payloads; prove the
+    // read path returns them intact and as valid JSON the estimators can parse.
+    let db = open_with_schema().await;
+    let a = r#"{"session_id":"s1","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":1}"#;
+    let b = r#"{"session_id":"s2","timestamp_ms":2,"action":"block","propensity":1.0,"reward":null}"#;
+    append_bandit_row(&db, a).await.expect("append a");
+    append_bandit_row(&db, b).await.expect("append b");
+
+    let rows = list_bandit_rows(&db, 100).await.expect("list");
+    assert_eq!(rows.len(), 2, "both appended rows must come back");
+
+    // Each returned string parses as JSON and carries the action field.
+    let actions: Vec<String> = rows
+        .iter()
+        .map(|r| {
+            let v: serde_json::Value = serde_json::from_str(r).expect("payload is valid JSON");
+            v["action"].as_str().expect("action field").to_owned()
+        })
+        .collect();
+    assert!(actions.contains(&"allow".to_owned()), "got {actions:?}");
+    assert!(actions.contains(&"block".to_owned()), "got {actions:?}");
+}
+
+#[tokio::test]
+async fn list_bandit_rows_is_empty_on_a_fresh_db() {
+    // With the schema applied, `bandit_log` is a DEFINED but empty table — the
+    // read must return [], not SurrealDB 3.0's "table does not exist" error.
+    let db = open_with_schema().await;
+    let rows = list_bandit_rows(&db, 100).await.expect("list");
+    assert!(rows.is_empty(), "no rows logged yet");
 }
