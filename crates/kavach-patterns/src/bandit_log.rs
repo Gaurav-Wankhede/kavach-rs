@@ -73,6 +73,30 @@ pub struct BanditContext {
     pub prior_fire_count: u32,
 }
 
+impl BanditContext {
+    /// Construct a decision context. The only way to build one outside this crate
+    /// (the struct is `#[non_exhaustive]`), so the emit seam in `kavach-engine`
+    /// goes through here.
+    #[must_use]
+    pub fn new(
+        gate: impl Into<String>,
+        tool: impl Into<String>,
+        file_ext: impl Into<String>,
+        diff_bytes: u32,
+        intent_risk: impl Into<String>,
+        prior_fire_count: u32,
+    ) -> Self {
+        Self {
+            gate: gate.into(),
+            tool: tool.into(),
+            file_ext: file_ext.into(),
+            diff_bytes,
+            intent_risk: intent_risk.into(),
+            prior_fire_count,
+        }
+    }
+}
+
 /// One logged-bandit row (the RLVR tuple). Append-only; the store assigns the id.
 ///
 /// `propensity` is the CURRENT rule-gate's probability of `action` given the

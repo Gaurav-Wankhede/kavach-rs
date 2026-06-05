@@ -5,8 +5,27 @@
 use core::ops::ControlFlow;
 
 use super::super::shared::StopCtx;
+use crate::gates::bandit::emit;
+use kavach_patterns::bandit_log::{BanditContext, GateAction};
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
+    // Layer-A bandit log: a clean exit is the Stop gate's `Allow` action. Reward
+    // is None here — it is back-filled when the 3-witness verify resolves. Pure
+    // logging, fire-and-forget; never affects whether the stop proceeds.
+    emit::emit_decision(
+        &ctx.session.session_id,
+        BanditContext::new(
+            "stop",
+            "Stop",
+            "",
+            0,
+            "",
+            u32::try_from(ctx.session.turn_count).unwrap_or(0),
+        ),
+        GateAction::Allow,
+        1.0,
+        None,
+    );
     let semver_ctx = ctx.semver_advisory.as_deref().unwrap_or("");
     // U3 capture-finding nudge: non-blocking — it NEVER prevents the clean stop,
     // it only rides along in the STOP context when a decision was settled in

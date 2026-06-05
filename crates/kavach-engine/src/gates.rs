@@ -9,6 +9,7 @@
 pub(crate) mod api_gateway_guard;
 pub(crate) mod assumption_guard;
 pub(crate) mod attention_guard;
+pub(crate) mod bandit;
 pub(crate) mod bulk_event;
 pub(crate) mod completion_guard;
 pub mod config_change;
