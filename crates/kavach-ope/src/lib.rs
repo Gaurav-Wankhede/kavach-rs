@@ -27,6 +27,7 @@ mod estimate;
 pub use estimate::Estimate;
 
 pub mod ips;
+pub mod trust;
 
 #[cfg(test)]
 #[path = "lib_test.rs"]
