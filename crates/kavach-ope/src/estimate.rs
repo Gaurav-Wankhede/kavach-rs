@@ -20,6 +20,21 @@ pub struct Estimate {
 }
 
 impl Estimate {
+    /// Build an estimate from its parts — the constructor external crates use,
+    /// since the struct is `#[non_exhaustive]` (no struct-literal across crates).
+    #[must_use]
+    pub const fn new(value: f64, std_error: f64, n: usize) -> Self {
+        Self { value, std_error, n }
+    }
+
+    /// A non-informative estimate: zero samples, infinite SE. Any audit reading
+    /// it treats the channel as having no usable signal (fail-closed), rather
+    /// than a confident zero.
+    #[must_use]
+    pub const fn non_informative() -> Self {
+        Self { value: 0.0, std_error: f64::INFINITY, n: 0 }
+    }
+
     /// The lower confidence bound at the given z-score (e.g. 1.96 for ~95%).
     ///
     /// This is the number a deploy decision compares against the incumbent: a
