@@ -5,8 +5,16 @@
     clippy::float_cmp,
     reason = "exact reward scalars; deterministic, not measured"
 )]
-use super::{VerifyOutcome, label};
+use super::{VerifyOutcome, label, reward_tag};
 use crate::sample::Action;
+
+#[test]
+fn reward_tag_maps_the_scalar_to_the_wire_enum() {
+    assert_eq!(reward_tag(Action::Allow, VerifyOutcome::VerifiedClean), "verified_clean");
+    assert_eq!(reward_tag(Action::Ask, VerifyOutcome::VerifiedClean), "verified_clean");
+    assert_eq!(reward_tag(Action::Allow, VerifyOutcome::VerifyFailed), "false_decision");
+    assert_eq!(reward_tag(Action::Block, VerifyOutcome::BlockedAndAccepted), "needed_ask");
+}
 
 #[test]
 fn allowing_good_work_is_rewarded() {

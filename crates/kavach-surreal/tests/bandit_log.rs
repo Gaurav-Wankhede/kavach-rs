@@ -11,8 +11,8 @@
 )]
 
 use kavach_surreal::{
-    append_bandit_row, apply_schema, list_bandit_rows, list_unrewarded_bandit_rows, open_memory,
-    update_bandit_reward,
+    append_bandit_row, apply_schema, list_bandit_rows, list_unrewarded_bandit_rows,
+    list_unrewarded_bandit_rows_for_session, open_memory, update_bandit_reward,
 };
 
 /// Open an in-memory db with the production schema applied — the daemon path
@@ -152,4 +152,35 @@ async fn back_filling_an_absent_row_is_an_error_not_a_silent_noop() {
     let never_logged = r#"{"session_id":"ghost","timestamp_ms":9,"action":"allow","propensity":1.0,"reward":null}"#;
     let res = update_bandit_reward(&db, never_logged, "verified_clean").await;
     assert!(res.is_err(), "back-filling a row that was never logged must error");
+}
+
+#[tokio::test]
+async fn the_per_session_unrewarded_list_is_the_join_key() {
+    // P3a JOIN: the stop gate grades ONE session's decisions. The per-session
+    // lister must return only this session's un-rewarded rows — never another
+    // session's, never an already-graded row.
+    let db = open_with_schema().await;
+    let mine_pending =
+        r#"{"session_id":"sess_mine","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":null}"#;
+    let mine_graded =
+        r#"{"session_id":"sess_mine","timestamp_ms":2,"action":"ask","propensity":1.0,"reward":"verified_clean"}"#;
+    let other_pending =
+        r#"{"session_id":"sess_other","timestamp_ms":3,"action":"block","propensity":1.0,"reward":null}"#;
+    append_bandit_row(&db, mine_pending).await.expect("append mine pending");
+    append_bandit_row(&db, mine_graded).await.expect("append mine graded");
+    append_bandit_row(&db, other_pending).await.expect("append other pending");
+
+    let mine = list_unrewarded_bandit_rows_for_session(&db, "sess_mine", 100)
+        .await
+        .expect("list mine");
+    assert_eq!(mine.len(), 1, "only my session's still-pending row");
+    let v: serde_json::Value = serde_json::from_str(&mine[0]).expect("json");
+    assert_eq!(v["session_id"].as_str(), Some("sess_mine"));
+    assert!(v["reward"].is_null(), "and it still awaits its reward");
+
+    // The other session's pending row is invisible to this join.
+    let other = list_unrewarded_bandit_rows_for_session(&db, "sess_other", 100)
+        .await
+        .expect("list other");
+    assert_eq!(other.len(), 1, "the other session sees only its own pending row");
 }

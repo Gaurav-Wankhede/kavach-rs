@@ -58,6 +58,23 @@ pub const fn label(action: Action, outcome: VerifyOutcome) -> f64 {
     0.0
 }
 
+/// The wire-enum tag (`kavach_patterns::Reward`, `snake_case`) for a labeled
+/// decision — the string `update_bandit_reward` writes back into `bandit_log`.
+///
+/// Derived from the SAME [`label`] scalar so the tag and the OPE scalar can never
+/// disagree: `+1` ⇒ `verified_clean`, `0` ⇒ `needed_ask`, `-1` ⇒ `false_decision`.
+#[must_use]
+pub fn reward_tag(action: Action, outcome: VerifyOutcome) -> &'static str {
+    let scalar = label(action, outcome);
+    if scalar > 0.0 {
+        "verified_clean"
+    } else if scalar < 0.0 {
+        "false_decision"
+    } else {
+        "needed_ask"
+    }
+}
+
 /// The two costly false decisions, scored `-1`: a false allow (shipped a break)
 /// and a false block (overridden, then verified clean).
 const fn is_false_decision(action: Action, outcome: VerifyOutcome) -> bool {

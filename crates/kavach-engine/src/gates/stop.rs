@@ -1,3 +1,5 @@
+// hub: thin orchestrator — per-invocation setup + the guard pipeline only; every
+// guard + helper lives in a gates/stop/<group>/<name>.rs leaf. No decision logic.
 //! Stop gate: HARD BLOCK premature stops; force diagnosis and task resumption.
 //!
 //! This file is the thin ORCHESTRATOR — it owns only per-invocation setup
@@ -16,6 +18,7 @@ use crate::error::EngineError;
 mod dispatch;
 mod inflight;
 mod phase;
+mod reward_backfill;
 mod shared;
 mod terminal;
 
@@ -68,6 +71,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     super::stop_decisions::scan_decision_blocks(&msg, &session.project, session.turn_count.into());
     // Trajectory emitter (best-effort; a JSONL error must NOT block the gate).
     emit_trajectory(&session, &msg);
+    // P3a reward back-fill: grade this session's logged bandit decisions against
+    // its 3-witness verify outcome. Fire-and-forget; never blocks the gate.
+    reward_backfill::backfill_session_rewards(&session);
 
     // U3 capture-finding advisory: if the final message settled a decision in
     // prose but no decision/research DB write happened this turn, stash a

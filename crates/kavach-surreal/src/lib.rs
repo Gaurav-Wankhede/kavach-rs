@@ -1,3 +1,6 @@
+// hub: crate root — module declarations + public re-export surface only, no logic.
+// A re-export hub aggregates the crate's public API; it cannot decompose without a
+// mod.rs (which the micro-file rule forbids), so it carries the hub exemption.
 // SOURCE: https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#result_large_err
 // Reason: surrealdb::Error is enum-driven and large by design; boxing the entire
 // `Result<T, Error>` chain would touch every public API. Pre-existing latent lints
@@ -16,6 +19,7 @@ pub mod bulk_manifest;
 pub mod connection;
 pub mod decisions;
 pub mod delete;
+pub mod bandit;
 pub mod dual_write;
 pub mod embed;
 pub mod error;
@@ -108,8 +112,11 @@ pub use schema_engine::apply as apply_schema_engine;
 pub use schema_v2::apply_agent_memory_schema;
 pub use session_store::{SessionRuntimeRow, session_get_by_id, session_upsert};
 pub use wipe::{WipeReport, preview_wipe, wipe_project};
+pub use bandit::{
+    append_bandit_row, list_bandit_rows, list_unrewarded_bandit_rows,
+    list_unrewarded_bandit_rows_for_session, update_bandit_reward,
+};
 pub use write::{
-    ExpireReport, append_bandit_row, append_event, expire_stale, list_bandit_rows,
-    list_unrewarded_bandit_rows, rotate_events, set_priority, update_bandit_reward, update_feedback,
+    ExpireReport, append_event, expire_stale, rotate_events, set_priority, update_feedback,
     update_status, upsert_entry, upsert_entry_full, upsert_entry_with_event,
 };
