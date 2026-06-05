@@ -12,7 +12,12 @@ pub(crate) fn home_dir() -> PathBuf {
     )
 }
 
-#[cfg(test)]
+// Gated to `all(test, unix)` to match its ONLY caller — the `#[cfg(unix)]`
+// fault-injection test in enforcement.rs that needs an unwritable state dir
+// (chmod 0o000 is a Unix-only construct). On Windows the caller compiles out,
+// so a bare `#[cfg(test)]` here would leave `set_test_state_dir` dead-coded and
+// trip the workspace's denied `dead_code` lint under `-D warnings`.
+#[cfg(all(test, unix))]
 thread_local! {
     /// Test-only state-dir override. Thread-local so parallel tests are
     /// isolated and no `unsafe` env mutation is needed (env::set_var is
@@ -24,7 +29,7 @@ thread_local! {
 /// Test-only: redirect `state_dir()` for the current thread. Pass `None` to
 /// clear. Used by fault-injection tests that need an unwritable state dir
 /// without touching the real session state or process-global env.
-#[cfg(test)]
+#[cfg(all(test, unix))]
 pub(crate) fn set_test_state_dir(dir: Option<PathBuf>) {
     TEST_STATE_DIR.with(|c| *c.borrow_mut() = dir);
 }
@@ -32,7 +37,7 @@ pub(crate) fn set_test_state_dir(dir: Option<PathBuf>) {
 /// Shared state directory (XDG on Linux, Library on macOS, LOCALAPPDATA on Windows).
 #[must_use]
 pub fn state_dir() -> PathBuf {
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     if let Some(d) = TEST_STATE_DIR.with(|c| c.borrow().clone()) {
         return d;
     }

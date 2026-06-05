@@ -56,13 +56,18 @@ Each hook event invokes the `kavach` binary, which routes through a persistent R
 
 Each installer below bundles **both** the Kavach desktop GUI and the `kavach` CLI in a single setup file. The `latest/download/` links always resolve to the most recent release:
 
-| Platform | Single setup file | Installs |
-|----------|-------------------|----------|
-| macOS (Apple Silicon) | [`Kavach-macos-arm64.dmg`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-macos-arm64.dmg) | `KavachApp.app` → `/Applications` (CLI embedded at `Contents/MacOS/kavach`) |
-| Linux (x86_64) | [`Kavach-linux-amd64.deb`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-linux-amd64.deb) | GUI + `kavach` CLI → `/usr/bin` (`sudo dpkg -i …`) |
-| Windows (x86_64) | [`Kavach-windows-amd64.msi`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-windows-amd64.msi) | GUI + `kavach.exe` → `C:\Program Files\KavachApp` |
+| Platform | Arch | Single setup file | Installs |
+|----------|------|-------------------|----------|
+| macOS | Apple Silicon | [`Kavach-macos-arm64.dmg`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-macos-arm64.dmg) | `KavachApp.app` → `/Applications` (CLI embedded at `Contents/MacOS/kavach`) |
+| macOS | Intel | [`Kavach-macos-amd64.dmg`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-macos-amd64.dmg) | `KavachApp.app` → `/Applications` (CLI embedded at `Contents/MacOS/kavach`) |
+| Linux | x86_64 | [`Kavach-linux-amd64.deb`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-linux-amd64.deb) | GUI + `kavach` CLI → `/usr/bin` (`sudo dpkg -i …`) |
+| Linux | aarch64 | [`Kavach-linux-arm64.deb`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-linux-arm64.deb) | GUI + `kavach` CLI → `/usr/bin` (`sudo dpkg -i …`) |
+| Windows | x86_64 | [`Kavach-windows-amd64.msi`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-windows-amd64.msi) | GUI + `kavach.exe` → `C:\Program Files\KavachApp` |
+| Windows | ARM64 | [`Kavach-windows-arm64-setup.exe`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-windows-arm64-setup.exe) | GUI + `kavach.exe` (NSIS installer) |
 
 These installers are **ad-hoc signed** (no paid Apple/Microsoft certificate): on macOS, right-click → Open the first time; on Windows, "More info → Run anyway" past SmartScreen.
+
+> **Windows ARM64** ships an NSIS `.exe` rather than `.msi` — the WiX MSI toolchain does not support `aarch64` ([tauri-apps/tauri#5499](https://github.com/tauri-apps/tauri/issues/5499)). The installer runs under Windows 11 ARM's x64 emulation layer; the installed Kavach app itself is native `aarch64`.
 
 > **Versioning — `YY.MM.PATCH`** (CalVer + SemVer blend, JetBrains/Ubuntu style). `YY.MM` is the release calendar month; `PATCH` is the iteration within it. Examples: `26.5.0` (first May-2026 release), `26.5.1`, `26.6.0`. A release is cut by pushing a matching git tag — the tag *is* the version baked into every installer.
 
@@ -77,6 +82,7 @@ Just want the `kavach` CLI? Grab the archive for your platform from the [latest 
 | macOS | x86_64 (Intel) | [`kavach-darwin-amd64.tar.gz`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-darwin-amd64.tar.gz) |
 | macOS | aarch64 (Apple Silicon) | [`kavach-darwin-arm64.tar.gz`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-darwin-arm64.tar.gz) |
 | Windows | x86_64 | [`kavach-windows-amd64.zip`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-windows-amd64.zip) |
+| Windows | aarch64 | [`kavach-windows-arm64.zip`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-windows-arm64.zip) |
 
 Verify the download against [`SHA256SUMS.txt`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/SHA256SUMS.txt) from the same release.
 
@@ -151,6 +157,30 @@ lets gates modulate strictness by effort tier (CC 2.1.133), `terminalSequence` b
 attention-needing notifications (CC 2.1.141), and `ultracode` intent recognition (CC 2.1.160).
 
 The `pre-write`/`post-write` gates carry the hard enforcement (skills, research, anti-pattern scan) on file mutations; `pre-tool`/`post-tool` cover every other tool (Bash blocklist, context injection, research tracking).
+
+### Cursor & Codex (same DB, native edges)
+
+One Kavach binary and one database serve **all three** harnesses — run Cursor for one
+task, Codex for another, Claude Code for a third, against a single shared memory bank.
+Kavach detects which IDE called (by payload shape, or an explicit `--vendor` flag),
+lowers that harness's native hook payload into its canonical form, runs the
+vendor-blind gates, and renders the verdict back in each tool's own dialect — including
+each one's native failure policy (Cursor fails **open** so a hook error never wedges the
+editor; Codex and Claude Code fail **closed**).
+
+Paste-ready configs and the per-harness global-rule files (`AGENTS.md` for Codex,
+`.cursor/rules/kavach.mdc` for Cursor — both mirroring `CLAUDE.md`) ship under
+[`crates/kavach-cli/templates/harness/`](crates/kavach-cli/templates/harness/):
+
+| IDE | Hook config | Install path | Rule file |
+|-----|-------------|-------------|-----------|
+| Claude Code | `claude.settings.json` | `~/.claude/settings.json` (merge `hooks`) | `CLAUDE.md` |
+| Cursor | `cursor.hooks.json` | `~/.cursor/hooks.json` or `<project>/.cursor/hooks.json` | `.cursor/rules/kavach.mdc` |
+| Codex | `codex.config.toml` | append to `~/.codex/config.toml` (set `[features] hooks = true`) | `AGENTS.md` |
+
+Cursor has no `SessionStart` event, so Kavach injects the live mistake ledger + rules +
+kanban into every Cursor turn via its `beforeSubmitPrompt` hook; Codex shares Claude
+Code's `SessionStart`/`UserPromptSubmit` channel and gets the same context natively.
 
 ---
 
