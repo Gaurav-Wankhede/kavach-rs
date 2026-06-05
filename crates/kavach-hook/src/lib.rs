@@ -8,8 +8,10 @@ pub mod context;
 pub mod lifecycle;
 pub mod severity;
 pub mod toon;
+pub mod vendor;
 
 pub use severity::GateSeverity;
+pub use vendor::Vendor;
 
 #[cfg(test)]
 #[path = "tests.rs"]
@@ -96,6 +98,48 @@ pub fn parse_hook_input(raw: &str) -> Result<HookInput, String> {
         obj.retain(|_, v| !v.is_null());
     }
     serde_json::from_value(value).map_err(|e| format!("JSON parse error: {e}"))
+}
+
+/// Read a hook input payload through the NATIVE EDGE for a resolved harness.
+///
+/// Reads stdin once, resolves the vendor (hybrid: `explicit` `--vendor` wins,
+/// else `$KAVACH_HARNESS`, else payload auto-detect, else Claude Code), and
+/// lowers that vendor's native payload into the canonical [`HookInput`]. The
+/// resolved [`Vendor`] is returned so the caller can render its native output.
+///
+/// # Errors
+/// Returns `Err` with the resolved vendor attached when the payload is not a
+/// JSON object at all, so the caller can still emit a vendor-native failure.
+pub fn read_hook_input_native(explicit: Option<&str>) -> Result<(Vendor, HookInput), (Vendor, String)> {
+    let stdin = io::stdin();
+    let mut buf = Vec::new();
+    for line in stdin.lock().lines() {
+        match line {
+            Ok(l) => buf.push(l),
+            Err(e) => return Err((Vendor::ClaudeCode, format!("read error: {e}"))),
+        }
+    }
+    let raw = buf.join("\n");
+    let vendor = Vendor::resolve(explicit, &raw);
+    match vendor.lower(&raw) {
+        Ok(input) => Ok((vendor, input)),
+        Err(e) => Err((vendor, e)),
+    }
+}
+
+/// Emit a canonical [`HookResponse`] in `vendor`'s NATIVE output contract and
+/// return the process exit code that vendor expects (Codex blocks via exit 2).
+#[must_use = "the returned exit code must be passed to process::exit for Codex's exit-2 block"]
+#[expect(
+    clippy::print_stderr,
+    reason = "hook diagnostic path; no tracing subscriber in the hook binary"
+)]
+pub fn output_native(vendor: Vendor, resp: &HookResponse) -> i32 {
+    let json = vendor.render(resp);
+    if writeln!(io::stdout().lock(), "{json}").is_err() {
+        eprintln!("kavach: stdout write failed");
+    }
+    if resp.decision == "block" { vendor.block_exit_code() } else { 0 }
 }
 
 /// Read a hook input payload, emitting an error response on failure.
