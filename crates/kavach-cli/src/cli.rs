@@ -60,6 +60,11 @@ pub(crate) enum Commands {
         /// Verify a prompt against a gate without hook mode (dry-run)
         #[arg(long)]
         verify: Option<String>,
+        /// Force the harness dialect (claude-code|cursor|codex). Omit to
+        /// auto-detect from the payload (falls back to `$KAVACH_HARNESS`, then
+        /// Claude Code). Lets one hook command serve all three IDEs.
+        #[arg(long)]
+        vendor: Option<String>,
     },
     /// Manage session lifecycle
     Session {

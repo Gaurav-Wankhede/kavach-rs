@@ -1,12 +1,17 @@
-use kavach_hook::HookAction;
-use kavach_types::HookInput;
+use kavach_hook::Vendor;
+use kavach_types::{HookInput, HookResponse};
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
-/// `kavach gates <name> --hook` — run a gate, reading JSON from stdin.
+#[cfg(test)]
+#[path = "gates_test.rs"]
+mod tests;
+
+/// `kavach gates <name> --hook [--vendor v]` — run a gate, reading JSON from
+/// stdin in the resolved harness's NATIVE dialect (Claude Code / Cursor / Codex).
 /// `kavach gates <name> --verify "prompt"` — dry-run a gate with inline prompt.
 /// Without flags, prints gate info.
-pub(super) fn run(gate_name: &str, hook: bool, verify: Option<String>) -> i32 {
+pub(super) fn run(gate_name: &str, hook: bool, verify: Option<String>, vendor: Option<&str>) -> i32 {
     if let Some(prompt) = verify {
         return run_verify(gate_name, &prompt);
     }
@@ -19,43 +24,54 @@ pub(super) fn run(gate_name: &str, hook: bool, verify: Option<String>) -> i32 {
         return print_gate_info(gate_name);
     }
 
-    // Read hook input from stdin.
-    //
-    // FIX rca.hook-error-path-fail-open [contract_violation + silent_failure]
-    // — a security gate that cannot evaluate must FAIL CLOSED. The old
-    // `return 1` made every parse-failure / gate-error a FALSE-SECURITY
-    // bypass: per the Claude Code v2.1.143 contract and the confirmed
-    // upstream bug anthropics/claude-code#21988, a non-zero-non-2 exit
-    // (incl. the default exit 1 of any uncaught error) is logged as a
-    // hook error and the tool PROCEEDS — exactly on the anomalous-input
-    // case the gate exists for. The robust, schema-independent fail-closed
-    // signal is **exit 2 with the reason on stderr**: it blocks regardless
-    // of hook event type.
-    let input = match kavach_hook::must_read_hook_input() {
-        Ok(input) => input,
-        Err(HookAction::Error) => {
-            let msg = format!(
-                "kavach gate '{gate_name}': unreadable hook input — failing CLOSED \
-                 (exit 2). Anomalous stdin must not bypass the gate."
-            );
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 2;
-        }
-        Err(HookAction::Done) => return 0,
+    // Read stdin through the NATIVE EDGE: resolve the harness (hybrid — --vendor
+    // flag > $KAVACH_HARNESS > payload sniff > Claude Code) and lower its native
+    // payload into the canonical HookInput the engine reasons over.
+    let (resolved, input) = match kavach_hook::read_hook_input_native(vendor) {
+        Ok(pair) => pair,
+        // Unreadable/unparseable input: apply the resolved vendor's NATIVE
+        // failure policy. Cursor fails OPEN (allow — never wedge the IDE);
+        // Codex/Claude Code fail CLOSED (exit 2 / deny). The decode error itself
+        // carries the resolved vendor so we honor the right contract.
+        Err((vendor, msg)) => return fail_native(vendor, gate_name, &msg),
     };
 
-    match kavach_engine::run_gate(gate_name, &input) {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!(
-                "kavach gate '{gate_name}' evaluation error: {e} — failing CLOSED \
-                 (exit 2). A gate that cannot complete must not let the tool through."
-            );
-            2
-        }
+    // The engine is vendor-blind: it sees only the canonical input and returns a
+    // canonical verdict. The edge renders that verdict in the harness's native
+    // output contract and returns its native block exit code (Codex = exit 2).
+    let verdict = match kavach_engine::run_gate(gate_name, &input) {
+        Ok(()) => HookResponse::new_approve("ok"),
+        Err(e) => HookResponse::new_block(&format!("kavach gate '{gate_name}': {e}")),
+    };
+    kavach_hook::output_native(resolved, &verdict)
+}
+
+/// Emit a vendor-native FAILURE for an unreadable payload and return its exit code.
+///
+/// Cursor's native model is fail-OPEN, so a decode failure must let the action
+/// through (a blocked-on-error gate wedges the editor — the original Cursor bug).
+/// Codex and Claude Code fail CLOSED with the reason on stderr.
+fn fail_native(vendor: Vendor, gate_name: &str, msg: &str) -> i32 {
+    let resp = HookResponse::new_block(&format!(
+        "kavach gate '{gate_name}': unreadable hook input ({msg})"
+    ));
+    // Cursor's native model: render its fail-OPEN body and exit 0 so the action
+    // proceeds — a blocked-on-error gate wedges the editor.
+    if vendor == Vendor::Cursor {
+        eprintln!("kavach gate '{gate_name}': unreadable input — Cursor fail-OPEN (allow)");
+        return kavach_hook::output_native(vendor, &HookResponse::new_approve("fail-open"));
     }
+    // Codex / Claude Code: fail CLOSED on anomalous stdin. Emit the native block
+    // body, then force **exit 2** — the schema-independent block signal both
+    // honor regardless of event type (the original gates.rs contract;
+    // anthropics/claude-code#21988). `.max(2)` keeps Codex's native 2 and lifts
+    // Claude Code's body-block (exit 0, which an error-logged unreadable payload
+    // would otherwise treat as a bypass) to a real block.
+    eprintln!(
+        "kavach gate '{gate_name}': unreadable input ({msg}) — failing CLOSED (exit 2). \
+         Anomalous stdin must not bypass the gate."
+    );
+    kavach_hook::output_native(vendor, &resp).max(2)
 }
 
 /// Clear stuck test enforcement state from the current session.
