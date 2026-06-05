@@ -162,7 +162,10 @@ fn deploy_cli(skip_tests: bool) -> i32 {
         }
         return 1;
     };
-    let src = root.join("target").join(RELEASE_PROFILE).join(BINARY_NAME);
+    let src = root
+        .join("target")
+        .join(RELEASE_PROFILE)
+        .join(binary_filename());
     let Some(dst) = install_dest() else {
         if let Err(io_err) = ewrite_or_exit("[DEPLOY] FAIL: cannot resolve $HOME") {
             return into_exit_code(io_err);
@@ -200,13 +203,18 @@ fn deploy_cli(skip_tests: bool) -> i32 {
 /// daemon is running (nothing to restart) — never fail the deploy over it. The
 /// lockfile is removed so a stale entry can't block the respawn's `write_lockfile`.
 fn restart_rpc_daemon() {
-    let Ok(lock) = kavach_rpc::lockfile::read_lockfile() else {
-        // No lockfile → no daemon running. The next hook starts one fresh.
-        print_or_exit("[DEPLOY] step 8/8: no running daemon (nothing to restart)").ok();
-        return;
-    };
+    // The lockfile read + SIGTERM is Unix-only: the sync UDS daemon never runs on
+    // Windows (the RPC client is `cfg(not(unix))` and the gates open SurrealDB
+    // directly), so there is no pid to signal — `lock` would be an unused binding
+    // there (`-D unused-variables`). On Windows we fall straight through to the
+    // unconditional lockfile cleanup below, which is a harmless no-op when absent.
     #[cfg(unix)]
     {
+        let Ok(lock) = kavach_rpc::lockfile::read_lockfile() else {
+            // No lockfile → no daemon running. The next hook starts one fresh.
+            print_or_exit("[DEPLOY] step 8/8: no running daemon (nothing to restart)").ok();
+            return;
+        };
         // SIGTERM lets the daemon run its shutdown (remove_lockfile, close socket).
         let killed = Command::new("kill")
             .arg(lock.pid.to_string())
@@ -614,13 +622,27 @@ fn symlink_force(target: &Path, link: &Path) -> Result<(), String> {
         std::fs::remove_file(link)
             .map_err(|e| format!("[BUNDLE] FAIL: unlink {}: {e}", link.display()))?;
     }
-    std::os::unix::fs::symlink(target, link).map_err(|e| {
+    platform_symlink(target, link).map_err(|e| {
         format!(
             "[BUNDLE] FAIL: symlink {} -> {}: {e}",
             link.display(),
             target.display()
         )
     })
+}
+
+/// Create a file symlink in a platform-portable way. The `--bundle` flow that
+/// calls this is macOS-only at runtime, but the function is compiled on every
+/// target, so the syscall must resolve on each: `std::os::unix::fs::symlink`
+/// on Unix, `std::os::windows::fs::symlink_file` on Windows.
+#[cfg(unix)]
+fn platform_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(target, link)
+}
+
+#[cfg(windows)]
+fn platform_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_file(target, link)
 }
 
 /// Resolve the host target triple via `rustc --print host-tuple`. The bundler
@@ -675,18 +697,33 @@ fn workspace_root() -> Option<PathBuf> {
     std::env::current_dir().ok()
 }
 
-/// Resolve ~/.local/bin/kavach without panicking on missing $HOME.
+/// Platform binary filename: `kavach.exe` on Windows, `kavach` elsewhere.
+/// `cargo build` emits the `.exe` suffix on the MSVC/GNU Windows targets, and
+/// the install destination must match so the copied file is executable.
+fn binary_filename() -> String {
+    if cfg!(windows) {
+        format!("{BINARY_NAME}.exe")
+    } else {
+        BINARY_NAME.to_owned()
+    }
+}
+
+/// Resolve `~/.local/bin/kavach[.exe]` without panicking on a missing home dir.
+/// Uses `dirs::home_dir()` (resolves `$HOME` on Unix, `%USERPROFILE%` on
+/// Windows) so the install path is correct on every host.
 fn install_dest() -> Option<PathBuf> {
-    let home = std::env::var("HOME").ok()?;
     Some(
-        PathBuf::from(home)
+        dirs::home_dir()?
             .join(".local")
             .join("bin")
-            .join(BINARY_NAME),
+            .join(binary_filename()),
     )
 }
 
-#[cfg(test)]
+// These tests exercise the macOS/Unix install path (symlink fixtures via
+// `std::os::unix::fs`), so they are gated to Unix. The cross-platform logic
+// (`binary_filename`, `install_dest`) is covered by the build itself on Windows.
+#[cfg(all(test, unix))]
 mod tests {
     use super::install_binary;
     use std::fs;
