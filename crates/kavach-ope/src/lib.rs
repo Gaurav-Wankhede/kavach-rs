@@ -27,6 +27,7 @@ mod estimate;
 pub use estimate::Estimate;
 
 pub mod dm;
+pub mod doubly_robust;
 pub mod ips;
 pub mod trust;
 
