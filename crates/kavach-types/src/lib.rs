@@ -503,6 +503,14 @@ impl HookResponse {
         Self {
             decision: "block".into(),
             reason: reason.into(),
+            // Stamp the event so a native edge can route this to the harness's
+            // stop contract (Cursor's `{continue, followupMessage}`). Claude Code
+            // reads only `decision`/`reason` on Stop and ignores this field, so
+            // its wire is unchanged.
+            hook_specific_output: Some(HookSpecificOutput {
+                hook_event_name: "Stop".into(),
+                ..Default::default()
+            }),
             ..Default::default()
         }
     }

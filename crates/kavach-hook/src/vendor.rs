@@ -106,14 +106,25 @@ impl Vendor {
     }
 
     /// Render a canonical [`HookResponse`] verdict into this vendor's native
-    /// output contract as a stdout-ready JSON string.
+    /// output contract as a stdout-ready JSON string. The event defaults to the
+    /// one stamped on the response; use [`Self::render_for`] when the answered
+    /// event is known independently (a gate may emit a bare verdict).
     #[must_use]
     pub fn render(self, resp: &HookResponse) -> String {
+        let event = resp.hook_specific_output.as_ref().map_or("", |h| h.hook_event_name.as_str());
+        self.render_for(resp, event)
+    }
+
+    /// Render a verdict scoped to the canonical `event` being answered. Only
+    /// Cursor's output contract is event-dependent (its `Stop` differs from its
+    /// permission events); Claude Code and Codex render identically regardless.
+    #[must_use]
+    pub fn render_for(self, resp: &HookResponse, event: &str) -> String {
         match self {
             Self::ClaudeCode => {
                 serde_json::to_string(resp).unwrap_or_else(|_| claude_fallback_block())
             }
-            Self::Cursor => cursor::render(resp),
+            Self::Cursor => cursor::render(resp, event),
             Self::Codex => codex::render(resp),
         }
     }

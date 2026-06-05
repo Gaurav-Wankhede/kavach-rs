@@ -78,7 +78,7 @@ fn codex_input_is_claude_code_compatible_with_extras_ignored() {
 
 #[test]
 fn cursor_block_renders_the_native_deny_contract() {
-    let json = cursor::render(&HookResponse::new_block("nope"));
+    let json = cursor::render(&HookResponse::new_block("nope"), "PreToolUse");
     assert!(json.contains(r#""continue":false"#), "got {json}");
     assert!(json.contains(r#""permission":"deny""#), "got {json}");
     assert!(json.contains("nope"), "reason carried as user/agent message: {json}");
@@ -87,7 +87,7 @@ fn cursor_block_renders_the_native_deny_contract() {
 
 #[test]
 fn cursor_approve_renders_allow() {
-    let json = cursor::render(&HookResponse::new_approve("ok"));
+    let json = cursor::render(&HookResponse::new_approve("ok"), "PreToolUse");
     assert!(json.contains(r#""continue":true"#), "got {json}");
     assert!(json.contains(r#""permission":"allow""#), "got {json}");
 }
@@ -120,10 +120,35 @@ fn output_sink_defaults_to_claude_code_then_tracks_set_vendor() {
     // it once, every `output(&resp)` then renders in that dialect. Proven here on
     // the selector; the render mapping itself is covered above.
     assert_eq!(crate::output_vendor(), Vendor::ClaudeCode, "unset => canonical default");
-    crate::set_output_vendor(Vendor::Cursor);
+    crate::set_output_context(Vendor::Cursor, "Stop");
     assert_eq!(crate::output_vendor(), Vendor::Cursor);
+    assert_eq!(crate::output_event(), "Stop", "the answered event is recorded too");
     // Restore so we don't leak the dialect into sibling tests on this thread.
-    crate::set_output_vendor(Vendor::ClaudeCode);
+    crate::set_output_context(Vendor::ClaudeCode, "");
+}
+
+#[test]
+fn cursor_allow_carries_injected_context_as_agent_message() {
+    // The gap-A/B fix: Cursor has no SessionStart, so the per-prompt ALLOW must
+    // ferry the mistake ledger / global rules to the agent via agentMessage.
+    let mut resp = HookResponse::new_approve("");
+    resp.system_message = "[MISTAKE_LEDGER] do not X".to_owned();
+    let json = cursor::render(&resp, "UserPromptSubmit");
+    assert!(json.contains(r#""continue":true"#), "{json}");
+    assert!(json.contains("MISTAKE_LEDGER"), "context must ride agentMessage: {json}");
+}
+
+#[test]
+fn cursor_stop_block_renders_followup_message_not_permission() {
+    // The gap-C fix: Cursor's stop hook contract is {continue, followupMessage};
+    // a reblock must surface there, NOT as a permission body Cursor ignores. The
+    // edge passes the answered event ("Stop") so even a bare verdict routes right.
+    let resp = HookResponse::new_stop_block("finish the work");
+    let json = cursor::render(&resp, "Stop");
+    assert!(json.contains(r#""continue":false"#), "stop block halts: {json}");
+    assert!(json.contains("followupMessage"), "reblock rides followupMessage: {json}");
+    assert!(json.contains("finish the work"), "{json}");
+    assert!(!json.contains(r#""permission""#), "stop has no permission field: {json}");
 }
 
 #[test]

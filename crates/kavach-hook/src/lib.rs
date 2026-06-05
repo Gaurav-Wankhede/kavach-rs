@@ -125,10 +125,18 @@ pub fn read_hook_input_native(explicit: Option<&str>) -> Result<(Vendor, HookInp
     // verdict (allow/block/ask) is rendered in this harness's dialect. Without
     // this, a Cursor gate's allow emitted Claude Code's body and Cursor read its
     // absent `continue`/`permission` as null — the original wedge.
-    set_output_vendor(vendor);
     match vendor.lower(&raw) {
-        Ok(input) => Ok((vendor, input)),
-        Err(e) => Err((vendor, e)),
+        Ok(input) => {
+            // Arm the sink with the resolved vendor AND the canonical event, so a
+            // gate emitting a bare verdict still renders into the right native
+            // contract (e.g. Cursor's Stop → `{continue, followupMessage}`).
+            set_output_context(vendor, &input.hook_event_name);
+            Ok((vendor, input))
+        }
+        Err(e) => {
+            set_output_context(vendor, "");
+            Err((vendor, e))
+        }
     }
 }
 
@@ -190,17 +198,25 @@ std::thread_local! {
     /// WITHOUT the engine or any gate knowing a non-Claude-Code harness exists.
     /// Defaults to [`Vendor::ClaudeCode`] — the canonical, unset behavior.
     static OUTPUT_VENDOR: std::cell::Cell<Vendor> = const { std::cell::Cell::new(Vendor::ClaudeCode) };
+    /// The canonical event this thread's gate is answering (e.g. "Stop",
+    /// "UserPromptSubmit"). The edge sets it from the lowered input so a native
+    /// renderer can pick the right output contract (Cursor's `Stop` =
+    /// `{continue, followupMessage}`) even when a gate emits a bare verdict that
+    /// doesn't stamp the event itself.
+    static OUTPUT_EVENT: std::cell::RefCell<String> = const { std::cell::RefCell::new(String::new()) };
 }
 
-/// Set the native dialect for all subsequent gate output on THIS thread.
+/// Set the native dialect + answered event for all subsequent gate output on
+/// THIS thread.
 ///
 /// Called by the native edge after vendor resolution so a gate's self-emitted
 /// verdict (allow/block/ask) is rendered in the caller's contract — Cursor's
 /// `{continue,permission}`, Codex's CC-compatible body — instead of always
 /// Claude Code's. Keeps the engine/gates vendor-blind: they call [`output`]
 /// exactly as before.
-pub fn set_output_vendor(vendor: Vendor) {
+pub fn set_output_context(vendor: Vendor, event: &str) {
     OUTPUT_VENDOR.with(|v| v.set(vendor));
+    OUTPUT_EVENT.with(|e| e.replace(event.to_owned()));
 }
 
 /// The native dialect currently selected for this thread's gate output.
@@ -209,16 +225,23 @@ pub fn output_vendor() -> Vendor {
     OUTPUT_VENDOR.with(std::cell::Cell::get)
 }
 
+/// The canonical event the current thread's gate is answering ("" if unset).
+#[must_use]
+pub fn output_event() -> String {
+    OUTPUT_EVENT.with(|e| e.borrow().clone())
+}
+
 #[expect(
     clippy::print_stderr,
     reason = "hook last-ditch diagnostic path; no tracing subscriber in hook binary, broken-pipe surfaces via SIGPIPE (RFC 1869)"
 )]
 pub fn output(resp: &HookResponse) {
-    // Render the verdict in the thread's resolved native dialect. For Claude
-    // Code (the default) this is byte-identical to `write_json(resp)`; for
-    // Cursor/Codex it translates the canonical body into their contract — the
-    // single chokepoint that makes EVERY gate's happy path natively correct.
-    let json = output_vendor().render(resp);
+    // Render the verdict in the thread's resolved native dialect, scoped to the
+    // event being answered. For Claude Code (the default) this is byte-identical
+    // to `write_json(resp)`; for Cursor/Codex it translates the canonical body
+    // into their contract — the single chokepoint that makes EVERY gate's happy
+    // path natively correct.
+    let json = output_vendor().render_for(resp, &output_event());
     if writeln!(io::stdout().lock(), "{json}").is_err() {
         eprintln!("kavach: stdout write failed");
     }

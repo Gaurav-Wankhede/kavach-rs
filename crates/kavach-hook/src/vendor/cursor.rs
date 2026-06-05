@@ -35,15 +35,25 @@ pub fn lower(raw_payload: &str) -> Result<HookInput, String> {
     Ok(input)
 }
 
-/// Render a canonical verdict into Cursor's native output JSON.
+/// Render a canonical verdict into Cursor's native output JSON, dispatching on the
+/// event Cursor is waiting for.
 ///
-/// `block` ⇒ `{continue:false, permission:"deny", userMessage, agentMessage}`;
-/// otherwise ⇒ `{continue:true, permission:"allow"}`, carrying any reason/context
-/// as the user + agent message.
+/// `Stop` ⇒ `{continue, followup_message}` (Cursor's stop contract — a reblock
+/// rides `followup_message`, NOT the permission body). Everything else ⇒
+/// `{continue, permission, userMessage, agentMessage}`. Crucially the ALLOW path
+/// still carries `system_message`/`additional_context` as `agentMessage`: Cursor
+/// has no `SessionStart`, so `beforeSubmitPrompt`'s allow is the ONLY door for the
+/// mistake ledger + global rules + kanban to reach the agent — every turn.
 #[must_use]
-pub fn render(resp: &HookResponse) -> String {
+pub fn render(resp: &HookResponse, event: &str) -> String {
+    // The answered event is authoritative (the edge passes it from the lowered
+    // input); fall back to whatever the response stamped on itself.
+    let event = if event.is_empty() { response_event(resp) } else { event };
+    if event == "Stop" {
+        return render_stop(resp);
+    }
     let blocked = resp.decision == "block";
-    let msg = if resp.reason.is_empty() { resp.additional_context.clone() } else { resp.reason.clone() };
+    let msg = context_message(resp);
     let out = CursorResponse {
         r#continue: !blocked,
         permission: if blocked { "deny" } else { "allow" },
@@ -51,6 +61,47 @@ pub fn render(resp: &HookResponse) -> String {
         agent_message: if msg.is_empty() { None } else { Some(msg) },
     };
     serde_json::to_string(&out).unwrap_or_else(|_| fail_open())
+}
+
+/// Cursor's `stop` hook contract: `{continue, followup_message}`. A stop-gate
+/// BLOCK (unfinished work) becomes `continue:false` with the reblock reason as the
+/// follow-up; otherwise the agent is free to stop.
+fn render_stop(resp: &HookResponse) -> String {
+    let blocked = resp.decision == "block";
+    let msg = context_message(resp);
+    let out = CursorStopResponse {
+        r#continue: !blocked,
+        followup_message: if msg.is_empty() { None } else { Some(msg) },
+    };
+    serde_json::to_string(&out).unwrap_or_else(|_| fail_open())
+}
+
+/// The message Cursor should surface: prefer the verdict `reason`, else the
+/// injected context. Context can live in three places depending on the emitter:
+/// `system_message` (SessionStart-style ledger), the top-level `additional_context`,
+/// or — the common `UserPromptSubmit` case — nested in
+/// `hook_specific_output.additional_context`. The nested field is where the intent
+/// gate puts per-prompt context, so Cursor's every-turn injection depends on it.
+fn context_message(resp: &HookResponse) -> String {
+    if !resp.reason.is_empty() {
+        return resp.reason.clone();
+    }
+    if !resp.system_message.is_empty() {
+        return resp.system_message.clone();
+    }
+    if !resp.additional_context.is_empty() {
+        return resp.additional_context.clone();
+    }
+    resp.hook_specific_output
+        .as_ref()
+        .map(|h| h.additional_context.clone())
+        .unwrap_or_default()
+}
+
+/// The canonical event this response answers, read from its `hookSpecificOutput`
+/// (gates stamp it there). Empty when the gate emitted a bare verdict.
+fn response_event(resp: &HookResponse) -> &str {
+    resp.hook_specific_output.as_ref().map_or("", |h| h.hook_event_name.as_str())
 }
 
 /// Cursor's NATIVE failure default: fail OPEN.
@@ -73,6 +124,15 @@ struct CursorResponse {
     user_message: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     agent_message: Option<String>,
+}
+
+/// Cursor's `stop` hook output schema (`camelCase` on the wire).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CursorStopResponse {
+    r#continue: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    followup_message: Option<String>,
 }
 
 /// Map a Cursor camelCase event name to the canonical event the gates dispatch on.

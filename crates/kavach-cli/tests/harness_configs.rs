@@ -79,6 +79,25 @@ fn cursor_uses_its_native_camelcase_events() {
     assert!(!hooks.contains_key("PreToolUse"), "must NOT use Claude Code event names");
 }
 
+/// The per-harness global-rule files ship and carry the kavach DB contract, so a
+/// Cursor/Codex agent is governed by the same rules as Claude Code's CLAUDE.md.
+#[test]
+fn global_rule_files_ship_and_reference_the_db_contract() {
+    for file in ["AGENTS.md", "kavach.mdc"] {
+        let body = read(file);
+        assert!(
+            body.contains("kavach db write"),
+            "{file} must teach the DB write contract"
+        );
+        assert!(
+            body.contains("three-witness") || body.contains("three witnesses") || body.contains("git diff --stat"),
+            "{file} must carry the evidence/verify rule"
+        );
+    }
+    // Cursor's rule file must declare itself always-applied (its enforcement knob).
+    assert!(read("kavach.mdc").contains("alwaysApply: true"), "cursor rule must alwaysApply");
+}
+
 #[test]
 fn every_cursor_and_codex_command_carries_its_vendor_flag() {
     let cursor = read("cursor.hooks.json");
