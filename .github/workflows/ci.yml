@@ -17,7 +17,7 @@ jobs:
     name: Build / Test (Linux)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # The Dioxus desktop app (kavach-app) links wry/webkit2gtk-4.1 + libsoup-3,
       # so glib-sys/webkit2gtk-sys build scripts need the GTK/WebKit dev headers.
@@ -82,7 +82,7 @@ jobs:
     name: cargo-deny (advisories + bans + licenses + sources)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
@@ -92,7 +92,7 @@ jobs:
     name: Build / Test (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # `toolchain:` omitted on purpose — the action reads rust-toolchain.toml
       # (single source of truth) and provides its own build cache.
@@ -127,7 +127,7 @@ jobs:
     name: Build / Test (Windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # `toolchain:` omitted on purpose — the action reads rust-toolchain.toml
       # (single source of truth) and provides its own build cache.
