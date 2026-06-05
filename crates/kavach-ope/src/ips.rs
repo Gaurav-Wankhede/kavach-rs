@@ -58,7 +58,11 @@ impl TargetPolicy for FixedPolicy {
 pub fn estimate<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Estimate {
     let n = samples.len();
     if n == 0 {
-        return Estimate { value: 0.0, std_error: f64::INFINITY, n: 0 };
+        return Estimate {
+            value: 0.0,
+            std_error: f64::INFINITY,
+            n: 0,
+        };
     }
     // Per-sample IPS reward: (pi(a)/p) * r.
     let weighted: Vec<f64> = samples
@@ -81,7 +85,11 @@ pub fn estimate<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Estima
         (var / n_f).sqrt()
     };
 
-    Estimate { value: mean, std_error, n }
+    Estimate {
+        value: mean,
+        std_error,
+        n,
+    }
 }
 
 /// Self-normalized IPS (SNIPS) — divide the weighted reward sum by the weight
@@ -96,16 +104,26 @@ pub fn estimate<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Estima
 pub fn estimate_self_normalized<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Estimate {
     let n = samples.len();
     if n == 0 {
-        return Estimate { value: 0.0, std_error: f64::INFINITY, n: 0 };
+        return Estimate {
+            value: 0.0,
+            std_error: f64::INFINITY,
+            n: 0,
+        };
     }
-    let weights: Vec<f64> = samples.iter().map(|s| policy.prob(s.action) / s.propensity).collect();
+    let weights: Vec<f64> = samples
+        .iter()
+        .map(|s| policy.prob(s.action) / s.propensity)
+        .collect();
     let weight_sum: f64 = weights.iter().sum();
     if weight_sum <= 0.0 {
         // No target-policy support over the logged actions -> value undefined.
-        return Estimate { value: 0.0, std_error: f64::INFINITY, n };
+        return Estimate {
+            value: 0.0,
+            std_error: f64::INFINITY,
+            n,
+        };
     }
-    let weighted_reward: f64 =
-        weights.iter().zip(samples).map(|(w, s)| w * s.reward).sum();
+    let weighted_reward: f64 = weights.iter().zip(samples).map(|(w, s)| w * s.reward).sum();
     let value = weighted_reward / weight_sum;
 
     // Delta-method SE: var of (w*(r - value)) / weight_sum, scaled by n. With a
@@ -124,7 +142,11 @@ pub fn estimate_self_normalized<P: TargetPolicy>(samples: &[LoggedSample], polic
         (residual_var / n_f).sqrt() / mean_weight
     };
 
-    Estimate { value, std_error, n }
+    Estimate {
+        value,
+        std_error,
+        n,
+    }
 }
 
 #[cfg(test)]

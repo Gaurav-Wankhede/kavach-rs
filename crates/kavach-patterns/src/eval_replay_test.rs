@@ -139,8 +139,7 @@ fn jsonl_emit_then_read_roundtrip() {
 
 #[test]
 fn jsonl_skips_malformed_lines() {
-    let dir =
-        std::env::temp_dir().join(format!("kavach_replay_malformed_{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("kavach_replay_malformed_{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("malformed.jsonl");
     std::fs::write(&path, "not-json\n{\"timestamp_ms\":1,\"session_id\":\"s\",\"event_kind\":{\"kind\":\"bash\",\"command\":\"ls\"}}\n").unwrap();
@@ -159,11 +158,16 @@ fn capture_appends_event_to_the_tape() {
     // Use emit_to_jsonl directly with the same kinds capture() builds — capture()
     // itself targets the home-dir default path, so we assert the kind plumbing here
     // and exercise the home-path no-op guard separately below.
-    emit_to_jsonl(&path, &TrajectoryEvent {
-        timestamp_ms: 7,
-        session_id: "s".into(),
-        event_kind: EventKind::Bash { command: "cargo check --workspace".into() },
-    })
+    emit_to_jsonl(
+        &path,
+        &TrajectoryEvent {
+            timestamp_ms: 7,
+            session_id: "s".into(),
+            event_kind: EventKind::Bash {
+                command: "cargo check --workspace".into(),
+            },
+        },
+    )
     .unwrap();
     let read = read_jsonl(&path).unwrap();
     assert_eq!(read.len(), 1);
@@ -174,7 +178,16 @@ fn capture_appends_event_to_the_tape() {
 #[test]
 fn capture_empty_session_id_is_a_noop() {
     // No session → no tape write, no error. Guards against polluting a default file.
-    assert!(capture("", 0, EventKind::Bash { command: "ls".into() }).is_ok());
+    assert!(
+        capture(
+            "",
+            0,
+            EventKind::Bash {
+                command: "ls".into()
+            }
+        )
+        .is_ok()
+    );
 }
 
 #[test]
@@ -194,15 +207,22 @@ fn tape_survives_a_simulated_restart_and_still_replays() {
             file_path: "src/lib.rs".into(),
             content: "pub fn add(a: i64, b: i64) -> i64 { a + b }".into(),
         },
-        EventKind::Bash { command: "cargo check --workspace".into() },
-        EventKind::Stop { final_message: "done".into() },
+        EventKind::Bash {
+            command: "cargo check --workspace".into(),
+        },
+        EventKind::Stop {
+            final_message: "done".into(),
+        },
     ];
     for (i, kind) in session.iter().enumerate() {
-        emit_to_jsonl(&path, &TrajectoryEvent {
-            timestamp_ms: i64::try_from(i).unwrap(),
-            session_id: "restart".into(),
-            event_kind: kind.clone(),
-        })
+        emit_to_jsonl(
+            &path,
+            &TrajectoryEvent {
+                timestamp_ms: i64::try_from(i).unwrap(),
+                session_id: "restart".into(),
+                event_kind: kind.clone(),
+            },
+        )
         .unwrap();
     }
 

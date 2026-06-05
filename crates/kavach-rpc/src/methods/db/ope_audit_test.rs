@@ -4,8 +4,8 @@
 //! mis-parse would let a hacking row slip past.
 
 use super::{channel_reward, mean_estimate, relaxes_block, rule_shadow_pair};
-use kavach_ope::label::action_from_tag;
 use kavach_ope::Action;
+use kavach_ope::label::action_from_tag;
 
 #[test]
 fn a_canary_row_yields_its_rule_and_shadow_actions() {
@@ -62,7 +62,10 @@ fn action_from_tag_maps_the_snake_case_vocabulary() {
 fn an_empty_channel_is_non_informative_not_a_confident_zero() {
     let e = mean_estimate(&[]);
     assert_eq!(e.n, 0);
-    assert!(!e.std_error.is_finite(), "empty channel ⇒ infinite SE ⇒ Inconclusive");
+    assert!(
+        !e.std_error.is_finite(),
+        "empty channel ⇒ infinite SE ⇒ Inconclusive"
+    );
 }
 
 #[test]

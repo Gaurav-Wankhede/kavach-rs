@@ -47,7 +47,13 @@ fn record_canary_shadow(command: &str, decision: &Decision) {
     let session_id = std::env::var("KAVACH_SESSION_ID").unwrap_or_default();
     let shadow = controller_shadow_action();
     let verb = command.split_whitespace().next().unwrap_or("");
-    shadow::record_shadow(&session_id, "destructive_cli_guard", verb, decision.action(), shadow);
+    shadow::record_shadow(
+        &session_id,
+        "destructive_cli_guard",
+        verb,
+        decision.action(),
+        shadow,
+    );
 }
 
 /// The controller's hot-path shadow action: with no live estimates it abstains

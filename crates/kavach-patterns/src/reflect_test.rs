@@ -26,7 +26,9 @@ fn bash(cmd: &str) -> TrajectoryEvent {
     TrajectoryEvent {
         timestamp_ms: 0,
         session_id: "t".into(),
-        event_kind: EventKind::Bash { command: cmd.into() },
+        event_kind: EventKind::Bash {
+            command: cmd.into(),
+        },
     }
 }
 
@@ -43,7 +45,10 @@ fn prompt_includes_gate_fires_and_rca() {
     // rm -rf / triggers destructive_cli_guard — the fire must surface in the prompt.
     let traj = vec![bash("rm -rf /")];
     let p = assemble_reflection_prompt(&traj, "the dir was a scratch temp", "s1");
-    assert!(p.contains("destructive_cli_guard"), "gate fire must be in the prompt");
+    assert!(
+        p.contains("destructive_cli_guard"),
+        "gate fire must be in the prompt"
+    );
     assert!(p.contains("operator_rca: the dir was a scratch temp"));
     assert!(p.contains("session: s1"));
 }
@@ -111,7 +116,10 @@ fn reflect_once_yields_exactly_one_proposal() {
     // AC-2: the full path — assemble → reflect → parse → one proposal.
     let stub = StubReflector("destructive_cli_guard|loosen|temp dir cleanup is safe");
     let proposal = reflect_once(&stub, &[bash("rm -rf /tmp/x")], "false positive", "s1");
-    assert!(proposal.is_some(), "a valid reflection must yield one proposal");
+    assert!(
+        proposal.is_some(),
+        "a valid reflection must yield one proposal"
+    );
     assert_eq!(proposal.unwrap().gate, "destructive_cli_guard");
 }
 

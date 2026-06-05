@@ -14,7 +14,10 @@ fn python_heredoc_writing_a_rust_source_is_denied() {
         Some(Decision::Deny(reason)) => {
             assert!(reason.contains("write-bypass"), "deny reason: {reason}");
         }
-        other => panic!("expected Deny for a source heredoc, got {}", verdict_name(other.as_ref())),
+        other => panic!(
+            "expected Deny for a source heredoc, got {}",
+            verdict_name(other.as_ref())
+        ),
     }
 }
 

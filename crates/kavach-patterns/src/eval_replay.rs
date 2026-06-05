@@ -348,7 +348,11 @@ pub fn emit_to_jsonl(path: &std::path::Path, event: &TrajectoryEvent) -> Result<
 ///
 /// # Errors
 /// Propagates `EmitError` from path resolution or the JSONL append.
-pub fn capture(session_id: &str, timestamp_ms: i64, event_kind: EventKind) -> Result<(), EmitError> {
+pub fn capture(
+    session_id: &str,
+    timestamp_ms: i64,
+    event_kind: EventKind,
+) -> Result<(), EmitError> {
     if session_id.is_empty() {
         return Ok(());
     }

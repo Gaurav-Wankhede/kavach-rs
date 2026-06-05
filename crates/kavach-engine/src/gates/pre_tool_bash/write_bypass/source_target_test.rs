@@ -9,7 +9,10 @@ use super::targets_tracked_source;
 fn the_python_heredoc_bypass_that_started_this_is_caught() {
     // The exact shape used to launder an Edit on write.rs past the gate.
     let cmd = "python3 - <<'PY'\nopen('crates/kavach-surreal/src/write.rs','w').write(s)\nPY";
-    assert!(targets_tracked_source(cmd), "heredoc write to a .rs source must be denied");
+    assert!(
+        targets_tracked_source(cmd),
+        "heredoc write to a .rs source must be denied"
+    );
 }
 
 #[test]
@@ -20,12 +23,16 @@ fn redirect_into_a_rust_source_is_caught() {
 
 #[test]
 fn sed_inplace_on_a_source_path_is_caught() {
-    assert!(targets_tracked_source("sed -i 's/a/b/' crates/kavach-engine/src/gates/mod.rs"));
+    assert!(targets_tracked_source(
+        "sed -i 's/a/b/' crates/kavach-engine/src/gates/mod.rs"
+    ));
 }
 
 #[test]
 fn tests_tree_and_other_source_langs_are_caught() {
-    assert!(targets_tracked_source("python3 -c \"open('tests/foo.rs','w')\""));
+    assert!(targets_tracked_source(
+        "python3 -c \"open('tests/foo.rs','w')\""
+    ));
     assert!(targets_tracked_source("echo x > src/app.ts"));
     assert!(targets_tracked_source("echo q > crates/db/src/migrate.sql"));
 }
@@ -47,7 +54,10 @@ fn a_kavach_db_write_carrying_a_source_path_in_content_is_not_denied() {
     // must not deny it (this exact shape false-positived after the deny shipped).
     let cmd = "kavach db write --new --project p --category decision --key k \
                --title t --content \"shipped crates/kavach-rpc/src/methods/db/ope.rs\"";
-    assert!(!targets_tracked_source(cmd), "a kavach db write is not a source mutation");
+    assert!(
+        !targets_tracked_source(cmd),
+        "a kavach db write is not a source mutation"
+    );
     // Also the chained form actually used (cd then kavach db).
     let chained = "kavach db write --content \"see crates/foo/src/lib.rs for detail\"";
     assert!(!targets_tracked_source(chained));

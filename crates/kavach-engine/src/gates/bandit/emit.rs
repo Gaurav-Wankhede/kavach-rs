@@ -48,7 +48,14 @@ pub(crate) fn emit_decision(
         return;
     }
     let timestamp_ms = now_ms();
-    let row = build_row(session_id, timestamp_ms, context, action, propensity, reward);
+    let row = build_row(
+        session_id,
+        timestamp_ms,
+        context,
+        action,
+        propensity,
+        reward,
+    );
     let Some(payload) = payload_of(&row) else {
         return;
     };

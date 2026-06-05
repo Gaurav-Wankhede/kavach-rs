@@ -67,7 +67,10 @@ pub const fn safety_floor_held(rule: Action, shadow: Action) -> bool {
 /// controller has proposed weakening a safety verdict and must not be promoted.
 #[must_use]
 pub fn first_floor_violation(pairs: &[(Action, Action)]) -> Option<(Action, Action)> {
-    pairs.iter().copied().find(|&(rule, shadow)| !safety_floor_held(rule, shadow))
+    pairs
+        .iter()
+        .copied()
+        .find(|&(rule, shadow)| !safety_floor_held(rule, shadow))
 }
 
 /// The audit's verdict on whether the learned policy is reward-hacking.

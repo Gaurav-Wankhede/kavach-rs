@@ -23,11 +23,13 @@ const SESSION: &str = "sess_abc";
 /// Seed the lease row the way the live system does before a first acquire
 /// (acquire itself returns `RecordNotFound` on a missing record).
 async fn seed(db: &surrealdb::Surreal<surrealdb::engine::local::Db>) {
-    db.query("CREATE type::record($t, $k) SET occupied_by=NONE, occupied_until=NONE, occupied_epoch=0")
-        .bind(("t", TABLE))
-        .bind(("k", KEY))
-        .await
-        .expect("seed lease row");
+    db.query(
+        "CREATE type::record($t, $k) SET occupied_by=NONE, occupied_until=NONE, occupied_epoch=0",
+    )
+    .bind(("t", TABLE))
+    .bind(("k", KEY))
+    .await
+    .expect("seed lease row");
 }
 
 #[tokio::test]
@@ -44,14 +46,20 @@ async fn full_lease_cycle_executes_against_a_real_db() {
     assert_eq!(lease.session_id, SESSION);
 
     // status() must now report the live holder (proves the SELECT query parses).
-    let seen = status(&db, TABLE, KEY).await.expect("status").expect("a live lease");
+    let seen = status(&db, TABLE, KEY)
+        .await
+        .expect("status")
+        .expect("a live lease");
     assert_eq!(seen.session_id, SESSION);
     assert_eq!(seen.epoch, 1);
 
     // heartbeat() with the matching epoch must succeed and keep the epoch.
     let beat = heartbeat(&db, TABLE, KEY, &lease).await.expect("heartbeat");
     assert_eq!(beat.epoch, 1);
-    assert!(beat.expires_at >= lease.expires_at, "heartbeat extends the lease");
+    assert!(
+        beat.expires_at >= lease.expires_at,
+        "heartbeat extends the lease"
+    );
 
     // unlock() clears the holder; status() then sees no live lease.
     unlock(&db, TABLE, KEY, &lease).await.expect("unlock");
@@ -64,9 +72,14 @@ async fn acquire_reports_a_conflicting_holder() {
     // Proves the contended path: a second session sees HeldBy, not Acquired.
     let db = open_memory().await.expect("memory db");
     seed(&db).await;
-    let _first = acquire(&db, TABLE, KEY, SESSION).await.expect("first acquire");
+    let _first = acquire(&db, TABLE, KEY, SESSION)
+        .await
+        .expect("first acquire");
 
-    match acquire(&db, TABLE, KEY, "sess_other").await.expect("second acquire") {
+    match acquire(&db, TABLE, KEY, "sess_other")
+        .await
+        .expect("second acquire")
+    {
         AcquireOutcome::HeldBy { session_id, .. } => assert_eq!(session_id, SESSION),
         other @ AcquireOutcome::Acquired(_) => panic!("expected HeldBy, got {other:?}"),
     }

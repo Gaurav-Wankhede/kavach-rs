@@ -57,7 +57,9 @@ pub async fn append_bandit_row(db: &Surreal<Db>, payload: &str) -> Result<Record
     let result: Option<IdRow> = response.take(0)?;
     match result {
         Some(e) => Ok(e.id),
-        None => Err(crate::error::Error::RecordNotFound("bandit_log create".into())),
+        None => Err(crate::error::Error::RecordNotFound(
+            "bandit_log create".into(),
+        )),
     }
 }
 
@@ -131,7 +133,10 @@ pub async fn list_unrewarded_bandit_rows_for_session(
         // Parse ONCE per row and test both predicates on the same Value (the
         // per-session list is the hottest reader — re-parsing each row twice was
         // pure waste).
-        .filter(|res| res.as_ref().map_or(true, |s| pending_for_session(s, session_id)))
+        .filter(|res| {
+            res.as_ref()
+                .map_or(true, |s| pending_for_session(s, session_id))
+        })
         .take(limit as usize)
         .collect()
 }
@@ -169,7 +174,11 @@ pub async fn update_bandit_reward(db: &Surreal<Db>, payload: &str, reward: &str)
 /// so the key derivation can never drift between write and update.
 fn content_key(payload: &str) -> String {
     let digest = blake3::hash(payload.as_bytes()).to_hex();
-    digest.as_str().get(..32).unwrap_or(digest.as_str()).to_owned()
+    digest
+        .as_str()
+        .get(..32)
+        .unwrap_or(digest.as_str())
+        .to_owned()
 }
 
 /// Fetch every stored payload as JSON, newest first (unbounded — callers filter
@@ -195,7 +204,9 @@ fn payload_to_json(r: BanditPayloadRow) -> Result<String> {
 /// `reward` is absent or JSON null. A parse failure counts as "still pending" so
 /// a malformed row is surfaced to the caller, never silently graded.
 fn reward_is_absent(payload: &str) -> bool {
-    serde_json::from_str::<serde_json::Value>(payload).ok().is_none_or(|v| reward_absent_in(&v))
+    serde_json::from_str::<serde_json::Value>(payload)
+        .ok()
+        .is_none_or(|v| reward_absent_in(&v))
 }
 
 /// True when this row is un-rewarded AND logged under `session_id` — the

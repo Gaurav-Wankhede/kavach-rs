@@ -10,7 +10,11 @@ use crate::sample::{Action, LoggedSample};
 
 #[test]
 fn empty_input_is_non_gating() {
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 };
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    };
     let est = estimate(&[], &policy);
     assert_eq!(est.n, 0);
     assert_eq!(est.value, 0.0);
@@ -29,7 +33,11 @@ fn matching_policy_recovers_the_mean_reward() {
         LoggedSample::new(Action::Allow, 0.5, 1.0),
         LoggedSample::new(Action::Allow, 0.5, 1.0),
     ];
-    let policy = FixedPolicy { allow: 0.5, ask: 0.25, block: 0.25 };
+    let policy = FixedPolicy {
+        allow: 0.5,
+        ask: 0.25,
+        block: 0.25,
+    };
     let est = estimate(&samples, &policy);
     // mean reward = (1 - 1 + 1 + 1) / 4 = 0.5.
     assert_eq!(est.value, 0.5);
@@ -42,7 +50,11 @@ fn upweights_actions_the_target_favors_more() {
     // Target assigns Allow prob 1.0 vs logging propensity 0.5 -> weight 2.
     // One sample, reward 1 -> IPS value = 2 * 1 = 2.
     let samples = vec![LoggedSample::new(Action::Allow, 0.5, 1.0)];
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 };
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    };
     let est = estimate(&samples, &policy);
     assert_eq!(est.value, 2.0);
     // A single sample has no variance information -> infinite SE.
@@ -57,7 +69,11 @@ fn a_target_that_never_takes_the_logged_action_values_it_at_zero() {
         LoggedSample::new(Action::Block, 0.3, 1.0),
         LoggedSample::new(Action::Block, 0.3, 1.0),
     ];
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 };
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    };
     let est = estimate(&samples, &policy);
     assert_eq!(est.value, 0.0);
 }
@@ -71,7 +87,11 @@ fn snips_matching_policy_also_recovers_the_mean_reward() {
         LoggedSample::new(Action::Allow, 0.5, 1.0),
         LoggedSample::new(Action::Allow, 0.5, 1.0),
     ];
-    let policy = FixedPolicy { allow: 0.5, ask: 0.25, block: 0.25 };
+    let policy = FixedPolicy {
+        allow: 0.5,
+        ask: 0.25,
+        block: 0.25,
+    };
     let est = estimate_self_normalized(&samples, &policy);
     assert_eq!(est.value, 0.5);
     assert!(est.std_error.is_finite());
@@ -86,17 +106,32 @@ fn snips_normalizes_away_a_uniform_weight_scale() {
         LoggedSample::new(Action::Allow, 0.5, 1.0),
         LoggedSample::new(Action::Allow, 0.5, 0.0),
     ];
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 }; // weight = 2 each
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    }; // weight = 2 each
     let snips = estimate_self_normalized(&samples, &policy);
     assert_eq!(snips.value, 0.5, "SNIPS cancels the uniform 2x scale");
     let plain = estimate(&samples, &policy);
-    assert_eq!(plain.value, 1.0, "plain IPS keeps the 2x scale: mean(2*1, 2*0)=1");
+    assert_eq!(
+        plain.value, 1.0,
+        "plain IPS keeps the 2x scale: mean(2*1, 2*0)=1"
+    );
 }
 
 #[test]
 fn snips_empty_and_unsupported_are_non_gating() {
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 };
-    assert!(estimate_self_normalized(&[], &policy).std_error.is_infinite());
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    };
+    assert!(
+        estimate_self_normalized(&[], &policy)
+            .std_error
+            .is_infinite()
+    );
     // Target never takes the logged Block action -> weight sum 0 -> undefined.
     let block = vec![LoggedSample::new(Action::Block, 0.4, 1.0)];
     let est = estimate_self_normalized(&block, &policy);

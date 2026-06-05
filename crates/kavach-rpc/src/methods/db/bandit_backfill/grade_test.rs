@@ -38,6 +38,14 @@ fn a_block_or_ask_in_a_failing_session_is_neutral_no_counterfactual() {
 #[test]
 fn a_malformed_or_actionless_row_is_a_surfaced_skip() {
     assert_eq!(reward_tag_for_row("not json", true), None);
-    assert_eq!(reward_tag_for_row(r#"{"propensity":1.0}"#, true), None, "no action ⇒ skip");
-    assert_eq!(reward_tag_for_row(r#"{"action":"garbage"}"#, true), None, "unknown action ⇒ skip");
+    assert_eq!(
+        reward_tag_for_row(r#"{"propensity":1.0}"#, true),
+        None,
+        "no action ⇒ skip"
+    );
+    assert_eq!(
+        reward_tag_for_row(r#"{"action":"garbage"}"#, true),
+        None,
+        "unknown action ⇒ skip"
+    );
 }

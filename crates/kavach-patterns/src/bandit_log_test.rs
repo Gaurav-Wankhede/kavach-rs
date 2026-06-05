@@ -29,7 +29,10 @@ fn reward_scalars_encode_fail_closed_bias() {
 #[test]
 fn new_row_awaits_reward() {
     let row = BanditRow::new("sess_x", 100, ctx(), GateAction::Block, 1.0);
-    assert!(row.awaits_reward(), "a freshly logged row has no reward yet");
+    assert!(
+        row.awaits_reward(),
+        "a freshly logged row has no reward yet"
+    );
     assert_eq!(row.reward, None);
 }
 
@@ -68,5 +71,8 @@ fn back_filled_reward_serializes_as_snake_case() {
     let mut row = BanditRow::new("s", 0, ctx(), GateAction::Allow, 1.0);
     row.reward = Some(Reward::VerifiedClean);
     let json = serde_json::to_string(&row).unwrap();
-    assert!(json.contains("\"reward\":\"verified_clean\""), "got: {json}");
+    assert!(
+        json.contains("\"reward\":\"verified_clean\""),
+        "got: {json}"
+    );
 }

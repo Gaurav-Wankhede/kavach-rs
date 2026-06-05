@@ -48,10 +48,17 @@ fn read(name: &str) -> String {
 /// Every `kavach gates <name>` reference across all configs names a real gate.
 #[test]
 fn every_referenced_gate_name_is_one_the_cli_serves() {
-    for file in ["cursor.hooks.json", "codex.config.toml", "claude.settings.json"] {
+    for file in [
+        "cursor.hooks.json",
+        "codex.config.toml",
+        "claude.settings.json",
+    ] {
         let body = read(file);
         for chunk in body.split("kavach gates ").skip(1) {
-            let gate = chunk.split_whitespace().next().expect("a gate name follows");
+            let gate = chunk
+                .split_whitespace()
+                .next()
+                .expect("a gate name follows");
             assert!(
                 VALID_GATES.contains(&gate),
                 "{file} references unknown gate '{gate}'"
@@ -74,9 +81,15 @@ fn cursor_uses_its_native_camelcase_events() {
     let v: serde_json::Value = serde_json::from_str(&read("cursor.hooks.json")).unwrap();
     let hooks = v["hooks"].as_object().expect("hooks object");
     // Cursor's real event names — not Claude Code's PascalCase.
-    assert!(hooks.contains_key("beforeShellExecution"), "must use Cursor's native event");
+    assert!(
+        hooks.contains_key("beforeShellExecution"),
+        "must use Cursor's native event"
+    );
     assert!(hooks.contains_key("beforeSubmitPrompt"));
-    assert!(!hooks.contains_key("PreToolUse"), "must NOT use Claude Code event names");
+    assert!(
+        !hooks.contains_key("PreToolUse"),
+        "must NOT use Claude Code event names"
+    );
 }
 
 /// The per-harness global-rule files ship and carry the kavach DB contract, so a
@@ -90,12 +103,17 @@ fn global_rule_files_ship_and_reference_the_db_contract() {
             "{file} must teach the DB write contract"
         );
         assert!(
-            body.contains("three-witness") || body.contains("three witnesses") || body.contains("git diff --stat"),
+            body.contains("three-witness")
+                || body.contains("three witnesses")
+                || body.contains("git diff --stat"),
             "{file} must carry the evidence/verify rule"
         );
     }
     // Cursor's rule file must declare itself always-applied (its enforcement knob).
-    assert!(read("kavach.mdc").contains("alwaysApply: true"), "cursor rule must alwaysApply");
+    assert!(
+        read("kavach.mdc").contains("alwaysApply: true"),
+        "cursor rule must alwaysApply"
+    );
 }
 
 #[test]
@@ -103,11 +121,17 @@ fn every_cursor_and_codex_command_carries_its_vendor_flag() {
     let cursor = read("cursor.hooks.json");
     for chunk in cursor.split("kavach gates ").skip(1) {
         let line = chunk.lines().next().unwrap_or("");
-        assert!(line.contains("--vendor cursor"), "cursor cmd missing flag: {line}");
+        assert!(
+            line.contains("--vendor cursor"),
+            "cursor cmd missing flag: {line}"
+        );
     }
     let codex = read("codex.config.toml");
     for chunk in codex.split("kavach gates ").skip(1) {
         let line = chunk.lines().next().unwrap_or("");
-        assert!(line.contains("--vendor codex"), "codex cmd missing flag: {line}");
+        assert!(
+            line.contains("--vendor codex"),
+            "codex cmd missing flag: {line}"
+        );
     }
 }

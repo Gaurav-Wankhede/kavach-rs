@@ -12,7 +12,11 @@ use crate::estimate::Estimate;
 use crate::sample::Action;
 
 fn est(value: f64, std_error: f64) -> Estimate {
-    Estimate { value, std_error, n: 100 }
+    Estimate {
+        value,
+        std_error,
+        n: 100,
+    }
 }
 
 #[test]

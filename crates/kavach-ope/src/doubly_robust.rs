@@ -34,7 +34,11 @@ where
 {
     let n = samples.len();
     if n == 0 {
-        return Estimate { value: 0.0, std_error: f64::INFINITY, n: 0 };
+        return Estimate {
+            value: 0.0,
+            std_error: f64::INFINITY,
+            n: 0,
+        };
     }
     let per_sample: Vec<f64> = samples
         .iter()
@@ -58,7 +62,11 @@ where
         (var / n_f).sqrt()
     };
 
-    Estimate { value: mean, std_error, n }
+    Estimate {
+        value: mean,
+        std_error,
+        n,
+    }
 }
 
 #[cfg(test)]

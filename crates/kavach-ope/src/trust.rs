@@ -42,7 +42,11 @@ impl Trust {
 pub fn assess<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Trust {
     let n = samples.len();
     if n == 0 {
-        return Trust { effective_sample_size: 0.0, n: 0, coverage_ratio: 0.0 };
+        return Trust {
+            effective_sample_size: 0.0,
+            n: 0,
+            coverage_ratio: 0.0,
+        };
     }
     let weights = samples.iter().map(|s| policy.prob(s.action) / s.propensity);
     let mut sum = 0.0_f64;
@@ -53,9 +57,17 @@ pub fn assess<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Trust {
     }
     // ESS = (Σw)² / Σw². Σw² == 0 only if every weight is 0 (target supports none
     // of the logged actions) -> zero ESS, zero coverage.
-    let ess = if sum_sq > 0.0 { (sum * sum) / sum_sq } else { 0.0 };
+    let ess = if sum_sq > 0.0 {
+        (sum * sum) / sum_sq
+    } else {
+        0.0
+    };
     let n_f = f64::from(u32::try_from(n).unwrap_or(u32::MAX));
-    Trust { effective_sample_size: ess, n, coverage_ratio: ess / n_f }
+    Trust {
+        effective_sample_size: ess,
+        n,
+        coverage_ratio: ess / n_f,
+    }
 }
 
 #[cfg(test)]

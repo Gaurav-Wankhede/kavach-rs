@@ -22,7 +22,9 @@ pub fn lower(raw_payload: &str) -> Result<HookInput, String> {
     // Reuse the W1 null-scrubbing parse to a Value, then map native names.
     let value: serde_json::Value =
         serde_json::from_str(raw_payload).map_err(|e| format!("JSON parse error: {e}"))?;
-    let obj = value.as_object().ok_or_else(|| "cursor payload is not an object".to_owned())?;
+    let obj = value
+        .as_object()
+        .ok_or_else(|| "cursor payload is not an object".to_owned())?;
 
     let input = HookInput {
         session_id: get_str(obj, "conversation_id"),
@@ -48,7 +50,11 @@ pub fn lower(raw_payload: &str) -> Result<HookInput, String> {
 pub fn render(resp: &HookResponse, event: &str) -> String {
     // The answered event is authoritative (the edge passes it from the lowered
     // input); fall back to whatever the response stamped on itself.
-    let event = if event.is_empty() { response_event(resp) } else { event };
+    let event = if event.is_empty() {
+        response_event(resp)
+    } else {
+        event
+    };
     if event == "Stop" {
         return render_stop(resp);
     }
@@ -57,7 +63,11 @@ pub fn render(resp: &HookResponse, event: &str) -> String {
     let out = CursorResponse {
         r#continue: !blocked,
         permission: if blocked { "deny" } else { "allow" },
-        user_message: if msg.is_empty() { None } else { Some(msg.clone()) },
+        user_message: if msg.is_empty() {
+            None
+        } else {
+            Some(msg.clone())
+        },
         agent_message: if msg.is_empty() { None } else { Some(msg) },
     };
     serde_json::to_string(&out).unwrap_or_else(|_| fail_open())
@@ -101,7 +111,9 @@ fn context_message(resp: &HookResponse) -> String {
 /// The canonical event this response answers, read from its `hookSpecificOutput`
 /// (gates stamp it there). Empty when the gate emitted a bare verdict.
 fn response_event(resp: &HookResponse) -> &str {
-    resp.hook_specific_output.as_ref().map_or("", |h| h.hook_event_name.as_str())
+    resp.hook_specific_output
+        .as_ref()
+        .map_or("", |h| h.hook_event_name.as_str())
 }
 
 /// Cursor's NATIVE failure default: fail OPEN.
@@ -150,7 +162,10 @@ fn canonical_event(cursor_event: &str) -> String {
 
 /// Read a string field from the object, tolerating absent/null (→ empty).
 fn get_str(obj: &serde_json::Map<String, serde_json::Value>, key: &str) -> String {
-    obj.get(key).and_then(serde_json::Value::as_str).unwrap_or_default().to_owned()
+    obj.get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .to_owned()
 }
 
 /// Cursor sends `workspace_roots` as an array (VS Code multi-root); the canonical

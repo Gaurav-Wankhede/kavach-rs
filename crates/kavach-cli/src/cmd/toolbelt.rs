@@ -32,27 +32,111 @@ struct Tool {
 /// Canonical toolbelt — mirrors the `toolbelt` skill's mapping. `bun` is
 /// intentionally excluded (Node runtime, not a cargo crate / not binstallable).
 const TOOLBELT: &[Tool] = &[
-    Tool { bin: "rg", krate: "ripgrep", license: "MIT OR Unlicense" },
-    Tool { bin: "fd", krate: "fd-find", license: "MIT OR Apache-2.0" },
-    Tool { bin: "bat", krate: "bat", license: "MIT OR Apache-2.0" },
-    Tool { bin: "eza", krate: "eza", license: "MIT" },
-    Tool { bin: "erd", krate: "erdtree", license: "MIT" },
-    Tool { bin: "sd", krate: "sd", license: "MIT" },
-    Tool { bin: "sg", krate: "ast-grep", license: "MIT" },
-    Tool { bin: "rnr", krate: "rnr", license: "MIT" },
-    Tool { bin: "difft", krate: "difftastic", license: "MIT" },
-    Tool { bin: "delta", krate: "git-delta", license: "MIT" },
-    Tool { bin: "tokei", krate: "tokei", license: "MIT OR Apache-2.0" },
-    Tool { bin: "just", krate: "just", license: "CC0-1.0" },
-    Tool { bin: "watchexec", krate: "watchexec-cli", license: "Apache-2.0" },
-    Tool { bin: "hyperfine", krate: "hyperfine", license: "MIT OR Apache-2.0" },
-    Tool { bin: "jaq", krate: "jaq", license: "MIT" },
-    Tool { bin: "gron", krate: "gron", license: "MIT" },
-    Tool { bin: "dasel", krate: "dasel", license: "MIT" },
-    Tool { bin: "dust", krate: "du-dust", license: "MIT" },
-    Tool { bin: "procs", krate: "procs", license: "MIT" },
-    Tool { bin: "xh", krate: "xh", license: "MIT" },
-    Tool { bin: "atuin", krate: "atuin", license: "MIT" },
+    Tool {
+        bin: "rg",
+        krate: "ripgrep",
+        license: "MIT OR Unlicense",
+    },
+    Tool {
+        bin: "fd",
+        krate: "fd-find",
+        license: "MIT OR Apache-2.0",
+    },
+    Tool {
+        bin: "bat",
+        krate: "bat",
+        license: "MIT OR Apache-2.0",
+    },
+    Tool {
+        bin: "eza",
+        krate: "eza",
+        license: "MIT",
+    },
+    Tool {
+        bin: "erd",
+        krate: "erdtree",
+        license: "MIT",
+    },
+    Tool {
+        bin: "sd",
+        krate: "sd",
+        license: "MIT",
+    },
+    Tool {
+        bin: "sg",
+        krate: "ast-grep",
+        license: "MIT",
+    },
+    Tool {
+        bin: "rnr",
+        krate: "rnr",
+        license: "MIT",
+    },
+    Tool {
+        bin: "difft",
+        krate: "difftastic",
+        license: "MIT",
+    },
+    Tool {
+        bin: "delta",
+        krate: "git-delta",
+        license: "MIT",
+    },
+    Tool {
+        bin: "tokei",
+        krate: "tokei",
+        license: "MIT OR Apache-2.0",
+    },
+    Tool {
+        bin: "just",
+        krate: "just",
+        license: "CC0-1.0",
+    },
+    Tool {
+        bin: "watchexec",
+        krate: "watchexec-cli",
+        license: "Apache-2.0",
+    },
+    Tool {
+        bin: "hyperfine",
+        krate: "hyperfine",
+        license: "MIT OR Apache-2.0",
+    },
+    Tool {
+        bin: "jaq",
+        krate: "jaq",
+        license: "MIT",
+    },
+    Tool {
+        bin: "gron",
+        krate: "gron",
+        license: "MIT",
+    },
+    Tool {
+        bin: "dasel",
+        krate: "dasel",
+        license: "MIT",
+    },
+    Tool {
+        bin: "dust",
+        krate: "du-dust",
+        license: "MIT",
+    },
+    Tool {
+        bin: "procs",
+        krate: "procs",
+        license: "MIT",
+    },
+    Tool {
+        bin: "xh",
+        krate: "xh",
+        license: "MIT",
+    },
+    Tool {
+        bin: "atuin",
+        krate: "atuin",
+        license: "MIT",
+    },
 ];
 
 /// Dispatch entry for `kavach toolbelt <action>`.
@@ -92,9 +176,12 @@ fn install(yes: bool, only: Option<&str>) -> i32 {
     let wanted: Vec<&Tool> = match only {
         None => TOOLBELT.iter().collect(),
         Some(csv) => {
-            let names: Vec<&str> = csv.split(',').map(str::trim).filter(|s| !s.is_empty()).collect();
-            let selected: Vec<&Tool> =
-                TOOLBELT.iter().filter(|t| names.contains(&t.bin)).collect();
+            let names: Vec<&str> = csv
+                .split(',')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .collect();
+            let selected: Vec<&Tool> = TOOLBELT.iter().filter(|t| names.contains(&t.bin)).collect();
             let unknown: Vec<&str> = names
                 .iter()
                 .copied()
@@ -176,9 +263,8 @@ fn missing_binstall() -> i32 {
 /// exit with the POSIX I/O-error code so callers see a non-zero, classifiable
 /// failure rather than a swallowed spawn error.
 fn spawn_error(e: &std::io::Error) -> i32 {
-    let msg = format!(
-        "kavach: could not run `cargo` ({e}). Install a Rust toolchain: https://rustup.rs"
-    );
+    let msg =
+        format!("kavach: could not run `cargo` ({e}). Install a Rust toolchain: https://rustup.rs");
     if let Err(io_err) = io_safe::ewrite_or_exit(&msg) {
         return io_safe::into_exit_code(io_err);
     }

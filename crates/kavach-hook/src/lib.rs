@@ -110,7 +110,9 @@ pub fn parse_hook_input(raw: &str) -> Result<HookInput, String> {
 /// # Errors
 /// Returns `Err` with the resolved vendor attached when the payload is not a
 /// JSON object at all, so the caller can still emit a vendor-native failure.
-pub fn read_hook_input_native(explicit: Option<&str>) -> Result<(Vendor, HookInput), (Vendor, String)> {
+pub fn read_hook_input_native(
+    explicit: Option<&str>,
+) -> Result<(Vendor, HookInput), (Vendor, String)> {
     let stdin = io::stdin();
     let mut buf = Vec::new();
     for line in stdin.lock().lines() {
@@ -152,7 +154,11 @@ pub fn output_native(vendor: Vendor, resp: &HookResponse) -> i32 {
     if writeln!(io::stdout().lock(), "{json}").is_err() {
         eprintln!("kavach: stdout write failed");
     }
-    if resp.decision == "block" { vendor.block_exit_code() } else { 0 }
+    if resp.decision == "block" {
+        vendor.block_exit_code()
+    } else {
+        0
+    }
 }
 
 /// Read a hook input payload, emitting an error response on failure.

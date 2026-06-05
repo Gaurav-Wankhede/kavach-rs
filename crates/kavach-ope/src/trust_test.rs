@@ -18,7 +18,11 @@ fn equal_weights_give_full_coverage() {
         LoggedSample::new(Action::Allow, 0.5, 1.0),
         LoggedSample::new(Action::Allow, 0.5, 0.0),
     ];
-    let policy = FixedPolicy { allow: 0.5, ask: 0.25, block: 0.25 };
+    let policy = FixedPolicy {
+        allow: 0.5,
+        ask: 0.25,
+        block: 0.25,
+    };
     let t = assess(&samples, &policy);
     assert_eq!(t.effective_sample_size, 4.0);
     assert_eq!(t.coverage_ratio, 1.0);
@@ -36,16 +40,32 @@ fn one_dominant_weight_collapses_the_effective_sample_size() {
         LoggedSample::new(Action::Allow, 1.0, 0.0),
         LoggedSample::new(Action::Allow, 1.0, 0.0),
     ];
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 };
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    };
     let t = assess(&samples, &policy);
-    assert!(t.effective_sample_size < 1.1, "ESS collapses to ~1, got {}", t.effective_sample_size);
-    assert!(t.coverage_ratio < 0.3, "coverage low, got {}", t.coverage_ratio);
+    assert!(
+        t.effective_sample_size < 1.1,
+        "ESS collapses to ~1, got {}",
+        t.effective_sample_size
+    );
+    assert!(
+        t.coverage_ratio < 0.3,
+        "coverage low, got {}",
+        t.coverage_ratio
+    );
     assert!(!t.is_trustworthy(0.5), "must be flagged untrustworthy");
 }
 
 #[test]
 fn empty_and_unsupported_are_untrustworthy() {
-    let policy = FixedPolicy { allow: 1.0, ask: 0.0, block: 0.0 };
+    let policy = FixedPolicy {
+        allow: 1.0,
+        ask: 0.0,
+        block: 0.0,
+    };
     let empty = assess(&[], &policy);
     assert_eq!(empty.coverage_ratio, 0.0);
     assert!(!empty.is_trustworthy(0.01));

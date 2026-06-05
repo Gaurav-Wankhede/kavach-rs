@@ -15,11 +15,11 @@
 )]
 
 pub mod archive;
+pub mod bandit;
 pub mod bulk_manifest;
 pub mod connection;
 pub mod decisions;
 pub mod delete;
-pub mod bandit;
 pub mod dual_write;
 pub mod embed;
 pub mod error;
@@ -69,6 +69,10 @@ pub use graph::{
 };
 // L3 mistake-event RPCs
 pub use archive::{ArchiveReport, archive_irrelevant};
+pub use bandit::{
+    append_bandit_row, list_bandit_rows, list_unrewarded_bandit_rows,
+    list_unrewarded_bandit_rows_for_session, update_bandit_reward,
+};
 pub use decisions::{
     AlgoDecision, AlgoUpsertParams, ArchDecision, ArchUpsertParams, algo_list_recent, algo_upsert,
     arch_list_recent, arch_upsert,
@@ -112,10 +116,6 @@ pub use schema_engine::apply as apply_schema_engine;
 pub use schema_v2::apply_agent_memory_schema;
 pub use session_store::{SessionRuntimeRow, session_get_by_id, session_upsert};
 pub use wipe::{WipeReport, preview_wipe, wipe_project};
-pub use bandit::{
-    append_bandit_row, list_bandit_rows, list_unrewarded_bandit_rows,
-    list_unrewarded_bandit_rows_for_session, update_bandit_reward,
-};
 pub use write::{
     ExpireReport, append_event, expire_stale, rotate_events, set_priority, update_feedback,
     update_status, upsert_entry, upsert_entry_full, upsert_entry_with_event,

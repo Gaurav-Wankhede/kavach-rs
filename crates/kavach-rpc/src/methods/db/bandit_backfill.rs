@@ -82,7 +82,12 @@ pub async fn bandit_backfill_session(
             skipped = skipped.saturating_add(1);
         }
     }
-    Ok(BanditBackfillResult { success: true, graded, skipped, error: None })
+    Ok(BanditBackfillResult {
+        success: true,
+        graded,
+        skipped,
+        error: None,
+    })
 }
 
 /// Label one row (via the pure `grade` map) and write its reward back; `true` on
@@ -93,5 +98,7 @@ async fn write_reward(ctx: &AppState, payload: &str, verified_clean: bool) -> bo
     let Some(tag) = grade::reward_tag_for_row(payload, verified_clean) else {
         return false;
     };
-    kavach_surreal::update_bandit_reward(&ctx.db, payload, tag).await.is_ok()
+    kavach_surreal::update_bandit_reward(&ctx.db, payload, tag)
+        .await
+        .is_ok()
 }

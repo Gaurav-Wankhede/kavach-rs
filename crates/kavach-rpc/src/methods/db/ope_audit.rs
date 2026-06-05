@@ -16,10 +16,10 @@
 
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
+use kavach_ope::Action;
 use kavach_ope::Estimate;
 use kavach_ope::audit::{AuditVerdict, detect_reward_hacking};
 use kavach_ope::label::{action_from_tag, reward_scalar};
-use kavach_ope::Action;
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
@@ -76,14 +76,22 @@ pub async fn ope_audit(
         Err(e) => return Ok(load_failed(e.to_string())),
     };
 
-    let pairs: Vec<(Action, Action)> =
-        raw.iter().filter_map(|json| rule_shadow_pair(json)).collect();
+    let pairs: Vec<(Action, Action)> = raw
+        .iter()
+        .filter_map(|json| rule_shadow_pair(json))
+        .collect();
     let floor_violations = pairs.iter().filter(|&&(r, s)| relaxes_block(r, s)).count();
 
-    let hard: Vec<f64> = raw.iter().filter_map(|j| channel_reward(j, false)).collect();
+    let hard: Vec<f64> = raw
+        .iter()
+        .filter_map(|j| channel_reward(j, false))
+        .collect();
     let soft: Vec<f64> = raw.iter().filter_map(|j| channel_reward(j, true)).collect();
-    let drift =
-        detect_reward_hacking(&mean_estimate(&hard), &mean_estimate(&soft), params.drift_tolerance);
+    let drift = detect_reward_hacking(
+        &mean_estimate(&hard),
+        &mean_estimate(&soft),
+        params.drift_tolerance,
+    );
 
     let (tag, gap) = match drift {
         AuditVerdict::Healthy => ("healthy", 0.0),
@@ -128,7 +136,10 @@ fn rule_shadow_pair(json: &str) -> Option<(Action, Action)> {
 /// `held_out: true`); `true` ⇒ the soft held-out channel.
 fn channel_reward(json: &str, want_held_out: bool) -> Option<f64> {
     let v: serde_json::Value = serde_json::from_str(json).ok()?;
-    let held_out = v.get("held_out").and_then(serde_json::Value::as_bool).unwrap_or(false);
+    let held_out = v
+        .get("held_out")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
     if held_out != want_held_out {
         return None;
     }

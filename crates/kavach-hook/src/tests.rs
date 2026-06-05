@@ -71,7 +71,10 @@ mod tests {
     fn a_non_object_payload_still_errors() {
         // Defaulting can't recover a payload that isn't even a JSON object.
         assert!(parse_hook_input("not json").is_err());
-        assert!(parse_hook_input("[1,2,3]").is_err(), "array is not a hook input");
+        assert!(
+            parse_hook_input("[1,2,3]").is_err(),
+            "array is not a hook input"
+        );
     }
 
     #[test]

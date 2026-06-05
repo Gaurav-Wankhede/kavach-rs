@@ -44,6 +44,9 @@ mod tests {
         assert_eq!(Decision::Deny("x".into()).action(), GateAction::Block);
         assert_eq!(Decision::Ask("x".into()).action(), GateAction::Ask);
         assert_eq!(Decision::Allow(None).action(), GateAction::Allow);
-        assert_eq!(Decision::Allow(Some("ctx".into())).action(), GateAction::Allow);
+        assert_eq!(
+            Decision::Allow(Some("ctx".into())).action(),
+            GateAction::Allow
+        );
     }
 }

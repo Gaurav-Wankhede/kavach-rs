@@ -9,7 +9,10 @@ use super::{BanditBackfillParams, BanditBackfillResult};
 fn params_deserialize_from_the_session_id_wire_name() {
     let json = r#"{"session_id":"sess_abc","verified_clean":true,"limit":50}"#;
     let p: BanditBackfillParams = serde_json::from_str(json).expect("parse params");
-    assert_eq!(p.session, "sess_abc", "wire `session_id` maps to the `session` field");
+    assert_eq!(
+        p.session, "sess_abc",
+        "wire `session_id` maps to the `session` field"
+    );
     assert!(p.verified_clean);
     assert_eq!(p.limit, 50);
 }
@@ -22,7 +25,10 @@ fn params_serialize_back_to_session_id() {
         limit: 10,
     };
     let json = serde_json::to_string(&p).expect("serialize");
-    assert!(json.contains(r#""session_id":"sess_xyz""#), "field renames to session_id on the wire");
+    assert!(
+        json.contains(r#""session_id":"sess_xyz""#),
+        "field renames to session_id on the wire"
+    );
 }
 
 #[test]

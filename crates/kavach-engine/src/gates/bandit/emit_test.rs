@@ -22,7 +22,14 @@ fn build_row_carries_action_and_pending_reward() {
 
 #[test]
 fn build_row_back_fills_reward_when_supplied() {
-    let row = build_row("s", 0, ctx(), GateAction::Allow, 1.0, Some(Reward::VerifiedClean));
+    let row = build_row(
+        "s",
+        0,
+        ctx(),
+        GateAction::Allow,
+        1.0,
+        Some(Reward::VerifiedClean),
+    );
     assert!(!row.awaits_reward());
     assert_eq!(row.reward, Some(Reward::VerifiedClean));
 }
@@ -35,7 +42,10 @@ fn payload_is_the_wire_shape_the_rpc_stores() {
     let json = payload_of(&row).expect("serialize");
     assert!(json.contains("\"action\":\"ask\""), "got: {json}");
     assert!(json.contains("\"reward\":null"), "got: {json}");
-    assert!(json.contains("\"gate\":\"micro_file_guard\""), "got: {json}");
+    assert!(
+        json.contains("\"gate\":\"micro_file_guard\""),
+        "got: {json}"
+    );
     assert!(json.contains("\"session_id\":\"sess_wire\""), "got: {json}");
 }
 

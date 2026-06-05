@@ -63,9 +63,7 @@ fn writes_via_interpreter(lower: &str) -> bool {
         return true;
     }
     // `perl -i` (in-place edit) or `perl -e '... > FILE'` / `open(..,'>',..)`.
-    if has_perl
-        && (lower.contains(" -i") || lower.contains("open(") || has_file_redirect(lower))
-    {
+    if has_perl && (lower.contains(" -i") || lower.contains("open(") || has_file_redirect(lower)) {
         return true;
     }
     false

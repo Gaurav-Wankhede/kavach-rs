@@ -20,11 +20,26 @@ fn content_key_differs_for_different_payloads() {
 
 #[test]
 fn reward_is_absent_for_null_or_missing_only() {
-    assert!(reward_is_absent(r#"{"action":"allow"}"#), "missing reward ⇒ pending");
-    assert!(reward_is_absent(r#"{"reward":null}"#), "JSON null reward ⇒ pending");
-    assert!(reward_is_absent("not json"), "unparseable ⇒ surfaced as pending");
-    assert!(!reward_is_absent(r#"{"reward":"verified_clean"}"#), "graded ⇒ NOT pending");
-    assert!(!reward_is_absent(r#"{"reward":"false_decision"}"#), "graded ⇒ NOT pending");
+    assert!(
+        reward_is_absent(r#"{"action":"allow"}"#),
+        "missing reward ⇒ pending"
+    );
+    assert!(
+        reward_is_absent(r#"{"reward":null}"#),
+        "JSON null reward ⇒ pending"
+    );
+    assert!(
+        reward_is_absent("not json"),
+        "unparseable ⇒ surfaced as pending"
+    );
+    assert!(
+        !reward_is_absent(r#"{"reward":"verified_clean"}"#),
+        "graded ⇒ NOT pending"
+    );
+    assert!(
+        !reward_is_absent(r#"{"reward":"false_decision"}"#),
+        "graded ⇒ NOT pending"
+    );
 }
 
 #[test]
@@ -33,16 +48,25 @@ fn pending_for_session_matches_only_an_unrewarded_row_of_the_join_key() {
     // rows here so the session axis is what's under test.
     let row = r#"{"session_id":"sess_abc","action":"block","reward":null}"#;
     assert!(pending_for_session(row, "sess_abc"));
-    assert!(!pending_for_session(row, "sess_other"), "another session's row ⇒ not in this join");
+    assert!(
+        !pending_for_session(row, "sess_other"),
+        "another session's row ⇒ not in this join"
+    );
     // A graded row of THIS session is also excluded — the reward axis still bites.
     let graded = r#"{"session_id":"sess_abc","action":"block","reward":"needed_ask"}"#;
-    assert!(!pending_for_session(graded, "sess_abc"), "already graded ⇒ not a candidate");
+    assert!(
+        !pending_for_session(graded, "sess_abc"),
+        "already graded ⇒ not a candidate"
+    );
 }
 
 #[test]
 fn a_row_missing_its_session_id_does_not_match_a_real_session() {
     let row = r#"{"action":"block","reward":null}"#;
-    assert!(!pending_for_session(row, "sess_abc"), "no session_id field ⇒ not this session");
+    assert!(
+        !pending_for_session(row, "sess_abc"),
+        "no session_id field ⇒ not this session"
+    );
 }
 
 #[test]

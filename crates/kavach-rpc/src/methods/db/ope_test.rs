@@ -9,8 +9,8 @@
 )]
 
 use super::{context_features, sample_from_row};
-use kavach_ope::label::reward_scalar;
 use kavach_ope::Action;
+use kavach_ope::label::reward_scalar;
 
 #[test]
 fn a_rewarded_row_projects_to_a_usable_sample() {
@@ -32,13 +32,19 @@ fn an_unrewarded_row_is_dropped() {
     let json = r#"{"session_id":"s2","timestamp_ms":2,
         "context":{"diff_bytes":0,"intent_risk":"","prior_fire_count":0},
         "action":"block","propensity":1.0,"reward":null}"#;
-    assert!(sample_from_row(json).is_none(), "a None-reward row must be excluded");
+    assert!(
+        sample_from_row(json).is_none(),
+        "a None-reward row must be excluded"
+    );
 }
 
 #[test]
 fn a_malformed_row_is_dropped_not_panicked() {
     assert!(sample_from_row("not json").is_none());
-    assert!(sample_from_row(r#"{"action":"allow"}"#).is_none(), "missing fields -> drop");
+    assert!(
+        sample_from_row(r#"{"action":"allow"}"#).is_none(),
+        "missing fields -> drop"
+    );
 }
 
 #[test]

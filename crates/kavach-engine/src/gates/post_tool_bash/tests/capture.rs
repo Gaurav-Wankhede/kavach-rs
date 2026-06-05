@@ -40,7 +40,10 @@ fn handle_appends_a_bash_event_to_the_session_tape() {
             .join(".kavach")
             .join("trajectories")
             .join(format!("{sid}.jsonl"));
-        assert!(tape.exists(), "capture must create the session tape at {tape:?}");
+        assert!(
+            tape.exists(),
+            "capture must create the session tape at {tape:?}"
+        );
 
         let events = kavach_patterns::eval_replay::read_jsonl(&tape).unwrap();
         assert!(

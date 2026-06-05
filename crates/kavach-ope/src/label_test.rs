@@ -10,10 +10,22 @@ use crate::sample::Action;
 
 #[test]
 fn reward_tag_maps_the_scalar_to_the_wire_enum() {
-    assert_eq!(reward_tag(Action::Allow, VerifyOutcome::VerifiedClean), "verified_clean");
-    assert_eq!(reward_tag(Action::Ask, VerifyOutcome::VerifiedClean), "verified_clean");
-    assert_eq!(reward_tag(Action::Allow, VerifyOutcome::VerifyFailed), "false_decision");
-    assert_eq!(reward_tag(Action::Block, VerifyOutcome::BlockedAndAccepted), "needed_ask");
+    assert_eq!(
+        reward_tag(Action::Allow, VerifyOutcome::VerifiedClean),
+        "verified_clean"
+    );
+    assert_eq!(
+        reward_tag(Action::Ask, VerifyOutcome::VerifiedClean),
+        "verified_clean"
+    );
+    assert_eq!(
+        reward_tag(Action::Allow, VerifyOutcome::VerifyFailed),
+        "false_decision"
+    );
+    assert_eq!(
+        reward_tag(Action::Block, VerifyOutcome::BlockedAndAccepted),
+        "needed_ask"
+    );
 }
 
 #[test]
@@ -36,7 +48,10 @@ fn a_false_block_is_penalized_exactly_like_a_false_allow() {
     let false_block = label(Action::Block, VerifyOutcome::BlockedThenOverriddenClean);
     let false_allow = label(Action::Allow, VerifyOutcome::VerifyFailed);
     assert_eq!(false_block, -1.0);
-    assert_eq!(false_block, false_allow, "over-firing must cost as much as under-firing");
+    assert_eq!(
+        false_block, false_allow,
+        "over-firing must cost as much as under-firing"
+    );
 }
 
 #[test]

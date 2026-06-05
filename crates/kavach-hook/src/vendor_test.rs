@@ -20,8 +20,15 @@ fn detects_codex_from_turn_id() {
 
 #[test]
 fn unknown_or_plain_payload_defaults_to_claude_code() {
-    assert_eq!(Vendor::detect(r#"{"session_id":"s1","tool_name":"Bash"}"#), Vendor::ClaudeCode);
-    assert_eq!(Vendor::detect("not json"), Vendor::ClaudeCode, "unparseable => safe default");
+    assert_eq!(
+        Vendor::detect(r#"{"session_id":"s1","tool_name":"Bash"}"#),
+        Vendor::ClaudeCode
+    );
+    assert_eq!(
+        Vendor::detect("not json"),
+        Vendor::ClaudeCode,
+        "unparseable => safe default"
+    );
 }
 
 #[test]
@@ -35,7 +42,11 @@ fn an_explicit_flag_overrides_the_payload_sniff() {
 #[test]
 fn an_unknown_flag_falls_through_to_detect() {
     let p = r#"{"conversation_id":"c1"}"#;
-    assert_eq!(Vendor::resolve(Some("nonsense"), p), Vendor::Cursor, "bad flag => sniff");
+    assert_eq!(
+        Vendor::resolve(Some("nonsense"), p),
+        Vendor::Cursor,
+        "bad flag => sniff"
+    );
 }
 
 // --- Cursor native input lowering ---
@@ -51,7 +62,10 @@ fn cursor_input_maps_native_names_to_the_pivot() {
     assert_eq!(input.prompt, "do it");
     assert_eq!(input.cwd, "/repo", "first workspace_root -> cwd");
     assert_eq!(input.tool_name, "Bash", "metadata.tool_name -> tool_name");
-    assert_eq!(input.hook_event_name, "PreToolUse", "beforeShellExecution -> PreToolUse");
+    assert_eq!(
+        input.hook_event_name, "PreToolUse",
+        "beforeShellExecution -> PreToolUse"
+    );
 }
 
 #[test]
@@ -81,8 +95,14 @@ fn cursor_block_renders_the_native_deny_contract() {
     let json = cursor::render(&HookResponse::new_block("nope"), "PreToolUse");
     assert!(json.contains(r#""continue":false"#), "got {json}");
     assert!(json.contains(r#""permission":"deny""#), "got {json}");
-    assert!(json.contains("nope"), "reason carried as user/agent message: {json}");
-    assert!(!json.contains(r#""decision""#), "must NOT emit Claude-Code shape");
+    assert!(
+        json.contains("nope"),
+        "reason carried as user/agent message: {json}"
+    );
+    assert!(
+        !json.contains(r#""decision""#),
+        "must NOT emit Claude-Code shape"
+    );
 }
 
 #[test]
@@ -95,13 +115,20 @@ fn cursor_approve_renders_allow() {
 #[test]
 fn cursor_fails_open_on_error() {
     let json = cursor::fail_open();
-    assert!(json.contains(r#""continue":true"#), "Cursor's native default is allow");
+    assert!(
+        json.contains(r#""continue":true"#),
+        "Cursor's native default is allow"
+    );
     assert!(json.contains(r#""permission":"allow""#));
 }
 
 #[test]
 fn codex_blocks_via_exit_code_two_not_the_body() {
-    assert_eq!(Vendor::Codex.block_exit_code(), 2, "Codex hard-block = exit 2");
+    assert_eq!(
+        Vendor::Codex.block_exit_code(),
+        2,
+        "Codex hard-block = exit 2"
+    );
     assert_eq!(Vendor::ClaudeCode.block_exit_code(), 0);
     assert_eq!(Vendor::Cursor.block_exit_code(), 0);
 }
@@ -109,7 +136,10 @@ fn codex_blocks_via_exit_code_two_not_the_body() {
 #[test]
 fn claude_code_render_is_the_canonical_json_unchanged() {
     let json = Vendor::ClaudeCode.render(&HookResponse::new_block("x"));
-    assert!(json.contains(r#""decision":"block""#), "CC keeps canonical shape: {json}");
+    assert!(
+        json.contains(r#""decision":"block""#),
+        "CC keeps canonical shape: {json}"
+    );
 }
 
 // --- thread-local output sink (the happy-path native translation) ---
@@ -119,10 +149,18 @@ fn output_sink_defaults_to_claude_code_then_tracks_set_vendor() {
     // The sink is what makes a gate's SELF-EMITTED verdict native: the edge arms
     // it once, every `output(&resp)` then renders in that dialect. Proven here on
     // the selector; the render mapping itself is covered above.
-    assert_eq!(crate::output_vendor(), Vendor::ClaudeCode, "unset => canonical default");
+    assert_eq!(
+        crate::output_vendor(),
+        Vendor::ClaudeCode,
+        "unset => canonical default"
+    );
     crate::set_output_context(Vendor::Cursor, "Stop");
     assert_eq!(crate::output_vendor(), Vendor::Cursor);
-    assert_eq!(crate::output_event(), "Stop", "the answered event is recorded too");
+    assert_eq!(
+        crate::output_event(),
+        "Stop",
+        "the answered event is recorded too"
+    );
     // Restore so we don't leak the dialect into sibling tests on this thread.
     crate::set_output_context(Vendor::ClaudeCode, "");
 }
@@ -135,7 +173,10 @@ fn cursor_allow_carries_injected_context_as_agent_message() {
     resp.system_message = "[MISTAKE_LEDGER] do not X".to_owned();
     let json = cursor::render(&resp, "UserPromptSubmit");
     assert!(json.contains(r#""continue":true"#), "{json}");
-    assert!(json.contains("MISTAKE_LEDGER"), "context must ride agentMessage: {json}");
+    assert!(
+        json.contains("MISTAKE_LEDGER"),
+        "context must ride agentMessage: {json}"
+    );
 }
 
 #[test]
@@ -145,10 +186,19 @@ fn cursor_stop_block_renders_followup_message_not_permission() {
     // edge passes the answered event ("Stop") so even a bare verdict routes right.
     let resp = HookResponse::new_stop_block("finish the work");
     let json = cursor::render(&resp, "Stop");
-    assert!(json.contains(r#""continue":false"#), "stop block halts: {json}");
-    assert!(json.contains("followupMessage"), "reblock rides followupMessage: {json}");
+    assert!(
+        json.contains(r#""continue":false"#),
+        "stop block halts: {json}"
+    );
+    assert!(
+        json.contains("followupMessage"),
+        "reblock rides followupMessage: {json}"
+    );
     assert!(json.contains("finish the work"), "{json}");
-    assert!(!json.contains(r#""permission""#), "stop has no permission field: {json}");
+    assert!(
+        !json.contains(r#""permission""#),
+        "stop has no permission field: {json}"
+    );
 }
 
 #[test]
@@ -157,6 +207,12 @@ fn cursor_armed_sink_never_emits_a_top_level_null_pair() {
     // its absent `continue`/`permission` as null and `invalid type: null` blocked
     // the IDE. With the sink armed, the rendered body carries real booleans.
     let json = Vendor::Cursor.render(&HookResponse::new_approve("ok"));
-    assert!(!json.contains(r#""continue":null"#), "no null continue: {json}");
-    assert!(!json.contains(r#""permission":null"#), "no null permission: {json}");
+    assert!(
+        !json.contains(r#""continue":null"#),
+        "no null continue: {json}"
+    );
+    assert!(
+        !json.contains(r#""permission":null"#),
+        "no null permission: {json}"
+    );
 }

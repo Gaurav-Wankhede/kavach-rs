@@ -10,7 +10,9 @@ fn bash(cmd: &str) -> TrajectoryEvent {
     TrajectoryEvent {
         timestamp_ms: 0,
         session_id: "t".into(),
-        event_kind: EventKind::Bash { command: cmd.into() },
+        event_kind: EventKind::Bash {
+            command: cmd.into(),
+        },
     }
 }
 
@@ -62,7 +64,10 @@ fn reward_hack_probe_vacuous_test_scores_at_most_real_check() {
 #[test]
 fn vacuous_test_earns_only_the_file_landed_floor() {
     // An always-pass test adds the VACUOUS_TEST weight (zero) on top of FILE_LANDED.
-    let s = score_trajectory(&[write("src/x_test.rs", "#[test]\nfn t() { assert_eq!(1, 1); }")]);
+    let s = score_trajectory(&[write(
+        "src/x_test.rs",
+        "#[test]\nfn t() { assert_eq!(1, 1); }",
+    )]);
     assert_eq!(s, FILE_LANDED + VACUOUS_TEST);
 }
 
@@ -79,14 +84,20 @@ fn substantive_test_outscores_vacuous_test() {
         "b_test.rs",
         "#[test]\nfn t() { assert_eq!(add(2, 2), 4); }",
     )]);
-    assert!(real > vacuous, "real test ({real}) must beat vacuous ({vacuous})");
+    assert!(
+        real > vacuous,
+        "real test ({real}) must beat vacuous ({vacuous})"
+    );
 }
 
 #[test]
 fn real_cargo_check_dominates_a_landed_file() {
     let check = score_trajectory(&[bash("cargo check --workspace")]);
     let file = score_trajectory(&[write("src/x.rs", "pub fn f() {}")]);
-    assert!(check > file, "a real build ({check}) must dominate a bare file ({file})");
+    assert!(
+        check > file,
+        "a real build ({check}) must dominate a bare file ({file})"
+    );
 }
 
 #[test]
@@ -100,14 +111,20 @@ fn quoted_cargo_mention_is_not_a_verify_witness() {
 fn gate_block_is_a_penalty() {
     // A destructive command the gate must Block drags the score negative.
     let blocked = score_trajectory(&[bash("rm -rf /")]);
-    assert!(blocked < 0, "a blocked session must score negative: {blocked}");
+    assert!(
+        blocked < 0,
+        "a blocked session must score negative: {blocked}"
+    );
 }
 
 #[test]
 fn build_then_block_nets_below_a_clean_build() {
     let clean = score_trajectory(&[bash("cargo check --workspace")]);
     let dirty = score_trajectory(&[bash("cargo check --workspace"), bash("rm -rf /")]);
-    assert!(dirty < clean, "a build followed by a blocked op ({dirty}) < clean build ({clean})");
+    assert!(
+        dirty < clean,
+        "a build followed by a blocked op ({dirty}) < clean build ({clean})"
+    );
 }
 
 #[test]

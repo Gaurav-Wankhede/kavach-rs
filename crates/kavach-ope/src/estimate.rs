@@ -24,7 +24,11 @@ impl Estimate {
     /// since the struct is `#[non_exhaustive]` (no struct-literal across crates).
     #[must_use]
     pub const fn new(value: f64, std_error: f64, n: usize) -> Self {
-        Self { value, std_error, n }
+        Self {
+            value,
+            std_error,
+            n,
+        }
     }
 
     /// A non-informative estimate: zero samples, infinite SE. Any audit reading
@@ -32,7 +36,11 @@ impl Estimate {
     /// than a confident zero.
     #[must_use]
     pub const fn non_informative() -> Self {
-        Self { value: 0.0, std_error: f64::INFINITY, n: 0 }
+        Self {
+            value: 0.0,
+            std_error: f64::INFINITY,
+            n: 0,
+        }
     }
 
     /// The lower confidence bound at the given z-score (e.g. 1.96 for ~95%).

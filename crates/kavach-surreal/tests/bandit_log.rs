@@ -61,16 +61,27 @@ async fn replaying_the_identical_decision_does_not_double_count() {
         .await
         .expect("count query");
     let count: Option<i64> = resp.take((0, "count")).expect("take count");
-    assert_eq!(count, Some(1), "identical replay must yield exactly one row");
+    assert_eq!(
+        count,
+        Some(1),
+        "identical replay must yield exactly one row"
+    );
 
     // And a rejected replay must be an Err, never a silent Ok masking the drop.
-    assert!(second.is_err(), "a duplicate decision must not report success");
+    assert!(
+        second.is_err(),
+        "a duplicate decision must not report success"
+    );
 }
 
 /// Mirror of the store's key derivation so the readback targets the same record.
 fn blake3_key(payload: &str) -> String {
     let digest = blake3::hash(payload.as_bytes()).to_hex();
-    digest.as_str().get(..32).unwrap_or(digest.as_str()).to_owned()
+    digest
+        .as_str()
+        .get(..32)
+        .unwrap_or(digest.as_str())
+        .to_owned()
 }
 
 #[tokio::test]
@@ -79,7 +90,8 @@ async fn list_bandit_rows_reads_back_appended_payloads() {
     // read path returns them intact and as valid JSON the estimators can parse.
     let db = open_with_schema().await;
     let a = r#"{"session_id":"s1","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":1}"#;
-    let b = r#"{"session_id":"s2","timestamp_ms":2,"action":"block","propensity":1.0,"reward":null}"#;
+    let b =
+        r#"{"session_id":"s2","timestamp_ms":2,"action":"block","propensity":1.0,"reward":null}"#;
     append_bandit_row(&db, a).await.expect("append a");
     append_bandit_row(&db, b).await.expect("append b");
 
@@ -111,13 +123,22 @@ async fn list_bandit_rows_is_empty_on_a_fresh_db() {
 async fn unrewarded_list_excludes_rows_whose_reward_is_set() {
     // P3a: only rows still awaiting a 3-witness reward are back-fill candidates.
     let db = open_with_schema().await;
-    let pending = r#"{"session_id":"p","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":null}"#;
+    let pending =
+        r#"{"session_id":"p","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":null}"#;
     let graded = r#"{"session_id":"g","timestamp_ms":2,"action":"block","propensity":1.0,"reward":"needed_ask"}"#;
-    append_bandit_row(&db, pending).await.expect("append pending");
+    append_bandit_row(&db, pending)
+        .await
+        .expect("append pending");
     append_bandit_row(&db, graded).await.expect("append graded");
 
-    let unrewarded = list_unrewarded_bandit_rows(&db, 100).await.expect("list unrewarded");
-    assert_eq!(unrewarded.len(), 1, "only the null-reward row is a candidate");
+    let unrewarded = list_unrewarded_bandit_rows(&db, 100)
+        .await
+        .expect("list unrewarded");
+    assert_eq!(
+        unrewarded.len(),
+        1,
+        "only the null-reward row is a candidate"
+    );
     let v: serde_json::Value = serde_json::from_str(&unrewarded[0]).expect("json");
     assert_eq!(v["session_id"].as_str(), Some("p"));
     assert!(v["reward"].is_null(), "candidate still awaits its reward");
@@ -129,20 +150,36 @@ async fn back_filling_a_reward_removes_the_row_from_the_unrewarded_list() {
     // content-addressed key from the SAME payload — after which the row is no
     // longer a back-fill candidate, and the reward reads back on the row.
     let db = open_with_schema().await;
-    let payload = r#"{"session_id":"x","timestamp_ms":7,"action":"block","propensity":1.0,"reward":null}"#;
+    let payload =
+        r#"{"session_id":"x","timestamp_ms":7,"action":"block","propensity":1.0,"reward":null}"#;
     append_bandit_row(&db, payload).await.expect("append");
-    assert_eq!(list_unrewarded_bandit_rows(&db, 100).await.expect("pre").len(), 1);
+    assert_eq!(
+        list_unrewarded_bandit_rows(&db, 100)
+            .await
+            .expect("pre")
+            .len(),
+        1
+    );
 
-    update_bandit_reward(&db, payload, "false_decision").await.expect("back-fill");
+    update_bandit_reward(&db, payload, "false_decision")
+        .await
+        .expect("back-fill");
 
     assert!(
-        list_unrewarded_bandit_rows(&db, 100).await.expect("post").is_empty(),
+        list_unrewarded_bandit_rows(&db, 100)
+            .await
+            .expect("post")
+            .is_empty(),
         "a back-filled row is no longer un-rewarded"
     );
     // And the reward actually landed on the stored row.
     let all = list_bandit_rows(&db, 100).await.expect("all");
     let v: serde_json::Value = serde_json::from_str(&all[0]).expect("json");
-    assert_eq!(v["reward"].as_str(), Some("false_decision"), "reward persisted");
+    assert_eq!(
+        v["reward"].as_str(),
+        Some("false_decision"),
+        "reward persisted"
+    );
 }
 
 #[tokio::test]
@@ -151,7 +188,10 @@ async fn back_filling_an_absent_row_is_an_error_not_a_silent_noop() {
     let db = open_with_schema().await;
     let never_logged = r#"{"session_id":"ghost","timestamp_ms":9,"action":"allow","propensity":1.0,"reward":null}"#;
     let res = update_bandit_reward(&db, never_logged, "verified_clean").await;
-    assert!(res.is_err(), "back-filling a row that was never logged must error");
+    assert!(
+        res.is_err(),
+        "back-filling a row that was never logged must error"
+    );
 }
 
 #[tokio::test]
@@ -160,15 +200,18 @@ async fn the_per_session_unrewarded_list_is_the_join_key() {
     // lister must return only this session's un-rewarded rows — never another
     // session's, never an already-graded row.
     let db = open_with_schema().await;
-    let mine_pending =
-        r#"{"session_id":"sess_mine","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":null}"#;
-    let mine_graded =
-        r#"{"session_id":"sess_mine","timestamp_ms":2,"action":"ask","propensity":1.0,"reward":"verified_clean"}"#;
-    let other_pending =
-        r#"{"session_id":"sess_other","timestamp_ms":3,"action":"block","propensity":1.0,"reward":null}"#;
-    append_bandit_row(&db, mine_pending).await.expect("append mine pending");
-    append_bandit_row(&db, mine_graded).await.expect("append mine graded");
-    append_bandit_row(&db, other_pending).await.expect("append other pending");
+    let mine_pending = r#"{"session_id":"sess_mine","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":null}"#;
+    let mine_graded = r#"{"session_id":"sess_mine","timestamp_ms":2,"action":"ask","propensity":1.0,"reward":"verified_clean"}"#;
+    let other_pending = r#"{"session_id":"sess_other","timestamp_ms":3,"action":"block","propensity":1.0,"reward":null}"#;
+    append_bandit_row(&db, mine_pending)
+        .await
+        .expect("append mine pending");
+    append_bandit_row(&db, mine_graded)
+        .await
+        .expect("append mine graded");
+    append_bandit_row(&db, other_pending)
+        .await
+        .expect("append other pending");
 
     let mine = list_unrewarded_bandit_rows_for_session(&db, "sess_mine", 100)
         .await
@@ -182,5 +225,9 @@ async fn the_per_session_unrewarded_list_is_the_join_key() {
     let other = list_unrewarded_bandit_rows_for_session(&db, "sess_other", 100)
         .await
         .expect("list other");
-    assert_eq!(other.len(), 1, "the other session sees only its own pending row");
+    assert_eq!(
+        other.len(),
+        1,
+        "the other session sees only its own pending row"
+    );
 }

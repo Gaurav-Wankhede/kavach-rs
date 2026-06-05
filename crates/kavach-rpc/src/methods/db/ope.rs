@@ -90,10 +90,15 @@ pub async fn ope_evaluate(
         Err(e) => return Ok(load_failed(e.to_string())),
     };
 
-    let samples: Vec<LoggedSample> = raw.iter().filter_map(|json| sample_from_row(json)).collect();
+    let samples: Vec<LoggedSample> = raw
+        .iter()
+        .filter_map(|json| sample_from_row(json))
+        .collect();
 
     let policy = FixedPolicy::new(params.allow, params.ask, params.block);
-    let model = MeanRewardModel { mean: mean_reward(&samples) };
+    let model = MeanRewardModel {
+        mean: mean_reward(&samples),
+    };
 
     let estimate = kavach_ope::doubly_robust::estimate(&samples, &policy, &model);
     let trust = kavach_ope::trust::assess(&samples, &policy);
@@ -147,7 +152,9 @@ fn sample_from_row(json: &str) -> Option<LoggedSample> {
     // None-reward rows are excluded — only a back-filled reward is usable signal.
     let reward = reward_scalar(value.get("reward")?.as_str()?)?;
     let context = context_features(value.get("context"));
-    Some(LoggedSample::with_context(action, propensity, reward, context))
+    Some(LoggedSample::with_context(
+        action, propensity, reward, context,
+    ))
 }
 
 /// Project the `BanditContext` object into the numeric feature vector the Direct
@@ -155,8 +162,14 @@ fn sample_from_row(json: &str) -> Option<LoggedSample> {
 /// label is ordinal-encoded (low=0, medium=1, high=2, unknown=0).
 fn context_features(ctx: Option<&serde_json::Value>) -> Vec<f64> {
     let Some(c) = ctx else { return Vec::new() };
-    let diff_bytes = c.get("diff_bytes").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
-    let prior = c.get("prior_fire_count").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+    let diff_bytes = c
+        .get("diff_bytes")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(0.0);
+    let prior = c
+        .get("prior_fire_count")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(0.0);
     let risk = c
         .get("intent_risk")
         .and_then(serde_json::Value::as_str)

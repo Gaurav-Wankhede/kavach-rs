@@ -65,7 +65,10 @@ impl Vendor {
         if let Some(v) = explicit.and_then(Self::from_tag) {
             return v;
         }
-        if let Some(v) = std::env::var(VENDOR_ENV).ok().and_then(|t| Self::from_tag(&t)) {
+        if let Some(v) = std::env::var(VENDOR_ENV)
+            .ok()
+            .and_then(|t| Self::from_tag(&t))
+        {
             return v;
         }
         Self::detect(raw_payload)
@@ -111,7 +114,10 @@ impl Vendor {
     /// event is known independently (a gate may emit a bare verdict).
     #[must_use]
     pub fn render(self, resp: &HookResponse) -> String {
-        let event = resp.hook_specific_output.as_ref().map_or("", |h| h.hook_event_name.as_str());
+        let event = resp
+            .hook_specific_output
+            .as_ref()
+            .map_or("", |h| h.hook_event_name.as_str());
         self.render_for(resp, event)
     }
 

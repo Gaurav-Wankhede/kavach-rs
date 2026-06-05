@@ -64,7 +64,10 @@ impl RiskConfig {
     /// net-positive pessimistic estimate.
     #[must_use]
     pub const fn conservative() -> Self {
-        Self { z: 1.96, confidence_floor: 0.0 }
+        Self {
+            z: 1.96,
+            confidence_floor: 0.0,
+        }
     }
 }
 

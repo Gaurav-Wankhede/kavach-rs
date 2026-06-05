@@ -33,7 +33,10 @@ pub(crate) fn canary_armed() -> bool {
 
 /// Parse a flag value as a boolean — only an explicit truthy arms the canary.
 fn is_truthy(v: &str) -> bool {
-    matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
+    matches!(
+        v.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "on"
+    )
 }
 
 /// Record a shadow decision: what the controller WOULD choose vs the rule's

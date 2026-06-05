@@ -11,7 +11,12 @@ mod tests;
 /// stdin in the resolved harness's NATIVE dialect (Claude Code / Cursor / Codex).
 /// `kavach gates <name> --verify "prompt"` — dry-run a gate with inline prompt.
 /// Without flags, prints gate info.
-pub(super) fn run(gate_name: &str, hook: bool, verify: Option<String>, vendor: Option<&str>) -> i32 {
+pub(super) fn run(
+    gate_name: &str,
+    hook: bool,
+    verify: Option<String>,
+    vendor: Option<&str>,
+) -> i32 {
     if let Some(prompt) = verify {
         return run_verify(gate_name, &prompt);
     }

@@ -1,0 +1,28 @@
+# cargo-nextest configuration — scaffolded by the kavach harness.
+# Each #[test] runs in its own process; this tunes parallelism, hung-test
+# termination, and serial isolation for env-mutating tests.
+# Docs: https://nexte.st/docs/configuration/reference/
+
+[profile.default]
+test-threads = "num-cpus"
+retries = 0
+slow-timeout = { period = "30s", terminate-after = 2 }
+final-status-level = "slow"
+
+[profile.ci]
+inherits = "default"
+fail-fast = false
+retries = 1
+slow-timeout = { period = "60s", terminate-after = 3 }
+
+# Logical mutex for tests mutating process-global env (HOME, *_HOST, etc).
+[test-groups]
+serial-env = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(/env|setenv|home_dir|with_var/)'
+test-group = 'serial-env'
+
+[[profile.ci.overrides]]
+filter = 'test(/env|setenv|home_dir|with_var/)'
+test-group = 'serial-env'
