@@ -10,7 +10,10 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_surreal::{append_bandit_row, apply_schema, list_bandit_rows, open_memory};
+use kavach_surreal::{
+    append_bandit_row, apply_schema, list_bandit_rows, list_unrewarded_bandit_rows, open_memory,
+    update_bandit_reward,
+};
 
 /// Open an in-memory db with the production schema applied — the daemon path
 /// (`open_default_daemon`) runs `apply_schema`, so a read of a never-written
@@ -98,8 +101,55 @@ async fn list_bandit_rows_reads_back_appended_payloads() {
 #[tokio::test]
 async fn list_bandit_rows_is_empty_on_a_fresh_db() {
     // With the schema applied, `bandit_log` is a DEFINED but empty table — the
-    // read must return [], not SurrealDB 3.0's "table does not exist" error.
+    // read must return [], not `SurrealDB` 3.0's "table does not exist" error.
     let db = open_with_schema().await;
     let rows = list_bandit_rows(&db, 100).await.expect("list");
     assert!(rows.is_empty(), "no rows logged yet");
+}
+
+#[tokio::test]
+async fn unrewarded_list_excludes_rows_whose_reward_is_set() {
+    // P3a: only rows still awaiting a 3-witness reward are back-fill candidates.
+    let db = open_with_schema().await;
+    let pending = r#"{"session_id":"p","timestamp_ms":1,"action":"allow","propensity":1.0,"reward":null}"#;
+    let graded = r#"{"session_id":"g","timestamp_ms":2,"action":"block","propensity":1.0,"reward":"needed_ask"}"#;
+    append_bandit_row(&db, pending).await.expect("append pending");
+    append_bandit_row(&db, graded).await.expect("append graded");
+
+    let unrewarded = list_unrewarded_bandit_rows(&db, 100).await.expect("list unrewarded");
+    assert_eq!(unrewarded.len(), 1, "only the null-reward row is a candidate");
+    let v: serde_json::Value = serde_json::from_str(&unrewarded[0]).expect("json");
+    assert_eq!(v["session_id"].as_str(), Some("p"));
+    assert!(v["reward"].is_null(), "candidate still awaits its reward");
+}
+
+#[tokio::test]
+async fn back_filling_a_reward_removes_the_row_from_the_unrewarded_list() {
+    // P3a write path: update_bandit_reward sets the reward by re-deriving the
+    // content-addressed key from the SAME payload — after which the row is no
+    // longer a back-fill candidate, and the reward reads back on the row.
+    let db = open_with_schema().await;
+    let payload = r#"{"session_id":"x","timestamp_ms":7,"action":"block","propensity":1.0,"reward":null}"#;
+    append_bandit_row(&db, payload).await.expect("append");
+    assert_eq!(list_unrewarded_bandit_rows(&db, 100).await.expect("pre").len(), 1);
+
+    update_bandit_reward(&db, payload, "false_decision").await.expect("back-fill");
+
+    assert!(
+        list_unrewarded_bandit_rows(&db, 100).await.expect("post").is_empty(),
+        "a back-filled row is no longer un-rewarded"
+    );
+    // And the reward actually landed on the stored row.
+    let all = list_bandit_rows(&db, 100).await.expect("all");
+    let v: serde_json::Value = serde_json::from_str(&all[0]).expect("json");
+    assert_eq!(v["reward"].as_str(), Some("false_decision"), "reward persisted");
+}
+
+#[tokio::test]
+async fn back_filling_an_absent_row_is_an_error_not_a_silent_noop() {
+    // Fail-closed: an UPDATE matching no row must surface, never report success.
+    let db = open_with_schema().await;
+    let never_logged = r#"{"session_id":"ghost","timestamp_ms":9,"action":"allow","propensity":1.0,"reward":null}"#;
+    let res = update_bandit_reward(&db, never_logged, "verified_clean").await;
+    assert!(res.is_err(), "back-filling a row that was never logged must error");
 }

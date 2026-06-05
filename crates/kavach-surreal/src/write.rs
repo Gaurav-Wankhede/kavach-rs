@@ -489,6 +489,76 @@ pub async fn list_bandit_rows(db: &Surreal<Db>, limit: u32) -> Result<Vec<String
         .collect()
 }
 
+/// List logged decisions whose reward has NOT been back-filled yet (P3a input).
+///
+/// A row is un-rewarded when its stored `payload.reward` is `null` — the emitter
+/// logs `(x, a, p)` and defers `r` until the 3-witness verify resolves. The
+/// back-fill writer fetches these as their `BanditRow` JSON, joins each to its
+/// later verify outcome, and calls [`update_bandit_reward`] (which re-derives
+/// the content-addressed key from the same payload) with the
+/// `kavach_ope::label`-derived reward string.
+///
+/// # Errors
+/// Returns an error if the `SELECT` fails or a stored payload is malformed.
+pub async fn list_unrewarded_bandit_rows(db: &Surreal<Db>, limit: u32) -> Result<Vec<String>> {
+    // Filter "un-rewarded" in Rust, not SurrealQL: a pending row stores `reward`
+    // as JSON null, and SurrealDB 3.0's NULL-vs-NONE distinction makes a server
+    // `WHERE payload.reward IS NONE` brittle (NULL is present-but-empty, not
+    // NONE). Reading the reward back as plain JSON and testing `is_null()` is
+    // version-proof. `limit` is applied AFTER the filter so it bounds candidates.
+    let query = "SELECT payload, created_at FROM bandit_log ORDER BY created_at DESC";
+    let mut response = db.query(query).await?;
+    let rows: Vec<BanditPayloadRow> = response.take(0)?;
+    rows.into_iter()
+        .map(|r| {
+            let json = r.payload.into_json_value();
+            serde_json::to_string(&json).map_err(crate::error::Error::Json)
+        })
+        // A malformed payload (Err) is kept so it surfaces, not silently hidden.
+        .filter(|res| res.as_ref().map_or(true, |s| reward_is_absent(s)))
+        .take(limit as usize)
+        .collect()
+}
+
+/// True when the serialized `BanditRow` JSON carries no realized reward yet —
+/// `reward` is absent or JSON null. A parse failure counts as "still pending" so
+/// a malformed row is surfaced to the caller, never silently graded.
+fn reward_is_absent(payload: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(payload)
+        .ok()
+        .and_then(|v| v.get("reward").cloned())
+        .is_none_or(|r| r.is_null())
+}
+
+/// Back-fill the realized reward on one logged decision (P3a write).
+///
+/// Re-derives the content-addressed key from the ORIGINAL un-rewarded `payload`
+/// (BLAKE3, exactly as `append_bandit_row` did), so the caller passes the same
+/// JSON it read from [`list_unrewarded_bandit_rows`] — no fragile record-id
+/// parsing. `reward` is the `kavach_ope::label`-derived enum string
+/// (`verified_clean` / `needed_ask` / `false_decision`) the OPE estimators read.
+/// Idempotent: a re-run with the same payload + reward writes the same scalar.
+///
+/// # Errors
+/// Returns an error if the `UPDATE` fails or no row matches the derived key.
+pub async fn update_bandit_reward(db: &Surreal<Db>, payload: &str, reward: &str) -> Result<()> {
+    let digest = blake3::hash(payload.as_bytes()).to_hex();
+    let row_key = digest.as_str().get(..32).unwrap_or(digest.as_str());
+    let query = "UPDATE type::record('bandit_log', $key) SET payload.reward = $reward RETURN AFTER";
+    let mut response = db
+        .query(query)
+        .bind(("key", row_key.to_owned()))
+        .bind(("reward", reward.to_owned()))
+        .await?;
+    let updated: Vec<BanditPayloadRow> = response.take(0)?;
+    if updated.is_empty() {
+        return Err(crate::error::Error::RecordNotFound(format!(
+            "bandit_log reward back-fill: no row for key {row_key}"
+        )));
+    }
+    Ok(())
+}
+
 /// Tables that carry an `entry_status` field and are valid targets for
 /// `update_status`. Compile-time list — extending it requires a code change,
 /// preventing typo-driven silent no-ops.
