@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "_comment": "Kavach native hooks for Cursor. Install to ~/.cursor/hooks.json (global) or <project>/.cursor/hooks.json. Every command is the SAME kavach binary with --vendor cursor; kavach lowers Cursor's payload into its canonical pivot, runs the gate, and renders Cursor's native {continue,permission,userMessage,agentMessage} output. SOURCE: https://cursor.com/docs/hooks",
+  "hooks": {
+    "beforeSubmitPrompt": [
+      { "command": "kavach gates intent --hook --vendor cursor" }
+    ],
+    "beforeShellExecution": [
+      { "command": "kavach gates pre-tool --hook --vendor cursor", "failClosed": true }
+    ],
+    "beforeMCPExecution": [
+      { "command": "kavach gates pre-tool --hook --vendor cursor", "failClosed": true }
+    ],
+    "beforeReadFile": [
+      { "command": "kavach gates pre-tool --hook --vendor cursor" }
+    ],
+    "afterFileEdit": [
+      { "command": "kavach gates post-write --hook --vendor cursor" }
+    ],
+    "stop": [
+      { "command": "kavach gates stop --hook --vendor cursor" }
+    ]
+  }
+}

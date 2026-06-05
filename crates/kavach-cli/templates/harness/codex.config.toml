@@ -1,0 +1,50 @@
+# Kavach native hooks for OpenAI Codex CLI.
+# Append to ~/.codex/config.toml (user) or <project>/.codex/config.toml (project,
+# loads only when the .codex layer is trusted). Enable hooks first:
+#   [features]
+#   hooks = true
+#
+# Codex mirrors Claude Code's hook contract (same event names, stdin JSON), so the
+# SAME kavach binary serves it with --vendor codex. Codex blocks a turn when the
+# hook exits with code 2 — kavach's native edge returns exactly that on a gate
+# block. SOURCE: https://developers.openai.com/codex/hooks
+
+[[hooks.UserPromptSubmit]]
+matcher = "*"
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = "kavach gates intent --hook --vendor codex"
+timeout = 30
+statusMessage = "kavach: intent gate"
+
+[[hooks.PreToolUse]]
+matcher = "*"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "kavach gates pre-tool --hook --vendor codex"
+timeout = 30
+statusMessage = "kavach: pre-tool gate"
+
+[[hooks.PostToolUse]]
+matcher = "*"
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = "kavach gates post-tool --hook --vendor codex"
+timeout = 30
+statusMessage = "kavach: post-tool gate"
+
+[[hooks.Stop]]
+matcher = "*"
+[[hooks.Stop.hooks]]
+type = "command"
+command = "kavach gates stop --hook --vendor codex"
+timeout = 30
+statusMessage = "kavach: stop gate"
+
+[[hooks.SessionStart]]
+matcher = "*"
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "kavach gates session-start --hook --vendor codex"
+timeout = 30
+statusMessage = "kavach: session-start"

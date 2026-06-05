@@ -1,0 +1,22 @@
+{
+  "_comment": "Kavach native hooks for Claude Code. Merge into ~/.claude/settings.json (user) or <project>/.claude/settings.json. No --vendor needed: a Claude Code payload auto-detects as the canonical dialect. SOURCE: https://code.claude.com/docs/en/hooks",
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "kavach gates intent --hook" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Write|Edit|NotebookEdit", "hooks": [ { "type": "command", "command": "kavach gates pre-write --hook" } ] },
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "kavach gates pre-tool --hook" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit|NotebookEdit", "hooks": [ { "type": "command", "command": "kavach gates post-write --hook" } ] },
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "kavach gates post-tool --hook" } ] }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "kavach gates session-start --hook" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "kavach gates stop --hook" } ] }
+    ]
+  }
+}
