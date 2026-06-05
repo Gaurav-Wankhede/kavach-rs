@@ -227,6 +227,28 @@ pub(crate) enum Commands {
     /// MCP (Model Context Protocol) stdio server bridging Claude Code to kavach-db.
     /// Register with: `claude mcp add kavach -- kavach mcp`.
     Mcp,
+    /// Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …)
+    /// via `cargo binstall` — ships *with* kavach, no per-machine setup.
+    /// SOURCE: arch.decision.toolbelt-binstall-subcommand.
+    Toolbelt {
+        #[command(subcommand)]
+        action: ToolbeltAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum ToolbeltAction {
+    /// Fetch + install the toolbelt's prebuilt binaries into the cargo bin dir.
+    Install {
+        /// Pass `--no-confirm` to `cargo binstall` (non-interactive).
+        #[arg(long)]
+        yes: bool,
+        /// Restrict to a comma-separated subset of bin names (e.g. `rg,fd,bat`).
+        #[arg(long)]
+        only: Option<String>,
+    },
+    /// List every toolbelt tool with its provider crate + upstream license.
+    List,
 }
 
 #[derive(Subcommand)]

@@ -158,6 +158,18 @@ attention-needing notifications (CC 2.1.141), and `ultracode` intent recognition
 
 The `pre-write`/`post-write` gates carry the hard enforcement (skills, research, anti-pattern scan) on file mutations; `pre-tool`/`post-tool` cover every other tool (Bash blocklist, context injection, research tracking).
 
+### Install the CLI toolbelt
+
+Kavach's `pre-tool` gate steers shell commands toward faster Rust equivalents (`grep`→`rg`, `find`→`fd`, `cat`→`bat`, `sed`→`sd`, …). One command provisions the whole set so those tools are present on any machine — no per-tool install:
+
+```bash
+kavach toolbelt install --yes      # fetch all 21 tools via cargo binstall (prebuilt binaries)
+kavach toolbelt list               # show each tool, its provider crate, and upstream license
+kavach toolbelt install --only rg,fd,bat   # install just a subset
+```
+
+It shells out to [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall), pulling each tool's **prebuilt** release binary (seconds, not a source compile) into your cargo bin directory — already on `PATH` for a `cargo install kavach` user. No binaries are redistributed inside Kavach; `kavach toolbelt list` surfaces every tool's crate + license for provenance.
+
 ### Cursor & Codex (same DB, native edges)
 
 One Kavach binary and one database serve **all three** harnesses — run Cursor for one

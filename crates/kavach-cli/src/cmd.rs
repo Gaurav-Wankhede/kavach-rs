@@ -27,6 +27,7 @@ mod status;
 mod tailwind_plus;
 mod tasks;
 pub(crate) mod team;
+mod toolbelt;
 mod todos;
 pub(crate) mod verify;
 pub(crate) mod verify_frontend;
@@ -102,5 +103,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Goal(args) => goal::run(args),
         Commands::Team(args) => team::run(args),
         Commands::Mcp => mcp::run(),
+        Commands::Toolbelt { action } => toolbelt::run(action),
     }
 }
