@@ -116,18 +116,34 @@ pub fn cancel_run(entry_key: &str) {
         })
     };
     let Some(pid) = pid else { return };
-    // SIGTERM via rustix (safe wrapper, no FFI/unsafe — upholds the
-    // workspace forbid(unsafe_code) posture). Best-effort: a dead pid
-    // just means the child already exited.
-    if let Ok(p) = rustix::process::Pid::from_raw(pid.cast_signed()).ok_or(()) {
-        rustix::process::kill_process(p, rustix::process::Signal::TERM).ok();
-    }
+    // Best-effort terminate: a dead pid just means the child already exited.
+    terminate_pid(pid);
     if let Some(h) = RUNS.write().get_mut(entry_key) {
         h.status = RunStatus::Cancelled;
         h.finished_at = Some(chrono::Utc::now());
         h.child_pid = None;
         h.events.push("[cancelled by user]".to_owned());
     }
+}
+
+/// Best-effort terminate a child process by OS pid, cross-platform. No `unsafe`
+/// (upholds the workspace `forbid(unsafe_code)`): on Unix, rustix's safe
+/// `kill_process` wrapper sends SIGTERM; on Windows — which has no POSIX signals,
+/// and where rustix's `process` kill API is `cfg(unix)`-only — it shells out to
+/// the built-in `taskkill /F`. A failure just means the child already exited.
+#[cfg(unix)]
+fn terminate_pid(pid: u32) {
+    if let Ok(p) = rustix::process::Pid::from_raw(pid.cast_signed()).ok_or(()) {
+        rustix::process::kill_process(p, rustix::process::Signal::TERM).ok();
+    }
+}
+
+#[cfg(windows)]
+fn terminate_pid(pid: u32) {
+    std::process::Command::new("taskkill")
+        .args(["/F", "/PID", &pid.to_string()])
+        .status()
+        .ok();
 }
 
 pub static SELECTED_PROJECT: GlobalSignal<Option<String>> = Signal::global(|| None);
