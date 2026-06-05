@@ -12,6 +12,16 @@ pub(super) enum Decision {
 }
 
 impl Decision {
+    /// The bandit action this verdict represents (Layer-A logging).
+    pub(super) const fn action(&self) -> kavach_patterns::bandit_log::GateAction {
+        use kavach_patterns::bandit_log::GateAction;
+        match self {
+            Self::Deny(_) => GateAction::Block,
+            Self::Ask(_) => GateAction::Ask,
+            Self::Allow(_) => GateAction::Allow,
+        }
+    }
+
     /// Fire the matching hook exit for this verdict.
     pub(super) fn emit(self) {
         match self {
@@ -19,5 +29,21 @@ impl Decision {
             Self::Ask(reason) => drop(kavach_hook::exit_pre_tool_ask(&reason)),
             Self::Allow(ctx) => drop(kavach_hook::exit_pre_tool_allow(ctx.as_deref())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Decision;
+    use kavach_patterns::bandit_log::GateAction;
+
+    #[test]
+    fn action_maps_each_verdict_to_its_bandit_action() {
+        // Security invariant: a Deny must log as Block, never as Allow — the
+        // bandit reward signal would otherwise mis-learn a hard refuse as a pass.
+        assert_eq!(Decision::Deny("x".into()).action(), GateAction::Block);
+        assert_eq!(Decision::Ask("x".into()).action(), GateAction::Ask);
+        assert_eq!(Decision::Allow(None).action(), GateAction::Allow);
+        assert_eq!(Decision::Allow(Some("ctx".into())).action(), GateAction::Allow);
     }
 }
