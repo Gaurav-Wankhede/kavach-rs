@@ -121,6 +121,11 @@ pub fn read_hook_input_native(explicit: Option<&str>) -> Result<(Vendor, HookInp
     }
     let raw = buf.join("\n");
     let vendor = Vendor::resolve(explicit, &raw);
+    // Arm the native output sink BEFORE the gate runs, so every self-emitted
+    // verdict (allow/block/ask) is rendered in this harness's dialect. Without
+    // this, a Cursor gate's allow emitted Claude Code's body and Cursor read its
+    // absent `continue`/`permission` as null — the original wedge.
+    set_output_vendor(vendor);
     match vendor.lower(&raw) {
         Ok(input) => Ok((vendor, input)),
         Err(e) => Err((vendor, e)),
@@ -178,8 +183,45 @@ pub(crate) fn write_json<T: Serialize>(val: &T) {
     }
 }
 
+std::thread_local! {
+    /// The harness whose NATIVE dialect this thread's gate output must speak.
+    /// The edge (`read_hook_input_native`) sets it once per invocation; every
+    /// gate that self-emits via [`output`] is then rendered in that dialect
+    /// WITHOUT the engine or any gate knowing a non-Claude-Code harness exists.
+    /// Defaults to [`Vendor::ClaudeCode`] — the canonical, unset behavior.
+    static OUTPUT_VENDOR: std::cell::Cell<Vendor> = const { std::cell::Cell::new(Vendor::ClaudeCode) };
+}
+
+/// Set the native dialect for all subsequent gate output on THIS thread.
+///
+/// Called by the native edge after vendor resolution so a gate's self-emitted
+/// verdict (allow/block/ask) is rendered in the caller's contract — Cursor's
+/// `{continue,permission}`, Codex's CC-compatible body — instead of always
+/// Claude Code's. Keeps the engine/gates vendor-blind: they call [`output`]
+/// exactly as before.
+pub fn set_output_vendor(vendor: Vendor) {
+    OUTPUT_VENDOR.with(|v| v.set(vendor));
+}
+
+/// The native dialect currently selected for this thread's gate output.
+#[must_use]
+pub fn output_vendor() -> Vendor {
+    OUTPUT_VENDOR.with(std::cell::Cell::get)
+}
+
+#[expect(
+    clippy::print_stderr,
+    reason = "hook last-ditch diagnostic path; no tracing subscriber in hook binary, broken-pipe surfaces via SIGPIPE (RFC 1869)"
+)]
 pub fn output(resp: &HookResponse) {
-    write_json(resp);
+    // Render the verdict in the thread's resolved native dialect. For Claude
+    // Code (the default) this is byte-identical to `write_json(resp)`; for
+    // Cursor/Codex it translates the canonical body into their contract — the
+    // single chokepoint that makes EVERY gate's happy path natively correct.
+    let json = output_vendor().render(resp);
+    if writeln!(io::stdout().lock(), "{json}").is_err() {
+        eprintln!("kavach: stdout write failed");
+    }
 }
 pub fn output_error(msg: &str) {
     output(&HookResponse::new_block(&format!("error: {msg}")));

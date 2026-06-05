@@ -111,3 +111,27 @@ fn claude_code_render_is_the_canonical_json_unchanged() {
     let json = Vendor::ClaudeCode.render(&HookResponse::new_block("x"));
     assert!(json.contains(r#""decision":"block""#), "CC keeps canonical shape: {json}");
 }
+
+// --- thread-local output sink (the happy-path native translation) ---
+
+#[test]
+fn output_sink_defaults_to_claude_code_then_tracks_set_vendor() {
+    // The sink is what makes a gate's SELF-EMITTED verdict native: the edge arms
+    // it once, every `output(&resp)` then renders in that dialect. Proven here on
+    // the selector; the render mapping itself is covered above.
+    assert_eq!(crate::output_vendor(), Vendor::ClaudeCode, "unset => canonical default");
+    crate::set_output_vendor(Vendor::Cursor);
+    assert_eq!(crate::output_vendor(), Vendor::Cursor);
+    // Restore so we don't leak the dialect into sibling tests on this thread.
+    crate::set_output_vendor(Vendor::ClaudeCode);
+}
+
+#[test]
+fn cursor_armed_sink_never_emits_a_top_level_null_pair() {
+    // The original Cursor wedge: an allow rendered in CC's shape, so Cursor read
+    // its absent `continue`/`permission` as null and `invalid type: null` blocked
+    // the IDE. With the sink armed, the rendered body carries real booleans.
+    let json = Vendor::Cursor.render(&HookResponse::new_approve("ok"));
+    assert!(!json.contains(r#""continue":null"#), "no null continue: {json}");
+    assert!(!json.contains(r#""permission":null"#), "no null permission: {json}");
+}

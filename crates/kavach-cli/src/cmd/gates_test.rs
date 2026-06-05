@@ -3,6 +3,12 @@
 //! `run` reads real stdin, so the unit-testable contract is `fail_native`: the
 //! per-vendor exit code on an unreadable payload. Cursor must fail OPEN (exit 0,
 //! never wedge the IDE); Codex and Claude Code fail CLOSED (exit 2).
+//!
+//! CONTRACT (also proven live in the deploy verify): on `run_gate` returning
+//! `Ok(())` the dispatcher emits NOTHING — the gate already wrote its own native
+//! stdout (e.g. session-start's mistake ledger). Emitting a second object made
+//! Claude Code drop the gate's rich output (the load-time context-loss bug).
+//! `output_native` therefore fires only on the `Err` (gate-could-not-run) path.
 
 use super::fail_native;
 use kavach_hook::Vendor;

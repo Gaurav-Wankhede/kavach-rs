@@ -36,14 +36,22 @@ pub(super) fn run(gate_name: &str, hook: bool, verify: Option<String>, vendor: O
         Err((vendor, msg)) => return fail_native(vendor, gate_name, &msg),
     };
 
-    // The engine is vendor-blind: it sees only the canonical input and returns a
-    // canonical verdict. The edge renders that verdict in the harness's native
-    // output contract and returns its native block exit code (Codex = exit 2).
-    let verdict = match kavach_engine::run_gate(gate_name, &input) {
-        Ok(()) => HookResponse::new_approve("ok"),
-        Err(e) => HookResponse::new_block(&format!("kavach gate '{gate_name}': {e}")),
-    };
-    kavach_hook::output_native(resolved, &verdict)
+    // The engine is vendor-blind: it sees only the canonical input.
+    //
+    // CONTRACT (gate_runner.rs): every gate handler WRITES ITS OWN native stdout
+    // via kavach_hook helpers and returns `Ok(())` — including self-emitted blocks
+    // (pre-write deny) AND context injection (session-start's mistake ledger).
+    // `Err` means the gate could NOT run (unknown name / handler failure), so it
+    // emitted nothing.
+    //
+    // Therefore the dispatcher must stay SILENT on `Ok` — emitting a second JSON
+    // object made Claude Code drop the gate's rich first object, the load-time
+    // context-loss bug (mistakes/instructions not loading). It only owns output
+    // on `Err`, where it must fail-closed in the harness's native contract.
+    match kavach_engine::run_gate(gate_name, &input) {
+        Ok(()) => 0,
+        Err(e) => fail_native(resolved, gate_name, &e.to_string()),
+    }
 }
 
 /// Emit a vendor-native FAILURE for an unreadable payload and return its exit code.
