@@ -144,6 +144,12 @@ jobs:
             target: aarch64-apple-darwin
             ext: dmg
             asset: Kavach-macos-arm64.dmg
+          # Intel Macs get the GUI too — macos-latest cross-builds x86_64 natively
+          # via the toolchain `target`; the bundle steps are already arch-driven.
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            ext: dmg
+            asset: Kavach-macos-amd64.dmg
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             pkg: deb
@@ -227,10 +233,13 @@ jobs:
         run: |
           set -euo pipefail
           APP="target/dx/kavach-app/bundle/macos/macos/KavachApp.app"
-          ( cd crates/kavach-app && dx bundle --release --platform desktop --package-types macos )
+          # --target pins the GUI build to the matrix arch. Without it dx builds
+          # for the runner's host arch (aarch64 on macos-latest), so the Intel leg
+          # would silently emit an ARM app inside Kavach-macos-amd64.dmg.
+          ( cd crates/kavach-app && dx bundle --release --platform desktop --target ${{ matrix.target }} --package-types macos )
           codesign --deep --force --sign - "$APP"
           codesign --verify --verbose=2 "$APP"
-          ( cd crates/kavach-app && dx bundle --release --platform desktop --package-types dmg )
+          ( cd crates/kavach-app && dx bundle --release --platform desktop --target ${{ matrix.target }} --package-types dmg )
 
       - name: Bundle GUI + embedded CLI (Linux / Windows)
         if: runner.os != 'macOS'
