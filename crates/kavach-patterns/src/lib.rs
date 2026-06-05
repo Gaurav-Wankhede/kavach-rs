@@ -64,6 +64,7 @@ pub mod dsa_guard;
 pub mod eval_replay;
 pub mod finops_guard;
 pub mod irreversible_guard;
+pub mod bandit_log;
 pub mod micro_file_guard;
 pub mod reflect;
 pub mod reward;
