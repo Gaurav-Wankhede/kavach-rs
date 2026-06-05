@@ -74,6 +74,49 @@ pub fn estimate<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Estima
     Estimate { value: mean, std_error, n }
 }
 
+/// Self-normalized IPS (SNIPS) — divide the weighted reward sum by the weight
+/// sum instead of by `n`.
+///
+/// Plain IPS is unbiased but its variance explodes when importance weights are
+/// large or don't average to 1 (common when the logging policy is near-
+/// deterministic — exactly the rule-gate case). SNIPS trades a small bias for a
+/// large variance reduction by normalizing: `sum(w*r) / sum(w)`. It is the more
+/// reliable point estimate in practice; the CI here is the delta-method SE.
+#[must_use]
+pub fn estimate_self_normalized<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Estimate {
+    let n = samples.len();
+    if n == 0 {
+        return Estimate { value: 0.0, std_error: f64::INFINITY, n: 0 };
+    }
+    let weights: Vec<f64> = samples.iter().map(|s| policy.prob(s.action) / s.propensity).collect();
+    let weight_sum: f64 = weights.iter().sum();
+    if weight_sum <= 0.0 {
+        // No target-policy support over the logged actions -> value undefined.
+        return Estimate { value: 0.0, std_error: f64::INFINITY, n };
+    }
+    let weighted_reward: f64 =
+        weights.iter().zip(samples).map(|(w, s)| w * s.reward).sum();
+    let value = weighted_reward / weight_sum;
+
+    // Delta-method SE: var of (w*(r - value)) / weight_sum, scaled by n. With a
+    // single sample there is no spread information, so SE is infinite.
+    let std_error = if n == 1 {
+        f64::INFINITY
+    } else {
+        let n_f = f64::from(u32::try_from(n).unwrap_or(u32::MAX));
+        let residual_var: f64 = weights
+            .iter()
+            .zip(samples)
+            .map(|(w, s)| (w * (s.reward - value)).powi(2))
+            .sum::<f64>()
+            / (n_f - 1.0);
+        let mean_weight = weight_sum / n_f;
+        (residual_var / n_f).sqrt() / mean_weight
+    };
+
+    Estimate { value, std_error, n }
+}
+
 #[cfg(test)]
 #[path = "ips_test.rs"]
 mod tests;
