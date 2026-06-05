@@ -24,6 +24,11 @@ pub(crate) fn handle(
     session: &mut kavach_session::SessionState,
 ) -> Result<(), EngineError> {
     let command = input.get_string("command");
+
+    // Capture this Bash command to the session trajectory tape (replay/reward
+    // signal). Best-effort: a tape-write error must never block the gate.
+    capture_bash(&session.session_id, command);
+
     let output = input
         .tool_response
         .as_ref()
@@ -74,4 +79,22 @@ pub(crate) fn handle(
 
     drop(kavach_hook::exit_silent());
     Ok(())
+}
+
+/// Append a Bash command to the session trajectory tape. Fire-and-forget:
+/// errors are swallowed because a tape write must never block the gate.
+fn capture_bash(session_id: &str, command: &str) {
+    if session_id.is_empty() || command.is_empty() {
+        return;
+    }
+    let timestamp_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
+    drop(kavach_patterns::eval_replay::capture(
+        session_id,
+        timestamp_ms,
+        kavach_patterns::eval_replay::EventKind::Bash {
+            command: command.to_owned(),
+        },
+    ));
 }

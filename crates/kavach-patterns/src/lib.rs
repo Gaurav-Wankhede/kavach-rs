@@ -65,6 +65,7 @@ pub mod eval_replay;
 pub mod finops_guard;
 pub mod irreversible_guard;
 pub mod micro_file_guard;
+pub mod reward;
 pub mod migration_safety_guard;
 pub mod observability_guard;
 pub mod pii_data_guard;

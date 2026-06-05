@@ -30,6 +30,12 @@ pub fn get_or_create_session_for(session_id: &str) -> SessionState {
     state
 }
 
+/// Resolve the session id from the `KAVACH_SESSION_ID` env (Claude Code sets it
+/// on every hook). Empty if unset — callers guard on emptiness.
+fn env_session_id() -> String {
+    std::env::var("KAVACH_SESSION_ID").unwrap_or_default()
+}
+
 /// Apply `work_dir` / project refresh to a loaded state, or build a fresh one.
 fn materialize(loaded: Option<SessionState>) -> SessionState {
     let wd = std::env::current_dir()
@@ -39,6 +45,13 @@ fn materialize(loaded: Option<SessionState>) -> SessionState {
         let old_wd = state.work_dir.clone();
         wd.clone_into(&mut state.work_dir);
         state.project = detect_project();
+        // A loaded state can predate session_start (or come from a stale INI)
+        // and carry an empty session_id. Backfill from the env so EVERY gate —
+        // not just those running after a save — sees the real id (trajectory
+        // capture, mistake ledger, durable resume all key off it).
+        if state.session_id.is_empty() {
+            state.session_id = env_session_id();
+        }
         if old_wd != wd {
             filter_test_pending_for_project(&mut state, &wd);
         }
@@ -51,7 +64,8 @@ fn materialize(loaded: Option<SessionState>) -> SessionState {
         }
         state
     } else {
-        let state = SessionState::new(&wd);
+        let mut state = SessionState::new(&wd);
+        state.session_id = env_session_id();
         #[expect(clippy::print_stderr, reason = "diagnostic output to audit trail")]
         if let Err(e) = state.save() {
             eprintln!("[session] materialize: initial save failed: {e}");

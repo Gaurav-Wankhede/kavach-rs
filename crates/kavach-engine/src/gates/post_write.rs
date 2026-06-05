@@ -65,6 +65,7 @@ fn record_write(
         &sess.project,
         content,
     );
+    capture_write(&sess.session_id, file_path, content);
     // Bulk-mode conformance: fire-and-forget manifest increment (daemon-down no-ops).
     if let Ok(sweep_id) = std::env::var("KAVACH_BULK_SWEEP_ID")
         && !sweep_id.is_empty()
@@ -74,6 +75,25 @@ fn record_write(
     let turn = sess.turn_count.into();
     super::post_tool_algo_recorder::record(file_path, content, &sess.project, turn);
     super::post_tool_arch_recorder::record(file_path, content, &sess.project, turn);
+}
+
+/// Append a file write to the session trajectory tape (replay/reward signal).
+/// Fire-and-forget: a tape-write error must never block the post-write pipeline.
+fn capture_write(session_id: &str, file_path: &str, content: &str) {
+    if session_id.is_empty() || file_path.is_empty() {
+        return;
+    }
+    let timestamp_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
+    drop(kavach_patterns::eval_replay::capture(
+        session_id,
+        timestamp_ms,
+        kavach_patterns::eval_replay::EventKind::Write {
+            file_path: file_path.to_owned(),
+            content: content.to_owned(),
+        },
+    ));
 }
 
 /// Emit the `[POST_WRITE]` block only when an actionable advisory exists.
