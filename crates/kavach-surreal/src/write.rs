@@ -427,6 +427,37 @@ pub async fn append_event(
     }
 }
 
+/// Append one Layer-A RLVR bandit-log row (harness-rl Wave P2).
+///
+/// `payload` is the serialized `BanditRow` JSON (the `(x, a, p, r)` tuple) -- this
+/// crate stays decoupled from `kavach-patterns`, so the typed row is serialized by
+/// the caller and stored opaquely. Content-addressed by a BLAKE3 digest of the
+/// payload so an identical replayed decision dedups to one row (append-only,
+/// idempotent). Single-writer invariant: only the daemon reaches this.
+///
+/// # Errors
+/// Returns an error if the `bandit_log` create fails.
+pub async fn append_bandit_row(db: &Surreal<Db>, payload: &str) -> Result<RecordId> {
+    let digest = blake3::hash(payload.as_bytes()).to_hex();
+    let row_key = digest.as_str().get(..32).unwrap_or(digest.as_str());
+    let payload_value: serde_json::Value = serde_json::from_str(payload)
+        .unwrap_or_else(|_| serde_json::Value::String(payload.to_owned()));
+    // SurrealDB 3.0 renamed the SurrealQL builtin type::thing() -> type::record()
+    // (parse-errors at runtime otherwise; same migration as parts.rs / projects.rs).
+    let query = "CREATE type::record('bandit_log', $key) SET \
+                 payload = $payload, created_at = time::now() RETURN AFTER";
+    let mut response = db
+        .query(query)
+        .bind(("key", row_key.to_owned()))
+        .bind(("payload", payload_value))
+        .await?;
+    let result: Option<EventRow> = response.take(0)?;
+    match result {
+        Some(e) => Ok(e.id),
+        None => Err(crate::error::Error::RecordNotFound("bandit_log create".into())),
+    }
+}
+
 /// Tables that carry an `entry_status` field and are valid targets for
 /// `update_status`. Compile-time list — extending it requires a code change,
 /// preventing typo-driven silent no-ops.

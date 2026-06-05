@@ -58,3 +58,49 @@ pub async fn event(ctx: &AppState, params: EventParams) -> Result<EventResult, E
         }),
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]
+pub struct BanditRowParams {
+    /// The serialized `kavach_patterns::bandit_log::BanditRow` (RLVR tuple) JSON.
+    /// Stored opaquely so kavach-surreal stays decoupled from the patterns crate.
+    pub payload: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]
+pub struct BanditRowResult {
+    pub success: bool,
+    pub id: Option<String>,
+    pub error: Option<String>,
+}
+
+/// Append a Layer-A bandit-log tuple to the `bandit_log` table.
+///
+/// The tuple is `(context, action, propensity, reward)`. Content-addressed by
+/// BLAKE3 of the payload, so an identical replay dedups instead of
+/// double-counting training signal.
+///
+/// INV-1: the agent never writes the reward directly — only the daemon, via this
+/// single-writer RPC path, persists graded tuples.
+///
+/// # Errors
+/// Returns an RPC `ErrorObjectOwned` only on transport-level failure; a store
+/// error is reported in `BanditRowResult.error` with `success = false`.
+pub async fn bandit_row(
+    ctx: &AppState,
+    params: BanditRowParams,
+) -> Result<BanditRowResult, ErrorObjectOwned> {
+    match kavach_surreal::append_bandit_row(&ctx.db, &params.payload).await {
+        Ok(id) => Ok(BanditRowResult {
+            success: true,
+            id: Some(format!("{id:?}")),
+            error: None,
+        }),
+        Err(e) => Ok(BanditRowResult {
+            success: false,
+            id: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
