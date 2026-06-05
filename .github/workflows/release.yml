@@ -77,6 +77,11 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             asset: kavach-windows-amd64.zip
+          # Windows ARM64 CLI — native on windows-11-arm (GA). The raw CLI has no
+          # WiX/MSI dependency, so unlike the GUI installer it builds cleanly here.
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            asset: kavach-windows-arm64.zip
     steps:
       - uses: actions/checkout@v4
 
@@ -155,11 +160,27 @@ jobs:
             pkg: deb
             ext: deb
             asset: Kavach-linux-amd64.deb
+          # Linux ARM64 GUI — native on GitHub's ubuntu-24.04-arm (GA Aug 2025).
+          # dx bundle --package-types deb works natively on aarch64; no blockers.
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            pkg: deb
+            ext: deb
+            asset: Kavach-linux-arm64.deb
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             pkg: msi
             ext: msi
             asset: Kavach-windows-amd64.msi
+          # Windows ARM64 GUI — native on windows-11-arm (GA). MSI is NOT an option:
+          # WiX rejects aarch64 (tauri-apps/tauri#5499), so the only GUI installer
+          # is NSIS (.exe). It runs under Win11-ARM's x64 emulation layer; the app
+          # itself is native aarch64. This is the closest parity upstream allows.
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            pkg: nsis
+            ext: exe
+            asset: Kavach-windows-arm64-setup.exe
     steps:
       - uses: actions/checkout@v4
 
@@ -244,7 +265,10 @@ jobs:
       - name: Bundle GUI + embedded CLI (Linux / Windows)
         if: runner.os != 'macOS'
         working-directory: crates/kavach-app
-        run: dx bundle --release --platform desktop --package-types ${{ matrix.pkg }}
+        # --target pins the GUI build to the matrix arch (same reason as the macOS
+        # leg) — the ARM64 runners are aarch64 hosts, but passing it explicitly
+        # keeps the build arch independent of the runner default and future-proof.
+        run: dx bundle --release --platform desktop --target ${{ matrix.target }} --package-types ${{ matrix.pkg }}
 
       # Rename the version-stamped bundle output to the stable asset name so the
       # releases/latest/download/<asset> link is permanent across versions.
@@ -269,10 +293,16 @@ jobs:
       - name: Rename to stable asset name (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          EXT: ${{ matrix.ext }}
+          ASSET: ${{ matrix.asset }}
         run: |
-          $src = (Get-ChildItem -Recurse -Path "target/dx/kavach-app/bundle/windows" -Filter *.msi | Select-Object -First 1).FullName
-          if (-not $src) { throw "no .msi produced" }
-          Copy-Item $src "${{ matrix.asset }}"
+          # Search the whole bundle root by the matrix ext — MSI lands under
+          # bundle/windows/msi, NSIS (.exe) under bundle/windows/nsis, so a fixed
+          # subpath + *.msi would miss the ARM64 NSIS leg.
+          $src = (Get-ChildItem -Recurse -Path "target/dx/kavach-app/bundle" -Filter "*.$env:EXT" | Select-Object -First 1).FullName
+          if (-not $src) { throw "no .$env:EXT produced under target/dx/kavach-app/bundle" }
+          Copy-Item $src "$env:ASSET"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
