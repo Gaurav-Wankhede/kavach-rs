@@ -71,7 +71,31 @@ pub fn read_hook_input_from<R: BufRead>(reader: R) -> Result<HookInput, String> 
         buf.push(line);
     }
     let raw = buf.join("\n");
-    serde_json::from_str(&raw).map_err(|e| format!("JSON parse error: {e}"))
+    parse_hook_input(&raw)
+}
+
+/// Parse a raw hook-input payload into [`HookInput`], tolerating explicit JSON
+/// `null` on any field.
+///
+/// A present `null` (not an absent key) otherwise hits serde's typed field and
+/// fails with `invalid type: null, expected a string` — the bug that blocked
+/// Cursor, whose payloads carry `null` for fields a Claude-Code field expects as
+/// a string. We pre-scrub every top-level `null` to "absent" so `#[serde(default)]`
+/// fills it, covering all fields at once instead of one `null_string` attr each.
+///
+/// # Errors
+/// Returns `Err` only when the payload is not a JSON object at all (truly
+/// unparseable) — a shape no amount of field-defaulting can recover.
+pub fn parse_hook_input(raw: &str) -> Result<HookInput, String> {
+    let mut value: serde_json::Value =
+        serde_json::from_str(raw).map_err(|e| format!("JSON parse error: {e}"))?;
+    if let Some(obj) = value.as_object_mut() {
+        // Drop every top-level explicit `null`; an absent key triggers
+        // `#[serde(default)]`, a present `null` does not. Nested nulls (inside
+        // tool_input/attachments, typed Option/Value) are already tolerated.
+        obj.retain(|_, v| !v.is_null());
+    }
+    serde_json::from_value(value).map_err(|e| format!("JSON parse error: {e}"))
 }
 
 /// Read a hook input payload, emitting an error response on failure.
