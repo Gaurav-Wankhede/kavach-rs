@@ -11,6 +11,7 @@ use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_ope::dm::RewardModel;
 use kavach_ope::ips::FixedPolicy;
+use kavach_ope::label::{action_from_tag, reward_scalar};
 use kavach_ope::{Action, LoggedSample};
 use serde::{Deserialize, Serialize};
 
@@ -141,34 +142,12 @@ fn mean_reward(samples: &[LoggedSample]) -> f64 {
 /// not usable for OPE — only graded decisions carry signal).
 fn sample_from_row(json: &str) -> Option<LoggedSample> {
     let value: serde_json::Value = serde_json::from_str(json).ok()?;
-    let action = action_of(value.get("action")?.as_str()?)?;
+    let action = action_from_tag(value.get("action")?.as_str()?)?;
     let propensity = value.get("propensity")?.as_f64()?;
     // None-reward rows are excluded — only a back-filled reward is usable signal.
-    let reward = reward_scalar(value.get("reward")?)?;
+    let reward = reward_scalar(value.get("reward")?.as_str()?)?;
     let context = context_features(value.get("context"));
     Some(LoggedSample::with_context(action, propensity, reward, context))
-}
-
-/// Map the `bandit_log` `action` string (`snake_case`) to the OPE action.
-fn action_of(s: &str) -> Option<Action> {
-    match s {
-        "allow" => Some(Action::Allow),
-        "ask" => Some(Action::Ask),
-        "block" => Some(Action::Block),
-        _ => None,
-    }
-}
-
-/// Map the wire `reward` enum (`kavach_patterns::Reward`, `snake_case`) to its
-/// scalar: `verified_clean = +1`, `needed_ask = 0`, `false_decision = -1`.
-/// `null`/absent → `None` (un-rewarded; the caller drops the row).
-fn reward_scalar(v: &serde_json::Value) -> Option<f64> {
-    match v.as_str()? {
-        "verified_clean" => Some(1.0),
-        "needed_ask" => Some(0.0),
-        "false_decision" => Some(-1.0),
-        _ => None,
-    }
 }
 
 /// Project the `BanditContext` object into the numeric feature vector the Direct

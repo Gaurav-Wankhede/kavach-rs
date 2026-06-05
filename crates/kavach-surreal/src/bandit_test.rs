@@ -2,7 +2,7 @@
 //! by `tests/bandit_log.rs`; here we prove the content-addressing + the two
 //! Rust-side filters that decide which rows the reward back-fill grades.
 
-use super::{content_key, reward_is_absent, row_is_for_session};
+use super::{content_key, pending_for_session, reward_is_absent};
 
 #[test]
 fn content_key_is_deterministic_and_32_hex() {
@@ -28,21 +28,26 @@ fn reward_is_absent_for_null_or_missing_only() {
 }
 
 #[test]
-fn row_is_for_session_matches_only_the_join_key() {
-    let row = r#"{"session_id":"sess_abc","action":"block"}"#;
-    assert!(row_is_for_session(row, "sess_abc"));
-    assert!(!row_is_for_session(row, "sess_other"));
+fn pending_for_session_matches_only_an_unrewarded_row_of_the_join_key() {
+    // The JOIN predicate: un-rewarded AND this session. Reward absent on all
+    // rows here so the session axis is what's under test.
+    let row = r#"{"session_id":"sess_abc","action":"block","reward":null}"#;
+    assert!(pending_for_session(row, "sess_abc"));
+    assert!(!pending_for_session(row, "sess_other"), "another session's row ⇒ not in this join");
+    // A graded row of THIS session is also excluded — the reward axis still bites.
+    let graded = r#"{"session_id":"sess_abc","action":"block","reward":"needed_ask"}"#;
+    assert!(!pending_for_session(graded, "sess_abc"), "already graded ⇒ not a candidate");
 }
 
 #[test]
 fn a_row_missing_its_session_id_does_not_match_a_real_session() {
-    let row = r#"{"action":"block"}"#;
-    assert!(!row_is_for_session(row, "sess_abc"), "no session_id field ⇒ not this session");
+    let row = r#"{"action":"block","reward":null}"#;
+    assert!(!pending_for_session(row, "sess_abc"), "no session_id field ⇒ not this session");
 }
 
 #[test]
 fn an_unparseable_row_is_kept_so_it_surfaces() {
     // Parse failure ⇒ treated as a match, so a malformed row is surfaced to the
     // caller rather than silently dropped from the grading set.
-    assert!(row_is_for_session("not json", "sess_abc"));
+    assert!(pending_for_session("not json", "sess_abc"));
 }

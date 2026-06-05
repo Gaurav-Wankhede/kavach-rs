@@ -128,9 +128,10 @@ pub async fn list_unrewarded_bandit_rows_for_session(
     let rows = select_all_payloads(db).await?;
     rows.into_iter()
         // A malformed payload (Err) is kept so it surfaces, never silently hidden.
-        .filter(|res| {
-            res.as_ref().map_or(true, |s| reward_is_absent(s) && row_is_for_session(s, session_id))
-        })
+        // Parse ONCE per row and test both predicates on the same Value (the
+        // per-session list is the hottest reader — re-parsing each row twice was
+        // pure waste).
+        .filter(|res| res.as_ref().map_or(true, |s| pending_for_session(s, session_id)))
         .take(limit as usize)
         .collect()
 }
@@ -194,17 +195,25 @@ fn payload_to_json(r: BanditPayloadRow) -> Result<String> {
 /// `reward` is absent or JSON null. A parse failure counts as "still pending" so
 /// a malformed row is surfaced to the caller, never silently graded.
 fn reward_is_absent(payload: &str) -> bool {
-    serde_json::from_str::<serde_json::Value>(payload)
-        .ok()
-        .and_then(|v| v.get("reward").cloned())
-        .is_none_or(|r| r.is_null())
+    serde_json::from_str::<serde_json::Value>(payload).ok().is_none_or(|v| reward_absent_in(&v))
 }
 
-/// True when the serialized `BanditRow` JSON was logged under `session_id`. A
-/// parse failure counts as a match so a malformed row still surfaces to the
-/// caller rather than being silently dropped from the grading set.
-fn row_is_for_session(payload: &str, session_id: &str) -> bool {
-    serde_json::from_str::<serde_json::Value>(payload).ok().is_none_or(|v| {
-        v.get("session_id").and_then(serde_json::Value::as_str) == Some(session_id)
-    })
+/// True when this row is un-rewarded AND logged under `session_id` — the
+/// per-session JOIN predicate. Parses the payload ONCE and tests both fields on
+/// the same `Value`; a parse failure surfaces the row (both predicates default
+/// to "kept") rather than silently dropping it from the grading set.
+fn pending_for_session(payload: &str, session_id: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(payload)
+        .ok()
+        .is_none_or(|v| reward_absent_in(&v) && session_matches_in(&v, session_id))
+}
+
+/// `reward` field is absent or JSON null on an already-parsed row.
+fn reward_absent_in(v: &serde_json::Value) -> bool {
+    v.get("reward").is_none_or(serde_json::Value::is_null)
+}
+
+/// `session_id` field equals `session_id` on an already-parsed row.
+fn session_matches_in(v: &serde_json::Value, session_id: &str) -> bool {
+    v.get("session_id").and_then(serde_json::Value::as_str) == Some(session_id)
 }

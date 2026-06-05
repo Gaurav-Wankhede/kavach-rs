@@ -3,7 +3,7 @@
 //! LOC ceiling and test the mapping without a store.
 
 use kavach_ope::Action;
-use kavach_ope::label::{VerifyOutcome, reward_tag};
+use kavach_ope::label::{VerifyOutcome, action_from_tag, reward_tag};
 
 #[cfg(test)]
 #[path = "grade_test.rs"]
@@ -22,24 +22,18 @@ pub(super) fn reward_tag_for_row(payload: &str, verified_clean: bool) -> Option<
 /// ALLOW; a `Block`/`Ask` has no counterfactual ⇒ neutral `BlockedAndAccepted`
 /// (`label` scores it `0`), never an unprovable penalty.
 const fn outcome_for(action: Action, verified_clean: bool) -> VerifyOutcome {
-    if verified_clean {
-        return VerifyOutcome::VerifiedClean;
-    }
-    match action {
-        Action::Allow => VerifyOutcome::VerifyFailed,
+    match (verified_clean, action) {
+        (true, _) => VerifyOutcome::VerifiedClean,
+        (false, Action::Allow) => VerifyOutcome::VerifyFailed,
         // Ask/Block (and any future variant) in a failing session: no
         // counterfactual ⇒ neutral. Action is #[non_exhaustive] ⇒ wildcard.
-        Action::Ask | Action::Block | _ => VerifyOutcome::BlockedAndAccepted,
+        (false, Action::Ask | Action::Block | _) => VerifyOutcome::BlockedAndAccepted,
     }
 }
 
-/// Read the `action` field off a `BanditRow` JSON, mapped to the OPE action.
+/// Read the `action` field off a `BanditRow` JSON, mapped to the OPE action via
+/// the canonical [`action_from_tag`] (the one parser every reader shares).
 fn action_of_payload(payload: &str) -> Option<Action> {
     let v: serde_json::Value = serde_json::from_str(payload).ok()?;
-    match v.get("action")?.as_str()? {
-        "allow" => Some(Action::Allow),
-        "ask" => Some(Action::Ask),
-        "block" => Some(Action::Block),
-        _ => None,
-    }
+    action_from_tag(v.get("action")?.as_str()?)
 }

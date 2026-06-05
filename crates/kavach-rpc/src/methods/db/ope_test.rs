@@ -8,7 +8,8 @@
     reason = "exact scalar rewards/probabilities; deterministic, not measured"
 )]
 
-use super::{context_features, reward_scalar, sample_from_row};
+use super::{context_features, sample_from_row};
+use kavach_ope::label::reward_scalar;
 use kavach_ope::Action;
 
 #[test]
@@ -49,12 +50,10 @@ fn the_false_decision_reward_is_negative_one() {
 
 #[test]
 fn reward_scalar_maps_every_variant_and_rejects_unknown() {
-    let v = |s: &str| reward_scalar(&serde_json::Value::String(s.to_owned()));
-    assert_eq!(v("verified_clean"), Some(1.0));
-    assert_eq!(v("needed_ask"), Some(0.0));
-    assert_eq!(v("false_decision"), Some(-1.0));
-    assert_eq!(v("garbage"), None);
-    assert_eq!(reward_scalar(&serde_json::Value::Null), None);
+    assert_eq!(reward_scalar("verified_clean"), Some(1.0));
+    assert_eq!(reward_scalar("needed_ask"), Some(0.0));
+    assert_eq!(reward_scalar("false_decision"), Some(-1.0));
+    assert_eq!(reward_scalar("garbage"), None);
 }
 
 #[test]

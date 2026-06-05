@@ -17,7 +17,8 @@
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_ope::Estimate;
-use kavach_ope::audit::{AuditVerdict, detect_reward_hacking, first_floor_violation};
+use kavach_ope::audit::{AuditVerdict, detect_reward_hacking};
+use kavach_ope::label::{action_from_tag, reward_scalar};
 use kavach_ope::Action;
 use serde::{Deserialize, Serialize};
 
@@ -77,7 +78,6 @@ pub async fn ope_audit(
 
     let pairs: Vec<(Action, Action)> =
         raw.iter().filter_map(|json| rule_shadow_pair(json)).collect();
-    let floor_violation = first_floor_violation(&pairs);
     let floor_violations = pairs.iter().filter(|&&(r, s)| relaxes_block(r, s)).count();
 
     let hard: Vec<f64> = raw.iter().filter_map(|j| channel_reward(j, false)).collect();
@@ -92,7 +92,7 @@ pub async fn ope_audit(
         // non-promotable by default (fail-closed).
         AuditVerdict::Inconclusive | _ => ("inconclusive", 0.0),
     };
-    let promotable = floor_violation.is_none() && matches!(drift, AuditVerdict::Healthy);
+    let promotable = floor_violations == 0 && matches!(drift, AuditVerdict::Healthy);
 
     Ok(OpeAuditResult {
         success: true,
@@ -118,8 +118,8 @@ const fn relaxes_block(rule: Action, shadow: Action) -> bool {
 /// shadow rows carry both).
 fn rule_shadow_pair(json: &str) -> Option<(Action, Action)> {
     let v: serde_json::Value = serde_json::from_str(json).ok()?;
-    let rule = action_of(v.get("action")?.as_str()?)?;
-    let shadow = action_of(v.get("shadow_action")?.as_str()?)?;
+    let rule = action_from_tag(v.get("action")?.as_str()?)?;
+    let shadow = action_from_tag(v.get("shadow_action")?.as_str()?)?;
     Some((rule, shadow))
 }
 
@@ -132,28 +132,7 @@ fn channel_reward(json: &str, want_held_out: bool) -> Option<f64> {
     if held_out != want_held_out {
         return None;
     }
-    reward_scalar(v.get("reward")?)
-}
-
-/// Map a `snake_case` action string to the OPE action.
-fn action_of(s: &str) -> Option<Action> {
-    match s {
-        "allow" => Some(Action::Allow),
-        "ask" => Some(Action::Ask),
-        "block" => Some(Action::Block),
-        _ => None,
-    }
-}
-
-/// Map the wire `reward` enum to its scalar: `verified_clean = +1`,
-/// `needed_ask = 0`, `false_decision = -1`; `null`/absent → `None`.
-fn reward_scalar(v: &serde_json::Value) -> Option<f64> {
-    match v.as_str()? {
-        "verified_clean" => Some(1.0),
-        "needed_ask" => Some(0.0),
-        "false_decision" => Some(-1.0),
-        _ => None,
-    }
+    reward_scalar(v.get("reward")?.as_str()?)
 }
 
 /// A sample-mean estimate over a reward channel, with the standard error of the

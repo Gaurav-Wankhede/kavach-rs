@@ -3,7 +3,8 @@
 //! logic that decides what the audit counts, since that is where a silent
 //! mis-parse would let a hacking row slip past.
 
-use super::{action_of, channel_reward, mean_estimate, relaxes_block, rule_shadow_pair};
+use super::{channel_reward, mean_estimate, relaxes_block, rule_shadow_pair};
+use kavach_ope::label::action_from_tag;
 use kavach_ope::Action;
 
 #[test]
@@ -50,11 +51,11 @@ fn an_unrewarded_row_contributes_to_no_channel() {
 }
 
 #[test]
-fn action_of_maps_the_snake_case_vocabulary() {
-    assert_eq!(action_of("allow"), Some(Action::Allow));
-    assert_eq!(action_of("ask"), Some(Action::Ask));
-    assert_eq!(action_of("block"), Some(Action::Block));
-    assert_eq!(action_of("garbage"), None);
+fn action_from_tag_maps_the_snake_case_vocabulary() {
+    assert_eq!(action_from_tag("allow"), Some(Action::Allow));
+    assert_eq!(action_from_tag("ask"), Some(Action::Ask));
+    assert_eq!(action_from_tag("block"), Some(Action::Block));
+    assert_eq!(action_from_tag("garbage"), None);
 }
 
 #[test]

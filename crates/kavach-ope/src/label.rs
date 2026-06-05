@@ -75,6 +75,37 @@ pub fn reward_tag(action: Action, outcome: VerifyOutcome) -> &'static str {
     }
 }
 
+/// Parse a `bandit_log` `action` field (`snake_case` wire string) into the OPE
+/// [`Action`]; `None` for an unknown/garbled tag.
+///
+/// The single definition every row-projection (`db.ope_evaluate`, `db.ope_audit`,
+/// the P3a grader) shares so the action mapping can never drift between readers.
+#[must_use]
+pub fn action_from_tag(tag: &str) -> Option<Action> {
+    match tag {
+        "allow" => Some(Action::Allow),
+        "ask" => Some(Action::Ask),
+        "block" => Some(Action::Block),
+        _ => None,
+    }
+}
+
+/// Parse a `bandit_log` `reward` field (the `snake_case` wire enum) back to the
+/// OPE scalar — the inverse of [`reward_tag`].
+///
+/// `verified_clean = +1`, `needed_ask = 0`, `false_decision = -1`;
+/// `null`/absent/unknown → `None`. The single definition every reader shares so
+/// the tag↔scalar mapping is canonical.
+#[must_use]
+pub fn reward_scalar(tag: &str) -> Option<f64> {
+    match tag {
+        "verified_clean" => Some(1.0),
+        "needed_ask" => Some(0.0),
+        "false_decision" => Some(-1.0),
+        _ => None,
+    }
+}
+
 /// The two costly false decisions, scored `-1`: a false allow (shipped a break)
 /// and a false block (overridden, then verified clean).
 const fn is_false_decision(action: Action, outcome: VerifyOutcome) -> bool {
