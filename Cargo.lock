@@ -4428,6 +4428,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kavach-ope"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "kavach-patterns"
 version = "0.1.0"
 dependencies = [
