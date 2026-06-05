@@ -57,6 +57,16 @@ jobs:
       - name: Build (release)
         run: cargo build --workspace --release
 
+      # The repo's test contract is `cargo nextest run --workspace` (CLAUDE.md +
+      # .config/nextest.toml), with per-test process isolation. Without this step
+      # CI proved only that the tree COMPILES — every unit/integration test
+      # (e.g. the multi-harness cursor/codex output contracts) was unverified.
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Test (nextest, workspace)
+        run: cargo nextest run --workspace
+
       - name: Install global CLAUDE.md (derives path from $HOME, no hardcoding)
         run: bash scripts/install-claude-md.sh
 
@@ -64,6 +74,18 @@ jobs:
         run: |
           test -f "$HOME/.claude/CLAUDE.md"
           echo "OK: $HOME/.claude/CLAUDE.md"
+
+  # ── Supply chain (Linux only — advisories/bans/licenses/sources) ─────────────
+  # Mirrors deploy.rs step 3 (`cargo deny check`). A banned advisory, denied
+  # license, or unvetted source must fail the PR, not just the local deploy.
+  supply-chain:
+    name: cargo-deny (advisories + bans + licenses + sources)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
 
   # ── macOS ──────────────────────────────────────────────────────────────────
   macos:
@@ -85,6 +107,12 @@ jobs:
 
       - name: Build (release)
         run: cargo build --workspace --release
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Test (nextest, workspace)
+        run: cargo nextest run --workspace
 
       - name: Install global CLAUDE.md (derives path from $HOME, no hardcoding)
         run: bash scripts/install-claude-md.sh
@@ -114,6 +142,12 @@ jobs:
 
       - name: Build (release)
         run: cargo build --workspace --release
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Test (nextest, workspace)
+        run: cargo nextest run --workspace
 
       - name: Install global CLAUDE.md (derives path from %USERPROFILE%, no hardcoding)
         shell: pwsh
