@@ -4,6 +4,11 @@
 //! tests prove against a real (in-memory) `SurrealDB` that a row persists and that
 //! a replayed identical decision behaves as the store's doc claims — content
 //! addressing must not silently double-count training signal.
+#![allow(
+    clippy::expect_used,
+    clippy::unwrap_used,
+    reason = "test assertions: a panic on the Err/None path IS the failure signal"
+)]
 
 use kavach_surreal::{append_bandit_row, open_memory};
 

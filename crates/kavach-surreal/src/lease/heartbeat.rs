@@ -18,7 +18,7 @@ pub async fn heartbeat(db: &Surreal<Db>, table: &str, key: &str, lease: &Lease) 
         .ok_or_else(|| Error::Migration("lease expiration overflow".to_owned()))?;
     let updated: Option<LeaseRow> = db
         .query(
-            "UPDATE type::thing($t, $k) SET occupied_heartbeat=$h, occupied_until=$u \
+            "UPDATE type::record($t, $k) SET occupied_heartbeat=$h, occupied_until=$u \
              WHERE occupied_by=$s AND occupied_epoch=$e \
              RETURN occupied_by, occupied_until, occupied_epoch",
         )

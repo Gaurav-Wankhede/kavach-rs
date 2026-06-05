@@ -19,7 +19,7 @@ pub async fn acquire(
     session_id: &str,
 ) -> Result<AcquireOutcome> {
     let cur: Option<LeaseRow> = db
-        .query("SELECT occupied_by, occupied_until, occupied_epoch FROM type::thing($t, $k)")
+        .query("SELECT occupied_by, occupied_until, occupied_epoch FROM type::record($t, $k)")
         .bind(("t", table.to_owned()))
         .bind(("k", key.to_owned()))
         .await
@@ -48,7 +48,7 @@ pub async fn acquire(
         .checked_add_signed(Duration::seconds(LEASE_TTL_SECS))
         .ok_or_else(|| Error::Migration("lease expiration overflow".to_owned()))?;
     db.query(
-        "UPDATE type::thing($t, $k) SET \
+        "UPDATE type::record($t, $k) SET \
          occupied_by=$s, occupied_until=$u, occupied_epoch=$e, occupied_heartbeat=$h",
     )
     .bind(("t", table.to_owned()))

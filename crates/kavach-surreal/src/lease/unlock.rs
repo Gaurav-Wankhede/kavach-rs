@@ -13,7 +13,7 @@ use crate::error::{Error, Result};
 /// Propagates `Error::Surreal` when the database query fails.
 pub async fn unlock(db: &Surreal<Db>, table: &str, key: &str, lease: &Lease) -> Result<()> {
     db.query(
-        "UPDATE type::thing($t, $k) SET \
+        "UPDATE type::record($t, $k) SET \
          occupied_by=NONE, occupied_until=NONE, occupied_heartbeat=NONE \
          WHERE occupied_by=$s AND occupied_epoch=$e",
     )

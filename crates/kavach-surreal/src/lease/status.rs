@@ -11,7 +11,7 @@ use crate::error::{Error, Result};
 /// Propagates `Error::Surreal` when the query fails.
 pub async fn status(db: &Surreal<Db>, table: &str, key: &str) -> Result<Option<Lease>> {
     let row: Option<LeaseRow> = db
-        .query("SELECT occupied_by, occupied_until, occupied_epoch FROM type::thing($t, $k)")
+        .query("SELECT occupied_by, occupied_until, occupied_epoch FROM type::record($t, $k)")
         .bind(("t", table.to_owned()))
         .bind(("k", key.to_owned()))
         .await
