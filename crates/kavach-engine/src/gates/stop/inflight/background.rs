@@ -21,5 +21,15 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         drop(kavach_hook::exit_silent());
         return ControlFlow::Break(());
     }
+    // Yield for in-flight categories not modelled by a named field — notably the
+    // Monitor tool (CC 2026-04-09), whose Stop-hook field name is undocumented.
+    // A live Monitor stream is in-flight work; stopping mid-stream recreates the
+    // #55754 class. `inflight_extra_key` matches signal substrings, not a guessed
+    // literal, so it stays correct across renames. SOURCE: rca.stop-gate-monitor.
+    if let Some(key) = ctx.input.inflight_extra_key() {
+        eprintln!("[KAVACH_BG_YIELD] in-flight '{key}' present; stop-gate yields");
+        drop(kavach_hook::exit_silent());
+        return ControlFlow::Break(());
+    }
     ControlFlow::Continue(())
 }

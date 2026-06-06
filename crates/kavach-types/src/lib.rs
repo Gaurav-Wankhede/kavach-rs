@@ -217,9 +217,39 @@ pub struct HookInput {
     // PostCompact
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub compact_summary: String,
+
+    /// Catch-all for hook-input keys not modelled above. Without this, serde
+    /// DROPS unknown fields, so a new in-flight category (e.g. the Monitor tool
+    /// shipped `CC` 2026-04-09, whose Stop-hook field name is undocumented) would
+    /// be invisible to the stop-gate inflight guard. Retaining the raw map lets
+    /// `has_inflight_extra` yield generically on ANY non-empty array category
+    /// without hard-coding a field name we cannot yet verify. SOURCE: Monitor
+    /// tool — claudefast.com/blog/guide/mechanics/monitor.
+    #[serde(flatten, default, skip_serializing_if = "HashMap::is_empty")]
+    pub extra: HashMap<String, serde_json::Value>,
 }
 
 impl HookInput {
+    /// Return the first `extra` key whose value is a NON-EMPTY JSON array and
+    /// whose name signals in-flight work (monitor / task / cron / stream / watch
+    /// / active / inflight). Lets the stop-gate yield for in-flight categories
+    /// not modelled by a named field — notably Claude Code's Monitor tool, whose
+    /// Stop-hook field name is undocumented. Field-name-agnostic by design: it
+    /// matches the SIGNAL substrings, not a guessed literal, so it stays correct
+    /// across future renames. Returns the matching key for the yield message.
+    #[must_use]
+    pub fn inflight_extra_key(&self) -> Option<&str> {
+        const SIGNALS: [&str; 7] = [
+            "monitor", "task", "cron", "stream", "watch", "active", "inflight",
+        ];
+        self.extra.iter().find_map(|(k, v)| {
+            let key_lc = k.to_lowercase();
+            let is_inflight_name = SIGNALS.iter().any(|s| key_lc.contains(s));
+            let is_nonempty_array = v.as_array().is_some_and(|a| !a.is_empty());
+            (is_inflight_name && is_nonempty_array).then_some(k.as_str())
+        })
+    }
+
     /// Extract a string value from `tool_input` by key.
     /// Falls back to prompt field for "prompt" key.
     #[must_use]
@@ -612,6 +642,25 @@ macro_rules! kavach_todo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn inflight_extra_detects_monitor_array() {
+        // A future/undocumented in-flight category (e.g. the Monitor tool) lands
+        // in `extra` via #[serde(flatten)]; a non-empty array under an in-flight-
+        // signal key must be detected so the stop-gate yields.
+        let json = r#"{"hook_event_name":"Stop","monitors":[{"id":"m1"}]}"#;
+        let input: HookInput = serde_json::from_str(json).expect("parse");
+        assert_eq!(input.inflight_extra_key(), Some("monitors"));
+    }
+
+    #[test]
+    fn inflight_extra_ignores_empty_and_benign() {
+        // Empty array under a signal key, and a non-empty array under a benign
+        // key, must NOT trigger a yield (no false positive).
+        let json = r#"{"monitors":[],"tags":["a","b"],"note":"x"}"#;
+        let input: HookInput = serde_json::from_str(json).expect("parse");
+        assert_eq!(input.inflight_extra_key(), None);
+    }
 
     #[test]
     fn effort_level_prefers_json_field() {
