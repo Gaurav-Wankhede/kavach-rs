@@ -33,17 +33,17 @@ static PATTERNS: LazyLock<Vec<AllocPattern>> = LazyLock::new(|| {
         mk(
             r"String::from\(",
             "String alloc in potential hot path",
-            "Consider &str or Cow<str> if borrowed lifetime works",
+            "Use &str or Cow<str> when the borrowed lifetime works",
         ),
         mk(
             r"\.to_string\(\)\s*[,;)]",
             "to_string alloc",
-            "Consider &str reference or write! macro",
+            "Use a &str reference or the write! macro",
         ),
         mk(
             r"format!\s*\(",
             "format! allocation",
-            "Consider write! to pre-allocated buffer in loops",
+            "In loops, write! to a pre-allocated buffer",
         ),
     ]
     .into_iter()

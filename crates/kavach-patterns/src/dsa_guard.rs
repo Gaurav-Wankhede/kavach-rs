@@ -247,7 +247,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<DsaViolation> {
     if patterns.get(14).is_some_and(|p| p.is_match(content)) {
         v.push(DsaViolation { severity: DsaSeverity::P2Warning, class: DsaClass::Allocation,
             pattern: "clone-in-iter-map",
-            fix: "Cloning inside .map() in an iterator chain allocates per element. Borrow with .iter() + & where possible, or .into_iter() if you can consume.",
+            fix: "Cloning inside .map() in an iterator chain allocates per element. Borrow with .iter() + &, or .into_iter() to consume.",
             line: 0 });
     }
     if patterns.get(15).is_some_and(|p| p.is_match(content)) {

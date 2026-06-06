@@ -29,7 +29,7 @@ static PATTERNS: LazyLock<Vec<AlgoPattern>> = LazyLock::new(|| {
         mk(
             r"for .+ in .+\{[\s\S]*?for .+ in .+\{",
             "O(n²) nested loops",
-            "Consider HashMap/HashSet for O(1) lookup or Iterator combinators",
+            "Use HashMap/HashSet for O(1) lookup, or Iterator combinators",
         ),
         mk(
             r"\.contains\(.+\)\s*\{",

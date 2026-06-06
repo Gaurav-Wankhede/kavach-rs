@@ -156,7 +156,7 @@ pub(super) fn scan(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
             v,
             P1Advisory,
             "REST-only router",
-            "Consider WebSocket, SSE, GraphQL, gRPC, or HTTP/3 — REST is not the only protocol",
+            "Evaluate WebSocket, SSE, GraphQL, gRPC, or HTTP/3 — REST is not the only protocol",
         );
     }
     if has_router && !m(38) {
@@ -181,7 +181,7 @@ pub(super) fn scan(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
             v,
             P1Advisory,
             "god class (too many functions)",
-            "Split into smaller modules — >15 functions suggests mixed responsibilities",
+            "Split into smaller modules — >15 functions = mixed responsibilities",
         );
     }
 }
