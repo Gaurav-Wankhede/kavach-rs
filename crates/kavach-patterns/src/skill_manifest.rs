@@ -8,7 +8,7 @@
 // SOURCE: https://docs.rs/aho-corasick (trigger matching pattern)
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use super::skill_keyword_router::{ModelTier, SkillContext};
@@ -134,8 +134,16 @@ impl SkillManifest {
     /// Build manifest by scanning SKILL.md frontmatter only.
     #[must_use]
     pub fn build() -> Self {
-        let dir = Self::skills_dir();
-        let Ok(entries) = std::fs::read_dir(&dir) else {
+        Self::build_from(&Self::skills_dir())
+    }
+
+    /// Build a manifest from a specific skills directory. Split from `build` so
+    /// tests can scan a hermetic fixture dir instead of the developer's real
+    /// `~/.claude/skills` (absent on CI runners → empty manifest → false test
+    /// failures). SOURCE: rca.non-hermetic-skill-router-tests.
+    #[must_use]
+    pub fn build_from(dir: &Path) -> Self {
+        let Ok(entries) = std::fs::read_dir(dir) else {
             return Self::default();
         };
 
@@ -283,12 +291,28 @@ pub fn load_skill_on_demand(name: &str) -> Option<String> {
 mod tests {
     use super::*;
 
+    /// Build a hermetic fixture skills dir with two SKILL.md files, so the test
+    /// asserts the scanner populates a manifest without depending on the
+    /// developer's real `~/.claude/skills` (absent on CI runners).
+    /// SOURCE: rca.non-hermetic-skill-router-tests.
+    fn fixture_dir() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().expect("tempdir");
+        for (name, triggers) in [("arch", r#"["architecture"]"#), ("data", r#"["sqlx"]"#)] {
+            let skill_dir = dir.path().join(name);
+            std::fs::create_dir_all(&skill_dir).expect("mkdir");
+            let body = format!("---\nname: {name}\ntriggers: {triggers}\n---\n# {name}\n");
+            std::fs::write(skill_dir.join("SKILL.md"), body).expect("write");
+        }
+        dir
+    }
+
     #[test]
     fn manifest_builds_without_panic() {
-        let m = SkillManifest::build();
+        let dir = fixture_dir();
+        let m = SkillManifest::build_from(dir.path());
         assert!(
             !m.entries.is_empty(),
-            "Expected skills in ~/.claude/skills/"
+            "Expected the scanner to populate the manifest from the fixture dir"
         );
     }
 
