@@ -28,7 +28,7 @@ pub(crate) fn handle_task(input: &HookInput) -> Result<(), EngineError> {
     // The model itself manages context; kavach should advise, not block.
     if session.context_phase == "critical" {
         drop(kavach_hook::exit_pre_tool_allow(Some(
-            "WARNING: context phase critical — consider compacting before spawning more agents",
+            "WARNING: context phase critical — compact before spawning more agents",
         )));
         return Ok(());
     }

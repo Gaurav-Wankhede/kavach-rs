@@ -24,7 +24,7 @@ fn phase_advisory(
         session.current_phase.as_str()
     };
     (phase == "PLAN" && ctx.is_code && !ctx.is_test).then(|| {
-        "[ADVISORY] PHASE: in PLAN phase; consider `kavach phase advance` if implementing"
+        "[ADVISORY] PHASE: in PLAN phase — run `kavach phase advance` before writing code"
             .to_owned()
     })
 }

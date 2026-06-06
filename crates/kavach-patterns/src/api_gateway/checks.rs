@@ -211,7 +211,7 @@ fn check_missing_aggregation(file_path: &str, content: &str) -> Option<Violation
         kind: ViolationKind::MissingAggregation,
         severity: Severity::P1Advisory,
         message: format!(
-            "{service_call_count} service calls in handler — consider aggregator: {file_path}"
+            "{service_call_count} service calls in handler — extract an aggregator service: {file_path}"
         ),
         fix: "Create aggregation service; handler calls aggregator once".to_owned(),
     })

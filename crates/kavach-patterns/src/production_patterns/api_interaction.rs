@@ -13,7 +13,7 @@ pub(super) fn build() -> Vec<(Option<regex::Regex>, &'static str, &'static str, 
         (
             mk(r"\.send\(\)\.await\?;"),
             "NO_RETRY",
-            "HTTP call — consider retry with exponential backoff",
+            "HTTP call — add retry with exponential backoff",
             Severity::P1High,
         ),
         (
