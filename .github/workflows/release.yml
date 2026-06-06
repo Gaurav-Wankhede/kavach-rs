@@ -313,11 +313,19 @@ jobs:
   release:
     name: Publish release
     needs: [version, build, bundle]
-    # Publish ONLY when every build + bundle leg succeeded. `fail-fast: false`
-    # lets healthy legs finish for diagnostics, but a single failed leg fails
-    # its job overall → this guard skips the release so we never ship a
-    # partial asset set (e.g. CLI tarballs + Linux/Windows but no macOS dmg).
-    if: ${{ needs.build.result == 'success' && needs.bundle.result == 'success' }}
+    # Partial-success publish: ship whatever legs SUCCEEDED instead of skipping
+    # the whole release when one matrix leg is red. `fail-fast: false` already
+    # lets every healthy leg finish; this job then downloads only the artifacts
+    # that were actually produced and publishes them. Rationale: an all-green
+    # guard meant a single red leg (e.g. Windows) left ALL
+    # releases/latest/download/<asset> URLs 404 — a worse failure than a release
+    # missing two of twelve assets. `always()` runs the job regardless of
+    # upstream job result; the no-assets guard below still refuses to publish an
+    # empty release, and softprops uploads only the files the glob matches, so a
+    # missing Windows leg simply omits its 2 assets (those URLs 404 until the
+    # leg is fixed and the tag re-cut). A still-running upstream (cancelled) is
+    # excluded so we never publish a truncated mid-build set.
+    if: ${{ !cancelled() && needs.version.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v8
@@ -325,11 +333,28 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # Fail closed: if NO build/bundle leg produced an asset, there is nothing
+      # to release — abort rather than cut an empty (assetless) release.
+      - name: Require at least one asset
+        run: |
+          set -euo pipefail
+          count=$(find dist -maxdepth 1 -type f \( -name 'kavach-*' -o -name 'Kavach-*' \) | wc -l | tr -d ' ')
+          echo "downloaded asset count = $count"
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: no build/bundle leg produced an asset — refusing to publish an empty release"
+            exit 1
+          fi
+
       - name: Generate SHA256SUMS.txt
         run: |
+          set -euo pipefail
           cd dist
           # CLI tarballs (kavach-*) + single-setup installers (Kavach-*).
-          sha256sum kavach-* Kavach-* > SHA256SUMS.txt
+          # nullglob so a missing leg's pattern expands to nothing instead of a
+          # literal 'kavach-*' filename — partial sets must still checksum cleanly.
+          shopt -s nullglob
+          files=(kavach-* Kavach-*)
+          sha256sum "${files[@]}" > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Attach assets to release
@@ -337,6 +362,8 @@ jobs:
         with:
           # Display the CalVer version (YY.MM.PATCH) as the release title.
           name: Kavach ${{ needs.version.outputs.version }}
+          # Globs match only files that actually downloaded — a failed leg's
+          # assets are simply absent, not an upload error.
           files: |
             dist/kavach-*
             dist/Kavach-*
