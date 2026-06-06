@@ -198,8 +198,16 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
+          # libxdo-dev provides the unversioned libxdo.so the dioxus/tao tray +
+          # predefined Copy/Cut/Paste menu items link against (-lxdo). It is a
+          # transitive native dep of tray-icon NOT pulled by webkit2gtk/gtk, so
+          # without it the GUI .deb leg fails at link time with
+          # "rust-lld: error: unable to find library -lxdo". xdotool/libxdo3
+          # alone are insufficient — the linker needs the -dev symlink.
+          # SOURCE: github.com/tauri-apps/tray-icon README (Linux deps);
+          # github.com/DioxusLabs/dioxus/discussions/5090.
           sudo apt-get install -y build-essential pkg-config \
-            libwebkit2gtk-4.1-dev libgtk-3-dev \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libxdo-dev \
             libayatana-appindicator3-dev librsvg2-dev dpkg
 
       # Pin dx to the dioxus line in Cargo.toml. binstall pulls a prebuilt
