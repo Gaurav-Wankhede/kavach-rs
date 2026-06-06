@@ -212,9 +212,15 @@ jobs:
 
       # Pin dx to the dioxus line in Cargo.toml. binstall pulls a prebuilt
       # binary (~seconds) instead of compiling the CLI from source (~minutes).
+      # --force is REQUIRED: the setup-rust-toolchain cache restores binstall's
+      # install metadata but NOT the dx binary into ~/.cargo/bin on the Linux
+      # runners, so without --force binstall sees "dioxus-cli already installed",
+      # no-ops, and the next step fails with `dx: command not found` (exit 127).
+      # SOURCE: github.com/Swatinem/rust-cache/issues/204 (binstall + cache:
+      # claims installed when binary absent → fix is `cargo binstall --force`).
       - name: Install Dioxus CLI (dx)
         uses: cargo-bins/cargo-binstall@v1.19.1
-      - run: cargo binstall -y dioxus-cli@0.7.9
+      - run: cargo binstall -y --force dioxus-cli@0.7.9
 
       # Bake the CalVer tag into the crate versions so the .dmg/.deb/.msi
       # metadata reports it (dx + tauri-bundler read version from Cargo.toml).
