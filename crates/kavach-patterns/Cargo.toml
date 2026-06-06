@@ -20,5 +20,10 @@ dirs = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+[dev-dependencies]
+# Hermetic fixture dirs for the skill-router tests — see
+# rca.non-hermetic-skill-router-tests (those tests must not read ~/.claude/skills).
+tempfile = { workspace = true }
+
 [lints]
 workspace = true
