@@ -15,6 +15,12 @@
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "kavach gates session-start --hook" } ] }
     ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "kavach gates notification --hook" } ] }
+    ],
+    "MessageDisplay": [
+      { "hooks": [ { "type": "command", "command": "kavach gates message-display --hook" } ] }
+    ],
     "Stop": [
       { "hooks": [ { "type": "command", "command": "kavach gates stop --hook" } ] }
     ]

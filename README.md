@@ -128,35 +128,51 @@ kavach --version
 
 ### Wire Into Claude Code
 
-Map each Claude Code lifecycle event to a Kavach gate in `~/.claude/settings.json`. The gate names are `intent`, `pre-write`, `post-write`, `pre-tool`, `post-tool`, `session-start`, and `stop` — every gate runs the same way (`kavach gates <name> --hook`, reading the hook JSON from stdin).
+Map each Claude Code lifecycle event to a Kavach gate. Every gate runs the same way — `kavach gates <name> --hook`, reading the hook JSON from stdin. The paste-ready config below is the recommended core; it is kept byte-for-byte in sync with [`crates/kavach-cli/templates/harness/claude.settings.json`](crates/kavach-cli/templates/harness/claude.settings.json). Merge its `hooks` block into `~/.claude/settings.json` (user) or `<project>/.claude/settings.json`:
 
 ```json
 {
   "hooks": {
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "kavach gates intent --hook" }] }],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "kavach gates intent --hook" } ] }
+    ],
     "PreToolUse": [
-      { "matcher": "Write|Edit|NotebookEdit", "hooks": [{ "type": "command", "command": "kavach gates pre-write --hook" }] },
-      { "matcher": "*",                        "hooks": [{ "type": "command", "command": "kavach gates pre-tool --hook" }] }
+      { "matcher": "Write|Edit|NotebookEdit", "hooks": [ { "type": "command", "command": "kavach gates pre-write --hook" } ] },
+      { "matcher": "*",                        "hooks": [ { "type": "command", "command": "kavach gates pre-tool --hook" } ] }
     ],
     "PostToolUse": [
-      { "matcher": "Write|Edit|NotebookEdit", "hooks": [{ "type": "command", "command": "kavach gates post-write --hook" }] },
-      { "matcher": "*",                        "hooks": [{ "type": "command", "command": "kavach gates post-tool --hook" }] }
+      { "matcher": "Write|Edit|NotebookEdit", "hooks": [ { "type": "command", "command": "kavach gates post-write --hook" } ] },
+      { "matcher": "*",                        "hooks": [ { "type": "command", "command": "kavach gates post-tool --hook" } ] }
     ],
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "kavach gates session-start --hook" }] }],
-    "Notification":   [{ "hooks": [{ "type": "command", "command": "kavach gates notification --hook" }] }],
-    "MessageDisplay": [{ "hooks": [{ "type": "command", "command": "kavach gates message-display --hook" }] }],
-    "Stop":         [{ "hooks": [{ "type": "command", "command": "kavach gates stop --hook" }] }]
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "kavach gates session-start --hook" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "kavach gates notification --hook" } ] }
+    ],
+    "MessageDisplay": [
+      { "hooks": [ { "type": "command", "command": "kavach gates message-display --hook" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "kavach gates stop --hook" } ] }
+    ]
   }
 }
 ```
 
-Kavach tracks Claude Code's hook surface as it evolves. Recent adoptions: the
-`message-display` gate (CC 2.1.152 `MessageDisplay`), `reloadSkills` + `sessionTitle`
-on `session-start` (CC 2.1.152), the `effort.level` / `$CLAUDE_EFFORT` hook input that
-lets gates modulate strictness by effort tier (CC 2.1.133), `terminalSequence` bells on
-attention-needing notifications (CC 2.1.141), and `ultracode` intent recognition (CC 2.1.160).
+| Hook event | Gate | What it enforces |
+|------------|------|------------------|
+| `UserPromptSubmit` | `intent` | Intent classification + skill routing + harness dispatch |
+| `PreToolUse` (Write/Edit/NotebookEdit) | `pre-write` | Hard enforcement: skills, research, anti-pattern scan |
+| `PreToolUse` (everything else) | `pre-tool` | Bash blocklist + read validation + subagent budget |
+| `PostToolUse` (Write/Edit/NotebookEdit) | `post-write` | Anti-prod scan + quality + lint + memory sync |
+| `PostToolUse` (everything else) | `post-tool` | Context injection + research + task sync |
+| `SessionStart` | `session-start` | Restore state from the DB, not the chat |
+| `Notification` | `notification` | Terminal bell on attention events (CC 2.1.141) |
+| `MessageDisplay` | `message-display` | Message pass-through transform (CC 2.1.152) |
+| `Stop` | `stop` | 3-witness verify or block |
 
-The `pre-write`/`post-write` gates carry the hard enforcement (skills, research, anti-pattern scan) on file mutations; `pre-tool`/`post-tool` cover every other tool (Bash blocklist, context injection, research tracking).
+Kavach tracks Claude Code's hook surface as it evolves — the binary also dispatches gates for the wider lifecycle (`pre-compact`/`post-compact`, `session-end`, `worktree-create`/`worktree-remove`, `permission-request`, `elicitation`, `teammate-idle`, `task-completed`, `config-change`, `instructions-loaded`, and more); wire any of them with the same `kavach gates <name> --hook` form. Recent surface adoptions: `reloadSkills` + `sessionTitle` on `session-start` (CC 2.1.152), the `effort.level` / `$CLAUDE_EFFORT` input that lets gates modulate strictness by effort tier (CC 2.1.133), and `ultracode` intent recognition (CC 2.1.160). A fuller, timeout-annotated reference set ships under [`transfer-package/settings.json`](transfer-package/settings.json).
 
 ### Install the CLI toolbelt
 
