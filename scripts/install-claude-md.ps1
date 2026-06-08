@@ -10,13 +10,15 @@ if (-not (Test-Path $src)) {
     exit 1
 }
 
-$home = $env:USERPROFILE
-if ([string]::IsNullOrEmpty($home)) {
+# NB: $HOME is a read-only automatic variable in PowerShell — assigning to it
+# throws. Use a distinct name for the resolved profile path.
+$userProfile = $env:USERPROFILE
+if ([string]::IsNullOrEmpty($userProfile)) {
     Write-Error 'USERPROFILE is not set'
     exit 1
 }
 
-$destDir = Join-Path $home '.claude'
+$destDir = Join-Path $userProfile '.claude'
 $dest = Join-Path $destDir 'CLAUDE.md'
 
 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
