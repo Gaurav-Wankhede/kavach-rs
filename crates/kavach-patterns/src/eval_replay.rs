@@ -301,15 +301,24 @@ impl From<serde_json::Error> for EmitError {
 /// Default trajectory directory: ~/.kavach/trajectories/
 /// Stop hooks call this with their session id to append a single line.
 ///
+/// The base resolves from `KAVACH_HOME` if set, else `dirs::home_dir()`. The env
+/// override is the only platform-portable test seam: `dirs::home_dir()` reads
+/// `$HOME` on Unix but calls the Win32 `SHGetKnownFolderPath` on Windows, so it
+/// ignores env vars there — tests cannot redirect it by setting `HOME`/`USERPROFILE`.
+/// It also matches the `KAVACH_CONFIG_DIR` convention for operator relocation.
+///
 /// # Errors
 /// Returns `EmitError::Io` if the home directory is not found or directory creation fails.
 pub fn default_trajectory_path(session_id: &str) -> Result<std::path::PathBuf, EmitError> {
-    let home = dirs::home_dir().ok_or_else(|| {
-        EmitError::Io(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "no home dir",
-        ))
-    })?;
+    let home = std::env::var_os("KAVACH_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(dirs::home_dir)
+        .ok_or_else(|| {
+            EmitError::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "no home dir",
+            ))
+        })?;
     let dir = home.join(".kavach").join("trajectories");
     std::fs::create_dir_all(&dir)?;
     Ok(dir.join(format!("{session_id}.jsonl")))

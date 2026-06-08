@@ -22,13 +22,14 @@ fn bash_input(command: &str) -> HookInput {
 
 #[test]
 fn handle_appends_a_bash_event_to_the_session_tape() {
-    // Point HOME at a temp dir so the tape lands somewhere we can read + clean up.
-    // `default_trajectory_path` is HOME-rooted (~/.kavach/trajectories/<sid>.jsonl).
+    // `default_trajectory_path` roots the tape at KAVACH_HOME/.kavach/trajectories/.
+    // KAVACH_HOME is the portable seam: `dirs::home_dir()` ignores env vars on
+    // Windows (it calls SHGetKnownFolderPath), so setting HOME would not redirect it.
     let home = std::env::temp_dir().join(format!("kavach_capture_e2e_{}", std::process::id()));
     std::fs::create_dir_all(&home).unwrap();
 
     let sid = "sess_capture_proof";
-    temp_env::with_var("HOME", Some(home.as_os_str()), || {
+    temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
         let mut session = kavach_session::SessionState::default();
         session.session_id = sid.to_owned();
 
@@ -67,7 +68,7 @@ fn empty_session_id_writes_no_tape() {
     // The no-op guard: a missing session id must not pollute a default path.
     let home = std::env::temp_dir().join(format!("kavach_capture_noid_{}", std::process::id()));
     std::fs::create_dir_all(&home).unwrap();
-    temp_env::with_var("HOME", Some(home.as_os_str()), || {
+    temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
         let mut session = kavach_session::SessionState::default();
         session.session_id.clear();
         drop(handle(&bash_input("cargo check"), &mut session));
