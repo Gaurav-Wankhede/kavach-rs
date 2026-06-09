@@ -11,11 +11,11 @@ pub mod types;
 
 pub use backlog::promote_next_backlog;
 pub use card_mutation::{claim_card, verify_card};
-pub use dispatch::{next_open_hunt, next_open_task, ready_set};
+pub use dispatch::{next_open_hunt, next_open_task, open_set_census, ready_set};
 pub use query::{entry_status, list_done_cards, list_titles};
 pub use types::{
     ClaimCardParams, ClaimCardResult, EntryStatusParams, EntryStatusResult, ListTitlesParams,
-    NextOpenTaskParams, NextTaskResult, TitleRow, VerifyCardResult,
+    NextOpenTaskParams, NextTaskResult, OpenSetCensus, TitleRow, VerifyCardResult,
 };
 
 #[cfg(test)]

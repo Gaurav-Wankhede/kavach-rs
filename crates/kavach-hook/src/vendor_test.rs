@@ -19,7 +19,35 @@ fn detects_codex_from_turn_id() {
 }
 
 #[test]
+fn detects_cursor_from_camelcase_event_when_id_fields_absent() {
+    // workspaceOpen omits conversation_id/generation_id/model — the camelCase
+    // event name is the ONLY tell. Before the fix this fell through to CC.
+    let p = r#"{"hook_event_name":"workspaceOpen","workspace_roots":["/r"]}"#;
+    assert_eq!(Vendor::detect(p), Vendor::Cursor);
+    // Even with NO workspace_roots, the event vocabulary alone is decisive.
+    let bare = r#"{"hook_event_name":"beforeSubmitPrompt","prompt":"hi"}"#;
+    assert_eq!(Vendor::detect(bare), Vendor::Cursor);
+}
+
+#[test]
+fn detects_cursor_from_cursor_version_field() {
+    let p = r#"{"cursor_version":"1.2.3","hook_event_name":"PreToolUse"}"#;
+    assert_eq!(Vendor::detect(p), Vendor::Cursor);
+}
+
+#[test]
+fn pascalcase_event_is_not_mistaken_for_cursor() {
+    // CC/Codex PascalCase events must NOT trip the Cursor camelCase matcher.
+    let p = r#"{"hook_event_name":"PreToolUse","tool_name":"Bash"}"#;
+    assert_eq!(Vendor::detect(p), Vendor::ClaudeCode);
+}
+
+#[test]
 fn unknown_or_plain_payload_defaults_to_claude_code() {
+    // NOTE: detect() now consults env when the payload is inconclusive. These
+    // assertions hold whenever the test process carries no harness env marker
+    // (CODEX_HOME / PLUGIN_ROOT / CURSOR_*), which is the case under nextest's
+    // per-test isolated environment.
     assert_eq!(
         Vendor::detect(r#"{"session_id":"s1","tool_name":"Bash"}"#),
         Vendor::ClaudeCode

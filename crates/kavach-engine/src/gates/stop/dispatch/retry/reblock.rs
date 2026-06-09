@@ -105,5 +105,5 @@ fn all_blocked_or_autoverify(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     if outcome == AutoVerify::WitnessFailed {
         return keystone_repair();
     }
-    continue_next_phase()
+    continue_next_phase(&ctx.session.project)
 }

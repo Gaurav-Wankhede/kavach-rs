@@ -6,7 +6,7 @@ use super::super::*;
 #[test]
 fn continuation_menu_blocks_choice_offering() {
     for m in [
-        "Say \"continue to W4\" and I'll proceed, or redirect me to the JLM port.",
+        "Say \"continue to W4\" and I'll proceed, or redirect me to the Jacobs Ladder Marketing port.",
         "Want me to continue with the migration or switch to the API work?",
         "I can continue here, or pivot to the other thread — let me know which to proceed.",
         "say go and i'll continue, or redirect me to the other task",
@@ -23,7 +23,7 @@ fn continuation_menu_catches_announce_then_offer_out() {
         "X is the next card unless you want me to redirect.",
         "The index pages are next up — want me to proceed, or redirect me?",
         "Next step is the directory port; let me know if you'd like to switch.",
-        "unless you'd like me to pivot, the next task is the JLM client",
+        "unless you'd like me to pivot, the next task is the Jacobs Ladder Marketing client",
     ] {
         assert!(detect_continuation_menu(m).unwrap(), "missed: {m}");
     }
@@ -45,8 +45,10 @@ fn continuation_menu_allows_announce_then_execute() {
 #[test]
 fn continuation_menu_suppressed_for_legit_stop_and_ask() {
     assert!(
-        !detect_continuation_menu("you asked me to choose, so: continue to W4 or switch to JLM?")
-            .unwrap()
+        !detect_continuation_menu(
+            "you asked me to choose, so: continue to W4 or switch to Jacobs Ladder Marketing?"
+        )
+        .unwrap()
     );
     assert!(
         !detect_continuation_menu(

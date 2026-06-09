@@ -68,3 +68,16 @@ pub struct VerifyCardResult {
     pub status: String,
     pub verified: bool,
 }
+
+/// Open-set census for the stop gate's board-drained branch.
+///
+/// `runnable` = cards in a dispatchable status; `blocked` = those of them held
+/// back (blocked deps / owner-gate). `runnable == 0` → board truly empty;
+/// `runnable > 0 && blocked == runnable` → every remainder blocked → clean
+/// `[ALL_BLOCKED]` stop.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct OpenSetCensus {
+    pub runnable: usize,
+    pub blocked: usize,
+}

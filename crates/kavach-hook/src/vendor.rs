@@ -6,7 +6,8 @@
 //!
 //! Each harness spawns the same kavach binary and pipes JSON over stdin/stdout,
 //! but in its OWN dialect. This module is the anti-corruption layer: it detects
-//! which harness called (hybrid: explicit override wins, else payload sniff),
+//! which harness called (hybrid: explicit override wins, else payload sniff,
+//! else env marker for lifecycle events whose payload is CC-shaped),
 //! LOWERS that harness's native input into the canonical [`HookInput`] pivot the
 //! gates reason over, and RENDERS the canonical [`HookResponse`] verdict back
 //! into that harness's native output contract — including its native failure
@@ -74,24 +75,70 @@ impl Vendor {
         Self::detect(raw_payload)
     }
 
-    /// Auto-detect the vendor from the raw payload's shape. Cursor and Codex each
-    /// carry signature fields a Claude Code payload never does; anything else is
-    /// treated as Claude Code (the canonical, most-compatible default).
+    /// Auto-detect the vendor from the raw payload's shape, then — only if the
+    /// payload is inconclusive — from the process environment.
+    ///
+    /// Payload signals are preferred because they are per-invocation and cannot be
+    /// stale. But several lifecycle events carry NO distinguishing payload field:
+    /// Cursor's `workspaceOpen` omits `conversation_id`/`generation_id`/`model`,
+    /// and Codex's `SessionStart`/`Stop`/`PreCompact`/`UserPromptSubmit` carry no
+    /// `turn_id` — their base shape is byte-for-byte a Claude Code payload. For
+    /// those, the harness's exported env markers are the only reliable tell, so we
+    /// fall back to them rather than silently defaulting to Claude Code.
+    /// SOURCES: <https://cursor.com/docs/hooks> · <https://developers.openai.com/codex/hooks>
     #[must_use]
     pub fn detect(raw_payload: &str) -> Self {
-        let Ok(v) = serde_json::from_str::<serde_json::Value>(raw_payload) else {
-            return Self::ClaudeCode;
-        };
+        if let Some(v) = Self::detect_from_payload(raw_payload) {
+            return v;
+        }
+        Self::detect_from_env().unwrap_or_default()
+    }
+
+    /// Detect from payload shape alone. `None` when the payload carries no
+    /// vendor-distinguishing signal (a bare Claude-Code-shaped object, or any
+    /// non-object) — the caller then consults the environment.
+    fn detect_from_payload(raw_payload: &str) -> Option<Self> {
+        let v = serde_json::from_str::<serde_json::Value>(raw_payload).ok()?;
         let has = |k: &str| v.get(k).is_some_and(|x| !x.is_null());
-        // Cursor: conversation_id + workspace_roots are unique to its payload.
-        if has("conversation_id") || has("workspace_roots") || has("generation_id") {
-            return Self::Cursor;
+        let event = v.get("hook_event_name").and_then(|e| e.as_str());
+
+        // Cursor: any of its unique top-level fields, OR a camelCase event name
+        // from its vocabulary — the latter is the ONLY signal on `workspaceOpen`,
+        // which omits every id field but still names a Cursor-only event.
+        if has("conversation_id")
+            || has("workspace_roots")
+            || has("generation_id")
+            || has("cursor_version")
+            || event.is_some_and(is_cursor_event)
+        {
+            return Some(Self::Cursor);
         }
-        // Codex: turn_id is its turn-scope extension over the CC contract.
+        // Codex: `turn_id` is its turn-scope extension over the CC contract. (Its
+        // non-turn events are payload-indistinguishable from CC — caught by env.)
         if has("turn_id") {
-            return Self::Codex;
+            return Some(Self::Codex);
         }
-        Self::ClaudeCode
+        None
+    }
+
+    /// Detect from harness-exported env markers — the cross-event fallback for
+    /// lifecycle events whose payload is Claude-Code-shaped. `None` when no marker
+    /// is set, so the caller defaults to Claude Code.
+    ///
+    /// - Cursor sets `CURSOR_TRACE_ID` / `CURSOR_AGENT` during agent sessions.
+    /// - Codex exports the BARE `PLUGIN_ROOT` (Claude Code only ever sets the
+    ///   `CLAUDE_PLUGIN_ROOT` alias) and runs under `CODEX_HOME`.
+    fn detect_from_env() -> Option<Self> {
+        let set = |k: &str| std::env::var_os(k).is_some_and(|v| !v.is_empty());
+        if set("CURSOR_TRACE_ID") || set("CURSOR_AGENT") {
+            return Some(Self::Cursor);
+        }
+        // Bare PLUGIN_ROOT without the CLAUDE_ alias is Codex's tell; CODEX_HOME
+        // confirms a Codex process even when no plugin is loaded.
+        if (set("PLUGIN_ROOT") && !set("CLAUDE_PLUGIN_ROOT")) || set("CODEX_HOME") {
+            return Some(Self::Codex);
+        }
+        None
     }
 
     /// Lower a raw native payload into the canonical [`HookInput`] pivot. Every
@@ -144,6 +191,39 @@ impl Vendor {
             Self::Codex => 2,
         }
     }
+}
+
+/// True if `event` is a Cursor camelCase hook event. Cursor is the only harness
+/// whose event names are camelCase (`beforeShellExecution`, `workspaceOpen`…);
+/// Claude Code and Codex both use `PascalCase` (`PreToolUse`, `SessionStart`), so a
+/// match here is an unambiguous Cursor tell — and the SOLE signal on lifecycle
+/// events like `workspaceOpen` that omit every id field.
+/// SOURCE: <https://cursor.com/docs/hooks>
+fn is_cursor_event(event: &str) -> bool {
+    matches!(
+        event,
+        "sessionStart"
+            | "sessionEnd"
+            | "preToolUse"
+            | "postToolUse"
+            | "postToolUseFailure"
+            | "subagentStart"
+            | "subagentStop"
+            | "beforeShellExecution"
+            | "afterShellExecution"
+            | "beforeMCPExecution"
+            | "afterMCPExecution"
+            | "beforeReadFile"
+            | "afterFileEdit"
+            | "beforeSubmitPrompt"
+            | "preCompact"
+            | "stop"
+            | "afterAgentResponse"
+            | "afterAgentThought"
+            | "beforeTabFileRead"
+            | "afterTabFileEdit"
+            | "workspaceOpen"
+    )
 }
 
 /// Last-ditch Claude-Code block JSON if the canonical response fails to serialize

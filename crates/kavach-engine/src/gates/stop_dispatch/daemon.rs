@@ -57,3 +57,19 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     }
     Err(())
 }
+
+/// `roadmap.open_set_census` → `(runnable, blocked)` counts, or `Err(())` on a
+/// transport error (caller fails closed). Single-shot: the board census is only
+/// consulted on the already-drained branch, where a daemon spawned by the prior
+/// `rpc_next` self-heal is already warm; an outage here degrades to "do not
+/// clean-stop", never a wrong "board empty".
+pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64)>, ()> {
+    let params = serde_json::json!({ "project": project_slug });
+    kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
+        .map_err(|_| ())
+        .map(|v| {
+            let runnable = v.get("runnable").and_then(serde_json::Value::as_u64);
+            let blocked = v.get("blocked").and_then(serde_json::Value::as_u64);
+            runnable.zip(blocked)
+        })
+}

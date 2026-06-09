@@ -59,6 +59,8 @@ pub mod bandit_log;
 pub mod bidi_unicode_guard;
 pub mod database_ops_guard;
 pub mod design_patterns_guard;
+pub mod design_patterns_rules;
+pub mod design_patterns_scan;
 pub mod destructive_cli_guard;
 pub mod dioxus_guard;
 pub mod dsa_guard;

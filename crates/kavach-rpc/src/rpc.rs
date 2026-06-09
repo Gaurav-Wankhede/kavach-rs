@@ -389,6 +389,15 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register roadmap.ready_set: {e}")))?;
 
     module
+        .register_async_method("roadmap.open_set_census", |params, ctx, _ext| async move {
+            let p: roadmap::NextOpenTaskParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            roadmap::open_set_census(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register roadmap.open_set_census: {e}")))?;
+
+    module
         .register_async_method("roadmap.next_open_hunt", |params, ctx, _ext| async move {
             let p: roadmap::NextOpenTaskParams = params
                 .parse()

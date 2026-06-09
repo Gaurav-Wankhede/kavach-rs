@@ -1,6 +1,6 @@
 //! Next-dispatchable selectors: task / hunt / backlog, with fail-closed sentinel.
 use super::card::SOURCE_DOWN_KEY;
-use super::daemon::rpc_next;
+use super::daemon::{rpc_next, rpc_open_census};
 
 fn source_down_sentinel() -> (String, String) {
     (
@@ -37,6 +37,20 @@ pub(crate) fn get_next_hunt_info(project_slug: &str) -> Option<(String, String)>
 /// loop keeps draining the roadmap rather than halting on an empty open-set.
 pub(crate) fn get_next_backlog_info(project_slug: &str) -> Option<(String, String)> {
     select(project_slug, "roadmap.promote_next_backlog")
+}
+
+/// Open-set census distinguishing a BLOCKED remainder from a truly empty board.
+/// `(runnable, blocked)` counts of dispatch-status cards / those held back by
+/// unmet deps or owner-gating. `None` on empty slug or RPC outage — the caller
+/// fails closed (treats an unobservable board as "do not clean-stop").
+pub(crate) fn open_set_census(project_slug: &str) -> Option<(u64, u64)> {
+    if project_slug.is_empty() {
+        return None;
+    }
+    match rpc_open_census(project_slug) {
+        Ok(Some((r, b))) => Some((r, b)),
+        Ok(None) | Err(()) => None,
+    }
 }
 
 /// Shared selector body: empty slug → None; RPC down → fail-closed sentinel.
