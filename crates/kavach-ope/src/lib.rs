@@ -30,6 +30,7 @@ pub mod audit;
 pub mod controller;
 pub mod dm;
 pub mod doubly_robust;
+pub mod explore;
 pub mod ips;
 pub mod label;
 pub mod trust;
