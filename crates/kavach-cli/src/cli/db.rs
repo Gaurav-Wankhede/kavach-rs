@@ -519,6 +519,20 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         name: String,
     },
     /// Store an implementation-flow DAG (structured JSON ingest, render-on-read)
+    #[command(
+        long_about = "Persist an implementation flow as a DAG in the entity graph (store-as-DAG, \
+render-on-read). The flow is native graph: a `flow` anchor + `flow_step` nodes joined by \
+`contains` and `depends_on` edges — traversable, cycle-checked (a `depends_on` cycle is \
+rejected), and embeddable for awareness. Mermaid is a VIEW, not the store: ingest is structured \
+JSON `{steps:[{id,label,shape?}],edges:[{from,to}]}`; the optional `--mermaid` source is cached \
+for round-trip fidelity but the DAG is the source of truth. Idempotent on (project, key).",
+        after_help = "EXAMPLES:\n  \
+kavach db flow-add --project P --key build-flow --title 'Build Flow' --steps-json steps.json\n  \
+echo '{\"steps\":[{\"id\":\"a\",\"label\":\"compile\"},{\"id\":\"b\",\"label\":\"test\"}],\"edges\":[{\"from\":\"a\",\"to\":\"b\"}]}' | kavach db flow-add --project P --key ci --title CI\n\n\
+The DAG renders back to a Mermaid `flowchart TD` via `kavach db flow-show`; project flows are \
+injected into session-start context as [FLOW] Mermaid for implementation-order awareness.\n\n\
+WHEN: Capture how an implementation HAS to be ordered, so future sessions recall the plan as a graph."
+    )]
     FlowAdd {
         /// Project slug the flow belongs to
         #[arg(long)]
@@ -537,6 +551,16 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         mermaid: Option<String>,
     },
     /// Render a stored implementation-flow DAG as Mermaid (default) or JSON
+    #[command(
+        long_about = "Render a stored flow DAG. `--format mermaid` (default) emits a \
+`flowchart TD` regenerated from the graph (cached `--mermaid` source is reused only when its \
+topology matches, else regenerated — the DAG is authoritative); `--format json` emits the raw \
+{steps,edges}. Read-only.",
+        after_help = "EXAMPLES:\n  \
+kavach db flow-show --project P --key build-flow           # Mermaid flowchart TD\n  \
+kavach db flow-show --project P --key build-flow --format json\n\n\
+WHEN: Recall the intended implementation order; paste the Mermaid into any renderer to view the graph."
+    )]
     FlowShow {
         /// Project slug
         #[arg(long)]
