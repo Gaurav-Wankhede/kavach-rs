@@ -23,7 +23,11 @@ pub(super) fn resolve_project_context(cwd: &str) -> Result<Option<ProjectContext
     let rt = tokio::runtime::Runtime::new()
         .map_err(|e| EngineError::Session(format!("tokio runtime: {e}")))?;
     rt.block_on(async {
-        let db = kavach_surreal::open_default()
+        // Resilient open: this gate resolves project context inside a hook
+        // child, where a daemon mid-restart can transiently hold the RocksDB
+        // lock. Wait it out across bounded backoff instead of racing-and-failing
+        // (rca-stop-hook-surreal-lock-direct-open-bypasses-rpc).
+        let db = kavach_surreal::open_default_resilient()
             .await
             .map_err(|e| EngineError::Session(format!("open db: {e}")))?;
         let Some(project) = kavach_surreal::projects::find_by_path(&db, cwd)

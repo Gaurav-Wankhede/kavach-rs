@@ -33,7 +33,7 @@ pub(crate) fn DecisionsList(rows: Resource<LoadState>) -> Element {
                         on_delete: move |t: EntryRef| {
                             spawn(async move {
                                 delete(&t);
-                                *REFRESH_TICK.write() += 1;
+                                REFRESH_TICK.with_mut(|tick| *tick = tick.wrapping_add(1));
                             });
                         },
                     }

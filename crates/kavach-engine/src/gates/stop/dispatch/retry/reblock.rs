@@ -9,8 +9,8 @@ use core::ops::ControlFlow;
 mod outcome;
 
 use outcome::{continue_next_phase, keystone_repair};
-
 use super::probe::next_dispatch;
+use crate::gates::loop_frame;
 use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{
     AutoVerify, SOURCE_DOWN_KEY, auto_verify_done_cards, claim_card,
@@ -20,16 +20,22 @@ use crate::gates::stop_dispatch::{
 /// by an agent (owner action / prod deploy / external prerequisite). Surfaced on
 /// every re-block so an agent NEVER has to reverse-engineer the park mechanism
 /// or — worse — fake completion / mutate rows to dodge the scheduler. The
-/// dispatcher's `is_agent_gated` (k8s schedulingGates pattern) skips any card
-/// whose body carries this marker, exactly like an unmet dependency: parked
-/// honestly, NOT marked done/verified.
+/// dispatcher's `is_owner_gated` (k8s schedulingGates pattern) skips any card
+/// whose STRUCTURED `owner_gated` flag is set, exactly like an unmet dependency:
+/// parked honestly, NOT marked done/verified.
+///
+/// Owner directive 2026-06-13: NEVER write `AGENT_BLOCKED:`/`OWNER-GATED` prose
+/// keywords into card bodies (state-in-prose anti-pattern, retired). The skip
+/// state is the typed `owner_gated` column; the only two legal moves on a
+/// non-progressable card are DELETE it or REFINE it to its latest real need.
 pub(super) const PARK_HINT: &str = " IF this card cannot be built by an agent \
-    (owner-only / prod deploy / external prerequisite): do NOT fake completion \
-    and do NOT edit rows to dodge dispatch — instead park it honestly by adding a \
-    line `AGENT_BLOCKED: <one-line reason>` to its content \
-    (`kavach db write --project <slug> --category roadmap --key <key> \
-    --content '...AGENT_BLOCKED: <reason>'`); the scheduler then skips it like an \
-    unmet dependency. Otherwise, build it now.";
+    (owner-only / prod deploy / external prerequisite): do NOT fake completion, \
+    do NOT mutate rows to dodge dispatch, and do NOT add block-keywords to the \
+    body. Instead either (a) DELETE the card if it is obsolete, or (b) REFINE it \
+    to its latest real need and set the structured owner-gate flag: \
+    `kavach db status-update --project <slug> --category roadmap --key <key> \
+    --owner-gated true`; the scheduler then skips it like an unmet dependency. \
+    Otherwise, build it now.";
 
 /// Run the three-tier re-block while under the breaker ceiling. `Continue` only
 /// when the ceiling is spent or no terminal branch fired (falls through).
@@ -58,12 +64,17 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             // the compiled workflow rather than hand-executing the card.
             let harness =
                 super::super::harness_suffix(&ctx.session.project, &priority).unwrap_or_default();
+            let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&title));
+            let reward_prefix = loop_frame::build_reward_stop_last(ctx.session);
             drop(kavach_hook::exit_stop_block(&format!(
-                "STOP BLOCKED ({attempt}/{max}): kanban has runnable work. \
+                "{loop_prefix}{reward_prefix}STOP BLOCKED ({attempt}/{max}): kanban has runnable work. \
                  NEXT {tier} [{priority}]: {title}. CLAIMED — now in_progress in \
                  the Kavach DB; resume this work NOW. Stop is forced after {max} \
                  re-blocks; the card stays open and you resume work THIS turn per \
-                 §FOCUS NEVER-PROPOSE-SESSION-BREAK.{harness}{PARK_HINT}"
+                 §FOCUS NEVER-PROPOSE-SESSION-BREAK. CONTRACT: claim -> implement \
+                 -> 3-witness verify (artifact exists -> diff landed -> build \
+                 passes) -> close, all this turn; loophole-check before any done \
+                 claim.{harness}{PARK_HINT}"
             )));
             ControlFlow::Break(())
         }

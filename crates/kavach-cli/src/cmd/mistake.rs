@@ -19,6 +19,19 @@ use std::process::Command as ProcessCommand;
 use clap::{Args, Subcommand};
 
 #[derive(Debug, Args)]
+#[command(
+    about = "Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks)",
+    long_about = "The mistake ledger records behavioral blocks from gates (loop escapes, \
+unpersisted findings, loophole misses). Rows accumulate hit_count across sessions so \
+session-start can inject hot patterns.\n\n\
+WHEN: After a stop-gate block, inspect the row; use stats before tuning gate policy.",
+    after_help = "EXAMPLES:\n  \
+kavach mistake stats --project nicole-carpenter\n  \
+kavach mistake list --project P --limit 10 [--gate behavioral_breaker_tripped]\n  \
+kavach mistake inspect --project P --key mistake.<gate>.<slug>\n  \
+kavach mistake clear --project P --key K --confirm\n  \
+kavach mistake clear-all --project P --confirm"
+)]
 pub(crate) struct MistakeArgs {
     #[command(subcommand)]
     pub action: MistakeAction,
@@ -26,35 +39,51 @@ pub(crate) struct MistakeArgs {
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum MistakeAction {
+    /// List mistake ledger rows sorted by `hit_count` (most recurring first).
     List {
+        /// Project slug whose mistake rows to list.
         #[arg(long)]
         project: String,
+        /// Max rows to print (default 10).
         #[arg(long, default_value_t = 10)]
         limit: usize,
+        /// Filter to one gate name (e.g. `behavioral_breaker_tripped`).
         #[arg(long)]
         gate: Option<String>,
     },
+    /// Show full content for one mistake row (gate block detail + metadata).
     Inspect {
+        /// Project slug.
         #[arg(long)]
         project: String,
+        /// Mistake row key (from `mistake list` or stop-gate advisory).
         #[arg(long)]
         key: String,
     },
+    /// Delete one mistake row after human review (--confirm required).
     Clear {
+        /// Project slug.
         #[arg(long)]
         project: String,
+        /// Mistake row key to delete.
         #[arg(long)]
         key: String,
+        /// Required safety flag — refuses without it.
         #[arg(long)]
         confirm: bool,
     },
+    /// Wipe all mistake rows for a project (--confirm required).
     ClearAll {
+        /// Project slug.
         #[arg(long)]
         project: String,
+        /// Required safety flag — refuses without it.
         #[arg(long)]
         confirm: bool,
     },
+    /// Aggregate hit counts by gate (dashboard for recurring failures).
     Stats {
+        /// Project slug.
         #[arg(long)]
         project: String,
     },
@@ -167,11 +196,6 @@ fn clear_all(project: &str, confirm: bool) -> i32 {
         eprintln!("kavach mistake clear-all: db query failed");
         return 1;
     };
-    // FIX [C2 reviewer cold-cluster] wiped counter was unconditionally
-    // incremented — daemon-down / row-already-gone / permission-denied all
-    // silently inflated the "wiped N row(s)" message. Now gate on
-    // o.status.success() and report failed deletions separately.
-    // SOURCE: github.com/rust-lang/rust/issues/73126 (output() hazards).
     let mut wiped = 0_usize;
     let mut failed = 0_usize;
     for (key, _) in &rows {

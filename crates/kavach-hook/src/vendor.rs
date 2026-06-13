@@ -97,7 +97,11 @@ impl Vendor {
     /// Detect from payload shape alone. `None` when the payload carries no
     /// vendor-distinguishing signal (a bare Claude-Code-shaped object, or any
     /// non-object) — the caller then consults the environment.
-    fn detect_from_payload(raw_payload: &str) -> Option<Self> {
+    ///
+    /// `pub(crate)` so tests can assert the payload-shape contract WITHOUT the
+    /// ambient env interference of [`detect`] (which falls back to env markers a
+    /// parent harness process may set, e.g. `CURSOR_AGENT` under the Cursor IDE).
+    pub(crate) fn detect_from_payload(raw_payload: &str) -> Option<Self> {
         let v = serde_json::from_str::<serde_json::Value>(raw_payload).ok()?;
         let has = |k: &str| v.get(k).is_some_and(|x| !x.is_null());
         let event = v.get("hook_event_name").and_then(|e| e.as_str());

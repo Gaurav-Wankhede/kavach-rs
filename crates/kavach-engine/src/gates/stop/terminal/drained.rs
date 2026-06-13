@@ -1,32 +1,32 @@
 //! Shared drained-board terminal verdict — the SINGLE source of truth both stop
 //! terminals emit when the dispatch tiers find no runnable card.
 //!
-//! A drained board is NOT a finished plan. Two states hide behind "nothing
-//! dispatchable" and they have OPPOSITE correct outcomes:
+//! Three states hide behind "nothing dispatchable" with DIFFERENT outcomes:
 //!
+//! 0. The session is pinned to a lane (`KAVACH_LANE`) and its lane + the unlaned
+//!    backlog are both drained → `[LANE_DRAINED]` clean stop (lane.rs). Never
+//!    cross into a foreign lane; that is another session's work.
 //! 1. The board still holds runnable-status cards, but EVERY one is held back by
-//!    an unmet dep or an owner-gate (`AGENT_BLOCKED` / prod-deploy / CI-green).
-//!    That is a DECISION hand-off, not AI work → `[ALL_BLOCKED]` naming the
-//!    prerequisite, then a clean stop.
-//! 2. The board is genuinely empty (zero runnable cards). A frozen `[PLAN]` doc
-//!    MAY still name an un-built next phase → a bounded `[AUTO_CONTINUE]` nudge to
-//!    check the plan and, if found, materialize it as a card and build it.
+//!    an unmet dep or an owner-gate → `[ALL_BLOCKED]` clean stop.
+//! 2. The board is genuinely empty. A frozen `[PLAN]` doc MAY name an un-built
+//!    next phase → a bounded `[AUTO_CONTINUE]` nudge.
 //!
-//! Lives HERE (under `terminal`, `pub(in crate::gates::stop)`) so BOTH the
-//! first-pass terminal (`clean_exit`) and the retry terminal
-//! (`dispatch::retry::reblock::outcome::continue_next_phase`) emit the IDENTICAL
-//! verdict. Wiring it into only one terminal was the bug: an empty board on a
-//! non-re-entrant stop reached `clean_exit`, which stopped silently — never the
-//! census or the plan nudge. The verdict is loop-SAFE: callers emit it via
-//! `exit_stop_context` (allows the stop, no hard block), so it can never spin.
+//! Lives HERE (`pub(in crate::gates::stop)`) so BOTH the first-pass terminal
+//! (`clean_exit`) and the retry terminal emit the IDENTICAL verdict. The verdict
+//! is loop-SAFE: callers emit it via `exit_stop_context` (allows the stop, no
+//! hard block), so it can never spin.
 
-/// The census-aware terminal context for a drained dispatch: `[ALL_BLOCKED]` when
-/// every remaining card is owner-gated, else the board-drained `[PLAN]` nudge.
+mod lane;
+
+/// The census-aware terminal context for a drained dispatch.
 ///
 /// `open_set_census` returns `Some((runnable, blocked))` or `None` on RPC outage;
 /// `None` fails closed to the nudge (never a wrong clean-stop on an unobservable
 /// board).
 pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String {
+    if let Some(lane_name) = lane::lane_env() {
+        return lane::lane_drained_context(&lane_name);
+    }
     if census_is_all_blocked(crate::gates::stop_dispatch::open_set_census(project)) {
         all_blocked_context()
     } else {
@@ -97,54 +97,5 @@ fn board_drained_plan_context() -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{all_blocked_context, board_drained_plan_context, census_is_all_blocked};
-
-    #[test]
-    fn lone_blocked_card_is_all_blocked() {
-        // The reported bug: one todo card, blocked on Windows CI → clean stop.
-        assert!(census_is_all_blocked(Some((1, 1))));
-    }
-
-    #[test]
-    fn every_remaining_card_blocked_is_all_blocked() {
-        assert!(census_is_all_blocked(Some((3, 3))));
-    }
-
-    #[test]
-    fn some_runnable_some_blocked_is_not_all_blocked() {
-        // A dispatchable card exists — defer to the nudge (real work remains).
-        assert!(!census_is_all_blocked(Some((3, 2))));
-    }
-
-    #[test]
-    fn empty_board_is_not_all_blocked() {
-        // Zero runnable cards → PLAN nudge, not an ALL_BLOCKED stop.
-        assert!(!census_is_all_blocked(Some((0, 0))));
-    }
-
-    #[test]
-    fn rpc_outage_fails_closed_to_nudge() {
-        // None = census unobservable → never a wrong clean-stop.
-        assert!(!census_is_all_blocked(None));
-    }
-
-    #[test]
-    fn all_blocked_context_names_the_owner_gate() {
-        let c = all_blocked_context();
-        assert!(c.contains("ALL_BLOCKED"), "tag present: {c}");
-        assert!(c.contains("owner-gate"), "names the prerequisite class: {c}");
-    }
-
-    #[test]
-    fn plan_context_nudges_instead_of_silent_stop() {
-        // The fix's core: a drained board emits the PLAN nudge, never silence.
-        let c = board_drained_plan_context();
-        assert!(c.contains("AUTO_CONTINUE"), "continue tag present: {c}");
-        assert!(c.contains("un-built next phase"), "names the un-built work: {c}");
-        assert!(
-            c.contains("genuine clean stop"),
-            "still allows a real stop when the plan is fully built: {c}"
-        );
-    }
-}
+#[path = "drained_test.rs"]
+mod tests;

@@ -17,6 +17,7 @@ use std::path::PathBuf;
 /// If a template references a name absent here, the install would no-op or error.
 const VALID_GATES: &[&str] = &[
     "pre-write",
+    "pre-implementation",
     "post-write",
     "pre-tool",
     "post-tool",
@@ -86,6 +87,14 @@ fn cursor_uses_its_native_camelcase_events() {
         "must use Cursor's native event"
     );
     assert!(hooks.contains_key("beforeSubmitPrompt"));
+    assert!(
+        hooks["preToolUse"]
+            .as_array()
+            .and_then(|a| a.first())
+            .and_then(|e| e["command"].as_str())
+            .is_some_and(|c| c.contains("pre-write")),
+        "Write tools must route through pre-write"
+    );
     assert!(
         !hooks.contains_key("PreToolUse"),
         "must NOT use Claude Code event names"

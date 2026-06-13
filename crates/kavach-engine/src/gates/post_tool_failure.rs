@@ -14,8 +14,8 @@ use std::fmt::Write as _;
 
 use kavach_types::HookInput;
 
-use classify::{action_for_type, classify_failure};
-use rpc::{find_autonomous_via_rpc, self_evolve_block, upsert_via_rpc};
+use classify::{action_for_type, classify_failure, is_repeat_failure};
+use rpc::{find_autonomous_via_rpc, tier2_context, upsert_via_rpc};
 
 use crate::error::EngineError;
 
@@ -34,6 +34,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let failure_type = classify_failure(error_text);
     let mut session = kavach_session::get_or_create_session();
     session.increment_turn();
+    // Repeat check BEFORE record_failure_typed overwrites the markers.
+    let (last_tool, last_type) = (&session.last_failure_tool, &session.failure_type);
+    let is_repeat = is_repeat_failure(last_tool, last_type, tool_name, failure_type);
     session.record_failure_typed(tool_name, failure_type);
     let turn_str = session.turn_count.to_string();
     let retryable = if failure_type == "transient" {
@@ -63,7 +66,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             writeln!(ctx, "[DSA_RATIONALE]\n{}", pat.dsa_rationale).ok();
             ctx
         } else {
-            // Tier 2: novel error — seed pattern store, inject SELF_EVOLVE block.
+            // Tier 2: ALWAYS seed the pattern store, but inject context only
+            // on a REPEAT of the same (tool, class) — the raw error is already
+            // in the transcript; a directive per one-off mistake was noise.
             let action = action_for_type(failure_type);
             super::event_log::log_tool_failure(&super::event_log::ToolFailureLog {
                 session_id: &session.session_id,
@@ -75,22 +80,24 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 gate_name: "post_tool_failure",
                 project_slug: &session.project,
             });
-            let mut ctx = kavach_hook::context_block(
-                "TOOL_FAILURE",
-                &[
-                    ("tool", tool_name),
-                    ("t", &turn_str),
-                    ("err", failure_type),
-                    ("retry", retryable),
-                    ("tier", "research"),
-                    ("action", action),
-                ],
-            );
-            ctx.push('\n');
-            ctx.push_str(&self_evolve_block(error_text, tool_name, failure_type));
-            ctx
+            if !is_repeat {
+                drop(kavach_hook::exit_silent());
+                return Ok(());
+            }
+            tier2_context(
+                tool_name,
+                &turn_str,
+                failure_type,
+                retryable,
+                action,
+                error_text,
+            )
         };
 
     drop(kavach_hook::exit_post_tool_failure_context(&context));
+    if super::turn_relay::should_relay() {
+        let one_line = context.lines().next().unwrap_or(&context);
+        super::turn_relay::queue_advisory(&mut session, one_line);
+    }
     Ok(())
 }

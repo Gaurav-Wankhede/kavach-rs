@@ -133,6 +133,11 @@ pub fn read_hook_input_native(
             // gate emitting a bare verdict still renders into the right native
             // contract (e.g. Cursor's Stop → `{continue, followupMessage}`).
             set_output_context(vendor, &input.hook_event_name);
+            // Arm the session-id context so EVERY gate's session load keys the
+            // durable row + stop-reblock counter per conversation — Cursor sets
+            // no KAVACH_SESSION_ID env; it carries the id as conversation_id,
+            // already lowered into input.session_id. No-op for the empty id.
+            kavach_session::set_session_context(&input.session_id);
             Ok((vendor, input))
         }
         Err(e) => {

@@ -15,7 +15,19 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     if backlog_key == SOURCE_DOWN_KEY {
         return source_down::block("roadmap backlog");
     }
-    let _claimed = claim_card(&ctx.session.project, &backlog_key);
+    // Honor the atomic claim: a lost CAS means another session already took this
+    // card — fall through instead of announcing a false claim (multi-session
+    // work-steal guard; see task.rs).
+    if !claim_card(&ctx.session.project, &backlog_key) {
+        log_gate_decision(
+            &ctx.session.session_id,
+            "stop:claim_lost",
+            "continue",
+            &format!("backlog={backlog_key} taken by another session; falling through"),
+            &ctx.session.project,
+        );
+        return ControlFlow::Continue(());
+    }
     if ctx.session.current_kanban_card != backlog_key {
         ctx.session.current_kanban_card.clone_from(&backlog_key);
         ctx.session.save_or_log();

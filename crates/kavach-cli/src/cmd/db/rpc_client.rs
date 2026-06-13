@@ -12,8 +12,9 @@ use kavach_rpc::methods::db::{
     GraphQueryResult, KanbanCloseParams, KanbanCloseResult, KanbanParams, KanbanResult,
     ListPartsParams, ListPartsResult, ListProjectsParams, ListProjectsResult, QueryParams,
     QueryResult, RegisterParams, RegisterPartParams, RegisterPartResult, RegisterResult,
-    RotateParams, RotateResult, SearchParams, SearchResult, SetParentParams, SetParentResult,
-    SetPriorityParams, SetPriorityResult, StatusUpdateParams, StatusUpdateResult, TreeParams,
+    RotateParams, RotateResult, SearchParams, SearchResult, SetLaneParams, SetLaneResult,
+    SetParentParams, SetParentResult, SetPriorityParams, SetPriorityResult, StatusUpdateParams,
+    StatusUpdateResult, TreeParams,
     TreeResult, WipeProjectParams, WipeProjectResult, WriteParams, WriteResult,
 };
 
@@ -244,6 +245,21 @@ pub(super) fn set_priority(
     call::<_, SetPriorityResult>("db.set_priority", Some(params)).map_err(format_err)
 }
 
+pub(super) fn set_lane(
+    project: &str,
+    category: &str,
+    key: &str,
+    lane: Option<String>,
+) -> Result<SetLaneResult, String> {
+    let params = SetLaneParams {
+        project: project.to_owned(),
+        category: category.to_owned(),
+        key: key.to_owned(),
+        lane,
+    };
+    call::<_, SetLaneResult>("db.set_lane", Some(params)).map_err(format_err)
+}
+
 pub(super) fn status_update(
     project: &str,
     category: &str,
@@ -331,6 +347,40 @@ pub(super) fn graph_query(
         limit,
     };
     call::<_, GraphQueryResult>("db.graph_query", Some(params)).map_err(format_err)
+}
+
+pub(super) fn flow_upsert(
+    project_slug: &str,
+    flow_key: &str,
+    flow_title: &str,
+    steps: Vec<kavach_surreal::FlowStepInput>,
+    edges: Vec<kavach_surreal::FlowEdgeInput>,
+    raw_mermaid: Option<String>,
+) -> Result<kavach_rpc::methods::db::FlowUpsertResult, String> {
+    let params = kavach_rpc::methods::db::FlowUpsertParams {
+        project_slug: project_slug.to_owned(),
+        flow_key: flow_key.to_owned(),
+        flow_title: flow_title.to_owned(),
+        steps,
+        edges,
+        raw_mermaid,
+    };
+    call::<_, kavach_rpc::methods::db::FlowUpsertResult>("db.flow_upsert", Some(params))
+        .map_err(format_err)
+}
+
+pub(super) fn flow_render(
+    project_slug: &str,
+    flow_key: &str,
+    format: &str,
+) -> Result<kavach_rpc::methods::db::FlowRenderResult, String> {
+    let params = kavach_rpc::methods::db::FlowRenderParams {
+        project_slug: project_slug.to_owned(),
+        flow_key: flow_key.to_owned(),
+        format: Some(format.to_owned()),
+    };
+    call::<_, kavach_rpc::methods::db::FlowRenderResult>("db.flow_render", Some(params))
+        .map_err(format_err)
 }
 
 #[expect(

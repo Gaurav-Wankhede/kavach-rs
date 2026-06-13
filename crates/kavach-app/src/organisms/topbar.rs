@@ -32,7 +32,7 @@ pub fn TopBar() -> Element {
             button {
                 class: "topbar-refresh",
                 title: "Refresh data",
-                onclick: move |_| { *REFRESH_TICK.write() += 1; },
+                onclick: move |_| { REFRESH_TICK.with_mut(|tick| *tick = tick.wrapping_add(1)); },
                 "↻"
             }
         }

@@ -132,6 +132,25 @@ pub(crate) enum DbAction {
         #[arg(long, conflicts_with = "priority")]
         clear: bool,
     },
+    /// Pin a roadmap card to a dispatch LANE (or clear it back to unlaned).
+    /// A session running `KAVACH_LANE=<name>` dispatches its own lane first,
+    /// then the unlaned backlog, never a foreign lane. Refuses if the row is
+    /// absent (no implicit insert). Roadmap only.
+    LaneSet {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Entry key (must already exist)
+        #[arg(long)]
+        key: String,
+        /// Lane name to pin the card to. Mutually exclusive with --clear.
+        #[arg(long, conflicts_with = "clear")]
+        lane: Option<String>,
+        /// Clear the lane (back to the unlaned general backlog). Mutually
+        /// exclusive with --lane.
+        #[arg(long, conflicts_with = "lane")]
+        clear: bool,
+    },
     /// Sync session state to database
     Sync,
     /// Find project matching an absolute path
@@ -177,6 +196,7 @@ pub(crate) enum DbAction {
         payload: Option<String>,
     },
     /// Fetch a single memory entry by key
+    #[command(after_help = "EXAMPLES:\n  kavach db get --project P --category roadmap --key roadmap.unit.foo --full\n\nWHEN: Before implementing — always `--full` for roadmap units.")]
     Get {
         /// Project slug
         #[arg(long)]
@@ -206,6 +226,13 @@ pub(crate) enum DbAction {
         dry_run: bool,
     },
     /// Show kanban board for a project (todo / `in_progress` / done)
+    #[command(
+        long_about = "Direct SurrealDB read (no RPC). Primary health check for agents.\n\n\
+Open lanes: todo, in_progress, done. Use --include-verified for terminal verified rows.",
+        after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  \
+kavach db kanban --project P --status in_progress --key backend --json\n\n\
+WHEN: Session start and after every card close — prefer over stop-hook pipes."
+    )]
     Kanban {
         /// Project slug
         #[arg(long)]
@@ -224,6 +251,10 @@ pub(crate) enum DbAction {
         /// Filter by key substring (e.g. "backend" matches "backend.crate.foo")
         #[arg(long)]
         key: Option<String>,
+        /// Filter by dispatch lane (exact match). Shows only cards pinned to
+        /// this lane — the board lens for affinity-sharded sessions.
+        #[arg(long)]
+        lane: Option<String>,
         /// Also render terminal `verified` rows in a [VERIFIED] lens. Off by
         /// default — the board shows OPEN work; this surfaces closed items
         /// (e.g. to confirm a unit reached `verified`, not just `done`).
@@ -243,6 +274,7 @@ pub(crate) enum DbAction {
         key: String,
     },
     /// Update the strict status of a memory entry (`todo|in_progress|done|verified`)
+    #[command(after_help = "EXAMPLES:\n  kavach db status-update --project P --category roadmap --key K --status in_progress\n  kavach db status-update --project P --category roadmap --key K --status done\n\nWHEN: Claim card (todo→in_progress), finish work (→done), then run `kavach verify` (→verified).")]
     StatusUpdate {
         /// Project slug
         #[arg(long)]
@@ -255,6 +287,13 @@ pub(crate) enum DbAction {
         /// New status: planned, todo, `in_progress`, done, verified
         #[arg(long)]
         status: String,
+        /// Set the structured owner-gate flag (roadmap only). `true` = the card
+        /// needs an external owner action no agent can self-supply (greenlight /
+        /// prod deploy / live run / secrets); the dispatcher skips it like an
+        /// unmet dependency. Replaces the retired `AGENT_BLOCKED:`/`OWNER-GATED`
+        /// body keywords. Omit to leave the flag unchanged.
+        #[arg(long)]
+        owner_gated: Option<bool>,
     },
     /// Populate the knowledge graph from existing relational data
     PopulateGraph,
@@ -430,5 +469,35 @@ pub(crate) enum DbAction {
         /// Anti-pattern canonical name (e.g. `anti.self_imposed_limit.abc12345`)
         #[arg(long)]
         name: String,
+    },
+    /// Store an implementation-flow DAG (structured JSON ingest, render-on-read)
+    FlowAdd {
+        /// Project slug the flow belongs to
+        #[arg(long)]
+        project: String,
+        /// Flow key, unique per project (e.g. `auth-flow`)
+        #[arg(long)]
+        key: String,
+        /// Display title
+        #[arg(long)]
+        title: String,
+        /// Path to JSON `{steps:[...],edges:[...]}` (reads stdin if omitted)
+        #[arg(long = "steps-json")]
+        steps_json: Option<String>,
+        /// Optional raw Mermaid source cached for round-trip
+        #[arg(long)]
+        mermaid: Option<String>,
+    },
+    /// Render a stored implementation-flow DAG as Mermaid (default) or JSON
+    FlowShow {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Flow key
+        #[arg(long)]
+        key: String,
+        /// Output format: `mermaid` (default) or `json`
+        #[arg(long, default_value = "mermaid")]
+        format: String,
     },
 }

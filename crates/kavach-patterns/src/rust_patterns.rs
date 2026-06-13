@@ -283,6 +283,17 @@ fn build_status_code_patterns() -> Vec<Regex> {
         // 77 P1: 1xx informational returned from handler — wrong layer.
         // hyper handles 100 Continue / 101 Switching at transport; never axum handler.
         mk(r"StatusCode::(?:CONTINUE|SWITCHING_PROTOCOLS|PROCESSING|EARLY_HINTS)\b"),
+        // 78 P1: general named-underscore discard `let _name = <expr>;` — the author
+        // NAMED what the value IS then threw it away, so a return carrying a decision
+        // (bool won/lost, Result ok/err, row count) is silently dropped and the caller
+        // never reacts when it needs to (the dispatch work-steal bug: `let _claimed =
+        // claim_card(...)`). Indices 50-52 catch only DB/HTTP/await; this generalizes.
+        // The `[A-Za-z]` after `_` excludes anonymous `let _ =` / `let _: T =` in the
+        // regex itself. RAII held-for-drop names (guard/lock/span/…) cannot be excluded
+        // with this engine (no lookaround), so `discard_race.rs` filters them per-match
+        // on the captured binding name. MUST stay the LAST entry: indices are positional,
+        // so appending here keeps 0-77 stable (a mid-table insert shifts every later index).
+        mk(r"(?m)^\s*let\s+(_[A-Za-z]\w*)\s*=\s*\S"), // 78 P1 named-underscore discard
     ]
 }
 

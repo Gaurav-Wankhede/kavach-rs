@@ -95,14 +95,51 @@ fn read_live_daemon_pid() -> Option<i32> {
         .then_some(pid)
 }
 
+/// Discover the PID currently holding the `SurrealDB` LOCK file via the OS,
+/// independent of the daemon port file. This is the fallback when the port file
+/// is stale/missing but a live process still holds the OS `fcntl` lock (an
+/// orphaned holder — the exact state that wedged the stop hook:
+/// rca.stop-hook-surreal-lock-orphaned-holder-invisible-to-portfile-eviction).
+///
+/// Uses `lsof -t -- <LOCK path>` (a single PID per line). Only the FIRST live,
+/// positive, non-self PID is returned. Returns None when `lsof` is absent, the
+/// file is unheld, or only this process holds it (never SIGTERM ourselves).
+#[cfg(unix)]
+fn lock_holder_pid_via_os() -> Option<i32> {
+    let mut lock_path = default_db_path();
+    lock_path.push("LOCK");
+    let out = std::process::Command::new("lsof")
+        .args(["-t", "--"])
+        .arg(&lock_path)
+        .output()
+        .ok()?;
+    let self_pid = std::process::id();
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|l| l.trim().parse::<i32>().ok())
+        .find(|&pid| {
+            pid > 0
+                && u32::try_from(pid) != Ok(self_pid)
+                && rustix::process::Pid::from_raw(pid)
+                    .is_some_and(|rp| rustix::process::test_kill_process(rp).is_ok())
+        })
+}
+
 /// Stop the kavach-rpc daemon if it is currently holding the `SurrealDB` lock.
 /// Returns true if a daemon was killed and waited on, false if no live daemon
 /// was found. Used by `open_default` on LOCK errors to clear the contention
 /// before retrying. Daemon is best-effort perf cache — restarting on next
 /// gate fire costs <1s.
+///
+/// Holder discovery is TWO-TIER: the daemon port file first (fast, the common
+/// path), then an OS LOCK-holder probe (`lsof`) as a fallback. The fallback is
+/// load-bearing: the port file and the OS lock are DECOUPLED — a crashed or
+/// partially-cleaned daemon can leave a live process holding the `fcntl` lock
+/// with no/stale port file, making it invisible to port-file-only eviction and
+/// wedging every subsequent open into a doomed backoff (the stop-hook LOCK error).
 #[cfg(unix)]
 fn try_stop_daemon() -> bool {
-    let Some(pid) = read_live_daemon_pid() else {
+    let Some(pid) = read_live_daemon_pid().or_else(lock_holder_pid_via_os) else {
         return false;
     };
     // rustix safe wrapper for POSIX kill(pid, SIGTERM). The daemon installs
@@ -247,6 +284,57 @@ pub async fn open_default_daemon() -> Result<Surreal<Db>> {
     }))
 }
 
+/// Bounded backoff schedule for [`open_default_resilient`]: 5 monotonic steps,
+/// ~3.35s ceiling. The bound is load-bearing — it distinguishes a *restarting*
+/// daemon (rebinds in-window) from a *stale lock after unclean shutdown* (never
+/// recovers — must surface, not spin: CWE-835 / rocksdb#4696).
+fn resilient_backoff() -> impl Iterator<Item = std::time::Duration> {
+    [100_u64, 250, 500, 1000, 1500]
+        .into_iter()
+        .map(std::time::Duration::from_millis)
+}
+
+/// Open the default-path store, tolerating the daemon-restart TOCTOU that any
+/// ephemeral hook child can hit.
+///
+/// [`open_default`] evicts a conflicting daemon and retries ONCE — correct for
+/// a foreground CLI op, but fragile in a short-lived hook child: a daemon
+/// mid-restart grabs the `RocksDB` `fcntl` lock between the eviction and the
+/// retry, and the child fails with `LOCK: Resource temporarily unavailable`
+/// (rocksdb#3114). Every gate/phase/context path that runs inside a hook child
+/// MUST use this resilient open instead of bare [`open_default`], so a
+/// transiently-held lock is waited out across bounded backoff rather than raced.
+/// On a genuinely non-lock error it fails fast (no spin); on lock contention it
+/// retries within the budget, then surfaces the real error.
+///
+/// SINGLE-WRITER NOTE: this is still a *direct* open — it is the correct tool
+/// only for paths that cannot route through the kavach-rpc daemon (the engine
+/// crate cannot depend on the daemon without a cycle). Paths that CAN reach the
+/// daemon should call its RPC instead (see `mistake_ledger_graph`).
+/// SOURCE: <https://github.com/facebook/rocksdb/issues/3114>
+///
+/// # Errors
+/// Propagates the last `Error` if every attempt within the backoff budget still
+/// fails, or immediately on the first non-lock error.
+pub async fn open_default_resilient() -> Result<Surreal<Db>> {
+    let mut last = match open_default().await {
+        Ok(db) => return Ok(db),
+        Err(e) => e,
+    };
+    for backoff in resilient_backoff() {
+        if !is_lock_error(&last) {
+            // Not the restart race — a real fault. Surface now, do not loop.
+            break;
+        }
+        tokio::time::sleep(backoff).await;
+        match open_default().await {
+            Ok(db) => return Ok(db),
+            Err(e) => last = e,
+        }
+    }
+    Err(last)
+}
+
 /// Open an in-memory `SurrealDB` store. Used by tests.
 ///
 /// # Errors
@@ -258,14 +346,5 @@ pub async fn open_memory() -> Result<Surreal<Db>> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_open_memory() -> Result<()> {
-        let db = open_memory().await?;
-        let info: Option<serde_json::Value> = db.query("INFO FOR DB").await?.take(0)?;
-        info.ok_or_else(|| Error::RecordNotFound("INFO FOR DB returned empty result".to_owned()))?;
-        Ok(())
-    }
-}
+#[path = "connection_test.rs"]
+mod tests;

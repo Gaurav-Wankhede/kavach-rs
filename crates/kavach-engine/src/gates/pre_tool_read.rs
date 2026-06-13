@@ -3,6 +3,7 @@ use kavach_types::HookInput;
 /// Handle Read tool pre-check: path blocklist + extension + warn paths.
 pub(crate) fn handle_read(input: &HookInput) {
     let file_path = input.get_string("file_path");
+    let mut session = kavach_session::get_or_create_session();
 
     if kavach_config::is_blocked_path(file_path) {
         drop(kavach_hook::exit_pre_tool_deny(&format!(
@@ -48,15 +49,15 @@ pub(crate) fn handle_read(input: &HookInput) {
              Use values only to determine existing keys before appending new ones.\n\
              Immediately use Write tool after reading — do not store or reference values."
         );
-        drop(kavach_hook::exit_pre_tool_allow(Some(&context)));
+        super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&context));
         return;
     }
 
     if kavach_config::is_warn_path(file_path) {
         let context = format!("sensitive file: {file_path} — proceed with caution");
-        drop(kavach_hook::exit_pre_tool_allow(Some(&context)));
+        super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&context));
         return;
     }
 
-    drop(kavach_hook::exit_pre_tool_allow(None));
+    super::turn_relay::exit_pre_tool_allow_relay(&mut session, None);
 }

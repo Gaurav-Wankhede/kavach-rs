@@ -282,16 +282,23 @@ fn allows_source_env_and_sqlx_with_source_flag() {
 }
 
 #[test]
-fn blocks_psql_completely() {
-    // psql removed from safe_binaries — it was the canonical escape hatch for
-    // bypassing sqlx checksum validation. All DB ops go through sqlx or
-    // kavach db pg-* commands. Both -f (file) and -c (inline) are blocked.
-    assert!(check_env_value_read("source .env && psql -c \"SELECT version()\"").is_some());
-    assert!(check_env_value_read("source .env && psql -f /tmp/query.sql").is_some());
+fn psql_is_operation_aware_after_source() {
+    // Operation-aware policy: psql after `source .env` is SAFE for read/write,
+    // so the env-leak gate does NOT fire (no value is echoed). A bare -f file
+    // load carries no visible verb -> treated as non-destructive here; the psql
+    // write-bypass gate still inspects its contents separately.
+    assert!(check_env_value_read("source .env && psql -c \"SELECT version()\"").is_none());
+    assert!(check_env_value_read("source .env && psql -c \"INSERT INTO t VALUES (1)\"").is_none());
+    assert!(check_env_value_read("source .env && psql -f /tmp/query.sql").is_none());
     assert!(
         check_env_value_read("source .env && /usr/local/bin/psql -c \"SELECT version()\"")
-            .is_some()
+            .is_none()
     );
+    // A destructive verb makes psql unsafe at the env layer too (defense-in-depth).
+    assert!(
+        check_env_value_read("source .env && psql -c \"DELETE FROM users WHERE id=1\"").is_some()
+    );
+    assert!(check_env_value_read("source .env && psql -c \"DROP TABLE users\"").is_some());
 }
 
 #[test]

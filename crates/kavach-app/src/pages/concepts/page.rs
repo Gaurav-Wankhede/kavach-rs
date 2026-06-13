@@ -83,7 +83,7 @@ pub fn ConceptsView() -> Element {
                                     new_desc.set(String::new());
                                     new_source.set(String::new());
                                     add_error.set(String::new());
-                                    *REFRESH_TICK.write() += 1;
+                                    REFRESH_TICK.with_mut(|prev| *prev = prev.wrapping_add(1));
                                 }
                                 Err(e) => add_error.set(e),
                             }

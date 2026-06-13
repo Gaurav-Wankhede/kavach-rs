@@ -220,6 +220,13 @@ DEFINE FIELD IF NOT EXISTS priority ON roadmap TYPE option<int>;
 DEFINE FIELD IF NOT EXISTS priority ON decision TYPE option<int>;
 DEFINE INDEX IF NOT EXISTS idx_roadmap_priority ON roadmap FIELDS project, priority;
 
+-- Lane-affinity sharding: a card may be pinned to a dispatch LANE so a session
+-- running `KAVACH_LANE=<name>` runs its own prioritized slice, falls back to
+-- the unlaned (NULL) general backlog when its lane drains, and never reaches a
+-- foreign lane. NULL = unlaned. Roadmap only; indexed for the two-pass dispatch.
+DEFINE FIELD IF NOT EXISTS lane ON roadmap TYPE option<string>;
+DEFINE INDEX IF NOT EXISTS idx_roadmap_lane ON roadmap FIELDS project, lane;
+
 -- Autonomous harness loop: a roadmap card may carry the dynamic-workflow
 -- pattern the AI chose for it (`harness`, e.g. "worker-critic") and the path to
 -- the compiled `workflow.js` the stop gate dispatches. NULL = no harness (the
@@ -229,6 +236,15 @@ DEFINE FIELD IF NOT EXISTS workflow_path ON roadmap TYPE option<string>;
 -- Index the (project, harness) pair so L3's stop-gate dispatch can find the
 -- harness-bearing cards for a project without a full-table scan.
 DEFINE INDEX IF NOT EXISTS idx_roadmap_harness ON roadmap FIELDS project, harness;
+
+-- Structured owner-gate flag (owner directive 2026-06-13): TRUE = the card needs
+-- an external owner action no agent can self-supply (greenlight / prod deploy /
+-- live run / secrets); the dispatcher (readiness::is_owner_gated) skips it like
+-- an unmet dependency. NULL/false = agent-dispatchable. RETIRES the free-text
+-- `AGENT_BLOCKED:`/`OWNER-GATED` body keywords (state-in-prose anti-pattern) in
+-- favour of a typed column, mirroring `priority`/`lane`. Roadmap only.
+DEFINE FIELD IF NOT EXISTS owner_gated ON roadmap TYPE option<bool>;
+DEFINE INDEX IF NOT EXISTS idx_roadmap_owner_gated ON roadmap FIELDS project, owner_gated;
 
 -- =============================================================================
 -- Migration backfill: v2->v3 import did not materialize the `category` column

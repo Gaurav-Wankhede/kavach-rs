@@ -6,10 +6,24 @@
 
 /// Sentinel key returned when the kanban source-of-truth is unreachable. The
 /// caller BLOCKS the stop (fail-closed) rather than reading a phantom "empty".
-/// kavach-engine is deliberately runtime-free (sync gate hot path) — no
-/// tokio/direct-DB fallback here; fail-closed on RPC outage is the correct
-/// contract for a path where a wrong "no work" answer is worse than an error.
+/// Fail-closed only when RPC **and** direct `SurrealDB` both miss (see
+/// `daemon::direct`). A wrong "no work" answer is worse than an error.
 pub(crate) const SOURCE_DOWN_KEY: &str = "__kanban_source_unreachable__";
+
+/// Query the current `entry_status` for a card. `None` on RPC miss or absent key.
+pub(crate) fn card_entry_status(project_slug: &str, key: &str) -> Option<String> {
+    if project_slug.is_empty() || key.is_empty() {
+        return None;
+    }
+    let params = serde_json::json!({"project": project_slug, "key": key});
+    kavach_rpc::client::call::<_, serde_json::Value>("roadmap.entry_status", Some(params))
+        .ok()
+        .and_then(|v| {
+            v.get("status")
+                .and_then(|s| s.as_str())
+                .map(str::to_owned)
+        })
+}
 
 /// Query kavach DB for whether a card is still open (dispatch-runnable).
 /// SOURCE: `schema_v10` — strict `entry_status` enum.

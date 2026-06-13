@@ -13,6 +13,7 @@ use crate::rust_patterns::RUST_P;
 pub use crate::severity::Severity as RustSeverity;
 pub use crate::severity::Violation as RustViolation;
 
+mod env_var;
 mod line_scan;
 mod multiline_canon;
 mod multiline_core;
@@ -36,6 +37,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<RustViolation> {
     line_scan::scan(r, content, &base, has_serde_derive, &mut violations);
     multiline_core::scan(r, content, &mut violations);
     multiline_canon::scan(r, content, &mut violations);
+    env_var::scan(file_path, content, &mut violations);
     violations
 }
 

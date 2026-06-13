@@ -64,6 +64,8 @@ fn done_card_satisfies_a_dependent_and_is_promotable() {
             created_at: None,
             updated_at: None,
             priority: None,
+            lane: None,
+            owner_gated: None,
         }
     }
     let all = vec![

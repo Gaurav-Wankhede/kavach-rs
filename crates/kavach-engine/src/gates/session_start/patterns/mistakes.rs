@@ -8,6 +8,7 @@
 //! The ledger lives under `pattern` category with key prefix `mistake.`
 //! (no `STRICT_CATEGORIES` allowlist mutation). Falls back to None on any
 //! RPC/parse failure — boot must NEVER block on memory-injection drift.
+mod graph;
 mod row;
 
 use std::fmt::Write as _;
@@ -20,6 +21,14 @@ pub(in crate::gates::session_start) fn mistake_ledger_context(
     if project_slug.is_empty() {
         return None;
     }
+    // Primary: the graph anti_patterns the daemon embeds + clusters (the
+    // autonomous loop). Closes the read/write split-brain — reinjection used to
+    // read only the legacy `pattern` ledger below, never these nodes.
+    if let Some(ctx) = graph::anti_pattern_context() {
+        return Some(ctx);
+    }
+    // Fallback: the legacy `pattern`-category ledger (pre-graph rows, or rows the
+    // capture path wrote when the graph RPC was down). Never block boot on drift.
     // 1. List candidate mistake.* keys from `kavach db query --category pattern`.
     let listing = std::process::Command::new("kavach")
         .args([

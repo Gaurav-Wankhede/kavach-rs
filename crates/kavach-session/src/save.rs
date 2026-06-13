@@ -3,7 +3,7 @@ use std::io;
 
 use fs2::FileExt;
 
-use crate::paths::{ensure_parent_dir, state_path};
+use crate::paths::{ensure_parent_dir, state_path_for};
 use crate::state::SessionState;
 
 impl SessionState {
@@ -13,7 +13,7 @@ impl SessionState {
     ///
     /// Returns `Err` if parent directory creation, file locking, write, or rename fails.
     pub fn save(&self) -> io::Result<()> {
-        let path = state_path();
+        let path = state_path_for(&self.session_id);
         ensure_parent_dir(&path)?;
 
         let lock_path = path.with_extension("lock");
@@ -104,7 +104,7 @@ impl SessionState {
     where
         F: FnOnce(&mut Self),
     {
-        let path = state_path();
+        let path = state_path_for(&self.session_id);
         ensure_parent_dir(&path)?;
 
         let lock_path = path.with_extension("lock");

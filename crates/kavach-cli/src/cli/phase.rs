@@ -5,6 +5,16 @@
 use clap::Subcommand;
 
 #[derive(Subcommand)]
+#[command(
+    about = "SDLC phase gates (PLAN → IMPLEMENT → TEST → HARDEN)",
+    long_about = "Enforces depth-over-breadth: one file per iteration during IMPLEMENT, \
+Definition-of-Done checks before phase advance.\n\n\
+Phases: PLAN, IMPLEMENT, TEST, HARDEN.",
+    after_help = "EXAMPLES:\n  kavach phase status\n  \
+kavach phase iteration-start crates/foo/src/lib.rs\n  \
+kavach phase iteration-done\n  \
+kavach phase iteration-list\n\nWHEN: Every edit during IMPLEMENT — lock one file, then release."
+)]
 pub(crate) enum PhaseAction {
     /// Show current phase and iteration status
     Status,
@@ -17,7 +27,7 @@ pub(crate) enum PhaseAction {
     },
     /// Start an iteration on a specific file
     IterationStart {
-        /// File path to work on
+        /// File path to work on (must match the file you will edit this turn)
         file: String,
     },
     /// Mark the current iteration file as done

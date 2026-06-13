@@ -29,3 +29,20 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// True only for `SurrealDB`'s table-not-found error (`The table '<name>' does
+/// not exist`), which a fresh graph raises on the first SELECT before any write.
+///
+/// Anchored to the `The table '` shape so it does NOT also swallow the sibling
+/// `does not exist` errors (field, function, param, index, …) — masking one of
+/// those as an empty result would hide a genuine malformed query. SOURCE:
+/// surrealdb-core 3.0.5 `err` variants, each `The <kind> '<name>' does not exist`.
+#[must_use]
+pub(crate) fn is_missing_table_error(e: &surrealdb::Error) -> bool {
+    let msg = e.to_string();
+    msg.contains("The table '") && msg.contains("' does not exist")
+}
+
+#[cfg(test)]
+#[path = "error_test.rs"]
+mod error_test;

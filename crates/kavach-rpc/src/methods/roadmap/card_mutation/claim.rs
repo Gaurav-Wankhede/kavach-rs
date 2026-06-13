@@ -28,6 +28,32 @@ pub async fn claim_card(
             claimed: false,
         });
     };
+    // ATOMIC claim: a single conditional UPDATE (todo -> in_progress) is the
+    // compare-and-set. The previous read-then-write was a TOCTOU race — two
+    // sessions could both read "todo", both pass the check, and both write
+    // in_progress, each believing it owned the card. With the CAS, SurrealDB
+    // evaluates `entry_status = 'todo'` at write time, so exactly ONE racer
+    // matches; the loser gets 0 rows updated and `claimed: false`.
+    let updated = kavach_surreal::update_status_cas(
+        &state.db,
+        TABLE_ROADMAP,
+        &project_id,
+        &params.key,
+        "todo",
+        "in_progress",
+    )
+    .await
+    .map_err(surreal_to_rpc)?;
+    if updated > 0 {
+        return Ok(ClaimCardResult {
+            key: params.key,
+            status: "in_progress".to_owned(),
+            claimed: true,
+        });
+    }
+    // CAS missed: either the key is absent or another session already moved it
+    // off `todo`. Report the actual current status so the caller can distinguish
+    // "already claimed" from "gone".
     let current = kavach_surreal::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
         .map_err(surreal_to_rpc)?;
@@ -35,25 +61,9 @@ pub async fn claim_card(
         .as_ref()
         .map_or("", |e| e.entry_status_str())
         .to_owned();
-    if current_status != "todo" {
-        return Ok(ClaimCardResult {
-            key: params.key,
-            status: current_status,
-            claimed: false,
-        });
-    }
-    let updated = kavach_surreal::update_status(
-        &state.db,
-        TABLE_ROADMAP,
-        &project_id,
-        &params.key,
-        "in_progress",
-    )
-    .await
-    .map_err(surreal_to_rpc)?;
     Ok(ClaimCardResult {
         key: params.key,
-        status: "in_progress".to_owned(),
-        claimed: updated > 0,
+        status: current_status,
+        claimed: false,
     })
 }

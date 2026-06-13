@@ -37,5 +37,29 @@ pub(super) fn build(
         context.push('\n');
     }
 
+    // [MISTAKE_GUARD] advisory (P1, soft) — cosine-retrieves the past mistakes
+    // most relevant to the content being written and reinjects them as Reflexion
+    // negatives at the point of action. Best-effort: degrades to nothing when the
+    // daemon is down or no past mistake is relevant. SOURCE: loop-eng F2.
+    if let Some(adv) = super::mistake_guard::advisory(ctx) {
+        context.push_str("\n\n");
+        context.push_str(&adv);
+        context.push('\n');
+    }
+
+    if let Some(adv) = super::skill_match::advisory(ctx, &session.intent_type) {
+        context.push_str("\n\n");
+        context.push_str(&adv);
+        context.push('\n');
+    }
+
+    // Compact `[LOOP]` on production code writes (loop-eng Phase 2).
+    if ctx.is_code && !ctx.is_test {
+        let loop_line = super::super::loop_frame::build_loop_compact(session, None);
+        context.push_str("\n\n");
+        context.push_str(&loop_line);
+        context.push('\n');
+    }
+
     context
 }

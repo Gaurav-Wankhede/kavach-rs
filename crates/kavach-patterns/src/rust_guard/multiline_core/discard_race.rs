@@ -131,10 +131,57 @@ fn matches(regexes: &[Regex], idx: usize, line_scoped: bool, content: &str) -> b
     }
 }
 
+/// RAII / scope-guard binding stems that are legitimately `let _name = …`
+/// (held to end-of-scope for their Drop, not a discarded signal). The general
+/// discard arm (regex index 78) skips a match whose captured name matches one of
+/// these — done here per-match because this regex engine has no lookaround, so
+/// the exclusion cannot live in the pattern itself.
+const RAII_DISCARD_ALLOW: &[&str] = &["guard", "lock", "span", "permit", "g", "defer", "entered"];
+
+/// True when the captured `_name` is a RAII guard binding (prefix match after the
+/// leading underscore, so `_guard`, `_guard2`, `_lockA` all pass).
+fn is_raii_name(name: &str) -> bool {
+    let stem = name.trim_start_matches('_').to_ascii_lowercase();
+    RAII_DISCARD_ALLOW
+        .iter()
+        .any(|a| stem == *a || stem.starts_with(a))
+}
+
+/// Index-78 arm: general named-underscore discard. Fires once per non-RAII
+/// `let _name = <expr>` line. Separate from the table because it captures the
+/// binding name to filter RAII guards (the table only does `is_match`).
+fn scan_named_discard(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
+    let Some(re) = r.get(78) else {
+        return;
+    };
+    let mut fired = false;
+    for caps in content.lines().filter_map(|l| re.captures(l)) {
+        let Some(name) = caps.get(1).map(|m| m.as_str()) else {
+            continue;
+        };
+        if is_raii_name(name) {
+            continue;
+        }
+        fired = true;
+        break;
+    }
+    if fired {
+        one(
+            v,
+            Severity::P1Advisory,
+            "let _name discards a return value",
+            "`let _name = …` names a value then throws it away — a discarded signal. \
+             If the return carries a decision (bool/Result/count), ACT on it (match/if/?, \
+             propagate, or log on the failure arm). For true fire-and-forget use `let _ =` or `drop(…)`",
+        );
+    }
+}
+
 pub(super) fn scan(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
     for &(idx, line_scoped, sev, pat, fix) in ROWS {
         if matches(r, idx, line_scoped, content) {
             one(v, sev, pat, fix);
         }
     }
+    scan_named_discard(r, content, v);
 }

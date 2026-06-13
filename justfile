@@ -106,6 +106,13 @@ unused:
 # aggregate CI / deploy targets
 # ─────────────────────────────────────────────────────────────
 
+# Optimized whole-workspace release build — the artifact guarantee CI enforces
+# beside the gates (LTO / opt-level / codegen-units + release-only cfg that the
+# dev-profile lint/test never exercise). Kept OUT of `just ci` so the inner dev
+# loop stays fast; CI invokes it as its own labeled step.
+release:
+    cargo build --workspace --release
+
 # Full pre-merge gate: format, lint, test, security policy, hygiene.
 # Mirrors what `kavach deploy` runs (which also builds + installs +
 # codesigns). Use `just ci` for fast pre-push validation; `kavach

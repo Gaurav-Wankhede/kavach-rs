@@ -18,6 +18,46 @@ pub async fn acquire(
     key: &str,
     session_id: &str,
 ) -> Result<AcquireOutcome> {
+    let now = Utc::now();
+    let lease_until = now
+        .checked_add_signed(Duration::seconds(LEASE_TTL_SECS))
+        .ok_or_else(|| Error::Migration("lease expiration overflow".to_owned()))?;
+    // ATOMIC acquire. A single conditional UPDATE is the compare-and-set: the
+    // claim is applied ONLY when the lease is unheld, already expired, or
+    // already ours. The previous SELECT-then-UPDATE was a TOCTOU window — two
+    // acquires could both read "free" and both write, last-writer-wins, each
+    // returning a different epoch for the same key. Here SurrealDB evaluates the
+    // WHERE against row state at write time, so only one racer's UPDATE matches.
+    // `occupied_epoch = (occupied_epoch ?? 0) + 1` bumps the fencing token in the
+    // same statement; RETURN gives back the post-write epoch for the winner.
+    let updated: Option<LeaseRow> = db
+        .query(
+            "UPDATE type::record($t, $k) SET \
+             occupied_by=$s, occupied_until=$u, \
+             occupied_epoch=(occupied_epoch ?? 0) + 1, occupied_heartbeat=$h \
+             WHERE occupied_by=NONE OR occupied_until=NONE OR occupied_until < $now \
+                   OR occupied_by=$s \
+             RETURN occupied_by, occupied_until, occupied_epoch",
+        )
+        .bind(("t", table.to_owned()))
+        .bind(("k", key.to_owned()))
+        .bind(("s", session_id.to_owned()))
+        .bind(("u", lease_until))
+        .bind(("h", now))
+        .bind(("now", now))
+        .await
+        .map_err(Error::Surreal)?
+        .take(0)
+        .map_err(Error::Surreal)?;
+    if let Some(won) = updated {
+        return Ok(AcquireOutcome::Acquired(Lease {
+            session_id: session_id.to_owned(),
+            epoch: won.occupied_epoch.unwrap_or(1),
+            expires_at: won.occupied_until.unwrap_or(lease_until),
+        }));
+    }
+    // The CAS matched no row: either the record is absent, or it is validly held
+    // by another session. Read once to disambiguate and report the true holder.
     let cur: Option<LeaseRow> = db
         .query("SELECT occupied_by, occupied_until, occupied_epoch FROM type::record($t, $k)")
         .bind(("t", table.to_owned()))
@@ -29,39 +69,9 @@ pub async fn acquire(
     let Some(row) = cur else {
         return Err(Error::RecordNotFound(format!("{table}:{key}")));
     };
-    let now = Utc::now();
-    let prev_epoch: i64 = row.occupied_epoch.map_or(0, |e| e);
-    let expired = row.occupied_until.is_none_or(|t| t < now);
-    let mine = row.occupied_by.as_deref() == Some(session_id);
-    if let Some(holder) = row.occupied_by.as_ref()
-        && !expired
-        && !mine
-    {
-        let held_until = row.occupied_until.unwrap_or(now);
-        return Ok(AcquireOutcome::HeldBy {
-            session_id: holder.clone(),
-            expires_at: held_until,
-        });
-    }
-    let next_epoch = prev_epoch.saturating_add(1);
-    let lease_until = now
-        .checked_add_signed(Duration::seconds(LEASE_TTL_SECS))
-        .ok_or_else(|| Error::Migration("lease expiration overflow".to_owned()))?;
-    db.query(
-        "UPDATE type::record($t, $k) SET \
-         occupied_by=$s, occupied_until=$u, occupied_epoch=$e, occupied_heartbeat=$h",
-    )
-    .bind(("t", table.to_owned()))
-    .bind(("k", key.to_owned()))
-    .bind(("s", session_id.to_owned()))
-    .bind(("u", lease_until))
-    .bind(("e", next_epoch))
-    .bind(("h", now))
-    .await
-    .map_err(Error::Surreal)?;
-    Ok(AcquireOutcome::Acquired(Lease {
-        session_id: session_id.to_owned(),
-        epoch: next_epoch,
-        expires_at: lease_until,
-    }))
+    let holder = row.occupied_by.unwrap_or_default();
+    Ok(AcquireOutcome::HeldBy {
+        session_id: holder,
+        expires_at: row.occupied_until.unwrap_or(now),
+    })
 }

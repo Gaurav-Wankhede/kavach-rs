@@ -15,6 +15,9 @@ pub(crate) fn run_content_quality_checks(content: &str, parts: &mut Vec<String>)
     if let Some(w) = super::completion_guard::check_completion_claim(content, &session) {
         parts.push(w);
     }
+    if let Some(w) = super::loophole_guard::check_loophole_interrogation(content) {
+        parts.push(w);
+    }
 }
 
 /// Extract the content that was written. For Write tool, it's "content".

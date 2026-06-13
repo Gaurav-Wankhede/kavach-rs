@@ -2,7 +2,10 @@
 //! keyword routing, write feedback edges, and expand with graph neighbors.
 mod cluster;
 mod feedback;
+mod match_top;
 mod neighbors;
+
+pub(crate) use match_top::{SkillMatch, SKILL_MATCH_FLOOR, top_skill_match};
 
 use kavach_rag_core::{MatchResult, Matcher, Query};
 
@@ -81,7 +84,7 @@ pub(crate) fn top_skill_names_all(
 
 /// Extract the bare skill name from a tree root title. Enriched trees use the
 /// SKILL.md path (`rust/SKILL.md`); the skill name is the first path component.
-fn skill_name_from_title(title: &str) -> String {
+pub(super) fn skill_name_from_title(title: &str) -> String {
     title
         .split('/')
         .next()

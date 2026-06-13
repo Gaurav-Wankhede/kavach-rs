@@ -34,8 +34,12 @@ mod subagent;
 mod subset;
 mod task;
 mod team_tracking;
+mod turn_shadow;
+pub use turn_shadow::RelayFlush;
 
-pub use get_or_create::{get_or_create_session, get_or_create_session_for};
+pub use get_or_create::{
+    get_or_create_session, get_or_create_session_for, set_session_context,
+};
 pub use load::{load_session_state, load_session_state_for, parse_ini_str};
 pub use mistake_ledger::{Mistake, record as record_mistake};
 pub use paths::{canonicalize_iteration_path, memory_dir, state_dir, state_path, stm_path};

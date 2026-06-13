@@ -17,6 +17,7 @@ use crate::error::EngineError;
 
 mod dispatch;
 mod inflight;
+mod pattern_extract;
 mod phase;
 mod reward_backfill;
 mod shared;
@@ -48,6 +49,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             session: &mut session,
             semver_advisory: None,
             capture_advisory: None,
+            loophole_advisory: None,
+            shallow_advisory: None,
         };
         if inflight::background(&mut ctx).is_break() {
             return Ok(());
@@ -73,7 +76,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     emit_trajectory(&session, &msg);
     // P3a reward back-fill: grade this session's logged bandit decisions against
     // its 3-witness verify outcome. Fire-and-forget; never blocks the gate.
-    reward_backfill::backfill_session_rewards(&session);
+    reward_backfill::backfill_session_rewards(&mut session);
+    pattern_extract::trigger_on_verify(&session);
+    // P6: learn from the freshly-graded rewards — fire db.policy_improve so the
+    // daemon promotes a learned advisory policy iff all three gates clear.
+    reward_backfill::trigger_policy_improve(&session);
 
     // U3 capture-finding advisory: if the final message settled a decision in
     // prose but no decision/research DB write happened this turn, stash a
@@ -102,6 +109,45 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             correct_action: "write a decision row the same turn (sync_to_kavach_db)",
             turn: session.turn_count,
         }));
+        if let Some(ref adv) = capture_advisory {
+            super::turn_relay::queue_advisory(&mut session, adv);
+        }
+    }
+
+    // Loophole self-interrogation: if the turn claimed completion on a
+    // risk-bearing path WITHOUT a `Loopholes considered:` line, stash the
+    // advisory for the clean-exit ride-along AND record a mistake-ledger row HERE
+    // (same rationale as capture_finding above: the loop usually short-circuits
+    // at dispatch::reblock and never reaches clean_exit, so recording at the
+    // computation site is the only way the learning loop sees it on every stop).
+    let loophole_advisory = super::loophole_guard::check_stop_interrogation(&msg);
+    if loophole_advisory.is_some() {
+        drop(kavach_session::record_mistake(&kavach_session::Mistake {
+            project: &session.project,
+            gate: "loophole_uninterrogated",
+            banned_sample: "claimed completion on a risk-bearing path without a Loopholes considered: line",
+            correct_action: "run the 6 attack lenses and emit a Loopholes considered: line before stopping",
+            turn: session.turn_count,
+        }));
+    }
+
+    // Shallow-verdict guard (re-enforced from the advisory path, NOT a HALT — the
+    // pure-HALT version was removed under the no-block policy and the detector was
+    // left orphaned: `shallow_verdict_guard` was a `pub mod` with ZERO call sites.
+    // A "clean / wired / no-defect / safe" verdict asserted without leaf-depth
+    // evidence (`file.rs:NN` or an [RCA] block) is the shallow-research signature.
+    // Same wiring as loophole/capture above: stash the advisory for clean-exit AND
+    // record a mistake row at the computation site so the learning loop sees it on
+    // every stop (the loop usually short-circuits before clean_exit).
+    let shallow_advisory = kavach_patterns::shallow_verdict_guard::detect_shallow_verdict(&msg);
+    if shallow_advisory.is_some() {
+        drop(kavach_session::record_mistake(&kavach_session::Mistake {
+            project: &session.project,
+            gate: "shallow_verdict",
+            banned_sample: "asserted a clean/wired/no-defect verdict with no file:line citation and no [RCA] block",
+            correct_action: "open the entry->...->logic call path and cite the file:line you read, or drop the verdict",
+            turn: session.turn_count,
+        }));
     }
 
     // Build the shared context once; guards thread it.
@@ -110,6 +156,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         session: &mut session,
         semver_advisory: None,
         capture_advisory,
+        loophole_advisory,
+        shallow_advisory,
     };
 
     // Ordered guard pipeline. `?`-style short-circuit via ControlFlow: the first

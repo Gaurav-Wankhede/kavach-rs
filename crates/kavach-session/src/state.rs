@@ -331,4 +331,19 @@ pub struct SessionState {
     pub blast_escalation_threshold: i32,
     /// True when blast threshold exceeded — gates escalate P1→P0.
     pub blast_escalated: bool,
+
+    // ARCH: CursorTurnShadowRelay — per-turn context dropped on Cursor allow path
+    // PATTERN: session_relay | SCOPE: session | CAP: AP | SEARCHED: 2026-06
+    /// Compact per-turn shadow (~600–800 bytes) replayed via `preToolUse` `agent_message`.
+    pub turn_shadow: String,
+    /// True until the first `pre_tool`/`pre_write` flush consumes the shadow.
+    pub turn_shadow_pending: bool,
+    /// FIFO post-tool advisories (max 3) merged into the next relay flush.
+    pub pending_advisories: Vec<String>,
+    /// Last card verify summary for `[REWARD:last]` stop followup.
+    pub last_reward_summary: String,
+    /// Session verify passes counted for `[REWARD:stats]`.
+    pub reward_session_pass: i32,
+    /// Session verify attempts counted for `[REWARD:stats]`.
+    pub reward_session_total: i32,
 }

@@ -17,6 +17,12 @@ pub struct EntryStatusResult {
 #[non_exhaustive]
 pub struct NextOpenTaskParams {
     pub project: String,
+    /// Lane affinity for the dispatching session. `None` (unset / no
+    /// `KAVACH_LANE`) behaves exactly as before — the whole project backlog is
+    /// the dispatch pool. `Some(lane)` runs a two-pass dispatch: own lane first,
+    /// then the unlaned (NULL) backlog, never a foreign lane.
+    #[serde(default)]
+    pub lane: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

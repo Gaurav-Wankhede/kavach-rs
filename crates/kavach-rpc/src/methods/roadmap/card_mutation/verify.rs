@@ -28,6 +28,28 @@ pub async fn verify_card(
             verified: false,
         });
     };
+    // ATOMIC verify: single conditional UPDATE (done -> verified) is the CAS,
+    // same fix as claim_card. The prior read-then-write let a second session
+    // verify a card the first was mid-transition on. Only one racer matches the
+    // `entry_status = 'done'` predicate at write time.
+    let updated = kavach_surreal::update_status_cas(
+        &state.db,
+        TABLE_ROADMAP,
+        &project_id,
+        &params.key,
+        "done",
+        "verified",
+    )
+    .await
+    .map_err(surreal_to_rpc)?;
+    if updated > 0 {
+        return Ok(VerifyCardResult {
+            key: params.key,
+            status: "verified".to_owned(),
+            verified: true,
+        });
+    }
+    // CAS missed: report the real current status (absent, or not yet `done`).
     let current = kavach_surreal::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
         .map_err(surreal_to_rpc)?;
@@ -35,25 +57,9 @@ pub async fn verify_card(
         .as_ref()
         .map_or("", |e| e.entry_status_str())
         .to_owned();
-    if current_status != "done" {
-        return Ok(VerifyCardResult {
-            key: params.key,
-            status: current_status,
-            verified: false,
-        });
-    }
-    let updated = kavach_surreal::update_status(
-        &state.db,
-        TABLE_ROADMAP,
-        &project_id,
-        &params.key,
-        "verified",
-    )
-    .await
-    .map_err(surreal_to_rpc)?;
     Ok(VerifyCardResult {
         key: params.key,
-        status: "verified".to_owned(),
-        verified: updated > 0,
+        status: current_status,
+        verified: false,
     })
 }

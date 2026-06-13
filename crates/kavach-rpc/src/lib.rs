@@ -4,6 +4,7 @@
 //! All logging MUST go to stderr (caller responsibility via tracing-subscriber).
 pub mod client;
 pub mod error;
+pub mod lease_janitor;
 pub mod live_watch;
 pub mod lockfile;
 pub mod methods;
@@ -60,6 +61,9 @@ pub async fn run(transport: TransportKind, apply_schema_on_start: bool) -> Resul
         std::sync::Arc::clone(&state.db),
         std::sync::Arc::clone(&state.changes),
     );
+    // Renew held leases on a TTL/3 cadence so a session working a card longer
+    // than the lease TTL keeps its claim (crashed holders still lapse).
+    lease_janitor::spawn(std::sync::Arc::clone(&state.db));
     let module = rpc::build_module(state).map_err(|e| format!("build module: {e}"))?;
 
     match transport {

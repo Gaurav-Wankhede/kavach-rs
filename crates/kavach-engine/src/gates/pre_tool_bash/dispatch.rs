@@ -24,14 +24,16 @@ pub(crate) fn handle_bash(input: &HookInput) -> Result<(), EngineError> {
 
     // Fast-exit for kavach CLI calls — internal bookkeeping, no enforcement.
     if is_kavach_cli(command) {
-        Decision::Allow(None).emit();
+        let mut session = kavach_session::get_or_create_session();
+        Decision::Allow(None).emit(&mut session);
         return Ok(());
     }
 
     let decision = blocklist::check(command).unwrap_or_else(|| advisory_ctx::run(command));
     log_bandit_decision(command, &decision);
     record_canary_shadow(command, &decision);
-    decision.emit();
+    let mut session = kavach_session::get_or_create_session();
+    decision.emit(&mut session);
     Ok(())
 }
 
@@ -61,9 +63,14 @@ fn record_canary_shadow(command: &str, decision: &Decision) {
 /// action so the two layers agree on the action vocabulary.
 fn controller_shadow_action() -> kavach_patterns::bandit_log::GateAction {
     use kavach_ope::Action;
+    use kavach_ope::controller::{AdvisoryCandidates, GateScope, RiskConfig, choose};
     use kavach_patterns::bandit_log::GateAction;
-    let cfg = kavach_ope::controller::RiskConfig::conservative();
-    match kavach_ope::controller::choose(&[], cfg) {
+    // destructive_cli_guard is a hard P0 gate -> the controller must NEVER tune
+    // it; the advisory-scope guard refuses construction (GateScope::HardBlock ->
+    // None), so the shadow abstains to Ask, the C2 fail-closed default.
+    let action = AdvisoryCandidates::new(&[], GateScope::HardBlock)
+        .map_or(Action::Ask, |adv| choose(adv, RiskConfig::conservative()));
+    match action {
         Action::Allow => GateAction::Allow,
         Action::Block => GateAction::Block,
         // Ask is the abstention default; a future variant also maps to Ask (safe).

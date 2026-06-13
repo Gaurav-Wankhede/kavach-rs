@@ -7,7 +7,9 @@
 // `prelude` holds the Stage 0 phase/iteration advisories; `advisory_ctx` builds
 // the Stage 4 allow-time context block.
 mod advisory_ctx;
+mod mistake_guard;
 mod prelude;
+mod skill_match;
 
 use kavach_types::HookInput;
 
@@ -29,7 +31,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
 
     // Stage 0: SDLC-phase + iteration-scope advisories (demoted-to-advisory nudges).
     if let Some(advisory) = prelude::check(&ctx, &session) {
-        drop(kavach_hook::exit_pre_tool_allow(Some(&advisory)));
+        super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&advisory));
         return Ok(());
     }
 
@@ -40,7 +42,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             return Ok(());
         }
         SecurityResult::AllowEarly(warn) => {
-            drop(kavach_hook::exit_pre_tool_allow(Some(&warn)));
+            super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&warn));
             return Ok(());
         }
         SecurityResult::Pass => {}
@@ -91,6 +93,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         ctx.file_path,
         &session.project,
     );
-    drop(kavach_hook::exit_pre_tool_allow(Some(&context)));
+    super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&context));
     Ok(())
 }

@@ -11,6 +11,9 @@ pub(crate) fn run(input: &HookInput) {
             "PRE_COMPACT",
             &[("custom_instructions", ci), ("date", &kavach_hook::today())],
         );
+        let mut session = kavach_session::get_or_create_session();
+        session.queue_lifecycle_relay(&context);
+        // CC path: notification context. Cursor drops allow output — relay above.
         drop(kavach_hook::exit_notification_context(&context));
     }
 }

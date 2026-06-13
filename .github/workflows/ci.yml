@@ -11,8 +11,31 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+# Every gate below runs through `just`, so CI executes the IDENTICAL recipes a
+# developer runs locally (`just fmt`/`lint`/`release`/`test`/`deny`/`unused`).
+# The justfile is the SINGLE SOURCE OF TRUTH for every flag — this is what kills
+# the CI<->local drift hand-copied cargo lines accrue (the old CI lacked
+# --all-features on clippy and --profile ci / doctests on the test run).
+# FOOTGUN: `just install` is the DEPLOY recipe (`cargo run --release -p
+# kavach-cli -- deploy`); CI installs the just TOOL via taiki-e/install-action
+# and must NEVER run `just install`.
+#
+# COST MODEL (why the structure below):
+#  * `just` is a thin wrapper — it adds ~0ms; the cost is the cargo work under it.
+#  * setup-rust-toolchain BUNDLES Swatinem/rust-cache (cache: true by default), so
+#    ~/.cargo + target/ are cached keyed on Cargo.lock + the toolchain triple. We
+#    do NOT add rust-cache separately (it would double-cache). A per-OS
+#    `cache-shared-key` keeps the entry stable across this workflow's reruns.
+#  * The three profiles (clippy=dev+all-features, release, nextest=test) each
+#    recompile the workspace, so building all three triples the work. On PRs we
+#    run clippy + test only (they already PROVE it compiles); the release build
+#    runs only on push-to-main, where the artifact actually matters.
+#  * macOS/Windows minutes cost ~10x/2x Linux. Every PR runs the full Linux leg
+#    (fast feedback); macOS + Windows run on push-to-main + manual dispatch only.
+#    Windows must stay green there — roadmap publish-first-release gates on it.
+
 jobs:
-  # ── Linux ──────────────────────────────────────────────────────────────────
+  # ── Linux (every PR + push — the fast feedback leg) ──────────────────────────
   linux:
     name: Build / Test (Linux)
     runs-on: ubuntu-latest
@@ -45,27 +68,40 @@ jobs:
       # prior hardcoded "1.95.0" diverged from the repo's pinned 1.96.0, so CI ran
       # a different rustfmt than the tree was formatted with and `fmt --check`
       # failed on every push. (https://github.com/actions-rust-lang/setup-rust-toolchain)
-      - name: Install Rust toolchain (channel from rust-toolchain.toml)
+      # The action's BUILT-IN Swatinem/rust-cache is on by default; the shared key
+      # keeps the target/ + ~/.cargo cache stable across reruns of this leg.
+      - name: Install Rust toolchain + cache (channel from rust-toolchain.toml)
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache-shared-key: ci-linux
 
-      - name: Format check
-        run: cargo fmt --all -- --check
+      # Install the `just` runner + cargo-nextest (the justfile `test` recipe
+      # shells out to `cargo nextest`, so the binary must exist on the runner).
+      # taiki-e/install-action pulls prebuilt binaries (~seconds) and already is
+      # the repo's nextest installer — one trusted provider for both tools.
+      - name: Install just
+        uses: taiki-e/install-action@just
 
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Build (release)
-        run: cargo build --workspace --release
-
-      # The repo's test contract is `cargo nextest run --workspace` (CLAUDE.md +
-      # .config/nextest.toml), with per-test process isolation. Without this step
-      # CI proved only that the tree COMPILES — every unit/integration test
-      # (e.g. the multi-harness cursor/codex output contracts) was unverified.
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Test (nextest, workspace)
-        run: cargo nextest run --workspace
+      # Gate commands + flags are the single source of truth in ./justfile.
+      - name: Format check (just fmt)
+        run: just fmt
+
+      - name: Clippy (just lint)
+        run: just lint
+
+      # Release build runs only on push-to-main / manual dispatch: on PRs, clippy
+      # + nextest already prove the workspace compiles, so a third full recompile
+      # in the release profile is pure wasted minutes. push-to-main keeps it for
+      # parity with the release pipeline and to catch release-only build breaks.
+      - name: Build release (just release)
+        if: github.event_name != 'pull_request'
+        run: just release
+
+      - name: Test (just test — nextest ci profile + doctests)
+        run: just test
 
       - name: Install global CLAUDE.md (derives path from $HOME, no hardcoding)
         run: bash scripts/install-claude-md.sh
@@ -75,44 +111,70 @@ jobs:
           test -f "$HOME/.claude/CLAUDE.md"
           echo "OK: $HOME/.claude/CLAUDE.md"
 
-  # ── Supply chain (Linux only — advisories/bans/licenses/sources) ─────────────
-  # Mirrors deploy.rs step 3 (`cargo deny check`). A banned advisory, denied
-  # license, or unvetted source must fail the PR, not just the local deploy.
-  supply-chain:
-    name: cargo-deny (advisories + bans + licenses + sources)
+  # ── Policy (Linux only — OS-independent gates, run ONCE) ─────────────────────
+  # Routes the supply-chain + hygiene gates through `just` too, so the WHOLE
+  # pipeline is single-source: `just deny` (advisories + bans + licenses +
+  # sources, mirrors deploy.rs step 3) and `just unused` (cargo-machete
+  # dead-dependency scan — a gate the old CI lacked, so an unused workspace dep
+  # that fails local `just ci` used to pass CI green). Both are manifest/lockfile
+  # scans, identical on every OS, so they run a single time here rather than
+  # triplicated across the build legs.
+  policy:
+    name: Policy (cargo-deny + machete via just)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: EmbarkStudios/cargo-deny-action@v2
-        with:
-          command: check
 
-  # ── macOS ──────────────────────────────────────────────────────────────────
+      # cargo-deny + cargo-machete invoke `cargo metadata`, so a toolchain is
+      # required even though neither compiles the tree.
+      - name: Install Rust toolchain (channel from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache-shared-key: ci-policy
+
+      - name: Install just + cargo-deny + cargo-machete
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-deny,cargo-machete
+
+      - name: Supply-chain policy (just deny)
+        run: just deny
+
+      - name: Unused dependencies (just unused)
+        run: just unused
+
+  # ── macOS (push-to-main + manual dispatch only — 10x runner cost) ────────────
   macos:
     name: Build / Test (macOS)
+    if: github.event_name != 'pull_request'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
 
       # `toolchain:` omitted on purpose — the action reads rust-toolchain.toml
-      # (single source of truth) and provides its own build cache.
-      - name: Install Rust toolchain (channel from rust-toolchain.toml)
+      # (single source of truth) and provides its own built-in build cache.
+      - name: Install Rust toolchain + cache (channel from rust-toolchain.toml)
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache-shared-key: ci-macos
 
-      - name: Format check
-        run: cargo fmt --all -- --check
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Build (release)
-        run: cargo build --workspace --release
+      - name: Install just
+        uses: taiki-e/install-action@just
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Test (nextest, workspace)
-        run: cargo nextest run --workspace
+      - name: Format check (just fmt)
+        run: just fmt
+
+      - name: Clippy (just lint)
+        run: just lint
+
+      - name: Build release (just release)
+        run: just release
+
+      - name: Test (just test — nextest ci profile + doctests)
+        run: just test
 
       - name: Install global CLAUDE.md (derives path from $HOME, no hardcoding)
         run: bash scripts/install-claude-md.sh
@@ -122,32 +184,49 @@ jobs:
           test -f "$HOME/.claude/CLAUDE.md"
           echo "OK: $HOME/.claude/CLAUDE.md"
 
-  # ── Windows ────────────────────────────────────────────────────────────────
+  # ── Windows (push-to-main + manual dispatch only) ────────────────────────────
+  # Must stay green on main: roadmap publish-first-release is BLOCKED on Windows
+  # CI green, so this leg is the release gate — kept off PRs to save minutes but
+  # always run on the merge to main that a release tag is later cut from.
   windows:
     name: Build / Test (Windows)
+    if: github.event_name != 'pull_request'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
 
       # `toolchain:` omitted on purpose — the action reads rust-toolchain.toml
-      # (single source of truth) and provides its own build cache.
-      - name: Install Rust toolchain (channel from rust-toolchain.toml)
+      # (single source of truth) and provides its own built-in build cache.
+      - name: Install Rust toolchain + cache (channel from rust-toolchain.toml)
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache-shared-key: ci-windows
 
-      - name: Format check
-        run: cargo fmt --all -- --check
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Build (release)
-        run: cargo build --workspace --release
+      - name: Install just
+        uses: taiki-e/install-action@just
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Test (nextest, workspace)
-        run: cargo nextest run --workspace
+      # The justfile pins `set shell := ["bash", "-uc"]`, so the `just` steps below
+      # run under Git Bash (present on the windows-latest image). This guard fails
+      # fast with a clear message if a future runner image ever drops bash from
+      # PATH, instead of an opaque "bash: not found" from the first recipe.
+      - name: Verify bash is available (just recipes require it)
+        shell: bash
+        run: bash --version
+
+      - name: Format check (just fmt)
+        run: just fmt
+
+      - name: Clippy (just lint)
+        run: just lint
+
+      - name: Build release (just release)
+        run: just release
+
+      - name: Test (just test — nextest ci profile + doctests)
+        run: just test
 
       - name: Install global CLAUDE.md (derives path from %USERPROFILE%, no hardcoding)
         shell: pwsh

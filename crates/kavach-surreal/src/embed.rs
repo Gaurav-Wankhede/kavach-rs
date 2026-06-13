@@ -2,8 +2,11 @@
 // Embedder wraps the blocking ONNX call in tokio::task::spawn_blocking.
 // See decision/crate-fastembed-bge-small for crate selection rationale.
 use crate::error::{Error, Result};
+use cache_dir::model_cache_dir;
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use std::sync::Arc;
+
+mod cache_dir;
 
 pub const EMBED_DIM: usize = 384;
 
@@ -22,13 +25,14 @@ impl std::fmt::Debug for Embedder {
 
 impl Embedder {
     /// Initialise the BGE-small embedder. Downloads the ONNX model on first
-    /// call and caches it under the fastembed default model dir.
+    /// call into the cwd-independent `model_cache_dir` (not fastembed's default).
     ///
     /// # Errors
     /// Returns `Error::Migration` when fastembed cannot fetch or initialise
     /// the model (network failure, disk-full, corrupted cache).
     pub fn try_new() -> Result<Self> {
-        let opts = InitOptions::new(EmbeddingModel::BGESmallENV15);
+        let opts =
+            InitOptions::new(EmbeddingModel::BGESmallENV15).with_cache_dir(model_cache_dir());
         let model = TextEmbedding::try_new(opts)
             .map_err(|e| Error::Migration(format!("fastembed init: {e}")))?;
         Ok(Self {

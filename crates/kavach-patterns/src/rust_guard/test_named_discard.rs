@@ -1,0 +1,45 @@
+//! Named-underscore discard tests (`RUST_P` index 78) — the `let _name = <expr>`
+//! discarded-signal class. Exercised through the `detect()` engine entry point.
+//! The DB/HTTP/await sub-cases (indices 50-52) are covered in `test_async_db.rs`;
+//! these prove the GENERAL arm fires on any named discard and respects the RAII
+//! exclusion the regex cannot express (no lookaround in this engine).
+use crate::rust_guard::detect;
+
+const PAT: &str = "let _name discards a return value";
+
+#[test]
+fn flags_named_discard_of_a_call() {
+    // The exact dispatch work-steal bug shape: a lost-race bool thrown away.
+    let v = detect("src/lib.rs", "fn f() {\n    let _claimed = claim_card(p, k);\n}\n");
+    assert!(v.iter().any(|x| x.pattern == PAT), "named discard must fire");
+}
+
+#[test]
+fn flags_named_result_discard() {
+    let v = detect("src/lib.rs", "fn f() {\n    let _result = run_thing();\n}\n");
+    assert!(v.iter().any(|x| x.pattern == PAT));
+}
+
+#[test]
+fn allows_anonymous_discard() {
+    // `let _ = …` is the sanctioned explicit ignore — excluded by the regex itself.
+    let v = detect("src/lib.rs", "fn f() {\n    let _ = run_thing();\n}\n");
+    assert!(!v.iter().any(|x| x.pattern == PAT));
+}
+
+#[test]
+fn allows_type_only_anonymous() {
+    let v = detect("src/lib.rs", "fn f() {\n    let _: () = noop();\n}\n");
+    assert!(!v.iter().any(|x| x.pattern == PAT));
+}
+
+#[test]
+fn allows_raii_guard_bindings() {
+    // RAII held-for-drop names are filtered per-match in discard_race.rs.
+    let code = "fn f() {\n    let _guard = lock.lock();\n    let _span = enter();\n    let _permit = sem.acquire();\n}\n";
+    let v = detect("src/lib.rs", code);
+    assert!(
+        !v.iter().any(|x| x.pattern == PAT),
+        "RAII guards are held-for-drop, not discards"
+    );
+}

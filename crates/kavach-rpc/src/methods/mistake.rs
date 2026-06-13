@@ -11,7 +11,7 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::{ErrorObjectOwned, error::INTERNAL_ERROR_CODE};
 use kavach_surreal::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
-use kavach_surreal::{Embedder, graph_query_anti_pattern_hit_count};
+use kavach_surreal::{Embedder, graph_nearest_anti_patterns, graph_query_anti_pattern_hit_count};
 use serde::{Deserialize, Serialize};
 
 /// Process-cached BGE-small embedder. The daemon is long-lived, so the ONNX
@@ -149,5 +149,79 @@ pub async fn record(state: &AppState, p: RecordParams) -> Result<RecordResult, E
             .map_err(surreal_to_rpc)?;
     Ok(RecordResult {
         ids: format!("{event_id:?} -> {pattern_id:?}"),
+    })
+}
+
+/// Default number of relevant mistakes surfaced at the point of action.
+const NEAREST_DEFAULT_K: usize = 3;
+/// Default cosine floor: below this a past mistake is not relevant to the edit.
+const NEAREST_DEFAULT_FLOOR: f32 = 0.6;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct NearestParams {
+    /// Free text to relevance-match against — e.g. the file content being written.
+    pub text: String,
+    /// How many hits to return (defaults to `NEAREST_DEFAULT_K`).
+    pub k: Option<usize>,
+    /// Cosine relevance floor (defaults to `NEAREST_DEFAULT_FLOOR`).
+    pub floor: Option<f32>,
+}
+
+impl NearestParams {
+    /// Construct params for a `mistake.nearest` call (`#[non_exhaustive]` ⇒ no
+    /// cross-crate struct literal).
+    #[must_use]
+    pub const fn new(text: String, k: Option<usize>, floor: Option<f32>) -> Self {
+        Self { text, k, floor }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct NearestHit {
+    pub gate: String,
+    pub correct_action: String,
+    pub score: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct NearestResult {
+    pub hits: Vec<NearestHit>,
+}
+
+/// Cosine-retrieve the `anti_patterns` most relevant to `text`.
+///
+/// The read side of the `[MISTAKE_GUARD]` pre-write frame: embeds the query once
+/// (cached BGE model) and runs the kNN over the HNSW-indexed centroid set,
+/// keeping only hits at or above the floor. Empty result (no relevant mistake /
+/// fresh graph) is a success, never an error — the gate must fail open on benign
+/// emptiness.
+///
+/// # Errors
+/// Returns an RPC error only on embedder init/embedding failure or a real DB
+/// query failure.
+pub async fn nearest(
+    state: &AppState,
+    p: NearestParams,
+) -> Result<NearestResult, ErrorObjectOwned> {
+    let embedding = embedder()?.embed_one(&p.text).await.map_err(|e| {
+        ErrorObjectOwned::owned(INTERNAL_ERROR_CODE, format!("embed: {e}"), None::<()>)
+    })?;
+    let k = p.k.unwrap_or(NEAREST_DEFAULT_K);
+    let floor = p.floor.unwrap_or(NEAREST_DEFAULT_FLOOR);
+    let hits = graph_nearest_anti_patterns(&state.db, &embedding, k, floor)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(NearestResult {
+        hits: hits
+            .into_iter()
+            .map(|h| NearestHit {
+                gate: h.gate,
+                correct_action: h.correct_action,
+                score: h.score,
+            })
+            .collect(),
     })
 }

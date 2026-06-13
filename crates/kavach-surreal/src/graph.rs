@@ -1,6 +1,7 @@
 pub mod bridges;
 pub mod concepts;
 pub mod dynamic;
+pub mod flow_dag;
 pub mod list_with_links;
 pub mod mistakes;
 pub mod relationships;
@@ -17,12 +18,18 @@ pub use concepts::{
     search_concepts_fts, upsert_concept,
 };
 pub use dynamic::{
-    RelatedRow, find_entity, get_related, list_entities, relate_dynamic, upsert_entity,
+    EdgeRow, RelatedRow, find_entity, get_related, list_edges_among, list_entities,
+    relate_dynamic, upsert_entity,
+};
+pub use flow_dag::{
+    FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput, NodeShape, fetch_flow, list_flows,
+    upsert_flow,
 };
 pub use list_with_links::{LinkedRow, list_with_links as list_rows_with_links};
 pub use mistakes::{
-    append_mistake_event, cluster_event_to_pattern, query_anti_pattern_hit_count,
-    upsert_anti_pattern,
+    AntiPatternHit, AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow, append_mistake_event,
+    cluster_event_to_pattern, nearest_anti_patterns, query_anti_pattern_hit_count,
+    top_anti_patterns, top_deployed_policies, upsert_anti_pattern, upsert_deployed_policy,
 };
 pub use relationships::upsert_relationships;
 pub use roadmap_dag::{DagEdge, DagNode, RoadmapDag, fetch as roadmap_dag_fetch};

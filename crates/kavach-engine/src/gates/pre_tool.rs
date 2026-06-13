@@ -6,9 +6,43 @@ use crate::gates::{
     rule_eval,
 };
 
+/// Rate-limited per-turn quality nudge for the generic tool-allow path.
+///
+/// Returns `Some(advisory)` at most once per `reinforce_every_n` turn window
+/// (reusing the purpose-built `needs_reinforcement`/`mark_reinforcement_done`
+/// turn-window limiter) so it can NEVER spam: ≤1 fire per turn, and only on the
+/// Nth-turn boundary. Returns `None` on every other call. The nudge restates the
+/// same-turn autonomy contract as a soft advisory — no block, no control-flow
+/// change. SOURCE: gate-severity policy §default-advisory + §no-spam budget.
+fn perturn_nudge(session: &mut kavach_session::SessionState) -> Option<String> {
+    if !session.needs_reinforcement() {
+        return None;
+    }
+    session.mark_reinforcement_done();
+    Some(String::from(
+        "[QUALITY_NUDGE] Act, don't narrate: execute -> show output -> state result. \
+         Close the active card this turn (claim -> implement -> 3-witness verify -> close); \
+         run the loophole self-check before any done claim. Do not hand labor back.",
+    ))
+}
+
 /// Pre-tool umbrella gate: bash blocklist + read validation + subagent budget.
 /// Runs before any tool use (except Write/Edit which go through pre-write).
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
+    // MCP / shell-proxy tools that carry a raw `command` must run the destructive
+    // blocklist too — else `rm -rf /` through an MCP tool (tool_name="MCP: …")
+    // falls into the `_` allow arm and bypasses the Bash guard entirely.
+    // The `command` field is the security-critical signal, not the tool name.
+    // SOURCE: loophole audit (cursor-edge), runtime-proven via beforeMCPExecution.
+    let carries_shell_command = input.tool_name != "Bash"
+        && input
+            .tool_input
+            .as_ref()
+            .is_some_and(|ti| ti.get("command").and_then(|v| v.as_str()).is_some_and(|c| !c.is_empty()));
+    if carries_shell_command {
+        return pre_tool_bash::handle_bash(input);
+    }
+
     match input.tool_name.as_str() {
         "Bash" => pre_tool_bash::handle_bash(input),
         "Read" => {
@@ -77,7 +111,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                      spawning agents. Topic: {topic}. Tabula rasa: do not trust \
                      training weights — WebSearch first, then delegate."
                 );
-                drop(kavach_hook::exit_pre_tool_allow(Some(&reason)));
+                super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&reason));
                 return Ok(());
             }
             // Advisory: remind model about pending research — fire once per intent window.
@@ -93,14 +127,26 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                     "[RESEARCH_PENDING] WebSearch \"{topic}\" before writing code. \
                      Do not generate code from training weights."
                 );
-                drop(kavach_hook::exit_pre_tool_allow(Some(&ctx)));
+                super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&ctx));
                 return Ok(());
             }
-            let rule_ctx = rule_eval::results_to_context(&rule_eval::evaluate_rules(input));
+            let mut rule_ctx = rule_eval::results_to_context(&rule_eval::evaluate_rules(input));
+            // RATE-LIMITED per-turn quality nudge. Reuses `turn_count` as the
+            // session counter: fire at most once per turn, and only every Nth
+            // turn, so it can never spam (≤1 per turn, ~1/NUDGE_EVERY_N_TURNS of
+            // turns). Skip entirely when a rule already produced context (avoid
+            // doubling the advisory) or when a fresh advisory recovery is already
+            // pending. SOURCE: gate-severity advisory budget — default-advisory,
+            // never spam. See pre_tool.rs §perturn-nudge.
+            if rule_ctx.is_empty()
+                && let Some(nudge) = perturn_nudge(&mut session)
+            {
+                rule_ctx.push_str(&nudge);
+            }
             if rule_ctx.is_empty() {
-                drop(kavach_hook::exit_pre_tool_allow(None));
+                super::turn_relay::exit_pre_tool_allow_relay(&mut session, None);
             } else {
-                drop(kavach_hook::exit_pre_tool_allow(Some(&rule_ctx)));
+                super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&rule_ctx));
             }
             Ok(())
         }

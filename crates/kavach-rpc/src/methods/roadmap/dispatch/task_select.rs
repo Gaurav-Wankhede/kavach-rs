@@ -1,5 +1,6 @@
 use super::super::readiness::{deps_satisfied, is_runnable_status};
-use super::super::types::{NextOpenTaskParams, NextTaskResult, OpenSetCensus};
+use super::super::types::{NextOpenTaskParams, NextTaskResult};
+use super::lane_pick::{lane_matches, pick_in_lane};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
@@ -27,20 +28,14 @@ pub async fn next_open_task(
     let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
-    let mut selected: Option<NextTaskResult> = None;
-    for e in &entries {
-        if !is_runnable_status(e.entry_status_str()) {
-            continue;
-        }
-        if deps_satisfied(e, &dep_pool) {
-            selected = Some(NextTaskResult {
-                key: e.entry_key.clone(),
-                title: e.title.clone(),
-                status: e.entry_status_str().to_owned(),
-            });
-            break;
-        }
-    }
+    // Two-pass lane-affinity dispatch. `entries` is priority-ordered, so the
+    // first match per pass is the best card. Pass 1: the session's OWN lane.
+    // Pass 2: the unlaned (NULL) general backlog. A foreign lane is NEVER
+    // inspected. With no session lane, pass 1 matches everything and pass 2 is a
+    // no-op — byte-identical to the pre-lane single loop.
+    let want = params.lane.as_deref();
+    let selected = pick_in_lane(&entries, &dep_pool, |e| lane_matches(e, want))
+        .or_else(|| pick_in_lane(&entries, &dep_pool, |e| e.lane.is_none()));
     Ok(selected)
 }
 
@@ -75,49 +70,4 @@ pub async fn ready_set(
         })
         .collect();
     Ok(ready)
-}
-
-/// Census of the open set, splitting a BLOCKED remainder from an empty board.
-///
-/// `next_open_task`/`ready_set` both collapse "no runnable card" and "runnable
-/// cards all blocked by unmet deps / owner-gating" to the same `None`/empty — so
-/// the gate cannot decide between a clean `[ALL_BLOCKED]` stop and an
-/// `[AUTO_CONTINUE]` PLAN nudge without this split.
-///
-/// `runnable` = cards in a dispatchable status (`todo`/`in_progress`).
-/// `blocked`  = of those, the ones held back by unmet deps or an agent-gate
-///              (`AGENT_BLOCKED`/owner-only) — i.e. real work the AI cannot start.
-///
-/// # Errors
-/// Returns an RPC `ErrorObjectOwned` when the database query fails.
-pub async fn open_set_census(
-    state: &AppState,
-    params: NextOpenTaskParams,
-) -> Result<OpenSetCensus, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
-        .await
-        .map_err(surreal_to_rpc)?
-    else {
-        return Ok(OpenSetCensus::default());
-    };
-    let Some(project_id) = project.id else {
-        return Ok(OpenSetCensus::default());
-    };
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
-        .await
-        .map_err(surreal_to_rpc)?;
-    let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
-        .await
-        .map_err(surreal_to_rpc)?;
-    let mut census = OpenSetCensus::default();
-    for e in &entries {
-        if !is_runnable_status(e.entry_status_str()) {
-            continue;
-        }
-        census.runnable = census.runnable.saturating_add(1);
-        if !deps_satisfied(e, &dep_pool) {
-            census.blocked = census.blocked.saturating_add(1);
-        }
-    }
-    Ok(census)
 }

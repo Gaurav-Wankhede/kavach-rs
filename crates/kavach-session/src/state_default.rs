@@ -157,6 +157,12 @@ impl Default for SessionState {
             subagent_denied_tools: Vec::new(),
             blast_escalation_threshold: 10,
             blast_escalated: false,
+            turn_shadow: String::new(),
+            turn_shadow_pending: false,
+            pending_advisories: Vec::new(),
+            last_reward_summary: String::new(),
+            reward_session_pass: 0,
+            reward_session_total: 0,
         }
     }
 }

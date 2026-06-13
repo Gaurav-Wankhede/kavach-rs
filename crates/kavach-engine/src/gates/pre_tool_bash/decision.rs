@@ -23,11 +23,13 @@ impl Decision {
     }
 
     /// Fire the matching hook exit for this verdict.
-    pub(super) fn emit(self) {
+    pub(super) fn emit(self, session: &mut kavach_session::SessionState) {
         match self {
             Self::Deny(reason) => drop(kavach_hook::exit_pre_tool_deny(&reason)),
             Self::Ask(reason) => drop(kavach_hook::exit_pre_tool_ask(&reason)),
-            Self::Allow(ctx) => drop(kavach_hook::exit_pre_tool_allow(ctx.as_deref())),
+            Self::Allow(ctx) => {
+                crate::gates::turn_relay::exit_pre_tool_allow_relay(session, ctx.as_deref());
+            }
         }
     }
 }

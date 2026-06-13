@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 
 use crate::parse::parse_field;
-use crate::paths::{ensure_parent_dir, state_path, today};
+use crate::paths::{ensure_parent_dir, state_path, state_path_for, today};
 use crate::state::SessionState;
 
 /// Load session state from the state file.
@@ -111,12 +111,34 @@ pub fn load_session_state_for(session_id: &str) -> Option<SessionState> {
             return Some(state);
         }
     }
-    // DB miss or daemon down — fall back to the INI file, gated on session_id.
-    match load_session_state() {
+    // DB miss or daemon down — fall back to the conversation-scoped INI file.
+    match load_session_state_at(state_path_for(session_id).as_path()) {
         Ok(Some(state)) if state.session_id == session_id => Some(state),
-        // Mismatch: the file is a prior conversation's. Refuse the stale row.
+        // Mismatch or missing: refuse a stale or foreign row.
         _ => None,
     }
+}
+
+/// Load session state from a specific INI path (shared lock).
+fn load_session_state_at(path: &std::path::Path) -> Result<Option<SessionState>, io::Error> {
+    if !path.exists() {
+        return Ok(None);
+    }
+    let lock_path = path.with_extension("lock");
+    ensure_parent_dir(&lock_path)?;
+    let lock_file = fs::OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(&lock_path)?;
+    lock_file.lock_shared()?;
+    let content = fs::read_to_string(path)?;
+    lock_file.unlock()?;
+    let state = parse_ini_str(&content);
+    if state.today != today() {
+        return Ok(None);
+    }
+    Ok(Some(state))
 }
 
 pub(crate) fn split_csv(s: &str) -> Vec<String> {

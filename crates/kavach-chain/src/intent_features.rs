@@ -6,9 +6,8 @@ use kavach_dtree::FeatureSet;
 #[must_use]
 pub fn extract_features(prompt: &str) -> FeatureSet {
     let lower = prompt.to_lowercase();
-
     FeatureSet::new()
-        .with_bool("has_destructive", has_destructive(&lower))
+        .with_bool("has_destructive", destructive::has_destructive(&lower))
         .with_bool("has_deploy", has_deploy(&lower))
         .with_bool("has_security", has_security(&lower))
         .with_bool("has_debug", has_debug(&lower))
@@ -16,21 +15,13 @@ pub fn extract_features(prompt: &str) -> FeatureSet {
         .with_bool("has_implement", has_implement(&lower))
         .with_bool("has_memory", has_memory(&lower))
         .with_numeric("word_count", {
-            #[expect(
-                clippy::cast_precision_loss,
-                reason = "word_count is typical <1M, safe within f64 mantissa precision"
-            )]
+            #[expect(clippy::cast_precision_loss, reason = "word_count <1M fits f64")]
             let count = prompt.split_whitespace().count() as f64;
             count
         })
 }
 
-fn has_destructive(s: &str) -> bool {
-    contains_any(
-        s,
-        &["delete", "remove", "drop", "destroy", "purge", "truncate"],
-    )
-}
+mod destructive;
 
 fn has_deploy(s: &str) -> bool {
     contains_any(
@@ -105,45 +96,5 @@ fn contains_any(s: &str, patterns: &[&str]) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn extracts_debug_features() {
-        let features = extract_features("fix this bug in the handler");
-        assert_eq!(
-            features
-                .get("has_debug")
-                .and_then(kavach_dtree::Feature::as_bool),
-            Some(true)
-        );
-        assert_eq!(
-            features
-                .get("has_implement")
-                .and_then(kavach_dtree::Feature::as_bool),
-            Some(false)
-        );
-    }
-
-    #[test]
-    fn extracts_deploy_features() {
-        let features = extract_features("deploy to production");
-        assert_eq!(
-            features
-                .get("has_deploy")
-                .and_then(kavach_dtree::Feature::as_bool),
-            Some(true)
-        );
-    }
-
-    #[test]
-    fn extracts_word_count() {
-        let features = extract_features("one two three");
-        assert_eq!(
-            features
-                .get("word_count")
-                .and_then(kavach_dtree::Feature::as_numeric),
-            Some(3.0)
-        );
-    }
-}
+#[path = "intent_features_test.rs"]
+mod tests;

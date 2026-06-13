@@ -94,6 +94,20 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         prompt,
         &forbidden,
     );
+
+    // Cursor turn shadow: persist compact per-turn context for preToolUse relay.
+    let harness_pattern = harness::classify_harness(prompt);
+    let top_skill = super::rag_router::top_skill_names_all("", prompt, &intent.intent_type, 1)
+        .into_iter()
+        .next();
+    let shadow = super::loop_frame::build_turn_shadow(
+        &session,
+        &intent,
+        harness_pattern,
+        top_skill.as_deref(),
+    );
+    session.store_turn_shadow(&shadow);
+
     drop(kavach_hook::exit_prompt_context(&context));
     Ok(())
 }

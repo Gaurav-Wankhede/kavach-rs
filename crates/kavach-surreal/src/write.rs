@@ -84,6 +84,42 @@ pub async fn set_priority(
     })
 }
 
+/// Surgical lane mutation — partial UPDATE of `lane` + `updated_at` only.
+///
+/// Lane is the dispatch-affinity slice a session runs (`KAVACH_LANE`). Roadmap
+/// only. Title/content/status/priority are untouched. `Some(name)` pins the
+/// card to that lane; `None` clears it back to the unlaned general backlog.
+///
+/// # Errors
+/// `Error::RecordNotFound` when no row matches (project, key) or the category is
+/// not `roadmap`; `Error::Surreal` when the UPDATE itself fails.
+pub async fn set_lane(
+    db: &Surreal<Db>,
+    category: &str,
+    project_id: &RecordId,
+    entry_key: &str,
+    new_lane: Option<String>,
+) -> Result<RecordId> {
+    if category != "roadmap" {
+        return Err(crate::error::Error::RecordNotFound(format!(
+            "lane is only defined on the roadmap table, got: {category}"
+        )));
+    }
+    let mut response = db
+        .query(
+            "UPDATE roadmap SET lane = $lane, updated_at = time::now() \
+             WHERE project = $pid AND entry_key = $key RETURN id",
+        )
+        .bind(("pid", project_id.clone()))
+        .bind(("key", entry_key.to_owned()))
+        .bind(("lane", new_lane))
+        .await?;
+    let ids: Vec<RecordId> = response.take("id")?;
+    ids.into_iter().next().ok_or_else(|| {
+        crate::error::Error::RecordNotFound(format!("roadmap/{entry_key} not found in project"))
+    })
+}
+
 async fn expire_table(db: &Surreal<Db>, table: &str) -> Result<usize> {
     let query = match table {
         "decision" => {
@@ -155,21 +191,28 @@ pub async fn upsert_entry(
     // The `IF $priority != NONE THEN ... ELSE priority END` clause leaves the
     // stored value unchanged when the caller passes None (no clobber on
     // re-write of a row that already carries a priority).
+    // FIX: [state_drift / kanban-lies] entry_status + access_count are OMITTED
+    // from SET on purpose: schema.rs defines DEFAULT 'todo' (app_spec:
+    // 'verified') and DEFAULT 0, which apply on CREATE; an UPDATE leaves them
+    // untouched. Setting them here hard-reset every verified/done card back to
+    // 'todo' on any content update (`db write --update-key`), so completed
+    // work reappeared as runnable and the loop dispatched phantom tasks.
+    // Status transitions go through `update_status`/kanban-close ONLY.
     let query = match category {
         "decision" => {
-            "LET $eid = (SELECT VALUE id FROM decision WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'decision', entry_key = $key, title = $title, content = $content, status = 'active', entry_status = 'todo', access_count = 0, priority = IF $priority != NONE THEN $priority ELSE priority END, updated_at = time::now() RETURN id"
+            "LET $eid = (SELECT VALUE id FROM decision WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'decision', entry_key = $key, title = $title, content = $content, status = 'active', priority = IF $priority != NONE THEN $priority ELSE priority END, updated_at = time::now() RETURN id"
         }
         "research" => {
-            "LET $eid = (SELECT VALUE id FROM research WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'research', entry_key = $key, title = $title, content = $content, status = 'active', entry_status = 'todo', access_count = 0, updated_at = time::now() RETURN id"
+            "LET $eid = (SELECT VALUE id FROM research WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'research', entry_key = $key, title = $title, content = $content, status = 'active', updated_at = time::now() RETURN id"
         }
         "roadmap" => {
-            "LET $eid = (SELECT VALUE id FROM roadmap WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'roadmap', entry_key = $key, title = $title, content = $content, status = 'active', entry_status = 'todo', access_count = 0, priority = IF $priority != NONE THEN $priority ELSE priority END, updated_at = time::now() RETURN id"
+            "LET $eid = (SELECT VALUE id FROM roadmap WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'roadmap', entry_key = $key, title = $title, content = $content, status = 'active', priority = IF $priority != NONE THEN $priority ELSE priority END, updated_at = time::now() RETURN id"
         }
         "pattern" => {
-            "LET $eid = (SELECT VALUE id FROM pattern WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'pattern', entry_key = $key, title = $title, content = $content, status = 'active', entry_status = 'todo', access_count = 0, updated_at = time::now() RETURN id"
+            "LET $eid = (SELECT VALUE id FROM pattern WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'pattern', entry_key = $key, title = $title, content = $content, status = 'active', updated_at = time::now() RETURN id"
         }
         "app_spec" => {
-            "LET $eid = (SELECT VALUE id FROM app_spec WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'app_spec', entry_key = $key, title = $title, content = $content, status = 'active', entry_status = 'verified', access_count = 0, updated_at = time::now() RETURN id"
+            "LET $eid = (SELECT VALUE id FROM app_spec WHERE project = $project AND entry_key = $key LIMIT 1)[0] ?? $rid; UPSERT $eid SET project = $project, category = 'app_spec', entry_key = $key, title = $title, content = $content, status = 'active', updated_at = time::now() RETURN id"
         }
         other => {
             return Err(crate::error::Error::Migration(format!(
@@ -306,11 +349,6 @@ pub async fn upsert_entry_full(
             )));
         }
     };
-    let entry_status_default = if table == "app_spec" {
-        "verified"
-    } else {
-        "todo"
-    };
     let pk = format!("{:?}", project_id.key);
     let rid = RecordId::new(table, format!("{pk}:{entry_key}"));
     let rid_returned = rid.clone();
@@ -334,13 +372,18 @@ pub async fn upsert_entry_full(
             )));
         }
     };
+    // entry_status + access_count OMITTED from SET: schema DEFAULTs ('todo' /
+    // app_spec 'verified', 0) apply on CREATE; an UPDATE preserves the stored
+    // value. Setting them here was the status-drift bug — every content
+    // re-write flipped verified/done cards back to 'todo', so the kanban lied
+    // and the loop dispatched already-completed work. Transitions go through
+    // `update_status` / kanban-close ONLY.
     writeln!(
         q,
         "UPSERT $eid \
             SET project = $project, category = '{table}', \
             entry_key = $key, title = $title, content = $content, \
-            status = 'active', entry_status = '{entry_status_default}', \
-            access_count = 0{priority_clause}, updated_at = time::now() RETURN id;"
+            status = 'active'{priority_clause}, updated_at = time::now() RETURN id;"
     )
     .ok();
     writeln!(
@@ -477,6 +520,91 @@ pub async fn update_status(
     Ok(count)
 }
 
+/// Set the structured `owner_gated` flag on a roadmap card.
+///
+/// TRUE marks the card as needing an external owner action no agent can
+/// self-supply; the dispatcher (`readiness::is_owner_gated`) then skips it like
+/// an unmet dependency. This is the typed replacement for the retired
+/// `AGENT_BLOCKED:`/`OWNER-GATED` body keywords (owner directive 2026-06-13).
+/// Returns the number of rows updated.
+///
+/// # Errors
+/// Returns [`crate::error::Error::Migration`] if `table` is not in
+/// [`STATUS_TABLES`], or any underlying `SurrealDB` query error.
+pub async fn set_owner_gated(
+    db: &Surreal<Db>,
+    table: &str,
+    project_id: &RecordId,
+    entry_key: &str,
+    owner_gated: bool,
+) -> Result<usize> {
+    if !STATUS_TABLES.contains(&table) {
+        return Err(crate::error::Error::Migration(format!(
+            "set_owner_gated: unsupported table '{table}'; allowed: {STATUS_TABLES:?}"
+        )));
+    }
+    let query = format!(
+        "UPDATE {table} SET owner_gated = $gated, updated_at = time::now() \
+         WHERE project = $project AND entry_key = $key RETURN id"
+    );
+    let mut response = db
+        .query(query)
+        .bind(("project", project_id.clone()))
+        .bind(("key", entry_key.to_owned()))
+        .bind(("gated", owner_gated))
+        .await?;
+    let updated: Vec<UpdatedIdRow> = response.take(0)?;
+    Ok(updated.len())
+}
+
+/// Atomically transition `entry_status` only when the row's CURRENT status
+/// equals `expected`. Returns the number of rows actually transitioned (0 or 1).
+///
+/// This is the single-statement compare-and-set that closes the claim-card
+/// TOCTOU race: the `WHERE entry_status = $expected` predicate is evaluated and
+/// the write applied inside ONE `UPDATE`, so two sessions racing to claim the
+/// same `todo` card cannot both succeed — `SurrealDB` evaluates the predicate
+/// against the row state at write time, and only the first writer matches. A
+/// returned count of 0 means "another session already moved it" (lost the
+/// race), NOT an error. Prefer this over the read-then-`update_status` pattern
+/// for any contended transition.
+///
+/// # Errors
+/// `Error::Migration` when `table` is not in `STATUS_TABLES`; `Error::Surreal`
+/// when the UPDATE itself fails or the response shape is malformed.
+pub async fn update_status_cas(
+    db: &Surreal<Db>,
+    table: &str,
+    project_id: &RecordId,
+    entry_key: &str,
+    expected: &str,
+    new_status: &str,
+) -> Result<usize> {
+    if !STATUS_TABLES.contains(&table) {
+        return Err(crate::error::Error::Migration(format!(
+            "update_status_cas: unsupported table '{table}'; allowed: {STATUS_TABLES:?}"
+        )));
+    }
+    let query = format!(
+        "UPDATE {table} SET entry_status = $status, updated_at = time::now() \
+         WHERE project = $project AND entry_key = $key AND entry_status = $expected \
+         RETURN id"
+    );
+    let mut response = db
+        .query(query)
+        .bind(("project", project_id.clone()))
+        .bind(("key", entry_key.to_owned()))
+        .bind(("expected", expected.to_owned()))
+        .bind(("status", new_status.to_owned()))
+        .await?;
+    let updated: Vec<UpdatedIdRow> = response.take(0)?;
+    let count = updated.len();
+    if let Some(first) = updated.first() {
+        let _ = &first.id.table;
+    }
+    Ok(count)
+}
+
 const FEEDBACK_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
 
 /// Update the `feedback` field for a memory entry.
@@ -514,3 +642,7 @@ pub async fn update_feedback(
     let updated: Vec<UpdatedIdRow> = response.take(0)?;
     Ok(updated.len())
 }
+
+#[cfg(test)]
+#[path = "write_test.rs"]
+mod write_test;

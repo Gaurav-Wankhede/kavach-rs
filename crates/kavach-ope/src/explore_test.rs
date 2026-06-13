@@ -25,10 +25,20 @@ fn propensities_sum_to_one() {
     let (g_act, g_p) = epsilon_greedy_select(Act::Allow, &set, 0.3, 0.5); // exploit
     let (ask_act, ask_p) = epsilon_greedy_select(Act::Allow, &set, 0.3, 0.15); // idx 1
     let (blk_act, blk_p) = epsilon_greedy_select(Act::Allow, &set, 0.3, 0.25); // idx 2
-    assert_eq!((g_act, ask_act, blk_act), (Act::Allow, Act::Ask, Act::Block));
+    assert_eq!(
+        (g_act, ask_act, blk_act),
+        (Act::Allow, Act::Ask, Act::Block)
+    );
     assert!(close(g_p, 0.8), "greedy propensity {g_p}");
-    assert!(close(ask_p, 0.1) && close(blk_p, 0.1), "explore {ask_p} {blk_p}");
-    assert!(close(g_p + ask_p + blk_p, 1.0), "sum {}", g_p + ask_p + blk_p);
+    assert!(
+        close(ask_p, 0.1) && close(blk_p, 0.1),
+        "explore {ask_p} {blk_p}"
+    );
+    assert!(
+        close(g_p + ask_p + blk_p, 1.0),
+        "sum {}",
+        g_p + ask_p + blk_p
+    );
 }
 
 #[test]
@@ -38,7 +48,10 @@ fn greedy_propensity_dominates_non_greedy() {
     // draw 0.1 with eps 0.2, |A|=3 maps to index 1 (Ask) — a genuine non-greedy.
     let (act, explore_p) = epsilon_greedy_select(Act::Allow, &set, 0.2, 0.1);
     assert_ne!(act, Act::Allow, "draw should explore off greedy");
-    assert!(greedy_p > explore_p, "greedy {greedy_p} !> explore {explore_p}");
+    assert!(
+        greedy_p > explore_p,
+        "greedy {greedy_p} !> explore {explore_p}"
+    );
 }
 
 #[test]
@@ -74,7 +87,11 @@ fn c2_never_selects_an_action_outside_the_candidate_set() {
     for i in 0..=100u32 {
         let draw = f32::from(u16::try_from(i).unwrap()) / 100.0;
         let (act, _) = epsilon_greedy_select(Act::Allow, &set, 0.5, draw.min(0.999));
-        assert_ne!(act, Act::Block, "synthesized a non-candidate at draw {draw}");
+        assert_ne!(
+            act,
+            Act::Block,
+            "synthesized a non-candidate at draw {draw}"
+        );
     }
 }
 

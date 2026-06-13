@@ -2,10 +2,13 @@
 //! env vars without echoing them (fail-closed: unknown binaries are rejected).
 
 /// Return true when the post-source command is one that consumes env vars without
-/// echoing them — e.g. sqlx migrate, cargo run, npm run.
+/// echoing them — e.g. sqlx migrate, cargo run, npm run, or a non-destructive psql.
 ///
 /// Python is BANNED per ~/.claude/rules/04-anti-patterns.md global Python ban.
-/// psql is BANNED — canonical escape hatch for bypassing sqlx checksum validation.
+/// `psql` is allowed for READ/INSERT/UPDATE/CREATE — but a destructive verb
+/// (DELETE/DROP/TRUNCATE) anywhere in the command makes it unsafe here, and the
+/// dedicated psql write-bypass gate hard-blocks it regardless. This is the
+/// defense-in-depth first line so the env-leak gate doesn't wave it through.
 /// `kavach` is allowed so `source .env && kavach db pg-fix-checksum ...` works —
 /// kavach sub-commands take DSN via --dsn flag and never print env values.
 pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
@@ -20,6 +23,11 @@ pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
         .file_name()
         .and_then(|n| n.to_str())
         .map_or(first_token, |b| b);
+    // psql is conditionally safe: allowed only when it carries no destructive
+    // SQL verb. Shared classifier keeps identifier substrings (deleted_at) safe.
+    if basename == "psql" {
+        return crate::gates::sql_destructive::destructive_sql_keyword(&lc).is_none();
+    }
     let safe_binaries = [
         "sqlx",
         "cargo",

@@ -1,4 +1,7 @@
 //! RPC daemon self-heal: launchd respawn (`spawn`) + bounded poll-retry probe.
+//! When RPC stays unreachable (e.g. Cursor hook sandbox blocks the Unix socket),
+//! fall back to direct `SurrealDB` — same resilient open as session-start.
+mod direct;
 mod spawn;
 
 use spawn::try_spawn_rpc_daemon;
@@ -7,15 +10,25 @@ use spawn::try_spawn_rpc_daemon;
 /// transport error -> `Err(())` (caller fails closed via sentinel).
 ///
 /// SELF-HEAL: on the first transport error, attempt a one-shot daemon respawn
-/// and poll-retry (bounded 20×500ms) while `RocksDB` cold-opens, then honest
-/// `Err(())` — the bounded escape valve for the fail-closed sentinel.
+/// and poll-retry (bounded 20×500ms) while `RocksDB` cold-opens. When spawn is
+/// blocked (hook sandbox) or retries exhaust, fall back to direct `SurrealDB`.
 #[expect(
     clippy::print_stderr,
     reason = "hook engine has no tracing dep; stderr is the hook log channel"
 )]
 pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_json::Value>, ()> {
     let dbg = std::env::var("KAVACH_RPC_CLIENT_DEBUG").is_ok();
-    let params = serde_json::json!({ "project": project_slug });
+    // Lane-affinity sharding: a session running `KAVACH_LANE=<name>` dispatches
+    // its own lane first, then the unlaned backlog, never a foreign lane (the
+    // two-pass logic lives in roadmap::next_open_task). Unset/empty lane => the
+    // field is absent and dispatch sees the whole project backlog as before.
+    let lane = std::env::var("KAVACH_LANE").ok().filter(|l| !l.is_empty());
+    let mut map = serde_json::Map::new();
+    map.insert("project".to_owned(), serde_json::Value::String(project_slug.to_owned()));
+    if let Some(l) = lane {
+        map.insert("lane".to_owned(), serde_json::Value::String(l));
+    }
+    let params = serde_json::Value::Object(map);
     let classify = |v: serde_json::Value| {
         if v.is_object() && v.get("key").is_some() {
             Ok(Some(v))
@@ -40,7 +53,10 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
         eprintln!("[rpc_next] try_spawn_rpc_daemon -> {spawned}");
     }
     if !spawned {
-        return Err(());
+        if dbg {
+            eprintln!("[rpc_next] spawn unavailable — trying direct `SurrealDB`");
+        }
+        return direct::next(method, project_slug);
     }
     for attempt in 0..20 {
         std::thread::sleep(std::time::Duration::from_millis(500));
@@ -55,7 +71,10 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
             Err(_) => {}
         }
     }
-    Err(())
+    if dbg {
+        eprintln!("[rpc_next] {method}: RPC exhausted — trying direct SurrealDB");
+    }
+    direct::next(method, project_slug)
 }
 
 /// `roadmap.open_set_census` → `(runnable, blocked)` counts, or `Err(())` on a
@@ -66,10 +85,12 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
 pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64)>, ()> {
     let params = serde_json::json!({ "project": project_slug });
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
-        .map_err(|_| ())
-        .map(|v| {
-            let runnable = v.get("runnable").and_then(serde_json::Value::as_u64);
-            let blocked = v.get("blocked").and_then(serde_json::Value::as_u64);
-            runnable.zip(blocked)
-        })
+        .map_or_else(
+            |_| direct::census(project_slug),
+            |v| {
+                let runnable = v.get("runnable").and_then(serde_json::Value::as_u64);
+                let blocked = v.get("blocked").and_then(serde_json::Value::as_u64);
+                Ok(runnable.zip(blocked))
+            },
+        )
 }

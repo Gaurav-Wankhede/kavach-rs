@@ -23,7 +23,18 @@ pub(super) fn check(ctx: &StopCtx<'_>) -> ControlFlow<()> {
         return source_down::block("backlog");
     }
     let proj = ctx.session.project.clone();
-    let _claimed = claim_card(&proj, &hunt_key);
+    // Honor the atomic claim: lost CAS -> another session took this hunt card;
+    // fall through rather than announce a false claim (work-steal guard).
+    if !claim_card(&proj, &hunt_key) {
+        log_gate_decision(
+            &ctx.session.session_id,
+            "stop:claim_lost",
+            "continue",
+            &format!("hunt={hunt_key} taken by another session; falling through"),
+            &proj,
+        );
+        return ControlFlow::Continue(());
+    }
     drop(kavach_hook::exit_stop_block(&format!(
         "[AUTO_CONTINUE] Bug-hunt backlog not empty — do not stop.\n\
          NEXT HUNT [{hunt_key}]: {hunt_title}\n\

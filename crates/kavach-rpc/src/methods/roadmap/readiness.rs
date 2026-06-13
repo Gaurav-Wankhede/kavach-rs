@@ -2,7 +2,7 @@ pub mod agent_gate;
 pub mod dep_key;
 pub mod status_check;
 
-pub use agent_gate::is_agent_gated;
+pub use agent_gate::is_owner_gated;
 pub use dep_key::{dep_key_satisfied, parse_declared_deps};
 pub use status_check::is_runnable_status;
 
@@ -19,7 +19,7 @@ pub fn deps_satisfied(
     entry: &kavach_surreal::MemoryEntry,
     dep_pool: &[kavach_surreal::MemoryEntry],
 ) -> bool {
-    if is_agent_gated(&entry.title) || is_agent_gated(&entry.content) {
+    if is_owner_gated(entry.owner_gated) {
         return false;
     }
     parse_declared_deps(&entry.content)

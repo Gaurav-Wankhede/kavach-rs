@@ -9,6 +9,7 @@
 
 mod checks;
 mod config;
+pub mod dedup_guard;
 mod detect;
 mod file_types;
 mod regex_patterns;

@@ -24,9 +24,19 @@ pub(super) fn python_ban(ctx: &WriteContext<'_>) -> Option<SecurityResult> {
     })
 }
 
-/// Hardcoded credentials in non-test content — hard block.
+/// Hardcoded credentials in content — hard block.
+///
+/// Exempts only GENUINE test files (fixtures legitimately carry dummy secrets),
+/// not every non-code file. `ctx.is_test` is true for ANY non-code path
+/// (`is_test_or_exempt` returns true when `!is_code_write`), which wrongly
+/// captured `.env`/credential files — letting a real `AWS_SECRET_ACCESS_KEY=AKIA…`
+/// write through. Gate on an actual test-path marker instead.
+/// SOURCE: loophole audit (cursor-edge), runtime-proven.
 pub(super) fn hardcoded_secret(ctx: &WriteContext<'_>) -> Option<SecurityResult> {
-    if ctx.content.is_empty() || ctx.is_test {
+    let is_real_test_file = ["_tests.rs", "_test.rs", "tests/", "test_", "/fixtures/"]
+        .iter()
+        .any(|pat| ctx.file_path.contains(pat));
+    if ctx.content.is_empty() || is_real_test_file {
         return None;
     }
     kavach_config::has_secret_in_content(ctx.content).map(|secret_msg| {

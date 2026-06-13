@@ -1,9 +1,32 @@
 {
   "version": 1,
-  "_comment": "Kavach native hooks for Cursor. Install to ~/.cursor/hooks.json (global) or <project>/.cursor/hooks.json. Every command is the SAME kavach binary with --vendor cursor; kavach lowers Cursor's payload into its canonical pivot, runs the gate, and renders Cursor's native {continue,permission,userMessage,agentMessage} output. SOURCE: https://cursor.com/docs/hooks",
+  "_comment": "Kavach native hooks for Cursor. Install to ~/.cursor/hooks.json (global) or <project>/.cursor/hooks.json. Every command is the SAME kavach binary with --vendor cursor; kavach lowers Cursor's payload into its canonical pivot, runs the gate, and renders Cursor's native output. SOURCE: https://cursor.com/docs/hooks",
   "hooks": {
+    "sessionStart": [
+      { "command": "kavach gates session-start --hook --vendor cursor" }
+    ],
     "beforeSubmitPrompt": [
       { "command": "kavach gates intent --hook --vendor cursor" }
+    ],
+    "preToolUse": [
+      {
+        "command": "kavach gates pre-write --hook --vendor cursor",
+        "matcher": "Write"
+      },
+      {
+        "command": "kavach gates pre-implementation --hook --vendor cursor",
+        "matcher": "Write"
+      },
+      {
+        "command": "kavach gates pre-tool --hook --vendor cursor",
+        "matcher": "Shell|Read|Grep|Delete|Task"
+      }
+    ],
+    "postToolUse": [
+      { "command": "kavach gates post-tool --hook --vendor cursor" }
+    ],
+    "postToolUseFailure": [
+      { "command": "kavach gates post-tool-failure --hook --vendor cursor" }
     ],
     "beforeShellExecution": [
       { "command": "kavach gates pre-tool --hook --vendor cursor", "failClosed": true }
@@ -17,8 +40,23 @@
     "afterFileEdit": [
       { "command": "kavach gates post-write --hook --vendor cursor" }
     ],
+    "subagentStart": [
+      { "command": "kavach gates subagent-start --hook --vendor cursor" }
+    ],
+    "subagentStop": [
+      { "command": "kavach gates subagent-stop --hook --vendor cursor" }
+    ],
+    "preCompact": [
+      { "command": "kavach gates pre-compact --hook --vendor cursor" }
+    ],
+    "sessionEnd": [
+      { "command": "kavach gates session-end --hook --vendor cursor" }
+    ],
     "stop": [
-      { "command": "kavach gates stop --hook --vendor cursor" }
+      {
+        "command": "kavach gates stop --hook --vendor cursor",
+        "loop_limit": 10
+      }
     ]
   }
 }

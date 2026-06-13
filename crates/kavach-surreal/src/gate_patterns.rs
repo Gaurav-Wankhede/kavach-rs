@@ -26,7 +26,8 @@ const SCAN_LIMIT: i64 = 200;
 const MIN_SIM: f64 = 0.35;
 
 const COLS: &str = "id, project, tool_name, gate_name, error_tokens, fix_strategy, \
-                    imperative_rewrite, dsa_rationale, occurrence_count, bloom_bytes, tier";
+                    imperative_rewrite, dsa_rationale, occurrence_count, bloom_bytes, tier, \
+                    time::unix(updated_at) AS updated_unix";
 
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
@@ -43,6 +44,10 @@ pub struct GatePattern {
     #[serde(default)]
     pub bloom_bytes: Option<Vec<u8>>,
     pub tier: String,
+    /// Unix epoch of last touch (`time::unix(updated_at)`), driving the `k_pri`
+    /// recency axis when injection-ranking. `None` on legacy rows.
+    #[serde(default)]
+    pub updated_unix: Option<i64>,
 }
 
 #[derive(Debug)]
@@ -228,7 +233,13 @@ pub async fn find_autonomous(
         .bind(("tool", tool_name.to_owned()))
         .bind(("limit", SCAN_LIMIT))
         .await?;
-    let candidates: Vec<GatePattern> = response.take(0)?;
+    // Missing `gate_pattern` table (no pattern ever recorded) is the empty case,
+    // not a failure — same as `list_hot`.
+    let candidates: Vec<GatePattern> = match response.take(0) {
+        Ok(c) => c,
+        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(None),
+        Err(e) => return Err(e.into()),
+    };
     if candidates.is_empty() {
         return Ok(None);
     }
@@ -324,6 +335,7 @@ pub async fn list_hot(
     let q = format!(
         "SELECT {COLS} FROM gate_pattern \
          WHERE project = $project AND tier = 'autonomous' \
+         ORDER BY occurrence_count DESC \
          LIMIT $limit"
     );
     let limit_i64 = i64::try_from(limit).unwrap_or(i64::MAX);
@@ -332,6 +344,16 @@ pub async fn list_hot(
         .bind(("project", project.clone()))
         .bind(("limit", limit_i64))
         .await?;
-    let rows: Vec<GatePattern> = response.take(0)?;
-    Ok(rows)
+    // A daemon DB that never recorded an autonomous pattern has no `gate_pattern`
+    // table yet, so SELECT raises "table does not exist" — the empty case (zero
+    // hot patterns), not a failure. Mirrors `top_deployed_policies`.
+    match response.take(0) {
+        Ok(rows) => Ok(rows),
+        Err(e) if crate::error::is_missing_table_error(&e) => Ok(Vec::new()),
+        Err(e) => Err(e.into()),
+    }
 }
+
+#[cfg(test)]
+#[path = "gate_patterns_test.rs"]
+mod tests;

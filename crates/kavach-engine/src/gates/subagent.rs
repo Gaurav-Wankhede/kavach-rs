@@ -71,6 +71,8 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
         ).ok();
     }
 
+    session.queue_lifecycle_relay(&context);
+    // CC path: systemMessage. Cursor drops allow output — relay above.
     drop(kavach_hook::exit_subagent_start(&context));
     Ok(())
 }
@@ -111,6 +113,7 @@ pub(crate) fn run_stop(input: &HookInput) -> Result<(), EngineError> {
         ],
     );
 
+    session.queue_lifecycle_relay(&context);
     drop(kavach_hook::exit_subagent_stop(&context));
     Ok(())
 }

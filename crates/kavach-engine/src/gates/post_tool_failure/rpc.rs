@@ -22,6 +22,33 @@ pub(super) fn self_evolve_block(error: &str, tool_name: &str, failure_type: &str
     )
 }
 
+/// Full Tier-2 context: `[TOOL_FAILURE]` header + `[SELF_EVOLVE]` research
+/// directive. Built ONLY for a repeated (tool, failure-class) — first
+/// occurrences seed the pattern store silently (see `is_repeat_failure`).
+pub(super) fn tier2_context(
+    tool_name: &str,
+    turn: &str,
+    failure_type: &str,
+    retryable: &str,
+    action: &str,
+    error_text: &str,
+) -> String {
+    let mut ctx = kavach_hook::context_block(
+        "TOOL_FAILURE",
+        &[
+            ("tool", tool_name),
+            ("t", turn),
+            ("err", failure_type),
+            ("retry", retryable),
+            ("tier", "research"),
+            ("action", action),
+        ],
+    );
+    ctx.push('\n');
+    ctx.push_str(&self_evolve_block(error_text, tool_name, failure_type));
+    ctx
+}
+
 /// Query kavach-rpc for an autonomous `gate_pattern` matching this error.
 /// Returns None if daemon not running or no match — caller falls through to Tier 2.
 pub(super) fn find_autonomous_via_rpc(

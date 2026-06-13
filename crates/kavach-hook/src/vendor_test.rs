@@ -38,24 +38,28 @@ fn detects_cursor_from_cursor_version_field() {
 #[test]
 fn pascalcase_event_is_not_mistaken_for_cursor() {
     // CC/Codex PascalCase events must NOT trip the Cursor camelCase matcher.
+    // Assert the PAYLOAD-SHAPE seam directly: `detect` falls back to env markers
+    // (e.g. CURSOR_AGENT set under the Cursor IDE) when the shape is inconclusive,
+    // so testing via detect() would flake on the parent process. The contract
+    // under test is "this shape carries no vendor signal" => None => CC default.
     let p = r#"{"hook_event_name":"PreToolUse","tool_name":"Bash"}"#;
-    assert_eq!(Vendor::detect(p), Vendor::ClaudeCode);
+    assert_eq!(Vendor::detect_from_payload(p), None);
 }
 
 #[test]
 fn unknown_or_plain_payload_defaults_to_claude_code() {
-    // NOTE: detect() now consults env when the payload is inconclusive. These
-    // assertions hold whenever the test process carries no harness env marker
-    // (CODEX_HOME / PLUGIN_ROOT / CURSOR_*), which is the case under nextest's
-    // per-test isolated environment.
+    // A bare Claude-Code-shaped object and any non-object carry NO vendor signal.
+    // Assert the payload-shape seam directly (None) rather than detect(), which
+    // would consult env markers a parent harness sets (CURSOR_AGENT under the
+    // Cursor IDE) and flake. `None` here is what makes detect() default to CC.
     assert_eq!(
-        Vendor::detect(r#"{"session_id":"s1","tool_name":"Bash"}"#),
-        Vendor::ClaudeCode
+        Vendor::detect_from_payload(r#"{"session_id":"s1","tool_name":"Bash"}"#),
+        None
     );
     assert_eq!(
-        Vendor::detect("not json"),
-        Vendor::ClaudeCode,
-        "unparseable => safe default"
+        Vendor::detect_from_payload("not json"),
+        None,
+        "unparseable => no payload signal => CC default"
     );
 }
 
@@ -97,12 +101,76 @@ fn cursor_input_maps_native_names_to_the_pivot() {
 }
 
 #[test]
+fn cursor_pretooluse_event_maps_to_canonical_pretooluse() {
+    let p = r#"{
+        "conversation_id":"c1","workspace_roots":["/repo"],
+        "tool_name":"Write","hook_event_name":"preToolUse",
+        "tool_input":{"file_path":"src/lib.rs","content":"fn main(){}"}
+    }"#;
+    let input = cursor::lower(p).expect("cursor lowers");
+    assert_eq!(input.hook_event_name, "PreToolUse", "preToolUse -> PreToolUse");
+    assert_eq!(input.tool_name, "Write");
+    assert_eq!(input.get_string("file_path"), "src/lib.rs");
+}
+
+#[test]
+fn cursor_shell_command_reaches_canonical_tool_input() {
+    // Regression: beforeShellExecution must carry `command` into tool_input so the
+    // destructive blocklist can see it (else rm -rf / is silently allowed).
+    let p = r#"{
+        "conversation_id":"c","metadata":{"tool_name":"Bash"},
+        "hook_event_name":"beforeShellExecution","command":"rm -rf /tmp/x"
+    }"#;
+    let input = cursor::lower(p).expect("cursor lowers");
+    assert_eq!(
+        input.get_string("command"),
+        "rm -rf /tmp/x",
+        "cursor command must reach tool_input[command]"
+    );
+}
+
+#[test]
+fn cursor_pre_tool_deny_renders_permission_deny() {
+    // Regression: a PreToolUse deny sets only hook_specific_output.permission_decision
+    // (not top-level `decision`). Cursor's render must still emit permission:"deny",
+    // else the destructive blocklist's deny is silently downgraded to allow.
+    let resp = HookResponse::new_pre_tool_use_deny("BLOCKED [test]: nope");
+    let out = cursor::render(&resp, "PreToolUse");
+    assert!(out.contains(r#""permission":"deny""#), "must deny: {out}");
+    // SPEC (cursor.com/docs/hooks): PreToolUse honors NO `continue` field — only
+    // {permission, user_message, agent_message}. Emitting `continue` here is the
+    // imprecision this fix removes.
+    assert!(!out.contains(r#""continue""#), "pre-tool has no continue field: {out}");
+    assert!(out.contains("BLOCKED [test]"), "must carry reason: {out}");
+}
+
+#[test]
 fn cursor_input_tolerates_nulls_and_missing_fields() {
     let p = r#"{"conversation_id":null,"prompt":"hi","workspace_roots":null,"metadata":null}"#;
     let input = cursor::lower(p).expect("nulls must not block");
     assert_eq!(input.prompt, "hi");
     assert_eq!(input.session_id, "");
     assert_eq!(input.cwd, "");
+}
+
+#[test]
+fn cursor_loop_count_maps_to_stop_hook_active() {
+    // SPEC (cursor.com/docs/hooks): the stop hook carries `loop_count` (auto-
+    // follow-ups already fired, starts at 0). The stop gate's dispatch tiers key
+    // on the canonical `stop_hook_active` (first_pass when false, retry/verify
+    // when true). Without this map Cursor was forever first_pass-only and never
+    // ran the done->verified promotion path, stalling the loop after a verify.
+    // loop_count == 0 -> initial stop -> false.
+    let initial = cursor::lower(r#"{"hook_event_name":"stop","loop_count":0}"#)
+        .expect("cursor lowers");
+    assert!(!initial.stop_hook_active, "loop_count 0 is the initial stop");
+    // loop_count > 0 -> already in a follow-up loop -> true (re-entry path).
+    let reentry = cursor::lower(r#"{"hook_event_name":"stop","loop_count":3}"#)
+        .expect("cursor lowers");
+    assert!(reentry.stop_hook_active, "loop_count>0 is a re-entry stop");
+    // Absent / malformed loop_count fails safe to 0 -> false.
+    let absent = cursor::lower(r#"{"hook_event_name":"stop"}"#).expect("cursor lowers");
+    assert!(!absent.stop_hook_active, "absent loop_count defaults to initial");
 }
 
 // --- Codex native input lowering (CC-compatible) ---
@@ -121,7 +189,7 @@ fn codex_input_is_claude_code_compatible_with_extras_ignored() {
 #[test]
 fn cursor_block_renders_the_native_deny_contract() {
     let json = cursor::render(&HookResponse::new_block("nope"), "PreToolUse");
-    assert!(json.contains(r#""continue":false"#), "got {json}");
+    assert!(!json.contains(r#""continue""#), "pre-tool has no continue: {json}");
     assert!(json.contains(r#""permission":"deny""#), "got {json}");
     assert!(
         json.contains("nope"),
@@ -136,7 +204,7 @@ fn cursor_block_renders_the_native_deny_contract() {
 #[test]
 fn cursor_approve_renders_allow() {
     let json = cursor::render(&HookResponse::new_approve("ok"), "PreToolUse");
-    assert!(json.contains(r#""continue":true"#), "got {json}");
+    assert!(!json.contains(r#""continue""#), "pre-tool has no continue: {json}");
     assert!(json.contains(r#""permission":"allow""#), "got {json}");
 }
 
@@ -194,38 +262,168 @@ fn output_sink_defaults_to_claude_code_then_tracks_set_vendor() {
 }
 
 #[test]
-fn cursor_allow_carries_injected_context_as_agent_message() {
-    // The gap-A/B fix: Cursor has no SessionStart, so the per-prompt ALLOW must
-    // ferry the mistake ledger / global rules to the agent via agentMessage.
+fn cursor_session_start_injects_context_as_additional_context() {
+    // SPEC (cursor.com/docs/hooks): `sessionStart` is the ONLY hook whose output
+    // reaches the model, via `additional_context`. The mistake ledger / global
+    // rules / kanban boot context land here (once per conversation).
     let mut resp = HookResponse::new_approve("");
-    resp.system_message = "[MISTAKE_LEDGER] do not X".to_owned();
-    let json = cursor::render(&resp, "UserPromptSubmit");
-    assert!(json.contains(r#""continue":true"#), "{json}");
+    // The real session-start gate prepends an [AUTONOMY_CONTRACT] block ahead of
+    // the mistake ledger; prove the renderer carries BOTH through the only
+    // agent-readable door so the autonomy contract reaches the model on boot.
+    resp.system_message =
+        "[AUTONOMY_CONTRACT] claim -> implement -> 3-witness -> close\n[MISTAKE_LEDGER] do not X"
+            .to_owned();
+    let json = cursor::render(&resp, "SessionStart");
     assert!(
-        json.contains("MISTAKE_LEDGER"),
-        "context must ride agentMessage: {json}"
+        json.contains(r#""additional_context""#),
+        "session-start injects via additional_context: {json}"
+    );
+    assert!(json.contains("MISTAKE_LEDGER"), "context must be carried: {json}");
+    assert!(
+        json.contains("AUTONOMY_CONTRACT"),
+        "the autonomy contract must reach the model via additional_context: {json}"
     );
 }
 
 #[test]
-fn cursor_stop_block_renders_followup_message_not_permission() {
-    // The gap-C fix: Cursor's stop hook contract is {continue, followupMessage};
-    // a reblock must surface there, NOT as a permission body Cursor ignores. The
-    // edge passes the answered event ("Stop") so even a bare verdict routes right.
+fn cursor_submit_emits_continue_only_no_agent_message() {
+    // SPEC: beforeSubmitPrompt honors ONLY {continue, user_message}; user_message
+    // is user-facing (never reaches the model) and agent_message is NOT honored.
+    // A clean allow is a bare {continue:true} — no message popup every turn. This
+    // is the bug the old test encoded: routing agent context through submit, which
+    // Cursor drops.
+    let mut resp = HookResponse::new_approve("");
+    resp.system_message = "[MISTAKE_LEDGER] do not X".to_owned();
+    let json = cursor::render(&resp, "UserPromptSubmit");
+    assert!(json.contains(r#""continue":true"#), "{json}");
+    assert!(!json.contains("agent_message"), "submit honors no agent_message: {json}");
+    assert!(
+        !json.contains("MISTAKE_LEDGER"),
+        "allow-path submit must NOT spam a user popup: {json}"
+    );
+}
+
+#[test]
+fn cursor_submit_block_surfaces_reason_in_user_message() {
+    let json = cursor::render(&HookResponse::new_block("denied: bad prompt"), "UserPromptSubmit");
+    assert!(json.contains(r#""continue":false"#), "{json}");
+    assert!(json.contains(r#""user_message""#), "block reason rides user_message: {json}");
+    assert!(json.contains("denied: bad prompt"), "{json}");
+    assert!(!json.contains(r#""permission""#), "submit has no permission field: {json}");
+}
+
+#[test]
+fn cursor_after_file_edit_emits_empty_object() {
+    // SPEC: afterFileEdit honors NO output fields. Emit `{}`, not a permission blob.
+    let json = cursor::render(&HookResponse::new_block("ignored"), "PostToolUse");
+    assert_eq!(json, "{}", "afterFileEdit output is an empty object: {json}");
+}
+
+#[test]
+fn cursor_lifecycle_hooks_emit_empty_object_not_permission_blob() {
+    let resp = HookResponse::new_approve("[SUBAGENT_START] id:1");
+    for event in ["PreCompact", "SubagentStart", "SubagentStop", "SessionEnd"] {
+        let json = cursor::render(&resp, event);
+        assert_eq!(json, "{}", "{event} must emit {{}}: {json}");
+        assert!(
+            !json.contains("permission"),
+            "{event} must not emit permission blob: {json}"
+        );
+    }
+}
+
+#[test]
+fn cursor_subagent_stop_maps_to_subagent_stop_not_harness_stop() {
+    let input = cursor::lower(r#"{"hook_event_name":"subagentStop","conversation_id":"c1"}"#)
+        .expect("cursor lowers");
+    assert_eq!(
+        input.hook_event_name, "SubagentStop",
+        "subagentStop must NOT map to Stop (would emit followup_message)"
+    );
+}
+
+#[test]
+fn cursor_stop_block_renders_snake_case_followup_message() {
+    // SPEC (cursor.com/docs/hooks): the stop hook output is {followup_message}
+    // ONLY — snake_case, and NO `continue` field. A reblock (decision==block, the
+    // gate forcing the next dispatch turn) surfaces the reblock text as a non-empty
+    // `followup_message`, which Cursor auto-submits as the next user message to
+    // continue the loop. The edge passes the answered event ("Stop") so even a bare
+    // verdict routes through render_stop.
     let resp = HookResponse::new_stop_block("finish the work");
     let json = cursor::render(&resp, "Stop");
     assert!(
-        json.contains(r#""continue":false"#),
-        "stop block halts: {json}"
+        json.contains("followup_message"),
+        "reblock rides snake_case followup_message: {json}"
     );
     assert!(
-        json.contains("followupMessage"),
-        "reblock rides followupMessage: {json}"
+        !json.contains("followupMessage"),
+        "must NOT emit camelCase (Cursor ignores it — the loophole): {json}"
     );
     assert!(json.contains("finish the work"), "{json}");
     assert!(
+        !json.contains(r#""continue""#),
+        "stop hook has NO continue field per spec: {json}"
+    );
+    assert!(
         !json.contains(r#""permission""#),
         "stop has no permission field: {json}"
+    );
+}
+
+#[test]
+fn cursor_stop_clean_emits_empty_object_no_followup() {
+    // A clean stop (decision != block — drained board / [ALL_BLOCKED]) must NOT
+    // carry a follow-up, else Cursor would auto-resubmit and spin. The advisory
+    // text rides the gate's own message but is suppressed here so Cursor stops.
+    let resp = HookResponse::new_approve("");
+    let json = cursor::render(&resp, "Stop");
+    assert!(
+        !json.contains("followup_message"),
+        "clean stop must omit follow-up so Cursor halts: {json}"
+    );
+}
+
+#[test]
+fn cursor_lifecycle_hooks_emit_empty_object() {
+    // PreCompact / SubagentStart / SubagentStop / SessionEnd honor NO output
+    // fields on Cursor — must emit `{}`, not a spurious pre_tool permission blob.
+    for event in ["PreCompact", "SubagentStart", "SubagentStop", "SessionEnd"] {
+        let resp = HookResponse::new_approve("relay context queued");
+        let json = cursor::render(&resp, event);
+        assert_eq!(json, "{}", "{event} must be empty object: {json}");
+        assert!(!json.contains("permission"), "{event} has no permission: {json}");
+    }
+}
+
+#[test]
+fn cursor_pre_tool_allow_carries_agent_message() {
+    let resp = HookResponse::new_pre_tool_use_allow("[INTENT] type:fix");
+    let json = cursor::render(&resp, "PreToolUse");
+    assert!(json.contains(r#""permission":"allow""#), "{json}");
+    assert!(json.contains("agent_message"), "{json}");
+    assert!(json.contains("[INTENT]"), "{json}");
+}
+
+#[test]
+fn cursor_pre_tool_allow_prefers_additional_context_over_allow_reason() {
+    // Turn-shadow relay uses `new_pre_tool_use_with_context("allow", shadow)`;
+    // the boilerplate reason must NOT displace rich `additional_context` in
+    // `agent_message` — the loophole that made probe 3 emit only "allow".
+    let resp = HookResponse::new_pre_tool_use_with_context(
+        "allow",
+        "[INTENT] type:fix risk:low complexity:simple\n[LOOP] goal:card harness:loop-until-done iter:1 done:3-witness→close→next same turn",
+    );
+    let json = cursor::render(&resp, "PreToolUse");
+    assert!(json.contains("[INTENT]"), "shadow must reach agent_message: {json}");
+    assert!(json.contains("[LOOP]"), "LOOP compact must reach agent_message: {json}");
+    assert!(
+        !json.contains(r#""agent_message":"allow""#),
+        "boilerplate allow must not win over relay: {json}"
+    );
+    assert!(
+        !json.contains(r#""user_message""#),
+        "allow-path must not mirror relay into user_message: {json}"
     );
 }
 

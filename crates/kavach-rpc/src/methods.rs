@@ -11,6 +11,7 @@ pub mod gates;
 pub mod graph;
 pub mod lease;
 pub mod mistake;
+pub mod mistake_top;
 pub mod projects;
 pub mod rag;
 pub mod replay;

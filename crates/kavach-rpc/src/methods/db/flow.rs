@@ -1,0 +1,163 @@
+// split: RPC namespace for implementation-flow DAG verbs (flow.upsert / flow.render).
+// Mirrors methods/concept.rs: DTOs at the boundary, delegate to kavach_surreal
+// graph_* helpers, map errors via surreal_to_rpc. The DAG is the store; Mermaid
+// is rendered on read by walking it.
+use crate::error::surreal_to_rpc;
+use crate::state::AppState;
+use jsonrpsee::types::ErrorObjectOwned;
+use kavach_surreal::{
+    FlowDag, FlowEdgeInput, FlowSpec, FlowStepInput, graph_fetch_flow, graph_list_flows,
+    graph_upsert_flow,
+};
+use serde::{Deserialize, Serialize};
+
+/// Parameters for `db.flow_upsert`.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct UpsertParams {
+    /// Project slug the flow belongs to.
+    pub project_slug: String,
+    /// Project-scoped flow key.
+    pub flow_key: String,
+    /// Display title.
+    pub flow_title: String,
+    /// Steps (nodes).
+    pub steps: Vec<FlowStepInput>,
+    /// Dependency edges (`from` is prerequisite of `to`).
+    pub edges: Vec<FlowEdgeInput>,
+    /// Optional raw Mermaid source cached for round-trip.
+    #[serde(default)]
+    pub raw_mermaid: Option<String>,
+}
+
+/// Result of `db.flow_upsert`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct UpsertResult {
+    /// Record id of the flow anchor entity.
+    pub flow_id: String,
+    /// Number of steps persisted.
+    pub step_count: usize,
+}
+
+/// Parameters for `db.flow_render`.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct RenderParams {
+    /// Project slug.
+    pub project_slug: String,
+    /// Flow key.
+    pub flow_key: String,
+    /// `"mermaid"` (default) or `"json"`.
+    #[serde(default)]
+    pub format: Option<String>,
+}
+
+/// Result of `db.flow_render`: exactly one of `mermaid` / `json` is set.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct RenderResult {
+    /// Rendered Mermaid `flowchart TD`, when `format == "mermaid"`.
+    pub mermaid: Option<String>,
+    /// The full DAG, when `format == "json"`.
+    pub dag: Option<FlowDag>,
+}
+
+/// Upsert an implementation-flow DAG. Idempotent on `(project_slug, flow_key)`.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` when the project is unregistered, the edges form
+/// a cycle / reference an unknown step, or the database operation fails.
+pub async fn upsert(state: &AppState, p: UpsertParams) -> Result<UpsertResult, ErrorObjectOwned> {
+    let step_count = p.steps.len();
+    let spec = FlowSpec {
+        flow_key: p.flow_key,
+        flow_title: p.flow_title,
+        steps: p.steps,
+        edges: p.edges,
+        raw_mermaid: p.raw_mermaid,
+    };
+    let id = graph_upsert_flow(&state.db, &p.project_slug, &spec)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(UpsertResult {
+        flow_id: format!("{id:?}"),
+        step_count,
+    })
+}
+
+/// Parameters for `db.flow_list`.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct ListParams {
+    /// Project slug to list flows for.
+    pub project_slug: String,
+}
+
+/// One flow's identity in a list result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct FlowSummary {
+    /// Flow key.
+    pub flow_key: String,
+    /// Flow title.
+    pub flow_title: String,
+}
+
+/// List the flows defined for a project (key + title only).
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on database failure.
+pub async fn list(state: &AppState, p: ListParams) -> Result<Vec<FlowSummary>, ErrorObjectOwned> {
+    let flows = graph_list_flows(&state.db, &p.project_slug)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(flows
+        .into_iter()
+        .map(|(flow_key, flow_title)| FlowSummary {
+            flow_key,
+            flow_title,
+        })
+        .collect())
+}
+
+/// Render a stored flow as Mermaid (default) or JSON by walking its DAG.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` when the project or flow does not exist, or the
+/// database operation fails.
+pub async fn render(state: &AppState, p: RenderParams) -> Result<RenderResult, ErrorObjectOwned> {
+    let dag = graph_fetch_flow(&state.db, &p.project_slug, &p.flow_key)
+        .await
+        .map_err(surreal_to_rpc)?;
+    let fmt = p.format.as_deref().unwrap_or("mermaid");
+    if fmt == "json" {
+        Ok(RenderResult {
+            mermaid: None,
+            dag: Some(dag),
+        })
+    } else {
+        Ok(RenderResult {
+            mermaid: Some(dag.to_mermaid()),
+            dag: None,
+        })
+    }
+}

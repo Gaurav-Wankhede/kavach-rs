@@ -42,3 +42,20 @@ pub(super) fn action_for_type(failure_type: &str) -> &'static str {
         _ => "DIAGNOSE: Read the error. FIX: Correct the cause. RETRY: Run again.",
     }
 }
+
+/// True iff the PREVIOUS unresolved failure marker matches this
+/// (tool, failure-class) — the recurrence signal that gates Tier-2
+/// `[SELF_EVOLVE]` emission. First occurrences seed the pattern store
+/// silently: the raw tool error is already visible in the transcript, and
+/// injecting a research directive for every one-off mistake (a mistyped
+/// flag, an oversized read) was loop-derailing noise. A repeat means the
+/// agent hit the same class twice without an intervening success — THAT is
+/// worth a research detour. Markers reset via `clear_failure` on success.
+pub(super) fn is_repeat_failure(
+    last_tool: &str,
+    last_type: &str,
+    tool: &str,
+    failure_type: &str,
+) -> bool {
+    !last_tool.is_empty() && last_tool == tool && last_type == failure_type
+}

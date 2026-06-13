@@ -46,8 +46,17 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     }
 
     record_write(input, &sess, file_path, &content);
-    concept::scan_concept_markers(&content);
-    emit_context(file_path, &context_parts);
+    let concept_count = concept::scan_concept_markers(&content);
+    if concept_count > 0 {
+        super::turn_relay::queue_advisory(
+            &mut sess,
+            &format!("[CONCEPT] upserted {concept_count} L0 concept(s) this write"),
+        );
+    }
+    emit_context(&mut sess, file_path, &context_parts);
+    if super::turn_relay::should_relay() {
+        drop(kavach_hook::exit_silent());
+    }
     Ok(())
 }
 
@@ -97,10 +106,16 @@ fn capture_write(session_id: &str, file_path: &str, content: &str) {
 }
 
 /// Emit the `[POST_WRITE]` block only when an actionable advisory exists.
-/// CONTEXT-ROT: noise in mid-context degrades every later output — filter at
-/// source. SOURCE: research.trychroma.com/context-rot.
-fn emit_context(file_path: &str, context_parts: &[String]) {
+/// On Cursor, queue one-line flags for the next `pre_tool`/`pre_write` relay instead.
+fn emit_context(sess: &mut kavach_session::SessionState, file_path: &str, context_parts: &[String]) {
     if context_parts.is_empty() {
+        return;
+    }
+    if super::turn_relay::should_relay() {
+        for part in context_parts {
+            let one_line = part.lines().next().unwrap_or(part);
+            super::turn_relay::queue_advisory(sess, one_line);
+        }
         return;
     }
     let mut full = format!("[POST_WRITE]\nfile: {file_path}\n\n");

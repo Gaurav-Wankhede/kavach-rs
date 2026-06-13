@@ -23,10 +23,22 @@ fn safe_downstream_recognizes_kavach_subcommands() {
 }
 
 #[test]
-fn safe_downstream_rejects_python_psql_bash() {
+fn safe_downstream_rejects_python_and_bash() {
+    // python (global ban) and an arbitrary `bash -c` (can echo secrets) stay unsafe.
     assert!(!is_safe_downstream("python -c 'print(env)'"));
-    assert!(!is_safe_downstream("psql $DATABASE_URL"));
     assert!(!is_safe_downstream("bash -c 'echo $SECRET'"));
+}
+
+#[test]
+fn safe_downstream_psql_is_operation_aware() {
+    // psql consuming a DSN for a read/write op is safe — it never echoes the env.
+    assert!(is_safe_downstream("psql $DATABASE_URL -c 'SELECT 1'"));
+    assert!(is_safe_downstream("psql $DATABASE_URL -c 'UPDATE t SET x=1'"));
+    assert!(is_safe_downstream("psql $DATABASE_URL"));
+    // A destructive verb makes it unsafe at this layer (and the psql gate blocks it).
+    assert!(!is_safe_downstream("psql $DATABASE_URL -c 'DELETE FROM t'"));
+    assert!(!is_safe_downstream("psql $DATABASE_URL -c 'DROP TABLE t'"));
+    assert!(!is_safe_downstream("psql $DATABASE_URL -c 'TRUNCATE t'"));
 }
 
 #[test]

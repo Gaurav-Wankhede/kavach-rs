@@ -18,13 +18,17 @@ use kavach_dtree::{DecisionNode, DecisionTree, Outcome, Predicate};
     reason = "linear dispatcher building decision tree bottom-up; refactoring would reduce clarity"
 )]
 pub fn build_intent_tree() -> DecisionTree {
+    // 0.9 (was 0.75): has_destructive is now high-precision — word-boundary
+    // verb within 4 tokens of a destructive target, or a shell idiom — so a
+    // hit is a confident signal, and the [INTENT] risk line (gated at >=0.85
+    // confidence) still prints for genuine destructive asks.
     let critical_leaf = DecisionNode::leaf(Outcome {
         intent_type: "destructive".into(),
         complexity: "complex".into(),
         risk_level: "critical".into(),
         required_skills: Vec::new(),
         requires_research: true,
-        confidence: 0.75,
+        confidence: 0.9,
     });
 
     let deploy_leaf = DecisionNode::leaf(Outcome {

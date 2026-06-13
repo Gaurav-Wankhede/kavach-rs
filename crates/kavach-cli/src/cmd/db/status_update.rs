@@ -10,7 +10,13 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
     clippy::too_many_lines,
     reason = "RPC-first with fallback to direct DB requires nested match arms and error handling"
 )]
-pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -> i32 {
+pub(super) fn run(
+    project_slug: &str,
+    category: &str,
+    key: &str,
+    status: &str,
+    owner_gated: Option<bool>,
+) -> i32 {
     if MemoryStatus::from_str(status).is_err() {
         let msg = format!(
             "error: invalid status '{status}'. Valid: {}",
@@ -28,6 +34,11 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -
             let msg = format!("status applied: [{category}] {key} -> {status} (via rpc)");
             if let Err(io_err) = print_or_exit(&msg) {
                 return into_exit_code(io_err);
+            }
+            // Owner-gate flag is set via a direct-DB write (no RPC verb yet):
+            // best-effort, the status transition already succeeded.
+            if let Some(gated) = owner_gated {
+                apply_owner_gated_direct(project_slug, category, key, gated);
             }
             return 0;
         }
@@ -112,6 +123,12 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -
                 if let Err(io_err) = print_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
+                if let Some(gated) = owner_gated
+                    && let Err(e) =
+                        kavach_surreal::set_owner_gated(&db, category, &project_id, key, gated).await
+                {
+                    ewrite_or_exit(&format!("warn: owner_gated not set: {e}")).ok();
+                }
                 refresh_memory_entry_graph(&db, category, key, project_slug).await;
                 0
             }
@@ -131,6 +148,36 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -
             }
         }
     })
+}
+
+/// Apply the structured `owner_gated` flag via a direct-DB write after an
+/// RPC-routed status update (no RPC verb threads `owner_gated` yet). Best-effort:
+/// the status transition has already succeeded, so a flag-set failure is warned,
+/// not fatal. Runs its own short-lived tokio runtime + DB handle.
+fn apply_owner_gated_direct(project_slug: &str, category: &str, key: &str, gated: bool) {
+    let Ok(runtime) = tokio::runtime::Runtime::new() else {
+        ewrite_or_exit("warn: owner_gated not set: tokio runtime unavailable").ok();
+        return;
+    };
+    runtime.block_on(async {
+        let Ok(db) = super::rpc_client::open_direct_resilient().await else {
+            ewrite_or_exit("warn: owner_gated not set: direct DB unavailable").ok();
+            return;
+        };
+        match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+            Ok(Some(project)) => {
+                if let Some(pid) = project.id
+                    && let Err(e) =
+                        kavach_surreal::set_owner_gated(&db, category, &pid, key, gated).await
+                {
+                    ewrite_or_exit(&format!("warn: owner_gated not set: {e}")).ok();
+                }
+            }
+            _ => {
+                ewrite_or_exit("warn: owner_gated not set: project lookup failed").ok();
+            }
+        }
+    });
 }
 
 /// Direct-DB graph projection refresh. Best-effort: errors logged via `.ok()`

@@ -57,6 +57,17 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push('\n');
         full.push_str(capture_ctx);
     }
+    let loophole_ctx = ctx.loophole_advisory.as_deref().unwrap_or("");
+    if !loophole_ctx.is_empty() {
+        full.push('\n');
+        full.push_str(loophole_ctx);
+    }
+    let shallow_ctx = ctx.shallow_advisory.as_deref().unwrap_or("");
+    if !shallow_ctx.is_empty() {
+        full.push('\n');
+        full.push_str(shallow_ctx);
+    }
+    super::super::pattern_extract::trigger_on_verify(ctx.session);
     drop(kavach_hook::exit_stop_context(&full));
     ControlFlow::Break(())
 }

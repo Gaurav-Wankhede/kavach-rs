@@ -7,11 +7,12 @@
 const CONCEPT_MARKER_CAP: usize = 8;
 
 /// Scan up to `CONCEPT_MARKER_CAP` `// CONCEPT:` lines and upsert each concept.
-pub(super) fn scan_concept_markers(content: &str) {
+/// Returns the number of valid concepts upserted.
+pub(super) fn scan_concept_markers(content: &str) -> usize {
     let mut count = 0usize;
     for line in content.lines() {
         if count >= CONCEPT_MARKER_CAP {
-            return;
+            return count;
         }
         let Some(body) = line.trim_start().strip_prefix("// CONCEPT:") else {
             continue;
@@ -20,6 +21,7 @@ pub(super) fn scan_concept_markers(content: &str) {
             count = count.saturating_add(1);
         }
     }
+    count
 }
 
 /// Parse one marker body (`name | DESC: .. | TAGS: a,b`) and upsert it.

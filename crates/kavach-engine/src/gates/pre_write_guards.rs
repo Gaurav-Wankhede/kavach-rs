@@ -83,5 +83,34 @@ fn platform(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if let Some(msg) = super::api_gateway_guard::check(ctx.file_path, ctx.content) {
         acc.p1_advisories.push(format!("[API_GATEWAY_P1] {msg}"));
     }
+    production_audit(ctx, acc);
     None
+}
+
+/// Multi-category production-pattern audit (`kavach_patterns::production_patterns`).
+/// This detector was a `pub mod` with ZERO call sites — defined-but-never-enforced.
+/// Wired here as a P1 ADVISORY rollup (NOT a block): it overlaps existing P0
+/// security guards, so blocking on its full set would risk a false-positive storm
+/// against the <1% bar. Surfaced as one compact advisory naming the highest-
+/// severity hits so the signal is no longer dark. Reuses the crate's own pattern
+/// table — no rule is re-declared in the engine.
+fn production_audit(ctx: &WriteContext<'_>, acc: &mut Acc) {
+    let matches = kavach_patterns::production_patterns::scan(ctx.file_path, &ctx.effective_content);
+    if matches.is_empty() {
+        return;
+    }
+    let crit = kavach_patterns::production_patterns::count_critical(&matches);
+    let mut codes: Vec<&str> = matches.iter().take(5).map(|m| m.code).collect();
+    codes.dedup();
+    acc.p1_advisories.push(format!(
+        "[PRODUCTION_AUDIT_P1] {} pattern hit(s){} — codes: {}. \
+         Review each before declaring done (these are quality nudges, not blocks).",
+        matches.len(),
+        if crit > 0 {
+            format!(", {crit} critical")
+        } else {
+            String::new()
+        },
+        codes.join(", "),
+    ));
 }

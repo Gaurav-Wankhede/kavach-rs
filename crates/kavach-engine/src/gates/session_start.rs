@@ -4,7 +4,9 @@
 //! (tree refresh), `memory` (project/ancestry titles), `patterns` (hot
 //! patterns + mistake ledger), `context` (assemble the `[SESSION_START]` block).
 mod boot;
+mod concepts;
 mod context;
+mod flows;
 mod memory;
 mod patterns;
 mod rag;

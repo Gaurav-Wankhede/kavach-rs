@@ -26,8 +26,11 @@ const APP_PKG: &str = "kavach-app";
 const APP_BUNDLE_NAME: &str = "KavachApp.app";
 
 pub(crate) fn run(skip_tests: bool, bundle: bool) -> i32 {
-    // Track A: strict gates + build + install the CLI to ~/.local/bin/kavach.
-    let cli = deploy_cli(skip_tests);
+    // Track A: strict gates + build + (for a CLI-only install) write the binary
+    // to ~/.local/bin/kavach. In --bundle mode the standalone install is SKIPPED:
+    // the bundle track installs the CLI INTO KavachApp.app and re-points the
+    // symlink, so a plain install_binary would (correctly) refuse to clobber it.
+    let cli = deploy_cli(skip_tests, bundle);
     if cli != 0 {
         return cli;
     }
@@ -41,7 +44,7 @@ pub(crate) fn run(skip_tests: bool, bundle: bool) -> i32 {
 /// Track A — the 8-step CLI deploy: strict gates + build + install + restart the
 /// RPC daemon so the new binary's code actually takes effect (step 8).
 #[expect(clippy::too_many_lines, reason = "deploy orchestrator with 8 steps")]
-fn deploy_cli(skip_tests: bool) -> i32 {
+fn deploy_cli(skip_tests: bool, bundle: bool) -> i32 {
     if let Err(io_err) = print_or_exit("[DEPLOY] step 1/8: cargo check --release -D warnings") {
         return into_exit_code(io_err);
     }
@@ -151,6 +154,21 @@ fn deploy_cli(skip_tests: bool) -> i32 {
             return into_exit_code(io_err);
         }
         return 1;
+    }
+
+    // Steps 7/8 install the standalone CLI to ~/.local/bin and restart the
+    // daemon. In --bundle mode BOTH are the bundle track's job: it installs the
+    // CLI into KavachApp.app, re-points the symlink, and restarts the daemon off
+    // the app binary. Running install_binary here would (correctly) refuse to
+    // clobber the bundle symlink, aborting the deploy before the bundle runs —
+    // so skip 7/8 entirely when bundling.
+    if bundle {
+        if let Err(io_err) = print_or_exit(
+            "[DEPLOY] step 7/8: SKIPPED (--bundle installs the CLI into KavachApp.app)",
+        ) {
+            return into_exit_code(io_err);
+        }
+        return 0;
     }
 
     if let Err(io_err) = print_or_exit("[DEPLOY] step 7/8: install to ~/.local/bin/kavach") {
@@ -439,7 +457,7 @@ fn deploy_bundle() -> i32 {
     // B6: symlink ~/.local/bin/kavach into the installed bundle so the
     // terminal CLI and the GUI's embedded sidecar are one binary.
     if let Err(io_err) = print_or_exit(
-        "[BUNDLE] step 5/6: symlink ~/.local/bin/kavach -> KavachApp.app/Contents/MacOS/kavach",
+        "[BUNDLE] step 5/7: symlink ~/.local/bin/kavach -> KavachApp.app/Contents/MacOS/kavach",
     ) {
         return into_exit_code(io_err);
     }
@@ -457,8 +475,19 @@ fn deploy_bundle() -> i32 {
         return 1;
     }
 
+    // B7: restart the RPC daemon so it loads the NEW embedded binary. Without
+    // this, a --bundle deploy leaves the long-running daemon on the OLD code —
+    // every gate routes through that stale process and the deploy silently never
+    // takes effect (the same failure the CLI track's step 8 fixes).
+    if let Err(io_err) =
+        print_or_exit("[BUNDLE] step 6/7: restart RPC daemon (load new binary)")
+    {
+        return into_exit_code(io_err);
+    }
+    restart_rpc_daemon();
+
     if let Err(io_err) = print_or_exit(&format!(
-        "[BUNDLE] step 6/6: OK — installed {} and symlinked CLI to {}",
+        "[BUNDLE] step 7/7: OK — installed {} and symlinked CLI to {}",
         app_dst.display(),
         link.display()
     )) {

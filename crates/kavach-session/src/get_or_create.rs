@@ -1,14 +1,38 @@
+//! Session load/create hub.
+//!
+//! Resolves a session id (env or thread-local edge context — see
+//! [`session_id`]) and loads the durable per-conversation row, so two
+//! conversations in one repo never collide on the workdir-keyed file cache.
+
+mod filter;
+mod session_id;
+
 use crate::load::{load_session_state, load_session_state_for};
 use crate::paths::detect_project;
 use crate::state::SessionState;
 
-/// Load existing session or create a new one (no `session_id` context).
+pub(crate) use filter::filter_test_pending_for_project;
+use session_id::env_session_id;
+pub use session_id::set_session_context;
+
+/// Load existing session or create a new one.
 ///
-/// Prefer `get_or_create_session_for` when a `session_id` is available — it
-/// resolves the durable DB row and is immune to cross-`/clear` rehydration.
+/// Resolves the session id from `KAVACH_SESSION_ID` (Claude Code) or the
+/// thread-local context the native edge armed from the lowered payload
+/// (Cursor's `conversation_id`, which sets no env). With an id present this
+/// routes to the durable per-conversation row via [`get_or_create_session_for`],
+/// so two conversations in ONE repo never share the workdir-keyed file cache —
+/// the collision that made two Cursor conversations advance one loop counter.
+/// Empty id (no edge, no env) falls back to the file-only load, today's
+/// behavior.
 #[must_use]
 pub fn get_or_create_session() -> SessionState {
-    materialize(load_session_state().ok().flatten())
+    let session_id = env_session_id();
+    if session_id.is_empty() {
+        materialize(load_session_state().ok().flatten())
+    } else {
+        get_or_create_session_for(&session_id)
+    }
 }
 
 /// Session-aware load: resolve the durable `session_runtime` DB row.
@@ -28,12 +52,6 @@ pub fn get_or_create_session_for(session_id: &str) -> SessionState {
         session_id.clone_into(&mut state.session_id);
     }
     state
-}
-
-/// Resolve the session id from the `KAVACH_SESSION_ID` env (Claude Code sets it
-/// on every hook). Empty if unset — callers guard on emptiness.
-fn env_session_id() -> String {
-    std::env::var("KAVACH_SESSION_ID").unwrap_or_default()
 }
 
 /// Apply `work_dir` / project refresh to a loaded state, or build a fresh one.
@@ -71,88 +89,5 @@ fn materialize(loaded: Option<SessionState>) -> SessionState {
             eprintln!("[session] materialize: initial save failed: {e}");
         }
         state
-    }
-}
-
-/// Remove `test_files_pending` entries that don't belong to the current `work_dir`.
-/// Prevents cross-project test enforcement leakage when switching directories.
-pub(crate) fn filter_test_pending_for_project(state: &mut SessionState, work_dir: &str) {
-    if work_dir.is_empty() || state.test_files_pending.is_empty() {
-        return;
-    }
-    let before = state.test_files_pending.len();
-    // Ensure trailing separator to prevent "/kavach" matching "/kavach-backup"
-    let prefix = if work_dir.ends_with('/') {
-        work_dir.to_owned()
-    } else {
-        format!("{work_dir}/")
-    };
-    state.test_files_pending.retain(|f| f.starts_with(&prefix));
-    if state.test_files_pending.is_empty() && before > 0 {
-        state.test_nudge_count = 0;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn filter_removes_other_project_files() {
-        let mut s = SessionState::default();
-        s.test_files_pending = vec![
-            "/Users/g/Astro/astro-advisor/src/forecast.rs".into(),
-            "/Users/g/Nicole/Backend/src/routes.rs".into(),
-        ];
-        s.test_nudge_count = 5;
-        filter_test_pending_for_project(&mut s, "/Users/g/Nicole");
-        assert_eq!(s.test_files_pending.len(), 1);
-        assert_eq!(
-            s.test_files_pending[0],
-            "/Users/g/Nicole/Backend/src/routes.rs"
-        );
-        assert_eq!(s.test_nudge_count, 5);
-    }
-
-    #[test]
-    fn filter_resets_nudge_when_all_cleared() {
-        let mut s = SessionState::default();
-        s.test_files_pending = vec!["/Users/g/Astro/src/forecast.rs".into()];
-        s.test_nudge_count = 49;
-        filter_test_pending_for_project(&mut s, "/Users/g/Nicole");
-        assert!(s.test_files_pending.is_empty());
-        assert_eq!(s.test_nudge_count, 0);
-    }
-
-    #[test]
-    fn filter_keeps_all_when_same_project() {
-        let mut s = SessionState::default();
-        s.test_files_pending = vec![
-            "/Users/g/Nicole/src/auth.rs".into(),
-            "/Users/g/Nicole/src/pay.rs".into(),
-        ];
-        s.test_nudge_count = 3;
-        filter_test_pending_for_project(&mut s, "/Users/g/Nicole");
-        assert_eq!(s.test_files_pending.len(), 2);
-        assert_eq!(s.test_nudge_count, 3);
-    }
-
-    #[test]
-    fn filter_noop_on_empty_pending() {
-        let mut s = SessionState::default();
-        s.test_nudge_count = 2;
-        filter_test_pending_for_project(&mut s, "/Users/g/Nicole");
-        assert!(s.test_files_pending.is_empty());
-        assert_eq!(s.test_nudge_count, 2);
-    }
-
-    #[test]
-    fn filter_noop_on_empty_work_dir() {
-        let mut s = SessionState::default();
-        s.test_files_pending = vec!["/Users/g/Astro/src/lib.rs".into()];
-        s.test_nudge_count = 1;
-        filter_test_pending_for_project(&mut s, "");
-        assert_eq!(s.test_files_pending.len(), 1);
-        assert_eq!(s.test_nudge_count, 1);
     }
 }

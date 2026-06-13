@@ -38,8 +38,19 @@ pub(crate) const KAVACH_GIT_SHA: &str = env!("KAVACH_GIT_SHA");
 #[derive(Parser)]
 #[command(
     name = "kavach",
-    about = "Kavach — Claude Code enforcement hooks",
-    version = KAVACH_VERSION,
+    about = "Kavach harness — hooks, SurrealDB kanban, SDLC phases, agent loop control",
+    long_about = "Kavach wraps AI agent sessions with enforcement hooks, a SurrealDB \
+memory store (projects, roadmap/kanban, decisions, graph), and SDLC phase gates.\n\n\
+WORKFLOWS (common agent paths):\n  \
+Session start:  kavach db kanban --project <slug>\n  \
+                kavach db get --project <slug> --category roadmap --key <unit> --full\n  \
+                kavach phase status && kavach context --project <slug>\n  \
+Close a card:   kavach db status-update … --status done\n  \
+                kavach verify --project <slug> --key <unit> --crate-name <crate>\n  \
+                kavach db kanban-close --project <slug> --key <unit>\n  \
+Health check:   kavach db kanban && kavach context (direct DB — no RPC required)\n\n\
+Run `kavach <command> --help` for subcommands, flags, and examples.",
+    version = KAVACH_VERSION
 )]
 pub(crate) struct Cli {
     #[command(subcommand)]
@@ -48,11 +59,13 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand)]
 pub(crate) enum Commands {
-    /// Show session status and enforcement state
+    /// Show session status, build identity, and enforcement flags.
+    #[command(after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates.")]
     Status,
-    /// Run a gate hook (called by Claude Code hooks)
+    /// Run a gate hook (called by Claude Code / Cursor hooks).
+    #[command(after_help = "EXAMPLES:\n  kavach gates stop --help          # gate purpose (no stdin)\n  echo '{\"hook_event_name\":\"Stop\",\"cwd\":\".\"}' | kavach gates stop --hook --vendor cursor\n\nWHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.")]
     Gates {
-        /// Gate name (e.g. pre-write, post-write, pre-tool, post-tool, intent)
+        /// Gate name (pre-write, post-write, pre-tool, post-tool, intent, stop, session-start, six-file-intent, pre-implementation, post-implementation, …)
         gate_name: String,
         /// Read JSON input from stdin (hook mode)
         #[arg(long)]
@@ -76,7 +89,8 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: RulesAction,
     },
-    /// Manage the SurrealDB-backed memory store (projects, kanban, decisions, graph)
+    /// Manage the SurrealDB-backed memory store (projects, kanban, decisions, graph).
+    #[command(after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  kavach db get --project P --category roadmap --key K --full\n  kavach db write --project P --category roadmap --key K --title T --new\n\nWHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks.")]
     Db {
         #[command(subcommand)]
         action: DbAction,
@@ -114,6 +128,7 @@ pub(crate) enum Commands {
         action: TailwindPlusAction,
     },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
+    #[command(after_help = "See: kavach phase --help")]
     Phase {
         #[command(subcommand)]
         action: PhaseAction,
@@ -124,12 +139,18 @@ pub(crate) enum Commands {
         action: SpecAction,
     },
     /// Manage autonomous execution loop (harness engineering)
+    #[command(after_help = "See: kavach loop --help")]
     Loop {
         #[command(subcommand)]
         action: LoopAction,
     },
-    /// Verify a roadmap entry: run cargo check + tests, then transition done→verified.
-    /// SOURCE: 42-pattern catalog §3.5 Writer-is-not-Evaluator separation.
+    /// Verify a roadmap entry: cargo check + tests, then done→verified.
+    #[command(
+        long_about = "Writer-is-not-evaluator separation: runs `cargo check` and \
+crate tests for the unit, then transitions the roadmap row from done to verified \
+only on pass. SOURCE: 42-pattern catalog §3.5.",
+        after_help = "EXAMPLES:\n  kavach verify --project nicole-carpenter --key roadmap.unit.foo --crate-name my-crate\n\nWHEN: After implementation is done and `db status-update … --status done`."
+    )]
     Verify {
         /// Project slug
         #[arg(long)]
@@ -141,11 +162,10 @@ pub(crate) enum Commands {
         #[arg(long)]
         crate_name: Option<String>,
     },
-    /// One-shot deploy: cargo build --release, install binary to ~/.local/bin/kavach.
-    /// With --bundle, also builds the Kavach.app GUI (via `dx bundle`) with the
-    /// CLI embedded as a sidecar, codesigns it, installs to /Applications, and
-    /// symlinks ~/.local/bin/kavach into the bundle.
-    /// SOURCE: `AgentCore` CLI pattern — agentcore deploy.
+    /// One-shot deploy: build, test, install binary to ~/.local/bin/kavach.
+    #[command(
+        after_help = "EXAMPLES:\n  just install              # from kavach-rs (plain CLI)\n  just bundle               # KavachApp.app + symlink (~/.local/bin/kavach)\n  kavach deploy --skip-tests --bundle\n\nWHEN: After engine/cli changes; restarts RPC daemon on success."
+    )]
     Deploy {
         /// Skip the cargo nextest step (build + install only).
         #[arg(long)]
@@ -171,6 +191,7 @@ pub(crate) enum Commands {
     },
     /// Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow.
     /// SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent.
+    #[command(after_help = "EXAMPLES:\n  kavach pipeline plan --project P --spec-key app_spec.build\n  kavach pipeline status --project nicole-carpenter\n\nWHEN: Bootstrap roadmap from app_spec; track multi-stage workflow counts.")]
     Pipeline {
         #[command(subcommand)]
         action: PipelineAction,
@@ -194,7 +215,13 @@ pub(crate) enum Commands {
     },
     /// Launch the kavach desktop app (Dioxus 0.7) — visualizes projects, roadmap, kanban, decisions, knowledge graph.
     App,
-    /// Unified context payload for AI agent harness — single JSON with kanban, session, phase, loop state
+    /// Unified JSON snapshot: kanban counts, session, phase, loop state.
+    #[command(
+        long_about = "Emits one JSON object for agent harness startup: project slug, \
+session id/phase, loop active flag, kanban status histogram, and top roadmap rows.\n\n\
+Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is sandboxed.",
+        after_help = "EXAMPLES:\n  kavach context --project nicole-carpenter --limit 10\n  kavach context --project P --status in_progress --key backend\n\nWHEN: Prefer over piping stop hooks when you only need backlog visibility."
+    )]
     Context {
         /// Project slug
         #[arg(long)]

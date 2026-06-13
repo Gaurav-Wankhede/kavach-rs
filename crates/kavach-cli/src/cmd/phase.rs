@@ -389,7 +389,7 @@ fn current_tier_for(project: &str) -> kavach_types::ProjectTier {
 }
 
 async fn current_tier_for_async(project: &str) -> kavach_types::ProjectTier {
-    let Ok(db) = kavach_surreal::open_default().await else {
+    let Ok(db) = kavach_surreal::open_default_resilient().await else {
         return kavach_types::ProjectTier::Refactor;
     };
     let Ok(Some(project_rec)) = kavach_surreal::projects::get_by_slug(&db, project).await else {
@@ -439,7 +439,7 @@ fn handle_spike_start(project: &str, hours: u32, reason: &str) -> i32 {
         }
     };
     let result: Result<(), String> = runtime.block_on(async {
-        let db = kavach_surreal::open_default()
+        let db = kavach_surreal::open_default_resilient()
             .await
             .map_err(|e| format!("open db: {e}"))?;
         let project_rec = kavach_surreal::projects::get_by_slug(&db, project)
@@ -492,7 +492,7 @@ fn handle_spike_end(project: &str) -> i32 {
         }
     };
     let result: Result<(), String> = runtime.block_on(async {
-        let db = kavach_surreal::open_default()
+        let db = kavach_surreal::open_default_resilient()
             .await
             .map_err(|e| format!("open db: {e}"))?;
         let project_rec = kavach_surreal::projects::get_by_slug(&db, project)

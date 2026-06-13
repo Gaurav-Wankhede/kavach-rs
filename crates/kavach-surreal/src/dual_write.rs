@@ -51,6 +51,23 @@ pub struct MemoryEntry {
     // newtype at the boundary for validation bounds [0, 1000].
     #[serde(default)]
     pub priority: Option<i64>,
+    // The dispatch LANE a session is affined to. NONE = unlaned (the shared
+    // general backlog every lane falls back to once its own lane drains). A
+    // session running `KAVACH_LANE=<name>` dispatches its own lane first, then
+    // the unlaned pool, and NEVER a foreign lane (task_select.rs two-pass).
+    // Defined on roadmap only; the cross-category SELECT yields NONE elsewhere.
+    #[serde(default)]
+    pub lane: Option<String>,
+    // STRUCTURED owner-gate flag: TRUE = this card needs an external owner
+    // action an agent can never self-supply (greenlight, prod deploy, live
+    // run, payment/CF secrets). The dispatcher (readiness::deps_satisfied)
+    // skips it like an unmet dependency. NONE/false = agent-dispatchable.
+    // Replaces the legacy free-text `AGENT_BLOCKED:`/`OWNER-GATED` body
+    // markers (state-in-prose anti-pattern) with a typed column, mirroring
+    // `priority`/`lane`. Defined on roadmap only; cross-category SELECT yields
+    // NONE elsewhere.
+    #[serde(default)]
+    pub owner_gated: Option<bool>,
 }
 
 impl MemoryEntry {

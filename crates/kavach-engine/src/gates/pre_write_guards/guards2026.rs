@@ -4,6 +4,7 @@
 //! `database_ops`, pii, migration, webhook) live in the `severity` submodule. This
 //! hub interleaves them in source order and returns the first block reason.
 mod advise;
+mod dedup;
 mod severity;
 
 use super::result::Acc;
@@ -34,5 +35,12 @@ pub(super) fn check(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if let Some(b) = severity::migration(ctx, acc) {
         return Some(b);
     }
+    if let Some(b) = dedup::dedup(ctx, acc) {
+        return Some(b);
+    }
     severity::webhook(ctx, acc)
 }
+
+#[cfg(test)]
+#[path = "guards2026_test.rs"]
+mod tests;

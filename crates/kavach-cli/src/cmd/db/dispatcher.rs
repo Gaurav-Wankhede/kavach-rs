@@ -2,8 +2,8 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    archive, backfill_relationships, bridge, concept, delete, event, expire, find, get,
-    graph_query, kanban, list, mistake_hits, pg, populate_graph, priority, query, register,
+    archive, backfill_relationships, bridge, concept, delete, event, expire, find, flow, get,
+    graph_query, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query, register,
     register_part, rotate, search, status_update, sync, tree, wipe_project, write,
 };
 use crate::cli::DbAction;
@@ -100,6 +100,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             status,
             active_first,
             key,
+            lane,
             include_verified,
             json,
         } => kanban::run(
@@ -108,6 +109,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             status.as_deref(),
             active_first,
             key.as_deref(),
+            lane.as_deref(),
             include_verified,
             json,
         ),
@@ -117,7 +119,8 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             category,
             key,
             status,
-        } => status_update::run(&project, &category, &key, &status),
+            owner_gated,
+        } => status_update::run(&project, &category, &key, &status, owner_gated),
         DbAction::PopulateGraph => populate_graph::run(),
         DbAction::BackfillRelationships { project, dry_run } => {
             backfill_relationships::run(project.as_deref(), dry_run)
@@ -167,6 +170,41 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         DbAction::BridgeConceptsFor { project } => bridge::concepts_for(&project),
         DbAction::BridgeProjectsFor { concept } => bridge::projects_for(&concept),
         DbAction::MistakeHitCount { name } => mistake_hits::run(&name),
+        flow_action @ (DbAction::FlowAdd { .. } | DbAction::FlowShow { .. }) => {
+            dispatch_flow(flow_action)
+        }
+        DbAction::LaneSet {
+            project,
+            key,
+            lane: new_lane,
+            clear,
+        } => lane::run(&project, &key, new_lane, clear),
         _ => 1, // SAFETY: dispatch_remaining only called with remaining actions
+    }
+}
+
+/// Implementation-flow DAG verbs (`flow-add` / `flow-show`), split out so
+/// `dispatch_remaining` stays within the per-fn line budget.
+fn dispatch_flow(action: DbAction) -> i32 {
+    match action {
+        DbAction::FlowAdd {
+            project,
+            key,
+            title,
+            steps_json,
+            mermaid,
+        } => flow::add(
+            &project,
+            &key,
+            &title,
+            steps_json.as_deref(),
+            mermaid.as_deref(),
+        ),
+        DbAction::FlowShow {
+            project,
+            key,
+            format,
+        } => flow::show(&project, &key, &format),
+        _ => 1, // SAFETY: dispatch_flow only called with Flow* actions
     }
 }

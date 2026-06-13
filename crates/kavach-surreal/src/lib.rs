@@ -39,7 +39,10 @@ pub mod session_store;
 pub mod wipe;
 pub mod write;
 
-pub use connection::{default_db_path, open_db, open_default, open_default_daemon, open_memory};
+pub use connection::{
+    default_db_path, open_db, open_default, open_default_daemon, open_default_resilient,
+    open_memory,
+};
 pub use dual_write::MemoryEntry;
 pub use embed::{EMBED_DIM, Embedder, cosine};
 pub use error::{Error, Result};
@@ -48,11 +51,16 @@ pub use graph::{DagEdge, DagNode, RoadmapDag, roadmap_dag_fetch};
 pub use graph::{Edge, Entity, RelateParams, RelationType};
 pub use graph::{LinkedRow, list_rows_with_links};
 pub use graph::{
-    RelatedRow, find_entity as graph_find_entity, get_related as graph_get_related,
-    list_entities as graph_list_entities, relate_dynamic as graph_relate_dynamic,
-    upsert_entity as graph_upsert_entity,
+    EdgeRow, RelatedRow, find_entity as graph_find_entity, get_related as graph_get_related,
+    list_edges_among as graph_list_edges_among, list_entities as graph_list_entities,
+    relate_dynamic as graph_relate_dynamic, upsert_entity as graph_upsert_entity,
 };
 pub use graph::{backward, create_entity, delete_edge, forward, get_entity, relate};
+// Implementation-flow DAG (store-as-DAG, render-Mermaid-on-read)
+pub use graph::{
+    FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput, NodeShape,
+    fetch_flow as graph_fetch_flow, list_flows as graph_list_flows, upsert_flow as graph_upsert_flow,
+};
 // L0 concept tier RPCs
 pub use graph::{
     delete_concept as graph_delete_concept,
@@ -87,10 +95,15 @@ pub use gate_patterns::{
     tokenize as gate_pattern_tokenize, upsert as gate_pattern_upsert,
 };
 pub use graph::{
+    AntiPatternHit, AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
     append_mistake_event as graph_append_mistake_event,
     cluster_event_to_pattern as graph_cluster_event_to_pattern,
+    nearest_anti_patterns as graph_nearest_anti_patterns,
     query_anti_pattern_hit_count as graph_query_anti_pattern_hit_count,
+    top_anti_patterns as graph_top_anti_patterns,
+    top_deployed_policies as graph_top_deployed_policies,
     upsert_anti_pattern as graph_upsert_anti_pattern,
+    upsert_deployed_policy as graph_upsert_deployed_policy,
 };
 pub use harness_link::{GoalAttempt, latest_goal_attempt, set_harness};
 pub use parts::{
@@ -117,6 +130,8 @@ pub use schema_v2::apply_agent_memory_schema;
 pub use session_store::{SessionRuntimeRow, session_get_by_id, session_upsert};
 pub use wipe::{WipeReport, preview_wipe, wipe_project};
 pub use write::{
-    ExpireReport, append_event, expire_stale, rotate_events, set_priority, update_feedback,
-    update_status, upsert_entry, upsert_entry_full, upsert_entry_with_event,
+    ExpireReport, append_event, expire_stale, rotate_events, set_lane, set_owner_gated,
+    set_priority, update_feedback, update_status, update_status_cas, upsert_entry,
+    upsert_entry_full,
+    upsert_entry_with_event,
 };

@@ -206,6 +206,69 @@ pub struct RelatedRow {
     pub target: Entity,
 }
 
+/// One edge whose both endpoints fall inside a given node set. Endpoint ids are
+/// stringified record ids matching the form the KG renderer keys nodes by.
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[non_exhaustive]
+pub struct EdgeRow {
+    pub from: String,
+    pub to: String,
+    pub rel_type: String,
+}
+
+/// Return every allowed edge whose endpoints are both in `node_ids`.
+///
+/// These are the edges internal to the visible node set, so the graph view never
+/// draws a line to an off-canvas node. Each source node is traversed per relation
+/// (the only way to recover the relation name), then targets are filtered to the
+/// set — keying endpoints exactly as the KG renderer does so they resolve.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from any per-relation SELECT.
+pub async fn list_edges_among(db: &Surreal<Db>, node_ids: &[RecordId]) -> Result<Vec<EdgeRow>> {
+    if node_ids.len() < 2 {
+        return Ok(Vec::new());
+    }
+    // Membership set keyed the same way endpoints are stringified, so the
+    // post-filter and the renderer agree on node identity.
+    let allowed: std::collections::HashSet<String> =
+        node_ids.iter().map(|id| format!("{id:?}")).collect();
+
+    let mut out: Vec<EdgeRow> = Vec::new();
+    for node in node_ids {
+        for &rel in ALLOWED_RELS {
+            // sql-safe: rel is a compile-time const from ALLOWED_RELS; the source
+            // node is bound. Traverse outgoing edges via the graph operator (the
+            // codebase-proven form — `get_related` uses the same `->rel->`), then
+            // keep only edges whose target is also in the visible set.
+            let q = format!("SELECT out AS target FROM $node->{rel}");
+            let mut response = db.query(q).bind(("node", node.clone())).await?;
+            let targets: Vec<TargetId> = match response.take(0) {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            let from = format!("{node:?}");
+            for t in targets {
+                let to = format!("{:?}", t.target);
+                if allowed.contains(&to) {
+                    out.push(EdgeRow {
+                        from: from.clone(),
+                        to,
+                        rel_type: rel.to_owned(),
+                    });
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// A single outgoing-edge target id pulled from a `->rel->` traversal.
+#[derive(Debug, Clone, Deserialize, SurrealValue)]
+struct TargetId {
+    target: RecordId,
+}
+
 /// Return outgoing edges from `from` across all `ALLOWED_RELS`, paired with
 /// the target entity. Limit caps the per-rel-type fan-out.
 ///

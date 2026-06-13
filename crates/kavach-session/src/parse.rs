@@ -212,6 +212,18 @@ pub(crate) fn parse_field(state: &mut SessionState, key: &str, value: &str, in_f
         "subagent_denied_tools" => set_csv(&mut state.subagent_denied_tools, value),
         "blast_escalation_threshold" => state.blast_escalation_threshold = pi32(value, 10),
         "blast_escalated" => state.blast_escalated = value == "true",
+        "turn_shadow_pending" => state.turn_shadow_pending = value == "true",
+        "turn_shadow" => state.turn_shadow = value.replace("\\n", "\n"),
+        "pending_advisories" => {
+            state.pending_advisories = value
+                .split("\\n")
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .collect();
+        }
+        "last_reward_summary" => state.last_reward_summary = value.into(),
+        "reward_session_pass" => state.reward_session_pass = pi32(value, 0),
+        "reward_session_total" => state.reward_session_total = pi32(value, 0),
         _ => parse_output_field(state, key, value),
     }
 }

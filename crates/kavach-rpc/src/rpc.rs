@@ -5,7 +5,7 @@
 use crate::error::{internal, invalid_params};
 use crate::methods::{
     bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates, graph,
-    lease, mistake, projects, rag, replay, roadmap, session, system, trust,
+    lease, mistake, mistake_top, projects, rag, replay, roadmap, session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
@@ -362,6 +362,24 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register mistake.record: {e}")))?;
 
     module
+        .register_async_method("mistake.top", |params, ctx, _ext| async move {
+            let p: mistake_top::TopParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            mistake_top::top(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register mistake.top: {e}")))?;
+
+    module
+        .register_async_method("mistake.nearest", |params, ctx, _ext| async move {
+            let p: mistake::NearestParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            mistake::nearest(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register mistake.nearest: {e}")))?;
+
+    module
         .register_async_method("roadmap.entry_status", |params, ctx, _ext| async move {
             let p: roadmap::EntryStatusParams = params
                 .parse()
@@ -654,6 +672,14 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(e.to_string()))?;
 
     module
+        .register_async_method("db.set_lane", |params, ctx, _ext| async move {
+            let p: db::SetLaneParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::set_lane(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
         .register_async_method("db.set_harness", |params, ctx, _ext| async move {
             let p: db_harness::SetHarnessParams =
                 params.parse().map_err(|e| invalid_params(e.to_string()))?;
@@ -709,6 +735,22 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(e.to_string()))?;
 
     module
+        .register_async_method("db.policy_improve", |params, ctx, _ext| async move {
+            let p: db::PolicyImproveParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::policy_improve(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.policy_current", |params, ctx, _ext| async move {
+            let p: db::PolicyCurrentParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::policy_current(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
         .register_async_method(
             "db.bandit_backfill_session",
             |params, ctx, _ext| async move {
@@ -732,6 +774,30 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             let p: db::GraphFetchParams =
                 params.parse().map_err(|e| invalid_params(e.to_string()))?;
             db::graph_fetch(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.flow_upsert", |params, ctx, _ext| async move {
+            let p: db::FlowUpsertParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::flow_upsert(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.flow_render", |params, ctx, _ext| async move {
+            let p: db::FlowRenderParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::flow_render(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.flow_list", |params, ctx, _ext| async move {
+            let p: db::FlowListParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::flow_list(&ctx, p).await
         })
         .map_err(|e| internal(e.to_string()))?;
 

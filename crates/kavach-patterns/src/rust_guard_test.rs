@@ -9,3 +9,5 @@ mod p0_errors;
 mod p0_structural;
 #[path = "rust_guard/test_p1_quality.rs"]
 mod p1_quality;
+#[path = "rust_guard/test_named_discard.rs"]
+mod named_discard;

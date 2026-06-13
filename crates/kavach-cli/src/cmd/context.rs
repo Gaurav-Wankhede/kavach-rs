@@ -31,8 +31,10 @@ async fn run_async(
     // Session state
     let session = kavach_session::get_or_create_session();
 
-    // DB connection
-    let db = match kavach_surreal::open_default().await {
+    // DB connection. Resilient open: this runs inside a hook child, so a daemon
+    // mid-restart can transiently hold the RocksDB lock — wait it out rather than
+    // race-and-fail (rca-stop-hook-surreal-lock-direct-open-bypasses-rpc).
+    let db = match kavach_surreal::open_default_resilient().await {
         Ok(d) => d,
         Err(e) => {
             let msg = format!(r#"{{"error":"db: {e}"}}"#);

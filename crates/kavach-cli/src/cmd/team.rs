@@ -16,6 +16,15 @@ use kavach_surreal::graph::roadmap_dag::RoadmapDag;
 use crate::cmd::io_safe::{IoExit, ewrite_or_exit, into_exit_code, print_or_exit};
 
 #[derive(Args)]
+#[command(
+    about = "DAG-aware parallel Team auto-dispatch over the roadmap",
+    long_about = "Resolves roadmap dependency DAG, fans CC Team agents across the ready \
+wavefront. Independent tasks dispatch concurrently; blocked tasks wait for prerequisites. \
+Cycles fail closed with named keys.",
+    after_help = "EXAMPLES:\n  kavach team dispatch --project nicole-carpenter --dry-run\n  \
+kavach team dispatch --project P --max-parallel 4 --spawner cc-teams\n\nWHEN: Multi-unit \
+parallel implementation with explicit depends_on edges."
+)]
 pub(crate) struct TeamArgs {
     #[command(subcommand)]
     pub(crate) action: TeamAction,

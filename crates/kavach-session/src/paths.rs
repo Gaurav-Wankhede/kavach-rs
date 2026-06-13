@@ -73,12 +73,7 @@ fn workdir_slug() -> String {
 }
 
 fn slug_from_path(path: &Path) -> String {
-    let hash = blake3::hash(path.to_string_lossy().as_bytes());
-    let mut hex = String::with_capacity(16);
-    for byte in hash.as_bytes().iter().take(8) {
-        std::fmt::Write::write_fmt(&mut hex, format_args!("{byte:02x}")).ok();
-    }
-    hex
+    slug_from_bytes(path.to_string_lossy().as_bytes())
 }
 
 /// Path to the session state file, scoped per working directory.
@@ -86,9 +81,21 @@ fn slug_from_path(path: &Path) -> String {
 /// Each terminal/project gets an isolated file so state never leaks across
 /// concurrent Claude Code sessions. Migrates legacy shared files on first access
 /// into the scoped file for the current cwd.
+///
+/// When `session_id` is non-empty (Cursor `conversation_id`, Claude Code session),
+/// the path also includes a session slug so concurrent conversations in ONE
+/// workdir do not clobber each other's INI cache when RPC is down.
 #[must_use]
-pub fn state_path() -> PathBuf {
+pub fn state_path_for(session_id: &str) -> PathBuf {
     let slug = workdir_slug();
+    if session_id.is_empty() {
+        return state_path_for_workdir_slug(&slug);
+    }
+    let sess = slug_from_bytes(session_id.as_bytes());
+    stm_path().join(format!("session-state-{slug}-{sess}.kavach"))
+}
+
+fn state_path_for_workdir_slug(slug: &str) -> PathBuf {
     let target = stm_path().join(format!("session-state-{slug}.kavach"));
     if target.exists() {
         return target;
@@ -104,6 +111,23 @@ pub fn state_path() -> PathBuf {
         }
     }
     target
+}
+
+fn slug_from_bytes(bytes: &[u8]) -> String {
+    let hash = blake3::hash(bytes);
+    let mut hex = String::with_capacity(16);
+    for byte in hash.as_bytes().iter().take(8) {
+        std::fmt::Write::write_fmt(&mut hex, format_args!("{byte:02x}")).ok();
+    }
+    hex
+}
+
+/// Path to the session state file, scoped per working directory (no conversation id).
+///
+/// Prefer [`state_path_for`] when a session id is known.
+#[must_use]
+pub fn state_path() -> PathBuf {
+    state_path_for_workdir_slug(&workdir_slug())
 }
 
 /// Memory bank directory.
@@ -283,5 +307,16 @@ mod tests {
             .map_or_else(String::new, |n| n.to_string_lossy().to_string());
         assert!(name.starts_with("session-state-"));
         assert!(name.ends_with(".kavach"));
+    }
+
+    #[test]
+    fn state_path_for_session_includes_session_slug() {
+        let a = state_path_for("conv-a");
+        let b = state_path_for("conv-b");
+        assert_ne!(a, b);
+        let name = a
+            .file_name()
+            .map_or_else(String::new, |n| n.to_string_lossy().to_string());
+        assert!(name.matches('-').count() >= 2, "workdir + session slugs: {name}");
     }
 }

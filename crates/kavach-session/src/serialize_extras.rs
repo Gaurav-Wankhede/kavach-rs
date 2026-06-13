@@ -472,6 +472,58 @@ impl SessionState {
             s.push('\n');
         }
 
+        if self.turn_shadow_pending
+            || !self.turn_shadow.is_empty()
+            || !self.pending_advisories.is_empty()
+        {
+            s.push_str("[TURN_SHADOW]\n");
+            write_kv(
+                s,
+                "turn_shadow_pending",
+                if self.turn_shadow_pending {
+                    "true"
+                } else {
+                    "false"
+                },
+            );
+            if !self.turn_shadow.is_empty() {
+                write_kv(s, "turn_shadow", &self.turn_shadow.replace('\n', "\\n"));
+            }
+            if !self.pending_advisories.is_empty() {
+                write_kv(
+                    s,
+                    "pending_advisories",
+                    &self.pending_advisories.join("\\n"),
+                );
+            }
+            s.push('\n');
+        }
+
+        if !self.last_reward_summary.is_empty()
+            || self.reward_session_pass > 0
+            || self.reward_session_total > 0
+        {
+            s.push_str("[REWARD_TRACKING]\n");
+            if !self.last_reward_summary.is_empty() {
+                write_kv(s, "last_reward_summary", &self.last_reward_summary);
+            }
+            if self.reward_session_pass > 0 {
+                write_kv(
+                    s,
+                    "reward_session_pass",
+                    &self.reward_session_pass.to_string(),
+                );
+            }
+            if self.reward_session_total > 0 {
+                write_kv(
+                    s,
+                    "reward_session_total",
+                    &self.reward_session_total.to_string(),
+                );
+            }
+            s.push('\n');
+        }
+
         self.serialize_enforcement_sections(s);
     }
 }

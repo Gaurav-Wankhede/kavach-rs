@@ -70,7 +70,7 @@ pub fn EntryEditor() -> Element {
                                 match save(&t) {
                                     Ok(()) => {
                                         *EDITING_ENTRY.write() = None;
-                                        *REFRESH_TICK.write() += 1;
+                                        REFRESH_TICK.with_mut(|tick| *tick = tick.wrapping_add(1));
                                     }
                                     Err(e) => error.set(e),
                                 }

@@ -70,6 +70,11 @@ fn emit_advisory_recovery(
     session.last_advisory_gate.clear();
     session.last_advisory_fix.clear();
     session.save().ok();
+    if super::turn_relay::should_relay() {
+        super::turn_relay::queue_advisory(session, &ctx);
+        drop(kavach_hook::exit_silent());
+        return Some(Ok(()));
+    }
     drop(kavach_hook::exit_post_tool_context(&ctx));
     Some(Ok(()))
 }
