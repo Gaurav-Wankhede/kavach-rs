@@ -35,11 +35,15 @@ fn allows_type_only_anonymous() {
 
 #[test]
 fn allows_raii_guard_bindings() {
-    // RAII held-for-drop names are filtered per-match in discard_race.rs.
+    // RAII held-for-drop names are filtered per-match in discard_race.rs. This
+    // path now resolves the allow-list through `kavach_types::gate_patterns`
+    // (`unit.gate-cfg-patterns-safelist-wireup`); with no daemon in-test the
+    // resolver returns the compiled floor unchanged — so the floor must still
+    // exempt every guard, proving the wireup is behavior-preserving fail-closed.
     let code = "fn f() {\n    let _guard = lock.lock();\n    let _span = enter();\n    let _permit = sem.acquire();\n}\n";
     let v = detect("src/lib.rs", code);
     assert!(
         !v.iter().any(|x| x.pattern == PAT),
-        "RAII guards are held-for-drop, not discards"
+        "RAII guards are held-for-drop, not discards — floor honored via gate_patterns"
     );
 }

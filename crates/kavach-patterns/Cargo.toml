@@ -17,6 +17,7 @@ strsim = "0.11"
 # low-churn = stable fixed POSIX spec. SOURCE: https://crates.io/crates/shell-words
 shell-words = "1.1"
 dirs = { workspace = true }
+kavach-types = { path = "../kavach-types" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 

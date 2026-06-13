@@ -131,20 +131,45 @@ fn matches(regexes: &[Regex], idx: usize, line_scoped: bool, content: &str) -> b
     }
 }
 
-/// RAII / scope-guard binding stems that are legitimately `let _name = …`
-/// (held to end-of-scope for their Drop, not a discarded signal). The general
-/// discard arm (regex index 78) skips a match whose captured name matches one of
-/// these — done here per-match because this regex engine has no lookaround, so
-/// the exclusion cannot live in the pattern itself.
+/// Compiled RAII / scope-guard allow floor — stems legitimately bound as
+/// `let _name = …` (held to end-of-scope for their Drop, not a discarded signal).
+/// The general discard arm (regex index 78) skips a match whose captured name
+/// matches one of these (done per-match because this regex engine has no
+/// lookaround). IMMUTABLE floor: the dynamic overlay can only ADD stems, never
+/// remove one — a safety pattern must not be deletable via the DB.
 const RAII_DISCARD_ALLOW: &[&str] = &["guard", "lock", "span", "permit", "g", "defer", "entered"];
 
+/// The gate-config key whose `pattern_list` overlay ADDS extra RAII allow-stems.
+/// Resolved under the global project — RAII naming is project-agnostic at the
+/// pre-write layer, which has no project in scope.
+const RAII_ALLOW_KEY: &str = "rust_guard.raii_discard_allow";
+
+/// Resolve the effective RAII allow-list: the compiled floor plus any DB overlay
+/// stems. The pattern crate is a leaf below the RPC client, so it injects a
+/// miss-only `call` here — the floor is always honored, and the DB-extras path
+/// activates the moment a transport-bearing caller supplies a real `call`. This
+/// is the `unit.gate-cfg-patterns-safelist-wireup` adoption: the detector now
+/// resolves through `kavach_types::gate_patterns` instead of a bare const.
+fn effective_raii_allow() -> Vec<String> {
+    // Leaf-crate transport seam: no RPC client below `kavach-rpc`, so resolve
+    // with a miss closure. `gate_patterns` returns the compiled floor unchanged
+    // on a miss (fail-closed); a transport-bearing variant can replace this.
+    kavach_types::gate_patterns(
+        |_: &str, _: &str| None,
+        kavach_types::gate_config::GLOBAL_PROJECT_KEY,
+        RAII_ALLOW_KEY,
+        RAII_DISCARD_ALLOW,
+    )
+}
+
 /// True when the captured `_name` is a RAII guard binding (prefix match after the
-/// leading underscore, so `_guard`, `_guard2`, `_lockA` all pass).
+/// leading underscore, so `_guard`, `_guard2`, `_lockA` all pass). Matches against
+/// the effective allow-list (compiled floor + DB overlay).
 fn is_raii_name(name: &str) -> bool {
     let stem = name.trim_start_matches('_').to_ascii_lowercase();
-    RAII_DISCARD_ALLOW
+    effective_raii_allow()
         .iter()
-        .any(|a| stem == *a || stem.starts_with(a))
+        .any(|a| stem == *a || stem.starts_with(a.as_str()))
 }
 
 /// Index-78 arm: general named-underscore discard. Fires once per non-RAII

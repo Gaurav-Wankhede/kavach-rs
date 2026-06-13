@@ -14,6 +14,12 @@
 //! already had a safe default for; it never leaves a gate value-less).
 use serde::{Deserialize, Serialize};
 
+/// The global (project-agnostic) row sentinel.
+///
+/// Mirrors `kavach-surreal`'s `GLOBAL_PROJECT`. A gate with no project in scope
+/// (e.g. a pre-write content scanner) resolves its overlay under this key.
+pub const GLOBAL_PROJECT_KEY: &str = "*";
+
 /// Wire shape for a gate-config value: a kind tag plus one populated value field.
 ///
 /// Flat (not a Rust enum) so it serializes cleanly over JSON-RPC and is trivial
