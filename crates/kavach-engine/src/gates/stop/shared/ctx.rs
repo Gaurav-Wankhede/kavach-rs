@@ -23,10 +23,11 @@ pub(crate) struct StopCtx<'a> {
     /// the clean-exit STOP context as a NON-blocking nudge — never a HALT.
     pub(crate) capture_advisory: Option<String>,
     /// Loophole self-interrogation advisory: set when the turn claimed
-    /// completion on a risk-bearing path WITHOUT a `Loopholes considered:` line.
-    /// Appended to the clean-exit context as a NON-blocking nudge; the omission
-    /// is also recorded to the mistake ledger at the computation site so the
-    /// learning loop sees it on every stop, not just clean exits.
+    /// completion on a risk-bearing path WITHOUT a `Loopholes closed:` line.
+    /// On a drained board the clean-exit terminal REFUSES the stop while this is
+    /// present (parity with `[CYCLE_DEADLOCK]`), bounded by the `loophole_open`
+    /// behavioral breaker; the omission is also recorded to the mistake ledger at
+    /// the computation site so the learning loop sees it on every stop.
     pub(crate) loophole_advisory: Option<String>,
     /// Shallow-verdict advisory: set when the turn asserted a clean/wired/
     /// no-defect verdict with no `file:line` citation and no `[RCA]` block — the
