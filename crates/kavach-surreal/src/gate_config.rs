@@ -37,6 +37,37 @@ pub enum GateConfigKind {
     Text,
 }
 
+impl GateConfigKind {
+    /// The bare wire string stored in the SCHEMAFULL `gate_config.kind` column.
+    /// MUST be bound as this `&str` (not the enum) — a `SurrealValue`-derived
+    /// fieldless enum serializes as a tagged object, which fails the column's
+    /// `TYPE string ASSERT` and silently drops the CREATE.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Threshold => "threshold",
+            Self::PatternList => "pattern_list",
+            Self::Enabled => "enabled",
+            Self::Severity => "severity",
+            Self::Text => "text",
+        }
+    }
+
+    /// Parse the bare wire string back to the kind; `None` on an unknown tag
+    /// (fail-closed: a corrupt `kind` reads as no-override).
+    #[must_use]
+    pub fn from_wire(s: &str) -> Option<Self> {
+        match s {
+            "threshold" => Some(Self::Threshold),
+            "pattern_list" => Some(Self::PatternList),
+            "enabled" => Some(Self::Enabled),
+            "severity" => Some(Self::Severity),
+            "text" => Some(Self::Text),
+            _ => None,
+        }
+    }
+}
+
 /// A resolved gate-config value — the discriminated union the resolver returns.
 /// Exactly one variant is produced per row, matching its [`GateConfigKind`].
 #[derive(Debug, Clone, PartialEq)]
@@ -58,7 +89,11 @@ pub enum GateConfigValue {
 struct GateConfigRow {
     project: String,
     gate_key: String,
-    kind: GateConfigKind,
+    // `kind` is the BARE wire string (`threshold`/…), NOT the enum: the
+    // SCHEMAFULL column is `TYPE string`, and a `SurrealValue`-derived fieldless
+    // enum round-trips as a tagged object that neither writes nor reads against
+    // a string column. Parsed to the typed kind in `value()` via `from_wire`.
+    kind: String,
     #[serde(default)]
     value_num: Option<f64>,
     #[serde(default)]
@@ -71,11 +106,11 @@ struct GateConfigRow {
 
 impl GateConfigRow {
     /// Project the populated value column for this row's `kind`. Returns `None`
-    /// on a shape mismatch (the wrong column populated) — fail-closed: a
-    /// corrupt row reads as "no override", so the resolver falls through to the
-    /// compiled default rather than feeding a gate a garbage value.
+    /// on an unknown kind OR a shape mismatch (the wrong column populated) —
+    /// fail-closed: a corrupt row reads as "no override", so the resolver falls
+    /// through to the compiled default rather than feeding a gate a garbage value.
     fn value(&self) -> Option<GateConfigValue> {
-        match self.kind {
+        match GateConfigKind::from_wire(&self.kind)? {
             GateConfigKind::Threshold => self.value_num.map(GateConfigValue::Threshold),
             GateConfigKind::PatternList => {
                 self.value_list.clone().map(GateConfigValue::PatternList)
@@ -244,7 +279,7 @@ pub async fn set_with_kind(
     )
     .bind(("p", project.to_owned()))
     .bind(("k", gate_key.to_owned()))
-    .bind(("kind", kind))
+    .bind(("kind", kind.as_str().to_owned()))
     .bind(("num", cols.num))
     .bind(("boolean", cols.boolean))
     .bind(("list", cols.list.cloned()))
@@ -262,8 +297,9 @@ pub struct GateConfigEntry {
     pub project: String,
     /// The gate-config key.
     pub gate_key: String,
-    /// The discriminator.
-    pub kind: GateConfigKind,
+    /// The discriminator, as the bare wire string (`threshold`/`pattern_list`/
+    /// `enabled`/`severity`/`text`) — matches the `TYPE string` DB column.
+    pub kind: String,
 }
 
 /// List every override for `project` (pass [`GLOBAL_PROJECT`] for the globals).

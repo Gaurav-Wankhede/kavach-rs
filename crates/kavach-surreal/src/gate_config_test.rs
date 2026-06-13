@@ -114,7 +114,7 @@ async fn severity_is_stored_as_text_kind() {
     .await
     .expect("set severity");
     let list = gate_config_list(&db, "p").await.expect("list");
-    assert_eq!(list[0].kind, GateConfigKind::Severity);
+    assert_eq!(list[0].kind, "severity");
     assert_eq!(
         gate_config_get(&db, "p", "owasp.sev").await.unwrap(),
         Some(GateConfigValue::Text("p0".into())),
