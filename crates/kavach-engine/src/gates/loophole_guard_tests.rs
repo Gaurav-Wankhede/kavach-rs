@@ -44,11 +44,25 @@ fn fires_on_payment_completion() {
 fn stop_fires_when_risk_completion_lacks_answer() {
     use super::check_stop_interrogation;
     let msg = "Done — the lease claim is now atomic and race-free.";
-    let out = check_stop_interrogation(msg).expect("should nudge at stop");
+    // wrote_this_turn = true: a real risk-bearing write happened this turn.
+    let out = check_stop_interrogation(msg, true).expect("should nudge at stop");
     assert!(out.contains("mistake ledger"));
     // Imperative: command the fix, do not just record-and-move-on.
     assert!(out.contains("Do NOT stop"), "refuses the stop, drives the fix: {out}");
     assert!(out.contains("fix it now"), "fix-first language: {out}");
+}
+
+#[test]
+fn stop_silent_on_read_only_turn_even_with_risk_prose() {
+    use super::check_stop_interrogation;
+    // The false-positive fix: a read-only Q&A turn whose PROSE describes past
+    // risk fixes (lease/atomic/done) must NOT refuse the stop — nothing was
+    // written, so no loophole can be live. wrote_this_turn = false.
+    let msg = "Done — explained the lease claim is now atomic and race-free.";
+    assert!(
+        check_stop_interrogation(msg, false).is_none(),
+        "a turn that wrote no file cannot have a live loophole; risk WORDS != risk WRITE"
+    );
 }
 
 #[test]
@@ -59,7 +73,7 @@ fn stop_silent_when_loopholes_already_closed() {
     let msg = "Done — the lease claim is now atomic.\n\
                Loopholes closed: concurrency -> fixed at acquire.rs:38; \
                failure -> TTL reclaim at lease.rs:71; replay -> N/A at claim.rs:12.";
-    assert!(check_stop_interrogation(msg).is_none());
+    assert!(check_stop_interrogation(msg, true).is_none());
 }
 
 #[test]
@@ -69,7 +83,7 @@ fn stop_still_fires_on_passive_considered_marker() {
     let msg = "Done — the lease claim is now atomic.\n\
                Loopholes considered: concurrency might be an issue.";
     assert!(
-        check_stop_interrogation(msg).is_some(),
+        check_stop_interrogation(msg, true).is_some(),
         "passive consideration does not satisfy the fix-first gate"
     );
 }
@@ -78,5 +92,5 @@ fn stop_still_fires_on_passive_considered_marker() {
 fn stop_silent_on_trivial_turn() {
     use super::check_stop_interrogation;
     let msg = "Done — renamed a variable and fixed a typo.";
-    assert!(check_stop_interrogation(msg).is_none());
+    assert!(check_stop_interrogation(msg, true).is_none());
 }

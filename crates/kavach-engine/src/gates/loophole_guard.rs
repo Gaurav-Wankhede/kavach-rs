@@ -115,7 +115,15 @@ const ANSWERED_MARKER: &str = "loopholes closed";
 /// (per the "kill blocking, keep auto-continue" policy) — the caller appends the
 /// result as a clean-exit ride-along advisory AND records a mistake-ledger row,
 /// feeding the learning loop so the omission is seen over time.
-pub(crate) fn check_stop_interrogation(message: &str) -> Option<String> {
+pub(crate) fn check_stop_interrogation(message: &str, wrote_this_turn: bool) -> Option<String> {
+    // PRECISION GUARD: a loophole can only be LIVE if this turn actually WROTE a
+    // risk-bearing path. Without this, the message-text trigger fires on a
+    // read-only Q&A turn whose PROSE merely describes past risk fixes (words like
+    // `lock`/`atomic`/`lease`/`done`) — a false-positive refuse-stop with no real
+    // defect. A turn that wrote no file cannot have shipped a live loophole.
+    if !wrote_this_turn {
+        return None;
+    }
     let base = check_loophole_interrogation(message)?;
     // Already answered -> satisfied, no nudge.
     if message.to_lowercase().contains(ANSWERED_MARKER) {

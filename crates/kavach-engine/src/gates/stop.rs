@@ -115,12 +115,20 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     }
 
     // Loophole self-interrogation: if the turn claimed completion on a
-    // risk-bearing path WITHOUT a `Loopholes considered:` line, stash the
-    // advisory for the clean-exit ride-along AND record a mistake-ledger row HERE
-    // (same rationale as capture_finding above: the loop usually short-circuits
-    // at dispatch::reblock and never reaches clean_exit, so recording at the
+    // risk-bearing path WITHOUT a `Loopholes closed:` line, stash the advisory
+    // for the clean-exit ride-along AND record a mistake-ledger row HERE (same
+    // rationale as capture_finding above: the loop usually short-circuits at
+    // dispatch::reblock and never reaches clean_exit, so recording at the
     // computation site is the only way the learning loop sees it on every stop).
-    let loophole_advisory = super::loophole_guard::check_stop_interrogation(&msg);
+    //
+    // PRECISION GUARD (false-positive fix): a loophole can only be LIVE if this
+    // turn actually WROTE a risk-bearing path. Pass `wrote_this_turn` so the
+    // message-text trigger cannot fire on a read-only Q&A turn whose PROSE merely
+    // describes past risk fixes. `last_write_turn == turn_count` iff a file was
+    // Written/Edited this turn (set by the post_write gate).
+    let wrote_this_turn = session.last_write_turn == session.turn_count;
+    let loophole_advisory =
+        super::loophole_guard::check_stop_interrogation(&msg, wrote_this_turn);
     if loophole_advisory.is_some() {
         drop(kavach_session::record_mistake(&kavach_session::Mistake {
             project: &session.project,
