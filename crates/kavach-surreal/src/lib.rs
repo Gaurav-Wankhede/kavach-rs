@@ -47,7 +47,7 @@ pub use connection::{
 pub use dual_write::MemoryEntry;
 pub use gate_config::{
     GLOBAL_PROJECT, GateConfigEntry, GateConfigKind, GateConfigValue,
-    gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
+    gate_config_delete, gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
     set_with_kind as gate_config_set_with_kind,
 };
 pub use embed::{EMBED_DIM, Embedder, cosine};

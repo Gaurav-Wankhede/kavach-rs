@@ -49,6 +49,38 @@ fn truncate_section(s: &str, max: usize) -> String {
     out
 }
 
+/// Lower / upper byte clamp for the optional-section budget. The floor stops a
+/// hostile zero override from starving every block; the ceiling stops one row
+/// from blowing the session-start token budget. Both are well within `f64`'s
+/// 52-bit lossless integer range, so the conversions below cannot lose data.
+const BUDGET_FLOOR: usize = 256;
+const BUDGET_CEIL: usize = 16_384;
+
+/// Resolve the per-project optional-section byte budget from the gate-config
+/// overlay, clamped to `[BUDGET_FLOOR, BUDGET_CEIL]`. Any miss / NaN / out-of-range
+/// override collapses into the clamp — fail-closed, never a starved or runaway cap.
+fn resolve_section_budget(project: &str) -> usize {
+    #[expect(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "values are clamped to [256, 16384] before conversion — far inside f64's \
+                  52-bit lossless integer range, so no precision/sign/truncation loss is possible"
+    )]
+    {
+        let default = OPTIONAL_SECTION_BUDGET as f64;
+        let resolved = crate::gates::gate_config::gate_threshold(
+            project,
+            "session.optional_section_budget",
+            default,
+        );
+        // NaN fails every comparison -> clamp() would propagate NaN, so guard first.
+        let safe = if resolved.is_finite() { resolved } else { default };
+        let clamped = safe.clamp(BUDGET_FLOOR as f64, BUDGET_CEIL as f64);
+        clamped as usize
+    }
+}
+
 /// Build the full session-start context string for `session`, marking
 /// `memory_queried` when the memory bank yields content.
 pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
@@ -60,7 +92,21 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
 
     // Inject the operating contract FIRST (right after the header) and never
     // under any byte cap — on Cursor this is the only per-conversation door.
-    context.push_str(AUTONOMY_CONTRACT);
+    // Resolves through the gate-config overlay (`session.autonomy_contract`) so
+    // an operator can retune the per-conversation directive without a rebuild;
+    // the compiled string is the fail-closed default on any miss.
+    let contract = crate::gates::gate_config::gate_text(
+        &session.project,
+        "session.autonomy_contract",
+        AUTONOMY_CONTRACT,
+    );
+    context.push_str(&contract);
+
+    // Optional-block byte budget, runtime-tunable per project via the gate-config
+    // overlay (`session.optional_section_budget`); the compiled constant is the
+    // fail-closed default. Clamped to a sane floor so a hostile/zero override can
+    // never starve every optional block to nothing.
+    let budget = resolve_section_budget(&session.project);
 
     // Auto memory query: inject project context from kavach-db
     if !session.project.is_empty()
@@ -76,7 +122,7 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     // Inject hot autonomous patterns so Claude sees cached fixes immediately.
     // OPTIONAL block: subject to the soft section budget (anchor stays whole).
     if let Some(hot_ctx) = hot_pattern_context(&session.project) {
-        context.push_str(&truncate_section(&hot_ctx, OPTIONAL_SECTION_BUDGET));
+        context.push_str(&truncate_section(&hot_ctx, budget));
     }
 
     // FIX: [contract_violation/silent_failure] no awareness of repeat mistakes.
@@ -88,28 +134,28 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     //   + correct alternative), NEVER as raw error text (parrots).
     // OPTIONAL block: a large ledger must never displace the contract, so cap it.
     if let Some(ledger_ctx) = mistake_ledger_context(&session.project) {
-        context.push_str(&truncate_section(&ledger_ctx, OPTIONAL_SECTION_BUDGET));
+        context.push_str(&truncate_section(&ledger_ctx, budget));
     }
 
     // P6: surface the RLVR-learned advisory policy (informational only — the loop
     // learned these gate preferences from verifiable rewards; never a directive).
     if let Some(policy_ctx) = learned_policy_context() {
-        context.push_str(&truncate_section(&policy_ctx, OPTIONAL_SECTION_BUDGET));
+        context.push_str(&truncate_section(&policy_ctx, budget));
     }
 
     if let Some(reward_ctx) = super::super::loop_frame::build_reward_session_stats(session) {
-        context.push_str(&truncate_section(&reward_ctx, OPTIONAL_SECTION_BUDGET));
+        context.push_str(&truncate_section(&reward_ctx, budget));
     }
 
     if let Some(concept_ctx) = concept_context(&session.project) {
-        context.push_str(&truncate_section(&concept_ctx, OPTIONAL_SECTION_BUDGET));
+        context.push_str(&truncate_section(&concept_ctx, budget));
     }
 
     // [FLOW] implementation-flow DAGs rendered as Mermaid — the intended order
     // of work, surfaced BEFORE the model starts so it follows the plan. OPTIONAL
     // block: capped so a large flow never displaces the [AUTONOMY_CONTRACT].
     if let Some(flow_ctx) = flow_context(&session.project) {
-        context.push_str(&truncate_section(&flow_ctx, OPTIONAL_SECTION_BUDGET));
+        context.push_str(&truncate_section(&flow_ctx, budget));
     }
 
     // [ALGO_EVOLUTION] removed — ~1kB/session token waste.

@@ -818,6 +818,14 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(e.to_string()))?;
 
     module
+        .register_async_method("db.gate_config_delete", |params, ctx, _ext| async move {
+            let p: db::GateCfgDeleteParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::gate_config_delete(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
         .register_async_method("db.gate_config_list", |params, ctx, _ext| async move {
             let p: db::GateCfgListParams =
                 params.parse().map_err(|e| invalid_params(e.to_string()))?;

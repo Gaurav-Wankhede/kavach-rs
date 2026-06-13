@@ -46,9 +46,9 @@ pub use event::{BanditRowParams, BanditRowResult, EventParams, EventResult, band
 pub use expire::{ExpireParams, ExpireResult, expire};
 pub use find::{FindParams, FindResult, find_part, find_project};
 pub use gate_cfg::{
-    GateValueDto, GetParams as GateCfgGetParams, ListParams as GateCfgListParams,
-    SetParams as GateCfgSetParams, get as gate_config_get, list as gate_config_list,
-    set as gate_config_set,
+    DeleteParams as GateCfgDeleteParams, GateValueDto, GetParams as GateCfgGetParams,
+    ListParams as GateCfgListParams, SetParams as GateCfgSetParams, delete as gate_config_delete,
+    get as gate_config_get, list as gate_config_list, set as gate_config_set,
 };
 pub use flow::{
     FlowSummary, ListParams as FlowListParams, RenderParams as FlowRenderParams,

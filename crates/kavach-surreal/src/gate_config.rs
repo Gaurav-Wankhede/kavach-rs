@@ -289,6 +289,22 @@ pub async fn set_with_kind(
     Ok(())
 }
 
+/// Remove the override for `(project, gate_key)`.
+///
+/// Reverts the gate to its file/compiled default. Idempotent: deleting an absent
+/// key is a no-op success (the post-condition — "no override exists" — holds).
+///
+/// # Errors
+/// Propagates `Error::Surreal` when the delete fails.
+pub async fn gate_config_delete(db: &Surreal<Db>, project: &str, gate_key: &str) -> Result<()> {
+    db.query("DELETE gate_config WHERE project = $p AND gate_key = $k")
+        .bind(("p", project.to_owned()))
+        .bind(("k", gate_key.to_owned()))
+        .await
+        .map_err(Error::Surreal)?;
+    Ok(())
+}
+
 /// One overridden key's identity, for `list`/inspection.
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]

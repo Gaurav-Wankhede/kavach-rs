@@ -6,8 +6,8 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::{
-    GateConfigEntry, GateConfigKind, GateConfigValue, gate_config_list, gate_config_resolve,
-    gate_config_set_with_kind,
+    GateConfigEntry, GateConfigKind, GateConfigValue, gate_config_delete, gate_config_list,
+    gate_config_resolve, gate_config_set_with_kind,
 };
 use serde::{Deserialize, Serialize};
 
@@ -147,6 +147,28 @@ pub async fn set(state: &AppState, p: SetParams) -> Result<&'static str, ErrorOb
         ));
     };
     gate_config_set_with_kind(&state.db, &p.project, &p.gate_key, &value, kind)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok("ok")
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct DeleteParams {
+    pub project: String,
+    pub gate_key: String,
+}
+
+/// Remove an override, reverting the gate to its file/compiled default.
+/// Idempotent — deleting an absent key succeeds.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` when the database delete fails.
+pub async fn delete(state: &AppState, p: DeleteParams) -> Result<&'static str, ErrorObjectOwned> {
+    gate_config_delete(&state.db, &p.project, &p.gate_key)
         .await
         .map_err(surreal_to_rpc)?;
     Ok("ok")
