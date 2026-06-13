@@ -3,26 +3,39 @@
 //! A Jaccard score maps to one of three discrete decisions; `check` runs the
 //! candidate against every existing body and keeps the worst (highest) match.
 use super::shingle::{jaccard, shingles};
+use crate::gates::gate_config::gate_threshold;
 
 /// Decision returned by the guard for one comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DupDecision {
-    /// Below 0.70 — independent functions.
+    /// Below the advise cutoff — independent functions.
     Clean,
-    /// 0.70..0.85 — extract a shared helper.
+    /// advise..block — extract a shared helper.
     Advise,
-    /// >= 0.85 — near-identical copy-paste.
+    /// >= block cutoff — near-identical copy-paste.
     Block,
 }
 
+/// The project whose gate-config overlay these thresholds resolve against.
+const PROJECT: &str = "kavach-rs";
+/// Compiled defaults.
+///
+/// The values used when no DB override exists (fail-closed: a missing row never
+/// changes the historical behavior). The DB key namespace `dup.*` lets an
+/// operator retune copy-paste sensitivity per project at runtime.
 const ADVISE_THRESHOLD: f64 = 0.70;
 const BLOCK_THRESHOLD: f64 = 0.85;
 
 /// Classify a Jaccard score into a discrete decision.
+///
+/// Cutoffs resolve through the dynamic gate-config overlay (`dup.advise` /
+/// `dup.block`), each falling back to its compiled default on any miss.
 pub(crate) fn classify(score: f64) -> DupDecision {
-    if score >= BLOCK_THRESHOLD {
+    let advise = gate_threshold(PROJECT, "dup.advise", ADVISE_THRESHOLD);
+    let block = gate_threshold(PROJECT, "dup.block", BLOCK_THRESHOLD);
+    if score >= block {
         DupDecision::Block
-    } else if score >= ADVISE_THRESHOLD {
+    } else if score >= advise {
         DupDecision::Advise
     } else {
         DupDecision::Clean

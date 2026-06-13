@@ -51,7 +51,9 @@ pub fn gate_text(project: &str, gate_key: &str, default: &str) -> String {
         .unwrap_or_else(|| default.to_owned())
 }
 
-/// Resolve a detection-pattern / safelist, ADDITIVELY: the returned list is the
+/// Resolve a detection-pattern / safelist, ADDITIVELY.
+///
+/// The returned list is the
 /// compiled `default` floor with any DB-provided patterns appended. A DB row can
 /// only ADD patterns — it can never remove a compiled one. This is the
 /// security-gate fail-closed invariant (a P0 pattern is not deletable via DB).
