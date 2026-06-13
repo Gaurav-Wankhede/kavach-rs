@@ -10,6 +10,11 @@ fn null_string<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
     Ok(Option::<String>::deserialize(d)?.unwrap_or_default())
 }
 
+pub mod gate_config;
+pub use gate_config::{
+    GateValueDto, gate_enabled, gate_patterns, gate_text, gate_threshold,
+};
+
 pub mod six_file;
 pub use six_file::{
     ArtifactValidator, AutoDraftSource, FOURTEEN_PREFIXES, MissingPrefix, MissingReason,
