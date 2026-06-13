@@ -27,7 +27,7 @@ fn loop_compact_is_single_block() {
 #[test]
 fn reward_session_stats_emits_when_data_present() {
     let mut session = SessionState::default();
-    session.record_reward_outcome("unit.a", true);
+    session.record_reward_outcome("unit.a", Some(true));
     let stats = super::build_reward_session_stats(&session).expect("stats");
     assert!(stats.contains("[REWARD:stats]"));
     assert!(stats.contains("session_pass_rate"));

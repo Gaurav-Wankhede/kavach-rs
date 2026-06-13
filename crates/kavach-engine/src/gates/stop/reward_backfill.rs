@@ -34,11 +34,23 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     } else {
         session.current_kanban_card.clone()
     };
-    let verified = session.goal_receipt_pass;
-    session.record_reward_outcome(&card, verified);
+    // FIX [false-negative reward / L2]: `goal_receipt_pass` is true ONLY when a
+    // verified-clean oracle receipt landed. Its `false` means "no clean receipt",
+    // NOT "proven failure" — an out-of-band-verified card (e.g. an HTTP-200
+    // release with no machine receipt) is correct yet has no receipt. Treating
+    // absence as `verified_clean:false` graded a let-through as -1.0 (the bug).
+    // There is no "proven failure" channel today, so the only definite signal is
+    // a clean receipt -> Some(true); everything else -> None (abstain).
+    let outcome = session.goal_receipt_pass.then_some(true);
+    session.record_reward_outcome(&card, outcome);
+    // Abstention writes no reward — a missing signal must never become a -1
+    // penalty on the bandit log. Only a definite outcome fires the grader.
+    let Some(verified_clean) = outcome else {
+        return;
+    };
     let params = serde_json::json!({
         "session_id": session.session_id,
-        "verified_clean": verified,
+        "verified_clean": verified_clean,
         "limit": BACKFILL_LIMIT,
     });
     // INTENTIONAL: fire-and-forget — daemon may be down; the Stop gate must not

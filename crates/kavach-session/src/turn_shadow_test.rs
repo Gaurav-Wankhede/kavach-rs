@@ -69,9 +69,31 @@ fn queue_lifecycle_relay_merges_into_shadow() {
 #[test]
 fn record_reward_outcome_tracks_pass_rate() {
     let mut s = SessionState::default();
-    s.record_reward_outcome("unit.a", true);
-    s.record_reward_outcome("unit.b", false);
+    s.record_reward_outcome("unit.a", Some(true));
+    s.record_reward_outcome("unit.b", Some(false));
     assert_eq!(s.reward_session_pass, 1);
     assert_eq!(s.reward_session_total, 2);
     assert!(s.last_reward_summary.contains("unit.b"));
+}
+
+#[test]
+fn abstention_is_neutral_not_a_failure() {
+    // L2 regression: a card with NO verification signal (None) must not be
+    // scored a failure, and must NOT count toward the graded total/pass rate.
+    let mut s = SessionState::default();
+    s.record_reward_outcome("unit.a", Some(true));
+    s.record_reward_outcome("unit.no-receipt", None);
+    assert_eq!(s.reward_session_pass, 1, "abstention adds no pass");
+    assert_eq!(
+        s.reward_session_total, 1,
+        "abstention is not a graded sample"
+    );
+    assert!(
+        s.last_reward_summary.contains("ABSTAINED"),
+        "no-signal reads as abstained, never FAILED (-1.0)"
+    );
+    assert!(
+        !s.last_reward_summary.contains("FAILED"),
+        "absence of a receipt must never be tagged a -1.0 failure"
+    );
 }

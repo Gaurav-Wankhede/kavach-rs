@@ -104,13 +104,29 @@ impl SessionState {
     }
 
     /// Record verify outcome for `[REWARD:last]` stop followup.
-    pub fn record_reward_outcome(&mut self, card: &str, passed: bool) {
+    ///
+    /// Tri-state, NOT a bool: `Some(true)` = a verified-clean receipt landed
+    /// (+1); `Some(false)` = a PROVEN failure (-1); `None` = no verification
+    /// signal at all (abstain — neither +1 nor -1, and it does NOT count toward
+    /// the session total). FIX [false-negative reward / L2]: the old `bool`
+    /// conflated "no receipt" with "failed", so an out-of-band-verified card
+    /// (e.g. an HTTP-200 release with no machine receipt) was scored -1.0. An
+    /// absent signal is an abstention, never a penalty.
+    pub fn record_reward_outcome(&mut self, card: &str, outcome: Option<bool>) {
         let card = if card.is_empty() { "(card)" } else { card };
-        let tag = if passed { "PASSED (+1.0)" } else { "FAILED (-1.0)" };
+        let tag = match outcome {
+            Some(true) => "PASSED (+1.0)",
+            Some(false) => "FAILED (-1.0)",
+            None => "ABSTAINED (no verification signal; 0.0, not penalized)",
+        };
         self.last_reward_summary = format!("last_action: {card} → verify {tag}");
-        self.reward_session_total = self.reward_session_total.saturating_add(1);
-        if passed {
-            self.reward_session_pass = self.reward_session_pass.saturating_add(1);
+        // Abstention is NOT a graded sample: it must not inflate the total or
+        // depress the pass-rate. Only a definite outcome counts.
+        if let Some(passed) = outcome {
+            self.reward_session_total = self.reward_session_total.saturating_add(1);
+            if passed {
+                self.reward_session_pass = self.reward_session_pass.saturating_add(1);
+            }
         }
         self.save_or_log();
     }
