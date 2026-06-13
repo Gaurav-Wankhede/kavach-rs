@@ -39,10 +39,17 @@ fn unblocked_when_prereq_done_or_verified() {
 }
 
 #[test]
-fn dangling_dep_does_not_block() {
+fn absent_dep_key_blocks_matching_dispatch() {
+    // An absent key is most likely a cross-project prereq the project-scoped
+    // board did not load. The scheduler resolves deps against the GLOBAL key
+    // space and would hold the card back, so the badge must show BLOCKED too
+    // (fail-safe) rather than falsely showing it ready.
     let rows = vec![card("c", MemoryStatus::Todo, "BLOCKED_BY: ghost")];
     let idx = status_index(&rows);
-    assert!(!is_blocked(&rows[0], &idx), "absent dep key cannot block");
+    assert!(
+        is_blocked(&rows[0], &idx),
+        "unknown dep key => blocked, aligning with global-pool dispatch"
+    );
 }
 
 #[test]

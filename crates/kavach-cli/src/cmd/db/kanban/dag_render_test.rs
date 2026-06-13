@@ -108,17 +108,26 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         lane: None,
         owner_gated: None,
     };
-    // u2 declares DEPENDS_ON: u1; u3 depends on u2. Dangling dep 'ghost' dropped.
+    // u2 declares DEPENDS_ON: u1; u3 depends on u2 + an absent 'ghost' key.
+    // An absent key is NOT dropped (that falsely marked the dependent ready —
+    // Finding B): it becomes a phantom prereq node so the dependent shows BLOCKED,
+    // matching the scheduler which resolves deps against the GLOBAL pool.
     let rows = vec![
         row("u1", "no deps"),
         row("u2", "DEPENDS_ON: u1"),
         row("u3", "BLOCKED_BY: u2 ghost"),
     ];
     let dag = dag_from_roadmap(&rows);
-    assert_eq!(dag.nodes.len(), 3, "one node per roadmap row");
-    assert_eq!(dag.edges.len(), 2, "u1->u2, u2->u3; dangling 'ghost' dropped");
+    assert_eq!(dag.nodes.len(), 4, "3 rows + 1 phantom node for absent 'ghost'");
+    assert_eq!(dag.edges.len(), 3, "u1->u2, u2->u3, ghost->u3 (phantom kept)");
     assert!(dag.edges.iter().any(|e| e.source == "u1" && e.target == "u2"));
     assert!(dag.edges.iter().any(|e| e.source == "u2" && e.target == "u3"));
+    assert!(
+        dag.edges.iter().any(|e| e.source == "ghost" && e.target == "u3"),
+        "absent dep surfaced as a phantom prereq, not silently dropped"
+    );
+    let ghost = dag.nodes.iter().find(|n| n.entry_key == "ghost").expect("phantom present");
+    assert_eq!(ghost.entry_status, "missing", "phantom never verified/done -> dependent stays blocked");
 }
 
 #[test]

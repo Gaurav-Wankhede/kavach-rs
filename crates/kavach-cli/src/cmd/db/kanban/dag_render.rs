@@ -36,17 +36,34 @@ fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
             category: "roadmap".to_owned(),
         })
         .collect();
+    let mut nodes = nodes;
     let mut edges: Vec<DagEdge> = Vec::new();
+    let mut phantom_seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     for e in rows {
         // prerequisite -> dependent: each declared dep must finish before `e`.
         for dep in parse_declared_deps(&e.content) {
-            if present.contains(dep.as_str()) {
-                edges.push(DagEdge {
-                    source: dep,
-                    target: e.entry_key.clone(),
-                    rel: "depends_on".to_owned(),
-                });
+            if !present.contains(dep.as_str()) {
+                // Absent in THIS project's rows — most often a cross-project
+                // prerequisite the scheduler resolves against the GLOBAL pool and
+                // would BLOCK on. Drop-the-edge would falsely mark `e` ready
+                // (Finding B). Instead inject a phantom prereq node whose status
+                // is never verified/done, so `is_ready` correctly returns false
+                // and the missing key is named — matching dispatch (fail-safe).
+                if phantom_seen.insert(dep.clone()) {
+                    nodes.push(DagNode {
+                        id: dep.clone(),
+                        entry_key: dep.clone(),
+                        title: "(unresolved — cross-project or missing)".to_owned(),
+                        entry_status: "missing".to_owned(),
+                        category: "roadmap".to_owned(),
+                    });
+                }
             }
+            edges.push(DagEdge {
+                source: dep,
+                target: e.entry_key.clone(),
+                rel: "depends_on".to_owned(),
+            });
         }
     }
     RoadmapDag { nodes, edges }

@@ -55,8 +55,8 @@ pub(super) fn next(method: &str, project_slug: &str) -> Result<Option<serde_json
     })
 }
 
-/// Direct census when RPC transport is down.
-pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64)>, ()> {
+/// Direct census when RPC transport is down. `(runnable, blocked, cyclic)`.
+pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, ()> {
     let rt = tokio::runtime::Runtime::new().map_err(|_| ())?;
     rt.block_on(async {
         let state = open_state().await?;
@@ -65,6 +65,7 @@ pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64)>, ()> {
         Ok(Some((
             u64::try_from(census.runnable).map_err(|_| ())?,
             u64::try_from(census.blocked).map_err(|_| ())?,
+            u64::try_from(census.cyclic).map_err(|_| ())?,
         )))
     })
 }

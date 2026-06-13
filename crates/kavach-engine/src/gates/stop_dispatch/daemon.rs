@@ -77,12 +77,14 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     direct::next(method, project_slug)
 }
 
-/// `roadmap.open_set_census` → `(runnable, blocked)` counts, or `Err(())` on a
-/// transport error (caller fails closed). Single-shot: the board census is only
-/// consulted on the already-drained branch, where a daemon spawned by the prior
-/// `rpc_next` self-heal is already warm; an outage here degrades to "do not
-/// clean-stop", never a wrong "board empty".
-pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64)>, ()> {
+/// `roadmap.open_set_census` → `(runnable, blocked, cyclic)` counts, or `Err(())`
+/// on a transport error (caller fails closed). `cyclic` = runnable cards whose
+/// declared deps form a cycle — they can never satisfy deps, so a non-zero count
+/// must REFUSE a clean-stop (else a deadlock forges a false `[ALL_BLOCKED]`).
+/// Single-shot: the board census is only consulted on the already-drained branch,
+/// where a daemon spawned by the prior `rpc_next` self-heal is already warm; an
+/// outage here degrades to "do not clean-stop", never a wrong "board empty".
+pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, ()> {
     let params = serde_json::json!({ "project": project_slug });
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
         .map_or_else(
@@ -90,7 +92,9 @@ pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64)>, 
             |v| {
                 let runnable = v.get("runnable").and_then(serde_json::Value::as_u64);
                 let blocked = v.get("blocked").and_then(serde_json::Value::as_u64);
-                Ok(runnable.zip(blocked))
+                // Absent `cyclic` (older daemon) defaults to 0 — backward-compatible.
+                let cyclic = v.get("cyclic").and_then(serde_json::Value::as_u64).unwrap_or(0);
+                Ok(runnable.zip(blocked).map(|(r, b)| (r, b, cyclic)))
             },
         )
 }

@@ -1,4 +1,4 @@
-use super::super::readiness::{deps_satisfied, is_runnable_status};
+use super::super::readiness::{deps_satisfied, dep_index, is_in_cycle, is_runnable_status};
 use super::super::types::{NextOpenTaskParams, OpenSetCensus};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
@@ -38,13 +38,21 @@ pub async fn open_set_census(
     let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
+    // Index the GLOBAL dep pool once: cycle detection follows declared-dep edges
+    // across every project (dep keys are a global key space, per `deps_satisfied`).
+    let by_key = dep_index(&dep_pool);
     let mut census = OpenSetCensus::default();
     for e in &entries {
         if !is_runnable_status(e.entry_status_str()) {
             continue;
         }
         census.runnable = census.runnable.saturating_add(1);
-        if !deps_satisfied(e, &dep_pool) {
+        // A cyclic card can never satisfy deps; count it as cyclic (NOT blocked)
+        // so it cannot forge a legitimate-looking `[ALL_BLOCKED]` clean-stop.
+        if is_in_cycle(&e.entry_key, &by_key) {
+            census.cyclic = census.cyclic.saturating_add(1);
+            census.cyclic_keys.push(e.entry_key.clone());
+        } else if !deps_satisfied(e, &dep_pool) {
             census.blocked = census.blocked.saturating_add(1);
         }
     }

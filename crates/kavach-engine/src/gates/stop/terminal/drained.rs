@@ -27,7 +27,14 @@ pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String 
     if let Some(lane_name) = lane::lane_env() {
         return lane::lane_drained_context(&lane_name);
     }
-    if census_is_all_blocked(crate::gates::stop_dispatch::open_set_census(project)) {
+    let census = crate::gates::stop_dispatch::open_set_census(project);
+    // A dependency cycle is NOT a legitimate block: it is a deadlock the AI must
+    // repair (break the cycle), never a clean stop. Surface it before any
+    // all-blocked / plan verdict so it cannot forge a false `[ALL_BLOCKED]`.
+    if census.is_some_and(|(_, _, cyclic)| cyclic > 0) {
+        return cycle_deadlock_context();
+    }
+    if census_is_all_blocked(census) {
         all_blocked_context()
     } else {
         board_drained_plan_context()
@@ -35,13 +42,42 @@ pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String 
 }
 
 /// True iff the census proves a BLOCKED remainder: at least one runnable-status
-/// card AND every one of them blocked. `None` (RPC outage) → false → fail closed
-/// to the PLAN nudge. An empty board (`runnable == 0`) is NOT all-blocked.
-const fn census_is_all_blocked(census: Option<(u64, u64)>) -> bool {
+/// card AND every one of them blocked or cyclic. `None` (RPC outage) → false →
+/// fail closed to the PLAN nudge. An empty board (`runnable == 0`) is NOT
+/// all-blocked. A cycle is handled BEFORE this by `drained_terminal_context`, so
+/// here `blocked + cyclic == runnable` still counts as the all-blocked remainder.
+const fn census_is_all_blocked(census: Option<(u64, u64, u64)>) -> bool {
     match census {
-        Some((runnable, blocked)) => runnable > 0 && blocked == runnable,
+        Some((runnable, blocked, cyclic)) => {
+            runnable > 0 && blocked.saturating_add(cyclic) == runnable
+        }
         None => false,
     }
+}
+
+/// A dependency cycle holds runnable cards hostage — no card in the cycle can ever
+/// become ready, so the loop would otherwise spin or falsely clean-stop. This is
+/// AI-repairable work (break the cycle), so REFUSE the stop and direct the fix.
+fn cycle_deadlock_context() -> String {
+    kavach_hook::context_block(
+        "CYCLE_DEADLOCK",
+        &[
+            (
+                "why",
+                "one or more runnable cards declare a dependency CYCLE (a card depends \
+                 on itself, or A->B->A). No card in a cycle can ever satisfy its deps, \
+                 so it is permanently un-dispatchable — this is a deadlock, NOT a \
+                 legitimate block and NOT a clean stop.",
+            ),
+            (
+                "action",
+                "Do NOT stop. Run `kavach db kanban --format mermaid` to see the cycle, \
+                 then break it: edit the offending card's `DEPENDS_ON:`/`BLOCKED_BY:` \
+                 line to remove the back-edge (or re-order the work). Re-verify the \
+                 census has zero cyclic cards before stopping.",
+            ),
+        ],
+    )
 }
 
 /// Case 1: every remaining runnable card is blocked/owner-gated → honest clean

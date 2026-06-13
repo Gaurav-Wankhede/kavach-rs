@@ -81,9 +81,19 @@ pub struct VerifyCardResult {
 /// back (blocked deps / owner-gate). `runnable == 0` → board truly empty;
 /// `runnable > 0 && blocked == runnable` → every remainder blocked → clean
 /// `[ALL_BLOCKED]` stop.
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+///
+/// `cyclic` = of the runnable set, cards whose declared deps form a dependency
+/// cycle (self-dep or mutual). These can NEVER satisfy `deps_satisfied`, so they
+/// would otherwise inflate `blocked` and forge a false `[ALL_BLOCKED]` clean-stop
+/// while real work sits unreachable. They are counted separately so the gate can
+/// refuse the stop and name the deadlock instead of treating it as legitimate.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct OpenSetCensus {
     pub runnable: usize,
     pub blocked: usize,
+    pub cyclic: usize,
+    /// Keys of the runnable cards detected in a dependency cycle (for the gate
+    /// message). Empty when `cyclic == 0`.
+    pub cyclic_keys: Vec<String>,
 }

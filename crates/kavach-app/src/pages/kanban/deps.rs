@@ -42,15 +42,19 @@ fn declared_deps(content: &str) -> Vec<&str> {
 }
 
 /// True when `entry` has at least one declared prerequisite that is NOT yet
-/// satisfied (i.e. some dep key is present in the project and not done/verified).
-/// A dep whose key is absent from the project is ignored (cannot block), matching
-/// the scheduler's tolerance. `by_key` maps every card's key to its status.
+/// satisfied. A prereq is satisfied ONLY when its key is present AND `done`/
+/// `verified`. A dep key ABSENT from the loaded board is treated as UNSATISFIED
+/// (→ blocked), NOT ignored: the scheduler resolves deps against the GLOBAL key
+/// space and would hold the card back, so an unknown key here is most likely a
+/// cross-project prerequisite the board simply did not load — surfacing it as
+/// blocked matches dispatch (fail-safe) instead of falsely showing it ready.
+/// `by_key` maps every loaded card's key to its status.
 #[must_use]
 pub(crate) fn is_blocked(entry: &EntryRef, by_key: &HashMap<&str, MemoryStatus>) -> bool {
     declared_deps(&entry.content).iter().any(|dep| {
         by_key
             .get(*dep)
-            .is_some_and(|st| !matches!(st, MemoryStatus::Verified | MemoryStatus::Done))
+            .is_none_or(|st| !matches!(st, MemoryStatus::Verified | MemoryStatus::Done))
     })
 }
 

@@ -1,8 +1,10 @@
 pub mod agent_gate;
+pub mod cycle;
 pub mod dep_key;
 pub mod status_check;
 
 pub use agent_gate::is_owner_gated;
+pub use cycle::{dep_index, is_in_cycle};
 pub use dep_key::{dep_key_satisfied, parse_declared_deps};
 pub use status_check::is_runnable_status;
 
