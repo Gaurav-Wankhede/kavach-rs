@@ -24,6 +24,7 @@ pub mod dual_write;
 pub mod embed;
 pub mod error;
 pub mod filter;
+pub mod gate_config;
 pub mod gate_patterns;
 pub mod graph;
 pub mod harness_link;
@@ -44,6 +45,11 @@ pub use connection::{
     open_memory,
 };
 pub use dual_write::MemoryEntry;
+pub use gate_config::{
+    GLOBAL_PROJECT, GateConfigEntry, GateConfigKind, GateConfigValue,
+    gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
+    set_with_kind as gate_config_set_with_kind,
+};
 pub use embed::{EMBED_DIM, Embedder, cosine};
 pub use error::{Error, Result};
 pub use graph::upsert_relationships;

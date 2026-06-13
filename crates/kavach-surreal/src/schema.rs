@@ -175,6 +175,27 @@ DEFINE TABLE bandit_log SCHEMALESS;
 DEFINE FIELD created_at ON bandit_log TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_bandit_log_created ON bandit_log FIELDS created_at;
 
+-- Dynamic gate-config overlay (unit.dynamic-gate-config-plane P1): the DB layer
+-- in the resolver chain DB > file > compiled-default. A row OVERRIDES a gate
+-- constant at runtime; absence falls through to the file/compiled default
+-- (fail-closed — a missing row never disables a gate). `project` is the slug
+-- string ('*' = the global row) NOT a record link, so the global row needs no
+-- project record and lookups are a plain string match. Value is discriminated by
+-- `kind`: exactly one of the four value_* columns is populated, validated at the
+-- write edge (illegal cross-kind shapes unrepresentable). SOURCE: layered config
+-- precedence (12-factor + k8s admission-policy overlay).
+DEFINE TABLE gate_config SCHEMAFULL;
+DEFINE FIELD project ON gate_config TYPE string;
+DEFINE FIELD gate_key ON gate_config TYPE string;
+DEFINE FIELD kind ON gate_config TYPE string
+    ASSERT $value IN ['threshold', 'pattern_list', 'enabled', 'severity', 'text'];
+DEFINE FIELD value_num ON gate_config TYPE option<number>;
+DEFINE FIELD value_bool ON gate_config TYPE option<bool>;
+DEFINE FIELD value_list ON gate_config TYPE option<array<string>>;
+DEFINE FIELD value_text ON gate_config TYPE option<string>;
+DEFINE FIELD updated_at ON gate_config TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_gate_config_project_key ON gate_config FIELDS project, gate_key UNIQUE;
+
 -- Project parts (sub-components within a project: backend, frontend, etc.)
 DEFINE TABLE part SCHEMAFULL;
 DEFINE FIELD project ON part TYPE record<project>;
