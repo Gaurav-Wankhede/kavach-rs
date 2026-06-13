@@ -1,0 +1,93 @@
+//! Proves the DAG projection: tier assignment by dependency depth, READY vs
+//! BLOCKED markers from prereq status, cycle is surfaced (not placed on a tier),
+//! and the mermaid emit is a well-formed `flowchart TD`.
+use super::{render_mermaid, render_tiered_text, tiers};
+use kavach_surreal::{DagEdge, DagNode, RoadmapDag};
+
+fn node(key: &str, status: &str) -> DagNode {
+    DagNode {
+        id: format!("p/roadmap/{key}"),
+        entry_key: key.to_owned(),
+        title: format!("title {key}"),
+        entry_status: status.to_owned(),
+        category: "roadmap".to_owned(),
+    }
+}
+
+fn dep(from: &str, to: &str) -> DagEdge {
+    DagEdge {
+        source: format!("p/roadmap/{from}"),
+        target: format!("p/roadmap/{to}"),
+        rel: "depends_on".to_owned(),
+    }
+}
+
+/// a -> b -> c chain: tiers must be 0, 1, 2.
+fn chain() -> RoadmapDag {
+    RoadmapDag {
+        nodes: vec![node("a", "todo"), node("b", "todo"), node("c", "todo")],
+        edges: vec![dep("a", "b"), dep("b", "c")],
+    }
+}
+
+#[test]
+fn tiers_follow_dependency_depth() {
+    let d = chain();
+    let order = match d.toposort_or_cycle() {
+        kavach_surreal::graph::roadmap_dag::TopoOrder::Ordered(o) => o,
+        kavach_surreal::graph::roadmap_dag::TopoOrder::Cycle(_) => panic!("chain is acyclic"),
+    };
+    let depth = tiers(&order, &d.edges);
+    assert_eq!(depth.get("p/roadmap/a"), Some(&0), "root is tier 0");
+    assert_eq!(depth.get("p/roadmap/b"), Some(&1));
+    assert_eq!(depth.get("p/roadmap/c"), Some(&2));
+}
+
+#[test]
+fn tiered_text_marks_ready_and_blocked() {
+    let out = render_tiered_text(&chain());
+    // 'a' has no prereqs -> READY; 'b' depends on unfinished 'a' -> BLOCKED.
+    assert!(out.contains("TIER 0 — ready now"));
+    assert!(out.contains("a — title a  ✓READY"), "got:\n{out}");
+    assert!(out.contains("⛔BLOCKED"), "dependent must be blocked:\n{out}");
+    assert!(out.contains("⤷ depends-on: a"), "inline prereq:\n{out}");
+}
+
+#[test]
+fn ready_when_prereq_verified() {
+    // a is verified -> b becomes READY despite the edge.
+    let d = RoadmapDag {
+        nodes: vec![node("a", "verified"), node("b", "todo")],
+        edges: vec![dep("a", "b")],
+    };
+    let out = render_tiered_text(&d);
+    assert!(out.contains("b — title b  ✓READY"), "verified prereq unblocks:\n{out}");
+}
+
+#[test]
+fn cycle_is_surfaced_not_tiered() {
+    // a -> b -> a is a deadlock.
+    let d = RoadmapDag {
+        nodes: vec![node("a", "todo"), node("b", "todo")],
+        edges: vec![dep("a", "b"), dep("b", "a")],
+    };
+    let out = render_tiered_text(&d);
+    assert!(out.contains("⚠ CYCLE"), "cycle must be named:\n{out}");
+    assert!(!out.contains("TIER"), "no tiers rendered for a cyclic graph:\n{out}");
+}
+
+#[test]
+fn mermaid_emits_flowchart_with_edges() {
+    let m = render_mermaid(&chain());
+    assert!(m.starts_with("flowchart TD"));
+    // sanitized ids (slashes -> underscores) + an arrow per dep edge.
+    assert!(m.contains("p_roadmap_a"), "node id sanitized:\n{m}");
+    assert!(m.contains("-->"), "edges rendered as arrows:\n{m}");
+    assert_eq!(m.matches("-->").count(), 2, "two dep edges:\n{m}");
+}
+
+#[test]
+fn empty_dag_is_safe() {
+    let out = render_tiered_text(&RoadmapDag::default());
+    assert!(out.contains("0 node(s), 0 edge(s)"), "empty boundary:\n{out}");
+}

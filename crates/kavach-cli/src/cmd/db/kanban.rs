@@ -5,6 +5,7 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 
 mod close;
+mod dag_render;
 mod render;
 
 pub(super) use close::close;
@@ -69,6 +70,7 @@ pub(super) fn run(
     lane_filter: Option<&str>,
     include_verified: bool,
     json_output: bool,
+    format: Option<&str>,
 ) -> i32 {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
@@ -87,6 +89,7 @@ pub(super) fn run(
         active_first,
         include_verified,
         json: json_output,
+        format,
     };
     runtime.block_on(run_async(project_slug, limit, &filters))
 }
@@ -128,6 +131,21 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
         }
         return 1;
     };
+    // DAG awareness view: fetch the SAME dependency graph the scheduler reads and
+    // project it as tiered text / mermaid, bypassing the flat status board.
+    if let Some(fmt) = filters.format {
+        let dag = match kavach_surreal::roadmap_dag_fetch(&db, project_slug).await {
+            Ok(d) => d,
+            Err(e) => {
+                let msg = format!("error: fetch roadmap DAG: {e}");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+        };
+        return dag_render::render_dag(&dag, fmt);
+    }
     let roadmap = match kavach_surreal::list_by_project(&db, "roadmap", &project_id).await {
         Ok(rows) => rows,
         Err(e) => {

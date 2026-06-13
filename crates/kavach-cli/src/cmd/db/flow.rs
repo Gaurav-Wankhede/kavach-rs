@@ -16,6 +16,11 @@ struct FlowJson {
 
 #[derive(serde::Deserialize)]
 struct StepJson {
+    // Documented JSON key is `id` (see flow-add --help + global CLAUDE.md/Cursor
+    // rules); `step_id` kept as an alias so older payloads still parse. Without
+    // this rename the documented `{"id":...}` shape failed to deserialize — a
+    // doc-vs-impl mismatch.
+    #[serde(rename = "id", alias = "step_id")]
     step_id: String,
     label: String,
     #[serde(default)]

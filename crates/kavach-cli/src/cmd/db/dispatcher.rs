@@ -104,6 +104,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             lane,
             include_verified,
             json,
+            format,
         } => kanban::run(
             &project,
             limit,
@@ -113,6 +114,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             lane.as_deref(),
             include_verified,
             json,
+            format.as_deref(),
         ),
         DbAction::KanbanClose { project, key } => kanban::close(&project, &key),
         DbAction::StatusUpdate {

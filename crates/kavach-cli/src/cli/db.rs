@@ -263,6 +263,14 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         /// Output as JSON for agent parsing
         #[arg(long)]
         json: bool,
+        /// Render the dependency DAG instead of the flat status list.
+        ///
+        /// `dag` = topo-tiered text (tier 0 = ready now, deeper tiers unlock as
+        /// prerequisites close; READY/BLOCKED/CYCLE markers + inline depends-on);
+        /// `mermaid` = a `flowchart TD` of the cards + `depends_on` edges. Omit
+        /// for the classic flat board. Reads the same edges the scheduler uses.
+        #[arg(long, value_parser = ["dag", "mermaid"])]
+        format: Option<String>,
     },
     /// Close a kanban roadmap item by key (marks status=verified)
     KanbanClose {

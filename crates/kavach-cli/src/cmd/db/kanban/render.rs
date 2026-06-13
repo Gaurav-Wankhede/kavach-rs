@@ -14,6 +14,9 @@ pub(in crate::cmd::db) struct KanbanFilters<'a> {
     pub active_first: bool,
     pub include_verified: bool,
     pub json: bool,
+    /// `Some("dag")` = topo-tiered text DAG; `Some("mermaid")` = flowchart TD;
+    /// `None` = classic flat status board. Routed in the hub before render.
+    pub format: Option<&'a str>,
 }
 
 fn matches_filters(e: &kavach_surreal::MemoryEntry, f: &KanbanFilters<'_>) -> bool {
