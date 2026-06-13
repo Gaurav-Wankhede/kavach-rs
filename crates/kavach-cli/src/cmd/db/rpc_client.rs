@@ -457,6 +457,49 @@ pub(super) fn concept_list(limit: usize) -> Result<Vec<kavach_surreal::Entity>, 
     call::<_, Vec<kavach_surreal::Entity>>("concept.list", Some(params)).map_err(format_err)
 }
 
+pub(super) fn gate_config_get(
+    project: &str,
+    gate_key: &str,
+) -> Result<Option<kavach_rpc::methods::db::GateValueDto>, String> {
+    let params = kavach_rpc::methods::db::GateCfgGetParams {
+        project: project.to_owned(),
+        gate_key: gate_key.to_owned(),
+    };
+    call::<_, Option<kavach_rpc::methods::db::GateValueDto>>("db.gate_config_get", Some(params))
+        .map_err(format_err)
+}
+
+pub(super) fn gate_config_set(
+    project: &str,
+    gate_key: &str,
+    value: kavach_rpc::methods::db::GateValueDto,
+) -> Result<String, String> {
+    let params = kavach_rpc::methods::db::GateCfgSetParams {
+        project: project.to_owned(),
+        gate_key: gate_key.to_owned(),
+        value,
+    };
+    call::<_, String>("db.gate_config_set", Some(params)).map_err(format_err)
+}
+
+pub(super) fn gate_config_delete(project: &str, gate_key: &str) -> Result<String, String> {
+    let params = kavach_rpc::methods::db::GateCfgDeleteParams {
+        project: project.to_owned(),
+        gate_key: gate_key.to_owned(),
+    };
+    call::<_, String>("db.gate_config_delete", Some(params)).map_err(format_err)
+}
+
+pub(super) fn gate_config_list(
+    project: &str,
+) -> Result<Vec<kavach_surreal::GateConfigEntry>, String> {
+    let params = kavach_rpc::methods::db::GateCfgListParams {
+        project: project.to_owned(),
+    };
+    call::<_, Vec<kavach_surreal::GateConfigEntry>>("db.gate_config_list", Some(params))
+        .map_err(format_err)
+}
+
 pub(super) fn bridge_create(
     src_table: &str,
     src_key: &str,

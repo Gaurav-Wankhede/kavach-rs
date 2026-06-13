@@ -2,7 +2,8 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    archive, backfill_relationships, bridge, concept, delete, event, expire, find, flow, get,
+    archive, backfill_relationships, bridge, concept, delete, event, expire, find, flow,
+    gate_config, get,
     graph_query, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query, register,
     register_part, rotate, search, status_update, sync, tree, wipe_project, write,
 };
@@ -161,6 +162,10 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         DbAction::ConceptDeletePrefix { prefix, confirm } => {
             concept::delete_by_prefix(&prefix, confirm)
         }
+        gc @ (DbAction::GateConfigGet { .. }
+        | DbAction::GateConfigSet { .. }
+        | DbAction::GateConfigDelete { .. }
+        | DbAction::GateConfigList { .. }) => dispatch_gate_config(gc),
         DbAction::BridgeCreate {
             src_table,
             src_key,
@@ -206,5 +211,27 @@ fn dispatch_flow(action: DbAction) -> i32 {
             format,
         } => flow::show(&project, &key, &format),
         _ => 1, // SAFETY: dispatch_flow only called with Flow* actions
+    }
+}
+
+/// Route the four `gate-config` verbs. Split out of `dispatch_remaining` to keep
+/// that match under the per-fn line cap; only ever called with `GateConfig*`.
+fn dispatch_gate_config(action: DbAction) -> i32 {
+    match action {
+        DbAction::GateConfigGet { project, gate_key } => gate_config::get(&project, &gate_key),
+        DbAction::GateConfigSet {
+            project,
+            gate_key,
+            kind,
+            num,
+            boolean,
+            list,
+            text,
+        } => gate_config::set(&project, &gate_key, &kind, num, boolean, list, text),
+        DbAction::GateConfigDelete { project, gate_key } => {
+            gate_config::delete(&project, &gate_key)
+        }
+        DbAction::GateConfigList { project } => gate_config::list(&project),
+        _ => 1, // SAFETY: only called with GateConfig* actions
     }
 }

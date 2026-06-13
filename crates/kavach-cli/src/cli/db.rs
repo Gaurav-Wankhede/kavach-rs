@@ -437,6 +437,54 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         #[arg(long)]
         confirm: bool,
     },
+    /// Resolve a gate-config override (project-then-global), or report the miss
+    GateConfigGet {
+        /// Project slug (`*` for the global row)
+        #[arg(long)]
+        project: String,
+        /// Gate-config key (e.g. `dup.block`, `session.autonomy_contract`)
+        #[arg(long = "gate-key")]
+        gate_key: String,
+    },
+    /// Set a gate-config override (exactly one value flag per `--kind`)
+    GateConfigSet {
+        /// Project slug (`*` for the global row)
+        #[arg(long)]
+        project: String,
+        /// Gate-config key
+        #[arg(long = "gate-key")]
+        gate_key: String,
+        /// Value kind: `threshold` | `pattern_list` | `enabled` | `severity` | `text`
+        #[arg(long)]
+        kind: String,
+        /// Numeric value (for `--kind threshold`)
+        #[arg(long)]
+        num: Option<f64>,
+        /// Boolean value (for `--kind enabled`)
+        #[arg(long)]
+        boolean: Option<bool>,
+        /// Comma-separated list (for `--kind pattern_list`)
+        #[arg(long)]
+        list: Option<String>,
+        /// Text value (for `--kind severity` | `--kind text`)
+        #[arg(long)]
+        text: Option<String>,
+    },
+    /// Delete a gate-config override, reverting to the compiled default
+    GateConfigDelete {
+        /// Project slug (`*` for the global row)
+        #[arg(long)]
+        project: String,
+        /// Gate-config key
+        #[arg(long = "gate-key")]
+        gate_key: String,
+    },
+    /// List every gate-config override for a project (`*` for the globals)
+    GateConfigList {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+    },
     /// Bridge a project-scoped L1 entity to a global L0 concept
     BridgeCreate {
         /// Source table (roadmap | decision | research | pattern | `app_spec`)

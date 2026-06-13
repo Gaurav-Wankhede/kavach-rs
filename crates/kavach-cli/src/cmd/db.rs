@@ -14,6 +14,7 @@ mod event;
 mod expire;
 mod find;
 mod flow;
+mod gate_config;
 mod get;
 mod graph_query;
 mod kanban;
