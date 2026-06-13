@@ -263,12 +263,15 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         /// Output as JSON for agent parsing
         #[arg(long)]
         json: bool,
-        /// Render the dependency DAG instead of the flat status list.
+        /// Override the always-on dependency-DAG view.
         ///
-        /// `dag` = topo-tiered text (tier 0 = ready now, deeper tiers unlock as
-        /// prerequisites close; READY/BLOCKED/CYCLE markers + inline depends-on);
-        /// `mermaid` = a `flowchart TD` of the cards + `depends_on` edges. Omit
-        /// for the classic flat board. Reads the same edges the scheduler uses.
+        /// The default (no flag) is the topo-tiered text DAG, where the first
+        /// tier is ready now and deeper tiers unlock as prerequisites close, with
+        /// READY/BLOCKED/CYCLE markers, inline depends-on, and per-card status —
+        /// the agent's always-on task awareness. Passing `mermaid` emits a
+        /// `flowchart TD` for human/GUI viewing, and `--json` gives the
+        /// machine-parseable card list. Reads the same declared deps the
+        /// scheduler dispatches on.
         #[arg(long, value_parser = ["dag", "mermaid"])]
         format: Option<String>,
     },

@@ -141,14 +141,18 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
             return 1;
         }
     };
-    // DAG awareness view: build the dependency graph from the SAME roadmap rows
-    // (and their declared DEPENDS_ON:/BLOCKED_BY: deps) the flat board + scheduler
-    // use, then project it as tiered text / mermaid. Sourced from the rows, NOT
-    // the entity-graph mirror (which is unpopulated for roadmap cards).
-    if let Some(fmt) = filters.format {
-        return dag_render::render_dag_from_rows(&roadmap, fmt);
+    // The DAG is the ALWAYS-ON default awareness surface: every `kavach db kanban`
+    // read projects the dependency graph (tiered text by default, or mermaid via
+    // `--format mermaid`) so the agent always sees the exact task graph + which
+    // cards are done/ready/blocked — never a dependency-blind flat list. Built
+    // from the SAME roadmap rows + declared DEPENDS_ON:/BLOCKED_BY: deps the
+    // scheduler uses, so the view and the dispatch order agree by construction.
+    // `--json` keeps the machine-parseable card list for tooling that needs it.
+    if filters.json {
+        return render_kanban(project_slug, &roadmap, limit, filters);
     }
-    render_kanban(project_slug, &roadmap, limit, filters)
+    let fmt = filters.format.unwrap_or("dag");
+    dag_render::render_dag_from_rows(&roadmap, fmt)
 }
 
 #[cfg(test)]
