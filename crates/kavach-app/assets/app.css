@@ -55,6 +55,10 @@ body, html { margin: 0; padding: 0; background: var(--bg); color: var(--text); f
 .kanban-board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 .kanban-col { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-height: 200px; }
 .kanban-col h3 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.kanban-card-wrap { position: relative; }
+.kanban-card-wrap.blocked { opacity: 0.72; }
+.kanban-card-wrap.blocked .entry-row, .kanban-card-wrap.blocked > * { border-left: 3px solid var(--danger, #d9534f); }
+.dep-badge { display: inline-block; margin-bottom: 4px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; color: #fff; background: var(--danger, #d9534f); }
 
 .cy-canvas { width: 100%; height: calc(100vh - 240px); min-height: 400px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
 

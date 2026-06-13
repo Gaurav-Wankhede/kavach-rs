@@ -1,5 +1,6 @@
 mod board;
 mod data;
+mod deps;
 
 use dioxus::prelude::*;
 
