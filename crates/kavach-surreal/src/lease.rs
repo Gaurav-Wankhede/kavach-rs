@@ -2,6 +2,7 @@
 // Hub module for the session-occupancy lease primitive (lease/TTL + heartbeat + fencing token).
 mod acquire;
 mod heartbeat;
+mod reclaim;
 mod recovery;
 mod renew;
 mod status;
@@ -10,6 +11,7 @@ mod unlock;
 
 pub use acquire::acquire;
 pub use heartbeat::heartbeat;
+pub use reclaim::reclaim_orphaned_in_progress;
 pub use recovery::clear_stale_for_session;
 pub use renew::{RENEW_INTERVAL_SECS, renew_active_leases};
 pub use status::status;

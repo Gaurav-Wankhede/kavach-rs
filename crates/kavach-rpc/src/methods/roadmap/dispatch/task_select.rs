@@ -22,6 +22,16 @@ pub async fn next_open_task(
     let Some(project_id) = project.id else {
         return Ok(None);
     };
+    // Reclaim crash-orphaned cards BEFORE selecting — closes harness-loop L1: a
+    // session that claimed a card then crashed left it `in_progress` with a
+    // lapsed lease, un-dispatchable forever. Reclaim gates dispatch so the orphan
+    // is reset to `todo` and reconsidered this very call. Best-effort: a reclaim
+    // failure must NOT block dispatch of the cards that are already runnable, but
+    // it is logged (not silently swallowed) so a persistent reclaim fault is
+    // diagnosable rather than an invisible backlog leak.
+    if let Err(e) = kavach_surreal::lease::reclaim_orphaned_in_progress(&state.db).await {
+        tracing::warn!(error = %e, "crash-orphan reclaim failed before dispatch; proceeding with current runnable set");
+    }
     let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
@@ -54,6 +64,10 @@ pub async fn ready_set(
     let Some(project_id) = project.id else {
         return Ok(Vec::new());
     };
+    // Reclaim crash-orphans before censusing the ready set (see `next_open_task`).
+    if let Err(e) = kavach_surreal::lease::reclaim_orphaned_in_progress(&state.db).await {
+        tracing::warn!(error = %e, "crash-orphan reclaim failed before ready_set; proceeding with current runnable set");
+    }
     let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
