@@ -71,25 +71,39 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
     }
     Some(
         "[LOOPHOLE_CHECK]\n\
-         This change claims completion on a risk-bearing path. Before declaring \
-         done, self-ask: \"What is the loophole here? How would a hostile / \
-         concurrent / malformed / crashed actor break this?\"\n\
-         Run the lenses and answer EACH with evidence:\n\
-         - concurrency: two actors at once -> TOCTOU / lost-update / double-claim?\n\
-         - failure: process dies mid-op -> orphaned lock / half-write / leaked task?\n\
-         - malformed: null/huge/wrong-type/hostile input -> panic / injection?\n\
-         - authz: caller without rights -> missing check / confused-deputy / IDOR?\n\
-         - replay: same request twice -> non-idempotent mutation?\n\
-         - boundary: empty / max / negative / off-by-one?\n\
-         Emit a `Loopholes considered:` line: each lens -> closed at file:line, \
-         recorded as a card, or proven N/A. Silence is NOT proof of safety."
+         This change claims completion on a risk-bearing path. A loophole found is \
+         a loophole you FIX THIS TURN at its root — do NOT narrate it, do NOT defer \
+         it, do NOT ship a summary in place of the fix.\n\
+         RUN each lens. For every lens, the verdict is exactly one of:\n\
+         - FIX NOW: write the guard/check at its root this turn, then cite file:line.\n\
+         - FILE: out-of-scope only -> create a roadmap card + decision row naming \
+         the exact failure mode (a parked loophole is tracked, never silent).\n\
+         - N/A: prove it cannot occur and cite the file:line that defends against it.\n\
+         The lenses:\n\
+         - concurrency: two actors at once -> TOCTOU / lost-update / double-claim. \
+         CLOSE with an atomic/compare-and-swap/lock, then cite it.\n\
+         - failure: process dies mid-op -> orphaned lock / half-write / leaked task. \
+         CLOSE with a guard/transaction/lease-expiry, then cite it.\n\
+         - malformed: null/huge/wrong-type/hostile input -> panic / injection. \
+         CLOSE by validating at the edge into a typed value, then cite it.\n\
+         - authz: caller without rights -> missing check / confused-deputy / IDOR. \
+         CLOSE by adding the check fail-closed, then cite it.\n\
+         - replay: same request twice -> non-idempotent mutation. \
+         CLOSE by making it idempotent, then cite it.\n\
+         - boundary: empty / max / negative / off-by-one. \
+         CLOSE by handling the bound, then cite it.\n\
+         Emit a `Loopholes closed:` line: each lens -> FIXED at file:line, FILED as \
+         <card-key>, or N/A at file:line. A `considered`/`noted`/`should` verdict \
+         without a fix or a card is NOT acceptable — close it or file it, now."
             .into(),
     )
 }
 
-/// Marker the agent emits to show it ran the self-interrogation. Matched
-/// case-insensitively; its presence is what satisfies the Stop-gate check.
-const ANSWERED_MARKER: &str = "loopholes considered";
+/// Marker the agent emits to show it CLOSED (not merely considered) the
+/// loopholes. Matched case-insensitively; its presence satisfies the Stop-gate
+/// check. Imperative on purpose: `closed` means each lens was fixed at `file:line`
+/// or filed as a card — a passive `considered` line no longer satisfies the gate.
+const ANSWERED_MARKER: &str = "loopholes closed";
 
 /// Stop-gate variant: given the final assistant `message` of a turn, return the
 /// loophole advisory when the turn claimed completion on a risk-bearing path but
@@ -109,9 +123,11 @@ pub(crate) fn check_stop_interrogation(message: &str) -> Option<String> {
     }
     Some(format!(
         "{base}\n\
-         [STOP] This turn closed risk-bearing work without a `Loopholes \
-         considered:` line. Recorded to the mistake ledger so the system stays \
-         aware. Next risk-bearing turn: answer the lenses BEFORE the stop."
+         [STOP] This turn shipped risk-bearing work without a `Loopholes closed:` \
+         line — meaning a loophole may be live and unfixed RIGHT NOW. Do NOT stop. \
+         Run the lenses on what you just shipped and CLOSE each one at its root this \
+         turn (or FILE it as a card), then emit the `Loopholes closed:` line. \
+         Recorded to the mistake ledger. Fixing beats documenting — fix it now."
     ))
 }
 

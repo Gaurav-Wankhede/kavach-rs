@@ -6,6 +6,13 @@ fn fires_on_done_claim_touching_risk_path() {
     let out = check_loophole_interrogation(c).expect("should fire");
     assert!(out.contains("[LOOPHOLE_CHECK]"));
     assert!(out.contains("concurrency"));
+    // Imperative, fix-first language — NOT a passive "consider" prompt.
+    assert!(out.contains("FIX THIS TURN"), "commands a same-turn fix: {out}");
+    assert!(out.contains("Loopholes closed:"), "marker is the action verb: {out}");
+    assert!(
+        out.contains("do NOT narrate") && out.contains("do NOT defer"),
+        "forbids the summary/deferral path: {out}"
+    );
 }
 
 #[test]
@@ -39,15 +46,32 @@ fn stop_fires_when_risk_completion_lacks_answer() {
     let msg = "Done — the lease claim is now atomic and race-free.";
     let out = check_stop_interrogation(msg).expect("should nudge at stop");
     assert!(out.contains("mistake ledger"));
+    // Imperative: command the fix, do not just record-and-move-on.
+    assert!(out.contains("Do NOT stop"), "refuses the stop, drives the fix: {out}");
+    assert!(out.contains("fix it now"), "fix-first language: {out}");
 }
 
 #[test]
-fn stop_silent_when_loopholes_already_considered() {
+fn stop_silent_when_loopholes_already_closed() {
     use super::check_stop_interrogation;
+    // The action marker `Loopholes closed:` satisfies the gate; a passive
+    // `considered:` no longer does.
     let msg = "Done — the lease claim is now atomic.\n\
-               Loopholes considered: concurrency -> closed at acquire.rs:38; \
-               failure -> TTL reclaim; replay -> N/A.";
+               Loopholes closed: concurrency -> fixed at acquire.rs:38; \
+               failure -> TTL reclaim at lease.rs:71; replay -> N/A at claim.rs:12.";
     assert!(check_stop_interrogation(msg).is_none());
+}
+
+#[test]
+fn stop_still_fires_on_passive_considered_marker() {
+    use super::check_stop_interrogation;
+    // A passive "considered" line is NOT a fix — the gate must still drive action.
+    let msg = "Done — the lease claim is now atomic.\n\
+               Loopholes considered: concurrency might be an issue.";
+    assert!(
+        check_stop_interrogation(msg).is_some(),
+        "passive consideration does not satisfy the fix-first gate"
+    );
 }
 
 #[test]

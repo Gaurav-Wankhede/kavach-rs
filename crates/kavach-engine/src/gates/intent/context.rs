@@ -29,7 +29,7 @@ pub(super) fn append_context_blocks(
     // harness-neutral drain (Claude Code + Cursor); the Cursor-only relay does NOT
     // reach the UserPromptSubmit injector, which is why the omission was lost.
     if let Some(carried) = session.drain_pending_advisories() {
-        context.push_str("\n[CARRY_FORWARD] unfinished from last turn — address before new work:");
+        context.push_str("\n[CARRY_FORWARD] unfinished from last turn — FIX these at their root THIS turn, before any new work (close it or file a card; do not re-summarize):");
         for adv in carried {
             context.push_str("\n- ");
             context.push_str(&adv);

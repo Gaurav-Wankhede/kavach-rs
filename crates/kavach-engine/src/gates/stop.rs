@@ -125,8 +125,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         drop(kavach_session::record_mistake(&kavach_session::Mistake {
             project: &session.project,
             gate: "loophole_uninterrogated",
-            banned_sample: "claimed completion on a risk-bearing path without a Loopholes considered: line",
-            correct_action: "run the 6 attack lenses and emit a Loopholes considered: line before stopping",
+            banned_sample: "shipped risk-bearing work without CLOSING the loopholes (no Loopholes closed: line)",
+            correct_action: "fix each of the 6 attack-lens loopholes at its root THIS turn (or file a card), then emit a Loopholes closed: line",
             turn: session.turn_count,
         }));
         // Queue it for the NEXT turn's intent injector to drain (see
@@ -139,7 +139,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         // primary harness — it would silently no-op and the loophole would vanish
         // again. The intent-injector drain is harness-neutral, so the queue must be
         // too. queue_pending_advisory persists to pending_advisories unconditionally.
-        session.queue_pending_advisory("[LOOPHOLE] last turn closed risk-bearing work without a `Loopholes considered:` line — run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and answer each before new work");
+        session.queue_pending_advisory("[LOOPHOLE] last turn shipped risk-bearing work without a `Loopholes closed:` line — a loophole may be LIVE. FIX FIRST: run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and CLOSE each at its root this turn (or file a card), then emit `Loopholes closed:`. Do this BEFORE any new work — fixing beats documenting.");
     }
 
     // Shallow-verdict guard (re-enforced from the advisory path, NOT a HALT — the
