@@ -70,6 +70,24 @@ impl SessionState {
         self.save_or_log();
     }
 
+    /// Drain the pending advisories as standalone lines, clearing them.
+    ///
+    /// Harness-NEUTRAL counterpart to `take_relay_payload`: that path is the
+    /// Cursor relay (wraps in `[POST_TOOL_RELAY]`, merged only when the vendor is
+    /// Cursor). This one is for the `UserPromptSubmit`/intent injector that runs on
+    /// EVERY harness — it is what carries a stop-gate advisory (e.g. an
+    /// un-interrogated loophole) forward into the NEXT turn's pre-implementation
+    /// context instead of letting it die as stale prose. Returns `None` when empty.
+    #[must_use]
+    pub fn drain_pending_advisories(&mut self) -> Option<Vec<String>> {
+        if self.pending_advisories.is_empty() {
+            return None;
+        }
+        let drained = std::mem::take(&mut self.pending_advisories);
+        self.save_or_log();
+        Some(drained)
+    }
+
     /// Take merged relay payload and clear the flushed parts.
     #[must_use]
     pub fn take_relay_payload(&mut self, flush: RelayFlush) -> Option<String> {

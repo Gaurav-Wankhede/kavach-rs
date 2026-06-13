@@ -129,6 +129,17 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             correct_action: "run the 6 attack lenses and emit a Loopholes considered: line before stopping",
             turn: session.turn_count,
         }));
+        // Queue it for the NEXT turn's intent injector to drain (see
+        // intent/context.rs::[CARRY_FORWARD]). This is the fix for the loophole
+        // dying as stale prose: recording to the ledger feeds the slow learning
+        // loop, but ONLY a queued pending-advisory re-surfaces the omission at the
+        // top of the next turn — before the next implementation, on every harness.
+        // Call queue_pending_advisory DIRECTLY (not turn_relay::queue_advisory):
+        // the latter is Cursor-gated via should_relay(), so on Claude Code — the
+        // primary harness — it would silently no-op and the loophole would vanish
+        // again. The intent-injector drain is harness-neutral, so the queue must be
+        // too. queue_pending_advisory persists to pending_advisories unconditionally.
+        session.queue_pending_advisory("[LOOPHOLE] last turn closed risk-bearing work without a `Loopholes considered:` line — run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and answer each before new work");
     }
 
     // Shallow-verdict guard (re-enforced from the advisory path, NOT a HALT — the

@@ -21,6 +21,25 @@ fn pending_advisories_fifo_cap_three() {
 }
 
 #[test]
+fn drain_pending_advisories_returns_then_empties() {
+    // The carry-forward contract: a stop-gate advisory (e.g. an un-interrogated
+    // loophole) queued on turn N must be drained by turn N+1's intent injector
+    // EXACTLY ONCE — present on the first drain, gone on the second, so the next
+    // turn's context is not nagged forever (replay/idempotency lens).
+    let mut s = SessionState::default();
+    s.queue_pending_advisory("[LOOPHOLE] interrogate the lease path");
+    s.queue_pending_advisory("[LOOPHOLE] interrogate the auth path");
+    let drained = s.drain_pending_advisories().expect("first drain non-empty");
+    assert_eq!(drained.len(), 2);
+    assert_eq!(drained[0], "[LOOPHOLE] interrogate the lease path");
+    assert!(s.pending_advisories.is_empty(), "queue cleared after drain");
+    assert!(
+        s.drain_pending_advisories().is_none(),
+        "second drain is None — advisory surfaced once, not re-nagged"
+    );
+}
+
+#[test]
 fn take_relay_payload_merges_and_clears() {
     let mut s = SessionState::default();
     s.store_turn_shadow("[INTENT] type:fix");

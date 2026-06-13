@@ -22,6 +22,20 @@ pub(super) fn append_context_blocks(
     prompt: &str,
     forbidden: &[String],
 ) {
+    // Carry-forward FIRST: an advisory queued by the PREVIOUS turn's stop gate
+    // (e.g. an un-interrogated loophole on a risk-bearing path) must lead this
+    // turn's context so it is answered BEFORE the next implementation — not left
+    // to die as stale prose in a transcript the next turn never reads. This is the
+    // harness-neutral drain (Claude Code + Cursor); the Cursor-only relay does NOT
+    // reach the UserPromptSubmit injector, which is why the omission was lost.
+    if let Some(carried) = session.drain_pending_advisories() {
+        context.push_str("\n[CARRY_FORWARD] unfinished from last turn — address before new work:");
+        for adv in carried {
+            context.push_str("\n- ");
+            context.push_str(&adv);
+        }
+    }
+
     append_forbidden(context, forbidden);
     append_memory_db(context, intent_type);
     append_verify_existing(context, intent_type);
