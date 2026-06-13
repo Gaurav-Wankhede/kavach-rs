@@ -121,10 +121,11 @@ fn render_empty(
 
 fn entry_json(e: &kavach_surreal::MemoryEntry) -> String {
     format!(
-        r#"{{"key":"{}","status":"{}","title":"{}"}}"#,
+        r#"{{"key":"{}","status":"{}","title":"{}","owner_gated":{}}}"#,
         e.entry_key.replace('"', r#"\""#),
         e.entry_status_str(),
-        e.title.replace('"', r#"\""#)
+        e.title.replace('"', r#"\""#),
+        e.owner_gated.unwrap_or(false)
     )
 }
 
@@ -161,8 +162,16 @@ fn render_group(header: &str, rows: &[&kavach_surreal::MemoryEntry]) -> Result<(
         return Err(into_exit_code(io_err));
     }
     for entry in rows {
+        // Surface the structured owner-gate so a reader can tell a card the loop
+        // legitimately SKIPS (owner-only action pending) from runnable backlog —
+        // otherwise an all-gated board reads as a stuck/non-autonomous loop.
+        let gate = if entry.owner_gated.unwrap_or(false) {
+            " (owner-gated)"
+        } else {
+            ""
+        };
         let line = format!(
-            "  [{}] {} — {}",
+            "  [{}] {} — {}{gate}",
             entry.entry_status_str(),
             entry.entry_key,
             entry.title
@@ -183,7 +192,20 @@ fn render_text(
     status_filter: Option<&str>,
 ) -> i32 {
     let filter_label = status_filter.map_or(String::new(), |s| format!(" status={s}"));
-    let road_header = format!("[ROADMAP] ({} item(s){filter_label})", roadmap_items.len());
+    let gated = roadmap_items
+        .iter()
+        .chain(hunt.iter())
+        .filter(|e| e.owner_gated.unwrap_or(false))
+        .count();
+    let gate_label = if gated > 0 {
+        format!(", {gated} owner-gated")
+    } else {
+        String::new()
+    };
+    let road_header = format!(
+        "[ROADMAP] ({} item(s){filter_label}{gate_label})",
+        roadmap_items.len()
+    );
     if let Err(code) = render_group(&road_header, roadmap_items) {
         return code;
     }

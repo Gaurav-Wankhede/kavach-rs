@@ -113,6 +113,13 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool) -> 
                 if let Err(io_err) = print_or_exit(&status_line) {
                     return into_exit_code(io_err);
                 }
+                if entry.owner_gated.unwrap_or(false)
+                    && let Err(io_err) = print_or_exit(
+                        "owner_gated: true (dispatcher SKIPS this card — owner action pending)",
+                    )
+                {
+                    return into_exit_code(io_err);
+                }
                 if full {
                     if let Some(tags) = &entry.tags {
                         let tags_line = format!("tags: {}", tags.join(", "));
