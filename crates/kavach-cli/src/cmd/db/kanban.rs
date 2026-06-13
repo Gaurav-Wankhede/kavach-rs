@@ -131,21 +131,6 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
         }
         return 1;
     };
-    // DAG awareness view: fetch the SAME dependency graph the scheduler reads and
-    // project it as tiered text / mermaid, bypassing the flat status board.
-    if let Some(fmt) = filters.format {
-        let dag = match kavach_surreal::roadmap_dag_fetch(&db, project_slug).await {
-            Ok(d) => d,
-            Err(e) => {
-                let msg = format!("error: fetch roadmap DAG: {e}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-        };
-        return dag_render::render_dag(&dag, fmt);
-    }
     let roadmap = match kavach_surreal::list_by_project(&db, "roadmap", &project_id).await {
         Ok(rows) => rows,
         Err(e) => {
@@ -156,6 +141,13 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
             return 1;
         }
     };
+    // DAG awareness view: build the dependency graph from the SAME roadmap rows
+    // (and their declared DEPENDS_ON:/BLOCKED_BY: deps) the flat board + scheduler
+    // use, then project it as tiered text / mermaid. Sourced from the rows, NOT
+    // the entity-graph mirror (which is unpopulated for roadmap cards).
+    if let Some(fmt) = filters.format {
+        return dag_render::render_dag_from_rows(&roadmap, fmt);
+    }
     render_kanban(project_slug, &roadmap, limit, filters)
 }
 

@@ -10,10 +10,47 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use kavach_surreal::{DagEdge, DagNode, RoadmapDag};
 use kavach_surreal::graph::roadmap_dag::TopoOrder;
+use kavach_surreal::{DagEdge, DagNode, MemoryEntry, RoadmapDag};
 
 use crate::cmd::io_safe::{into_exit_code, print_or_exit};
+
+/// Build a `RoadmapDag` from the roadmap ROWS (`list_by_project`) — the same
+/// source the flat board and the scheduler read — instead of the entity-graph
+/// mirror, which is unpopulated for roadmap cards. Edges come from the cards'
+/// declared `DEPENDS_ON:`/`BLOCKED_BY:` lines via the scheduler's own parser
+/// (`parse_declared_deps`), so the awareness DAG and dispatch order agree by
+/// construction. A declared dep whose key is absent from the project is dropped
+/// (it cannot be a node), mirroring the scheduler's tolerance.
+fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
+    use kavach_rpc::methods::roadmap::readiness::parse_declared_deps;
+    let present: std::collections::HashSet<&str> =
+        rows.iter().map(|e| e.entry_key.as_str()).collect();
+    let nodes: Vec<DagNode> = rows
+        .iter()
+        .map(|e| DagNode {
+            id: e.entry_key.clone(),
+            entry_key: e.entry_key.clone(),
+            title: e.title.clone(),
+            entry_status: e.entry_status_str().to_owned(),
+            category: "roadmap".to_owned(),
+        })
+        .collect();
+    let mut edges: Vec<DagEdge> = Vec::new();
+    for e in rows {
+        // prerequisite -> dependent: each declared dep must finish before `e`.
+        for dep in parse_declared_deps(&e.content) {
+            if present.contains(dep.as_str()) {
+                edges.push(DagEdge {
+                    source: dep,
+                    target: e.entry_key.clone(),
+                    rel: "depends_on".to_owned(),
+                });
+            }
+        }
+    }
+    RoadmapDag { nodes, edges }
+}
 
 /// Only these relations are dependency edges (prerequisite -> dependent). Mirror
 /// of the scheduler's edge filter in `roadmap_dag.rs::toposort_or_cycle`.
@@ -151,14 +188,16 @@ fn render_mermaid(dag: &RoadmapDag) -> String {
     out
 }
 
-/// Entry point: render the DAG in the requested `format` and print it.
-/// `format` is `"dag"` (tiered text) or `"mermaid"`; any other value is treated
-/// as `"dag"` (clap restricts the flag, so this is defense-in-depth).
-pub(in crate::cmd::db) fn render_dag(dag: &RoadmapDag, format: &str) -> i32 {
+/// Entry point: build the DAG from roadmap `rows`, render it in the requested
+/// `format`, and print it. `format` is `"dag"` (tiered text) or `"mermaid"`;
+/// any other value is treated as `"dag"` (clap restricts the flag, so this is
+/// defense-in-depth).
+pub(in crate::cmd::db) fn render_dag_from_rows(rows: &[MemoryEntry], format: &str) -> i32 {
+    let dag = dag_from_roadmap(rows);
     let body = if format == "mermaid" {
-        render_mermaid(dag)
+        render_mermaid(&dag)
     } else {
-        render_tiered_text(dag)
+        render_tiered_text(&dag)
     };
     match print_or_exit(body.trim_end()) {
         Ok(()) => 0,

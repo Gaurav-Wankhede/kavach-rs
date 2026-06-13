@@ -87,6 +87,41 @@ fn mermaid_emits_flowchart_with_edges() {
 }
 
 #[test]
+fn builds_dag_from_roadmap_rows_via_declared_deps() {
+    use super::dag_from_roadmap;
+    use kavach_surreal::MemoryEntry;
+    let row = |key: &str, content: &str| MemoryEntry {
+        id: None,
+        project: surrealdb_types::RecordId::new("project", "p"),
+        category: Some("roadmap".to_owned()),
+        entry_key: key.to_owned(),
+        title: format!("title {key}"),
+        content: content.to_owned(),
+        status: None,
+        entry_status: Some("todo".to_owned()),
+        tags: None,
+        decay_score: None,
+        access_count: None,
+        created_at: None,
+        updated_at: None,
+        priority: None,
+        lane: None,
+        owner_gated: None,
+    };
+    // u2 declares DEPENDS_ON: u1; u3 depends on u2. Dangling dep 'ghost' dropped.
+    let rows = vec![
+        row("u1", "no deps"),
+        row("u2", "DEPENDS_ON: u1"),
+        row("u3", "BLOCKED_BY: u2 ghost"),
+    ];
+    let dag = dag_from_roadmap(&rows);
+    assert_eq!(dag.nodes.len(), 3, "one node per roadmap row");
+    assert_eq!(dag.edges.len(), 2, "u1->u2, u2->u3; dangling 'ghost' dropped");
+    assert!(dag.edges.iter().any(|e| e.source == "u1" && e.target == "u2"));
+    assert!(dag.edges.iter().any(|e| e.source == "u2" && e.target == "u3"));
+}
+
+#[test]
 fn empty_dag_is_safe() {
     let out = render_tiered_text(&RoadmapDag::default());
     assert!(out.contains("0 node(s), 0 edge(s)"), "empty boundary:\n{out}");
