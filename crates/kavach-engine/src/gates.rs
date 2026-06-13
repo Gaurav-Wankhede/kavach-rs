@@ -25,6 +25,7 @@ pub(crate) mod env_guard_source_extract;
 pub(crate) mod env_guard_sourcing;
 pub mod event_log;
 pub mod file_changed;
+pub mod gate_config;
 pub(crate) mod fix_actions;
 pub(crate) mod fix_instructions;
 pub(crate) mod grep_guard;

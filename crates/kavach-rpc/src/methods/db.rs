@@ -12,6 +12,7 @@ mod event;
 mod expire;
 mod find;
 mod flow;
+mod gate_cfg;
 mod get;
 mod graph_fetch;
 mod graph_query;
@@ -44,6 +45,11 @@ pub use delete::{DeleteParams, DeleteResult, delete, delete_confirm_phrase};
 pub use event::{BanditRowParams, BanditRowResult, EventParams, EventResult, bandit_row, event};
 pub use expire::{ExpireParams, ExpireResult, expire};
 pub use find::{FindParams, FindResult, find_part, find_project};
+pub use gate_cfg::{
+    GateValueDto, GetParams as GateCfgGetParams, ListParams as GateCfgListParams,
+    SetParams as GateCfgSetParams, get as gate_config_get, list as gate_config_list,
+    set as gate_config_set,
+};
 pub use flow::{
     FlowSummary, ListParams as FlowListParams, RenderParams as FlowRenderParams,
     RenderResult as FlowRenderResult, UpsertParams as FlowUpsertParams,
