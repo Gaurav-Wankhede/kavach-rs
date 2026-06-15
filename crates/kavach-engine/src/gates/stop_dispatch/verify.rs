@@ -4,12 +4,12 @@
 
 /// Three-state outcome of an auto-verify pass. The caller MUST branch on this so
 /// a witness-failing `done` card (real AI repair work) is never confused with a
-/// genuinely empty/owner-gated queue (a legitimate clean stop) — collapsing both
-/// to `0` is what made the stop gate loop forever on owner-gated backlogs.
+/// genuinely empty queue (a legitimate clean stop) — collapsing both to `0` is
+/// what made the stop gate loop forever.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum AutoVerify {
     /// No `done` cards existed — nothing to verify. If no card is dispatchable
-    /// either, the queue is empty or every remainder is dependency/owner-gated:
+    /// either, the queue is empty or every remainder is blocked by dependencies:
     /// a clean stop is correct.
     NothingDone,
     /// `done` cards exist but the workspace witnesses FAILED — there is an
@@ -109,9 +109,8 @@ fn run_workspace_witnesses() -> WitnessRun {
 /// `[ALL_BLOCKED]`. Promotion also unblocks dependents on the same stop pass.
 ///
 /// Returns a three-state [`AutoVerify`] so the caller can tell a witness-failing
-/// `done` card (AI repair work) apart from an empty/owner-gated queue (clean
-/// stop). Collapsing both to `0` previously trapped the loop on owner-gated
-/// backlogs (prod deploy / mig-apply / live tests the AI cannot run).
+/// `done` card (AI repair work) apart from an empty queue (clean stop).
+/// Collapsing both to `0` previously trapped the loop.
 pub(crate) fn auto_verify_done_cards(project_slug: &str) -> AutoVerify {
     let done = list_done_card_keys(project_slug);
     if done.is_empty() {

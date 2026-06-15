@@ -1,60 +1,26 @@
-//! Proves the GUI dependency-awareness mirror: a card with an unsatisfied
-//! declared dep is BLOCKED; one whose deps are all done/verified (or has none,
-//! or whose dep key is absent) is not.
-use super::{is_blocked, status_index};
-use crate::state::EntryRef;
-use kavach_types::MemoryStatus;
+//! Tests for `declared_deps` — the inline dependency-key parser the kanban tier
+//! layout uses. Pure dependency ordering; there is no blocked/gate concept.
+use super::declared_deps;
 
-fn card(key: &str, status: MemoryStatus, content: &str) -> EntryRef {
-    EntryRef {
-        project_slug: "p".to_owned(),
-        category: "roadmap".to_owned(),
-        key: key.to_owned(),
-        title: format!("t {key}"),
-        content: content.to_owned(),
-        status,
-    }
+#[test]
+fn no_dep_line_yields_empty() {
+    assert!(declared_deps("just a plain card body, no prerequisites").is_empty());
 }
 
 #[test]
-fn blocked_when_prereq_open() {
-    let rows = vec![
-        card("a", MemoryStatus::Todo, ""),
-        card("b", MemoryStatus::Todo, "DEPENDS_ON: a"),
-    ];
-    let idx = status_index(&rows);
-    assert!(!is_blocked(&rows[0], &idx), "a has no deps -> ready");
-    assert!(is_blocked(&rows[1], &idx), "b depends on open a -> blocked");
+fn depends_on_line_is_parsed() {
+    assert_eq!(declared_deps("DEPENDS_ON: a, b c"), vec!["a", "b", "c"]);
 }
 
 #[test]
-fn unblocked_when_prereq_done_or_verified() {
-    let rows = vec![
-        card("a", MemoryStatus::Verified, ""),
-        card("b", MemoryStatus::Done, ""),
-        card("c", MemoryStatus::Todo, "DEPENDS_ON: a, b"),
-    ];
-    let idx = status_index(&rows);
-    assert!(!is_blocked(&rows[2], &idx), "all prereqs done/verified -> ready");
+fn blocked_by_is_a_dependency_alias() {
+    // BLOCKED_BY: is accepted as a back-compat alias for DEPENDS_ON: — it
+    // declares a prerequisite key, NOT a gate; the word carries no special state.
+    assert_eq!(declared_deps("BLOCKED_BY: prereq.one"), vec!["prereq.one"]);
 }
 
 #[test]
-fn absent_dep_key_blocks_matching_dispatch() {
-    // An absent key is most likely a cross-project prereq the project-scoped
-    // board did not load. The scheduler resolves deps against the GLOBAL key
-    // space and would hold the card back, so the badge must show BLOCKED too
-    // (fail-safe) rather than falsely showing it ready.
-    let rows = vec![card("c", MemoryStatus::Todo, "BLOCKED_BY: ghost")];
-    let idx = status_index(&rows);
-    assert!(
-        is_blocked(&rows[0], &idx),
-        "unknown dep key => blocked, aligning with global-pool dispatch"
-    );
-}
-
-#[test]
-fn no_deps_never_blocked() {
-    let rows = vec![card("a", MemoryStatus::Todo, "just a description, no deps")];
-    let idx = status_index(&rows);
-    assert!(!is_blocked(&rows[0], &idx));
+fn bullet_continuation_after_a_dep_header_is_collected() {
+    let body = "DEPENDS_ON:\n- first.key extra words\n- second.key\n\nunrelated tail";
+    assert_eq!(declared_deps(body), vec!["first.key", "second.key"]);
 }

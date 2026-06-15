@@ -2,7 +2,7 @@
 //! (a `done` card failed witnesses → AI repair) and the board-drained branch,
 //! which now `AUTO_CONTINUE`s into the next un-built `[PLAN]` phase rather than
 //! clean-stopping — an empty board is not an empty plan; only a fully-built plan
-//! plus an empty board (or a lone owner-gated prerequisite) is a real halt.
+//! plus an empty board is a real halt.
 use core::ops::ControlFlow;
 
 /// A `done` card failed the workspace witnesses — real, AI-fixable repair work.
@@ -34,8 +34,8 @@ pub(super) fn keystone_repair() -> ControlFlow<()> {
 
 /// No card is dispatchable and no `done` card failed its witnesses → emit the
 /// shared drained-board verdict (`[ALL_BLOCKED]` when every remainder is
-/// owner-gated, else the `[PLAN]` nudge) and Break. The census split + the two
-/// messages live in `terminal::drained` so this retry terminal and the
+/// dependency-blocked, else the `[PLAN]` nudge) and Break. The census check +
+/// the two messages live in `terminal::drained` so this retry terminal and the
 /// first-pass `clean_exit` terminal emit the IDENTICAL verdict — they used to
 /// diverge: `clean_exit` stopped silently on an empty board, never checking the
 /// plan (the reported loop bug).

@@ -14,7 +14,10 @@ mod verify;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use card::{SOURCE_DOWN_KEY, card_entry_status, card_is_still_open, claim_card, is_backlog_saturated};
+pub(crate) use card::{
+    SOURCE_DOWN_KEY, card_entry_status, card_is_still_open, claim_card, is_backlog_saturated,
+    live_lease_holder,
+};
 pub(crate) use query::{
     get_next_backlog_info, get_next_hunt_info, get_next_task_info, open_set_census,
 };

@@ -4,7 +4,6 @@
 use core::ops::ControlFlow;
 
 use super::probe::next_dispatch;
-use super::reblock::PARK_HINT;
 use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{SOURCE_DOWN_KEY, claim_card, is_backlog_saturated};
 
@@ -62,7 +61,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             "[AUTO_CONTINUE] backlog NOT empty — a completion left runnable work \
              queued; clean stop REFUSED. NEXT {tier} [{key}]: {title}. CLAIMED — \
              resume NOW. (The re-block breaker bounds SPINNING, not a non-empty \
-             queue; the loop continues while work remains.){PARK_HINT}"
+             queue; the loop continues while work remains.)"
         )));
         return ControlFlow::Break(());
     }

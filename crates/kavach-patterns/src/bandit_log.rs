@@ -118,6 +118,15 @@ pub struct BanditRow {
     pub propensity: f32,
     /// The downstream reward — `None` until the 3-witness back-fills it.
     pub reward: Option<Reward>,
+    /// Which reward CHANNEL this row belongs to (P8). `false` (the default for
+    /// every pre-P8 row and the on-policy training log) = the HARD, cheap,
+    /// code-checkable 3-witness channel. `true` = the SOFT held-out channel: a
+    /// sampled slice re-verified independently, the reward-hacking audit's
+    /// orthogonal signal (`db.ope_audit` splits the two on exactly this flag). A
+    /// held-out row is NEVER fed to policy training — it exists only to catch a
+    /// policy that games the cheap witness without earning the real outcome.
+    #[serde(default)]
+    pub held_out: bool,
 }
 
 impl BanditRow {
@@ -138,7 +147,21 @@ impl BanditRow {
             action,
             propensity: propensity.clamp(0.0, 1.0),
             reward: None,
+            held_out: false,
         }
+    }
+
+    /// Mark this row as belonging to the SOFT held-out channel (P8).
+    ///
+    /// Consumes and returns `self` so the emit seam can tag a sampled decision in
+    /// one expression: `BanditRow::new(..).into_held_out()`. The audit
+    /// (`db.ope_audit`) reads exactly this flag to split the soft re-verification
+    /// channel from the hard witness channel; a held-out row is never fed to the
+    /// policy-training estimators, only to the reward-hacking drift monitor.
+    #[must_use]
+    pub const fn into_held_out(mut self) -> Self {
+        self.held_out = true;
+        self
     }
 
     /// Whether this row still needs its reward back-filled (Layer-A -> 3-witness).

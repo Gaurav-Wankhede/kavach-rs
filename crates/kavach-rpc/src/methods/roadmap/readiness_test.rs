@@ -1,5 +1,5 @@
 use crate::methods::roadmap::readiness::{
-    dep_key_satisfied, deps_satisfied, is_owner_gated, is_runnable_status, parse_declared_deps,
+    dep_key_satisfied, deps_satisfied, is_runnable_status, parse_declared_deps,
 };
 
 fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {
@@ -19,15 +19,7 @@ fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry 
         updated_at: None,
         priority: None,
         lane: None,
-        owner_gated: None,
     }
-}
-
-/// Build a roadmap entry with the structured owner-gate flag set.
-fn gated_entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {
-    let mut e = entry(key, status, content);
-    e.owner_gated = Some(true);
-    e
 }
 
 #[test]
@@ -159,43 +151,11 @@ fn unknown_status_is_not_runnable() {
 }
 
 #[test]
-fn owner_gated_cards_are_not_dispatchable() {
-    // Owner-gate is now a STRUCTURED flag, NOT a body-keyword scan. A card the
-    // owner must unblock (greenlight / prod deploy / live run / secrets) carries
-    // owner_gated = true; the dispatcher skips it regardless of body prose.
-    let e = gated_entry(
-        "gated",
-        "todo",
-        "Flip the prod flag — owner action; no agent-executable code.",
-    );
-    assert!(
-        !deps_satisfied(&e, std::slice::from_ref(&e)),
-        "owner-gated card must be skipped by the dispatcher"
-    );
-}
-
-#[test]
-fn the_gate_reads_the_field_not_body_keywords() {
-    // The retired anti-pattern: gating used to key off `AGENT_BLOCKED:` /
-    // `OWNER-GATED` text in the body. Now those words in prose are INERT —
-    // only the typed flag gates. A card whose body merely MENTIONS the old
-    // words but has owner_gated unset stays dispatchable.
-    let body = "History: this used to say OWNER-GATED / AGENT_BLOCKED in prose.";
-    assert!(!is_owner_gated(None), "unset flag is not gated");
-    assert!(!is_owner_gated(Some(false)), "explicit false is not gated");
-    assert!(is_owner_gated(Some(true)), "explicit true is gated");
-    let e = entry("mentions-old-keywords", "todo", body);
-    assert!(
-        deps_satisfied(&e, std::slice::from_ref(&e)),
-        "body keyword text must NOT gate a card — only the structured flag does"
-    );
-}
-
-#[test]
 fn genuine_leaf_card_stays_dispatchable() {
+    // No owner-gate path exists any more: a card with a runnable status and no
+    // unmet dependency is dispatchable, full stop (owner directive 2026-06-16).
     let body = "Reusable Dioxus virtualization organism in ui-organisms. \
                 Windowing + DOM node recycling + overscan buffer.";
-    assert!(!is_owner_gated(None));
     let e = entry("frontend.virtual-list-organism", "todo", body);
     assert!(
         is_runnable_status(e.entry_status_str()) && deps_satisfied(&e, std::slice::from_ref(&e)),
@@ -204,12 +164,12 @@ fn genuine_leaf_card_stays_dispatchable() {
 }
 
 #[test]
-fn dispatcher_skips_gated_head_for_next_actionable_leaf() {
-    fn entry_with_priority_gate(
+fn dispatcher_picks_first_runnable_dependency_satisfied_leaf() {
+    fn entry_with_priority(
         key: &str,
         status: &str,
         priority: Option<i64>,
-        owner_gated: bool,
+        content: &str,
     ) -> kavach_surreal::MemoryEntry {
         kavach_surreal::MemoryEntry {
             id: None,
@@ -217,7 +177,7 @@ fn dispatcher_skips_gated_head_for_next_actionable_leaf() {
             category: Some("roadmap".into()),
             entry_key: key.into(),
             title: key.into(),
-            content: "real agent work".into(),
+            content: content.into(),
             status: None,
             entry_status: Some(status.into()),
             tags: None,
@@ -227,7 +187,6 @@ fn dispatcher_skips_gated_head_for_next_actionable_leaf() {
             updated_at: None,
             priority,
             lane: None,
-            owner_gated: Some(owner_gated),
         }
     }
     fn pick_first(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {
@@ -235,11 +194,11 @@ fn dispatcher_skips_gated_head_for_next_actionable_leaf() {
             .iter()
             .find(|e| is_runnable_status(e.entry_status_str()) && deps_satisfied(e, entries))
     }
-    // The higher-priority head is owner-gated by its STRUCTURED flag — the
-    // dispatcher must skip it and pick the next actionable leaf.
+    // The head declares an unmet dependency (its prerequisite is still todo), so
+    // the dispatcher skips it on dependency order and picks the next ready leaf.
     let entries = vec![
-        entry_with_priority_gate("p1.owner", "todo", Some(1), true),
-        entry_with_priority_gate("p2.leaf", "todo", Some(2), false),
+        entry_with_priority("p1.head", "todo", Some(1), "DEPENDS_ON: p9.never-done"),
+        entry_with_priority("p2.leaf", "todo", Some(2), "real agent work"),
     ];
     let picked = pick_first(&entries).expect("an actionable card must be found");
     assert_eq!(picked.entry_key, "p2.leaf");

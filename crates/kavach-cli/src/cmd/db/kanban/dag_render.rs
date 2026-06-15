@@ -162,7 +162,7 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
         writeln!(out, "TIER {tier}{label}").ok();
         for id in ids {
             if let Some(n) = by_id.get(id.as_str()) {
-                let marker = if is_ready(n, &dag.edges, &by_id) { "✓READY" } else { "⛔BLOCKED" };
+                let marker = if is_ready(n, &dag.edges, &by_id) { "✓READY" } else { "⏳WAITING" };
                 writeln!(
                     out,
                     "  [{}] {} — {}  {marker}{}",

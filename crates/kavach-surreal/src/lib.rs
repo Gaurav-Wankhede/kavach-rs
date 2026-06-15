@@ -50,7 +50,10 @@ pub use gate_config::{
     gate_config_delete, gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
     set_with_kind as gate_config_set_with_kind,
 };
-pub use embed::{EMBED_DIM, Embedder, cosine};
+pub use embed::{
+    EMBED_DIM, Embedder, ORT_DYLIB_ENV, conventional_dylib_path, cosine, os_dylib_name,
+    resolve_dylib_path,
+};
 pub use error::{Error, Result};
 pub use graph::upsert_relationships;
 pub use graph::{DagEdge, DagNode, RoadmapDag, roadmap_dag_fetch};
@@ -136,7 +139,7 @@ pub use schema_v2::apply_agent_memory_schema;
 pub use session_store::{SessionRuntimeRow, session_get_by_id, session_upsert};
 pub use wipe::{WipeReport, preview_wipe, wipe_project};
 pub use write::{
-    ExpireReport, append_event, expire_stale, rotate_events, set_lane, set_owner_gated,
+    ExpireReport, append_event, expire_stale, rotate_events, set_lane,
     set_priority, update_feedback, update_status, update_status_cas, upsert_entry,
     upsert_entry_full,
     upsert_entry_with_event,

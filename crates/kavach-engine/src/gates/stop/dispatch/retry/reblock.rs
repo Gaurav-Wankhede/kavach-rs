@@ -3,7 +3,7 @@
 //! on the auto-verify outcome — `KEYSTONE_REPAIR` (AI fixes a witness-failing
 //! card) vs `AUTO_CONTINUE` into the next un-built `[PLAN]` phase when the board
 //! is drained. The loop halts only when the plan is fully built and the board is
-//! empty (or the lone remainder is an owner-gated prerequisite the AI cannot run).
+//! empty.
 use core::ops::ControlFlow;
 
 mod outcome;
@@ -15,27 +15,6 @@ use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{
     AutoVerify, SOURCE_DOWN_KEY, auto_verify_done_cards, claim_card,
 };
-
-/// The sanctioned honest exit when a dispatched card genuinely cannot be built
-/// by an agent (owner action / prod deploy / external prerequisite). Surfaced on
-/// every re-block so an agent NEVER has to reverse-engineer the park mechanism
-/// or — worse — fake completion / mutate rows to dodge the scheduler. The
-/// dispatcher's `is_owner_gated` (k8s schedulingGates pattern) skips any card
-/// whose STRUCTURED `owner_gated` flag is set, exactly like an unmet dependency:
-/// parked honestly, NOT marked done/verified.
-///
-/// Owner directive 2026-06-13: NEVER write `AGENT_BLOCKED:`/`OWNER-GATED` prose
-/// keywords into card bodies (state-in-prose anti-pattern, retired). The skip
-/// state is the typed `owner_gated` column; the only two legal moves on a
-/// non-progressable card are DELETE it or REFINE it to its latest real need.
-pub(super) const PARK_HINT: &str = " IF this card cannot be built by an agent \
-    (owner-only / prod deploy / external prerequisite): do NOT fake completion, \
-    do NOT mutate rows to dodge dispatch, and do NOT add block-keywords to the \
-    body. Instead either (a) DELETE the card if it is obsolete, or (b) REFINE it \
-    to its latest real need and set the structured owner-gate flag: \
-    `kavach db status-update --project <slug> --category roadmap --key <key> \
-    --owner-gated true`; the scheduler then skips it like an unmet dependency. \
-    Otherwise, build it now.";
 
 /// Run the three-tier re-block while under the breaker ceiling. `Continue` only
 /// when the ceiling is spent or no terminal branch fired (falls through).
@@ -74,7 +53,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
                  §FOCUS NEVER-PROPOSE-SESSION-BREAK. CONTRACT: claim -> implement \
                  -> 3-witness verify (artifact exists -> diff landed -> build \
                  passes) -> close, all this turn; loophole-check before any done \
-                 claim.{harness}{PARK_HINT}"
+                 claim.{harness}"
             )));
             ControlFlow::Break(())
         }
@@ -93,9 +72,8 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 /// - `Promoted` + a card now dispatchable → resume that card.
 /// - `WitnessFailed` → an AI-fixable keystone exists → command `KEYSTONE_REPAIR`.
 /// - `NothingDone` / `Promoted` with nothing dispatchable → the queue is empty or
-///   every remainder is owner-gated (prod deploy / mig-apply / live test the AI
-///   cannot run) → a genuine clean stop. This last branch is what stops the loop
-///   from running forever on an owner-gated backlog.
+///   every remainder is blocked by unmet dependencies → a genuine clean stop. This
+///   last branch is what stops the loop from running forever on a blocked backlog.
 fn all_blocked_or_autoverify(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     let outcome = auto_verify_done_cards(&ctx.session.project);
     if matches!(outcome, AutoVerify::Promoted(n) if n > 0)

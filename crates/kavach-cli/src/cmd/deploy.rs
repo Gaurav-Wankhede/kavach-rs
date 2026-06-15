@@ -239,10 +239,26 @@ fn restart_rpc_daemon() {
             .status()
             .is_ok_and(|s| s.success());
         let msg = if killed {
-            format!(
-                "[DEPLOY] step 8/8: signaled daemon pid {} to restart",
-                lock.pid
-            )
+            // GRACEFUL HANDOFF (race-free restart): SIGTERM is async and the
+            // daemon fsyncs RocksDB on shutdown, so it may still hold the OS
+            // `fcntl` LOCK for tens of ms after `kill` returns. Returning here
+            // (and removing the lockfile) immediately lets the next hook spawn a
+            // new daemon that opens the DB while the old one still holds the
+            // LOCK -> "Resource temporarily unavailable" (the post-deploy race,
+            // unit.daemon-restart-race-free). Block until the old PID is gone
+            // before releasing — bounded so a wedged daemon cannot hang deploy.
+            if wait_for_pid_exit(lock.pid) {
+                format!(
+                    "[DEPLOY] step 8/8: daemon pid {} exited (LOCK released)",
+                    lock.pid
+                )
+            } else {
+                format!(
+                    "[DEPLOY] step 8/8: WARNING daemon pid {} did not exit within budget; \
+                     respawn may hit transient LOCK contention (self-heals via backoff)",
+                    lock.pid
+                )
+            }
         } else {
             format!(
                 "[DEPLOY] step 8/8: daemon pid {} not running (stale lockfile)",
@@ -252,9 +268,42 @@ fn restart_rpc_daemon() {
         print_or_exit(&msg).ok();
     }
     // Remove the lockfile unconditionally: if the daemon was already dead the
-    // entry is stale; if we just killed it, removing now lets the respawn claim
-    // a clean lock without racing the dying process's own cleanup.
+    // entry is stale; if we just killed it (and waited for exit above), removing
+    // now lets the respawn claim a clean lock without racing the dying process.
     kavach_rpc::lockfile::remove_lockfile();
+}
+
+/// Poll until process `pid` has exited (the `RocksDB` LOCK is released only when
+/// the holding process is fully gone), bounded so a wedged daemon cannot hang
+/// the deploy. Returns true if it exited within the budget, false on timeout.
+///
+/// Budget mirrors the proven daemon-eviction wait in
+/// `kavach_surreal::connection::try_stop_daemon` (20 x 50ms = 1s) — long enough
+/// for a SIGTERM-handled `RocksDB` fsync-and-exit, short enough that a stuck
+/// daemon degrades to the self-healing backoff path rather than blocking deploy.
+///
+/// Unix-only: the daemon is signalled via POSIX kill; on non-unix there is no
+/// daemon to wait on (the restart block is itself `#[cfg(unix)]`). Uses the
+/// `kill -0 <pid>` existence probe — the same `Command::new("kill")` tool the
+/// restart already shells out to, so no new crate dependency is pulled in.
+#[cfg(unix)]
+fn wait_for_pid_exit(pid: u32) -> bool {
+    // `kill -0 <pid>` sends no signal; it only checks the process exists.
+    // Exit 0 = alive, non-zero (ESRCH) = gone. One final probe after the loop
+    // so a daemon exiting in the last window is not a false timeout.
+    let alive = || {
+        Command::new("kill")
+            .args(["-0", &pid.to_string()])
+            .status()
+            .is_ok_and(|s| s.success())
+    };
+    for _ in 0..20 {
+        if !alive() {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    !alive()
 }
 
 /// Track B — build the GUI app bundle with the CLI embedded as a sidecar,

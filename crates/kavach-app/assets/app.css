@@ -60,6 +60,22 @@ body, html { margin: 0; padding: 0; background: var(--bg); color: var(--text); f
 .kanban-card-wrap.blocked .entry-row, .kanban-card-wrap.blocked > * { border-left: 3px solid var(--danger, #d9534f); }
 .dep-badge { display: inline-block; margin-bottom: 4px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; color: #fff; background: var(--danger, #d9534f); }
 
+/* Kanban header + view toggle (status board <-> DAG tiers) */
+.kanban-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.toggle-btn { background: var(--panel); color: var(--muted); border: none; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
+.toggle-btn.active { background: var(--accent, #4a7cff); color: #fff; }
+
+/* DAG tier view — topological rows, TIER 0 = ready now */
+.kanban-dag { display: flex; flex-direction: column; gap: 16px; }
+.dag-tier { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.dag-tier-head { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.dag-tier-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.dag-deps { margin-top: 4px; font-size: 10px; color: var(--muted); font-family: var(--mono, monospace); }
+.dag-cycle { border-color: var(--danger, #d9534f); }
+.dag-cycle-head { color: var(--danger, #d9534f); }
+
 .cy-canvas { width: 100%; height: calc(100vh - 240px); min-height: 400px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
 
 .graph-header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }

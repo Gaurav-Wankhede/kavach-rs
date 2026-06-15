@@ -165,6 +165,20 @@ crate = "surrealdb-types-derive"
 expression = "BUSL-1.1"
 license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
 
+# surrealdb 3.1 split internals into two new crates that ship the same
+# BUSL-1.1 LICENSE file but omit the manifest `license` field -> cargo-deny
+# flags them `unlicensed` until clarified. Same license + same file hash as
+# the surreal crates above. Decision: crate.surrealdb.busl-1.1-accepted.
+[[licenses.clarify]]
+crate = "surrealdb-collections"
+expression = "BUSL-1.1"
+license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+
+[[licenses.clarify]]
+crate = "surrealdb-strand"
+expression = "BUSL-1.1"
+license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+
 # ─────────────────────────────────────────────────────────────
 # [bans] — banned crates + duplicate-version detection
 # ─────────────────────────────────────────────────────────────

@@ -57,14 +57,35 @@ pub enum LoadState {
 }
 
 pub fn load(slug: &str) -> LoadState {
-    let res = rpc::<QueryParams<'_>, QueryResultDto>(
-        "db.query",
-        QueryParams {
-            project: slug,
-            category: Some("roadmap"),
-            all: true,
-        },
-    );
+    // DURABILITY: the daemon is launchd-respawned but has a brief unavailability
+    // window during a restart/deploy (KeepAlive throttle + LOCK handoff). A
+    // single attempt that lands in that window would cache DaemonOffline forever
+    // (the GUI resource does not re-run on its own). Bounded retry on the
+    // transient-offline error lets the page self-heal the moment the daemon is
+    // back, without a manual refresh. Non-offline errors are NOT retried (they
+    // are real query failures, surfaced immediately).
+    const MAX_ATTEMPTS: usize = 6;
+    const BACKOFF_MS: [u64; 6] = [100, 250, 500, 1000, 1500, 2000];
+    let mut attempt: usize = 0;
+    let res = loop {
+        let r = rpc::<QueryParams<'_>, QueryResultDto>(
+            "db.query",
+            QueryParams {
+                project: slug,
+                category: Some("roadmap"),
+                all: true,
+            },
+        );
+        match r {
+            Err(RpcError::DaemonOffline(_)) if attempt.saturating_add(1) < MAX_ATTEMPTS => {
+                // index is in-bounds: attempt < MAX_ATTEMPTS == BACKOFF_MS.len().
+                let wait = BACKOFF_MS.get(attempt).copied().unwrap_or(2000);
+                std::thread::sleep(std::time::Duration::from_millis(wait));
+                attempt = attempt.saturating_add(1);
+            }
+            other => break other,
+        }
+    };
     match res {
         Ok(r) => LoadState::Ok(
             r.entries

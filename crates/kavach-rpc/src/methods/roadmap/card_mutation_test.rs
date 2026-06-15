@@ -21,6 +21,65 @@ fn claim_card_only_claims_a_fresh_todo() {
     );
 }
 
+// --- Lease-fused-claim wire contract (roadmap.unit.dispatch-lease-fused-claim) ---
+// AC2: ClaimCardParams must accept an optional session_id (a legacy caller that
+// omits it still deserializes), and ClaimCardResult must round-trip the fence
+// epoch. These are the wire guarantees the engine edge depends on — a silent
+// schema drift here re-opens the concurrent double-resume defect.
+
+#[test]
+fn claim_params_accept_optional_session_id() {
+    use crate::methods::roadmap::types::ClaimCardParams;
+    // Legacy payload (no session_id) must still parse — backward compatible.
+    let legacy: ClaimCardParams =
+        serde_json::from_value(serde_json::json!({"project": "p", "key": "k"}))
+            .expect("legacy payload without session_id must deserialize");
+    assert!(
+        legacy.session_id.is_none(),
+        "absent session_id => None => status-only claim (pre-lease behaviour)"
+    );
+    // Modern payload carries the lease owner.
+    let modern: ClaimCardParams = serde_json::from_value(
+        serde_json::json!({"project": "p", "key": "k", "session_id": "sess-A"}),
+    )
+    .expect("payload with session_id must deserialize");
+    assert_eq!(
+        modern.session_id.as_deref(),
+        Some("sess-A"),
+        "session_id must thread through so the RPC fuses an owner lease"
+    );
+}
+
+#[test]
+fn claim_result_round_trips_fence_epoch() {
+    use crate::methods::roadmap::types::ClaimCardResult;
+    let won = ClaimCardResult {
+        key: "k".into(),
+        status: "in_progress".into(),
+        claimed: true,
+        epoch: Some(7),
+    };
+    let won_json = serde_json::to_value(&won).expect("serialize");
+    assert_eq!(
+        won_json.get("epoch").and_then(serde_json::Value::as_i64),
+        Some(7),
+        "a won claim must expose the fence epoch so a renewer can present it"
+    );
+    // A legacy/lost claim has no epoch and must OMIT the field (skip_if None),
+    // never emit `epoch: null` — keeps the wire shape identical to pre-change.
+    let lost = ClaimCardResult {
+        key: "k".into(),
+        status: "todo".into(),
+        claimed: false,
+        epoch: None,
+    };
+    let v = serde_json::to_value(&lost).expect("serialize");
+    assert!(
+        v.get("epoch").is_none(),
+        "epoch=None must be omitted from the wire, not serialized as null"
+    );
+}
+
 fn is_auto_verifiable(current_status: &str) -> bool {
     current_status == "done"
 }
@@ -65,7 +124,6 @@ fn done_card_satisfies_a_dependent_and_is_promotable() {
             updated_at: None,
             priority: None,
             lane: None,
-            owner_gated: None,
         }
     }
     let all = vec![

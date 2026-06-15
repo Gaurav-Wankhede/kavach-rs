@@ -78,8 +78,8 @@ tokio-util = { version = "0.7", features = ["rt"] }
 parking_lot = "0.12"
 aho-corasick = "1"
 tracing = "0.1"
-surrealdb = { version = "3.0.5", default-features = false, features = ["kv-rocksdb", "kv-mem"] }
-surrealdb-types = "3.0.5"
+surrealdb = { version = "3.1.4", default-features = false, features = ["kv-rocksdb", "kv-mem"] }
+surrealdb-types = "3.1.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "signal", "net"] }
 jsonrpsee = { version = "0.24", features = ["server", "macros"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

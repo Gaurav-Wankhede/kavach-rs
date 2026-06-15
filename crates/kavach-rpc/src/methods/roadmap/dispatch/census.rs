@@ -9,13 +9,15 @@ const TABLE_ROADMAP: &str = "roadmap";
 /// Census of the open set, splitting a BLOCKED remainder from an empty board.
 ///
 /// `next_open_task`/`ready_set` both collapse "no runnable card" and "runnable
-/// cards all blocked by unmet deps / owner-gating" to the same `None`/empty — so
-/// the gate cannot decide between a clean `[ALL_BLOCKED]` stop and an
+/// cards all waiting on unmet dependencies" to the same `None`/empty — so the
+/// gate cannot decide between a clean `[ALL_BLOCKED]` stop and an
 /// `[AUTO_CONTINUE]` PLAN nudge without this split.
 ///
 /// `runnable` = cards in a dispatchable status (`todo`/`in_progress`).
-/// `blocked`  = of those, the ones held back by unmet deps or an agent-gate
-///              (`AGENT_BLOCKED`/owner-only) — i.e. real work the AI cannot start.
+/// `blocked`  = of those, the ones whose declared dependencies are not yet
+///              done — pure topological waiting. There is no owner-gate bucket
+///              (removed 2026-06-16): a card is either runnable, waiting on a
+///              dependency, or deleted.
 ///
 /// # Errors
 /// Returns an RPC `ErrorObjectOwned` when the database query fails.

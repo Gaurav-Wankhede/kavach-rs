@@ -94,11 +94,10 @@ fn render_empty_json(roadmap: &[kavach_surreal::MemoryEntry]) -> i32 {
 
 fn entry_json(e: &kavach_surreal::MemoryEntry) -> String {
     format!(
-        r#"{{"key":"{}","status":"{}","title":"{}","owner_gated":{}}}"#,
+        r#"{{"key":"{}","status":"{}","title":"{}"}}"#,
         e.entry_key.replace('"', r#"\""#),
         e.entry_status_str(),
         e.title.replace('"', r#"\""#),
-        e.owner_gated.unwrap_or(false)
     )
 }
 

@@ -4,6 +4,7 @@ mod ask;
 pub(crate) mod bg;
 pub(crate) mod bulk;
 mod context;
+pub(crate) mod daemon;
 pub(crate) mod goal;
 // `pub(crate)` so `cli::db` reaches `db::write::CATEGORY_HELP` (SSoT for the
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
@@ -52,6 +53,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             transport,
             apply_schema,
         } => rpc::run(&transport, apply_schema),
+        Commands::Daemon(args) => daemon::run(&args),
         Commands::Rag { action } => rag::run(action),
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),

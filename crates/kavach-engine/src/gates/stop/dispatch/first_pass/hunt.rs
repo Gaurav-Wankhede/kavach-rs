@@ -3,6 +3,7 @@ use core::ops::ControlFlow;
 
 use super::source_down;
 use crate::gates::event_log::log_gate_decision;
+use crate::gates::loop_frame;
 use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{SOURCE_DOWN_KEY, claim_card, get_next_hunt_info};
 
@@ -35,8 +36,9 @@ pub(super) fn check(ctx: &StopCtx<'_>) -> ControlFlow<()> {
         );
         return ControlFlow::Continue(());
     }
+    let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&hunt_title));
     drop(kavach_hook::exit_stop_block(&format!(
-        "[AUTO_CONTINUE] Bug-hunt backlog not empty — do not stop.\n\
+        "{loop_prefix}[AUTO_CONTINUE] Bug-hunt backlog not empty — do not stop.\n\
          NEXT HUNT [{hunt_key}]: {hunt_title}\n\
          (CLAIMED — now in_progress in the Kavach DB; work it immediately.)\n\n\
          Step 1 — read the proven defect + repro:\n\

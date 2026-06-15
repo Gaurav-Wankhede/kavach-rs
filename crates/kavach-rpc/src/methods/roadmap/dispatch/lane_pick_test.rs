@@ -18,7 +18,6 @@ fn card(key: &str, status: &str, lane: Option<&str>) -> MemoryEntry {
         updated_at: None,
         priority: None,
         lane: lane.map(Into::into),
-        owner_gated: None,
     }
 }
 

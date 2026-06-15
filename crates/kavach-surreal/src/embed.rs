@@ -7,6 +7,9 @@ use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use std::sync::Arc;
 
 mod cache_dir;
+mod dylib_path;
+
+pub use dylib_path::{ORT_DYLIB_ENV, conventional_dylib_path, os_dylib_name, resolve_dylib_path};
 
 pub const EMBED_DIM: usize = 384;
 

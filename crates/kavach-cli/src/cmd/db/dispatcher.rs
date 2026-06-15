@@ -4,7 +4,8 @@
 use super::{
     archive, backfill_relationships, bridge, concept, delete, event, expire, find, flow,
     gate_config, get,
-    graph_query, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query, register,
+    graph_query, infer_deps, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query,
+    register,
     register_part, rotate, search, status_update, sync, tree, wipe_project, write,
 };
 use crate::cli::DbAction;
@@ -122,8 +123,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             category,
             key,
             status,
-            owner_gated,
-        } => status_update::run(&project, &category, &key, &status, owner_gated),
+        } => status_update::run(&project, &category, &key, &status),
         DbAction::PopulateGraph => populate_graph::run(),
         DbAction::BackfillRelationships { project, dry_run } => {
             backfill_relationships::run(project.as_deref(), dry_run)
@@ -180,6 +180,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         flow_action @ (DbAction::FlowAdd { .. } | DbAction::FlowShow { .. }) => {
             dispatch_flow(flow_action)
         }
+        DbAction::InferDeps { project, apply } => infer_deps::run(&project, apply),
         DbAction::LaneSet {
             project,
             key,

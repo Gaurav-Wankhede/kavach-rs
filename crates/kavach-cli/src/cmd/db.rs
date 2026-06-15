@@ -17,6 +17,7 @@ mod flow;
 mod gate_config;
 mod get;
 mod graph_query;
+mod infer_deps;
 mod kanban;
 mod lane;
 mod list;

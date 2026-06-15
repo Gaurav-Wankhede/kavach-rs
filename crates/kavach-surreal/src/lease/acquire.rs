@@ -75,3 +75,7 @@ pub async fn acquire(
         expires_at: row.occupied_until.unwrap_or(now),
     })
 }
+
+#[cfg(test)]
+#[path = "acquire_test.rs"]
+mod tests;

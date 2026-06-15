@@ -5,27 +5,47 @@
 use core::ops::ControlFlow;
 
 use super::super::shared::StopCtx;
-use crate::gates::bandit::emit;
+use crate::gates::bandit::{emit, explore_emit};
 use kavach_patterns::bandit_log::{BanditContext, GateAction};
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    // Layer-A bandit log: a clean exit is the Stop gate's `Allow` action. Reward
-    // is None here — it is back-filled when the 3-witness verify resolves. Pure
+    // Layer-A bandit log: a clean exit is the Stop gate's GREEDY `Allow` action.
+    // P7: pass it through epsilon-greedy so, when `KAVACH_RL_EXPLORE` is armed, the
+    // emit MAY log a non-argmax advisory action (`Ask`) with its TRUE propensity
+    // < 1.0 — giving the off-policy estimators non-degenerate overlap. Disarmed
+    // (default) this is `(Allow, 1.0)`, the exact prior behavior. C2: the advisory
+    // set bars `Block`, so exploration NEVER converts this clean stop into a block.
+    // Reward is None here — back-filled when the 3-witness verify resolves. Pure
     // logging, fire-and-forget; never affects whether the stop proceeds.
+    let (action, propensity) = explore_emit::explore_action(
+        GateAction::Allow,
+        &ctx.session.session_id,
+        emit::now_ms(),
+    );
+    let ctx_for_emit = BanditContext::new(
+        "stop",
+        "Stop",
+        "",
+        0,
+        "",
+        u32::try_from(ctx.session.turn_count).unwrap_or(0),
+    );
     emit::emit_decision(
         &ctx.session.session_id,
-        BanditContext::new(
-            "stop",
-            "Stop",
-            "",
-            0,
-            "",
-            u32::try_from(ctx.session.turn_count).unwrap_or(0),
-        ),
-        GateAction::Allow,
-        1.0,
+        ctx_for_emit.clone(),
+        action,
+        propensity,
         None,
     );
+    // P8: sample this same decision into the SOFT held-out channel at rate
+    // `KAVACH_RL_HELDOUT_RATE` (default 0 ⇒ off). The held-out row carries the same
+    // (action, propensity) but is tagged `held_out: true`; its reward is back-filled
+    // by an INDEPENDENT real re-verification, giving the reward-hacking audit
+    // (`db.ope_audit`) a soft channel to compare against the hard 3-witness. Without
+    // it the soft channel is always empty ⇒ the audit stays `Inconclusive` ⇒ a
+    // candidate policy can never be cleared. Fire-and-forget; never affects the stop.
+    let roll = explore_emit::held_out_roll(&ctx.session.session_id, emit::now_ms());
+    emit::maybe_emit_held_out(&ctx.session.session_id, ctx_for_emit, action, propensity, roll);
     // Work is genuinely done at the dispatch level — reset the pending-work
     // re-block breaker before composing the terminal verdict.
     ctx.session.clear_stop_reblock();
@@ -33,8 +53,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // BUG FIX (drained-board → plan-check): the dispatch tiers found nothing
     // runnable, but a drained board is NOT a finished plan. Emit the SAME
     // census-aware verdict the retry terminal uses (`[ALL_BLOCKED]` when every
-    // remainder is owner-gated, else the board-drained `[PLAN]` nudge) — never a
-    // silent stop that hides un-built plan phases. This terminal used to
+    // remainder is dependency-blocked, else the board-drained `[PLAN]` nudge) —
+    // never a silent stop that hides un-built plan phases. This terminal used to
     // `exit_silent()` on an empty board, so an empty kanban stopped the loop
     // immediately without ever checking the active `[PLAN]`. Loop-safe:
     // `exit_stop_context` ALLOWS the stop, so the advisory can never spin.

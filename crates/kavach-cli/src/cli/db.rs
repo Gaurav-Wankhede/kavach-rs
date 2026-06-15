@@ -298,13 +298,6 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         /// New status: planned, todo, `in_progress`, done, verified
         #[arg(long)]
         status: String,
-        /// Set the structured owner-gate flag (roadmap only). `true` = the card
-        /// needs an external owner action no agent can self-supply (greenlight /
-        /// prod deploy / live run / secrets); the dispatcher skips it like an
-        /// unmet dependency. Replaces the retired `AGENT_BLOCKED:`/`OWNER-GATED`
-        /// body keywords. Omit to leave the flag unchanged.
-        #[arg(long)]
-        owner_gated: Option<bool>,
     },
     /// Populate the knowledge graph from existing relational data
     PopulateGraph,
@@ -582,5 +575,26 @@ WHEN: Recall the intended implementation order; paste the Mermaid into any rende
         /// Output format: `mermaid` (default) or `json`
         #[arg(long, default_value = "mermaid")]
         format: String,
+    },
+    /// Infer `depends_on` edges from card-key sequence tokens (tier backfill)
+    #[command(
+        long_about = "Derive kanban `depends_on` edges from card-key naming. Cards authored as a \
+dotted namespace with a trailing sequence token (`unit.harness-rl.p7`, `...loop-eng.f4`, \
+`...phase2`, `...step3`, or a bare trailing number) imply ordering: token N depends on the \
+same-namespace sibling with the matching token N-1. HEURISTIC — DRY RUN by default (prints the \
+proposal only); pass --apply to write the edges through the daemon. After --apply, re-deploy so \
+the tier GUI segregates the cards.",
+        after_help = "EXAMPLES:\n  \
+kavach db infer-deps --project kavach-rs            # dry run — review proposed edges\n  \
+kavach db infer-deps --project kavach-rs --apply    # write the edges\n\n\
+WHEN: The DAG tier view collapses every card into TIER 0 because no card declares prerequisites."
+    )]
+    InferDeps {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Write the inferred edges (default is a dry run that only prints them)
+        #[arg(long)]
+        apply: bool,
     },
 }

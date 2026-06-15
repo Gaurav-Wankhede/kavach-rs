@@ -7,7 +7,7 @@
 //!    backlog are both drained → `[LANE_DRAINED]` clean stop (lane.rs). Never
 //!    cross into a foreign lane; that is another session's work.
 //! 1. The board still holds runnable-status cards, but EVERY one is held back by
-//!    an unmet dep or an owner-gate → `[ALL_BLOCKED]` clean stop.
+//!    an unmet dependency → `[ALL_BLOCKED]` clean stop.
 //! 2. The board is genuinely empty. A frozen `[PLAN]` doc MAY name an un-built
 //!    next phase → a bounded `[AUTO_CONTINUE]` nudge.
 //!
@@ -42,10 +42,11 @@ pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String 
 }
 
 /// True iff the census proves a BLOCKED remainder: at least one runnable-status
-/// card AND every one of them blocked or cyclic. `None` (RPC outage) → false →
-/// fail closed to the PLAN nudge. An empty board (`runnable == 0`) is NOT
-/// all-blocked. A cycle is handled BEFORE this by `drained_terminal_context`, so
-/// here `blocked + cyclic == runnable` still counts as the all-blocked remainder.
+/// card AND every one of them blocked by dependencies or cyclic. `None` (RPC
+/// outage) → false → fail closed to the PLAN nudge. An empty board (`runnable
+/// == 0`) is NOT all-blocked. A cycle is handled BEFORE this by
+/// `drained_terminal_context`, so here `blocked + cyclic == runnable` still
+/// counts as the all-blocked remainder.
 const fn census_is_all_blocked(census: Option<(u64, u64, u64)>) -> bool {
     match census {
         Some((runnable, blocked, cyclic)) => {
@@ -80,9 +81,9 @@ fn cycle_deadlock_context() -> String {
     )
 }
 
-/// Case 1: every remaining runnable card is blocked/owner-gated → honest clean
-/// stop. The lone owner-gated prerequisite is a DECISION for the user, not work
-/// the AI can perform — surface it and stop, do NOT spin.
+/// Case 1: every remaining runnable card is blocked → honest clean stop. An
+/// unmet dependency blocks the card, and breaking the dependency is a DECISION
+/// for the user, not work the AI can perform — surface it and stop, do NOT spin.
 fn all_blocked_context() -> String {
     kavach_hook::context_block(
         "ALL_BLOCKED",
@@ -90,16 +91,15 @@ fn all_blocked_context() -> String {
             (
                 "why",
                 "no card is dispatchable AND every remaining runnable card is held \
-                 back by an unmet dependency or an owner-gate (AGENT_BLOCKED / prod \
-                 deploy / migration-apply / CI-green / live test). None of that is \
-                 work the AI can start — it is a DECISION or an external prerequisite.",
+                 back by an unmet dependency. None of that is work the AI can start \
+                 without the prerequisite being satisfied.",
             ),
             (
                 "action",
-                "Clean stop. State, in one line, which owner-gated prerequisite \
-                 blocks each remaining card so the owner can DECIDE or unblock it. \
-                 Do NOT invent PLAN phases, do NOT re-dispatch, do NOT spin — the \
-                 loop is correctly drained of AI-runnable work.",
+                "Clean stop. State, in one line, which unmet dependency blocks each \
+                 remaining card so the owner can unblock it. Do NOT invent PLAN \
+                 phases, do NOT re-dispatch, do NOT spin — the loop is correctly \
+                 drained of AI-runnable work.",
             ),
         ],
     )

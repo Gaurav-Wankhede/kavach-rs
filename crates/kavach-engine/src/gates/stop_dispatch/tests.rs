@@ -3,9 +3,9 @@ use super::card::is_backlog_saturated;
 use super::verify::AutoVerify;
 
 // Regression: the auto-verify outcome MUST keep three states distinct. A prior
-// `usize` return collapsed `NothingDone` (empty/owner-gated → clean stop) and
+// `usize` return collapsed `NothingDone` (empty → clean stop) and
 // `WitnessFailed` (AI repair work) both to 0, trapping the stop gate in an
-// infinite KEYSTONE_REPAIR loop on owner-gated backlogs. These must NOT be equal.
+// infinite KEYSTONE_REPAIR loop. These must NOT be equal.
 #[test]
 fn auto_verify_states_are_distinct() {
     assert_ne!(AutoVerify::NothingDone, AutoVerify::WitnessFailed);

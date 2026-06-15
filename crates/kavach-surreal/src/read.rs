@@ -11,7 +11,7 @@ use surrealdb_types::RecordId;
 // which trips serde even with #[serde(default)] (default applies to missing
 // keys, not null values). `tags` and `decay_score` aren't defined on every
 // per-category table either.
-const MEMORY_FIELDS: &str = "id, project, entry_key, title, content, status, entry_status, access_count, created_at, updated_at, priority, lane, owner_gated";
+const MEMORY_FIELDS: &str = "id, project, entry_key, title, content, status, entry_status, access_count, created_at, updated_at, priority, lane";
 
 // BUG-FIX [silent-read-drop]: `category` is implicit in the table name and is
 // NOT a selected column, so every row deserializes with `category = None` and
@@ -90,7 +90,7 @@ pub async fn list_by_project(
     // (roadmap::next_open_task) consumes this order directly.
     const QUERY: &str = concat!(
         "SELECT id, project, entry_key, title, content, status, entry_status, ",
-        "access_count, created_at, updated_at, priority, lane, owner_gated, ",
+        "access_count, created_at, updated_at, priority, lane, ",
         "priority ?? 999999 AS _sort_priority ",
         "FROM type::table($table) WHERE project = $project ",
         "ORDER BY _sort_priority ASC, created_at ASC"
@@ -145,7 +145,7 @@ pub async fn list_by_status(
     // see the same dispatch order.
     const QUERY: &str = concat!(
         "SELECT id, project, entry_key, title, content, status, entry_status, ",
-        "access_count, created_at, updated_at, priority, lane, owner_gated, ",
+        "access_count, created_at, updated_at, priority, lane, ",
         "priority ?? 999999 AS _sort_priority ",
         "FROM type::table($table) WHERE project = $project AND entry_status = $status ",
         "ORDER BY _sort_priority ASC, created_at ASC"

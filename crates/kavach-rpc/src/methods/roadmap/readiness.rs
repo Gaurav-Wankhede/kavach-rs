@@ -1,29 +1,27 @@
-pub mod agent_gate;
 pub mod cycle;
 pub mod dep_key;
 pub mod status_check;
 
-pub use agent_gate::is_owner_gated;
 pub use cycle::{dep_index, is_in_cycle};
 pub use dep_key::{dep_key_satisfied, parse_declared_deps};
 pub use status_check::is_runnable_status;
 
 /// Check if an entry is dispatchable to an agent.
 ///
-/// True iff `entry` is dispatchable to an AGENT right now: every declared
-/// `BLOCKED_BY/DEPENDS_ON` dep resolves to a verified/done row AND the card
-/// is not agent-gated. A card with no declared deps and no gate is trivially ready.
+/// True iff every declared `DEPENDS_ON` prerequisite resolves to a
+/// verified/done row. A card with no declared deps is trivially ready.
 /// `dep_pool` is the row set dependency KEYS resolve against — distinct from
 /// the project-scoped candidate list. Dependency keys are a GLOBAL key space:
 /// a card may legitimately declare a prerequisite owned by another project.
+///
+/// Pure topological ordering: a card whose prerequisite is not yet done simply
+/// waits its turn. There is no owner-gate / block path — a card that cannot be
+/// built is deleted, never flagged (owner directive 2026-06-16).
 #[must_use]
 pub fn deps_satisfied(
     entry: &kavach_surreal::MemoryEntry,
     dep_pool: &[kavach_surreal::MemoryEntry],
 ) -> bool {
-    if is_owner_gated(entry.owner_gated) {
-        return false;
-    }
     parse_declared_deps(&entry.content)
         .iter()
         .all(|dep| dep_key_satisfied(dep, dep_pool))

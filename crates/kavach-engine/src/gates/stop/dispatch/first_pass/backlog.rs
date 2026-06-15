@@ -3,6 +3,7 @@ use core::ops::ControlFlow;
 
 use super::source_down;
 use crate::gates::event_log::log_gate_decision;
+use crate::gates::loop_frame;
 use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{SOURCE_DOWN_KEY, claim_card, get_next_backlog_info};
 
@@ -42,9 +43,10 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         &format!("promoted={backlog_key}: {backlog_title}"),
         &ctx.session.project,
     );
+    let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&backlog_title));
     let proj = &ctx.session.project;
     drop(kavach_hook::exit_stop_block(&format!(
-        "[AUTO_CONTINUE] Roadmap backlog has runnable work — do not stop.\n\
+        "{loop_prefix}[AUTO_CONTINUE] Roadmap backlog has runnable work — do not stop.\n\
          NEXT BACKLOG [{backlog_key}]: {backlog_title}\n\
          (CLAIMED — now in_progress in the Kavach DB; execute it immediately.)\n\n\
          Step 1 — read the card:\n\

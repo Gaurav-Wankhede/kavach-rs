@@ -520,43 +520,6 @@ pub async fn update_status(
     Ok(count)
 }
 
-/// Set the structured `owner_gated` flag on a roadmap card.
-///
-/// TRUE marks the card as needing an external owner action no agent can
-/// self-supply; the dispatcher (`readiness::is_owner_gated`) then skips it like
-/// an unmet dependency. This is the typed replacement for the retired
-/// `AGENT_BLOCKED:`/`OWNER-GATED` body keywords (owner directive 2026-06-13).
-/// Returns the number of rows updated.
-///
-/// # Errors
-/// Returns [`crate::error::Error::Migration`] if `table` is not in
-/// [`STATUS_TABLES`], or any underlying `SurrealDB` query error.
-pub async fn set_owner_gated(
-    db: &Surreal<Db>,
-    table: &str,
-    project_id: &RecordId,
-    entry_key: &str,
-    owner_gated: bool,
-) -> Result<usize> {
-    if !STATUS_TABLES.contains(&table) {
-        return Err(crate::error::Error::Migration(format!(
-            "set_owner_gated: unsupported table '{table}'; allowed: {STATUS_TABLES:?}"
-        )));
-    }
-    let query = format!(
-        "UPDATE {table} SET owner_gated = $gated, updated_at = time::now() \
-         WHERE project = $project AND entry_key = $key RETURN id"
-    );
-    let mut response = db
-        .query(query)
-        .bind(("project", project_id.clone()))
-        .bind(("key", entry_key.to_owned()))
-        .bind(("gated", owner_gated))
-        .await?;
-    let updated: Vec<UpdatedIdRow> = response.take(0)?;
-    Ok(updated.len())
-}
-
 /// Atomically transition `entry_status` only when the row's CURRENT status
 /// equals `expected`. Returns the number of rows actually transitioned (0 or 1).
 ///

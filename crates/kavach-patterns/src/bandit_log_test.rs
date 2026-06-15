@@ -76,3 +76,34 @@ fn back_filled_reward_serializes_as_snake_case() {
         "got: {json}"
     );
 }
+
+#[test]
+fn new_row_defaults_to_the_hard_channel() {
+    // P8: every on-policy / pre-P8 row is the HARD (witness) channel. The audit's
+    // soft split (`channel_reward(.., true)`) must NOT pick these up.
+    let row = BanditRow::new("s", 0, ctx(), GateAction::Allow, 1.0);
+    assert!(!row.held_out, "a fresh row belongs to the hard channel by default");
+}
+
+#[test]
+fn into_held_out_tags_the_soft_channel_and_serializes() {
+    // The held-out flag is what `db.ope_audit` splits on; if it failed to serialize
+    // the soft channel would always read empty ⇒ the audit would never leave
+    // Inconclusive. Prove the flag round-trips on the wire.
+    let row = BanditRow::new("s", 1, ctx(), GateAction::Allow, 0.9).into_held_out();
+    assert!(row.held_out);
+    let json = serde_json::to_string(&row).unwrap();
+    assert!(json.contains("\"held_out\":true"), "got: {json}");
+    let back: BanditRow = serde_json::from_str(&json).unwrap();
+    assert_eq!(back, row);
+    assert!(back.held_out);
+}
+
+#[test]
+fn legacy_row_without_held_out_field_deserializes_as_hard_channel() {
+    // A row persisted before P8 has no `held_out` key. `#[serde(default)]` must
+    // read it as false (hard channel) — never panic, never mis-route to soft.
+    let legacy = r#"{"session_id":"s","timestamp_ms":0,"context":{"gate":"g","tool":"Write","file_ext":"rs","diff_bytes":0,"intent_risk":"low","prior_fire_count":0},"action":"allow","propensity":1.0,"reward":null}"#;
+    let back: BanditRow = serde_json::from_str(legacy).unwrap();
+    assert!(!back.held_out, "a pre-P8 row must default to the hard channel");
+}

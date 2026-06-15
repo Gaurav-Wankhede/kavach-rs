@@ -47,11 +47,11 @@ fn cycle_deadlock_context_refuses_stop_and_directs_the_fix() {
 }
 
 #[test]
-fn all_blocked_context_names_the_owner_gate() {
+fn all_blocked_context_names_the_dependency() {
     let c = all_blocked_context();
     assert!(c.contains("ALL_BLOCKED"), "tag present: {c}");
     assert!(
-        c.contains("owner-gate"),
+        c.contains("dependency"),
         "names the prerequisite class: {c}"
     );
 }

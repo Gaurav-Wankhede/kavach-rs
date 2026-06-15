@@ -46,10 +46,10 @@ fn tiers_follow_dependency_depth() {
 #[test]
 fn tiered_text_marks_ready_and_blocked() {
     let out = render_tiered_text(&chain());
-    // 'a' has no prereqs -> READY; 'b' depends on unfinished 'a' -> BLOCKED.
+    // 'a' has no prereqs -> READY; 'b' depends on unfinished 'a' -> WAITING.
     assert!(out.contains("TIER 0 — ready now"));
     assert!(out.contains("a — title a  ✓READY"), "got:\n{out}");
-    assert!(out.contains("⛔BLOCKED"), "dependent must be blocked:\n{out}");
+    assert!(out.contains("⏳WAITING"), "dependent must be waiting on its prereq:\n{out}");
     assert!(out.contains("⤷ depends-on: a"), "inline prereq:\n{out}");
 }
 
@@ -106,7 +106,6 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         updated_at: None,
         priority: None,
         lane: None,
-        owner_gated: None,
     };
     // u2 declares DEPENDS_ON: u1; u3 depends on u2 + an absent 'ghost' key.
     // An absent key is NOT dropped (that falsely marked the dependent ready —

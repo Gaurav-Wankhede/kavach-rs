@@ -104,6 +104,8 @@ pub(crate) enum Commands {
         #[arg(long, default_value_t = true)]
         apply_schema: bool,
     },
+    /// Manage the launchd RPC-daemon `LaunchAgent` (code-owned plist generation).
+    Daemon(crate::cmd::daemon::DaemonArgs),
     /// Build and query vectorless RAG trees
     Rag {
         #[command(subcommand)]

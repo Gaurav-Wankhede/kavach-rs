@@ -5,7 +5,9 @@ use super::source_down;
 use crate::gates::event_log::log_gate_decision;
 use crate::gates::loop_frame;
 use crate::gates::stop::shared::StopCtx;
-use crate::gates::stop_dispatch::{SOURCE_DOWN_KEY, card_entry_status, claim_card, get_next_task_info};
+use crate::gates::stop_dispatch::{
+    SOURCE_DOWN_KEY, card_entry_status, claim_card, get_next_task_info, live_lease_holder,
+};
 
 /// `Break` with an `[AUTO_CONTINUE]` envelope if a task is pending; `Continue`
 /// (fall through to the next tier) when the task tier is empty.
@@ -22,8 +24,25 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         // — reblock so Cursor's initial `loop_count:0` stop still dispatches runnable
         // work instead of a silent `{}` clean exit. Only fall through on a lost
         // `todo` race (another session claimed it first).
-        let resume = card_entry_status(&ctx.session.project, &priority)
+        let is_in_progress = card_entry_status(&ctx.session.project, &priority)
             .is_some_and(|s| s == "in_progress");
+        // Lease-aware resume (closes concurrent double-resume): an in_progress card
+        // is resumable by THIS session only if no OTHER session holds a live lease.
+        // A live foreign lease => its owner is still working (heartbeat-renewed), so
+        // resuming would double-run it — fall through instead. No holder / my own
+        // holder / unobservable lease (fail-open) => safe to resume.
+        let foreign_live_lease = live_lease_holder(&priority)
+            .is_some_and(|holder| holder != ctx.session.session_id);
+        let resume = is_in_progress && !foreign_live_lease;
+        if is_in_progress && foreign_live_lease {
+            log_gate_decision(
+                &ctx.session.session_id,
+                "stop:resume_foreign_live",
+                "continue",
+                &format!("card={priority} held by a live foreign lease; not resuming"),
+                &ctx.session.project,
+            );
+        }
         if !resume {
             log_gate_decision(
                 &ctx.session.session_id,

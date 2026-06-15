@@ -14,7 +14,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 dirs = { workspace = true }
 tokio = { workspace = true }
-surrealdb-types = "3.0.5"
+surrealdb-types = "3.1.4"
 # load-dynamic (not download-binaries): ort loads libonnxruntime at RUNTIME, so
 # the build/link step needs no static lib. Fixes CI test-compile on Linux/Windows
 # where the download strategy failed to surface the `-L` path under

@@ -58,16 +58,6 @@ pub struct MemoryEntry {
     // Defined on roadmap only; the cross-category SELECT yields NONE elsewhere.
     #[serde(default)]
     pub lane: Option<String>,
-    // STRUCTURED owner-gate flag: TRUE = this card needs an external owner
-    // action an agent can never self-supply (greenlight, prod deploy, live
-    // run, payment/CF secrets). The dispatcher (readiness::deps_satisfied)
-    // skips it like an unmet dependency. NONE/false = agent-dispatchable.
-    // Replaces the legacy free-text `AGENT_BLOCKED:`/`OWNER-GATED` body
-    // markers (state-in-prose anti-pattern) with a typed column, mirroring
-    // `priority`/`lane`. Defined on roadmap only; cross-category SELECT yields
-    // NONE elsewhere.
-    #[serde(default)]
-    pub owner_gated: Option<bool>,
 }
 
 impl MemoryEntry {

@@ -1,6 +1,7 @@
 use kavach_session::SessionState;
 
 use super::build_loop_compact;
+use super::build_loop_stop;
 use super::build_turn_shadow;
 
 #[test]
@@ -22,6 +23,32 @@ fn loop_compact_is_single_block() {
     let block = build_loop_compact(&session, None);
     assert!(block.starts_with("[LOOP]"));
     assert!(block.contains("unit.test"));
+}
+
+#[test]
+fn loop_stop_frame_is_legible_goal_iteration_termination() {
+    // F3 (unit.loop-eng-injection.f3-loop-goal-legible): the stop frame that
+    // prepends every [AUTO_CONTINUE] must be LEGIBLE — name the goal, the
+    // iteration, and the termination PREDICATE — not a bare "do not stop". This
+    // frame is now prepended on ALL three dispatch paths (task/hunt/backlog).
+    let mut session = SessionState::default();
+    session.turn_count = 4;
+    let frame = build_loop_stop(&session, Some("unit.demo-card"));
+    assert!(frame.starts_with("[LOOP]"), "frame must lead with the [LOOP] tag");
+    assert!(frame.contains("goal: unit.demo-card"), "goal must be named");
+    assert!(frame.contains("iteration:"), "iteration must be present");
+    assert!(
+        frame.contains("termination:"),
+        "the termination predicate is the whole point — it replaces bare 'do not stop'"
+    );
+    assert!(
+        frame.contains("3-witness"),
+        "termination predicate must state the 3-witness bar, not just 'keep going'"
+    );
+    assert!(
+        frame.contains("on_done:"),
+        "the frame must tell the loop what to do on completion (close + dispatch next)"
+    );
 }
 
 #[test]
