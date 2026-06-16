@@ -1,8 +1,8 @@
 // hub: multi-harness native edge — vendor detection + per-vendor input lowering
 // and output rendering. The ONLY place in the tree that knows a non-Claude-Code
 // harness exists; the engine/gates/DB stay vendor-blind (decision.multi-harness-native-edges).
-//! Native edges for the three harnesses kavach runs inside — Claude Code,
-//! Cursor, Codex.
+//! Native edges for the harnesses kavach runs inside — Claude Code, Cursor,
+//! Codex, Antigravity, Pi.
 //!
 //! Each harness spawns the same kavach binary and pipes JSON over stdin/stdout,
 //! but in its OWN dialect. This module is the anti-corruption layer: it detects
@@ -17,8 +17,10 @@
 
 use kavach_types::{HookInput, HookResponse};
 
+pub mod antigravity;
 pub mod codex;
 pub mod cursor;
+pub mod pi;
 
 #[cfg(test)]
 #[path = "vendor_test.rs"]
@@ -38,10 +40,68 @@ pub enum Vendor {
     /// `OpenAI` Codex CLI — Claude-Code-compatible events plus `turn_id` /
     /// `permission_mode`; blocks via exit code 2.
     Codex,
+    /// Google Antigravity (`agy`) CLI — successor to the retired Gemini CLI.
+    /// `PascalCase` CC-compatible events; output is `{"decision":"allow"|"deny"}`
+    /// (block via the JSON body, NOT an exit code). Config at
+    /// `~/.gemini/config/hooks.json`.
+    Antigravity,
+    /// Pi (`earendil-works/pi`) coding agent — TS extensions via `pi.on(event,cb)`.
+    /// A `tool_call` handler returns `{"block":true,"reason":…}` to deny and
+    /// NOTHING to allow (block via the JSON body, NOT an exit code). `agent_end` is
+    /// Pi's Stop-equivalent. Extension at `~/.pi/agent/extensions/kavach/index.ts`.
+    Pi,
 }
 
 /// The env var that force-selects a vendor, overriding payload auto-detect.
 pub const VENDOR_ENV: &str = "KAVACH_HARNESS";
+
+/// The live upstream source for a vendor's hook-contract schema.
+///
+/// Lets Kavach reference the CURRENT contract from the internet when a vendor
+/// updates its format, instead of trusting a frozen in-binary assumption.
+///
+/// The kind is type-encoded so callers never mistake a prose page for a fetchable
+/// schema: only [`SchemaSource::JsonSchema`] is a machine-readable document a
+/// drift-watcher may GET and diff; [`SchemaSource::Prose`] is human reference for
+/// a vendor that publishes no JSON Schema endpoint (Codex/Antigravity, Jun 2026).
+/// SOURCES: json.schemastore.org · cursor.com/docs/hooks ·
+/// developers.openai.com/codex/hooks · antigravity.google/docs/hooks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SchemaSource {
+    /// A machine-readable JSON Schema document — fetchable and diffable. `prose`
+    /// is the companion human-readable contract page.
+    JsonSchema {
+        /// URL of the JSON Schema document (the diff target for drift-watching).
+        url: &'static str,
+        /// Companion human-readable contract docs.
+        prose: &'static str,
+    },
+    /// A human-readable contract page only; the vendor publishes no JSON Schema
+    /// endpoint, so a drift-watcher can surface this URL but cannot auto-diff it.
+    Prose {
+        /// URL of the contract documentation.
+        url: &'static str,
+    },
+}
+
+impl SchemaSource {
+    /// The primary URL to reference for this vendor — the JSON Schema when one
+    /// exists, else the prose contract page.
+    #[must_use]
+    pub const fn url(&self) -> &'static str {
+        match *self {
+            Self::JsonSchema { url, .. } | Self::Prose { url } => url,
+        }
+    }
+
+    /// `true` when this source is a machine-readable JSON Schema a drift-watcher
+    /// may fetch and diff (vs. prose a human must read).
+    #[must_use]
+    pub const fn is_machine_readable(&self) -> bool {
+        matches!(self, Self::JsonSchema { .. })
+    }
+}
 
 impl Vendor {
     /// Parse a vendor tag (CLI `--vendor` value or `KAVACH_HARNESS`), case-insensitive.
@@ -52,6 +112,8 @@ impl Vendor {
             "claude" | "claude-code" | "claudecode" | "cc" => Some(Self::ClaudeCode),
             "cursor" => Some(Self::Cursor),
             "codex" => Some(Self::Codex),
+            "antigravity" | "agy" | "gemini" => Some(Self::Antigravity),
+            "pi" => Some(Self::Pi),
             _ => None,
         }
     }
@@ -156,6 +218,8 @@ impl Vendor {
             Self::ClaudeCode => crate::parse_hook_input(raw_payload),
             Self::Cursor => cursor::lower(raw_payload),
             Self::Codex => codex::lower(raw_payload),
+            Self::Antigravity => antigravity::lower(raw_payload),
+            Self::Pi => pi::lower(raw_payload),
         }
     }
 
@@ -183,16 +247,79 @@ impl Vendor {
             }
             Self::Cursor => cursor::render(resp, event),
             Self::Codex => codex::render(resp),
+            Self::Antigravity => antigravity::render(resp),
+            Self::Pi => pi::render(resp),
         }
     }
 
     /// The process exit code this vendor expects to signal a hard block. Claude
-    /// Code and Cursor signal via the JSON body (exit 0); Codex blocks with exit 2.
+    /// Code, Cursor, Antigravity, and Pi signal via the JSON body (exit 0 — Pi
+    /// blocks with `{"block":true}`, Antigravity with `{"decision":"deny"}`, not
+    /// an exit code); Codex blocks with exit 2.
     #[must_use]
     pub const fn block_exit_code(self) -> i32 {
         match self {
-            Self::ClaudeCode | Self::Cursor => 0,
+            Self::ClaudeCode | Self::Cursor | Self::Antigravity | Self::Pi => 0,
             Self::Codex => 2,
+        }
+    }
+
+    /// The live upstream hook-contract schema source for this vendor, so Kavach
+    /// can reference the CURRENT contract from the internet rather than a frozen
+    /// in-binary assumption. Claude Code and Cursor publish a machine-readable
+    /// JSON Schema (diffable by a drift-watcher); Codex and Antigravity publish
+    /// only a prose contract page as of Jun 2026.
+    ///
+    /// URLs are 2-source corroborated. SOURCES: schemastore.org · cursor.com ·
+    /// developers.openai.com/codex · antigravity.google.
+    #[must_use]
+    pub const fn schema_url(self) -> SchemaSource {
+        match self {
+            Self::ClaudeCode => SchemaSource::JsonSchema {
+                url: "https://json.schemastore.org/claude-code-settings.json",
+                prose: "https://code.claude.com/docs/en/hooks",
+            },
+            Self::Cursor => SchemaSource::JsonSchema {
+                url: "https://unpkg.com/cursor-hooks/schema/hooks.schema.json",
+                prose: "https://cursor.com/docs/hooks",
+            },
+            Self::Codex => SchemaSource::Prose {
+                url: "https://developers.openai.com/codex/hooks",
+            },
+            Self::Antigravity => SchemaSource::Prose {
+                url: "https://antigravity.google/docs/hooks",
+            },
+            Self::Pi => SchemaSource::Prose {
+                url: "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md",
+            },
+        }
+    }
+
+    /// Every vendor in detection order — the canonical roster a `--all` schema
+    /// listing iterates. Kept in sync with [`Self`]'s variants by exhaustiveness:
+    /// adding a variant forces this array (and `schema_url`) to be updated.
+    #[must_use]
+    pub const fn all() -> [Self; 5] {
+        [
+            Self::ClaudeCode,
+            Self::Cursor,
+            Self::Codex,
+            Self::Antigravity,
+            Self::Pi,
+        ]
+    }
+
+    /// Stable lowercase name for reports and `--vendor` round-trips. Defined here
+    /// (not duplicated in callers) so the `#[non_exhaustive]` enum stays the SOLE
+    /// match site — adding a variant forces an update in exactly one place.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::ClaudeCode => "claude-code",
+            Self::Cursor => "cursor",
+            Self::Codex => "codex",
+            Self::Pi => "pi",
+            Self::Antigravity => "antigravity",
         }
     }
 }

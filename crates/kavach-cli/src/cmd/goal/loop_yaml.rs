@@ -8,6 +8,7 @@
 // SOURCE: decision.goal-oracle-workflow · decision.goal-harness-6-patterns.
 mod harness;
 mod limits;
+mod loophole;
 mod model;
 mod oracle;
 
@@ -16,5 +17,6 @@ mod tests;
 
 pub(crate) use harness::Harness;
 pub(crate) use limits::LoopLimits;
+pub(crate) use loophole::{Lens, LoopholeIteration};
 pub(crate) use model::GoalLoopYaml;
 pub(crate) use oracle::{OnMaxAttempts, Oracle};

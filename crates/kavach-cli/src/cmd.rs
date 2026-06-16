@@ -12,6 +12,9 @@ pub(crate) mod db;
 pub(crate) mod deploy;
 mod gates;
 pub(crate) mod harness_loop;
+mod heal;
+mod install;
+mod loophole;
 pub(crate) mod io_safe;
 pub(crate) mod mcp;
 pub(crate) mod mistake;
@@ -21,6 +24,7 @@ pub(crate) mod pipeline;
 mod rag;
 mod rpc;
 mod rules;
+mod schema;
 mod security;
 mod session;
 mod spec;
@@ -54,6 +58,29 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             apply_schema,
         } => rpc::run(&transport, apply_schema),
         Commands::Daemon(args) => daemon::run(&args),
+        Commands::Install { vendor, dry_run } => install::run(&vendor, dry_run),
+        Commands::Schema { vendor, all } => schema::run(vendor.as_deref(), all),
+        Commands::Heal { action } => match action {
+            crate::cli::HealAction::Capture {
+                project,
+                incident,
+                summary,
+                log,
+                diff_base,
+            } => heal::run(&project, &incident, &summary, log.as_deref(), &diff_base),
+            crate::cli::HealAction::Sweep { project } => heal::sweep::run(&project),
+            crate::cli::HealAction::MergeGate { pr, witness_pass } => {
+                heal::merge_gate::run(pr, witness_pass)
+            }
+            crate::cli::HealAction::Ingest { project } => heal::ingest::run(&project),
+        },
+        Commands::Loophole { action } => match action {
+            crate::cli::LoopholeAction::Sweep {
+                project,
+                run_id,
+                round,
+            } => loophole::run(&project, &run_id, round),
+        },
         Commands::Rag { action } => rag::run(action),
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),

@@ -90,6 +90,18 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     let mut context = String::from(kavach_hook::CACHE_BOUNDARY_MARKER);
     writeln!(context, "[SESSION_START]\nmodel: {}\ncontext_window: {}\nusable_budget: {}\ncontext_phase: {}\ndev_phase: {}\nproject: {}", session.model_id, cfg.context_window, cfg.usable_budget, session.context_phase, session.current_phase, session.project).ok();
 
+    // Live temporal anchor (Tabula Rasa awareness): the CURRENT weekday + date,
+    // injected fresh every session so the model grounds "as of today" research
+    // to the precise day rather than a stale training-weight assumption. Must be
+    // a LIVE value — the old static `date` module froze at authoring time, so it
+    // is no longer injected (a frozen date would contradict this live line).
+    writeln!(
+        context,
+        "[TEMPORAL_AWARENESS]\ntoday: {}\nrule: treat THIS as the current date. When researching, search for information current as of today; do not assume the training-cutoff date.",
+        kavach_hook::today_full()
+    )
+    .ok();
+
     // Inject the operating contract FIRST (right after the header) and never
     // under any byte cap — on Cursor this is the only per-conversation door.
     // Resolves through the gate-config overlay (`session.autonomy_contract`) so
@@ -116,7 +128,9 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         session.memory_queried = true;
     }
 
-    let module_ctx = session.inject_modules_once(&["critical-rules", "date"]);
+    // `date` module dropped: superseded by the live [TEMPORAL_AWARENESS] line
+    // above (a static module froze the date at authoring time).
+    let module_ctx = session.inject_modules_once(&["critical-rules"]);
     context.push_str(&module_ctx);
 
     // Inject hot autonomous patterns so Claude sees cached fixes immediately.

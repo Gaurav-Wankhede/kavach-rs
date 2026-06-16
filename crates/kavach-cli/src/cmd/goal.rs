@@ -8,6 +8,7 @@ mod status;
 mod stop;
 mod types;
 
+pub(crate) use loop_yaml::{Lens, LoopholeIteration};
 pub(crate) use types::{GoalAction, GoalArgs};
 
 pub(crate) fn run(args: GoalArgs) -> i32 {

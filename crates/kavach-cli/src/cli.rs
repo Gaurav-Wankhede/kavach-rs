@@ -106,6 +106,44 @@ pub(crate) enum Commands {
     },
     /// Manage the launchd RPC-daemon `LaunchAgent` (code-owned plist generation).
     Daemon(crate::cmd::daemon::DaemonArgs),
+    /// Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…).
+    #[command(after_help = "EXAMPLES:\n  kavach install --vendor all --dry-run\n  kavach install --vendor cursor\n\nWHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent.")]
+    Install {
+        /// Which tool(s): cc | cursor | codex | gemini | pi | all.
+        #[arg(long)]
+        vendor: String,
+        /// Preview the would-be action without writing any file.
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Self-healing pipeline (Kavach replaces N8N). `capture` gathers CI/bug-hunt
+    /// failure context and writes a self-heal roadmap card the loop will dispatch.
+    #[command(after_help = "EXAMPLES:\n  kavach heal capture --project P --incident run-42 --summary 'smoke test failed' --log ci.log\n\nWHEN: a CI run failed or a bug-hunt found a defect — enqueue it for the autonomous loop to fix. Kavach never calls an LLM; the subscription agent heals.")]
+    Heal {
+        #[command(subcommand)]
+        action: HealAction,
+    },
+    /// Meta-Harness Loophole Loop: hunt loopholes in the SYSTEM ITSELF across the
+    /// six attack lenses, record each to the Kavach DB, and capture a heal card so
+    /// the loop fixes it — then re-hunt until dry. Emits a per-iteration YAML to a
+    /// /tmp working dir to precisely target each round's unit of work.
+    #[command(after_help = "EXAMPLES:\n  kavach loophole sweep --project P\n\nWHEN: continuously self-interrogate the codebase for concurrency/failure/malformed/authz/replay/boundary loopholes. Kavach detects (non-AI) + records; the subscription agent fixes.")]
+    Loophole {
+        #[command(subcommand)]
+        action: LoopholeAction,
+    },
+    /// Print a vendor's LIVE upstream hook-contract schema source so an operator
+    /// or agent can fetch + diff the current contract (realtime drift awareness).
+    #[command(after_help = "EXAMPLES:\n  kavach schema --all\n  kavach schema --vendor cursor\n\nWHEN: a native tool may have changed its hook format — reference the live schema URL instead of a frozen assumption.")]
+    Schema {
+        /// Which tool: cc | cursor | codex | antigravity (agy) | gemini (alias).
+        /// Omit with `--all` to list every vendor.
+        #[arg(long)]
+        vendor: Option<String>,
+        /// List the schema source for every vendor.
+        #[arg(long)]
+        all: bool,
+    },
     /// Build and query vectorless RAG trees
     Rag {
         #[command(subcommand)]
@@ -262,6 +300,81 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
     Toolbelt {
         #[command(subcommand)]
         action: ToolbeltAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum HealAction {
+    /// Gather a failure's context (logs, changed files) and write its self-heal
+    /// roadmap card. Idempotent on `--incident` (re-capture updates one card).
+    Capture {
+        /// Project slug the card belongs to.
+        #[arg(long)]
+        project: String,
+        /// Stable incident id (CI run id / bug-hunt finding id) — the card key.
+        #[arg(long)]
+        incident: String,
+        /// One-line failure summary (the card title).
+        #[arg(long)]
+        summary: String,
+        /// Path to the build/test log to tail into the card (optional).
+        #[arg(long)]
+        log: Option<String>,
+        /// Git ref to diff against for changed files (default: HEAD~1).
+        #[arg(long, default_value = "HEAD~1")]
+        diff_base: String,
+    },
+    /// Proactive bug-hunt: run the repo's non-AI quality gates (cargo check,
+    /// clippy -D warnings, machete) and, for each FAILING gate, capture a
+    /// self-heal card so the loop fixes the defect BEFORE CI does. Idempotent
+    /// per gate (re-sweep updates one card per gate). Kavach never calls an LLM.
+    Sweep {
+        /// Project slug the cards belong to.
+        #[arg(long)]
+        project: String,
+    },
+    /// Fail-closed auto-merge decision for a heal PR. ALLOWS merge ONLY when all
+    /// hold: the master switch is ON (env `KAVACH_HEAL_AUTOMERGE=1`, default OFF)
+    /// AND CI is green AND 3-witness passed AND the diff touches NO protected
+    /// path. Exit 0 = allow, non-zero = deny (and prints every failing reason).
+    /// Kavach decides; it does not itself perform the merge.
+    MergeGate {
+        /// PR number to evaluate (drives `gh pr checks` + `gh pr diff`).
+        #[arg(long)]
+        pr: u64,
+        /// Assert the heal contract's 3-witness verification passed for this PR.
+        /// Absent → treated as NOT verified (fail-closed).
+        #[arg(long)]
+        witness_pass: bool,
+    },
+    /// Ingestion bridge (host-side): poll OPEN GitHub Issues labelled `self-heal`
+    /// (opened by the CI self-heal workflow), capture each as a local roadmap
+    /// card via the RPC single-writer path, then relabel the issue
+    /// `self-heal-queued` so it is ingested exactly once. Connects the runner
+    /// issue queue (H2) to the local card (H1). Kavach never calls an LLM.
+    Ingest {
+        /// Project slug the captured cards belong to.
+        #[arg(long)]
+        project: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum LoopholeAction {
+    /// Run ONE loophole-hunt round: emit the iteration YAML to /tmp, scan the
+    /// six attack lenses over the workspace, record each finding to the DB
+    /// (mistakes) and capture a heal card. Idempotent per (lens, site).
+    Sweep {
+        /// Project slug the findings/cards belong to.
+        #[arg(long)]
+        project: String,
+        /// Sweep run id (groups iterations; defaults to a fixed `adhoc` id so a
+        /// re-run is idempotent on the same findings). Override per scheduled run.
+        #[arg(long, default_value = "adhoc")]
+        run_id: String,
+        /// 1-based round number within the run (the loop-until-dry counter).
+        #[arg(long, default_value_t = 1)]
+        round: u32,
     },
 }
 

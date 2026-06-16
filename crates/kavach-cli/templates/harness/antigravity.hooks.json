@@ -1,0 +1,21 @@
+{
+  "_comment": "Kavach native hooks for Google Antigravity (agy) CLI — successor to the retired Gemini CLI. Install to ~/.gemini/config/hooks.json (the shared agy hooks path per antigravity-cli CHANGELOG v1.0.8). Every command is the SAME kavach binary with --vendor antigravity; kavach lowers agy's PascalCase payload into its canonical pivot, runs the gate, and renders agy's native {\"decision\":\"allow\"|\"deny\",\"reason\":...} output. agy blocks via the decision body, not an exit code. SOURCES: https://antigravity.google/docs/hooks · github.com/google-antigravity/antigravity-cli",
+  "hooks": {
+    "SessionStart": [
+      { "command": "kavach gates session-start --hook --vendor antigravity" }
+    ],
+    "UserPromptSubmit": [
+      { "command": "kavach gates intent --hook --vendor antigravity" }
+    ],
+    "PreToolUse": [
+      { "command": "kavach gates pre-write --hook --vendor antigravity", "matcher": "Write|Edit" },
+      { "command": "kavach gates pre-tool --hook --vendor antigravity", "matcher": "*" }
+    ],
+    "PostToolUse": [
+      { "command": "kavach gates post-tool --hook --vendor antigravity", "matcher": "*" }
+    ],
+    "Stop": [
+      { "command": "kavach gates stop --hook --vendor antigravity" }
+    ]
+  }
+}

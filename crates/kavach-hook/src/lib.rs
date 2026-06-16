@@ -11,7 +11,7 @@ pub mod toon;
 pub mod vendor;
 
 pub use severity::GateSeverity;
-pub use vendor::Vendor;
+pub use vendor::{SchemaSource, Vendor};
 
 #[cfg(test)]
 #[path = "tests.rs"]
@@ -21,7 +21,7 @@ mod tests;
 pub use context::{
     CACHE_BOUNDARY_MARKER, context_block, current_month, current_week, current_year,
     exit_approve_ctx, exit_block_ctx, exit_modify_ctx, exit_modify_ctx_with_module,
-    exit_session_end_ctx, exit_user_prompt_submit_ctx, today,
+    exit_session_end_ctx, exit_user_prompt_submit_ctx, today, today_full,
 };
 
 // Re-export CC 2.1 functions at crate root

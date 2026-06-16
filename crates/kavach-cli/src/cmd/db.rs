@@ -41,6 +41,31 @@ pub(crate) use dispatcher::run;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 
+/// Upsert a roadmap card through the canonical write path (RPC-first → daemon,
+/// the single `RocksDB` writer; direct open only as daemon-down fallback). Sends
+/// `new: true`, which the daemon's `db.write` treats as a true upsert on
+/// `(project, roadmap, key)` — so re-capture of the same key UPDATES one card.
+/// Callers outside `db` (e.g. `heal`) use this instead of opening the DB
+/// directly, preserving the single-writer invariant. Returns the CLI exit code.
+pub(crate) fn upsert_roadmap_card(
+    project: &str,
+    key: &str,
+    title: &str,
+    content: &str,
+) -> i32 {
+    write::run(&rpc_client::WriteRequest {
+        project,
+        category: "roadmap",
+        key,
+        title,
+        content: Some(content),
+        new: true,
+        update_key: None,
+        priority: None,
+        depends_on: &[],
+    })
+}
+
 pub(crate) fn validate_project_workdir(project: &kavach_surreal::Project) -> Result<(), i32> {
     match &project.workdir {
         Some(workdir) if std::path::Path::new(workdir).is_dir() => Ok(()),

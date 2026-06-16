@@ -442,3 +442,130 @@ fn cursor_armed_sink_never_emits_a_top_level_null_pair() {
         "no null permission: {json}"
     );
 }
+
+// --- loop-parity: the autonomous-loop AUTO_CONTINUE must reach the agent in
+// EVERY vendor's native Stop contract, or the universal loop dies on that tool.
+// SOURCE: roadmap universal.loop-parity-audit. Locks the empirical finding that
+// a Stop `decision:block` carrying [AUTO_CONTINUE] renders natively per vendor.
+
+/// A canonical Stop-block verdict carrying the harness continuation text, stamped
+/// with the Stop event the way the stop gate emits it.
+fn stop_continue() -> HookResponse {
+    let mut resp = HookResponse::new_block("[AUTO_CONTINUE] Kanban has pending work — do not stop.");
+    resp.hook_specific_output = Some(kavach_types::HookSpecificOutput {
+        hook_event_name: "Stop".to_owned(),
+        ..Default::default()
+    });
+    resp
+}
+
+#[test]
+fn auto_continue_reaches_claude_code_stop() {
+    // Claude Code: the canonical block body — agent reads `reason`.
+    let json = Vendor::ClaudeCode.render_for(&stop_continue(), "Stop");
+    assert!(json.contains(r#""decision":"block""#), "cc block: {json}");
+    assert!(json.contains("AUTO_CONTINUE"), "cc carries continuation: {json}");
+}
+
+#[test]
+fn auto_continue_reaches_cursor_stop_as_followup_message() {
+    // Cursor's stop contract is {followup_message} (snake_case, no `continue`):
+    // continuation is driven SOLELY by a non-empty followup_message.
+    let json = Vendor::Cursor.render_for(&stop_continue(), "Stop");
+    assert!(json.contains("followup_message"), "cursor stop key: {json}");
+    assert!(json.contains("AUTO_CONTINUE"), "cursor carries continuation: {json}");
+    assert!(!json.contains(r#""continue""#), "cursor stop has no `continue` field: {json}");
+}
+
+#[test]
+fn auto_continue_reaches_codex_stop_body() {
+    // Codex mirrors CC's body; the Stop block reaches the agent via `reason`.
+    let json = Vendor::Codex.render_for(&stop_continue(), "Stop");
+    assert!(json.contains(r#""decision":"block""#), "codex block: {json}");
+    assert!(json.contains("AUTO_CONTINUE"), "codex carries continuation: {json}");
+}
+
+#[test]
+fn auto_continue_reaches_pi_agent_end_as_block() {
+    // Pi's agent_end (Stop-equivalent) carries the continuation as a `{block:true}`
+    // return — the shim re-injects `reason` so the agent keeps working.
+    let json = Vendor::Pi.render_for(&stop_continue(), "Stop");
+    assert!(json.contains(r#""block":true"#), "pi block: {json}");
+    assert!(json.contains("AUTO_CONTINUE"), "pi carries continuation: {json}");
+}
+
+#[test]
+fn clean_stop_does_not_resubmit_on_cursor() {
+    // A non-block verdict (drained board / ALL_BLOCKED) must NOT emit a
+    // followup_message — else Cursor would resubmit and spin forever.
+    let allow = HookResponse::new_approve("");
+    let json = Vendor::Cursor.render_for(&allow, "Stop");
+    assert!(!json.contains("followup_message"), "clean stop must not resubmit: {json}");
+}
+
+// ── SHARED-STATE PROOF (centralized brain) ────────────────────────────────
+// SOURCE: roadmap universal.shared-state-proof. The same kanban/memory/next-card
+// is shared across CC/Cursor/Codex/Antigravity (+Pi when shipped) because the
+// engine reads DB state ONCE, vendor-blind, then renders per-vendor. Vendor only
+// affects input lowering + output rendering — NEVER which card is selected. These
+// tests lock that: one canonical next-card verdict reaches EVERY vendor surface
+// carrying the identical card identity; only the wire dialect differs.
+
+/// A canonical "next card dispatched" verdict the way the stop gate emits it from
+/// shared DB state. The card key is the cross-vendor invariant every surface must
+/// carry verbatim.
+fn next_card_dispatch(card_key: &str) -> HookResponse {
+    let mut resp = HookResponse::new_block(&format!(
+        "[AUTO_CONTINUE] NEXT TASK [{card_key}]: shared kanban dispatched this card."
+    ));
+    resp.hook_specific_output = Some(kavach_types::HookSpecificOutput {
+        hook_event_name: "Stop".to_owned(),
+        ..Default::default()
+    });
+    resp
+}
+
+#[test]
+fn same_next_card_reaches_every_vendor_surface() {
+    // The engine's selection is keyed off the shared DB, not the caller's vendor.
+    // Whatever card the centralized brain picks must survive rendering into EVERY
+    // dialect with its identity intact — proving the brain is shared, not per-tool.
+    const CARD: &str = "universal.shared-state-proof";
+    let verdict = next_card_dispatch(CARD);
+    // Every shipped vendor (Pi excluded until its dialect lands) renders the SAME
+    // card key. The wire shape differs per vendor; the card identity does not.
+    for vendor in Vendor::all() {
+        let json = vendor.render_for(&verdict, "Stop");
+        assert!(
+            json.contains(CARD),
+            "{} dropped the shared card key: {json}",
+            vendor.name()
+        );
+        assert!(
+            json.contains("AUTO_CONTINUE"),
+            "{} dropped the continuation signal: {json}",
+            vendor.name()
+        );
+    }
+}
+
+#[test]
+fn drained_board_stops_every_vendor_without_resubmit() {
+    // The OTHER half of shared state: when the centralized brain reports the queue
+    // drained (a non-block verdict), NO vendor may resubmit. Cursor is the only
+    // resubmit-capable surface (followup_message); the rest carry no block body.
+    let drained = HookResponse::new_approve("");
+    for vendor in Vendor::all() {
+        let json = vendor.render_for(&drained, "Stop");
+        assert!(
+            !json.contains("followup_message"),
+            "{} would resubmit on a drained board: {json}",
+            vendor.name()
+        );
+        assert!(
+            !json.contains(r#""decision":"block""#),
+            "{} emitted a block on a drained board: {json}",
+            vendor.name()
+        );
+    }
+}

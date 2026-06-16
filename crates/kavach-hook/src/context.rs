@@ -1,10 +1,24 @@
 use crate::{HookAction, modify, output};
 use kavach_types::{HookResponse, HookSpecificOutput};
 
-/// Return today's date as YYYY-MM-DD using local time.
+/// Return today's date as YYYY-MM-DD using local time (bare ISO form).
+///
+/// Use for stored timestamps (e.g. RAG `built_at`) where a machine-parseable
+/// date is needed. For agent-visible CONTEXT, prefer [`today_full`] (weekday-aware).
 #[must_use]
 pub fn today() -> String {
     chrono::Local::now().format("%Y-%m-%d").to_string()
+}
+
+/// Return today's date WITH the weekday name, e.g. `"Tuesday, 2026-06-16"`.
+///
+/// This is the agent-visible temporal anchor injected into the Tabula Rasa
+/// (session-start) context and EVERY pre-task gate. The weekday sharpens "as of
+/// today" awareness so web research is scoped to the precise current day, not a
+/// stale training-weight assumption. `%A` is the full local weekday name.
+#[must_use]
+pub fn today_full() -> String {
+    chrono::Local::now().format("%A, %Y-%m-%d").to_string()
 }
 
 /// Return the current year (e.g., 2026).
@@ -57,10 +71,10 @@ pub fn context_block(name: &str, kvs: &[(&str, &str)]) -> String {
     out
 }
 
-/// `PreToolUse` allow with context GATE block, date auto-injected.
+/// `PreToolUse` allow with context GATE block, weekday-aware date auto-injected.
 #[must_use]
 pub fn exit_approve_ctx(gate: &str) -> HookAction {
-    let d = today();
+    let d = today_full();
     let context = context_block(gate, &[("status", "allow"), ("date", &d)]);
     let resp = HookResponse::new_pre_tool_use_with_context(gate, &context);
     output(&resp);
@@ -71,7 +85,7 @@ pub fn exit_approve_ctx(gate: &str) -> HookAction {
 /// Sends plain reason as permissionDecisionReason, context block as additionalContext.
 #[must_use]
 pub fn exit_block_ctx(gate: &str, reason: &str) -> HookAction {
-    let d = today();
+    let d = today_full();
     let context = context_block(
         gate,
         &[("status", "block"), ("reason", reason), ("date", &d)],
@@ -115,7 +129,7 @@ pub fn exit_modify_ctx_with_module(
 /// `UserPromptSubmit` with context block, date auto-injected.
 #[must_use]
 pub fn exit_user_prompt_submit_ctx(gate: &str, kvs: &[(&str, &str)]) -> HookAction {
-    let d = today();
+    let d = today_full();
     let mut all_kvs: Vec<(&str, &str)> = kvs.to_vec();
     all_kvs.push(("date", &d));
     let context = context_block(gate, &all_kvs);
@@ -125,7 +139,7 @@ pub fn exit_user_prompt_submit_ctx(gate: &str, kvs: &[(&str, &str)]) -> HookActi
 /// `SessionEnd` with context block, date auto-injected.
 #[must_use]
 pub fn exit_session_end_ctx(kvs: &[(&str, &str)]) -> HookAction {
-    let d = today();
+    let d = today_full();
     let mut all_kvs: Vec<(&str, &str)> = kvs.to_vec();
     all_kvs.push(("date", &d));
     let context = context_block("SESSION_END", &all_kvs);

@@ -113,6 +113,21 @@ mod tests {
     }
 
     #[test]
+    fn test_today_full_carries_weekday_and_iso_date() {
+        // Shape: "<Weekday>, YYYY-MM-DD" — the agent-visible temporal anchor.
+        let f = today_full();
+        assert!(f.contains(", "), "missing weekday separator: {f}");
+        // Weekday name is alphabetic and present before the comma.
+        let (weekday, rest) = f.split_once(", ").expect("has separator");
+        assert!(
+            weekday.chars().all(char::is_alphabetic) && !weekday.is_empty(),
+            "weekday not alphabetic: {weekday}"
+        );
+        // The ISO date trailer is exactly today()'s bare form.
+        assert_eq!(rest, today(), "ISO trailer must equal today()");
+    }
+
+    #[test]
     fn test_output_approve_json() {
         let resp = HookResponse::new_approve("test reason");
         let json = serde_json::to_string(&resp).expect("serialize");

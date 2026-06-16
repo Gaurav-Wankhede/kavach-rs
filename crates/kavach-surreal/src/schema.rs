@@ -263,6 +263,15 @@ DEFINE INDEX IF NOT EXISTS idx_roadmap_harness ON roadmap FIELDS project, harnes
 -- `owner_gated` field + its index are dropped below for existing stores.
 REMOVE INDEX IF EXISTS idx_roadmap_owner_gated ON roadmap;
 REMOVE FIELD IF EXISTS owner_gated ON roadmap;
+-- REMOVE FIELD drops the DEFINITION but NOT the bytes already stored per-row;
+-- on a SCHEMAFULL table the orphan value then fails every subsequent UPDATE
+-- ("Found field 'owner_gated', but no such field exists"). The companion
+-- data-migration scrubs the stored value from existing rows. SCHEMAFULL order
+-- is mandatory: REMOVE FIELD first (above), then UNSET (here). Idempotent: once
+-- scrubbed the field is absent and UNSET is a no-op.
+-- SOURCE: https://surrealdb.com/docs/surrealdb/surrealql/statements/update (UNSET)
+--         https://github.com/orgs/surrealdb/discussions/191 (REMOVE FIELD then UNSET)
+UPDATE roadmap UNSET owner_gated;
 
 -- =============================================================================
 -- Migration backfill: v2->v3 import did not materialize the `category` column

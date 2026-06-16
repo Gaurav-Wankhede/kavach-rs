@@ -9,7 +9,7 @@ pub(crate) fn run(input: &HookInput) {
     } else {
         let context = kavach_hook::context_block(
             "PRE_COMPACT",
-            &[("custom_instructions", ci), ("date", &kavach_hook::today())],
+            &[("custom_instructions", ci), ("date", &kavach_hook::today_full())],
         );
         let mut session = kavach_session::get_or_create_session();
         session.queue_lifecycle_relay(&context);
