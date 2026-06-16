@@ -29,3 +29,19 @@ const PARK_MARKERS: [&str; 2] = ["AGENT_BLOCKED:", "OWNER-GATED:"];
 pub fn is_parked(content: &str) -> bool {
     PARK_MARKERS.iter().any(|m| content.contains(m))
 }
+
+/// Title tokens that mark a card as an UMBRELLA/EPIC parent whose status is
+/// DERIVED from its children (e.g. `[UMBRELLA/EPIC — status child-derived]`).
+const UMBRELLA_MARKERS: [&str; 2] = ["UMBRELLA", "EPIC"];
+
+/// `true` iff the card is an umbrella/epic PARENT. A parent has no directly
+/// agent-executable leaf work — its status is computed from its children, so it
+/// must NOT be dispatched as a task (there is nothing to "implement" on the
+/// parent; the children are the real units). Without this the selector names the
+/// parent as `next_open_task` and the stop gate re-dispatches an un-buildable
+/// epic forever. The marker lives in the TITLE (`[UMBRELLA/EPIC — …]`), free-text
+/// by convention (no structural parent field in schema). Pairs with `is_parked`.
+#[must_use]
+pub fn is_umbrella(title: &str) -> bool {
+    UMBRELLA_MARKERS.iter().any(|m| title.contains(m))
+}

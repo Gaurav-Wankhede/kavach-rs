@@ -48,6 +48,26 @@ fn unparked_sibling_selected_over_parked_card() {
     assert_eq!(picked.expect("the live card").key, "live");
 }
 
+fn umbrella_card(key: &str) -> MemoryEntry {
+    let mut c = card(key, "todo", None);
+    c.title = format!("{key} [UMBRELLA/EPIC — status child-derived]");
+    c
+}
+
+#[test]
+fn umbrella_parent_card_is_not_selected() {
+    let cards = vec![umbrella_card("parent")];
+    let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
+    assert!(picked.is_none(), "an UMBRELLA/EPIC parent must not dispatch");
+}
+
+#[test]
+fn leaf_child_selected_over_umbrella_parent() {
+    let cards = vec![umbrella_card("parent"), card("leaf", "todo", None)];
+    let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
+    assert_eq!(picked.expect("the leaf child").key, "leaf");
+}
+
 #[test]
 fn lane_matches_unset_session_matches_every_card() {
     assert!(lane_matches(&card("a", "todo", Some("crypto")), None));

@@ -4,7 +4,7 @@
 //! foreign lane is never inspected. With no session lane every card matches
 //! pass 1, so pass 2 is a no-op and the behavior is the pre-lane single loop.
 
-use super::super::readiness::{deps_satisfied, is_parked, is_runnable_status};
+use super::super::readiness::{deps_satisfied, is_parked, is_runnable_status, is_umbrella};
 use super::super::types::NextTaskResult;
 use kavach_surreal::MemoryEntry;
 
@@ -24,7 +24,10 @@ pub(super) fn pick_in_lane(
     entries
         .iter()
         .filter(|e| {
-            in_lane(e) && is_runnable_status(e.entry_status_str()) && !is_parked(&e.content)
+            in_lane(e)
+                && is_runnable_status(e.entry_status_str())
+                && !is_parked(&e.content)
+                && !is_umbrella(&e.title)
         })
         .find(|e| deps_satisfied(e, dep_pool))
         .map(|e| NextTaskResult {
