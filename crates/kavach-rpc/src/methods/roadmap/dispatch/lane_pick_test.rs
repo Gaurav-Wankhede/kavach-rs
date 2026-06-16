@@ -21,6 +21,33 @@ fn card(key: &str, status: &str, lane: Option<&str>) -> MemoryEntry {
     }
 }
 
+fn parked_card(key: &str, marker: &str) -> MemoryEntry {
+    let mut c = card(key, "todo", None);
+    c.content = format!("{marker} owner-only, no agent code.");
+    c
+}
+
+#[test]
+fn parked_agent_blocked_card_is_not_selected() {
+    let cards = vec![parked_card("p", "AGENT_BLOCKED:")];
+    let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
+    assert!(picked.is_none(), "an AGENT_BLOCKED card must not dispatch");
+}
+
+#[test]
+fn parked_owner_gated_card_is_not_selected() {
+    let cards = vec![parked_card("p", "OWNER-GATED:")];
+    let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
+    assert!(picked.is_none(), "an OWNER-GATED card must not dispatch");
+}
+
+#[test]
+fn unparked_sibling_selected_over_parked_card() {
+    let cards = vec![parked_card("parked", "OWNER-GATED:"), card("live", "todo", None)];
+    let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
+    assert_eq!(picked.expect("the live card").key, "live");
+}
+
 #[test]
 fn lane_matches_unset_session_matches_every_card() {
     assert!(lane_matches(&card("a", "todo", Some("crypto")), None));

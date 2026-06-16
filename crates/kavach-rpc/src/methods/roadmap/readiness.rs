@@ -4,7 +4,7 @@ pub mod status_check;
 
 pub use cycle::{dep_index, is_in_cycle};
 pub use dep_key::{dep_key_satisfied, parse_declared_deps};
-pub use status_check::is_runnable_status;
+pub use status_check::{is_parked, is_runnable_status};
 
 /// Check if an entry is dispatchable to an agent.
 ///
