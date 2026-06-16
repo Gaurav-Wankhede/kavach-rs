@@ -21,31 +21,46 @@ fn card(key: &str, status: &str, lane: Option<&str>) -> MemoryEntry {
     }
 }
 
-fn parked_card(key: &str, marker: &str) -> MemoryEntry {
+fn marked_card(key: &str, marker: &str) -> MemoryEntry {
     let mut c = card(key, "todo", None);
     c.content = format!("{marker} owner-only, no agent code.");
     c
 }
 
+// PARKING ABOLISHED (owner directive 2026-06-16, reaffirmed 2026-06-17): the
+// former `AGENT_BLOCKED:`/`OWNER-GATED:` content markers are INERT — they no
+// longer suppress dispatch (the `is_parked` selector was removed). A card is
+// runnable or DELETED. These tests pin the new contract: a runnable card is
+// selected on status + deps + umbrella alone, regardless of any leftover marker
+// text. They are the regression tripwire if a future change re-adds `is_parked`.
+
 #[test]
-fn parked_agent_blocked_card_is_not_selected() {
-    let cards = vec![parked_card("p", "AGENT_BLOCKED:")];
+fn agent_blocked_marker_does_not_suppress_dispatch() {
+    let cards = vec![marked_card("p", "AGENT_BLOCKED:")];
     let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
-    assert!(picked.is_none(), "an AGENT_BLOCKED card must not dispatch");
+    assert_eq!(
+        picked.expect("a runnable card dispatches despite the inert marker").key,
+        "p"
+    );
 }
 
 #[test]
-fn parked_owner_gated_card_is_not_selected() {
-    let cards = vec![parked_card("p", "OWNER-GATED:")];
+fn owner_gated_marker_does_not_suppress_dispatch() {
+    let cards = vec![marked_card("p", "OWNER-GATED:")];
     let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
-    assert!(picked.is_none(), "an OWNER-GATED card must not dispatch");
+    assert_eq!(
+        picked.expect("a runnable card dispatches despite the inert marker").key,
+        "p"
+    );
 }
 
 #[test]
-fn unparked_sibling_selected_over_parked_card() {
-    let cards = vec![parked_card("parked", "OWNER-GATED:"), card("live", "todo", None)];
+fn priority_order_decides_between_two_runnable_cards() {
+    // `entries` is pre-sorted by priority; the first match wins. A marker on the
+    // first card no longer demotes it — both are runnable, the first is picked.
+    let cards = vec![marked_card("first", "OWNER-GATED:"), card("second", "todo", None)];
     let picked = pick_in_lane(&cards, &cards, |e| lane_matches(e, None));
-    assert_eq!(picked.expect("the live card").key, "live");
+    assert_eq!(picked.expect("the first runnable card").key, "first");
 }
 
 fn umbrella_card(key: &str) -> MemoryEntry {

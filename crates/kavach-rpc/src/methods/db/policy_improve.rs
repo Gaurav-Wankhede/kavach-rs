@@ -108,11 +108,14 @@ pub async fn policy_improve(
         },
     )
     .await?;
-    let incumbent_lcb = graph_top_deployed_policies(&ctx.db, 1)
-        .await
-        .ok()
-        .and_then(|v| v.first().map(|p| p.lcb))
-        .unwrap_or(0.0);
+    // Fail closed on an incumbent-read fault. A swallowed error here would default
+    // the incumbent LCB to 0.0, forging a false win in the GATE-C promotion check
+    // below — deploying an untested policy on a transient DB blip. Surface it like
+    // the bandit-load fault above (success=false).
+    let incumbent_lcb = match graph_top_deployed_policies(&ctx.db, 1).await {
+        Ok(rows) => rows.first().map_or(0.0, |p| p.lcb),
+        Err(e) => return Ok(load_failed(e.to_string())),
+    };
     let beats = promote(&cand.estimate, &Estimate::new(incumbent_lcb, 0.0, 1), params.z);
 
     let m = Metrics {

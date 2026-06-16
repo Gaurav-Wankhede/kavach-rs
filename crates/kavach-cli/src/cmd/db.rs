@@ -9,6 +9,7 @@ mod backfill_relationships;
 mod bridge;
 mod concept;
 mod delete;
+mod delete_prefix;
 mod dispatcher;
 mod event;
 mod expire;

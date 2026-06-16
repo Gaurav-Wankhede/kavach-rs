@@ -38,15 +38,17 @@ pub(super) fn check(ctx: &StopCtx<'_>) -> ControlFlow<()> {
     }
     let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&hunt_title));
     drop(kavach_hook::exit_stop_block(&format!(
-        "{loop_prefix}[AUTO_CONTINUE] Bug-hunt backlog not empty — do not stop.\n\
+        "{loop_prefix}[AUTO_CONTINUE] Do NOT stop. Fix this proven defect THIS turn.\n\
          NEXT HUNT [{hunt_key}]: {hunt_title}\n\
-         (CLAIMED — now in_progress in the Kavach DB; work it immediately.)\n\n\
-         Step 1 — read the proven defect + repro:\n\
+         This card is CLAIMED and in_progress in the Kavach DB. Work it now.\n\n\
+         Do this now, in order:\n\
+         1. Read the proven defect + repro:\n\
            kavach db get --project {proj} --category roadmap --key {hunt_key} --full\n\
-         Step 2 — CONFIRM-STILL-LIVE on HEAD (skip if already fixed), then RCA + root-fix.\n\
-         Step 3 — VERIFY 3-witness: failing-test->passing + cargo check exit 0.\n\
-         Step 4 — GATE: severity high/critical -> [HUMAN_GATE] halt; else close:\n\
-           kavach db status-update --project {proj} --category roadmap --key {hunt_key} --status verified"
+         2. Confirm it is still live on HEAD (skip if already fixed), then RCA + root-fix.\n\
+         3. Verify 3-witness: failing-test -> passing + cargo check exit 0.\n\
+         4. Gate: severity high/critical -> [HUMAN_GATE] halt; else close:\n\
+           kavach db status-update --project {proj} --category roadmap --key {hunt_key} --status verified\n\
+         Your VERY NEXT action must be step 1 — do not end this turn describing the defect."
     )));
     ControlFlow::Break(())
 }

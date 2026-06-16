@@ -47,26 +47,89 @@ fn cycle_deadlock_context_refuses_stop_and_directs_the_fix() {
 }
 
 #[test]
-fn all_blocked_context_names_the_dependency() {
-    let c = all_blocked_context();
+fn all_blocked_context_names_the_dependency_without_stop_language() {
+    let c = all_blocked_context(Some((2, 2, 0)));
     assert!(c.contains("ALL_BLOCKED"), "tag present: {c}");
     assert!(
         c.contains("dependency"),
         "names the prerequisite class: {c}"
     );
+    // The verdict must STAMP the census it read (verdict_needs_leaf_evidence):
+    // the live counts + proof the gate read the DB this stop.
+    assert!(
+        c.contains("census:") && c.contains("runnable=2 blocked=2 cyclic=0"),
+        "stamps the live census it read: {c}"
+    );
+    assert!(
+        c.contains("read the kavach DB roadmap table this stop"),
+        "cites the leaf it read this stop: {c}"
+    );
+    assert!(
+        c.contains("do NOT re-run `kavach db kanban`"),
+        "tells the AI not to redundantly re-query what the gate already read: {c}"
+    );
+    // The loop never self-terminates — even all-blocked re-scans the DB and
+    // yields to the user's Esc, never a hardcoded clean stop.
+    assert!(c.contains("Do NOT stop"), "refuses to self-terminate: {c}");
+    assert!(c.contains("Esc"), "yields only to the user halt: {c}");
+    assert!(
+        !c.contains("Clean stop") && !c.contains("clean stop"),
+        "carries no clean-stop language: {c}"
+    );
 }
 
 #[test]
-fn plan_context_nudges_instead_of_silent_stop() {
-    // The fix's core: a drained board emits the PLAN nudge, never silence.
-    let c = board_drained_plan_context();
+fn census_stamp_marks_rpc_outage_explicitly_so_no_false_read_claim() {
+    // None = RPC outage. The verdict must NOT claim a read it could not make;
+    // it must say the board was unobservable and the backlog is non-empty.
+    let c = board_drained_plan_context(None);
+    assert!(
+        c.contains("UNOBSERVABLE") && c.contains("treat the backlog as non-empty"),
+        "an unobservable board is stamped, never silently claimed read: {c}"
+    );
+}
+
+#[test]
+fn plan_context_directs_db_rescan_and_never_self_stops() {
+    // The contract: a drained board re-scans the DB (roadmap + decisions, all
+    // statuses) for the next task and never tells the LLM to stop. Only the
+    // user halts the loop, with Esc.
+    let c = board_drained_plan_context(Some((0, 0, 0)));
     assert!(c.contains("AUTO_CONTINUE"), "continue tag present: {c}");
+    assert!(c.contains("do NOT stop"), "never self-terminates: {c}");
+    // The drained verdict stamps the empty census it read (verdict_needs_leaf_evidence).
     assert!(
-        c.contains("un-built next phase"),
-        "names the un-built work: {c}"
+        c.contains("census:") && c.contains("runnable=0 blocked=0 cyclic=0"),
+        "stamps the empty census it read this stop: {c}"
     );
     assert!(
-        c.contains("genuine clean stop"),
-        "still allows a real stop when the plan is fully built: {c}"
+        c.contains("--category roadmap") && c.contains("--category decision"),
+        "directs DB scan across roadmap AND decisions: {c}"
     );
+    assert!(
+        c.contains("Esc"),
+        "the loop yields only to the user halt: {c}"
+    );
+    assert!(
+        !c.contains("clean stop") && !c.contains("clean-stop"),
+        "no hardcoded clean-stop language remains: {c}"
+    );
+}
+
+#[test]
+fn next_task_verdicts_mandate_research_mode_against_truth() {
+    // The built-in Stop→next-task step is research-first: WebSearch current truth,
+    // never trust training weights. Both next-task verdicts carry the directive.
+    for c in [board_drained_plan_context(Some((0, 0, 0))), all_blocked_context(Some((1, 1, 0)))] {
+        assert!(c.contains("RESEARCH MODE"), "names Research Mode: {c}");
+        assert!(c.contains("WebSearch"), "directs an internet search: {c}");
+        assert!(
+            c.contains("TABULA RASA = TRUTH"),
+            "asserts truth over weights: {c}"
+        );
+        assert!(
+            c.contains("NEVER trust training weights"),
+            "forbids answering from weights: {c}"
+        );
+    }
 }

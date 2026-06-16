@@ -53,13 +53,22 @@ pub async fn get_by_key(
     let query = format!(
         "SELECT {MEMORY_FIELDS} FROM type::table($table) WHERE project = $project AND entry_key = $key LIMIT 1"
     );
-    let mut response = db
-        .query(&query)
-        .bind(("table", table.to_owned()))
-        .bind(("project", project_id.clone()))
-        .bind(("key", key.to_owned()))
-        .await?;
-    let mut entry: Option<MemoryEntry> = response.take(0)?;
+    // SELF-HEALING (read path, increment 2): a transient RocksDB busy/lock spike or
+    // mid-session blip is retried with bounded backoff before surfacing. A read is
+    // not durability-critical (the caller can re-issue), but the dispatch hot path
+    // (next_open_task) reads every tick, so a momentary fault should self-heal
+    // rather than fail a scheduler tick. Binds are consumed per `.await`, so the
+    // closure rebuilds them each attempt. SOURCE: crate::retry::with_retry.
+    let mut entry: Option<MemoryEntry> = crate::retry::with_retry(|| async {
+        let mut response = db
+            .query(&query)
+            .bind(("table", table.to_owned()))
+            .bind(("project", project_id.clone()))
+            .bind(("key", key.to_owned()))
+            .await?;
+        response.take(0).map_err(crate::error::Error::Surreal)
+    })
+    .await?;
     stamp_one(table, &mut entry);
     Ok(entry)
 }
@@ -95,12 +104,18 @@ pub async fn list_by_project(
         "FROM type::table($table) WHERE project = $project ",
         "ORDER BY _sort_priority ASC, created_at ASC"
     );
-    let mut response = db
-        .query(QUERY)
-        .bind(("table", table.to_owned()))
-        .bind(("project", project_id.clone()))
-        .await?;
-    let entries: Vec<MemoryEntry> = response.take(0)?;
+    // SELF-HEALING (read path, increment 2): the scheduler consumes this order
+    // every dispatch tick, so a transient fault is retried before it fails a tick.
+    // See get_by_key for the rationale; binds rebuilt per attempt.
+    let entries: Vec<MemoryEntry> = crate::retry::with_retry(|| async {
+        let mut response = db
+            .query(QUERY)
+            .bind(("table", table.to_owned()))
+            .bind(("project", project_id.clone()))
+            .await?;
+        response.take(0).map_err(crate::error::Error::Surreal)
+    })
+    .await?;
     Ok(stamp_category(table, entries))
 }
 

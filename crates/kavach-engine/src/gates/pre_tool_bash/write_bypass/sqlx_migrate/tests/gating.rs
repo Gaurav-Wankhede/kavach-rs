@@ -3,11 +3,32 @@
 
 use super::super::check_sqlx_migrate_requires_rca;
 
+// The block-path tests below clear `DATABASE_URL`/`KAVACH_LOCAL_DB` for their
+// duration: the gate intentionally short-circuits to `None` when the target is a
+// local/dev DB (`is_local_database_url`) or the override is set. A dev shell that
+// exports a local `DATABASE_URL` (this repo's `.env`) would otherwise make these
+// pass-locally/fail-in-CI flaky. Clearing them pins the production-DB path so the
+// `rca_satisfied=false` block is exercised deterministically. `temp_env::with_vars`
+// is the same RAII crate `local_db_override_bypasses` uses; `None` ⇒ unset for the
+// closure, and its internal mutex serializes against the other env-touching test.
+// SOURCE: https://docs.rs/temp-env/latest/temp_env/fn.with_var_unset.html
+fn with_production_db_env(test: impl FnOnce()) {
+    temp_env::with_vars(
+        [
+            ("DATABASE_URL", None::<&str>),
+            ("KAVACH_LOCAL_DB", None::<&str>),
+        ],
+        test,
+    );
+}
+
 #[test]
 fn blocks_sqlx_migrate_run_without_rca() {
-    let r = check_sqlx_migrate_requires_rca("sqlx migrate run --source migrations", false);
-    assert!(r.is_some(), "must block when RCA not satisfied");
-    assert!(r.unwrap().contains("MIGRATE_RUN_REQUIRES_RCA"));
+    with_production_db_env(|| {
+        let r = check_sqlx_migrate_requires_rca("sqlx migrate run --source migrations", false);
+        assert!(r.is_some(), "must block when RCA not satisfied");
+        assert!(r.unwrap().contains("MIGRATE_RUN_REQUIRES_RCA"));
+    });
 }
 
 #[test]
@@ -24,8 +45,10 @@ fn allows_sqlx_migrate_info_without_rca() {
 
 #[test]
 fn matches_cargo_sqlx_variant() {
-    let r = check_sqlx_migrate_requires_rca("cargo sqlx migrate run", false);
-    assert!(r.is_some(), "cargo sqlx variant must also be gated");
+    with_production_db_env(|| {
+        let r = check_sqlx_migrate_requires_rca("cargo sqlx migrate run", false);
+        assert!(r.is_some(), "cargo sqlx variant must also be gated");
+    });
 }
 
 #[test]
@@ -76,8 +99,10 @@ fn dry_run_passes() {
 
 #[test]
 fn real_run_still_blocks_after_introspection_whitelist() {
-    let r = check_sqlx_migrate_requires_rca("sqlx migrate run --source migrations", false);
-    assert!(r.is_some(), "real migrate run must still block without RCA");
+    with_production_db_env(|| {
+        let r = check_sqlx_migrate_requires_rca("sqlx migrate run --source migrations", false);
+        assert!(r.is_some(), "real migrate run must still block without RCA");
+    });
 }
 
 #[test]

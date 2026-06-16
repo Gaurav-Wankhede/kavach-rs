@@ -1,6 +1,6 @@
 //! Next-dispatchable selectors: task / hunt / backlog, with fail-closed sentinel.
 use super::card::SOURCE_DOWN_KEY;
-use super::daemon::{rpc_next, rpc_open_census};
+use super::daemon::{rpc_census_only, rpc_next, rpc_next_only, rpc_open_census};
 
 fn source_down_sentinel() -> (String, String) {
     (
@@ -52,6 +52,27 @@ pub(crate) fn open_set_census(project_slug: &str) -> Option<(u64, u64, u64)> {
         Ok(Some((r, b, c))) => Some((r, b, c)),
         Ok(None) | Err(()) => None,
     }
+}
+
+/// RPC-ONLY census for HOT entry hooks (`SessionStart` / `UserPromptSubmit`).
+/// Single bounded RPC call — NO daemon self-heal, NO direct-DB cold-open. `None`
+/// on empty slug or any outage, so the hook fails SOFT and FAST to the legacy nag
+/// instead of blocking the session on a `RocksDB` open. Distinct from
+/// [`open_set_census`], which is the Stop gate's already-warm drained-branch read.
+pub(crate) fn census_rpc_only(project_slug: &str) -> Option<(u64, u64, u64)> {
+    if project_slug.is_empty() {
+        return None;
+    }
+    rpc_census_only(project_slug)
+}
+
+/// RPC-ONLY next-task name for hot entry hooks: bounded single call, no fallback.
+/// `None` on empty slug or outage → the caller omits the "next card" line.
+pub(crate) fn next_task_rpc_only(project_slug: &str) -> Option<(String, String)> {
+    if project_slug.is_empty() {
+        return None;
+    }
+    rpc_next_only(project_slug).as_ref().and_then(label_from)
 }
 
 /// Shared selector body: empty slug → None; RPC down → fail-closed sentinel.

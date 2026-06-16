@@ -5,9 +5,7 @@
 
 use core::ops::ControlFlow;
 
-use super::super::shared::{
-    StopCtx, card_owns_any_turn_file, get_scope_advisory, should_block_behavioral,
-};
+use super::super::shared::{StopCtx, card_owns_any_turn_file};
 use crate::gates::stop_dispatch::card_is_still_open;
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
@@ -25,16 +23,32 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             .recent_commands
             .iter()
             .any(|line| line.contains("kavach db status-update") && line.contains(&card));
-        if !updated && should_block_behavioral(ctx.session, "kanban_status_pending") {
+        // NON-SURRENDERABLE: close-before-advance is a DB-INTEGRITY invariant
+        // (global CLAUDE.md §autonomous_loop.3_close_before_advance), NOT a
+        // cosmetic behavioral nag. It does NOT route through the 3-strike
+        // behavioral breaker — a card left in_progress while work proceeds is a
+        // lie to the work-ledger, and an invariant that can be waited out in N
+        // turns is not enforced (CWE-840). PARKING ABOLISHED (owner directive
+        // 2026-06-16, reaffirmed 2026-06-17): there is no honest-park escape — the
+        // block lifts on EXACTLY ONE of:
+        //   (a) a real `kavach db status-update` for THIS card this turn, or
+        //   (b) DELETE the card (`kavach db delete --category roadmap --key ...`)
+        //       when it is genuinely un-buildable — runnable or DELETED, never
+        //       marker-parked (§delete_not_park). No timeout/marker escape.
+        if !updated {
             let n = ctx.session.files_modified_this_turn.len();
             let project = ctx.session.project.clone();
-            let advisory = get_scope_advisory(ctx.session, "kanban_status_pending");
             drop(kavach_hook::exit_stop_block(&format!(
-                "[KANBAN_STATUS_PENDING]\n\
-                 You modified {n} file(s) this turn but didn't update kanban card '{card}'.\n\
-                 Run: kavach db status-update --project {project} --category roadmap \\\n\
-                      --key {card} --status <todo|in_progress|done|verified>\n\
-                 Then re-stop. (3-strike circuit breaker auto-allows on the 3rd block.){advisory}"
+                "[KANBAN_STATUS_PENDING] (non-surrenderable: close-before-advance invariant)\n\
+                 You modified {n} file(s) this turn but card '{card}' is still open and \
+                 was NOT updated. The loop will NOT advance until the DB reflects reality.\n\
+                 CLOSE it:  kavach db status-update --project {project} --category roadmap \\\n\
+                            --key {card} --status <done|verified>  (or in_progress if mid-work)\n\
+                 OR, if it is genuinely un-buildable (owner-only / external prerequisite),\n\
+                 DELETE it (parking is abolished — runnable or deleted):\n\
+                   kavach db delete --project {project} --category roadmap --key {card}\n\
+                 Then re-stop. There is no timeout escape and no marker escape — \
+                 close or delete, then continue."
             )));
             return ControlFlow::Break(());
         }

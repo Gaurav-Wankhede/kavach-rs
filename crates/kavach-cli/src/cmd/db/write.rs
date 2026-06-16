@@ -12,7 +12,9 @@
 // similarity). --update-key verifies the key exists. Other categories keep
 // legacy back-compat.
 // SOURCE: docs.rs/clap/latest/clap/_derive/_tutorial/index.html
-use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use crate::cmd::io_safe::{
+    ewrite_or_exit, into_exit_code, print_or_exit, read_stdin_body_or_exit,
+};
 use kavach_types::Priority;
 use std::fmt::Write as _;
 
@@ -139,16 +141,35 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
     let new = req.new;
     let update_key = req.update_key;
     let priority = req.priority.map(Priority::new);
-    let body = if let Some(c) = content {
-        c.to_owned()
-    } else {
-        let warn = "warning: no --content provided. Only the title will be stored. \
-             Use --content \"...\" to persist plan details, decisions, or context.";
-        if let Err(io_err) = ewrite_or_exit(warn) {
-            return into_exit_code(io_err);
-        }
-        String::new()
+    // Body resolution honors the documented `--content reads from stdin if
+    // omitted` contract: explicit flag wins; else a piped/redirected stdin
+    // supplies the body; else (interactive TTY, nothing piped) fall back to the
+    // title-only warning. A real stdin read failure surfaces, never swallowed.
+    let body = match content {
+        Some(c) => c.to_owned(),
+        None => match read_stdin_body_or_exit() {
+            Ok(Some(piped)) => piped,
+            Ok(None) => {
+                let warn = "warning: no --content provided and no piped stdin. Only the \
+                     title will be stored. Pass --content \"...\" or pipe the body via \
+                     stdin to persist plan details, decisions, or context.";
+                if let Err(io_err) = ewrite_or_exit(warn) {
+                    return into_exit_code(io_err);
+                }
+                String::new()
+            }
+            Err(io_err) => return into_exit_code(io_err),
+        },
     };
+    // Carry the RESOLVED body (flag or stdin) through every downstream path:
+    // the RPC payload, RPC graph-edge extraction, and the direct fallback all
+    // read `content` — without this, a stdin-supplied body would reach the
+    // direct path but be dropped by the RPC-first call (the common case).
+    let effective_req = super::rpc_client::WriteRequest {
+        content: Some(body.as_str()),
+        ..*req
+    };
+    let eff = &effective_req;
 
     // STRICT MODE: for canonical categories the caller must declare intent.
     if STRICT_CATEGORIES.contains(&category) && !new && update_key.is_none() {
@@ -181,7 +202,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
     // races the lock. Only when the daemon is unreachable (DAEMON_UNAVAILABLE)
     // is a direct open safe (no other process holds the fcntl lock). Any other
     // RPC error means the daemon is up; propagate it, do not race the lock.
-    match super::rpc_client::write(req) {
+    match super::rpc_client::write(eff) {
         Ok(res) => {
             if res.success {
                 let id = super::rpc_client::or_str(res.id, "?");
@@ -377,7 +398,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                 // and upsert_relationships UPSERTs endpoints by name (no dup
                 // logical edge). SOURCE: https://surrealdb.com/docs/learn/querying/concepts-and-guides/idempotent-operations
                 let mut relationships = kavach_engine::extract_memory_entry_relationships(&body);
-                for dep in req.depends_on {
+                for dep in eff.depends_on {
                     let target = dep.trim();
                     if !target.is_empty() {
                         relationships.push(kavach_engine::ExtractedRelationship::new(

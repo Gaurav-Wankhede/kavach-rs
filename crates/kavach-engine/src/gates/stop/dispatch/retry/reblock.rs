@@ -25,11 +25,11 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     match next_dispatch(&ctx.session.project) {
         Some((_, priority, _)) if priority == SOURCE_DOWN_KEY => {
             drop(kavach_hook::exit_stop_block(
-                "[AUTO_CONTINUE] kanban source UNREACHABLE — cannot verify the \
-                 backlog is empty; clean stop REFUSED (fail-closed; this outage \
-                 silently disables the loop).\nRECOVER: `kavach rpc` \
-                 (background), then `kavach db kanban --project <slug>`. Fix the \
-                 daemon before stopping.",
+                "[AUTO_CONTINUE] kanban source UNREACHABLE — cannot read the \
+                 backlog to find the next task; fail-closed so the outage cannot \
+                 silently disable the loop.\nRECOVER: `kavach rpc` (background), \
+                 then `kavach db kanban --project <slug>` and resume dispatch. The \
+                 loop yields only to the user's `Esc`, never to a DB outage.",
             ));
             ControlFlow::Break(())
         }
@@ -46,14 +46,12 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&title));
             let reward_prefix = loop_frame::build_reward_stop_last(ctx.session);
             drop(kavach_hook::exit_stop_block(&format!(
-                "{loop_prefix}{reward_prefix}STOP BLOCKED ({attempt}/{max}): kanban has runnable work. \
-                 NEXT {tier} [{priority}]: {title}. CLAIMED — now in_progress in \
-                 the Kavach DB; resume this work NOW. Stop is forced after {max} \
-                 re-blocks; the card stays open and you resume work THIS turn per \
-                 §FOCUS NEVER-PROPOSE-SESSION-BREAK. CONTRACT: claim -> implement \
+                "{loop_prefix}{reward_prefix}STOP BLOCKED ({attempt}/{max}): you have runnable work — \
+                 resume it NOW, do not stop. NEXT {tier} [{priority}]: {title}. This card is CLAIMED \
+                 and in_progress in the Kavach DB. Start it this turn. CONTRACT: claim -> implement \
                  -> 3-witness verify (artifact exists -> diff landed -> build \
-                 passes) -> close, all this turn; loophole-check before any done \
-                 claim.{harness}"
+                 passes) -> close, all this turn; run the loophole lenses before \
+                 you claim done. Do NOT propose a session break.{harness}"
             )));
             ControlFlow::Break(())
         }
@@ -72,8 +70,9 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 /// - `Promoted` + a card now dispatchable → resume that card.
 /// - `WitnessFailed` → an AI-fixable keystone exists → command `KEYSTONE_REPAIR`.
 /// - `NothingDone` / `Promoted` with nothing dispatchable → the queue is empty or
-///   every remainder is blocked by unmet dependencies → a genuine clean stop. This
-///   last branch is what stops the loop from running forever on a blocked backlog.
+///   every remainder is dependency-blocked → emit the census-aware DB-rescan
+///   verdict (`all_blocked` / `board_drained`), never a self-stop. The loop yields
+///   only to the user's `Esc`.
 fn all_blocked_or_autoverify(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     let outcome = auto_verify_done_cards(&ctx.session.project);
     if matches!(outcome, AutoVerify::Promoted(n) if n > 0)

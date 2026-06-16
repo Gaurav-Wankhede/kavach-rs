@@ -148,6 +148,18 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         // again. The intent-injector drain is harness-neutral, so the queue must be
         // too. queue_pending_advisory persists to pending_advisories unconditionally.
         session.queue_pending_advisory("[LOOPHOLE] last turn shipped risk-bearing work without a `Loopholes closed:` line — a loophole may be LIVE. FIX FIRST: run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and CLOSE each at its root this turn (or file a card), then emit `Loopholes closed:`. Do this BEFORE any new work — fixing beats documenting.");
+        // M4 TEETH: beyond the prompt nudge, run the bounded lens DETECTOR over
+        // this turn's git-changed Rust files and surface CONCRETE suspected sites
+        // (lens + file:line). This feeds the same loophole loop — the agent gets
+        // real targets, not just a reminder. Bounded so the Stop path can't stall.
+        let changed = super::loophole_guard::changed_rust_files();
+        let file_refs: Vec<(&str, &str)> = changed
+            .iter()
+            .map(|(p, c)| (p.as_str(), c.as_str()))
+            .collect();
+        if let Some(sites) = super::loophole_guard::scan_changed_for_loopholes(&file_refs) {
+            session.queue_pending_advisory(&sites);
+        }
     }
 
     // Shallow-verdict guard (re-enforced from the advisory path, NOT a HALT — the

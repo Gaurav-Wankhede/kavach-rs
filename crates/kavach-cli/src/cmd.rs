@@ -74,13 +74,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             }
             crate::cli::HealAction::Ingest { project } => heal::ingest::run(&project),
         },
-        Commands::Loophole { action } => match action {
-            crate::cli::LoopholeAction::Sweep {
-                project,
-                run_id,
-                round,
-            } => loophole::run(&project, &run_id, round),
-        },
+        Commands::Loophole { action } => dispatch_loophole(action),
         Commands::Rag { action } => rag::run(action),
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),
@@ -133,5 +127,29 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Team(args) => team::run(args),
         Commands::Mcp => mcp::run(),
         Commands::Toolbelt { action } => toolbelt::run(action),
+    }
+}
+
+/// Dispatch the `loophole` subcommands (sweep / loop / cron) — extracted from
+/// `dispatch` to keep that router under the 100-line micro-file ceiling.
+fn dispatch_loophole(action: crate::cli::LoopholeAction) -> i32 {
+    use crate::cli::LoopholeAction;
+    match action {
+        LoopholeAction::Sweep {
+            project,
+            run_id,
+            round,
+        } => loophole::run(&project, &run_id, round),
+        LoopholeAction::Loop {
+            project,
+            run_id,
+            dry_rounds,
+            max_rounds,
+        } => loophole::run_loop(&project, &run_id, dry_rounds, max_rounds),
+        LoopholeAction::Cron {
+            project,
+            hour,
+            dry_run,
+        } => loophole::cron::run(&project, hour, dry_run),
     }
 }

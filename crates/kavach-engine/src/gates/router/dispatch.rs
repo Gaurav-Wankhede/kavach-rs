@@ -73,5 +73,7 @@ fn record_advisory(session: &mut SessionState, gate_name: &str, fix: &str) {
     session.last_advisory_gate.push_str(gate_name);
     session.last_advisory_fix.clear();
     session.last_advisory_fix.push_str(fix);
-    session.save().ok();
+    // Advisory stash is non-blocking, but a swallowed save means next turn's
+    // post_tool gate sees stale state — log the I/O failure instead of dropping it.
+    session.save_or_log();
 }

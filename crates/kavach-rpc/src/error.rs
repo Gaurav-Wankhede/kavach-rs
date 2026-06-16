@@ -10,6 +10,7 @@ pub const CODE_DB_IO: i32 = -32004;
 pub const CODE_DB_JSON: i32 = -32005;
 pub const CODE_DB_SURREAL: i32 = -32006;
 pub const CODE_DB_INVALID_HIERARCHY: i32 = -32007;
+pub const CODE_DB_SCHEMA_VIOLATION: i32 = -32008;
 
 #[must_use]
 #[expect(
@@ -30,6 +31,9 @@ pub fn surreal_to_rpc(err: SurrealError) -> ErrorObjectOwned {
         SurrealError::Surreal(e) => (CODE_DB_SURREAL, format!("surreal error: {e}")),
         SurrealError::InvalidHierarchy(h) => {
             (CODE_DB_INVALID_HIERARCHY, format!("invalid hierarchy: {h}"))
+        }
+        SurrealError::SchemaViolation(v) => {
+            (CODE_DB_SCHEMA_VIOLATION, format!("schema violation: {v}"))
         }
     };
     ErrorObjectOwned::owned(code, msg, None::<()>)

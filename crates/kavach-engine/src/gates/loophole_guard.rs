@@ -139,6 +139,109 @@ pub(crate) fn check_stop_interrogation(message: &str, wrote_this_turn: bool) -> 
     ))
 }
 
+/// Max changed files scanned per Stop — the boundary brake so a huge multi-file
+/// turn cannot stall the hot Stop path. Excess is named, never silently dropped.
+const MAX_FILES_SCANNED: usize = 24;
+/// Max suspected sites listed in the advisory — keeps the injected text bounded.
+const MAX_SITES_LISTED: usize = 12;
+
+/// Collect this turn's changed, scannable Rust files as `(path, content)` pairs,
+/// bounded to `MAX_FILES_SCANNED`. Source = `git diff --name-only HEAD` (working-
+/// tree changes since the last commit) — the same git-tracked view the CLI sweep
+/// uses. Consistent with the existing Stop-path process I/O (`cargo check` in
+/// `stop_dispatch/verify.rs`); the Stop gate is end-of-turn, not latency-critical.
+/// Returns an owned Vec so the borrow of file contents is self-contained. Any git
+/// or read error yields an empty Vec — detection is best-effort, never fatal.
+pub(crate) fn changed_rust_files() -> Vec<(String, String)> {
+    let Ok(out) = std::process::Command::new("git")
+        .args(["diff", "--name-only", "HEAD"])
+        .output()
+    else {
+        return Vec::new();
+    };
+    if !out.status.success() {
+        return Vec::new();
+    }
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(str::trim)
+        .filter(|p| is_scannable_rust(p))
+        .take(MAX_FILES_SCANNED)
+        .filter_map(|p| std::fs::read_to_string(p).ok().map(|c| (p.to_owned(), c)))
+        .collect()
+}
+
+/// True for a non-test Rust source — mirrors the CLI sweep's exclusion so the
+/// gate and the sweep agree on scope. Test code (`tests.rs`, `*_test.rs`,
+/// `*_tests.rs`, anything under a `tests/` dir) is excluded: it legitimately uses
+/// `unwrap`/`expect`/index, so flagging it floods the advisory with non-defects.
+fn is_scannable_rust(path: &str) -> bool {
+    let p = std::path::Path::new(path);
+    if p.extension().is_none_or(|e| !e.eq_ignore_ascii_case("rs")) {
+        return false;
+    }
+    let s = path.replace('\\', "/");
+    if s.contains("/tests/") || s.starts_with("tests/") {
+        return false;
+    }
+    p.file_name().and_then(|n| n.to_str()).is_some_and(|name| {
+        // Mirror the CLI sweep: exclude tests.rs and any stem carrying a `_test`
+        // segment (foo_test.rs / foo_tests.rs / foo_test_menu.rs sibling support).
+        name != "tests.rs" && !name.trim_end_matches(".rs").contains("_test")
+    })
+}
+
+/// Bounded loophole DETECTION over the turn's changed files — the M4 teeth that
+/// turn the prompt-only self-interrogation into an actual lens scan. PURE: the
+/// caller (the hook layer, which may touch git/fs) supplies `(path, content)`
+/// pairs; this runs the shared `kavach_patterns::loophole_lens` kernel and returns
+/// a concrete `[LOOPHOLE_SITES]` advisory naming suspected `(lens, file:line)`
+/// hints, or `None` when nothing fired. Bounded by `MAX_FILES_SCANNED` (the hot
+/// Stop path must never stall) and `MAX_SITES_LISTED`. Kavach DETECTS + RECORDS
+/// only — the native subscription agent triages + fixes each site; no LLM here.
+pub(crate) fn scan_changed_for_loopholes(files: &[(&str, &str)]) -> Option<String> {
+    if files.is_empty() {
+        return None;
+    }
+    let total_files = files.len();
+    let scanned = total_files.min(MAX_FILES_SCANNED);
+    let mut sites: Vec<String> = Vec::new();
+    for (path, content) in files.iter().take(scanned) {
+        for f in kavach_patterns::loophole_lens::scan_text(content) {
+            sites.push(format!("{} {}:{} — {}", f.lens.slug(), path, f.line, f.hint));
+        }
+    }
+    if sites.is_empty() {
+        return None;
+    }
+    let found = sites.len();
+    let shown = found.min(MAX_SITES_LISTED);
+    let mut out = String::from(
+        "[LOOPHOLE_SITES] bounded lens scan of this turn's changed files flagged \
+         suspected loopholes (heuristic hints, not proof). Triage each via its \
+         attack lens; FIX at the source or prove N/A with a file:line citation:\n",
+    );
+    for s in sites.iter().take(shown) {
+        out.push_str("  - ");
+        out.push_str(s);
+        out.push('\n');
+    }
+    // No silent cap: name what was dropped (sites and/or files). Format into a
+    // local first, then `push_str` — `String::push_str` is infallible, sidestepping
+    // both the `push_str(&format!())` and the `fmt::Result` discard lints.
+    if found > shown {
+        let line = format!("  … +{} more suspected site(s)\n", found.saturating_sub(shown));
+        out.push_str(&line);
+    }
+    if total_files > scanned {
+        let line = format!(
+            "  (scanned {scanned}/{total_files} changed files this turn; rerun `kavach loophole sweep` for the rest)\n"
+        );
+        out.push_str(&line);
+    }
+    Some(out)
+}
+
 #[cfg(test)]
 #[path = "loophole_guard_tests.rs"]
 mod tests;

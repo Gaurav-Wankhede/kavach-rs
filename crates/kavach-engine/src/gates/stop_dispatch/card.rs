@@ -74,6 +74,14 @@ pub(crate) fn card_is_still_open(project_slug: &str, key: &str) -> bool {
     matches!(status.as_deref(), Some("todo" | "in_progress"))
 }
 
+// PARKING ABOLISHED (owner directive 2026-06-16, reaffirmed 2026-06-17): there is
+// no `card_is_honestly_parked` stop-gate escape. The former `AGENT_BLOCKED:`/
+// `OWNER-GATED:` content markers no longer escape the non-surrenderable
+// close-before-advance block. A card is either CLOSED (done/verified, 3-witness)
+// or DELETED (`kavach db delete --category roadmap --key ...`) — never marker-parked. The only honest
+// exits from the close block are now a real status-update or deletion of the card,
+// per global CLAUDE.md `§delete_not_park`.
+
 /// Atomically CLAIM the dispatched card (`todo -> in_progress`). Best-effort: a
 /// transport miss degrades to prior behavior (card stays `todo`, re-dispatched
 /// next turn), never a stalled loop. Idempotent. True iff the row flipped now.

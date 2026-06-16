@@ -142,8 +142,8 @@ ignore = true
 # change date, and is acceptable for kavach-rs's internal-use
 # embedding (we are not redistributing the database itself).
 # Hash 0xbb1191d7 is the FNV-1a of the LICENSE file shipped in
-# surrealdb 3.0.5 (verified by cargo-deny on first scan). All four
-# surreal crates ship the identical LICENSE file (same hash).
+# surrealdb 3.1.4 (verified by cargo-deny; identical file across the
+# 3.x line). All four surreal crates ship the identical LICENSE file.
 # Decision: crate.surrealdb.busl-1.1-accepted.
 [[licenses.clarify]]
 crate = "surrealdb"

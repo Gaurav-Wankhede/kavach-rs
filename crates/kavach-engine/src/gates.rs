@@ -62,6 +62,7 @@ pub mod pre_tool;
 pub(crate) mod pre_tool_agent;
 pub mod pre_tool_bash;
 pub mod pre_tool_read;
+pub(crate) mod pre_tool_question;
 pub(crate) mod pre_tool_search;
 pub mod pre_tool_skill;
 pub mod pre_tool_task;

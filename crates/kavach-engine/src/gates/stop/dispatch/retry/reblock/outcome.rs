@@ -1,8 +1,8 @@
 //! Terminal stop-context emitters for the no-dispatch branch: `KEYSTONE_REPAIR`
 //! (a `done` card failed witnesses → AI repair) and the board-drained branch,
-//! which now `AUTO_CONTINUE`s into the next un-built `[PLAN]` phase rather than
-//! clean-stopping — an empty board is not an empty plan; only a fully-built plan
-//! plus an empty board is a real halt.
+//! which `AUTO_CONTINUE`s into a DB re-scan (roadmap + decisions, all statuses)
+//! and the next un-built `[PLAN]` phase. The loop never self-halts — an empty
+//! board is not an empty DB; only the user halts it, with `Esc`.
 use core::ops::ControlFlow;
 
 /// A `done` card failed the workspace witnesses — real, AI-fixable repair work.

@@ -12,6 +12,10 @@ pub struct DeleteParams {
     pub project: String,
     pub category: String,
     pub key: Option<String>,
+    /// Bulk-purge every record whose `entry_key` starts with this prefix. Mutually
+    /// exclusive with `key` and `all`.
+    #[serde(default)]
+    pub key_prefix: Option<String>,
     #[serde(default)]
     pub all: Option<bool>,
     #[serde(default)]
@@ -41,6 +45,25 @@ pub fn delete_confirm_phrase(project: &str, category: &str, key: Option<&str>) -
         phrase.push_str(SEPARATOR);
         phrase.push_str(k);
     }
+    phrase
+}
+
+/// Build the user confirmation phrase for a prefix-bound bulk delete.
+///
+/// Distinct from `delete_confirm_phrase` (carries a `prefix:` marker) so a phrase
+/// typed for a single-key delete can never authorize a wildcard purge of the same
+/// namespace.
+#[must_use]
+pub fn delete_confirm_phrase_prefix(project: &str, category: &str, key_prefix: &str) -> String {
+    let mut phrase = String::with_capacity(256);
+    phrase.push_str(CONFIRM_PREFIX);
+    phrase.push_str(project);
+    phrase.push_str(SEPARATOR);
+    phrase.push_str(category);
+    phrase.push_str(SEPARATOR);
+    phrase.push_str("prefix:");
+    phrase.push_str(key_prefix);
+    phrase.push('*');
     phrase
 }
 

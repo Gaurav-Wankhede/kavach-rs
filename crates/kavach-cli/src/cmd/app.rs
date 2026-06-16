@@ -11,7 +11,19 @@ pub(super) fn run() -> i32 {
     for path in candidates.iter().flatten() {
         match Command::new(path).status() {
             Ok(s) => {
-                return s.code().unwrap_or_default();
+                // ExitStatus::code() returns Option<i32>:
+                // - Some(n) when the process exited normally with code n
+                // - None when the process was terminated by a signal (Unix)
+                // Returning 0 on signal termination masks abnormal termination.
+                // Return 1 (generic error) on signal to ensure visibility.
+                return s.code().unwrap_or_else(|| {
+                    let msg = "kavach: kavach-app terminated by signal (abnormal exit)";
+                    if let Err(io_err) = ewrite_or_exit(msg) {
+                        into_exit_code(io_err)
+                    } else {
+                        1
+                    }
+                });
             }
             Err(e) => {
                 let msg = format!("kavach: failed to spawn {path}: {e}");

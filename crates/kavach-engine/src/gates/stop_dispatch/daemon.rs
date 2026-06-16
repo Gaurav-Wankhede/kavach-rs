@@ -77,6 +77,43 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     direct::next(method, project_slug)
 }
 
+/// RPC-ONLY census: a single bounded `kavach_rpc::client::call` (`UnixStream`
+/// connect + 2s socket timeout) with NO daemon self-heal and NO direct-DB
+/// fallback. Returns `None` instantly on ANY transport error.
+///
+/// WHY a separate path: [`rpc_open_census`] falls back to `direct::census`,
+/// which cold-opens the embedded `RocksDB` (~seconds, and contends the live app's
+/// DB lock). That is safe ONLY on the Stop gate's already-drained branch, where
+/// a daemon spawned by the prior `rpc_next` self-heal is warm. Hot entry hooks
+/// (`SessionStart` / `UserPromptSubmit`) run every turn with NO warm-daemon
+/// guarantee — routing them through the heavy fallback blocks the hook (observed
+/// as a nextest SIGTERM). These hooks must fail SOFT and FAST to the legacy nag,
+/// never block the session on a DB cold-open. See the parsing in [`parse_census`].
+pub(super) fn rpc_census_only(project_slug: &str) -> Option<(u64, u64, u64)> {
+    let params = serde_json::json!({ "project": project_slug });
+    kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
+        .ok()
+        .and_then(|v| parse_census(&v))
+}
+
+/// RPC-ONLY next-task name: bounded single call, no self-heal, no direct DB.
+/// `None` on outage so the caller omits the "next card" line rather than block.
+pub(super) fn rpc_next_only(project_slug: &str) -> Option<serde_json::Value> {
+    let params = serde_json::json!({ "project": project_slug });
+    kavach_rpc::client::call::<_, serde_json::Value>("roadmap.next_open_task", Some(params))
+        .ok()
+        .filter(|v| v.is_object() && v.get("key").is_some())
+}
+
+/// Extract `(runnable, blocked, cyclic)` from a census RPC value. Absent `cyclic`
+/// (older daemon) defaults to 0; a missing `runnable`/`blocked` yields `None`.
+fn parse_census(v: &serde_json::Value) -> Option<(u64, u64, u64)> {
+    let runnable = v.get("runnable").and_then(serde_json::Value::as_u64)?;
+    let blocked = v.get("blocked").and_then(serde_json::Value::as_u64)?;
+    let cyclic = v.get("cyclic").and_then(serde_json::Value::as_u64).unwrap_or(0);
+    Some((runnable, blocked, cyclic))
+}
+
 /// `roadmap.open_set_census` → `(runnable, blocked, cyclic)` counts, or `Err(())`
 /// on a transport error (caller fails closed). `cyclic` = runnable cards whose
 /// declared deps form a cycle — they can never satisfy deps, so a non-zero count
@@ -87,14 +124,5 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
 pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, ()> {
     let params = serde_json::json!({ "project": project_slug });
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
-        .map_or_else(
-            |_| direct::census(project_slug),
-            |v| {
-                let runnable = v.get("runnable").and_then(serde_json::Value::as_u64);
-                let blocked = v.get("blocked").and_then(serde_json::Value::as_u64);
-                // Absent `cyclic` (older daemon) defaults to 0 — backward-compatible.
-                let cyclic = v.get("cyclic").and_then(serde_json::Value::as_u64).unwrap_or(0);
-                Ok(runnable.zip(blocked).map(|(r, b)| (r, b, cyclic)))
-            },
-        )
+        .map_or_else(|_| direct::census(project_slug), |v| Ok(parse_census(&v)))
 }

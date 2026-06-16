@@ -1,6 +1,7 @@
-//! Guard: the genuine clean exit. No pending tasks, no review needed — reset
-//! the pending-work re-block breaker and emit either a STOP context (when a
-//! reason or semver advisory exists) or a silent exit. Always Breaks (terminal).
+//! Guard: the dispatch tiers found no runnable card. Reset the pending-work
+//! re-block breaker and emit the census-aware DB-rescan verdict (never a
+//! hardcoded self-stop — the loop yields only to the user's `Esc`), plus any
+//! ride-along advisories. Always Breaks (terminal for THIS turn, not the loop).
 
 use core::ops::ControlFlow;
 
@@ -14,7 +15,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // emit MAY log a non-argmax advisory action (`Ask`) with its TRUE propensity
     // < 1.0 — giving the off-policy estimators non-degenerate overlap. Disarmed
     // (default) this is `(Allow, 1.0)`, the exact prior behavior. C2: the advisory
-    // set bars `Block`, so exploration NEVER converts this clean stop into a block.
+    // set bars `Block`, so exploration NEVER converts this allow into a block.
     // Reward is None here — back-filled when the 3-witness verify resolves. Pure
     // logging, fire-and-forget; never affects whether the stop proceeds.
     let (action, propensity) = explore_emit::explore_action(

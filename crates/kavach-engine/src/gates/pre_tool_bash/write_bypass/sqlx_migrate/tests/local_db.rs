@@ -32,11 +32,19 @@ fn docker_compose_db_bypasses() {
 
 #[test]
 fn production_url_still_requires_rca() {
+    // Set a production DATABASE_URL AND clear KAVACH_LOCAL_DB: the gate's
+    // `KAVACH_LOCAL_DB=1` override (sqlx_migrate.rs) short-circuits to None BEFORE
+    // the URL check, so a dev shell exporting it would make this pass-locally/
+    // fail-elsewhere flaky. `with_vars` pins both so only the prod-URL path decides.
+    // SOURCE: https://docs.rs/temp-env/latest/temp_env/fn.with_vars.html
     let url = "postgres://user@prod.aws.neon.tech:5432/mydb";
-    temp_env::with_var("DATABASE_URL", Some(url), || {
-        let r = check_sqlx_migrate_requires_rca("sqlx migrate run", false);
-        assert!(r.is_some(), "production URL must still require RCA");
-    });
+    temp_env::with_vars(
+        [("DATABASE_URL", Some(url)), ("KAVACH_LOCAL_DB", None)],
+        || {
+            let r = check_sqlx_migrate_requires_rca("sqlx migrate run", false);
+            assert!(r.is_some(), "production URL must still require RCA");
+        },
+    );
 }
 
 #[test]

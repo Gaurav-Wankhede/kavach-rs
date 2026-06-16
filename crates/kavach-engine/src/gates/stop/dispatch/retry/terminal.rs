@@ -43,10 +43,10 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     }
     ctx.session.clear_failure();
 
-    // AUTHORITATIVE EMPTY-QUEUE PROBE (Ralph-loop law): before any clean stop,
-    // re-run the dependency-aware chain. A non-empty queue means real work
-    // remains — refuse the stop and dispatch — UNLESS a single card is saturated
-    // past the live-lock ceiling with zero progress.
+    // AUTHORITATIVE EMPTY-QUEUE PROBE (Ralph-loop law): re-run the dependency-aware
+    // chain to find the next task. A non-empty queue means work remains — dispatch
+    // it — UNLESS a single card is saturated past the live-lock ceiling with zero
+    // progress (the one anti-spin guard; the loop otherwise never self-terminates).
     let saturated = is_backlog_saturated(
         ctx.session.stop_reblock_count,
         ctx.session.has_progress_since_last_stop(),
@@ -59,19 +59,38 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         ctx.session.increment_stop_reblock();
         drop(kavach_hook::exit_stop_block(&format!(
             "[AUTO_CONTINUE] backlog NOT empty — a completion left runnable work \
-             queued; clean stop REFUSED. NEXT {tier} [{key}]: {title}. CLAIMED — \
-             resume NOW. (The re-block breaker bounds SPINNING, not a non-empty \
-             queue; the loop continues while work remains.)"
+             queued. NEXT {tier} [{key}]: {title}. CLAIMED — resume NOW. (The \
+             re-block breaker bounds SPINNING, not a non-empty queue; the loop \
+             continues while work remains.)"
         )));
         return ControlFlow::Break(());
     }
 
-    // Terminal: backlog provably empty (or one card saturated past ceiling).
+    // Terminal for THIS turn: backlog provably empty, OR one card saturated past
+    // the live-lock ceiling. Either way the loop does NOT self-terminate — it
+    // re-scans the DB across statuses for the NEXT task (a different one when the
+    // current card is live-locked) and yields only to the user's `Esc`.
     ctx.session.clear_stop_reblock();
     let context = kavach_hook::context_block(
-        "STOP",
+        "AUTO_CONTINUE",
         &[
-            ("why", "max failures — forced stop (post-retry)"),
+            (
+                "why",
+                "the dispatch tiers found nothing runnable, or one card is \
+                 live-locked past the anti-spin ceiling. Neither ends the loop: \
+                 the DB still holds roadmap units and decisions to execute.",
+            ),
+            (
+                "action",
+                "Do NOT stop. Re-scan the DB for the next task across statuses — \
+                 `kavach db query --category roadmap` and `--category decision` for \
+                 any todo/unexecuted row (skip the live-locked card; pick a \
+                 DIFFERENT one). RESEARCH MODE FIRST: WebSearch the current \
+                 authoritative source to scope it — TABULA RASA = TRUTH, never trust \
+                 training weights — then claim and START it THIS turn. When the DB \
+                 holds nothing actionable, keep the loop open and yield to the user's \
+                 `Esc`.",
+            ),
             ("bypassed", &info),
         ],
     );

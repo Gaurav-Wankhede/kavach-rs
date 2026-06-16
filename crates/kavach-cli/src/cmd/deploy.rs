@@ -13,7 +13,57 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use fs2::FileExt;
+
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+
+/// Filename of the workspace-root advisory lock that serializes `kavach deploy`.
+const DEPLOY_LOCK_NAME: &str = ".deploy.lock";
+
+/// RAII holder for the exclusive advisory `flock` that serializes concurrent
+/// `kavach deploy` runs. The lock is an OS-level `fcntl`/`flock` (via `fs2`), so
+/// the kernel releases it automatically if the process dies mid-deploy — a
+/// crashed run can never leave a stale lock that wedges the next deploy (unlike
+/// a manually-managed sentinel file). The file itself is intentionally NOT
+/// removed on drop: keeping it lets the next run re-lock the same inode, and an
+/// empty leftover `.deploy.lock` is harmless. Dropping the handle unlocks.
+#[derive(Debug)]
+struct DeployLock {
+    file: std::fs::File,
+}
+
+impl DeployLock {
+    /// Try to acquire the workspace deploy lock without blocking.
+    ///
+    /// Returns `Ok(Some(guard))` when this process won the lock, `Ok(None)` when
+    /// another `kavach deploy` already holds it (the caller must refuse to
+    /// proceed — two concurrent installs race the binary copy + daemon restart),
+    /// and `Err` only on an unexpected filesystem error opening the lock file.
+    fn try_acquire(root: &Path) -> std::io::Result<Option<Self>> {
+        let path = root.join(DEPLOY_LOCK_NAME);
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(false)
+            .open(&path)?;
+        match file.try_lock_exclusive() {
+            Ok(()) => Ok(Some(Self { file })),
+            // WouldBlock is the documented "another holder" signal from fs2's
+            // try_lock_exclusive — NOT an error to propagate. Anything else is.
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+impl Drop for DeployLock {
+    fn drop(&mut self) {
+        // Best-effort unlock: the kernel also drops the flock on close/exit, so a
+        // failure here cannot strand the lock for the next run. Nothing actionable
+        // for the caller, hence the deliberate discard.
+        drop(FileExt::unlock(&self.file));
+    }
+}
 
 const BINARY_NAME: &str = "kavach";
 const RELEASE_PROFILE: &str = "release";
@@ -26,6 +76,41 @@ const APP_PKG: &str = "kavach-app";
 const APP_BUNDLE_NAME: &str = "KavachApp.app";
 
 pub(crate) fn run(skip_tests: bool, bundle: bool) -> i32 {
+    // Serialize the whole deploy under a workspace-root advisory flock: two
+    // concurrent `kavach deploy` runs (CI parallelism or a manual double-run)
+    // would otherwise interleave the binary copy + the daemon restart, letting
+    // one run's stale bits win and one `restart_rpc_daemon` kill the daemon
+    // mid-lockfile-cleanup of the other (a possibly-lingering RocksDB lock).
+    // Held by `_deploy_lock` for the full function scope; released on drop.
+    let Some(root) = workspace_root() else {
+        if let Err(io_err) =
+            ewrite_or_exit("[DEPLOY] FAIL: cannot resolve workspace root for the deploy lock.")
+        {
+            return into_exit_code(io_err);
+        }
+        return 1;
+    };
+    let _deploy_lock = match DeployLock::try_acquire(&root) {
+        Ok(Some(guard)) => guard,
+        Ok(None) => {
+            if let Err(io_err) = ewrite_or_exit(
+                "[DEPLOY] FAIL: another `kavach deploy` is already running (holds .deploy.lock). \
+                 Refusing to race the binary install + daemon restart. Re-run once it finishes.",
+            ) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
+        Err(fs_err) => {
+            if let Err(io_err) = ewrite_or_exit(&format!(
+                "[DEPLOY] FAIL: cannot open the deploy lock ({DEPLOY_LOCK_NAME}): {fs_err}"
+            )) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
+    };
+
     // Track A: strict gates + build + (for a CLI-only install) write the binary
     // to ~/.local/bin/kavach. In --bundle mode the standalone install is SKIPPED:
     // the bundle track installs the CLI INTO KavachApp.app and re-points the
@@ -866,6 +951,40 @@ mod tests {
         // already proves the entry exists.
         let ft = dst.symlink_metadata().unwrap().file_type();
         assert!(!ft.is_symlink() && !ft.is_dir());
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    // The deploy lock must serialize concurrent `kavach deploy` runs: while one
+    // holds the workspace `.deploy.lock`, a second `try_acquire` on the same root
+    // must be REFUSED (Ok(None)), and once the first guard drops the lock must be
+    // re-acquirable. This is the race the card closes: two installs interleaving
+    // the binary copy + daemon restart.
+    #[test]
+    fn deploy_concurrent_lock_prevents_race() {
+        use super::DeployLock;
+
+        let dir = std::env::temp_dir().join(format!("kavach-locktest-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+
+        // First acquirer wins.
+        let first = DeployLock::try_acquire(&dir)
+            .expect("open lock file")
+            .expect("first acquire must win");
+
+        // A concurrent second acquirer on the same root is refused (lock held).
+        let second = DeployLock::try_acquire(&dir).expect("open lock file");
+        assert!(
+            second.is_none(),
+            "second concurrent deploy must be refused while the lock is held"
+        );
+
+        // Releasing the first lets the next run re-acquire — no stale lock.
+        drop(first);
+        let third = DeployLock::try_acquire(&dir)
+            .expect("open lock file")
+            .expect("re-acquire must win after the prior guard drops");
+        drop(third);
 
         fs::remove_dir_all(&dir).ok();
     }

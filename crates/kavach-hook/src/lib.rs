@@ -150,21 +150,47 @@ pub fn read_hook_input_native(
 /// Emit a canonical [`HookResponse`] in `vendor`'s NATIVE output contract and
 /// return the process exit code that vendor expects (Codex blocks via exit 2).
 #[must_use = "the returned exit code must be passed to process::exit for Codex's exit-2 block"]
-#[expect(
-    clippy::print_stderr,
-    reason = "hook diagnostic path; no tracing subscriber in the hook binary"
-)]
 pub fn output_native(vendor: Vendor, resp: &HookResponse) -> i32 {
     let json = vendor.render(resp);
-    if writeln!(io::stdout().lock(), "{json}").is_err() {
-        eprintln!("kavach: stdout write failed");
-    }
+    emit_or_fail_closed(&json);
     if resp.decision == "block" {
         vendor.block_exit_code()
     } else {
         0
     }
 }
+
+/// Write `json` to stdout, or fail CLOSED if the write errors.
+///
+/// stdout is the gate's ONLY verdict channel to the host. A swallowed write
+/// loses the verdict; the host then reads absent output as "allow" — fail-OPEN
+/// on an enforcement gate. So a non-pipe write error exits the process with
+/// `EXIT_HOOK_ERROR` (2): the host treats a non-zero hook exit as "do not
+/// proceed", never as allow. A broken pipe means the host already closed the
+/// channel (it is gone), so there is nothing left to fail closed toward —
+/// diagnose and return so the caller's exit code still flows.
+#[expect(
+    clippy::print_stderr,
+    clippy::exit,
+    reason = "fail-closed hook path: no tracing sink in the hook binary; process exit IS the verdict-undeliverable signal to the host"
+)]
+fn emit_or_fail_closed(json: &str) {
+    let Err(e) = writeln!(io::stdout().lock(), "{json}") else {
+        return;
+    };
+    if e.kind() == io::ErrorKind::BrokenPipe {
+        // Host already closed the channel — it is gone; nothing to fail toward.
+        eprintln!("kavach: stdout closed by host (broken pipe)");
+        return;
+    }
+    eprintln!("kavach: stdout write failed ({e}) — fail-closed, host must not proceed");
+    std::process::exit(EXIT_HOOK_ERROR);
+}
+
+/// Hook-error exit code. A non-zero hook exit tells every supported host "the
+/// gate did not produce a verdict — do not proceed", which is the fail-closed
+/// outcome when the verdict cannot be delivered on stdout.
+const EXIT_HOOK_ERROR: i32 = 2;
 
 /// Read a hook input payload, emitting an error response on failure.
 ///

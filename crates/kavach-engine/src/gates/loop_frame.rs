@@ -67,12 +67,12 @@ pub(crate) fn build_loop_stop(session: &SessionState, goal_title: Option<&str>) 
     let harness = loop_harness_label(session);
     let iter = session.loop_iteration.max(session.turn_count);
     format!(
-        "[LOOP]\n\
+        "[LOOP] — DO NOT END THIS TURN. Execute the dispatched card now.\n\
          goal: {title}\n\
          harness: {harness}\n\
          iteration: {iter}\n\
-         termination: 3-witness (rg ∧ diff ∧ build)\n\
-         on_done: status-update + dispatch next same turn\n\n"
+         terminate ONLY on 3-witness (rg ∧ diff ∧ build)\n\
+         on done: status-update + dispatch the next card THIS SAME turn\n\n"
     )
 }
 

@@ -1,20 +1,21 @@
 //! Shared drained-board terminal verdict — the SINGLE source of truth both stop
 //! terminals emit when the dispatch tiers find no runnable card.
 //!
-//! Three states hide behind "nothing dispatchable" with DIFFERENT outcomes:
+//! Three states hide behind "nothing dispatchable" with DIFFERENT outcomes. None
+//! tells the LLM to stop: the loop runs until the user halts it with `Esc`.
 //!
 //! 0. The session is pinned to a lane (`KAVACH_LANE`) and its lane + the unlaned
-//!    backlog are both drained → `[LANE_DRAINED]` clean stop (lane.rs). Never
-//!    cross into a foreign lane; that is another session's work.
+//!    backlog are both drained → `[LANE_DRAINED]` (lane.rs). Never cross into a
+//!    foreign lane; that is another session's work.
 //! 1. The board still holds runnable-status cards, but EVERY one is held back by
-//!    an unmet dependency → `[ALL_BLOCKED]` clean stop.
-//! 2. The board is genuinely empty. A frozen `[PLAN]` doc MAY name an un-built
-//!    next phase → a bounded `[AUTO_CONTINUE]` nudge.
+//!    an unmet dependency → `[ALL_BLOCKED]`: re-scan the DB, name the blockers.
+//! 2. No runnable-status card. Re-scan roadmap + decisions (ALL statuses) and the
+//!    active `[PLAN]` for the next actionable item → `[AUTO_CONTINUE]`.
 //!
 //! Lives HERE (`pub(in crate::gates::stop)`) so BOTH the first-pass terminal
 //! (`clean_exit`) and the retry terminal emit the IDENTICAL verdict. The verdict
-//! is loop-SAFE: callers emit it via `exit_stop_context` (allows the stop, no
-//! hard block), so it can never spin.
+//! is loop-SAFE: callers emit it via `exit_stop_context` (allows the turn to end,
+//! no hard block), so it can never spin.
 
 mod lane;
 
@@ -35,9 +36,26 @@ pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String 
         return cycle_deadlock_context();
     }
     if census_is_all_blocked(census) {
-        all_blocked_context()
+        all_blocked_context(census)
     } else {
-        board_drained_plan_context()
+        board_drained_plan_context(census)
+    }
+}
+
+/// One-line census STAMP proving the gate read the kavach DB roadmap table THIS
+/// stop. `Some` → the live counts; `None` (RPC outage) → an explicit
+/// unobservable marker so the verdict never *claims* a read it could not make.
+/// This is the leaf-evidence the drained verdict must carry (`verdict_needs_leaf_evidence`).
+fn census_stamp(census: Option<(u64, u64, u64)>) -> String {
+    match census {
+        Some((runnable, blocked, cyclic)) => format!(
+            "gate read the kavach DB roadmap table this stop -> \
+             runnable={runnable} blocked={blocked} cyclic={cyclic} \
+             (no dispatchable card remained, so the gate let the turn end)"
+        ),
+        None => "kavach DB roadmap table was UNOBSERVABLE this stop (RPC outage) -> \
+                 the gate could not confirm the board; treat the backlog as non-empty"
+            .to_owned(),
     }
 }
 
@@ -81,55 +99,84 @@ fn cycle_deadlock_context() -> String {
     )
 }
 
-/// Case 1: every remaining runnable card is blocked → honest clean stop. An
-/// unmet dependency blocks the card, and breaking the dependency is a DECISION
-/// for the user, not work the AI can perform — surface it and stop, do NOT spin.
-fn all_blocked_context() -> String {
-    kavach_hook::context_block(
+/// Case 1: every remaining runnable card is blocked by an unmet dependency.
+/// Breaking a dependency is a DECISION for the user, so the AI cannot force these
+/// cards — but the loop still re-scans the DB for any unblocked actionable item
+/// and never self-terminates. Only the user halts it, with `Esc`.
+fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
+    let stamp = census_stamp(census);
+    let block = kavach_hook::context_block(
         "ALL_BLOCKED",
         &[
+            ("census", &stamp),
             (
                 "why",
-                "no card is dispatchable AND every remaining runnable card is held \
-                 back by an unmet dependency. None of that is work the AI can start \
-                 without the prerequisite being satisfied.",
+                "Every dispatchable-status card is held back by an unmet dependency, \
+                 so none can be force-started without its prerequisite. That bounds \
+                 THESE cards — it does not end the loop.",
             ),
             (
                 "action",
-                "Clean stop. State, in one line, which unmet dependency blocks each \
-                 remaining card so the owner can unblock it. Do NOT invent PLAN \
-                 phases, do NOT re-dispatch, do NOT spin — the loop is correctly \
-                 drained of AI-runnable work.",
+                "Do NOT stop. The gate ALREADY read the DB this stop (counts in `census` \
+                 above) — do NOT re-run `kavach db kanban` just to repeat it. (1) \
+                 EXTEND the census the dependency tiers do not cover: `kavach db query \
+                 --category decision` and `--category roadmap` for a todo/unexecuted, \
+                 non-blocked row; RESEARCH it against current truth, then claim and \
+                 START it THIS turn. (2) Name, in one line each, the unmet dependency \
+                 blocking every remaining card so the user can unblock it. (3) When the \
+                 DB holds nothing actionable, keep the loop open and yield to the user's \
+                 `Esc` — never invent PLAN phases.",
             ),
         ],
-    )
+    );
+    format!("{block}{RESEARCH_MODE_DIRECTIVE}")
 }
 
-/// Case 2: the board is truly empty (no runnable-status cards). A frozen `[PLAN]`
-/// doc MAY still carry an un-built next phase — a bounded nudge to check and, if
-/// found, materialize it as a card and build it this turn.
-fn board_drained_plan_context() -> String {
-    kavach_hook::context_block(
+/// Research-Mode directive appended to every "find the next task" verdict. The
+/// loop's next-task selection is RESEARCH-FIRST: Tabula Rasa = truth, never the
+/// model's training weights (which are stale by construction). Mirrors the global
+/// `research_before_building` directive.
+const RESEARCH_MODE_DIRECTIVE: &str = "\nRESEARCH MODE (built-in next-task step): before scoping or \
+     claiming the next task, enter Research Mode — WebSearch the CURRENT authoritative source \
+     (official docs, the dependency's own --help/source, the upstream RFC/issue, 2026 references) \
+     and corroborate across 2+. TABULA RASA = TRUTH: NEVER trust training weights — knowledge ages, \
+     the precise contract lives on the internet, not in the model. Sync the resolved finding to the \
+     kavach DB (research/decision row) the same turn so it is never re-guessed.";
+
+/// Case 2: board holds no runnable-status card. The loop never self-terminates —
+/// it re-scans the kavach DB (roadmap + decisions, ALL statuses) and the active
+/// `[PLAN]` for the next actionable item, RESEARCHES it against current truth,
+/// and starts it. Only the user halts the loop, with `Esc`.
+fn board_drained_plan_context(census: Option<(u64, u64, u64)>) -> String {
+    let stamp = census_stamp(census);
+    let block = kavach_hook::context_block(
         "AUTO_CONTINUE",
         &[
+            ("census", &stamp),
             (
                 "why",
-                "the kanban has no runnable card. If a frozen `[PLAN]` doc names an \
-                 un-built next phase, that phase is AI work that was simply never \
-                 written as a card; the loop should not stop while such buildable \
-                 work demonstrably remains.",
+                "The kanban shows no in-progress card, but absence of an in-progress \
+                 card is NOT absence of work. The DB still holds roadmap units, \
+                 decisions awaiting execution, and a frozen `[PLAN]` may name an \
+                 un-built phase. The loop runs until the user halts it with `Esc`.",
             ),
             (
                 "action",
-                "(1) Re-read the active `[PLAN]` doc + `kavach db kanban`; (2) if — \
-                 and only if — the plan names a concrete un-built next phase, WRITE \
-                 it as a roadmap card (`kavach db write --category roadmap`) and \
-                 START it THIS turn (you are L4 autonomous); (3) if the plan is fully \
-                 built and the board is empty, this is a genuine clean stop — say so \
-                 plainly. Do NOT fabricate a phase that the plan does not name.",
+                "Find the next task autonomously — do NOT stop. The gate ALREADY scanned \
+                 the roadmap table this stop (counts in `census` above); do NOT re-run \
+                 `kavach db kanban` just to repeat the dispatch-status scan. EXTEND it \
+                 instead: (1) `kavach db query --category decision` and `--category \
+                 roadmap` for any todo/unexecuted item the dispatch tiers (runnable \
+                 status only) did not surface. (2) Re-read the active `[PLAN]`; when it \
+                 names an un-built phase, WRITE it as a roadmap card (`kavach db write \
+                 --category roadmap`). (3) RESEARCH the chosen item against current \
+                 truth, then claim and START it THIS turn — you are L4 autonomous. \
+                 Never invent a phase the plan does not name; surface a genuinely \
+                 empty DB to the user and keep the loop open for `Esc`.",
             ),
         ],
-    )
+    );
+    format!("{block}{RESEARCH_MODE_DIRECTIVE}")
 }
 
 #[cfg(test)]

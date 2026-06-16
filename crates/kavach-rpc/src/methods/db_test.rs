@@ -1,7 +1,7 @@
 // ALGO: Test suite
 //! Tests for db module.
 
-use super::delete::delete_confirm_phrase;
+use super::delete::{delete_confirm_phrase, delete_confirm_phrase_prefix};
 use super::wipe_project::wipe_confirm_phrase;
 
 #[test]
@@ -29,6 +29,31 @@ fn delete_phrase_for_one_target_does_not_authorize_another() {
     assert_ne!(a, b);
     assert_ne!(a, c);
     assert_ne!(a, d);
+}
+
+#[test]
+fn prefix_phrase_carries_a_wildcard_marker() {
+    assert_eq!(
+        delete_confirm_phrase_prefix("kavach-rs", "roadmap", "heal.incident.loophole-"),
+        "delete kavach-rs/roadmap/prefix:heal.incident.loophole-*"
+    );
+}
+
+#[test]
+fn single_key_confirm_cannot_authorize_a_prefix_purge() {
+    // authz/replay loophole: a phrase typed to delete ONE key whose name happens
+    // to equal a prefix must NOT match the wildcard-purge phrase for that prefix.
+    let single = delete_confirm_phrase("kavach-rs", "roadmap", Some("heal.incident.loophole-"));
+    let wildcard = delete_confirm_phrase_prefix("kavach-rs", "roadmap", "heal.incident.loophole-");
+    assert_ne!(single, wildcard, "single-key confirm must not authorize a bulk purge");
+}
+
+#[test]
+fn prefix_phrase_is_target_bound_per_field() {
+    let base = delete_confirm_phrase_prefix("proj-a", "roadmap", "p");
+    assert_ne!(base, delete_confirm_phrase_prefix("proj-b", "roadmap", "p"));
+    assert_ne!(base, delete_confirm_phrase_prefix("proj-a", "decision", "p"));
+    assert_ne!(base, delete_confirm_phrase_prefix("proj-a", "roadmap", "q"));
 }
 
 #[test]

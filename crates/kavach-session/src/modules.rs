@@ -11,7 +11,9 @@ impl SessionState {
     pub fn mark_module(&mut self, name: &str) {
         if !self.has_module(name) {
             self.modules_injected.push(name.into());
-            _ = self.save();
+            // A dropped save desyncs in-memory `modules_injected` from disk, so the
+            // module re-injects next session (token waste, broken once-only contract).
+            self.save_or_log();
         }
     }
 
@@ -44,7 +46,7 @@ impl SessionState {
         // Emitting a reminder on every tool call is pure token waste.
         let _ = already;
 
-        _ = self.save();
+        self.save_or_log();
         out
     }
 }

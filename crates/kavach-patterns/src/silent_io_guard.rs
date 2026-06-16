@@ -108,7 +108,13 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
     if hits.is_empty() {
         return None;
     }
-    let mut msg = String::from("[SILENT_IO_BLOCK] band-aid patterns detected. ");
+    let mut msg = String::from(
+        "[SILENT_IO_BLOCK] SILENT FAILURE FORBIDDEN. A swallowed error is a defect the \
+         happy path never exercises. EVERY fallible op is fail-closed-or-logged, NEVER \
+         silently discarded: propagate via `?`, OR fail closed (deny/early-return on a \
+         path touching persistence/lock/auth/money/RPC), OR `if let Err(e) = ...` and log \
+         with context. A bare discard that hides a material error is not allowed.\n",
+    );
     msg.push_str("SOURCE: doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html\n");
     for h in hits.iter().take(20) {
         use std::fmt::Write as _;

@@ -128,6 +128,14 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         session.memory_queried = true;
     }
 
+    // Live board status, read from the kavach DB at SessionStart — the same RPC
+    // the Stop gate uses. The session must OPEN with the real board (counts + next
+    // card), not a "run kavach db kanban yourself" reminder. Fail-soft on RPC
+    // outage: the block is simply omitted (session start is never blocked).
+    if !session.project.is_empty() {
+        super::super::intent::append_live_kanban_block(&mut context, &session.project);
+    }
+
     // `date` module dropped: superseded by the live [TEMPORAL_AWARENESS] line
     // above (a static module froze the date at authoring time).
     let module_ctx = session.inject_modules_once(&["critical-rules"]);

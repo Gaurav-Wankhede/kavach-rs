@@ -26,6 +26,9 @@ pub enum Error {
 
     #[error("Invalid hierarchy: {0}")]
     InvalidHierarchy(String),
+
+    #[error("Schema violation: {0}")]
+    SchemaViolation(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -36,7 +39,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Anchored to the `The table '` shape so it does NOT also swallow the sibling
 /// `does not exist` errors (field, function, param, index, …) — masking one of
 /// those as an empty result would hide a genuine malformed query. SOURCE:
-/// surrealdb-core 3.0.5 `err` variants, each `The <kind> '<name>' does not exist`.
+/// surrealdb-core 3.1.4 `err` variants, each `The <kind> '<name>' does not exist`.
 #[must_use]
 pub(crate) fn is_missing_table_error(e: &surrealdb::Error) -> bool {
     let msg = e.to_string();

@@ -3,15 +3,17 @@
 //! `next_open_task`). When dispatch finds nothing, THIS lane's slice + unlaned
 //! are drained — foreign-lane cards may still exist, but a laned session must
 //! NOT reach into them and must NOT invent PLAN phases for another lane's work.
-//! So it is a clean stop, distinct from the unlaned board-drained nudge.
+//! The loop still re-scans this lane's DB rows and yields only to the user's
+//! `Esc`; it never self-terminates.
 
 /// The session's pinned lane, if any. Empty/unset → None → unlaned behavior.
 pub(super) fn lane_env() -> Option<String> {
     std::env::var("KAVACH_LANE").ok().filter(|l| !l.is_empty())
 }
 
-/// Own lane + unlaned backlog both drained. Clean stop — never cross into a
-/// foreign lane, never fabricate a plan phase for it.
+/// Own lane + unlaned backlog both drained. Re-scan this lane's DB rows; never
+/// cross into a foreign lane, never fabricate a plan phase. The loop yields only
+/// to the user's `Esc`.
 pub(super) fn lane_drained_context(lane: &str) -> String {
     kavach_hook::context_block(
         "LANE_DRAINED",
@@ -20,16 +22,20 @@ pub(super) fn lane_drained_context(lane: &str) -> String {
             (
                 "why",
                 "this session is pinned to the lane above (KAVACH_LANE). Its assigned \
-                 lane AND the shared unlaned backlog are both drained of runnable \
-                 work. Any remaining cards belong to a FOREIGN lane owned by another \
-                 session — reaching into them would create the exact cross-session \
-                 conflict lane-affinity sharding exists to prevent.",
+                 lane AND the shared unlaned backlog hold no runnable card. Any \
+                 remaining cards belong to a FOREIGN lane owned by another session — \
+                 reaching into them would create the exact cross-session conflict \
+                 lane-affinity sharding exists to prevent.",
             ),
             (
                 "action",
-                "Clean stop. Do NOT dispatch a foreign-lane card, do NOT invent PLAN \
-                 phases, do NOT spin. If new work for this lane is needed, the owner \
-                 assigns it (`kavach db lane-set --key <k> --lane <lane>`).",
+                "Do NOT stop, and do NOT cross lanes. (1) Re-scan THIS lane's DB rows \
+                 across statuses (`kavach db query --category roadmap` / `--category \
+                 decision`, filtered to the lane above) for an actionable item; claim \
+                 and START it. (2) Never dispatch a foreign-lane card or invent a PLAN \
+                 phase. (3) When this lane holds nothing actionable, keep the loop open \
+                 and yield to the user's `Esc`; new lane work is owner-assigned via \
+                 `kavach db lane-set --key <k> --lane <lane>`.",
             ),
         ],
     )

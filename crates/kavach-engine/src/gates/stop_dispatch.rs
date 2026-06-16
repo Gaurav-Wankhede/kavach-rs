@@ -19,6 +19,7 @@ pub(crate) use card::{
     live_lease_holder,
 };
 pub(crate) use query::{
-    get_next_backlog_info, get_next_hunt_info, get_next_task_info, open_set_census,
+    census_rpc_only, get_next_backlog_info, get_next_hunt_info, get_next_task_info,
+    next_task_rpc_only, open_set_census,
 };
 pub(crate) use verify::{AutoVerify, auto_verify_done_cards};

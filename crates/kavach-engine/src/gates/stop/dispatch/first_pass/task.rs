@@ -81,23 +81,25 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&title));
     let reward_prefix = loop_frame::build_reward_stop_last(ctx.session);
     let claim_line = if claimed {
-        "(CLAIMED — this card is now in_progress in the Kavach DB; execute it immediately.)"
+        "This card is CLAIMED and in_progress in the Kavach DB. Start it now."
     } else {
-        "(IN_PROGRESS — resume this card immediately; do not stop mid-work.)"
+        "This card is IN_PROGRESS. Resume it now — you are mid-work."
     };
     drop(kavach_hook::exit_stop_block(&format!(
-        "{loop_prefix}{reward_prefix}[AUTO_CONTINUE] Kanban has pending work — do not stop.\n\
+        "{loop_prefix}{reward_prefix}[AUTO_CONTINUE] Do NOT stop. Build the next card THIS turn.\n\
          NEXT TASK [{priority}]: {title}\n\
          {claim_line}\n\n\
-         Step 1 — read the card:\n\
+         Do this now, in order:\n\
+         1. Read the card:\n\
            kavach db get --project {proj} --category roadmap --key {priority} --full\n\
-         Step 2 — open phase iteration on the first file you'll edit:\n\
+         2. Open a phase iteration on the first file you'll edit:\n\
            kavach phase iteration-start <path>\n\
-         Step 3 — execute. Close with:\n\
+         3. Implement it. Then close:\n\
            kavach db status-update --project {proj} --category roadmap --key {priority} --status done\n\
            kavach phase iteration-done\n\
          CONTRACT: claim -> implement -> 3-witness verify (artifact exists -> diff landed -> build passes) \
-         -> close, ALL this turn. Loophole-check before any done claim; do not stop mid-card."
+         -> close, ALL this turn. Run the loophole lenses before you claim done. Do NOT stop mid-card. \
+         Your VERY NEXT action must be step 1 above — do not end this turn describing the card."
     )));
     ControlFlow::Break(())
 }

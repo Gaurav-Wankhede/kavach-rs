@@ -66,7 +66,14 @@ fn harvest_concepts(query: &str, result_text: &str) {
             "desc": "auto-harvested from WebSearch",
             "tags": ["auto-harvested"], "sources": empty_sources,
         });
-        kavach_rpc::client::call::<_, serde_json::Value>("concept.add", Some(params)).ok();
+        // Non-blocking KG enrichment, but a dropped harvest on a daemon blip must
+        // be observable — log to stderr rather than swallow it silently.
+        if let Err(e) =
+            kavach_rpc::client::call::<_, serde_json::Value>("concept.add", Some(params))
+        {
+            use std::io::Write as _;
+            drop(writeln!(std::io::stderr(), "[CONCEPT_HARVEST_FAIL] {name}: {e}"));
+        }
     }
 }
 

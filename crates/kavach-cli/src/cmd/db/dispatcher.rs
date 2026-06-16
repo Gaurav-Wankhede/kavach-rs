@@ -2,8 +2,8 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    archive, backfill_relationships, bridge, concept, delete, event, expire, find, flow,
-    gate_config, get,
+    archive, backfill_relationships, bridge, concept, delete, delete_prefix, event, expire, find,
+    flow, gate_config, get,
     graph_query, infer_deps, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query,
     register,
     register_part, rotate, search, status_update, sync, tree, wipe_project, write,
@@ -89,6 +89,10 @@ pub(crate) fn run(action: DbAction) -> i32 {
     }
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "cohesive single `match DbAction` routing table — one arm per CLI verb; splitting fragments the dispatch surface with no reuse gain (same rationale as the file's micro-file exemption)"
+)]
 fn dispatch_remaining(action: DbAction) -> i32 {
     match action {
         DbAction::Rotate { days } => rotate::run(days),
@@ -145,6 +149,13 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             confirm,
             dry_run,
         } => delete::run(&project, &category, key.as_deref(), all, confirm, dry_run),
+        DbAction::DeletePrefix {
+            project,
+            category,
+            prefix,
+            confirm,
+            dry_run,
+        } => delete_prefix::run(&project, &category, &prefix, confirm, dry_run),
         DbAction::WipeProject {
             project,
             confirm,

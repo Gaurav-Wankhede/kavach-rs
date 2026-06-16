@@ -112,8 +112,18 @@ pub(super) fn append_context_blocks(
         context.push('\n');
         context.push_str(&test_ctx);
     }
+    // Inject the LIVE board status, read from the kavach DB at hook time — do NOT
+    // tell the agent to go read it. The Stop gate already reads the same RPC
+    // (open_set_census + next_open_task); the entry hooks must too, or the agent is
+    // perpetually told to fetch what the hook could have handed it. Fail-soft to the
+    // legacy nag on RPC outage so prompt submission is never blocked.
     if !session.memory_queried && session.turn_count <= 2 {
-        context.push_str("\n[MEMORY] status:PENDING action:kavach db kanban --project <slug>");
+        if append_live_kanban(context, &session.project) {
+            session.memory_queried = true;
+        } else {
+            context
+                .push_str("\n[MEMORY] status:PENDING action:kavach db kanban --project <slug>");
+        }
     }
     if session.turn_count > 1 && session.turn_count % 5 == 0 {
         writeln!(
@@ -135,6 +145,56 @@ pub(super) fn append_context_blocks(
     if let Some(skill) = top_skill.first() {
         writeln!(context, "\n[RAG:skill] {skill}").ok();
     }
+}
+
+/// Read the LIVE kanban board from the kavach DB (same RPC path the Stop gate
+/// uses) and append a `[KANBAN]` status block to `context`. Returns `true` when
+/// the board was observed (block injected), `false` on an empty slug or RPC
+/// outage so the caller fails soft to the legacy "go query it yourself" nag.
+///
+/// Census `(runnable, blocked, cyclic)`: runnable = roadmap cards in a
+/// dispatchable status (`todo` / `in_progress`) — the ONLY work queue. A 0/0/0
+/// board is genuinely drained; the agent is told so plainly instead of being sent
+/// to re-query. The next dispatchable card (if any) is named so the agent can start
+/// it without a round-trip.
+/// Cross-module entry (used by `session_start`): append the live `[KANBAN]`
+/// block, ignoring the observed/outage flag. Session start is never blocked on
+/// an outage — the block is simply omitted.
+pub(in crate::gates) fn append_live_kanban_block(context: &mut String, project: &str) {
+    let _ = append_live_kanban(context, project);
+}
+
+fn append_live_kanban(context: &mut String, project: &str) -> bool {
+    if project.is_empty() {
+        return false;
+    }
+    // RPC-ONLY: a hot entry hook must NOT trigger the daemon self-heal /
+    // direct-DB cold-open path (`open_set_census`) — that blocks the hook on a
+    // RocksDB open when no daemon is warm (observed as a nextest SIGTERM on the
+    // SessionStart lifecycle test). The Stop gate may use the heavy path because
+    // it only runs the census on its already-drained branch where a daemon is
+    // already warm; SessionStart / UserPromptSubmit have no such guarantee, so
+    // they read RPC-only and fail soft+fast to the legacy nag on any outage.
+    let Some((runnable, blocked, cyclic)) =
+        crate::gates::stop_dispatch::census_rpc_only(project)
+    else {
+        return false; // daemon unreachable -> fail soft to the nag, never block
+    };
+    context.push_str("\n[KANBAN] read live from the kavach DB this turn — do NOT re-query to confirm.");
+    write!(
+        context,
+        "\nproject: {project} · runnable: {runnable} · blocked: {blocked} · cyclic: {cyclic}"
+    )
+    .ok();
+    if runnable == 0 {
+        context.push_str(
+            "\nstatus: no runnable roadmap card. The work queue (roadmap+todo/in_progress) is \
+             drained. Do NOT invent work; if the user gave no task, await direction.",
+        );
+    } else if let Some((key, title)) = crate::gates::stop_dispatch::next_task_rpc_only(project) {
+        write!(context, "\nnext runnable card: [{key}] {title} — claim and START it.").ok();
+    }
+    true
 }
 
 #[cfg(test)]
@@ -193,6 +253,31 @@ mod tests {
         assert!(ctx.contains("[HARNESS_ENV] claude-code:subagent"));
         assert!(ctx.contains("do NOT call the Workflow tool again"));
         assert!(!ctx.contains("You MUST call"));
+    }
+
+    #[test]
+    fn empty_project_yields_no_live_kanban_and_no_panic() {
+        // Empty slug must short-circuit BEFORE any RPC — fail soft, no block.
+        let mut ctx = String::new();
+        let observed = super::append_live_kanban(&mut ctx, "");
+        assert!(!observed, "empty slug is never 'observed'");
+        assert!(ctx.is_empty(), "no [KANBAN] block for an empty slug: {ctx}");
+    }
+
+    #[test]
+    fn live_kanban_falls_soft_to_nag_on_outage() {
+        // With no daemon reachable in the unit-test process, the census read
+        // returns None -> append_context_blocks must fall back to the legacy
+        // PENDING nag rather than emit a half-formed [KANBAN] block or panic.
+        let input = HookInput { transcript_path: "/tmp/s.jsonl".to_owned(), ..HookInput::default() };
+        let mut ctx = String::new();
+        let mut session = SessionState { project: "kavach-rs".to_owned(), ..SessionState::default() };
+        append_context_blocks(&mut ctx, &input, &mut session, "debug", "fix the gate", &[]);
+        // Either the live block (daemon up in this env) or the nag (daemon down):
+        // exactly one path fires, never a panic, never both half-rendered.
+        let has_live = ctx.contains("[KANBAN]");
+        let has_nag = ctx.contains("[MEMORY] status:PENDING");
+        assert!(has_live ^ has_nag, "exactly one of live-board / nag must fire: {ctx}");
     }
 
     #[test]

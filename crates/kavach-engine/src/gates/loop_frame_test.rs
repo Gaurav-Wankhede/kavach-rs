@@ -38,7 +38,7 @@ fn loop_stop_frame_is_legible_goal_iteration_termination() {
     assert!(frame.contains("goal: unit.demo-card"), "goal must be named");
     assert!(frame.contains("iteration:"), "iteration must be present");
     assert!(
-        frame.contains("termination:"),
+        frame.contains("terminate ONLY on"),
         "the termination predicate is the whole point — it replaces bare 'do not stop'"
     );
     assert!(
@@ -46,7 +46,7 @@ fn loop_stop_frame_is_legible_goal_iteration_termination() {
         "termination predicate must state the 3-witness bar, not just 'keep going'"
     );
     assert!(
-        frame.contains("on_done:"),
+        frame.contains("on done:"),
         "the frame must tell the loop what to do on completion (close + dispatch next)"
     );
 }

@@ -30,3 +30,12 @@ Thumbs.db
 # Staged sidecar CLI for `dx bundle` external_bin (kavach deploy --bundle).
 # Build artifact: kavach-<target-triple> copied here before bundling.
 /crates/kavach-app/bin/
+
+# Runtime deploy mutex (kavach deploy) — machine-local transient lock, not source.
+/.deploy.lock
+
+# Local session audit/workflow scratch under .claude — transient agent output,
+# not project source (the durable record lives in the kavach DB, not the repo).
+/.claude/audit-digest.json
+/.claude/silent-failure-audit-result.json
+/.claude/wf-*.js

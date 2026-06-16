@@ -2,8 +2,8 @@ use kavach_types::HookInput;
 
 use crate::error::EngineError;
 use crate::gates::{
-    pre_tool_agent, pre_tool_bash, pre_tool_read, pre_tool_search, pre_tool_skill, pre_tool_task,
-    rule_eval,
+    pre_tool_agent, pre_tool_bash, pre_tool_question, pre_tool_read, pre_tool_search,
+    pre_tool_skill, pre_tool_task, rule_eval,
 };
 
 /// Rate-limited per-turn quality nudge for the generic tool-allow path.
@@ -59,6 +59,10 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             Ok(())
         }
         "Agent" => pre_tool_agent::handle_agent(input),
+        "AskUserQuestion" => {
+            pre_tool_question::handle_question(input);
+            Ok(())
+        }
         _ => {
             let mut session = kavach_session::get_or_create_session();
             let cfg = kavach_config::load_gates_config();

@@ -230,6 +230,117 @@ pub async fn delete_category(
     })
 }
 
+/// Per-category `(count_query, delete_statement)` for a prefix-bound delete. The
+/// table name is statically selected (never interpolated); `entry_key`/`project`
+/// are bound parameters, so no caller input reaches the SQL text.
+fn prefix_queries(category: &str) -> Result<(&'static str, &'static str)> {
+    let pair = match category {
+        "decision" => (
+            "SELECT count() FROM decision WHERE project = $pid AND string::starts_with(entry_key, $kp) GROUP ALL",
+            "DELETE decision WHERE project = $pid AND string::starts_with(entry_key, $kp);",
+        ),
+        "research" => (
+            "SELECT count() FROM research WHERE project = $pid AND string::starts_with(entry_key, $kp) GROUP ALL",
+            "DELETE research WHERE project = $pid AND string::starts_with(entry_key, $kp);",
+        ),
+        "pattern" => (
+            "SELECT count() FROM pattern WHERE project = $pid AND string::starts_with(entry_key, $kp) GROUP ALL",
+            "DELETE pattern WHERE project = $pid AND string::starts_with(entry_key, $kp);",
+        ),
+        "roadmap" => (
+            "SELECT count() FROM roadmap WHERE project = $pid AND string::starts_with(entry_key, $kp) GROUP ALL",
+            "DELETE roadmap WHERE project = $pid AND string::starts_with(entry_key, $kp);",
+        ),
+        "app_spec" => (
+            "SELECT count() FROM app_spec WHERE project = $pid AND string::starts_with(entry_key, $kp) GROUP ALL",
+            "DELETE app_spec WHERE project = $pid AND string::starts_with(entry_key, $kp);",
+        ),
+        other => return Err(Error::RecordNotFound(format!("unknown category: {other}"))),
+    };
+    Ok(pair)
+}
+
+/// Count records in `category` whose `entry_key` starts with `key_prefix`, for the
+/// shared count step of both the preview and the apply path.
+async fn count_by_key_prefix(
+    db: &Surreal<Db>,
+    pid: &RecordId,
+    count_q: &str,
+    key_prefix: &str,
+) -> Result<usize> {
+    let mut row_result = db
+        .query(count_q)
+        .bind(("pid", pid.clone()))
+        .bind(("kp", key_prefix.to_owned()))
+        .await?;
+    let row: Option<CountRow> = row_result.take(0)?;
+    Ok(usize::try_from(row.map_or(0, |r| r.count)).unwrap_or(0))
+}
+
+/// Preview a prefix delete (dry-run): report how many rows in `category` have an
+/// `entry_key` starting with `key_prefix`, without deleting anything.
+///
+/// # Errors
+/// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
+pub async fn preview_delete_by_key_prefix(
+    db: &Surreal<Db>,
+    project_slug: &str,
+    category: &str,
+    key_prefix: &str,
+) -> Result<DeleteReport> {
+    validate_category(category)?;
+    let pid = get_project_id(db, project_slug).await?;
+    let (count_q, _) = prefix_queries(category)?;
+    let count = count_by_key_prefix(db, &pid, count_q, key_prefix).await?;
+    Ok(DeleteReport {
+        project_slug: project_slug.to_owned(),
+        category: category.to_owned(),
+        key: Some(format!("{key_prefix}*")),
+        count,
+    })
+}
+
+/// Delete every record in a category whose `entry_key` starts with `key_prefix`.
+///
+/// E.g. purge all `heal.incident.loophole-*` cards in one transaction. Atomic:
+/// document rows + matching graph entities in a single `BEGIN`/`COMMIT`.
+///
+/// # Errors
+/// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
+pub async fn delete_by_key_prefix(
+    db: &Surreal<Db>,
+    project_slug: &str,
+    category: &str,
+    key_prefix: &str,
+) -> Result<DeleteReport> {
+    validate_category(category)?;
+    let pid = get_project_id(db, project_slug).await?;
+    let (count_q, table_delete) = prefix_queries(category)?;
+    let count = count_by_key_prefix(db, &pid, count_q, key_prefix).await?;
+
+    // Matching graph entities are named "<project>/<category>/<entry_key>", so the
+    // entity prefix is the category prefix + the key prefix.
+    let entity_prefix = format!("{project_slug}/{category}/{key_prefix}");
+    let q = format!(
+        "BEGIN TRANSACTION;\n\
+         {table_delete}\n\
+         DELETE entity WHERE entity_type = 'memory' AND string::starts_with(name, $eprefix);\n\
+         COMMIT TRANSACTION;"
+    );
+    db.query(q)
+        .bind(("pid", pid))
+        .bind(("kp", key_prefix.to_owned()))
+        .bind(("eprefix", entity_prefix))
+        .await?;
+
+    Ok(DeleteReport {
+        project_slug: project_slug.to_owned(),
+        category: category.to_owned(),
+        key: Some(format!("{key_prefix}*")),
+        count,
+    })
+}
+
 /// Preview delete of all records in a category (dry-run).
 ///
 /// # Errors

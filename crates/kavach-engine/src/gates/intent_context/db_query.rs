@@ -55,15 +55,32 @@ fn resolve_slug(session: &kavach_session::SessionState) -> String {
 /// Append DB query requirement for status/progress/resume/next-task prompts.
 /// Skips injection when the agent already queried kavach this session
 /// (`decision:rca.gate_session_amnesia` — durable artifacts beat re-prompting).
+///
+/// Thin wrapper: reads the ambient session singleton, then delegates to the pure
+/// [`append_db_query_required_with`]. The split keeps the global read OUT of the
+/// decision logic so unit tests inject `memory_queried` deterministically instead
+/// of depending on whatever on-disk session the test process happens to inherit.
 pub(crate) fn append_db_query_required(context: &mut String, prompt: &str) {
+    let session = kavach_session::get_or_create_session();
+    let slug = resolve_slug(&session);
+    append_db_query_required_with(context, prompt, session.memory_queried, &slug);
+}
+
+/// Pure core: emit the `[DB_QUERY_REQUIRED]` block iff the prompt is status-shaped
+/// AND the session has NOT already queried kavach. No global reads — every input
+/// is an explicit parameter, so the behavior is fully determined by its arguments.
+pub(crate) fn append_db_query_required_with(
+    context: &mut String,
+    prompt: &str,
+    memory_queried: bool,
+    slug: &str,
+) {
     if !is_status_query(&prompt.to_lowercase()) {
         return;
     }
-    let session = kavach_session::get_or_create_session();
-    if session.memory_queried {
+    if memory_queried {
         return;
     }
-    let slug = resolve_slug(&session);
     writeln!(context, "\n[DB_QUERY_REQUIRED]").ok();
     writeln!(
         context,

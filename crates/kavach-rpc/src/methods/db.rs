@@ -41,7 +41,9 @@ mod write;
 
 pub use archive::{ArchiveParams, ArchiveResult, archive};
 pub use bandit_backfill::{BanditBackfillParams, BanditBackfillResult, bandit_backfill_session};
-pub use delete::{DeleteParams, DeleteResult, delete, delete_confirm_phrase};
+pub use delete::{
+    DeleteParams, DeleteResult, delete, delete_confirm_phrase, delete_confirm_phrase_prefix,
+};
 pub use event::{BanditRowParams, BanditRowResult, EventParams, EventResult, bandit_row, event};
 pub use expire::{ExpireParams, ExpireResult, expire};
 pub use find::{FindParams, FindResult, find_part, find_project};

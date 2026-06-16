@@ -46,16 +46,18 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&backlog_title));
     let proj = &ctx.session.project;
     drop(kavach_hook::exit_stop_block(&format!(
-        "{loop_prefix}[AUTO_CONTINUE] Roadmap backlog has runnable work — do not stop.\n\
+        "{loop_prefix}[AUTO_CONTINUE] Do NOT stop. Build this backlog card THIS turn.\n\
          NEXT BACKLOG [{backlog_key}]: {backlog_title}\n\
-         (CLAIMED — now in_progress in the Kavach DB; execute it immediately.)\n\n\
-         Step 1 — read the card:\n\
+         This card is CLAIMED and in_progress in the Kavach DB. Start it now.\n\n\
+         Do this now, in order:\n\
+         1. Read the card:\n\
            kavach db get --project {proj} --category roadmap --key {backlog_key} --full\n\
-         Step 2 — open phase iteration on the first file you'll edit:\n\
+         2. Open a phase iteration on the first file you'll edit:\n\
            kavach phase iteration-start <path>\n\
-         Step 3 — execute. Close with:\n\
+         3. Implement it. Then close:\n\
            kavach db status-update --project {proj} --category roadmap --key {backlog_key} --status done\n\
-           kavach phase iteration-done"
+           kavach phase iteration-done\n\
+         Your VERY NEXT action must be step 1 — do not end this turn describing the card."
     )));
     ControlFlow::Break(())
 }

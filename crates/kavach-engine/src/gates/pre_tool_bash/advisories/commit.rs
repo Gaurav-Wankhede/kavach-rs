@@ -31,8 +31,8 @@ pub(in crate::gates::pre_tool_bash) fn check_commit_message(cmd: &str) -> Option
         return None;
     }
     Some(
-        "[COMMIT_FORMAT] Advisory: commit message should use conventional commits format.\n\
-         Recognized prefixes: feat | fix | refactor | docs | test | chore | perf | ci | build | style\n\
+        "[COMMIT_FORMAT] Prefix this commit message with a conventional-commits type.\n\
+         Use one of: feat | fix | refactor | docs | test | chore | perf | ci | build | style\n\
          Example: `git commit -m \"feat(auth): add PASETO token validation\"`".to_owned(),
     )
 }

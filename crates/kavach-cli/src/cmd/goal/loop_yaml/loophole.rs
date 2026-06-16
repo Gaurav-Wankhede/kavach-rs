@@ -49,6 +49,22 @@ impl Lens {
             Self::Boundary => "boundary",
         }
     }
+
+    /// Adapt a finding from the shared `kavach_patterns::loophole_lens` kernel
+    /// into this serde-carrying CLI lens (the YAML artifact needs serde; the
+    /// kernel deliberately does not). One source of truth for the variants —
+    /// adding a lens to the kernel forces this match to be updated.
+    pub(crate) const fn from_kernel(k: kavach_patterns::loophole_lens::Lens) -> Self {
+        use kavach_patterns::loophole_lens::Lens as K;
+        match k {
+            K::Concurrency => Self::Concurrency,
+            K::Failure => Self::Failure,
+            K::Malformed => Self::Malformed,
+            K::Authz => Self::Authz,
+            K::Replay => Self::Replay,
+            K::Boundary => Self::Boundary,
+        }
+    }
 }
 
 /// One iteration of the loophole loop — the YAML artifact written to /tmp. It

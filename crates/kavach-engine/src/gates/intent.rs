@@ -14,6 +14,10 @@ mod tests;
 
 use kavach_types::HookInput;
 
+// Re-export so `session_start` can inject the SAME live `[KANBAN]` block at
+// SessionStart that the UserPromptSubmit hook injects — both read the live board.
+pub(in crate::gates) use context::append_live_kanban_block;
+
 use super::intent_context::extract_research_topic;
 use classify::{
     apply_focus_marker, collapse_required_via_rag, filter_invocable_skills, prompt_injection_block,

@@ -1,7 +1,7 @@
 // split: intentional - cohesive gate_pattern store (struct + 3 async DB ops + pure helpers)
 // SurrealDB-backed gate_pattern store. Mirrors kavach-db::gate_patterns API.
 // Tokenization, bloom filter, and TF-IDF scoring are pure-fn ports.
-// SDK ref: surrealdb 3.0.5 — CREATE ... RETURN id + take(0) into typed struct.
+// SDK ref: surrealdb 3.1.4 — CREATE ... RETURN id + take(0) into typed struct.
 // sql-safe: explicit column list; bound params only; no string concat.
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};

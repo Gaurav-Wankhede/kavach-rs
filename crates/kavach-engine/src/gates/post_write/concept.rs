@@ -51,7 +51,12 @@ fn upsert_concept(body: &str) -> bool {
         "name": name, "display": name, "desc": desc,
         "tags": tags, "sources": empty_sources,
     });
-    kavach_rpc::client::call::<_, serde_json::Value>("concept.add", Some(params)).ok();
+    // KG harvest is a non-blocking side-effect, but a dropped concept on a daemon
+    // blip must be observable, not silent — log to the hook stderr channel.
+    if let Err(e) = kavach_rpc::client::call::<_, serde_json::Value>("concept.add", Some(params)) {
+        use std::io::Write as _;
+        drop(writeln!(std::io::stderr(), "[CONCEPT_ADD_FAIL] {name}: {e}"));
+    }
     true
 }
 

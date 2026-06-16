@@ -33,6 +33,7 @@ pub mod parts;
 pub mod projects;
 pub mod rag_trees;
 pub mod read;
+pub mod retry;
 pub mod schema;
 pub mod schema_engine;
 pub mod schema_v2;
@@ -95,7 +96,8 @@ pub use decisions::{
     arch_list_recent, arch_upsert,
 };
 pub use delete::{
-    DeleteReport, delete_by_key, delete_category, preview_delete_by_key, preview_delete_category,
+    DeleteReport, delete_by_key, delete_by_key_prefix, delete_category, preview_delete_by_key,
+    preview_delete_by_key_prefix, preview_delete_category,
 };
 pub use filter::{FilterBuilder, FilterExpr, FilterValue};
 pub use gate_patterns::{

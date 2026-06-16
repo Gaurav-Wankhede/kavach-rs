@@ -398,19 +398,6 @@ pub async fn upsert_entry_full(
 
     let project_name = format!("{:?}", &project_id.key);
     let priority_i64 = priority.map(Priority::get);
-    let response = db
-        .query(q)
-        .bind(("rid", rid))
-        .bind(("project", project_id.clone()))
-        .bind(("key", entry_key.to_owned()))
-        .bind(("title", title.to_owned()))
-        .bind(("content", content.to_owned()))
-        .bind(("priority", priority_i64))
-        .bind(("source", event_source.to_owned()))
-        .bind(("qname", qualified_name.to_owned()))
-        .bind(("project_name", project_name))
-        .bind(("refs", references.to_vec()))
-        .await?;
     // ALGO: DeterministicIdReturn (skip transaction-result deserialization)
     // PROBLEM_CLASS: stream (multi-statement response decode)
     // REJECTED: [{"name":"take::<Option<MemoryEntry>>(0)","reason":"RETURN AFTER on SCHEMAFULL row fails to bind when any strict field is absent -> false 'returned empty'"},{"name":"take::<Vec<UpdatedIdRow>>(0)","reason":"inside BEGIN..COMMIT the statement indices shift and RETURN id projects a bare id, not {id} -> 'Expected object, got none'"}]
@@ -420,12 +407,33 @@ pub async fn upsert_entry_full(
     //   deterministically in Rust (rid) before the query.
     // SOURCE: https://surrealdb.com/docs/sdk/rust/concepts/transaction
     // BENCHMARK: https://surrealdb.com/docs/sdk/rust/methods/query (IndexedResults per-statement indexing, 3.0)
-    match response.check() {
-        Ok(_) => Ok(rid_returned),
-        Err(e) => Err(crate::error::Error::Migration(format!(
-            "transaction failed for {category}/{entry_key}: {e}"
-        ))),
-    }
+    //
+    // SELF-HEALING: this UPSERT is durability-critical (a finding lives in the DB
+    // or it is LOST), so it runs through the operation-scoped transient-fault
+    // retry. A momentary RocksDB busy/lock spike or connection blip mid-session
+    // is retried with bounded backoff; a permanent error (parse/type/migration)
+    // fails fast. The whole BEGIN..COMMIT is the retried unit, so a retried write
+    // re-runs the full transaction atomically — never a partial double-apply.
+    // Binds are consumed per `.await`, so the closure rebuilds query+binds each
+    // attempt. SOURCE: crate::retry::with_retry.
+    crate::retry::with_retry(|| async {
+        let response = db
+            .query(q.clone())
+            .bind(("rid", rid.clone()))
+            .bind(("project", project_id.clone()))
+            .bind(("key", entry_key.to_owned()))
+            .bind(("title", title.to_owned()))
+            .bind(("content", content.to_owned()))
+            .bind(("priority", priority_i64))
+            .bind(("source", event_source.to_owned()))
+            .bind(("qname", qualified_name.to_owned()))
+            .bind(("project_name", project_name.clone()))
+            .bind(("refs", references.to_vec()))
+            .await?;
+        response.check().map_err(crate::error::Error::Surreal)?;
+        Ok(rid_returned.clone())
+    })
+    .await
 }
 
 /// Delete events older than `days` days. Returns count deleted.

@@ -70,3 +70,50 @@ fn a_source_extension_outside_a_source_tree_is_not_denied() {
     // A source tree without a source extension (a data file) is also fine.
     assert!(!targets_tracked_source("echo x > crates/foo/data.json"));
 }
+
+#[test]
+fn an_absolute_path_in_another_project_is_not_denied() {
+    // REGRESSION (the false-positive this fix targets): a Bash write to a SOURCE
+    // file in a DIFFERENT project — an absolute path NOT under this workspace —
+    // is outside the pre-write gate's jurisdiction, so it must PASS. Before the
+    // jurisdiction check, the `/src/` + `.ts` substrings alone tripped the deny
+    // and blocked all cross-project work.
+    let foreign_cp = "cp /tmp/poc-spec.ts \
+                      /Users/gauravwankhede/Projects/Video/kavach-ad/src/poc-spec.ts";
+    assert!(
+        !targets_tracked_source(foreign_cp),
+        "a write into another project's src/ tree is out of jurisdiction"
+    );
+    let foreign_heredoc = "cat > /Users/gauravwankhede/Projects/Video/kavach-ad/src/index.tsx";
+    assert!(
+        !targets_tracked_source(foreign_heredoc),
+        "a heredoc write into a foreign project's src/ is out of jurisdiction"
+    );
+    // An absolute /tmp source file is likewise external.
+    assert!(!targets_tracked_source(
+        "cp /tmp/a.rs /var/folders/scratch/b.rs"
+    ));
+}
+
+#[test]
+fn an_absolute_path_inside_this_workspace_is_still_denied() {
+    // The launder protection MUST survive for THIS repo: an absolute path that
+    // resolves under the workspace root is in-jurisdiction and stays a DENY.
+    // Build it from the real workspace root so the test is location-independent.
+    let root = std::env::current_dir()
+        .ok()
+        .and_then(|cwd| {
+            cwd.ancestors()
+                .find(|d| d.join("Cargo.toml").is_file())
+                .map(std::path::Path::to_path_buf)
+        })
+        .expect("tests run inside the kavach-rs workspace");
+    let in_repo = format!(
+        "cp /tmp/x.rs {}/crates/kavach-surreal/src/write.rs",
+        root.display()
+    );
+    assert!(
+        targets_tracked_source(&in_repo),
+        "an absolute path under the workspace root is in-jurisdiction → deny"
+    );
+}

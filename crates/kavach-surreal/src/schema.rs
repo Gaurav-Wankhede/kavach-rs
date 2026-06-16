@@ -52,7 +52,11 @@ DEFINE FIELD OVERWRITE category ON decision TYPE string VALUE $value OR 'decisio
 DEFINE FIELD title ON decision TYPE string;
 DEFINE FIELD content ON decision TYPE string;
 DEFINE FIELD status ON decision TYPE string DEFAULT 'active';
-DEFINE FIELD OVERWRITE entry_status ON decision TYPE string DEFAULT 'todo'
+-- Knowledge-store rows record SETTLED facts, not work to dispatch; the work
+-- queue is the `roadmap` table alone (kavach-db SKILL.md: next-task = roadmap+todo).
+-- Default a new decision to `verified` so it never pollutes `search --status todo`
+-- or the stop-gate census. (Was 'todo' -> 308 phantom decision "todos".)
+DEFINE FIELD OVERWRITE entry_status ON decision TYPE string DEFAULT 'verified'
     ASSERT $value IN ['todo', 'in_progress', 'done', 'verified'];
 DEFINE FIELD tags ON decision TYPE option<array<string>>;
 DEFINE FIELD decay_score ON decision TYPE option<float>;
@@ -71,7 +75,9 @@ DEFINE FIELD title ON research TYPE string;
 DEFINE FIELD content ON research TYPE string;
 DEFINE FIELD source ON research TYPE option<string>;
 DEFINE FIELD status ON research TYPE string DEFAULT 'active';
-DEFINE FIELD OVERWRITE entry_status ON research TYPE string DEFAULT 'todo'
+-- Research findings are cached SETTLED facts, not dispatchable work — default
+-- `verified` (was 'todo' -> phantom research "todos"). Work queue = roadmap only.
+DEFINE FIELD OVERWRITE entry_status ON research TYPE string DEFAULT 'verified'
     ASSERT $value IN ['todo', 'in_progress', 'done', 'verified'];
 DEFINE FIELD decay_score ON research TYPE option<float>;
 DEFINE FIELD access_count ON research TYPE int DEFAULT 0;
@@ -87,7 +93,9 @@ DEFINE FIELD OVERWRITE category ON pattern TYPE string VALUE $value OR 'pattern'
 DEFINE FIELD title ON pattern TYPE string;
 DEFINE FIELD content ON pattern TYPE string;
 DEFINE FIELD status ON pattern TYPE string DEFAULT 'active';
-DEFINE FIELD OVERWRITE entry_status ON pattern TYPE string DEFAULT 'todo'
+-- Gate patterns are LEARNED facts (false-positive fixes), not dispatchable work —
+-- default `verified` (was 'todo' -> phantom pattern "todos"). Work queue = roadmap.
+DEFINE FIELD OVERWRITE entry_status ON pattern TYPE string DEFAULT 'verified'
     ASSERT $value IN ['todo', 'in_progress', 'done', 'verified'];
 DEFINE FIELD decay_score ON pattern TYPE option<float>;
 DEFINE FIELD access_count ON pattern TYPE int DEFAULT 0;

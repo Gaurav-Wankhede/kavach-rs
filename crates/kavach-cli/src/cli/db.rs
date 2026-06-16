@@ -83,7 +83,9 @@ pub(crate) enum DbAction {
         /// Entry title
         #[arg(long)]
         title: String,
-        /// Content (reads from stdin if omitted)
+        /// Content. If omitted, the body is read from a piped/redirected stdin
+        /// (e.g. `... < plan.md` or `cat plan.md | ...`); an interactive
+        /// terminal with no pipe stores the title only.
         #[arg(long)]
         content: Option<String>,
         /// Intent: create a brand-new row. Gate fuzzy-matches title against
@@ -365,6 +367,24 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         #[arg(long)]
         confirm: bool,
         /// Dry-run: show what would be deleted
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Bulk-purge records in a category whose key starts with a prefix (requires --confirm).
+    /// E.g. clear every `heal.incident.loophole-*` roadmap card in one pass.
+    DeletePrefix {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        #[arg(long, help = crate::cmd::db::write::CATEGORY_HELP)]
+        category: String,
+        /// Key prefix to match (e.g. "heal.incident.loophole-")
+        #[arg(long)]
+        prefix: String,
+        /// Confirm the bulk purge (skipped under --dry-run)
+        #[arg(long)]
+        confirm: bool,
+        /// Dry-run: count what would be deleted without deleting
         #[arg(long)]
         dry_run: bool,
     },

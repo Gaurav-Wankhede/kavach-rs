@@ -69,7 +69,13 @@ pub async fn acquire(
     let Some(row) = cur else {
         return Err(Error::RecordNotFound(format!("{table}:{key}")));
     };
-    let holder = row.occupied_by.unwrap_or_default();
+    // The row exists but the CAS did not match — it must be validly held, so
+    // `occupied_by` is non-NULL. A NULL here is schema corruption or a torn write;
+    // returning an empty session_id would forge a fake holder that no lease check
+    // matches. Fail closed so the corruption surfaces instead of leaking a bogus lease.
+    let holder = row
+        .occupied_by
+        .ok_or_else(|| Error::SchemaViolation(format!("{table}:{key} exists but occupied_by is NULL")))?;
     Ok(AcquireOutcome::HeldBy {
         session_id: holder,
         expires_at: row.occupied_until.unwrap_or(now),

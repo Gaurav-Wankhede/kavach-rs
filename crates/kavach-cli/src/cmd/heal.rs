@@ -5,6 +5,8 @@
 //! SOURCE: decision.heal.self-healing-pipeline-architecture.
 
 mod capture;
+pub(crate) mod ingest;
+pub(crate) mod merge_gate;
 pub(crate) mod sweep;
 
 /// `kavach heal capture` entry: gather context for `incident` and upsert its

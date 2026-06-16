@@ -163,6 +163,11 @@ pub(super) fn get(
 /// Inputs for [`write`] — shaped like `DbAction::Write` so callers can `move`
 /// the clap variant in. Eliminates the 8-arg positional API the
 /// `clippy::too_many_arguments` lint flagged in Rust 1.95.
+///
+/// `Copy` (all fields are `Copy` borrows/scalars) so `write::run` can derive an
+/// `effective_req` via functional-update (`..*req`) when it resolves the body
+/// from stdin — threading the resolved content through the RPC path too.
+#[derive(Clone, Copy)]
 pub(crate) struct WriteRequest<'a> {
     pub project: &'a str,
     pub category: &'a str,
@@ -295,7 +300,27 @@ pub(super) fn delete(
         project: project.to_owned(),
         category: category.to_owned(),
         key: key.map(String::from),
+        key_prefix: None,
         all: Some(all),
+        dry_run: Some(dry_run),
+        confirm,
+    };
+    call::<_, DeleteResult>("db.delete", Some(params)).map_err(format_err)
+}
+
+pub(super) fn delete_by_key_prefix(
+    project: &str,
+    category: &str,
+    key_prefix: &str,
+    dry_run: bool,
+    confirm: Option<String>,
+) -> Result<DeleteResult, String> {
+    let params = DeleteParams {
+        project: project.to_owned(),
+        category: category.to_owned(),
+        key: None,
+        key_prefix: Some(key_prefix.to_owned()),
+        all: Some(false),
         dry_run: Some(dry_run),
         confirm,
     };

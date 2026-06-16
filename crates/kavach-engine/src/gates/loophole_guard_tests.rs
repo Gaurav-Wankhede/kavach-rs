@@ -94,3 +94,61 @@ fn stop_silent_on_trivial_turn() {
     let msg = "Done — renamed a variable and fixed a typo.";
     assert!(check_stop_interrogation(msg, true).is_none());
 }
+
+// ---- M4: bounded changed-file lens detector ----
+
+#[test]
+fn site_scan_names_concrete_lens_file_line() {
+    use super::scan_changed_for_loopholes;
+    let files = [("crates/x/src/y.rs", "fn ok() {}\nlet v = parse(i).unwrap();")];
+    let out = scan_changed_for_loopholes(&files).expect("should flag the unwrap");
+    assert!(out.contains("[LOOPHOLE_SITES]"));
+    assert!(out.contains("malformed crates/x/src/y.rs:2"), "concrete site: {out}");
+}
+
+#[test]
+fn site_scan_silent_on_clean_files() {
+    use super::scan_changed_for_loopholes;
+    let files = [("a.rs", "let s = a.checked_add(b)?;\nfn pure() {}")];
+    assert!(scan_changed_for_loopholes(&files).is_none(), "no hints -> no advisory");
+}
+
+#[test]
+fn site_scan_silent_on_empty_input() {
+    use super::scan_changed_for_loopholes;
+    assert!(scan_changed_for_loopholes(&[]).is_none());
+}
+
+#[test]
+fn site_scan_caps_files_and_names_the_drop() {
+    use super::scan_changed_for_loopholes;
+    // 30 files each with a finding > MAX_FILES_SCANNED (24): the advisory must
+    // name the truncation, never silently drop (boundary lens on the gate itself).
+    let owned: Vec<(String, String)> = (0..30)
+        .map(|i| (format!("f{i}.rs"), "let v = x.unwrap();".to_owned()))
+        .collect();
+    let refs: Vec<(&str, &str)> = owned.iter().map(|(p, c)| (p.as_str(), c.as_str())).collect();
+    let out = scan_changed_for_loopholes(&refs).expect("should flag");
+    assert!(out.contains("scanned 24/30"), "names the file cap: {out}");
+}
+
+#[test]
+fn site_scan_caps_listed_sites_and_names_the_remainder() {
+    // One file with 20 findings > MAX_SITES_LISTED (12): list is bounded, the
+    // remainder count is surfaced (no silent cap).
+    let body: String = (0..20).map(|_| "let v = x.unwrap();\n").collect();
+    let out = super::scan_changed_for_loopholes(&[("big.rs", &body)]).expect("flags");
+    assert!(out.contains("more suspected site(s)"), "names dropped sites: {out}");
+}
+
+#[test]
+fn changed_filter_excludes_test_files() {
+    use super::is_scannable_rust;
+    assert!(is_scannable_rust("crates/x/src/y.rs"));
+    assert!(!is_scannable_rust("crates/x/src/y_tests.rs"));
+    assert!(!is_scannable_rust("crates/x/src/y_test.rs"));
+    assert!(!is_scannable_rust("crates/x/src/y_test_menu.rs"));
+    assert!(!is_scannable_rust("crates/x/tests/it.rs"));
+    assert!(!is_scannable_rust("crates/x/src/y.toml"));
+    assert!(is_scannable_rust("crates/x/src/latest.rs"), "non-test stem stays in scope");
+}

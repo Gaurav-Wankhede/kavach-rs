@@ -59,7 +59,17 @@ pub(super) fn upsert(algo: &AlgoComment, file_path: &str, project_slug: &str, tu
         "search_month": i32::try_from(algo.search_month).unwrap_or(i32::MAX),
         "turn": turn,
     });
-    kavach_rpc::client::call::<_, serde_json::Value>("algo.upsert", Some(upsert_params)).ok();
+    // Fire-and-forget (never block the gate), but a lost persist is observable on
+    // stderr — same channel as reject(). A silent drop here breaks the algo-learning
+    // ledger on a daemon/network blip with no trace.
+    if let Err(e) =
+        kavach_rpc::client::call::<_, serde_json::Value>("algo.upsert", Some(upsert_params))
+    {
+        drop(writeln!(
+            std::io::stderr(),
+            "[ALGO_UPSERT_FAIL turn={turn}] {file_path}: {e}"
+        ));
+    }
 
     let payload = format!(
         r#"{{"chosen":"{}","problem_class":"{}","file":"{file_path}","turn":{turn}}}"#,
@@ -71,7 +81,14 @@ pub(super) fn upsert(algo: &AlgoComment, file_path: &str, project_slug: &str, tu
         "project": project_slug,
         "payload": payload,
     });
-    kavach_rpc::client::call::<_, serde_json::Value>("event.append", Some(event_params)).ok();
+    if let Err(e) =
+        kavach_rpc::client::call::<_, serde_json::Value>("event.append", Some(event_params))
+    {
+        drop(writeln!(
+            std::io::stderr(),
+            "[ALGO_EVENT_FAIL turn={turn}] {file_path}: {e}"
+        ));
+    }
 }
 
 /// Write graph edges: file→algorithm (`uses_algorithm`), algorithm→class (`solves`).

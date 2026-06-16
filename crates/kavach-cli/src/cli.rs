@@ -376,6 +376,38 @@ pub(crate) enum LoopholeAction {
         #[arg(long, default_value_t = 1)]
         round: u32,
     },
+    /// Loop-until-dry: re-run sweep rounds (each emits its own /tmp iteration
+    /// YAML) until `dry_rounds` consecutive rounds surface NO new (lens, site)
+    /// finding, OR `max_rounds` is hit. This is the meta-harness loop that keeps
+    /// hunting + recording until the system converges. Bounded; never infinite.
+    Loop {
+        /// Project slug the findings/cards belong to.
+        #[arg(long)]
+        project: String,
+        /// Run id grouping every round's /tmp iteration YAML.
+        #[arg(long, default_value = "loop")]
+        run_id: String,
+        /// Consecutive no-new-finding rounds that declare convergence (dry).
+        #[arg(long, default_value_t = 2)]
+        dry_rounds: u32,
+        /// Hard cap on rounds — the runaway brake (never loops forever).
+        #[arg(long, default_value_t = 10)]
+        max_rounds: u32,
+    },
+    /// Install the PROACTIVE host schedule: a code-owned launchd `LaunchAgent`
+    /// that runs `kavach loophole loop` on a daily calendar interval. The third
+    /// trigger (on-demand CLI + stop-gate hook + this cron) of the meta-harness loop.
+    Cron {
+        /// Project slug the scheduled loop hunts + records findings for.
+        #[arg(long)]
+        project: String,
+        /// Hour of day (0–23, local time) the daily loop fires.
+        #[arg(long, default_value_t = 4)]
+        hour: u8,
+        /// Render the plist to stdout instead of writing it (no filesystem change).
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Subcommand)]
