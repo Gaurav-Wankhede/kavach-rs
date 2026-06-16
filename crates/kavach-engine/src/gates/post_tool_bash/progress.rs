@@ -17,6 +17,18 @@ pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, comm
     let is_kanban_close = command.contains("kavach db kanban-close");
     if is_status_update || is_kanban_close {
         session.last_db_write_turn = session.turn_count;
+        // SELF-CLAIM TRACKING: a `status-update --status in_progress` is the agent
+        // claiming a card WITHOUT the stop-gate dispatcher. The dispatcher is the
+        // only OTHER writer of `current_kanban_card`, so without this a self-
+        // claimed card stays empty and the close-before-advance guard
+        // (stop/phase/kanban_status.rs) skips it ENTIRELY — the card then drifts
+        // with zero enforcement ("task done, DB stale"). Mirror the dispatcher:
+        // point `current_kanban_card` at the claimed key so the guard tracks it.
+        // SOURCE: rca.card-status-drift-self-claim-untracked.
+        if is_status_update && command.contains("in_progress")
+            && let Some(key) = extract_flag_value(command, "--key") {
+                session.current_kanban_card = key;
+            }
         session.save().ok();
     }
 
@@ -32,9 +44,27 @@ pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, comm
     }
 }
 
+/// Extract a CLI flag's value from a command line: `--key foo` or `--key=foo`.
+/// Returns the unquoted value, or `None` if the flag is absent or has no value.
+/// Total + malformed-safe (no panic on a trailing bare flag).
+fn extract_flag_value(command: &str, flag: &str) -> Option<String> {
+    let tokens: Vec<&str> = command.split_whitespace().collect();
+    for (i, tok) in tokens.iter().enumerate() {
+        if let Some(eq) = tok.strip_prefix(&format!("{flag}=")) {
+            let v = eq.trim_matches(['"', '\'']);
+            return (!v.is_empty()).then(|| v.to_owned());
+        }
+        if *tok == flag {
+            let v = tokens.get(i.checked_add(1)?)?.trim_matches(['"', '\'']);
+            return (!v.is_empty() && !v.starts_with("--")).then(|| v.to_owned());
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
-    use super::track_db_progress;
+    use super::{extract_flag_value, track_db_progress};
 
     /// REGRESSION rca.stop-breaker-bookkeeping-resets-livelock: a bare
     /// `db write --content` (decision row / marker dodge) must NOT advance the
@@ -75,5 +105,60 @@ mod tests {
             s.last_db_write_turn, 11,
             "kanban-close moves the board → progress"
         );
+    }
+
+    /// REGRESSION rca.card-status-drift-self-claim-untracked: a self-claim
+    /// (`status-update --status in_progress`) WITHOUT the stop-gate dispatcher
+    /// must point `current_kanban_card` at the claimed key, so the close-before-
+    /// advance guard tracks it instead of skipping an empty card (the "task done,
+    /// DB stale" drift). Mirrors the dispatcher's only-other write of that field.
+    #[test]
+    fn self_claim_in_progress_sets_current_card() {
+        let mut s = kavach_session::SessionState::default();
+        s.turn_count = 3;
+        track_db_progress(
+            &mut s,
+            "kavach db status-update --project p --category roadmap --key roadmap.unit.42.foo --status in_progress",
+        );
+        assert_eq!(
+            s.current_kanban_card, "roadmap.unit.42.foo",
+            "self-claim must register the card for close-before-advance enforcement"
+        );
+    }
+
+    /// A NON-claiming transition (status done / kanban-close) must NOT overwrite
+    /// `current_kanban_card` — only an `in_progress` claim does. Otherwise closing
+    /// card A would re-point the guard at A and mask a drift on the next card.
+    #[test]
+    fn done_transition_leaves_current_card_untouched() {
+        let mut s = kavach_session::SessionState::default();
+        s.current_kanban_card = "roadmap.unit.7.bar".to_owned();
+        track_db_progress(
+            &mut s,
+            "kavach db status-update --project p --key roadmap.unit.42.foo --status done",
+        );
+        assert_eq!(
+            s.current_kanban_card, "roadmap.unit.7.bar",
+            "a done-transition must not re-claim the card slot"
+        );
+    }
+
+    /// `extract_flag_value` parses both `--key v` and `--key=v` on a SINGLE token
+    /// (card keys never contain spaces), strips surrounding quotes on that token,
+    /// and is malformed-safe (a trailing bare flag yields None, never a panic).
+    /// It is deliberately NOT a shell word-splitter — values are whitespace-free.
+    #[test]
+    fn extract_flag_value_handles_both_forms_and_malformed() {
+        assert_eq!(
+            extract_flag_value("x --key abc --y", "--key"),
+            Some("abc".to_owned())
+        );
+        assert_eq!(
+            extract_flag_value("x --key='roadmap.unit.42.foo'", "--key"),
+            Some("roadmap.unit.42.foo".to_owned())
+        );
+        assert_eq!(extract_flag_value("x --key --status z", "--key"), None);
+        assert_eq!(extract_flag_value("x --key", "--key"), None);
+        assert_eq!(extract_flag_value("no flag here", "--key"), None);
     }
 }
