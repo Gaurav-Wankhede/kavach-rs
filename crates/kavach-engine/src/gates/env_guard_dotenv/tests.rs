@@ -42,6 +42,23 @@ fn safe_downstream_psql_is_operation_aware() {
 }
 
 #[test]
+fn safe_downstream_psql_after_harmless_prefix_or_pipe() {
+    // A psql that is not the LEADING binary — behind an echo prefix or a pipe —
+    // must still be recognised as safe (no destructive verb present).
+    assert!(is_safe_downstream("echo hi; psql $DATABASE_URL -c 'SELECT 1'"));
+    assert!(is_safe_downstream("psql $DATABASE_URL -f mig.sql | head"));
+    assert!(is_safe_downstream("cd /x; psql $DATABASE_URL -c 'UPDATE t SET y=1'"));
+}
+
+#[test]
+fn safe_downstream_compound_psql_still_blocks_destructive() {
+    // The destructive-verb guard must fire even when psql is behind a prefix/pipe —
+    // a harmless prefix must NOT mask a DROP/DELETE/TRUNCATE.
+    assert!(!is_safe_downstream("echo go; psql $DATABASE_URL -c 'DROP TABLE t'"));
+    assert!(!is_safe_downstream("psql $DATABASE_URL -c 'DELETE FROM t' | tee log"));
+}
+
+#[test]
 fn safe_downstream_recognizes_database_url_assignment() {
     assert!(is_safe_downstream(
         "DATABASE_URL=postgres://x sqlx migrate run"

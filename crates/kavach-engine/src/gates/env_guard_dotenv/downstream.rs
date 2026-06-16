@@ -25,7 +25,10 @@ pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
         .map_or(first_token, |b| b);
     // psql is conditionally safe: allowed only when it carries no destructive
     // SQL verb. Shared classifier keeps identifier substrings (deleted_at) safe.
-    if basename == "psql" {
+    // Recognise psql as the leading binary OR anywhere in a compound downstream
+    // (`echo ..; psql ..`, `psql .. | head`) — a harmless prefix/pipe must not mask
+    // a safe psql. The destructive-verb classifier stays the real safety gate.
+    if basename == "psql" || invokes_psql(&lc) {
         return crate::gates::sql_destructive::destructive_sql_keyword(&lc).is_none();
     }
     let safe_binaries = [
@@ -46,4 +49,21 @@ pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
         "kavach",
     ];
     safe_binaries.contains(&basename)
+}
+
+/// True when a `psql` command appears at any command boundary in a compound
+/// downstream (`echo ..; psql ..`, `psql .. | head`, `a && psql ..`), so a
+/// harmless prefix or pipe does not mask a safe psql. Matches `psql` only as a
+/// command word (boundary-prefixed + word-terminated), never the substring of
+/// another token. The destructive-SQL classifier remains the real safety gate.
+fn invokes_psql(lc: &str) -> bool {
+    lc.split([';', '|', '&'])
+        .map(str::trim)
+        .filter_map(|seg| seg.split_whitespace().next())
+        .any(|tok| {
+            std::path::Path::new(tok)
+                .file_name()
+                .and_then(|n| n.to_str())
+                == Some("psql")
+        })
 }
