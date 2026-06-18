@@ -50,8 +50,22 @@ pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
     render(section(q.project).await)
 }
 
+fn is_http_url(url: &str) -> bool {
+    let lower = url.trim().to_ascii_lowercase();
+    lower.starts_with("http://") || lower.starts_with("https://")
+}
+
 /// `POST /citations/add` — upsert a citation, then return the refreshed list.
 pub async fn add(Form(f): Form<AddForm>) -> Html<String> {
+    if !is_http_url(&f.url) {
+        let panel = html! {
+            div.panel.panel-error {
+                h2 { "Request failed" }
+                pre { "citation url must be http:// or https://" }
+            }
+        };
+        return Html(panel.into_string());
+    }
     let params = json!({
         "project": f.project,
         "entry_key": f.entry_key,
@@ -96,8 +110,10 @@ fn rows(citations: &[Citation]) -> Markup {
                         span.chip { (c.entry_key) }
                         span.muted { "access " (c.access_count) }
                         @for m in &c.metadata {
-                            @if !m.url.is_empty() {
+                            @if is_http_url(&m.url) {
                                 a.url href=(m.url) target="_blank" rel="noopener noreferrer" { (m.slug) }
+                            } @else if !m.slug.is_empty() {
+                                span.url { (m.slug) }
                             }
                         }
                     }
