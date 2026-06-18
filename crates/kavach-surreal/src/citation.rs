@@ -11,6 +11,47 @@ use surrealdb_types::{RecordId, SurrealValue};
 
 pub use crate::graph::traverse_with_citations as traverse;
 
+/// Seconds in the freshness window: a citation whose `updated_at` is older than
+/// this is STALE and must be re-researched against the official docs (C5).
+pub const FRESHNESS_WINDOW_SECS: i64 = 7 * 24 * 60 * 60;
+
+/// The `[STALE]` marker prepended to a stale citation's injected text so the
+/// model treats served-stale content with suspicion until C5 refreshes it.
+pub const STALE_MARKER: &str = "[STALE]";
+
+/// Freshness verdict for a citation row, decided purely from its `updated_unix`
+/// and a caller-supplied `now` epoch — no clock read, no I/O, fully testable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Freshness {
+    /// Updated within `FRESHNESS_WINDOW_SECS` of `now`.
+    Fresh,
+    /// Older than the window, or missing `updated_unix` (legacy/never-stamped).
+    Stale,
+}
+
+/// Classify a citation by age. `None`/future `updated_unix` and any age beyond
+/// the window are `Stale` (fail-suspicious: an unstamped row is not trusted).
+#[must_use]
+pub const fn freshness(updated_unix: Option<i64>, now: i64) -> Freshness {
+    match updated_unix {
+        Some(ts) if now.saturating_sub(ts) < FRESHNESS_WINDOW_SECS && ts <= now => {
+            Freshness::Fresh
+        }
+        _ => Freshness::Stale,
+    }
+}
+
+/// Prefix `text` with `STALE_MARKER` when the verdict is `Stale`, else return it
+/// unchanged — the one place injection decides whether to flag served content.
+#[must_use]
+pub fn mark_if_stale(verdict: Freshness, text: &str) -> String {
+    match verdict {
+        Freshness::Stale => format!("{STALE_MARKER} {text}"),
+        Freshness::Fresh => text.to_owned(),
+    }
+}
+
 const COLS: &str = "id, project, entry_key, name, metadata, access_count, \
                     time::unix(created_at) AS created_unix, \
                     time::unix(updated_at) AS updated_unix";

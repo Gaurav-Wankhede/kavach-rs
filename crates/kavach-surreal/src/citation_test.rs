@@ -8,7 +8,10 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use super::{CitationMeta, UpsertCitation, get_citation, list_citations_by_project, upsert_citation};
+use super::{
+    CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation, freshness,
+    get_citation, list_citations_by_project, mark_if_stale, upsert_citation,
+};
 use crate::{apply_schema, open_memory};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
@@ -133,4 +136,44 @@ async fn traverse_reexport_finds_a_citer() {
         .expect("cite edge");
     let citers = super::traverse(&db, &to).await.expect("traverse");
     assert_eq!(citers, vec![from], "the citing decision is reached in one query");
+}
+
+#[test]
+fn freshness_window_boundary_is_exact() {
+    let now = 1_000_000_000;
+    assert_eq!(freshness(Some(now), now), Freshness::Fresh, "just-updated is fresh");
+    assert_eq!(
+        freshness(Some(now - FRESHNESS_WINDOW_SECS + 1), now),
+        Freshness::Fresh,
+        "one second inside the window is fresh"
+    );
+    assert_eq!(
+        freshness(Some(now - FRESHNESS_WINDOW_SECS), now),
+        Freshness::Stale,
+        "exactly at the window edge is stale"
+    );
+    assert_eq!(
+        freshness(Some(now - FRESHNESS_WINDOW_SECS - 1), now),
+        Freshness::Stale,
+        "past the window is stale"
+    );
+}
+
+#[test]
+fn freshness_unstamped_and_future_are_stale() {
+    let now = 1_000_000_000;
+    assert_eq!(freshness(None, now), Freshness::Stale, "never-stamped is not trusted");
+    assert_eq!(
+        freshness(Some(now + 60), now),
+        Freshness::Stale,
+        "a future timestamp (clock skew) is not trusted"
+    );
+}
+
+#[test]
+fn mark_if_stale_flags_only_stale() {
+    assert_eq!(mark_if_stale(Freshness::Fresh, "docs"), "docs", "fresh text is untouched");
+    let marked = mark_if_stale(Freshness::Stale, "docs");
+    assert!(marked.starts_with(STALE_MARKER), "stale text is prefixed with the marker");
+    assert!(marked.contains("docs"), "stale text still carries the content");
 }
