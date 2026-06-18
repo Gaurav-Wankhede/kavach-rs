@@ -19,8 +19,9 @@ pub use concepts::{
     search_concepts_fts, upsert_concept,
 };
 pub use dynamic::{
-    EdgeRow, RelatedRow, find_entity, get_related, is_citation_rel, list_edges_among,
-    list_entities, relate_citation, relate_dynamic, traverse_with_citations, upsert_entity,
+    EdgeRow, RelatedRow, citations_cited_by, find_entity, get_related, is_citation_rel,
+    list_edges_among, list_entities, relate_citation, relate_dynamic, traverse_with_citations,
+    upsert_entity,
 };
 pub use flow_dag::{
     FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput, NodeShape, fetch_flow, list_flows,

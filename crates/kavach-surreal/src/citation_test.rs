@@ -10,8 +10,8 @@
 
 use super::{
     Citation, CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation,
-    freshness, get_citation, list_citations_by_project, mark_if_stale, plan_refresh,
-    upsert_citation,
+    citations_cited_by, freshness, get_citation, list_citations_by_project, mark_if_stale,
+    merge_node_into_citation, plan_refresh, upsert_citation,
 };
 use crate::{apply_schema, open_memory};
 use surrealdb::Surreal;
@@ -212,4 +212,58 @@ fn plan_refresh_partitions_stale_and_serves_all() {
 fn plan_refresh_empty_recall_is_empty_plan() {
     let plan = plan_refresh(&[], 2_000_000_000);
     assert!(plan.refresh.is_empty() && plan.served.is_empty(), "no recall -> no work, no served text");
+}
+
+#[tokio::test]
+async fn merge_node_wires_cite_edge_non_destructively() {
+    let db = seed().await;
+    let project = RecordId::new("project", "p");
+    upsert_citation(
+        &db,
+        &UpsertCitation {
+            project,
+            entry_key: "surreal",
+            name: "SurrealDB",
+            metadata: vec![meta("records", "https://surrealdb.com/docs")],
+        },
+    )
+    .await
+    .expect("citation");
+    db.query("CREATE entity:ap SET entity_type = 'anti_pattern', name = 'await-swallows-err'")
+        .await
+        .expect("anti_pattern node");
+
+    let node = RecordId::new("entity", "ap");
+    let citation: RecordId = db
+        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
+        .await
+        .expect("cite id")
+        .take::<Vec<RecordId>>(0)
+        .expect("take")
+        .pop()
+        .expect("one citation");
+
+    merge_node_into_citation(&db, &node, &citation).await.expect("merge edge");
+
+    let cited = citations_cited_by(&db, &node).await.expect("forward walk");
+    assert_eq!(cited, vec![citation.clone()], "the node reaches its merged citation in one query");
+
+    let still_there: Vec<RecordId> = db
+        .query("SELECT VALUE id FROM entity WHERE entity_type = 'anti_pattern'")
+        .await
+        .expect("entity still queryable")
+        .take::<Vec<RecordId>>(0)
+        .expect("take");
+    assert_eq!(still_there, vec![node.clone()], "the anti_pattern row is untouched — merge is an edge, not a move");
+
+    merge_node_into_citation(&db, &node, &citation).await.expect("replayed merge");
+    let edges: Vec<RecordId> = db
+        .query("SELECT VALUE id FROM cite WHERE in = $node AND out = $cit")
+        .bind(("node", node))
+        .bind(("cit", citation))
+        .await
+        .expect("edge count")
+        .take::<Vec<RecordId>>(0)
+        .expect("take");
+    assert_eq!(edges.len(), 1, "replayed merge is idempotent — exactly one cite edge, no double-count");
 }

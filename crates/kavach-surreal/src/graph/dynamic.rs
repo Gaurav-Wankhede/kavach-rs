@@ -252,6 +252,23 @@ pub async fn traverse_with_citations(
     Ok(ids)
 }
 
+/// Forward complement of `traverse_with_citations`: in ONE `SurrealDB` round-trip
+/// via the `->cite` arrow, return the citation record ids that `node` cites.
+///
+/// Lets a mistake/decision/roadmap node reach its merged citations without a
+/// second query — the read half of the non-destructive C6 merge.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from the query.
+pub async fn citations_cited_by(db: &Surreal<Db>, node: &RecordId) -> Result<Vec<RecordId>> {
+    let ids: Vec<RecordId> = db
+        .query("SELECT VALUE out FROM $node->cite")
+        .bind(("node", node.clone()))
+        .await?
+        .take(0)?;
+    Ok(ids)
+}
+
 /// One row of the related-entity result set: outgoing edge → target entity.
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]

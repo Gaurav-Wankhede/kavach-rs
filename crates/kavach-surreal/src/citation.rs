@@ -9,7 +9,43 @@ use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
-pub use crate::graph::traverse_with_citations as traverse;
+pub use crate::graph::{citations_cited_by, traverse_with_citations as traverse};
+
+/// Non-destructively merge an existing learning-tier node (mistake / anti-pattern
+/// / decision / roadmap) into the citation DAG by relating it `->cite->` the
+/// citation it draws on.
+///
+/// The node's own table is untouched — the merge is an EDGE, never a move. RLAIF
+/// reward (C8) and recall (C7) then flow along this edge.
+///
+/// Idempotent: a node already merged into the citation is a no-op, so a replayed
+/// merge never duplicates the `cite` edge (which would double-count C8 reward).
+///
+/// # Errors
+/// Propagates the `relate_citation` error (rejects a non-`cite`/`parent`/
+/// `depends_on` edge, or a DB failure).
+pub async fn merge_node_into_citation(
+    db: &Surreal<Db>,
+    node: &RecordId,
+    citation: &RecordId,
+) -> Result<()> {
+    let mut response = db
+        .query("SELECT VALUE id FROM cite WHERE in = $node AND out = $cit")
+        .bind(("node", node.clone()))
+        .bind(("cit", citation.clone()))
+        .await?;
+    // The `cite` edge table is absent until the first RELATE creates it; a
+    // missing table is the "no edge yet" case, not a failure.
+    let existing: Vec<RecordId> = match response.take(0) {
+        Ok(rows) => rows,
+        Err(e) if crate::error::is_missing_table_error(&e) => Vec::new(),
+        Err(e) => return Err(e.into()),
+    };
+    if existing.is_empty() {
+        crate::graph::relate_citation(db, node, citation, "cite", 1.0).await?;
+    }
+    Ok(())
+}
 
 /// Seconds in the freshness window: a citation whose `updated_at` is older than
 /// this is STALE and must be re-researched against the official docs (C5).
