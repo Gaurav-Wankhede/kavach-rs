@@ -45,7 +45,7 @@ pub struct Mistake<'a> {
 
 /// Record a mistake into kavach-db under the `pattern` category.
 ///
-/// Best-effort fire-and-forget: an unreachable daemon must NEVER block the
+/// Best-effort fire-and-forget: an unreachable server must NEVER block the
 /// parent gate (the parent is itself a security gate). Returns the key written
 /// so the caller can log it.
 ///
@@ -56,7 +56,7 @@ pub struct Mistake<'a> {
 pub fn record(m: &Mistake<'_>) -> String {
     if crate::mistake_ledger_graph::graph_path_enabled() {
         let session_id = std::env::var("KAVACH_SESSION_ID").unwrap_or_default();
-        // Synchronous: the graph path is now an RPC round-trip to the daemon
+        // Synchronous: the graph path is now an RPC round-trip to the server
         // (the single RocksDB writer), not a direct embedded-DB open — so no
         // tokio runtime is built here. SOURCE: rca.mistake-ledger-dark-via-direct-open.
         match crate::mistake_ledger_graph::try_record_via_graph(m, &session_id) {
@@ -119,7 +119,7 @@ pub fn record(m: &Mistake<'_>) -> String {
     }
     // SOURCE: post_tool_algo_recorder.rs:301 — existing shellout pattern.
     // FIX [C1 reviewer cold-cluster] silent persistence failure broke K-PRI
-    // contract: `let _ = output()` swallowed daemon-down / not-in-PATH errors
+    // contract: `let _ = output()` swallowed server-down / not-in-PATH errors
     // → hit_count never bumped → reinjection lost the recurrence signal.
     // SOURCE: github.com/rust-lang/rust/issues/73126 — output() error-handling
     // hazards; nonzero exit + nonempty stderr should never be silent.

@@ -10,7 +10,7 @@
 //! the ONNX embedder was removed (decision/onnx-removal-dag-rlaif-only).
 //!
 //! `k = 60` is the canonical constant (TREC-2009 empirical sweet spot; the
-//! default in OpenSearch / Elasticsearch / Azure AI Search / MongoDB / Weaviate).
+//! default in `OpenSearch` / `Elasticsearch` / Azure AI Search / `MongoDB` / `Weaviate`).
 //! Low k lets a single top-1 dominate; high k rewards consensus across lists.
 //! SOURCE: research.reciprocal-rank-fusion-rrf.
 use std::collections::HashMap;
@@ -28,6 +28,14 @@ pub const RRF_K: f64 = 60.0;
 /// Returns `(id, rrf_score)` pairs sorted by descending score. `k` is the rank
 /// constant (pass [`RRF_K`] for the canonical default); it must be positive.
 #[must_use]
+#[expect(
+    clippy::float_arithmetic,
+    clippy::cast_precision_loss,
+    reason = "RRF is float-sum by definition: 1/(k+rank) over rank lists. Ranks are \
+              bounded by SEARCH_LIMIT_MAX, far below f64's 2^52 exact-int range, so \
+              the usize->f64 cast is lossless in practice; scores rank, never settle \
+              money. SOURCE: research.reciprocal-rank-fusion-rrf"
+)]
 pub fn rrf_fuse(lists: &[&[String]], k: f64) -> Vec<(String, f64)> {
     let mut scores: HashMap<&str, f64> = HashMap::new();
     for list in lists {

@@ -48,7 +48,7 @@ fn build_inproc() -> Result<InProc, String> {
         .build()
         .map_err(|e| format!("runtime: {e}"))?;
     let db = rt
-        .block_on(kavach_surreal::open_default_daemon())
+        .block_on(kavach_surreal::open_default_held())
         .map_err(|e| format!("connect surreal server: {e}"))?;
     let state = crate::state::AppState::new(db);
     let module = crate::rpc::build_module(state).map_err(|e| format!("build module: {e}"))?;
@@ -85,6 +85,12 @@ fn inproc() -> Result<&'static InProc, ClientError> {
 /// `NotReachable` if the server connection / module build failed; `Json` on
 /// (de)serialization failure; `Rpc` if the method returned a JSON-RPC error;
 /// `NoResult` if a success response carried no `result` key.
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Option<P> by value is the ergonomic call signature across 100+ call \
+              sites; the json! macro serializes it by reference, but switching to \
+              Option<&P> would ripple a borrow through every caller for no win"
+)]
 pub fn call<P: Serialize, R: for<'de> Deserialize<'de>>(
     method: &str,
     params: Option<P>,

@@ -17,6 +17,7 @@
 pub mod archive;
 pub mod bandit;
 pub mod brain;
+pub mod brain_query;
 pub mod bulk_manifest;
 pub mod connection;
 pub mod decisions;
@@ -44,7 +45,7 @@ pub mod wipe;
 pub mod write;
 
 pub use connection::{
-    default_db_path, open_db, open_default, open_default_daemon, open_default_resilient,
+    default_db_path, open_db, open_default, open_default_held, open_default_resilient,
     open_memory,
 };
 pub use dual_write::MemoryEntry;
@@ -54,6 +55,7 @@ pub use gate_config::{
     set_with_kind as gate_config_set_with_kind,
 };
 pub use brain::{BrainHit, GapReport, KavachBrain, hybrid_search};
+pub use brain_query::{gap_for, search_corpus};
 pub use error::{Error, Result};
 pub use rrf::{RRF_K, rrf_fuse};
 pub use graph::upsert_relationships;

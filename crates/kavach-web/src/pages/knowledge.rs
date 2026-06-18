@@ -1,6 +1,8 @@
-//! Knowledge graph — `db.graph_fetch` rendered with Cytoscape.js. The page ships
-//! the canvas + bootstrap script; the browser fetches node/edge JSON from
-//! `/knowledge/data` and feeds it to the layout.
+//! Knowledge graph — `db.graph_fetch` rendered with Cytoscape.js (Brain-OS G4
+//! live graph viewer). The page ships the canvas + bootstrap script; the browser
+//! fetches node/edge JSON from `/knowledge/data` and feeds it to the layout.
+//! Tapping a node traverses one hop — it spotlights the node, its incident edges,
+//! and its neighbors while dimming the rest (the G4 click-traverse interaction).
 
 use axum::Json;
 use axum::response::Html;

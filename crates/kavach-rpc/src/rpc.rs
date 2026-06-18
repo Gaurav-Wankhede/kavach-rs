@@ -4,8 +4,8 @@
 // split: intentional - RpcModule construction wiring all method namespaces
 use crate::error::{internal, invalid_params};
 use crate::methods::{
-    bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates, graph,
-    lease, mistake, mistake_top, projects, rag, replay, roadmap, run, session, system, trust,
+    brain, bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates,
+    graph, lease, mistake, mistake_top, projects, rag, replay, roadmap, run, session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
@@ -260,6 +260,15 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             graph::get_related(&ctx, p).await
         })
         .map_err(|e| internal(format!("register graph.get_related: {e}")))?;
+
+    module
+        .register_async_method("brain.think", |params, ctx, _ext| async move {
+            let p: brain::ThinkParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            brain::think(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register brain.think: {e}")))?;
 
     module
         .register_async_method("concept.add", |params, ctx, _ext| async move {

@@ -1,13 +1,19 @@
 name: release
 
-# Build per-OS binaries + GUI installers and attach them to the GitHub Release
-# when a CalVer tag is pushed. Versioning is YY.MM.PATCH (CalVer+SemVer blend,
+# Build per-OS `kavach` CLI binaries and attach them to the GitHub Release when a
+# CalVer tag is pushed. Versioning is YY.MM.PATCH (CalVer+SemVer blend,
 # JetBrains/Ubuntu style): YY.MM = release calendar month, PATCH = iteration
 # within that month. Examples: 26.5.0 (first May-2026 release), 26.5.1, 26.6.0.
 # The tag IS the version — CI rewrites the crate version to it before building,
-# so the .dmg/.deb/.msi metadata reports the same number.
-# Asset names stay version-less (Kavach-macos-arm64.dmg …) so the
+# so `kavach --version` reports the same number.
+# Asset names stay version-less (kavach-darwin-arm64.tar.gz …) so the
 # `releases/latest/download/<name>` links remain valid across releases.
+#
+# NOTE: there is NO desktop GUI installer leg. The Dioxus/Tauri app (kavach-app)
+# was removed; the UI is now `kavach-web` (Axum + maud, server-rendered HTML),
+# launched with `kavach web` — it ships INSIDE the CLI binary, so the single CLI
+# artifact per platform is the whole product. Do NOT reintroduce `dx bundle` /
+# .dmg / .deb / .msi legs.
 on:
   push:
     tags:
@@ -37,11 +43,12 @@ jobs:
         id: v
         env:
           REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
         run: |
           set -euo pipefail
           # workflow_dispatch has no tag — fall back to a dev stamp so manual
           # runs still build (they won't publish; the release job needs a tag).
-          if [ "${{ github.ref_type }}" != "tag" ]; then
+          if [ "$REF_TYPE" != "tag" ]; then
             echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
             echo "manual run — version=0.0.0-dev (no publish)"
             exit 0
@@ -77,8 +84,8 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             asset: kavach-windows-amd64.zip
-          # Windows ARM64 CLI — native on windows-11-arm (GA). The raw CLI has no
-          # WiX/MSI dependency, so unlike the GUI installer it builds cleanly here.
+          # Windows ARM64 CLI — native on windows-11-arm (GA). Pure CLI, no WiX/MSI
+          # dependency, so it builds cleanly on the ARM runner.
           - os: windows-11-arm
             target: aarch64-pc-windows-msvc
             asset: kavach-windows-arm64.zip
@@ -109,6 +116,7 @@ jobs:
       # Every target builds NATIVELY on a matching runner (incl. linux-arm64 on
       # GitHub's ubuntu-24.04-arm). No cross/Docker — avoids the cross image's
       # missing libclang/stdbool that broke surrealdb-librocksdb-sys + ring.
+      # No GUI system deps: kavach-web is pure-Rust Axum+maud (no wry/webkit2gtk).
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} -p kavach-cli
 
@@ -130,215 +138,20 @@ jobs:
           name: ${{ matrix.asset }}
           path: ${{ matrix.asset }}
 
-  # Single-setup installers: GUI (kavach-app) + embedded kavach CLI in ONE file
-  # per platform, via `dx bundle` with Dioxus `external_bin`. Each native runner
-  # stages the CLI as bin/kavach-<triple>, bundles, ad-hoc signs (macOS), then
-  # renames to a STABLE asset name so releases/latest/download/<name> stays valid.
-  # dx pinned to match the dioxus 0.7.x line. Ad-hoc signed only (no Apple/MS
-  # cert) — users bypass Gatekeeper/SmartScreen on first launch.
-  bundle:
-    name: ${{ matrix.asset }}
-    needs: version
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # ext = the file extension to find when renaming to the stable asset.
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            ext: dmg
-            asset: Kavach-macos-arm64.dmg
-          # Intel Macs get the GUI too — macos-latest cross-builds x86_64 natively
-          # via the toolchain `target`; the bundle steps are already arch-driven.
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            ext: dmg
-            asset: Kavach-macos-amd64.dmg
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            pkg: deb
-            ext: deb
-            asset: Kavach-linux-amd64.deb
-          # Linux ARM64 GUI — native on GitHub's ubuntu-24.04-arm (GA Aug 2025).
-          # dx bundle --package-types deb works natively on aarch64; no blockers.
-          - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            pkg: deb
-            ext: deb
-            asset: Kavach-linux-arm64.deb
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            pkg: msi
-            ext: msi
-            asset: Kavach-windows-amd64.msi
-          # Windows ARM64 GUI — native on windows-11-arm (GA). MSI is NOT an option:
-          # WiX rejects aarch64 (tauri-apps/tauri#5499), so the only GUI installer
-          # is NSIS (.exe). It runs under Win11-ARM's x64 emulation layer; the app
-          # itself is native aarch64. This is the closest parity upstream allows.
-          - os: windows-11-arm
-            target: aarch64-pc-windows-msvc
-            pkg: nsis
-            ext: exe
-            asset: Kavach-windows-arm64-setup.exe
-    steps:
-      - uses: actions/checkout@v6
-
-      # Channel from rust-toolchain.toml (single source of truth); only the
-      # cross-compile target is passed per-leg. Action provides its own cache.
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: ${{ matrix.target }}
-          cache-key: bundle-${{ matrix.target }}
-
-      # webkit2gtk + the deb tooling dx shells out to on Linux. Without these the
-      # dioxus/desktop (wry/tao) build fails to link and `dpkg-deb` is missing.
-      - name: Install Linux bundle deps
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          # libxdo-dev provides the unversioned libxdo.so the dioxus/tao tray +
-          # predefined Copy/Cut/Paste menu items link against (-lxdo). It is a
-          # transitive native dep of tray-icon NOT pulled by webkit2gtk/gtk, so
-          # without it the GUI .deb leg fails at link time with
-          # "rust-lld: error: unable to find library -lxdo". xdotool/libxdo3
-          # alone are insufficient — the linker needs the -dev symlink.
-          # SOURCE: github.com/tauri-apps/tray-icon README (Linux deps);
-          # github.com/DioxusLabs/dioxus/discussions/5090.
-          sudo apt-get install -y build-essential pkg-config \
-            libwebkit2gtk-4.1-dev libgtk-3-dev libxdo-dev \
-            libayatana-appindicator3-dev librsvg2-dev dpkg
-
-      # Pin dx to the dioxus line in Cargo.toml. binstall pulls a prebuilt
-      # binary (~seconds) instead of compiling the CLI from source (~minutes).
-      # --force is REQUIRED: the setup-rust-toolchain cache restores binstall's
-      # install metadata but NOT the dx binary into ~/.cargo/bin on the Linux
-      # runners, so without --force binstall sees "dioxus-cli already installed",
-      # no-ops, and the next step fails with `dx: command not found` (exit 127).
-      # SOURCE: github.com/Swatinem/rust-cache/issues/204 (binstall + cache:
-      # claims installed when binary absent → fix is `cargo binstall --force`).
-      - name: Install Dioxus CLI (dx)
-        uses: cargo-bins/cargo-binstall@v1.19.1
-      - run: cargo binstall -y --force dioxus-cli@0.7.9
-
-      # Bake the CalVer tag into the crate versions so the .dmg/.deb/.msi
-      # metadata reports it (dx + tauri-bundler read version from Cargo.toml).
-      # Only on a real tag — manual runs keep the committed version.
-      - name: Set crate version from tag
-        if: github.ref_type == 'tag'
-        shell: bash
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          # Rewrite only the first `version = "…"` line in each target crate's
-          # manifest (the [package] version). sed is portable across macОS/Linux;
-          # Windows runs this step under bash (shell: bash) so it applies there too.
-          for f in crates/kavach-app/Cargo.toml crates/kavach-cli/Cargo.toml; do
-            perl -i -pe 'if (!$done && /^version\s*=/) { $_ = "version = \"$ENV{VERSION}\"\n"; $done=1 }' "$f"
-            grep -m1 '^version' "$f"
-          done
-
-      # Stage the release CLI as the triple-suffixed sidecar external_bin expects.
-      - name: Build + stage CLI sidecar (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          cargo build --release --target ${{ matrix.target }} -p kavach-cli
-          mkdir -p crates/kavach-app/bin
-          cp "target/${{ matrix.target }}/release/kavach" \
-             "crates/kavach-app/bin/kavach-${{ matrix.target }}"
-
-      - name: Build + stage CLI sidecar (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          cargo build --release --target ${{ matrix.target }} -p kavach-cli
-          New-Item -ItemType Directory -Force -Path crates/kavach-app/bin | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/kavach.exe" `
-            "crates/kavach-app/bin/kavach-${{ matrix.target }}.exe"
-
-      # macOS is two-phase ON PURPOSE: dx packs the .dmg from the .app, so the
-      # .app must be signed BEFORE the .dmg is built — otherwise the shipped
-      # .dmg contains an unsigned app that amfid kills on launch. Phase 1 builds
-      # only the .app; we ad-hoc sign it (nested CLI included via --deep); phase
-      # 2 packages the now-signed .app into the .dmg. Verified locally, 2026-05.
-      - name: Bundle + sign (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          set -euo pipefail
-          APP="target/dx/kavach-app/bundle/macos/macos/KavachApp.app"
-          # --target pins the GUI build to the matrix arch. Without it dx builds
-          # for the runner's host arch (aarch64 on macos-latest), so the Intel leg
-          # would silently emit an ARM app inside Kavach-macos-amd64.dmg.
-          ( cd crates/kavach-app && dx bundle --release --platform desktop --target ${{ matrix.target }} --package-types macos )
-          codesign --deep --force --sign - "$APP"
-          codesign --verify --verbose=2 "$APP"
-          ( cd crates/kavach-app && dx bundle --release --platform desktop --target ${{ matrix.target }} --package-types dmg )
-
-      - name: Bundle GUI + embedded CLI (Linux / Windows)
-        if: runner.os != 'macOS'
-        working-directory: crates/kavach-app
-        # --target pins the GUI build to the matrix arch (same reason as the macOS
-        # leg) — the ARM64 runners are aarch64 hosts, but passing it explicitly
-        # keeps the build arch independent of the runner default and future-proof.
-        run: dx bundle --release --platform desktop --target ${{ matrix.target }} --package-types ${{ matrix.pkg }}
-
-      # Rename the version-stamped bundle output to the stable asset name so the
-      # releases/latest/download/<asset> link is permanent across versions.
-      - name: Rename to stable asset name (Unix)
-        if: runner.os != 'Windows'
-        env:
-          BUNDLE_ROOT: target/dx/kavach-app/bundle
-          EXT: ${{ matrix.ext }}
-          ASSET: ${{ matrix.asset }}
-        run: |
-          set -euo pipefail
-          # find (not ls+glob) handles the recursive bundle path robustly — SC2012.
-          # Exactly one match expected; fail loud (with a dir listing) on 0.
-          src=$(find "$BUNDLE_ROOT" -type f -name "*.${EXT}" | head -n1)
-          if [ -z "$src" ]; then
-            echo "ERROR: no *.${EXT} produced under ${BUNDLE_ROOT} for ${ASSET}"
-            find "$BUNDLE_ROOT" -type f -maxdepth 6 2>/dev/null || true
-            exit 1
-          fi
-          cp "$src" "$ASSET"
-
-      - name: Rename to stable asset name (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          EXT: ${{ matrix.ext }}
-          ASSET: ${{ matrix.asset }}
-        run: |
-          # Search the whole bundle root by the matrix ext — MSI lands under
-          # bundle/windows/msi, NSIS (.exe) under bundle/windows/nsis, so a fixed
-          # subpath + *.msi would miss the ARM64 NSIS leg.
-          $src = (Get-ChildItem -Recurse -Path "target/dx/kavach-app/bundle" -Filter "*.$env:EXT" | Select-Object -First 1).FullName
-          if (-not $src) { throw "no .$env:EXT produced under target/dx/kavach-app/bundle" }
-          Copy-Item $src "$env:ASSET"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
-
   release:
     name: Publish release
-    needs: [version, build, bundle]
-    # Partial-success publish: ship whatever legs SUCCEEDED instead of skipping
-    # the whole release when one matrix leg is red. `fail-fast: false` already
-    # lets every healthy leg finish; this job then downloads only the artifacts
-    # that were actually produced and publishes them. Rationale: an all-green
-    # guard meant a single red leg (e.g. Windows) left ALL
-    # releases/latest/download/<asset> URLs 404 — a worse failure than a release
-    # missing two of twelve assets. `always()` runs the job regardless of
-    # upstream job result; the no-assets guard below still refuses to publish an
-    # empty release, and softprops uploads only the files the glob matches, so a
-    # missing Windows leg simply omits its 2 assets (those URLs 404 until the
-    # leg is fixed and the tag re-cut). A still-running upstream (cancelled) is
-    # excluded so we never publish a truncated mid-build set.
+    needs: [version, build]
+    # Partial-success publish: ship whatever build legs SUCCEEDED instead of
+    # skipping the whole release when one matrix leg is red. `fail-fast: false`
+    # lets every healthy leg finish; this job downloads only the artifacts that
+    # were actually produced and publishes them. Rationale: an all-green guard
+    # meant a single red leg (e.g. Windows) left ALL releases/latest/download
+    # URLs 404 — a worse failure than a release missing one of six assets.
+    # `!cancelled()` runs regardless of upstream success; the no-assets guard
+    # below still refuses to publish an empty release, and softprops uploads only
+    # the files the glob matches, so a missing leg simply omits its asset (that
+    # URL 404s until the leg is fixed and the tag re-cut). A still-running
+    # upstream (cancelled) is excluded so we never publish a truncated set.
     if: ${{ !cancelled() && needs.version.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
@@ -347,15 +160,15 @@ jobs:
           path: dist
           merge-multiple: true
 
-      # Fail closed: if NO build/bundle leg produced an asset, there is nothing
-      # to release — abort rather than cut an empty (assetless) release.
+      # Fail closed: if NO build leg produced an asset, there is nothing to
+      # release — abort rather than cut an empty (assetless) release.
       - name: Require at least one asset
         run: |
           set -euo pipefail
-          count=$(find dist -maxdepth 1 -type f \( -name 'kavach-*' -o -name 'Kavach-*' \) | wc -l | tr -d ' ')
+          count=$(find dist -maxdepth 1 -type f -name 'kavach-*' | wc -l | tr -d ' ')
           echo "downloaded asset count = $count"
           if [ "$count" -eq 0 ]; then
-            echo "ERROR: no build/bundle leg produced an asset — refusing to publish an empty release"
+            echo "ERROR: no build leg produced an asset — refusing to publish an empty release"
             exit 1
           fi
 
@@ -363,11 +176,10 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          # CLI tarballs (kavach-*) + single-setup installers (Kavach-*).
           # nullglob so a missing leg's pattern expands to nothing instead of a
           # literal 'kavach-*' filename — partial sets must still checksum cleanly.
           shopt -s nullglob
-          files=(kavach-* Kavach-*)
+          files=(kavach-*)
           sha256sum "${files[@]}" > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
@@ -377,8 +189,7 @@ jobs:
           # Display the CalVer version (YY.MM.PATCH) as the release title.
           name: Kavach ${{ needs.version.outputs.version }}
           # Globs match only files that actually downloaded — a failed leg's
-          # assets are simply absent, not an upload error.
+          # asset is simply absent, not an upload error.
           files: |
             dist/kavach-*
-            dist/Kavach-*
             dist/SHA256SUMS.txt

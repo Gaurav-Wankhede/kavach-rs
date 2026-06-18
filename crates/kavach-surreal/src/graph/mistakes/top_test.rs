@@ -10,7 +10,7 @@ use crate::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
 use crate::open_memory;
 
 /// Route one mistake observation through the capture path under `gate`/`fix`.
-/// Distinct (gate, fix) pairs cluster to distinct anti_patterns by content key
+/// Distinct (gate, fix) pairs cluster to distinct `anti_patterns` by content key
 /// (`anti.<gate>.<blake3(fix)[..8]>`); the same pair re-clusters to the same node.
 /// Helper returns `Result` and propagates with `?` — it asserts nothing, so it
 /// does not trip `panic_in_result_fn` (which fires only on asserting bodies).

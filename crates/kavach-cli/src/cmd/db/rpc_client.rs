@@ -608,7 +608,7 @@ pub(super) fn should_fallback_to_direct(rpc_err: &str) -> bool {
 ///
 /// Retained as a defensive transient-error classifier: the DB is now owned by
 /// the standalone `surreal start` server, so kavach clients connect via ws and
-/// do not contend for the RocksDB lock themselves. This only matches the
+/// do not contend for the `RocksDB` lock themselves. This only matches the
 /// surreal server's own startup window (it opens `RocksDB` before binding the
 /// ws port), letting a racing client treat the error as "server starting —
 /// retry" rather than a hard failure. SOURCE: <https://github.com/facebook/rocksdb/issues/3114>

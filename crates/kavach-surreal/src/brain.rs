@@ -1,4 +1,4 @@
-//! KavachBrain — the unified retrieval/graph contract (Brain-OS G3,
+//! `KavachBrain` — the unified retrieval/graph contract (Brain-OS G3,
 //! roadmap.unit.harness.brain-os.g3-kavachbrain-trait).
 //!
 //! One coherent surface over the scattered substrate: BM25/FTS retrieval (g1a),
@@ -14,7 +14,7 @@ use crate::error::Result;
 use crate::rrf::{RRF_K, rrf_fuse};
 
 /// One fused retrieval hit: the row id and its Reciprocal-Rank-Fusion score.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub struct BrainHit {
     /// Stable id of the retrieved row (e.g. `decision:<key>`).
@@ -48,11 +48,12 @@ pub trait KavachBrain {
     async fn gap(&self, query: &str) -> Result<GapReport>;
 }
 
-/// Fuse per-source ranked id lists into one RRF-ranked hit list, truncated to
-/// `limit`. This is the engine-independent core of `KavachBrain::search`: each
-/// `ranked` slice is one retrieval source (FTS-rank, graph-proximity-rank, …),
-/// most-relevant first. Rank-only fusion, so the incomparable BM25-score and
-/// graph-hop scales never need normalizing.
+/// Fuse per-source ranked id lists into one RRF-ranked hit list.
+///
+/// Truncated to `limit`. This is the engine-independent core of
+/// `KavachBrain::search`: each `ranked` slice is one retrieval source (FTS-rank,
+/// graph-proximity-rank, …), most-relevant first. Rank-only fusion, so the
+/// incomparable BM25-score and graph-hop scales never need normalizing.
 #[must_use]
 pub fn hybrid_search(ranked: &[&[String]], limit: usize) -> Vec<BrainHit> {
     let mut hits: Vec<BrainHit> = rrf_fuse(ranked, RRF_K)

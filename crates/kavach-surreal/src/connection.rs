@@ -103,11 +103,12 @@ pub async fn open_default() -> Result<Surreal<Db>> {
     connect_with_retry(MAIN_DB).await
 }
 
-/// Open for a long-lived holder; retry while the server is starting.
+/// Open for a long-lived holder (e.g. the RPC server's process-wide DB handle);
+/// retry while the SurrealDB server is starting.
 ///
 /// # Errors
 /// Propagates the last `Error::Surreal` if the server is unreachable.
-pub async fn open_default_daemon() -> Result<Surreal<Db>> {
+pub async fn open_default_held() -> Result<Surreal<Db>> {
     connect_with_retry(MAIN_DB).await
 }
 

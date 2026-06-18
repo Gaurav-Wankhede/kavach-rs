@@ -19,7 +19,7 @@
       for (const e of g.edges || []) {
         elements.push({ data: { source: e.from, target: e.to, rel: e.rel || "" } });
       }
-      cytoscape({
+      const cy = cytoscape({
         container: mount,
         elements,
         style: [
@@ -28,8 +28,30 @@
           { selector: "edge", style: { "width": 1, "line-color": "#3a4358",
             "target-arrow-color": "#3a4358", "target-arrow-shape": "triangle",
             "curve-style": "bezier" } },
+          // Edge-traversal highlight: the tapped node, its incident edges, and
+          // its 1-hop neighbors light up; everything else dims (G4 click-traverse).
+          { selector: ".faded", style: { "opacity": 0.12 } },
+          { selector: "node.focus", style: { "background-color": "#f2b134", "width": 24, "height": 24 } },
+          { selector: "edge.focus", style: { "line-color": "#f2b134",
+            "target-arrow-color": "#f2b134", "width": 2 } },
         ],
         layout: { name: "cose", animate: false, nodeRepulsion: 8000 },
+      });
+
+      // Click a node -> traverse one hop: spotlight it + its edges + neighbors.
+      cy.on("tap", "node", (evt) => {
+        const node = evt.target;
+        const hood = node.closedNeighborhood(); // the node, its edges, its neighbors
+        cy.elements().addClass("faded").removeClass("focus");
+        hood.removeClass("faded");
+        node.addClass("focus");
+        hood.edges().addClass("focus");
+      });
+      // Tap the empty background -> clear the traversal spotlight.
+      cy.on("tap", (evt) => {
+        if (evt.target === cy) {
+          cy.elements().removeClass("faded focus");
+        }
       });
     })
     .catch((err) => {

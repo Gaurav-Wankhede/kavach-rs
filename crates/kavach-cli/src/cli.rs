@@ -281,6 +281,23 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
     /// roadmap. Independent tasks fan out; blocked tasks wait for prerequisites.
     /// SOURCE: roadmap.unit.dag-parallel-dispatch.
     Team(crate::cmd::team::TeamArgs),
+    /// Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus.
+    /// Emits cited, RRF-ranked hits as JSON; auto-files a research card when the
+    /// corpus is thin for the query (gap-analysis closes the self-improving loop).
+    /// SOURCE: roadmap.unit.harness.brain-os.g2-think-mode.
+    #[command(
+        after_help = "EXAMPLES:\n  kavach think --project kavach-rs \"hybrid retrieval design\"\n  kavach think --project P --limit 5 \"lease fencing epoch\"\n\nWHEN: recover prior decisions/research before re-researching from scratch."
+    )]
+    Think {
+        /// Project slug (scopes the gap-file write).
+        #[arg(long)]
+        project: String,
+        /// Free-text retrieval query (BM25 over title/content + concept FTS).
+        query: String,
+        /// Max fused hits to return (default: 10).
+        #[arg(long, default_value_t = 10)]
+        limit: usize,
+    },
     /// Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …)
     /// via `cargo binstall` — ships *with* kavach, no per-machine setup.
     /// SOURCE: arch.decision.toolbelt-binstall-subcommand.

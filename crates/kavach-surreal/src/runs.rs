@@ -105,8 +105,8 @@ pub async fn run_update_status(
     Ok(())
 }
 
-/// Mark all running runs as orphaned on startup (daemon crash recovery).
-/// Called once during daemon initialization before serving requests.
+/// Mark all running runs as orphaned on startup (server crash recovery).
+/// Called once during server initialization before serving requests.
 ///
 /// # Errors
 /// Propagates `Error::Surreal` from the UPDATE.

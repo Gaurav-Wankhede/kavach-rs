@@ -1,6 +1,6 @@
-//! Integration proof for the Brain-OS Gap-1 BM25/FTS retrieval corpus
+//! Integration proof for the Brain-OS Gap-1 `BM25`/FTS retrieval corpus
 //! (roadmap.unit.harness.brain-os.g1a). Proves against a real in-memory
-//! SurrealDB — with the PRODUCTION schema applied — that the per-field FULLTEXT
+//! `SurrealDB` — with the PRODUCTION schema applied — that the per-field FULLTEXT
 //! indexes on the typed memory tables actually match (`@@`) and rank
 //! (`search::score`) by BM25 relevance. This is the no-vector retrieval side of
 //! hybrid search: the ONNX embedder was removed (decision/onnx-removal-dag-rlaif-only),
@@ -9,7 +9,7 @@
 //! If the DDL syntax were wrong, `apply_schema` here would error and every test
 //! below would fail at setup — so setup itself is a witness that the schema
 //! applies cleanly. Syntax: research.surrealdb-3.1-fulltext-bm25-syntax +
-//! https://surrealdb.com/docs/surrealql/statements/define/indexes
+//! <https://surrealdb.com/docs/surrealql/statements/define/indexes>
 #![allow(
     clippy::expect_used,
     clippy::unwrap_used,

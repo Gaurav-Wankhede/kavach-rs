@@ -1,79 +1,190 @@
 <div align="center">
-  <img src="docs/branding/kavach-logo-512.png" alt="Kavach" width="160" height="160">
-  <h1>Kavach</h1>
-  <p><strong>A self-improving development harness for Claude Code that enforces engineering discipline through lifecycle gates, persistent memory, and a knowledge graph.</strong></p>
+
+<img src="docs/branding/kavach-logo-512.png" alt="Kavach" width="150" height="150">
+
+<h1>Kavach</h1>
+
+<p>
+  <strong>A self-improving development harness for AI coding agents.</strong><br>
+  Lifecycle gates that enforce engineering discipline · persistent cross-session memory ·<br>
+  a knowledge graph that learns from every mistake — all in one Rust binary.
+</p>
+
+<p>
+  <a href="https://github.com/Wankhede-Brothers/kavach-rs/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Wankhede-Brothers/kavach-rs?style=for-the-badge&color=2b6cb0&label=release"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22863a?style=for-the-badge"></a>
+  <img alt="Rust 1.96+" src="https://img.shields.io/badge/Rust-1.96%2B-dea584?style=for-the-badge&logo=rust&logoColor=white">
+  <img alt="Edition 2024" src="https://img.shields.io/badge/edition-2024-555?style=for-the-badge">
+</p>
+
+<p>
+  <strong>Claude Code</strong> · <strong>Codex</strong> · <strong>Cursor</strong> — one binary, one shared memory bank, three harnesses.
+</p>
+
+<sub>कवच &nbsp;·&nbsp; Sanskrit for <em>"armor"</em> — Kavach wraps every agent session in a verification layer.</sub>
+
 </div>
 
----
+<hr>
 
-Kavach (Sanskrit: कवच, "armor") wraps every Claude Code session in a verification layer. It catches permission-seeking, enforces research-before-code, blocks destructive operations, remembers decisions across sessions, and learns from mistakes — all through Claude Code's native hook system.
+<div align="center">
+<table>
+<tr>
+<td align="center" width="33%">
+<h3>🛡️ Enforce</h3>
+Lifecycle gates catch permission-seeking, skipped research, destructive ops, and half-done work — and <em>block</em> them.
+</td>
+<td align="center" width="33%">
+<h3>🧠 Remember</h3>
+Decisions, research, and mistakes persist in SurrealDB — surviving context compaction and session restarts.
+</td>
+<td align="center" width="33%">
+<h3>♻️ Improve</h3>
+The harness auto-<strong>feeds</strong> its memory and auto-<strong>recalls</strong> it on every prompt. Gaps become tracked work.
+</td>
+</tr>
+</table>
+</div>
 
----
+<hr>
 
 ## Why Kavach?
 
-Claude Code is powerful but stateless between sessions and easily slips into anti-patterns: asking permission instead of acting, skipping research, repeating past mistakes, leaving work half-done. Kavach fixes this with a **Rust hook engine** that runs at every lifecycle event.
+AI coding agents are powerful but **stateless between sessions** and easily slip into anti-patterns: asking permission instead of acting, skipping research, repeating past mistakes, leaving work half-done. Kavach fixes this with a **Rust hook engine** that runs at every lifecycle event.
 
-| Without Kavach | With Kavach |
-|----------------|-------------|
-| Asks "should I proceed?" mid-task | L4 autonomy — acts, reports after |
-| Re-researches solved problems | Persistent decision memory |
-| Repeats past mistakes | Mistake ledger with embedding clustering |
-| Loses context on compact | State checkpointed to the DB, not the chat |
-| Ships half-finished work | Stop-gate blocks until a 3-witness verify |
-| Destructive `rm -rf` slips through | Pre-tool guards block or ask |
+<div align="center">
+<table>
+<tr><th>Without Kavach</th><th>With Kavach</th></tr>
+<tr><td>Asks <em>"should I proceed?"</em> mid-task</td><td><strong>L4 autonomy</strong> — acts, reports after</td></tr>
+<tr><td>Re-researches solved problems</td><td>Persistent decision memory</td></tr>
+<tr><td>Repeats past mistakes</td><td>Mistake ledger with embedding clustering</td></tr>
+<tr><td>Loses context on compact</td><td>State checkpointed to the DB, not the chat</td></tr>
+<tr><td>Ships half-finished work</td><td>Stop-gate blocks until a <strong>3-witness verify</strong></td></tr>
+<tr><td>Destructive <code>rm -rf</code> slips through</td><td>Pre-tool guards block or ask</td></tr>
+<tr><td>Writes memory it never reads back</td><td><strong>Brain-OS auto-recall</strong> injects relevant memory into every prompt</td></tr>
+</table>
+</div>
 
----
+<hr>
 
-## How It Works
+## How It Works — System Architecture
+
+Every harness lifecycle event invokes the `kavach` binary as a thin client. Gates are pure Rust functions that inspect the event and return **allow / block / ask**. All durable state lives in a standalone SurrealDB **server** (not a daemon) — every Kavach process is a thin WebSocket client of it, and the server is the single writer.
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Claude Code Session                                          │
-│                                                              │
-│  User prompt  → [UserPromptSubmit gate] → intent analysis    │
-│       ↓                                                      │
-│  Tool call    → [PreToolUse gate]       → block / ask / allow│
-│       ↓                                                      │
-│  Tool result  → [PostToolUse gate]      → research + memory  │
-│       ↓                                                      │
-│  Stop         → [Stop gate]             → 3-witness or block │
-└──────────────────────────────────────────────────────────────┘
-         ↓ every gate routes through ↓
-┌──────────────────────────────────────────────────────────────┐
-│  kavach-rpc daemon (SurrealDB-backed)                         │
-│  decisions · research · patterns · roadmap · mistakes · KG    │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│   AI HARNESS  (Claude Code · Codex · Cursor — identical hook set)              │
+│   settings.json hooks → ~/.local/bin/kavach gates <event> --hook              │
+└───────────────┬──────────────────────────────────────────────────────────────┘
+                │ lifecycle events
+    ┌───────────┼────────────────────────┬──────────────────────────┐
+ UserPromptSubmit                   PostToolUse                    Stop
+    │                                    │                            │
+┌───▼────────────────┐     ┌─────────────▼──────────┐   ┌─────────────▼──────────┐
+│ intent GATE        │     │ post-tool GATE         │   │ stop GATE              │
+│ ② recall_block() ◄─┼──┐  │ harvest_concepts()     │   │ extract RCA/patterns   │
+│ ③ inject [RECALL]  │  │  └──────────┬─────────────┘   └──────────┬─────────────┘
+└───┬────────────────┘  │             │ concept.add                │ pattern.add
+    │ [RECALL] context   │ brain.think │ (WRITE)                    │ (WRITE)
+    ▼ to agent           │ (READ)      ▼                            ▼
+                         │  ┌──────────────────────────────────────────────────┐
+                         │  │   kavach-rpc  ── IN-PROCESS dispatch ──           │
+                         │  │   (NO daemon, NO Unix socket — client.rs)        │
+                         │  │   holds ONE long-lived DB handle:                │
+                         └─►│   open_default_held()                            │
+                            │   verbs: brain.think · concept.* · …             │
+                            └──────────────────────┬───────────────────────────┘
+                                                   │ ws://127.0.0.1:7710
+                                                   │ (thin ws CLIENT; root signin)
+                            ┌──────────────────────▼───────────────────────────┐
+                            │   surreal start  SERVER   ◄── the real "server"   │
+                            │   official SurrealDB binary                       │
+                            │   launchd  ai.shared.kavach-surreal  (KeepAlive)  │
+                            │   ★ SERIALIZES ALL WRITERS — no file LOCK to hold │
+                            └──────────────────────┬───────────────────────────┘
+                                                   │ owns on-disk store
+                            ┌──────────────────────▼───────────────────────────┐
+                            │  kv-rocksdb (BM25 FULLTEXT + concept graph)       │
+                            │  per-OS data dir / SharedAI / kavach.surreal      │
+                            │  (macOS · Linux · Windows — resolved at runtime)  │
+                            └───────────────────────────────────────────────────┘
+
+  every kavach process (gate · CLI · web) = a thin ws CLIENT of the surreal SERVER.
+  the SERVER is the single writer. there is no kavach-owned daemon anywhere.
 ```
 
-Each hook event invokes the `kavach` binary, which routes through a persistent RPC daemon backed by SurrealDB. Gates are pure Rust functions that inspect the event and return an allow / block / ask decision — keeping a single DB writer and shared state out of the conversation window.
+> **Two layers, named correctly.** `kavach-rpc` is an **in-process** dispatch (not a daemon, not a socket) that holds one DB handle via `open_default_held()`. The **`surreal start` server** (the official SurrealDB binary, supervised by launchd `ai.shared.kavach-surreal` on `ws://127.0.0.1:7710`) is the single writer — a real server, not a daemon.
 
----
+<hr>
 
-## Quick Start
+## 🧠 Brain-OS — the closed self-improving loop
 
-### Install the desktop app (GUI + CLI in one file)
+Brain-OS is Kavach's memory + retrieval layer. What makes it different from a passive notes store is that the harness manages it **autonomously in both directions** — the agent never types a query by hand.
 
-Each installer below bundles **both** the Kavach desktop GUI and the `kavach` CLI in a single setup file. The `latest/download/` links always resolve to the most recent release:
+<div align="center">
+<table>
+<tr><th>Phase</th><th>Trigger</th><th>Gate</th><th>Direction</th><th>What happens</th></tr>
+<tr><td><strong>WRITE</strong></td><td>WebSearch returns</td><td><code>post-tool</code></td><td>brain&nbsp;←</td><td><code>harvest_concepts()</code> → <code>concept.add</code> → corpus grows on its own</td></tr>
+<tr><td><strong>WRITE</strong></td><td>verify passes</td><td><code>stop</code></td><td>brain&nbsp;←</td><td><code>[RCA]</code>/<code>[DESIGN]</code>/patterns extracted into rows</td></tr>
+<tr><td><strong>READ</strong></td><td><em>every</em> prompt</td><td><code>intent</code></td><td>brain&nbsp;→</td><td><code>recall_block()</code> → <code>brain.think</code> → RRF → <code>[RECALL]</code> injected into the agent's context</td></tr>
+</table>
+</div>
 
-| Platform | Arch | Single setup file | Installs |
-|----------|------|-------------------|----------|
-| macOS | Apple Silicon | [`Kavach-macos-arm64.dmg`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-macos-arm64.dmg) | `KavachApp.app` → `/Applications` (CLI embedded at `Contents/MacOS/kavach`) |
-| macOS | Intel | [`Kavach-macos-amd64.dmg`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-macos-amd64.dmg) | `KavachApp.app` → `/Applications` (CLI embedded at `Contents/MacOS/kavach`) |
-| Linux | x86_64 | [`Kavach-linux-amd64.deb`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-linux-amd64.deb) | GUI + `kavach` CLI → `/usr/bin` (`sudo dpkg -i …`) |
-| Linux | aarch64 | [`Kavach-linux-arm64.deb`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-linux-arm64.deb) | GUI + `kavach` CLI → `/usr/bin` (`sudo dpkg -i …`) |
-| Windows | x86_64 | [`Kavach-windows-amd64.msi`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-windows-amd64.msi) | GUI + `kavach.exe` → `C:\Program Files\KavachApp` |
-| Windows | ARM64 | [`Kavach-windows-arm64-setup.exe`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/Kavach-windows-arm64-setup.exe) | GUI + `kavach.exe` (NSIS installer) |
+**Retrieval is vectorless and explainable.** `kavach think` runs **BM25 full-text** across 5 typed memory tables (`decision · roadmap · research · pattern · app_spec`) plus a **concept-graph** FTS source, then fuses the rank lists with **Reciprocal Rank Fusion** (`k=60`). No embeddings — every hit is a **citable row key** you can `kavach db get`. When a query finds too little, the gap-filer writes a `research.gap.*` card, so the system's own ignorance becomes tracked work.
 
-These installers are **ad-hoc signed** (no paid Apple/Microsoft certificate): on macOS, right-click → Open the first time; on Windows, "More info → Run anyway" past SmartScreen.
+```bash
+kavach think --project myapp "how did we handle auth token refresh?"
+# → {"hits":[{"id":"decision.auth.token-refresh","score":0.03},…],"gap_filed":false}
+```
 
-> **Windows ARM64** ships an NSIS `.exe` rather than `.msi` — the WiX MSI toolchain does not support `aarch64` ([tauri-apps/tauri#5499](https://github.com/tauri-apps/tauri/issues/5499)). The installer runs under Windows 11 ARM's x64 emulation layer; the installed Kavach app itself is native `aarch64`.
+<hr>
 
-> **Versioning — `YY.MM.PATCH`** (CalVer + SemVer blend, JetBrains/Ubuntu style). `YY.MM` is the release calendar month; `PATCH` is the iteration within it. Examples: `26.5.0` (first May-2026 release), `26.5.1`, `26.6.0`. A release is cut by pushing a matching git tag — the tag *is* the version baked into every installer.
+## ✅ Prerequisites
 
-### Download the CLI only (prebuilt binary)
+Install these **before** running Kavach. The harness fails closed — if its memory store is unreachable, gates deny by default — so the SurrealDB server is not optional.
 
-Just want the `kavach` CLI? Grab the archive for your platform from the [latest release](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest):
+<div align="center">
+<table>
+<tr><th>Requirement</th><th>Why</th><th>Install</th></tr>
+<tr>
+<td><strong>SurrealDB</strong> ≥ 2.0<br><sub>(the memory <em>server</em>)</sub></td>
+<td>Kavach's durable store. A standalone <code>surreal start</code> server owns the DB and serializes all writers; every <code>kavach</code> process is a thin WebSocket client of it (default <code>ws://127.0.0.1:7710</code>).</td>
+<td><strong>macOS / Linux:</strong> <code>curl -sSf https://install.surrealdb.com | sh</code><br><strong>macOS (brew):</strong> <code>brew install surrealdb/tap/surreal</code><br><strong>Windows:</strong> <code>iwr https://windows.surrealdb.com -useb | iex</code><br><sub>or grab a binary from <a href="https://surrealdb.com/install">surrealdb.com/install</a></sub></td>
+</tr>
+<tr>
+<td><strong>An AI harness</strong></td>
+<td>Kavach wraps a coding agent. Use any one: <strong>Claude Code</strong> v2.0+, <strong>Codex</strong>, or <strong>Cursor</strong>. One binary serves all three.</td>
+<td>See each tool's install docs</td>
+</tr>
+<tr>
+<td><strong>Rust</strong> 1.96+<br><sub>(only to build from source)</sub></td>
+<td>Edition 2024 toolchain. Skip if you download a prebuilt <code>kavach</code> binary.</td>
+<td><code>rustup toolchain install 1.96</code></td>
+</tr>
+<tr>
+<td><strong>Rust CLI toolbelt</strong><br><sub>(rg · fd · bat · sd · …)</sub></td>
+<td>The <code>pre-tool</code> gate steers shell commands to fast Rust equivalents. Provisioned in one command (below) — no manual per-tool install.</td>
+<td><code>kavach toolbelt install --yes</code></td>
+</tr>
+</table>
+</div>
+
+> **Start the memory server once**, then keep it running as a background service (`launchd` on macOS, `systemd` on Linux, a Scheduled Task / NSSM service on Windows). Point `rocksdb://` at any writable directory — `<DATA_DIR>` below is a placeholder:
+> ```bash
+> surreal start --user root --pass root --bind 127.0.0.1:7710 rocksdb://<DATA_DIR>/kavach.surreal
+> ```
+> Kavach already knows a sensible per-OS default location (macOS: `~/Library/Application Support/SharedAI`, Linux: `$XDG_DATA_HOME/shared-ai`, Windows: `%LOCALAPPDATA%\SharedAI`) and resolves it automatically — you only set a path here if you run `surreal start` yourself. Override the endpoint/creds with the `KAVACH_SURREAL_ENDPOINT` / `KAVACH_SURREAL_USER` / `KAVACH_SURREAL_PASS` environment variables if you bind elsewhere.
+
+<hr>
+
+## 🚀 Quick Start
+
+<details open>
+<summary><strong>Download the CLI (prebuilt binary — recommended)</strong></summary>
+
+<br>
+
+Grab the archive for your platform from the [latest release](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest):
 
 | Platform | Architecture | Download |
 |----------|--------------|----------|
@@ -107,12 +218,16 @@ Expand-Archive kavach.zip -DestinationPath "$env:USERPROFILE\.local\bin" -Force
 & "$env:USERPROFILE\.local\bin\kavach.exe" --version
 ```
 
-### Build from source
+</details>
 
-Requires **Rust 1.96+** (edition 2024) and **Claude Code** v2.0+.
+<details>
+<summary><strong>Build from source</strong></summary>
+
+<br>
+
+Requires **Rust 1.96+** (edition 2024) and a supported AI harness (Claude Code v2.0+, Codex, or Cursor).
 
 ```bash
-# Clone
 git clone https://github.com/Wankhede-Brothers/kavach-rs
 cd kavach-rs
 
@@ -122,13 +237,30 @@ cargo build --release
 # Symlink into PATH (Linux/macOS)
 ln -sf "$(pwd)/target/release/kavach" ~/.local/bin/kavach
 
-# Verify
 kavach --version
 ```
 
-### Wire Into Claude Code
+</details>
 
-Map each Claude Code lifecycle event to a Kavach gate. Every gate runs the same way — `kavach gates <name> --hook`, reading the hook JSON from stdin. The paste-ready config below is the recommended core; it is kept byte-for-byte in sync with [`crates/kavach-cli/templates/harness/claude.settings.json`](crates/kavach-cli/templates/harness/claude.settings.json). Merge its `hooks` block into `~/.claude/settings.json` (user) or `<project>/.claude/settings.json`:
+<details>
+<summary><strong>Open the web dashboard (no install)</strong></summary>
+
+<br>
+
+Kavach ships a **server-rendered** web UI (Axum + maud — no desktop app, no webview to install). It reads everything through the running SurrealDB server and renders the memory graph, kanban, decisions, and mistake ledger as plain HTML:
+
+```bash
+kavach web --port 8787
+# → serves the dashboard at http://127.0.0.1:8787
+```
+
+</details>
+
+<hr>
+
+## 🔌 Wire Into Claude Code
+
+Map each lifecycle event to a Kavach gate. Every gate runs the same way — `kavach gates <name> --hook`, reading the hook JSON from stdin. The config below is the recommended core, kept in sync with [`crates/kavach-cli/templates/harness/claude.settings.json`](crates/kavach-cli/templates/harness/claude.settings.json). Merge its `hooks` block into `~/.claude/settings.json` (user) or `<project>/.claude/settings.json`:
 
 ```json
 {
@@ -150,9 +282,6 @@ Map each Claude Code lifecycle event to a Kavach gate. Every gate runs the same 
     "Notification": [
       { "hooks": [ { "type": "command", "command": "kavach gates notification --hook" } ] }
     ],
-    "MessageDisplay": [
-      { "hooks": [ { "type": "command", "command": "kavach gates message-display --hook" } ] }
-    ],
     "Stop": [
       { "hooks": [ { "type": "command", "command": "kavach gates stop --hook" } ] }
     ]
@@ -160,45 +289,44 @@ Map each Claude Code lifecycle event to a Kavach gate. Every gate runs the same 
 }
 ```
 
-| Hook event | Gate | What it enforces |
-|------------|------|------------------|
-| `UserPromptSubmit` | `intent` | Intent classification + skill routing + harness dispatch |
-| `PreToolUse` (Write/Edit/NotebookEdit) | `pre-write` | Hard enforcement: skills, research, anti-pattern scan |
-| `PreToolUse` (everything else) | `pre-tool` | Bash blocklist + read validation + subagent budget |
-| `PostToolUse` (Write/Edit/NotebookEdit) | `post-write` | Anti-prod scan + quality + lint + memory sync |
-| `PostToolUse` (everything else) | `post-tool` | Context injection + research + task sync |
-| `SessionStart` | `session-start` | Restore state from the DB, not the chat |
-| `Notification` | `notification` | Terminal bell on attention events (CC 2.1.141) |
-| `MessageDisplay` | `message-display` | Message pass-through transform (CC 2.1.152) |
-| `Stop` | `stop` | 3-witness verify or block |
+<div align="center">
+<table>
+<tr><th>Hook event</th><th>Gate</th><th>What it enforces</th></tr>
+<tr><td><code>UserPromptSubmit</code></td><td><code>intent</code></td><td>Intent classification + skill routing + harness dispatch + <strong>Brain-OS <code>[RECALL]</code></strong></td></tr>
+<tr><td><code>PreToolUse</code> (Write/Edit)</td><td><code>pre-write</code></td><td>Hard enforcement: skills, research, anti-pattern scan</td></tr>
+<tr><td><code>PreToolUse</code> (else)</td><td><code>pre-tool</code></td><td>Bash blocklist + read validation + subagent budget</td></tr>
+<tr><td><code>PostToolUse</code> (Write/Edit)</td><td><code>post-write</code></td><td>Anti-prod scan + quality + lint + memory sync</td></tr>
+<tr><td><code>PostToolUse</code> (else)</td><td><code>post-tool</code></td><td>Context injection + research + <strong>concept harvest</strong> + task sync</td></tr>
+<tr><td><code>SessionStart</code></td><td><code>session-start</code></td><td>Restore state from the DB, not the chat</td></tr>
+<tr><td><code>Stop</code></td><td><code>stop</code></td><td>3-witness verify or block + pattern extraction</td></tr>
+</table>
+</div>
 
-Kavach tracks Claude Code's hook surface as it evolves — the binary also dispatches gates for the wider lifecycle (`pre-compact`/`post-compact`, `session-end`, `worktree-create`/`worktree-remove`, `permission-request`, `elicitation`, `teammate-idle`, `task-completed`, `config-change`, `instructions-loaded`, and more); wire any of them with the same `kavach gates <name> --hook` form. Recent surface adoptions: `reloadSkills` + `sessionTitle` on `session-start` (CC 2.1.152), the `effort.level` / `$CLAUDE_EFFORT` input that lets gates modulate strictness by effort tier (CC 2.1.133), and `ultracode` intent recognition (CC 2.1.160). A fuller, timeout-annotated reference set ships under [`transfer-package/settings.json`](transfer-package/settings.json).
+Kavach tracks Claude Code's hook surface as it evolves — the binary also dispatches gates for the wider lifecycle (`pre-compact`/`post-compact`, `session-end`, `worktree-create`/`worktree-remove`, `permission-request`, `elicitation`, `notification`, `message-display`, and more); wire any of them with the same `kavach gates <name> --hook` form.
 
-### Install the CLI toolbelt
+<details>
+<summary><strong>Install the CLI toolbelt</strong></summary>
 
-Kavach's `pre-tool` gate steers shell commands toward faster Rust equivalents (`grep`→`rg`, `find`→`fd`, `cat`→`bat`, `sed`→`sd`, …). One command provisions the whole set so those tools are present on any machine — no per-tool install:
+<br>
+
+Kavach's `pre-tool` gate steers shell commands toward faster Rust equivalents (`grep`→`rg`, `find`→`fd`, `cat`→`bat`, `sed`→`sd`, …). One command provisions the whole set:
 
 ```bash
-kavach toolbelt install --yes      # fetch all 21 tools via cargo binstall (prebuilt binaries)
+kavach toolbelt install --yes      # fetch all tools via cargo binstall (prebuilt binaries)
 kavach toolbelt list               # show each tool, its provider crate, and upstream license
 kavach toolbelt install --only rg,fd,bat   # install just a subset
 ```
 
-It shells out to [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall), pulling each tool's **prebuilt** release binary (seconds, not a source compile) into your cargo bin directory — already on `PATH` for a `cargo install kavach` user. No binaries are redistributed inside Kavach; `kavach toolbelt list` surfaces every tool's crate + license for provenance.
+It shells out to [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall), pulling each tool's **prebuilt** release binary into your cargo bin directory. No binaries are redistributed inside Kavach; `kavach toolbelt list` surfaces every tool's crate + license for provenance.
 
-### Cursor & Codex (same DB, native edges)
+</details>
 
-One Kavach binary and one database serve **all three** harnesses — run Cursor for one
-task, Codex for another, Claude Code for a third, against a single shared memory bank.
-Kavach detects which IDE called (by payload shape, or an explicit `--vendor` flag),
-lowers that harness's native hook payload into its canonical form, runs the
-vendor-blind gates, and renders the verdict back in each tool's own dialect — including
-each one's native failure policy (Cursor fails **open** so a hook error never wedges the
-editor; Codex and Claude Code fail **closed**).
+<details>
+<summary><strong>Cursor &amp; Codex (same DB, native edges)</strong></summary>
 
-Paste-ready configs and the per-harness global-rule files (`AGENTS.md` for Codex,
-`.cursor/rules/kavach.mdc` for Cursor — both mirroring `CLAUDE.md`) ship under
-[`crates/kavach-cli/templates/harness/`](crates/kavach-cli/templates/harness/):
+<br>
+
+One Kavach binary and one database serve **all three** harnesses — run Cursor for one task, Codex for another, Claude Code for a third, against a single shared memory bank. Kavach detects which IDE called (by payload shape, or an explicit `--vendor` flag), lowers that harness's native hook payload into its canonical form, runs the vendor-blind gates, and renders the verdict back in each tool's own dialect — including each one's native failure policy (Cursor fails **open** so a hook error never wedges the editor; Codex and Claude Code fail **closed**).
 
 | IDE | Hook config | Install path | Rule file |
 |-----|-------------|-------------|-----------|
@@ -206,17 +334,17 @@ Paste-ready configs and the per-harness global-rule files (`AGENTS.md` for Codex
 | Cursor | `cursor.hooks.json` | `~/.cursor/hooks.json` or `<project>/.cursor/hooks.json` | `.cursor/rules/kavach.mdc` |
 | Codex | `codex.config.toml` | append to `~/.codex/config.toml` (set `[features] hooks = true`) | `AGENTS.md` |
 
-Cursor has no `SessionStart` event, so Kavach injects the live mistake ledger + rules +
-kanban into every Cursor turn via its `beforeSubmitPrompt` hook; Codex shares Claude
-Code's `SessionStart`/`UserPromptSubmit` channel and gets the same context natively.
+Cursor has no `SessionStart` event, so Kavach injects the live mistake ledger + rules + kanban into every Cursor turn via its `beforeSubmitPrompt` hook; Codex shares Claude Code's `SessionStart`/`UserPromptSubmit` channel and gets the same context natively. Configs ship under [`crates/kavach-cli/templates/harness/`](crates/kavach-cli/templates/harness/).
 
----
+</details>
 
-## Core Concepts
+<hr>
+
+## 🧩 Core Concepts
 
 ### Gates
 
-Gates are the enforcement primitive. Each gate is a Rust function mapped to a Claude Code lifecycle event. A gate can **block** (deny the action), **ask** (require confirmation), or **allow** (pass through, optionally injecting context). Detectors live in `kavach-patterns`; the dispatch and severity wiring live in `kavach-engine`.
+Gates are the enforcement primitive. Each gate is a Rust function mapped to a lifecycle event. A gate can **block** (deny the action), **ask** (require confirmation), or **allow** (pass through, optionally injecting context). Detectors live in `kavach-patterns`; the dispatch and severity wiring live in `kavach-engine`.
 
 ### Memory (kavach-db)
 
@@ -228,11 +356,11 @@ A SurrealDB store holds durable state across sessions, scoped per project:
 - **roadmap** — kanban-style task tracking (the kanban is a status lens over this)
 - **app_spec** — six-file project context
 
-All access is RPC-routed through the daemon — no crate opens the database directly, preserving the single-writer invariant.
+All access is RPC-routed through the in-process `kavach-rpc` layer to the SurrealDB server — **no crate opens the database directly**, preserving the single-writer invariant.
 
 ### Knowledge Graph
 
-A three-tier graph: global **concepts** (L0) link to project **entities** (L1), and **mistakes** cluster into anti-patterns (L3) using BGE-small embeddings with cosine similarity.
+A multi-tier graph: global **concepts** (L0) link to project **entities** (L1), and **mistakes** cluster into anti-patterns by semantic similarity — feeding the same corpus that Brain-OS retrieves over.
 
 ### Rules Engine
 
@@ -242,82 +370,80 @@ A dedicated crate family (`kavach-rule-*`) parses, stores, and evaluates rule de
 
 Kavach picks the right *agentic workflow shape* for a task and drives it autonomously — no manual orchestration. A task is classified into one of six dynamic-workflow patterns (after Anthropic's [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)):
 
-| Pattern | Shape | When |
-|---------|-------|------|
-| `classify-act` | route → handle | triage / dispatch-by-type |
-| `fan-out-synthesize` | parallel → merge | audits, broad sweeps |
-| `worker-critic` | produce → adversarially verify | reviews, hardening |
-| `generate-filter` | many candidates → keep best | brainstorming, design search |
-| `pairwise-tournament` | compare → rank → pick winner | "best of N" |
-| `loop-until-done` | iterate to a goal oracle | open-ended build/fix (default) |
+<div align="center">
+<table>
+<tr><th>Pattern</th><th>Shape</th><th>When</th></tr>
+<tr><td><code>classify-act</code></td><td>route → handle</td><td>triage / dispatch-by-type</td></tr>
+<tr><td><code>fan-out-synthesize</code></td><td>parallel → merge</td><td>audits, broad sweeps</td></tr>
+<tr><td><code>worker-critic</code></td><td>produce → adversarially verify</td><td>reviews, hardening</td></tr>
+<tr><td><code>generate-filter</code></td><td>many candidates → keep best</td><td>brainstorming, design search</td></tr>
+<tr><td><code>pairwise-tournament</code></td><td>compare → rank → pick winner</td><td>"best of N"</td></tr>
+<tr><td><code>loop-until-done</code></td><td>iterate to a goal oracle</td><td>open-ended build/fix (default)</td></tr>
+</table>
+</div>
 
-The loop is **DB-driven, end to end**:
+The loop is **DB-driven, end to end**: the `intent` gate classifies the prompt and persists the pattern on the next-open roadmap card; the `stop` gate reads that link plus the oracle's last verdict and emits `[AUTO_CONTINUE] run Workflow <path>`. The card's harness link in the DB is the single source of truth, so the choice survives context compaction and session restarts.
 
-1. **Classify (intent gate)** — `UserPromptSubmit` keyword-routes the prompt to a pattern and persists it on the next-open roadmap card via `db.set_harness`.
-2. **Schema (kavach-db)** — each card carries `harness` + `workflow_path` columns.
-3. **Dispatch (stop gate)** — when a card with a harness is claimed, the Stop gate reads the link (`db.get_harness`) plus the oracle's last verdict (`db.latest_goal_attempt`) and emits `[AUTO_CONTINUE] run Workflow <path>` — commanding the AI to run the compiled `workflow.js` rather than hand-execute the card.
-4. **Compile** — `kavach goal compile` turns a `loop.yaml` (tagged-enum harness spec) into a Claude Code Workflow.
+<hr>
 
-The card's harness link in the DB is the single source of truth, so the choice survives context compaction and session restarts.
+## 🏗️ Architecture — the crate workspace
 
----
-
-## Architecture
-
-The workspace is 20 crates. The load-bearing ones:
+The workspace is **21 crates**. The load-bearing ones:
 
 ```
 kavach-rs/
 ├── crates/
 │   ├── kavach-cli/          # binary entry point (`kavach`) + CLI commands
 │   ├── kavach-engine/       # gate dispatch, severity wiring, DAG team scheduler
-│   ├── kavach-chain/        # verification chain runner
+│   ├── kavach-chain/        # verification chain runner + intent analysis
 │   ├── kavach-patterns/     # pattern detectors (the guards gates fire)
-│   ├── kavach-rpc/          # JSON-RPC daemon + client
-│   ├── kavach-surreal/      # SurrealDB persistence + knowledge graph
+│   ├── kavach-rpc/          # in-process JSON-RPC dispatch + client
+│   ├── kavach-surreal/      # SurrealDB persistence + Brain-OS retrieval + knowledge graph
 │   ├── kavach-session/      # cross-turn session state + mistake ledger
 │   ├── kavach-types/        # shared types (HookInput, MemoryStatus, Priority)
 │   ├── kavach-config/       # configuration loading
-│   ├── kavach-hook/         # Claude Code hook I/O + lifecycle plumbing
+│   ├── kavach-hook/         # harness hook I/O + lifecycle plumbing
 │   ├── kavach-advisor/      # advisory client + types
 │   ├── kavach-dtree/        # decision-tree primitives (intent classification)
 │   ├── kavach-rag-core/     # retrieval scan / score / tree walk
+│   ├── kavach-ope/          # order-preserving primitives
 │   ├── kavach-toon/         # token-efficient serialization
-│   ├── kavach-app/          # desktop/web UI (knowledge-graph viewer)
+│   ├── kavach-web/          # server-rendered web UI (Axum + maud, `kavach web`)
 │   └── kavach-rule-*/       # rule ast · parser · engine · generator · storage
 └── (skills are loaded from ~/.claude/skills at runtime)
 ```
 
----
+<hr>
 
-## Development
+## 🛠️ Development
 
 Kavach follows a strict-lint, evidence-gated workflow: edition 2024, `unsafe` forbidden workspace-wide, `dead_code` denied, and lib crates use `thiserror` while the app uses `anyhow`.
 
 ```bash
-# Build all crates
-cargo check --workspace
-
-# Run tests (nextest — parallel, per-test process isolation)
-cargo nextest run --workspace
-
-# Lint (strict — correctness lints are deny-by-default)
-cargo clippy --workspace -- -D warnings
-
-# Format
-cargo fmt --all
+cargo check --workspace                      # build all crates
+cargo nextest run --workspace                # tests (parallel, per-test process isolation)
+cargo clippy --workspace -- -D warnings      # lint (correctness lints deny-by-default)
+cargo fmt --all                              # format
 ```
 
-The "done" bar is a **3-witness verify**: an `rg` artifact (the change exists at file:line), `git diff --stat` (the diff landed), and `cargo check --workspace` exit 0 (it compiles). The Stop gate blocks until those hold.
+The **"done" bar is a 3-witness verify**: an `rg` artifact (the change exists at `file:line`), `git diff --stat` (the diff landed), and `cargo check --workspace` exit 0 (it compiles). The Stop gate blocks until those hold.
 
----
+<hr>
 
-## Changelog
+## 📋 Changelog
 
 Release history lives in [CHANGELOG.md](CHANGELOG.md), newest version first.
 
----
+<hr>
 
-## License
+<div align="center">
 
-[MIT](LICENSE) © 2026 Wankhede Brothers
+## 📜 License
+
+<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-22863a?style=for-the-badge"></a>
+
+<strong>MIT</strong> © 2026 Wankhede Brothers
+
+<sub>Built in Rust 🦀 — armor for every agent session.</sub>
+
+</div>

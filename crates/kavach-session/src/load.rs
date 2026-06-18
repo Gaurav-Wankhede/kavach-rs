@@ -94,7 +94,7 @@ pub fn parse_ini_str(content: &str) -> SessionState {
 /// 3. No match anywhere ⇒ `None` (caller starts fresh).
 ///
 /// Fail-open: an RPC error is not fatal — fall through to the INI check so a
-/// dead daemon degrades to today's file-only behavior rather than blocking.
+/// dead server degrades to today's file-only behavior rather than blocking.
 #[must_use]
 pub fn load_session_state_for(session_id: &str) -> Option<SessionState> {
     if session_id.is_empty() {
@@ -113,11 +113,11 @@ pub fn load_session_state_for(session_id: &str) -> Option<SessionState> {
             }
         }
         Err(e) => {
-            // RPC error — daemon is down or unreachable. Log it but continue to INI fallback.
+            // RPC error — server is down or unreachable. Log it but continue to INI fallback.
             tracing::warn!(error = ?e, "kavach-session: session.get failed, falling back to INI");
         }
     }
-    // DB miss or daemon down — fall back to the conversation-scoped INI file.
+    // DB miss or server down — fall back to the conversation-scoped INI file.
     match load_session_state_at(state_path_for(session_id).as_path()) {
         Ok(Some(state)) if state.session_id == session_id => Some(state),
         // Mismatch or missing: refuse a stale or foreign row.

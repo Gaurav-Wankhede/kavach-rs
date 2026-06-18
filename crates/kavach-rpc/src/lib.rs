@@ -1,4 +1,4 @@
-//! kavach-rpc — in-process JSON-RPC 2.0 dispatch over the kavach SurrealDB server.
+//! kavach-rpc — in-process JSON-RPC 2.0 dispatch over the kavach `SurrealDB` server.
 //!
 //! There is no standalone RPC daemon any more: the database is owned by a
 //! `surreal start` server (launchd `ai.shared.kavach-surreal`) and every kavach

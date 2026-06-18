@@ -5,6 +5,7 @@ mod context;
 mod harness;
 mod kvs;
 mod phase;
+mod recall;
 
 #[cfg(test)]
 mod rag_tests;
@@ -95,6 +96,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
 
     let mut context = build_base_context(&intent, &routing, &session);
     context.push_str(&harness_block);
+    // Brain-OS auto-recall: consult memory on every prompt (fail-soft, advisory).
+    context.push_str(&recall::recall_block(prompt));
     append_context_blocks(
         &mut context,
         input,

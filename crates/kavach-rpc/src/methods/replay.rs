@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::state::AppState;
 
-/// Cap on events per replay call. Shields the daemon from `DoS` via attacker-shaped
+/// Cap on events per replay call. Shields the server from `DoS` via attacker-shaped
 /// trajectories (each event triggers regex set passes across every guard).
 const MAX_REPLAY_EVENTS: usize = 10_000;
 
