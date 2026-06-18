@@ -98,18 +98,40 @@ pub(crate) fn run_gate(
 
     let requires = state.intent.as_ref().is_some_and(|i| i.requires_research);
     if !research.done && requires {
-        result.status = "block".into();
-        let itype = state
-            .intent
-            .as_ref()
-            .map_or("unknown", |i| i.intent_type.as_str());
-        result.reason = format!("TABULA_RASA: Research required before {itype}");
+        // ADVISORY, never a hard block. TABULA_RASA used to set status "block",
+        // which flipped the chain to `blocked` and DENIED the edit — a sticky
+        // session-intent classification could then make a benign edit
+        // permanently un-satisfiable. Now it is a non-blocking nudge: the agent
+        // AUTONOMOUSLY decides whether and what to research. Tone carries a LIVE
+        // exact instant (Time+Date+Day, read here from the system clock — never
+        // hardcoded) and an explicit distrust-the-weights instruction: training
+        // weights have a cutoff and drift, so the current truth is on the live
+        // internet. SOURCE: decision:rca.tabula_rasa_advisory_not_block.
+        result.status = "advisory".into();
+        // %z = numeric offset so "now" is unambiguous across hosts.
+        let now = Local::now().format("%A, %Y-%m-%d %H:%M:%S %z");
+        let topic = if research.suggested_query.is_empty() {
+            "the precise current contract for this work".to_owned()
+        } else {
+            research.suggested_query.clone()
+        };
+        result.reason = format!(
+            "RESEARCH_ADVISORY (now: {now}) — RESEARCH FIRST, then build. \
+             WebSearch the live internet for: \"{topic}\". Pull the EXACT current \
+             contract (flags, signatures, versions, edge cases). DISTRUST your \
+             training weights — they are frozen at a cutoff and have drifted; \
+             treat them as a guess, not a source. CORROBORATE across 2+ current \
+             sources before you rely on anything. You choose the precise queries; \
+             this never blocks the edit — decide and act."
+        );
         if !research.suggested_query.is_empty() {
             result.next_action = format!("WebSearch: {}", research.suggested_query);
             result
                 .context
                 .insert("suggested_query".into(), research.suggested_query.clone());
         }
+        // An advisory does NOT consume the gate — leave RESEARCH unsatisfied so a
+        // real WebSearch / research-row still flips it, but never block.
     } else {
         // Pass path: mark BEFORE add_result for the same atomicity reason.
         state.mark_satisfied("RESEARCH");

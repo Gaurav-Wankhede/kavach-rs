@@ -21,6 +21,19 @@ pub fn today_full() -> String {
     chrono::Local::now().format("%A, %Y-%m-%d").to_string()
 }
 
+/// Return the exact current instant: weekday, date, time WITH the IANA offset,
+/// e.g. `"Tuesday, 2026-06-16 14:07:52 +05:30"`.
+///
+/// This is the precise temporal anchor (Time + Date + Day) the research advisory
+/// injects so the agent scopes web research to the EXACT current moment, never a
+/// stale training-weight assumption. The offset (`%z`) makes "now" unambiguous
+/// across hosts. All fields are read live from the system clock — nothing here is
+/// hardcoded, so the anchor is always correct whenever the gate fires.
+#[must_use]
+pub fn now_full() -> String {
+    chrono::Local::now().format("%A, %Y-%m-%d %H:%M:%S %z").to_string()
+}
+
 /// Return the current year (e.g., 2026).
 /// Uses `unsigned_abs()` — year is always a non-negative i32, no fallible cast needed.
 #[must_use]

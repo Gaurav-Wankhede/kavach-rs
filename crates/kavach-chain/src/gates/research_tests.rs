@@ -95,14 +95,24 @@ fn test_session_satisfied_short_circuits_block() {
         risk_level: "low".into(),
     });
 
-    // Turn 1: research_done=false, no satisfaction yet → blocks.
+    // Turn 1: research_done=false, no satisfaction yet → ADVISORY, never block.
+    // TABULA_RASA is a non-blocking nudge: the agent autonomously decides what to
+    // research; it must NOT deny the edit. SOURCE: rca.tabula_rasa_advisory_not_block.
     run_gate(&mut state, false, "implement new auth flow", "");
     assert!(
-        state.is_blocked(),
-        "first turn must block when research not done"
+        !state.is_blocked(),
+        "research advisory must NEVER block the edit"
+    );
+    let t1 = state.results.last().expect("verdict recorded");
+    assert_eq!(t1.gate, "RESEARCH");
+    assert_eq!(t1.status, "advisory", "research-required emits advisory, not block");
+    assert!(
+        t1.reason.contains("RESEARCH_ADVISORY") && t1.reason.contains("training weights"),
+        "advisory tone must carry the distrust-weights instruction: {}",
+        t1.reason
     );
 
-    // Reset blocked status (turn boundary). Mark satisfied as if WebSearch ran.
+    // Turn boundary. Mark satisfied as if WebSearch ran.
     state.final_status = "pending".into();
     state.results.clear();
     state.mark_satisfied("RESEARCH");

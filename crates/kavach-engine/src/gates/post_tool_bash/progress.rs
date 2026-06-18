@@ -32,6 +32,24 @@ pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, comm
         session.save().ok();
     }
 
+    // A `kavach db write --category research` is a RESEARCH ARTIFACT, so it
+    // satisfies the TABULA_RASA gate — the same way a live `WebSearch` does.
+    // Without this, the gate was satisfiable ONLY by a WebSearch tool-result
+    // (post_tool_research::handle), so an agent that researched-then-PERSISTED a
+    // research row (the canon path) stayed blocked and rationalized the dead end
+    // as "gate working as intended". It was not: the gate had no input channel
+    // for a written research row. We mark research_done WITHOUT advancing
+    // last_db_write_turn — a research write proves research, but (per the
+    // circuit-breaker rule above) must NOT reset the live-lock progress signal.
+    // SOURCE: decision:rca.tabula_rasa_research_row_not_a_satisfier.
+    if command.contains("kavach db write") && command.contains("--category research") {
+        let topic = extract_flag_value(command, "--key")
+            .or_else(|| extract_flag_value(command, "--title"))
+            .unwrap_or_else(|| "research".to_owned());
+        session.mark_research_done_with_topic(&topic);
+        session.save().ok();
+    }
+
     // kavach db kanban/query marks memory_queried for enforcement gates.
     // ARCH: MemoryQueryTracking — pre_write_enforcement blocks implement-intent
     // without a prior db query. SOURCE: CLAUDE.md §8.2.
@@ -82,6 +100,43 @@ mod tests {
             s.last_db_write_turn, 0,
             "a decision-row content write is bookkeeping, not roadmap progress"
         );
+    }
+
+    /// REGRESSION `rca.tabula_rasa_research_row_not_a_satisfier`: a
+    /// `db write --category research` IS a research artifact, so it satisfies the
+    /// `TABULA_RASA` gate (sets `research_done` + records the key as a topic) —
+    /// the dead end where an agent researched-then-persisted but stayed blocked.
+    /// CRUCIAL: it must NOT advance `last_db_write_turn` (a research write proves
+    /// research, but must not reset the live-lock breaker — circuit-breaker rule).
+    #[test]
+    fn research_row_write_satisfies_research_without_advancing_breaker() {
+        let mut s = kavach_session::SessionState::default();
+        s.turn_count = 7;
+        track_db_progress(
+            &mut s,
+            "kavach db write --project p --category research --key research.foo.bar --new --content 'x'",
+        );
+        assert!(s.research_done, "a research-row write must satisfy tabula-rasa");
+        assert!(
+            s.research_topics.iter().any(|t| t == "research.foo.bar"),
+            "the research key is recorded as the topic"
+        );
+        assert_eq!(
+            s.last_db_write_turn, 0,
+            "a research write proves research but must NOT reset the live-lock breaker"
+        );
+    }
+
+    /// A non-research `db write` (decision/roadmap content) must NOT satisfy the
+    /// research gate — only `--category research` does.
+    #[test]
+    fn decision_row_write_does_not_satisfy_research() {
+        let mut s = kavach_session::SessionState::default();
+        track_db_progress(
+            &mut s,
+            "kavach db write --project p --category decision --key d --content 'x'",
+        );
+        assert!(!s.research_done, "a decision-row write is not a research artifact");
     }
 
     /// A card STATE TRANSITION (status-update / kanban-close) IS roadmap progress

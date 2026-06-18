@@ -78,11 +78,24 @@ pub(super) static RESEARCH_PATTERNS: &[&str] = &[
     "WebSearch cloudflare",
 ];
 
-/// Path substrings exempt from the research requirement (config/docs, not code).
+/// Path substrings exempt from the research requirement (config/docs/tests,
+/// not production code). Test files cannot reach production, so tabula-rasa —
+/// whose purpose is "research before NOVEL RISKY work" — must not gate test
+/// hygiene (e.g. `#[ignore]`-annotating a live-infra integration test). Gating
+/// a `tests/` edit off a sticky session-level `deploy` intent is a
+/// false-positive: the block keys on the SESSION's classified intent, never on
+/// what the edit does. SOURCE: `decision:rca.tabula_rasa_test_path_false_positive`.
 pub(super) static CONFIG_EXEMPT_PATTERNS: &[&str] = &[
     "/.claude/",
     "/CLAUDE.md",
     ".json",
     "settings.json",
     "claude-progress.txt",
+    "/tests/",
+    "/test/",
+    "_test.rs",
+    "_tests.rs",
+    ".test.ts",
+    ".test.tsx",
+    ".spec.ts",
 ];

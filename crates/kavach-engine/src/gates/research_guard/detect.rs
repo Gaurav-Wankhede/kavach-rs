@@ -31,8 +31,13 @@ fn is_config_file(path: &str) -> bool {
     CONFIG_EXEMPT_PATTERNS.iter().any(|p| path.contains(p))
 }
 
-/// Gate: `Some(advisory)` iff a bug/fix intent lacks research evidence and is
-/// not low-risk or config-exempt; else `None`.
+/// Research ADVISORY (never a block): `Some(nudge)` iff the intent looks
+/// research-class, lacks research evidence, and is not low-risk or config/test
+/// exempt; else `None`. The caller surfaces this as an advisory — the agent
+/// AUTONOMOUSLY decides whether and what to research. No hardcoded tone, no
+/// hardcoded date: the temporal anchor is the live exact instant (Time + Date +
+/// Day via `kavach_hook::now_full`) and the topic is derived from the actual
+/// intent + prompt, so nothing is baked in.
 pub(crate) fn check(
     intent_type: &str,
     prompt: &str,
@@ -53,13 +58,20 @@ pub(crate) fn check(
     if session.intent_risk == "low" {
         return None;
     }
-    let search_year = kavach_hook::current_year();
+    // Live exact instant — read from the system clock at fire time, never a
+    // hardcoded year. "as of <now>" scopes any web research to THIS moment.
+    let now = kavach_hook::now_full();
+    // Topic derived from the work itself (intent + prompt salient tokens), not a
+    // fixed list — the system decides WHAT to research from context.
+    let topic = super::topic::derive(intent_type, prompt);
     Some(format!(
-        "RESEARCH_REQUIRED: Bug/fix intent detected. \
-         WebSearch \"<topic> {search_year}\" (general search, NO site: prefix). \
-         Valid sources: github.com, arxiv.org, stackoverflow.com, crates.io, docs.rs, \
-         martinfowler.com, rust-lang.org, official docs. \
-         DO NOT restrict to site:github.com only — use broad search."
+        "RESEARCH_ADVISORY (now: {now}) — RESEARCH FIRST, then build. WebSearch \
+         the live internet for: \"{topic}\". Pull the EXACT current contract \
+         (flags, signatures, versions, edge cases). DISTRUST your training \
+         weights — they are frozen at a cutoff and have drifted; treat them as a \
+         guess, not a source. CORROBORATE across 2+ current sources before you \
+         rely on anything. You choose the precise queries; this never blocks the \
+         edit — decide and act."
     ))
 }
 
@@ -95,5 +107,38 @@ mod tests {
         assert!(is_config_file("claude-progress.txt"));
         assert!(!is_config_file("src/main.rs"));
         assert!(!is_config_file("crates/app/lib.rs"));
+    }
+
+    /// REGRESSION `rca.tabula_rasa_test_path_false_positive`: a `tests/` edit
+    /// (e.g. `#[ignore]`-gating a live-infra test) must NOT be gated by tabula-rasa.
+    /// The reported failure was a deploy-classified session permanently blocking
+    /// `outbox-publisher/tests/..._survivor_check.rs` — a benign test annotation
+    /// policed as a production deploy because the gate keys on SESSION intent.
+    #[test]
+    fn exempts_test_files() {
+        assert!(is_config_file(
+            "crates/services/outbox-publisher/tests/jacobs_ladder_marketing_survivor_check.rs"
+        ));
+        assert!(is_config_file("crates/foo/src/bar_test.rs"));
+        assert!(is_config_file("crates/foo/src/bar_tests.rs"));
+        assert!(is_config_file("web/src/login.test.tsx"));
+        assert!(is_config_file("web/src/auth.spec.ts"));
+        // Production source is still gated — the exemption must not leak.
+        assert!(!is_config_file("crates/services/outbox-publisher/src/lib.rs"));
+    }
+
+    /// The gate `check` returns None for a deploy-classified, high-risk session
+    /// when the target is a test file — proving the SESSION-intent block no
+    /// longer overrides the EDIT's actual (benign) nature.
+    #[test]
+    fn deploy_session_does_not_block_test_edit() {
+        let session = kavach_session::SessionState::default();
+        let out = super::check(
+            "deploy",
+            "go ahead",
+            &session,
+            Some("crates/x/tests/survivor_check.rs"),
+        );
+        assert!(out.is_none(), "test-path edit must be exempt even in a deploy session");
     }
 }
