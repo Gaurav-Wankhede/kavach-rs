@@ -4,7 +4,7 @@
 use crate::error::Result;
 use crate::graph::types::Entity;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 const BULK_DELETE_CAP: i64 = 5_000;
 

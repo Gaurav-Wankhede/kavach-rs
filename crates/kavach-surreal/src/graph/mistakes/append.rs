@@ -3,7 +3,7 @@
 // anti_pattern centroid (Bug 1 + Bug 3 dissolved).
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 #[derive(SurrealValue)]

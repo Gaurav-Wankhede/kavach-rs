@@ -128,6 +128,45 @@ fn check_protected_closure(key: &str, title: &str) -> Option<String> {
     ))
 }
 
+/// Mirror `--depends-on` flag targets into a `DEPENDS_ON:` content line so the
+/// dispatch readiness check (which parses deps from CONTENT) honors them. Returns
+/// `body` unchanged when there are no flag deps. Idempotent: a target already
+/// present on an existing `DEPENDS_ON:`/`BLOCKED_BY:` content line is not
+/// re-added, so `--update-key … --depends-on x` re-runs never duplicate it. New
+/// targets are appended as one `DEPENDS_ON: a, b` line at the top of the body
+/// (the parser scans all lines, so position is immaterial; top keeps it visible).
+fn mirror_depends_on_into_content(body: String, depends_on: &[String]) -> String {
+    let fresh: Vec<&str> = depends_on
+        .iter()
+        .map(|d| d.trim())
+        .filter(|d| !d.is_empty())
+        // Skip any target the body already declares on a dep line (idempotent).
+        .filter(|d| !body_declares_dep(&body, d))
+        .collect();
+    if fresh.is_empty() {
+        return body;
+    }
+    let line = format!("DEPENDS_ON: {}", fresh.join(", "));
+    if body.is_empty() {
+        line
+    } else {
+        format!("{line}\n{body}")
+    }
+}
+
+/// `true` iff `body` already names `dep` on a `DEPENDS_ON:`/`BLOCKED_BY:` line —
+/// the same lines the readiness parser reads. Whitespace/comma tolerant.
+fn body_declares_dep(body: &str, dep: &str) -> bool {
+    body.lines()
+        .map(str::trim)
+        .filter(|l| l.starts_with("DEPENDS_ON:") || l.starts_with("BLOCKED_BY:"))
+        .any(|l| {
+            l.split([':', ',', ' ', '\t'])
+                .map(str::trim)
+                .any(|tok| tok == dep)
+        })
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "single unified CLI command handler with inlined validation and upsert logic"
@@ -161,10 +200,21 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
             Err(io_err) => return into_exit_code(io_err),
         },
     };
-    // Carry the RESOLVED body (flag or stdin) through every downstream path:
-    // the RPC payload, RPC graph-edge extraction, and the direct fallback all
-    // read `content` — without this, a stdin-supplied body would reach the
-    // direct path but be dropped by the RPC-first call (the common case).
+    // DISPATCH-GATING FIX (owner directive 2026-06-17 "honor graph deps in
+    // dispatch"): the `--depends-on` flag projects graph edges (below), but the
+    // dispatch readiness check reads deps ONLY from the card's CONTENT
+    // (`deps_satisfied` -> `parse_declared_deps(&entry.content)`), so a flag-only
+    // gate was invisible and the card re-dispatched forever
+    // (decision.arch.kavach-depends-on-flag-content-disconnect). Mirror the flag
+    // targets into a `DEPENDS_ON:` content line so the SAME source of truth the
+    // readiness check parses reflects the flag. Idempotent: skip any target the
+    // content already declares, so re-running `--update-key … --depends-on x`
+    // never duplicates the line.
+    let body = mirror_depends_on_into_content(body, req.depends_on);
+    // Carry the RESOLVED body (flag or stdin, deps-mirrored) through every
+    // downstream path: the RPC payload, RPC graph-edge extraction, and the
+    // direct fallback all read `content` — without this, a stdin-supplied body
+    // would reach the direct path but be dropped by the RPC-first call.
     let effective_req = super::rpc_client::WriteRequest {
         content: Some(body.as_str()),
         ..*req
@@ -459,7 +509,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
 
 // Best-effort hints on the not-found error path. Caller already returns
 // exit 1; if a hint write fails we surface the IO failure code instead.
-async fn suggest_projects(db: &surrealdb::Surreal<surrealdb::engine::local::Db>) -> i32 {
+async fn suggest_projects(db: &surrealdb::Surreal<surrealdb::engine::any::Any>) -> i32 {
     match kavach_surreal::projects_list_all(db).await {
         Ok(projects) if projects.is_empty() => {
             if let Err(io_err) = ewrite_or_exit("hint: no projects registered yet") {

@@ -2,7 +2,7 @@ use super::consts::{QUERIES_CONCEPTS_FOR_PROJECT, QUERIES_PROJECTS_FOR_CONCEPT};
 use super::types::{BRIDGE_QUERY_LIMIT, BridgeHit, ConceptsRow, ProjectHit, ProjectsRow};
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Retrieves all concepts bridged to a project.
 ///

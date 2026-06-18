@@ -107,7 +107,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<MigViolation> {
     if create_index_no_concurrent {
         v.push(MigViolation { severity: MigSeverity::P0Block,
             pattern: "create-index-not-concurrent",
-            fix: "CREATE INDEX without CONCURRENTLY blocks writes for the entire build duration. Use CREATE INDEX CONCURRENTLY (cannot run inside a transaction)." });
+            fix: "CREATE INDEX without CONCURRENTLY blocks writes for the entire build duration. Use CREATE INDEX CONCURRENTLY — BUT it cannot run inside a transaction, and sqlx/most runners wrap each migration in one: mark the migration non-transactional (sqlx: `-- no-transaction` header) or split it out. A CONCURRENTLY build that fails leaves an INVALID index — DROP INDEX <name>; before retrying. (Idempotent re-runs: CREATE INDEX CONCURRENTLY IF NOT EXISTS.)" });
     }
     let fk_without_not_valid =
         pattern_matches(4, content) && !content.to_uppercase().contains("NOT VALID");
@@ -167,6 +167,23 @@ mod tests {
         let src = "CREATE INDEX CONCURRENTLY idx_users_email ON users (email);";
         let r = detect("migrations/0003_idx.sql", src);
         assert!(!r.iter().any(|v| v.pattern == "create-index-not-concurrent"));
+    }
+
+    #[test]
+    fn create_index_fix_names_transaction_and_invalid_recovery() {
+        // The CONCURRENTLY advice is wrong-as-written inside a transactional runner
+        // (sqlx wraps migrations in a tx) and a failed build leaves an INVALID index.
+        // The fix text MUST surface both caveats, or it strands the operator.
+        let src = "CREATE INDEX idx_users_email ON users (email);";
+        let r = detect("migrations/0003_idx.sql", src);
+        let fix = r
+            .iter()
+            .find(|v| v.pattern == "create-index-not-concurrent")
+            .map(|v| v.fix)
+            .expect("create-index-not-concurrent must fire");
+        assert!(fix.contains("transaction"), "fix must warn it cannot run in a transaction");
+        assert!(fix.contains("INVALID"), "fix must name the INVALID-index recovery");
+        assert!(fix.contains("DROP INDEX"), "fix must give the DROP INDEX recovery step");
     }
 
     #[test]

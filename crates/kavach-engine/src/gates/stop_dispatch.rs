@@ -8,18 +8,18 @@
 //! the ordered guard chain in stop.rs.
 mod card;
 mod daemon;
-mod query;
-mod verify;
+pub(crate) mod query;
+pub(crate) mod verify;
 
 #[cfg(test)]
 mod tests;
 
 pub(crate) use card::{
-    SOURCE_DOWN_KEY, card_entry_status, card_is_still_open, claim_card, is_backlog_saturated,
-    live_lease_holder,
+    SOURCE_DOWN_KEY, card_entry_status, card_is_still_open, claim_card, live_lease_holder,
 };
 pub(crate) use query::{
     census_rpc_only, get_next_backlog_info, get_next_hunt_info, get_next_task_info,
-    next_task_rpc_only, open_set_census,
+    next_task_directive, next_task_rpc_only, open_set_census, reward_rubric_for,
 };
+pub(crate) use daemon::renew_my_leases;
 pub(crate) use verify::{AutoVerify, auto_verify_done_cards};

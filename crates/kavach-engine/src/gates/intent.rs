@@ -41,7 +41,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     }
     // P0 SECURITY: block prompt injection BEFORE any other processing.
     if let Some(msg) = prompt_injection_block(prompt) {
-        drop(kavach_hook::exit_prompt_context(&format!("block:{msg}")));
+        drop(kavach_hook::exit_prompt_submit_block(&msg));
         return Ok(());
     }
 
@@ -49,6 +49,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     session.reset_research_for_new_prompt();
     session.reset_evidence_window();
     session.increment_turn();
+    // Stamp this turn as USER-DIRECTED: a real `UserPromptSubmit` is the user
+    // speaking (the autonomous loop re-injects via the Stop hook, not here). The
+    // stop gate reads this to grant the user-focus override — a turn the user just
+    // steered is NOT hijacked onto a different kanban card by the dispatcher.
+    session.mark_user_directive();
     apply_focus_marker(&mut session, prompt);
 
     let intent = kavach_chain::analyze_intent(prompt);

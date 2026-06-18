@@ -4,7 +4,7 @@
 //! a hub+leaf module hierarchy; the LOC ceiling does not apply.
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Applies the schema DDL to the `SurrealDB` instance.
 ///
@@ -217,6 +217,22 @@ DEFINE FIELD created_at ON part TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON part TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_part_project_name ON part FIELDS project, part_name UNIQUE;
 DEFINE INDEX idx_part_path ON part FIELDS part_path;
+
+-- Run records (execution history and status tracking)
+DEFINE TABLE run SCHEMAFULL;
+DEFINE FIELD project ON run TYPE option<record<project>>;
+DEFINE FIELD entry_key ON run TYPE string;
+DEFINE FIELD branch ON run TYPE option<string>;
+DEFINE FIELD status ON run TYPE string;
+DEFINE FIELD command ON run TYPE option<string>;
+DEFINE FIELD pid ON run TYPE option<int>;
+DEFINE FIELD started_at ON run TYPE option<string>;
+DEFINE FIELD finished_at ON run TYPE option<string>;
+DEFINE FIELD exit_code ON run TYPE option<int>;
+DEFINE FIELD cost_usd ON run TYPE option<float>;
+DEFINE FIELD created_at ON run TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_run_project ON run FIELDS project;
+DEFINE INDEX idx_run_project_started ON run FIELDS project, started_at;
 
 -- Graph edge tables (created dynamically via RELATE)
 -- Example edges:

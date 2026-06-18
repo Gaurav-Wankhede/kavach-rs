@@ -35,7 +35,7 @@ mod subset;
 mod task;
 mod team_tracking;
 mod turn_shadow;
-pub use turn_shadow::RelayFlush;
+pub use turn_shadow::{RelayFlush, RewardOutcome};
 
 pub use get_or_create::{
     get_or_create_session, get_or_create_session_for, set_session_context,

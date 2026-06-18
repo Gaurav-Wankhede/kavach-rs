@@ -9,7 +9,7 @@ use surrealdb_types::RecordId;
 
 /// CREATE one autonomous-tier `gate_pattern` with an explicit `occurrence_count`.
 async fn seed(
-    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     proj: &RecordId,
     tokens: &str,
     count: i64,

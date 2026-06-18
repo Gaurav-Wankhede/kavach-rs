@@ -66,9 +66,11 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 }
 
 /// A `done` card (awaiting verify) is non-runnable and blocks dependents needing
-/// a `verified` prereq. Branch on the three-state auto-verify outcome:
-/// - `Promoted` + a card now dispatchable → resume that card.
+/// a `verified` prereq. Branch on the four-state auto-verify outcome:
+/// - `Promoted(n > 0)` + a card now dispatchable → resume that card.
 /// - `WitnessFailed` → an AI-fixable keystone exists → command `KEYSTONE_REPAIR`.
+/// - `Unprovable` → non-Rust project with no `KAVACH_VERIFY_CMD` → cannot prove work →
+///   block and surface reason.
 /// - `NothingDone` / `Promoted` with nothing dispatchable → the queue is empty or
 ///   every remainder is dependency-blocked → emit the census-aware DB-rescan
 ///   verdict (`all_blocked` / `board_drained`), never a self-stop. The loop yields
@@ -84,14 +86,25 @@ fn all_blocked_or_autoverify(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         let max = kavach_session::SessionState::max_stop_reblocks();
         drop(kavach_hook::exit_stop_block(&format!(
             "[AUTO_CONTINUE] ({attempt}/{max}) auto-verified done card(s) \
-             (workspace witnesses passed: cargo check + nextest) → loop unblocked. \
+             (workspace witnesses passed: cargo check + clippy + nextest + git diff) → loop unblocked. \
              NEXT {tier} [{key}]: {title}. CLAIMED — resume NOW."
         )));
         return ControlFlow::Break(());
     }
     ctx.session.clear_stop_reblock();
-    if outcome == AutoVerify::WitnessFailed {
-        return keystone_repair();
+    match outcome {
+        AutoVerify::WitnessFailed => keystone_repair(),
+        AutoVerify::Unprovable => {
+            drop(kavach_hook::exit_stop_block(
+                "BLOCKED: `done` cards exist but work CANNOT BE PROVEN. The project is \
+                 not a Rust workspace (no Cargo.toml) and KAVACH_VERIFY_CMD is not set. \
+                 Either:\n\
+                 1. Set env var KAVACH_VERIFY_CMD to a shell command that verifies the work, then resume.\n\
+                 2. Manually promote the cards (kavach db roadmap update <key> --status verified) if work is proven by external audit.\n\
+                 The loop yields only to the user's `Esc`."
+            ));
+            ControlFlow::Break(())
+        }
+        AutoVerify::Promoted(_) | AutoVerify::NothingDone => continue_next_phase(&ctx.session.project),
     }
-    continue_next_phase(&ctx.session.project)
 }

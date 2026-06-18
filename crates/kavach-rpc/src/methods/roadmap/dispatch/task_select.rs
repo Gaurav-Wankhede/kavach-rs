@@ -1,4 +1,4 @@
-use super::super::readiness::{deps_satisfied, is_runnable_status};
+use super::super::readiness::{deps_satisfied, is_gate, is_runnable_status, is_umbrella};
 use super::super::types::{NextOpenTaskParams, NextTaskResult};
 use super::lane_pick::{lane_matches, pick_in_lane};
 use crate::error::surreal_to_rpc;
@@ -44,8 +44,9 @@ pub async fn next_open_task(
     // inspected. With no session lane, pass 1 matches everything and pass 2 is a
     // no-op — byte-identical to the pre-lane single loop.
     let want = params.lane.as_deref();
-    let selected = pick_in_lane(&entries, &dep_pool, |e| lane_matches(e, want))
-        .or_else(|| pick_in_lane(&entries, &dep_pool, |e| e.lane.is_none()));
+    let me = params.session_id.as_deref().unwrap_or_default();
+    let selected = pick_in_lane(&entries, &dep_pool, me, |e| lane_matches(e, want))
+        .or_else(|| pick_in_lane(&entries, &dep_pool, me, |e| e.lane.is_none()));
     Ok(selected)
 }
 
@@ -76,7 +77,12 @@ pub async fn ready_set(
         .map_err(surreal_to_rpc)?;
     let ready = entries
         .iter()
-        .filter(|e| is_runnable_status(e.entry_status_str()) && deps_satisfied(e, &dep_pool))
+        .filter(|e| {
+            is_runnable_status(e.entry_status_str())
+                && !is_umbrella(&e.title)
+                && !is_gate(&e.title)
+                && deps_satisfied(e, &dep_pool)
+        })
         .map(|e| NextTaskResult {
             key: e.entry_key.clone(),
             title: e.title.clone(),

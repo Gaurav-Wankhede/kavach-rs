@@ -20,9 +20,12 @@ pub fn is_runnable_status(status: &str) -> bool {
 // (`kavach db delete --category roadmap --key ...`), per global CLAUDE.md `§delete_not_park`. The dispatch
 // predicate is now status + deps + umbrella only (see `lane_pick.rs`).
 
-/// Title tokens that mark a card as an UMBRELLA/EPIC parent whose status is
-/// DERIVED from its children (e.g. `[UMBRELLA/EPIC — status child-derived]`).
-const UMBRELLA_MARKERS: [&str; 2] = ["UMBRELLA", "EPIC"];
+/// Title tokens (LOWERCASE — matched case-insensitively) that mark a card as an
+/// umbrella/epic parent whose status is DERIVED from its children. Both the
+/// `[UMBRELLA — …]` token form AND prose like "platform umbrella" count, so a
+/// lowercase "umbrella" no longer slips into dispatch (the loop trap on
+/// `platform.jacobs-ladder-marketing` / `.soundbak` / `.rainfire-missions`).
+const UMBRELLA_MARKERS: [&str; 2] = ["umbrella", "epic"];
 
 /// `true` iff the card is an umbrella/epic PARENT.
 ///
@@ -32,8 +35,62 @@ const UMBRELLA_MARKERS: [&str; 2] = ["UMBRELLA", "EPIC"];
 /// the selector names the parent as `next_open_task` and the stop gate
 /// re-dispatches an un-buildable epic forever. The marker lives in the TITLE
 /// (`[UMBRELLA/EPIC — …]`), free-text by convention (no structural parent field
-/// in schema). Pairs with `is_parked`.
+/// in schema). The ONLY non-status dispatch predicates are this and `deps_satisfied`.
 #[must_use]
 pub fn is_umbrella(title: &str) -> bool {
-    UMBRELLA_MARKERS.iter().any(|m| title.contains(m))
+    let lowered = title.to_lowercase();
+    UMBRELLA_MARKERS.iter().any(|m| lowered.contains(m))
 }
+
+/// `true` iff the card is an OWNER-DECISION GATE.
+///
+/// A node whose "work" is an owner action (open a DB maintenance window, run a
+/// deploy, greenlight a cohort, supply a credential), NOT agent-buildable code.
+/// A gate exists to BLOCK its dependents
+/// until the owner acts; it is never itself dispatched. Recognized by the `GATE:`
+/// title prefix — the convention every `roadmap.unit.gate.*` card uses.
+///
+/// Without this the selector serves a gate card as `next_open_task` (a gate has no
+/// declared deps, so it is trivially deps-satisfied + runnable), and the loop
+/// dispatches owner-only work the agent cannot perform — the exact churn observed
+/// on `gate.owner-db-maintenance-window` / `gate.owner-greenlights-*`. Mirrors
+/// `is_umbrella`: a non-status dispatch-exclusion predicate.
+#[must_use]
+pub fn is_gate(title: &str) -> bool {
+    title.trim_start().to_lowercase().starts_with("gate:")
+}
+
+/// Title phrases that mark a card as too large to build in one dispatch — it must
+/// be DECOMPOSED into child roadmap rows before any leaf work is done. Unlike an
+/// umbrella (whose status is purely child-derived and is never dispatched), a
+/// needs-decomposition card IS still dispatched, but the stop-gate routes it to
+/// an auto-decompose directive: author the children, gate the parent on them,
+/// then build the children. Matching is case-insensitive on the lowered title.
+const DECOMPOSITION_MARKERS: [&str; 3] = [
+    "not one-card auto-build",
+    "requiring decomposition",
+    "needs decomposition",
+];
+
+/// `true` iff the card's title declares it too large for a one-card auto-build.
+///
+/// (a 127-page port, a multi-phase MAJOR unit, …). The stop-gate uses this to
+/// switch the dispatch envelope from "build it" to "decompose it FIRST, then
+/// build the children" (owner directive 2026-06-17: auto-decompose-then-build).
+/// Without it, the selector serves the same undecomposed umbrella every turn —
+/// the exact loop observed on `soundbak.dms` and `dashboard.internal-shell`.
+#[must_use]
+pub fn is_needs_decomposition(title: &str) -> bool {
+    let lowered = title.to_lowercase();
+    DECOMPOSITION_MARKERS.iter().any(|m| lowered.contains(m))
+}
+
+// PARKING FULLY ABOLISHED (owner directive 2026-06-17): the `has_inert_blocker`
+// detector + `INERT_BLOCKER_LINE_PREFIXES` are REMOVED. The gate no longer
+// recognizes `OWNER-GATED:`/`AGENT_BLOCKED:` as a signal at all — there is no
+// "reconcile-first" special-casing. Dispatch is purely status + deps + umbrella;
+// a card is RUNNABLE or DELETED. Decision: decision.arch.harness-degate-stale-blocker.
+
+#[cfg(test)]
+#[path = "status_check_test.rs"]
+mod status_check_test;

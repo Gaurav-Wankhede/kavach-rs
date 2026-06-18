@@ -12,6 +12,21 @@ fn idx(r: &[Regex], i: usize) -> &Regex {
     &r[i]
 }
 
+/// True when `fp`/`content` is a Rust TEST context, where production-leak
+/// patterns (empty fn bodies, proc-exit) are legitimate (mock impls, fixtures,
+/// `#[ignore]`-gated integration tests). Prevents the `EMPTY_RESPONSE` / `proc-exit`
+/// P0 false-positive that blocked legit DB/Scylla integration tests.
+/// Ref: <https://doc.rust-lang.org/book/ch11-03-test-organization.html>
+#[inline]
+fn is_test_context(fp: &str, content: &str) -> bool {
+    fp.contains("/tests/")
+        || fp.ends_with("_test.rs")
+        || fp.ends_with("tests.rs")
+        || content.contains("#[cfg(test)]")
+        || content.contains("#[tokio::test]")
+        || content.contains("#[test]")
+}
+
 #[inline]
 fn add(
     v: &mut Vec<AntiProdResult>,
@@ -63,7 +78,8 @@ pub(super) fn detect_rust_lang(
         );
     }
     let b = fbase(fp);
-    if idx(r, 21).is_match(content) && b != "main.rs" {
+    let test_ctx = is_test_context(fp, content);
+    if idx(r, 21).is_match(content) && b != "main.rs" && !test_ctx {
         add(
             res,
             AntiProdLevel::P1ProdLeak,
@@ -72,7 +88,7 @@ pub(super) fn detect_rust_lang(
             "Return Result.",
         );
     }
-    if idx(r, 22).is_match(content) && b != "main.rs" {
+    if idx(r, 22).is_match(content) && b != "main.rs" && !test_ctx {
         add(
             res,
             AntiProdLevel::P1ProdLeak,

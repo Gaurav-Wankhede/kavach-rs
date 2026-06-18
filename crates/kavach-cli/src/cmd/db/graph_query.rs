@@ -70,7 +70,7 @@ pub(super) fn run(entity_type: Option<&str>, name: Option<&str>, limit: usize) -
 }
 
 async fn query_named(
-    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     etype: &str,
     n: &str,
 ) -> i32 {
@@ -131,7 +131,7 @@ async fn query_named(
 }
 
 async fn query_list(
-    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     entity_type: Option<&str>,
     limit: usize,
 ) -> i32 {

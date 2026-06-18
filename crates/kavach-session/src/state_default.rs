@@ -88,6 +88,7 @@ impl Default for SessionState {
             intent_risk: "medium".into(),
             subagent_files_read: 0,
             last_write_turn: 0,
+            user_directive_turn: 0,
             new_crate_confirmed: false,
             algo_hunter_invoked: false,
             active_test_crates: Vec::new(),
@@ -133,6 +134,7 @@ impl Default for SessionState {
             goal_state: String::new(),
             goal_achieved: false,
             goal_receipt_pass: false,
+            ai_verdict: None,
             goal_set_turn: 0,
 
             // ARCH: AutonomousLoopDefaults

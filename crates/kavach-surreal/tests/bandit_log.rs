@@ -19,7 +19,7 @@ use kavach_surreal::{
 /// (`open_default_daemon`) runs `apply_schema`, so a read of a never-written
 /// `bandit_log` must see a *defined, empty* table, not `SurrealDB` 3.0's
 /// "table does not exist" error. `open_memory` alone skips schema.
-async fn open_with_schema() -> surrealdb::Surreal<surrealdb::engine::local::Db> {
+async fn open_with_schema() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
     let db = open_memory().await.expect("memory db");
     apply_schema(&db).await.expect("apply schema");
     db

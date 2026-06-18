@@ -73,6 +73,25 @@ fn reprioritize_paraphrases_and_alignment() {
 }
 
 #[test]
+fn permission_seek_exempts_user_directed_asks() {
+    // Bare permission-seek still fires.
+    assert!(detect_permission_seek("should I proceed with the migration?").unwrap());
+    // The broadened NEG arm exempts genuine user-delegated asks — these are the
+    // counterexamples surfaced when the detector was wired into the Stop gate.
+    for legit in [
+        "you asked me to choose, so should I proceed with option A?",
+        "this is your decision — should I continue?",
+        "you directed me to confirm before each step; may I proceed?",
+        "per your request, should I proceed to the next handler?",
+    ] {
+        assert!(
+            !detect_permission_seek(legit).unwrap(),
+            "user-directed ask must be exempt: {legit}"
+        );
+    }
+}
+
+#[test]
 fn unverified_code_with_code_block_is_exempted() {
     assert!(
         !detect_unverified_code_claim(

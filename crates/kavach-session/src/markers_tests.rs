@@ -1,5 +1,35 @@
 use crate::state::SessionState;
 
+// ── User-focus override predicate (owner directive 2026-06-18) ───────────────
+// `user_is_steering_this_turn()` is the stop-gate's authority check: a turn the
+// user steered must NOT be hijacked onto a different kanban card.
+
+#[test]
+fn user_steering_true_when_directive_stamped_this_turn() {
+    let mut s = SessionState::default();
+    s.increment_turn(); // turn 1
+    s.mark_user_directive(); // user spoke on turn 1
+    assert!(s.user_is_steering_this_turn(), "user spoke THIS turn → steering");
+}
+
+#[test]
+fn user_steering_false_on_a_later_autonomous_turn() {
+    let mut s = SessionState::default();
+    s.increment_turn();
+    s.mark_user_directive(); // user spoke on turn 1
+    s.increment_turn(); // turn 2 — autonomous loop tick, user did NOT speak
+    assert!(
+        !s.user_is_steering_this_turn(),
+        "a later turn with no fresh directive → autonomous, dispatch normally"
+    );
+}
+
+#[test]
+fn user_steering_false_at_session_start_no_directive() {
+    let s = SessionState::default();
+    assert!(!s.user_is_steering_this_turn(), "turn 0 / no directive → not steering");
+}
+
 #[test]
 fn mark_research_done() {
     let mut s = SessionState::default();

@@ -3,7 +3,7 @@
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// One `session_runtime` row: the full `SessionState` serialized into `state_blob`.

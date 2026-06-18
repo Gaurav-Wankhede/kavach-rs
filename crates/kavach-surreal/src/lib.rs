@@ -34,6 +34,7 @@ pub mod projects;
 pub mod rag_trees;
 pub mod read;
 pub mod retry;
+pub mod runs;
 pub mod schema;
 pub mod schema_engine;
 pub mod schema_v2;
@@ -127,6 +128,9 @@ pub use projects::{
     get_ancestry as project_get_ancestry, get_by_slug as project_get_by_slug,
     list_all as projects_list_all, register as project_register,
     relative_to_parent as project_relative_to_parent, set_parent as project_set_parent,
+};
+pub use runs::{
+    RunRecord, run_get, run_insert, run_list_by_project, run_reconcile_orphans, run_update_status,
 };
 pub use rag_trees::{
     RagTreeLabel, RagTreeRefreshable, RagTreeRow, get as rag_tree_get, list as rag_tree_list,

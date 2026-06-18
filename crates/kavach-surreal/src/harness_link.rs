@@ -8,7 +8,7 @@
 // SOURCE: decision.goal-harness-6-patterns · roadmap.unit.harness-loop-L2-rpc.
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 /// The most recent `goal_loop_attempt` event for a project.

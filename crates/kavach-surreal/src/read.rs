@@ -3,7 +3,7 @@ use crate::dual_write::MemoryEntry;
 use crate::error::Result;
 use crate::filter::FilterExpr;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::RecordId;
 
 // `category` is implicit in the table name (decision/research/roadmap/...), so
@@ -100,6 +100,7 @@ pub async fn list_by_project(
     const QUERY: &str = concat!(
         "SELECT id, project, entry_key, title, content, status, entry_status, ",
         "access_count, created_at, updated_at, priority, lane, ",
+        "occupied_by, occupied_until, ",
         "priority ?? 999999 AS _sort_priority ",
         "FROM type::table($table) WHERE project = $project ",
         "ORDER BY _sort_priority ASC, created_at ASC"
@@ -161,6 +162,7 @@ pub async fn list_by_status(
     const QUERY: &str = concat!(
         "SELECT id, project, entry_key, title, content, status, entry_status, ",
         "access_count, created_at, updated_at, priority, lane, ",
+        "occupied_by, occupied_until, ",
         "priority ?? 999999 AS _sort_priority ",
         "FROM type::table($table) WHERE project = $project AND entry_status = $status ",
         "ORDER BY _sort_priority ASC, created_at ASC"

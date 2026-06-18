@@ -8,7 +8,7 @@
 // SOURCE: https://github.com/surrealdb/agent-memory (official agent-memory schema)
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Applies the agent memory schema v2 to the database.
 ///

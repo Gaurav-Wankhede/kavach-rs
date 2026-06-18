@@ -13,7 +13,7 @@
 //   YEAR: 2026.
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// One cosine-relevant anti-pattern hit: the behavioral lesson plus its

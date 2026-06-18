@@ -32,7 +32,7 @@
 use crate::error::Result;
 use serde::Deserialize;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 #[derive(Debug, Clone, SurrealValue)]

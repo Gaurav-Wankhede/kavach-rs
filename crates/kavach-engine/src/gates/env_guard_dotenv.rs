@@ -9,7 +9,12 @@
 // PATTERN: filename_pattern + binary_allowlist | SCOPE: pre_tool_bash | CAP: AP
 // FAILURE_MODE: detect_env_filename returns ".env" fallback if nothing matches —
 //               error message stays generic but blocking still works.
-//               is_safe_downstream rejects all unknown binaries (fail-closed).
+//               is_safe_downstream is fail-OPEN for genuine runners: an unknown
+//               task-runner that consumes env silently (just/make/sqlx/unknown CLI)
+//               is ALLOWED; only an EXPLICIT env-value print (echo/printf/printenv/
+//               env/set/export, a raw `bash -c`, or python) or a destructive psql
+//               is rejected. A hygiene heuristic must never hard-block a real
+//               migration command — that strangles the autonomous loop.
 //
 // Extracted from env_guard.rs (split-env-guard-microservices roadmap, May 2026).
 //

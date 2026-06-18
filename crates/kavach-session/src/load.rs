@@ -103,12 +103,18 @@ pub fn load_session_state_for(session_id: &str) -> Option<SessionState> {
     // `session.get` returns `null` (no row) or `{session_id,workdir,state_blob}`.
     // Parse the blob out of a serde_json::Value — no derive, no `serde` dep.
     let params = serde_json::json!({ "session_id": session_id });
-    if let Ok(value) = kavach_rpc::client::call::<_, serde_json::Value>("session.get", Some(params))
-        && let Some(blob) = value.get("state_blob").and_then(|b| b.as_str())
-    {
-        let state = parse_ini_str(blob);
-        if state.today == today() {
-            return Some(state);
+    match kavach_rpc::client::call::<_, serde_json::Value>("session.get", Some(params)) {
+        Ok(value) => {
+            if let Some(blob) = value.get("state_blob").and_then(|b| b.as_str()) {
+                let state = parse_ini_str(blob);
+                if state.today == today() {
+                    return Some(state);
+                }
+            }
+        }
+        Err(e) => {
+            // RPC error — daemon is down or unreachable. Log it but continue to INI fallback.
+            tracing::warn!(error = ?e, "kavach-session: session.get failed, falling back to INI");
         }
     }
     // DB miss or daemon down — fall back to the conversation-scoped INI file.

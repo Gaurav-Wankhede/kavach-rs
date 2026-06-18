@@ -20,5 +20,6 @@ pub use gates::event_log::{
     ExtractedRelationship, extract_memory_entry_references, extract_memory_entry_relationships,
     memory_entry_qualified_name, project_memory_entry_rpc,
 };
+pub use gates::status_gate::{StatusGateVerdict, verify_status_promotion};
 pub use graph_infer::{InferRow, InferredRel, infer_relationships};
 pub use team::{DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};

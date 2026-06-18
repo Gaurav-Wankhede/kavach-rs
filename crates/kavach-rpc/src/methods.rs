@@ -16,6 +16,7 @@ pub mod projects;
 pub mod rag;
 pub mod replay;
 pub mod roadmap;
+pub mod run;
 pub mod session;
 pub mod system;
 pub mod trust;

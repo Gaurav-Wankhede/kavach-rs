@@ -10,8 +10,17 @@ const PERMISSION_SEEK_POS: &str = concat!(
     r"|\b(?:you|your)\s+(?:green[\s-]?light|approval|call)\s+(?:it|the)\b",
 );
 
-const PERMISSION_SEEK_NEG: &str =
-    r"(?i)\bas\s+you\s+(?:requested|asked|directed)\b|\bper\s+your\s+instruction\b";
+// Exempt GENUINE user-directed asks: when the user explicitly delegated the
+// choice, asking "should I proceed?" is correct, not a stall. Broadened beyond
+// "as you requested" to the full family of delegation phrasings (FP-hardening
+// surfaced when this detector was wired into the Stop gate's advisory dispatch).
+const PERMISSION_SEEK_NEG: &str = concat!(
+    r"(?i)\bas\s+you\s+(?:requested|asked|directed|instructed)\b",
+    r"|\bper\s+your\s+(?:instruction|request|direction)\b",
+    r"|\byou\s+(?:asked|told|directed|instructed)\s+me\s+to\b",
+    r"|\byour\s+(?:decision|call|choice)\b",
+    r"|\b(?:you|user)\s+(?:explicitly\s+)?(?:asked|requested)\b",
+);
 
 static PERMISSION_SEEK: Signal = Signal {
     positive: LazyLock::new(|| regex::Regex::new(PERMISSION_SEEK_POS)),

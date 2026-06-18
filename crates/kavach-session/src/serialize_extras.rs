@@ -359,7 +359,11 @@ impl SessionState {
 
         // ARCH: GoalOrientedLoopSerialization — persist goal state
         // PATTERN: goal_loop | SCOPE: session | CAP: AP | SEARCHED: 2026-04
-        if !self.goal_state.is_empty() || self.goal_achieved || self.goal_receipt_pass {
+        if !self.goal_state.is_empty()
+            || self.goal_achieved
+            || self.goal_receipt_pass
+            || self.ai_verdict.is_some()
+        {
             s.push_str("[GOAL_STATE]\n");
             if !self.goal_state.is_empty() {
                 write_kv(s, "goal_state", &self.goal_state);
@@ -378,6 +382,9 @@ impl SessionState {
                     "false"
                 },
             );
+            if let Some(v) = self.ai_verdict {
+                write_kv(s, "ai_verdict", if v { "true" } else { "false" });
+            }
             write_kv(s, "goal_set_turn", &self.goal_set_turn.to_string());
             s.push('\n');
         }

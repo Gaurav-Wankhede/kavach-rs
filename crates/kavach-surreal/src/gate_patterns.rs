@@ -6,7 +6,7 @@
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 const TIER_RESEARCH: &str = "research";

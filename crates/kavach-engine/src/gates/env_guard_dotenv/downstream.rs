@@ -1,54 +1,101 @@
-//! Binary allowlist for the command following `source .env` — safe iff it consumes
-//! env vars without echoing them (fail-closed: unknown binaries are rejected).
+//! Safety classifier for the command following `source .env`.
+//!
+//! POLICY (fail-OPEN for genuine runners): the env-leak gate must NEVER hard-block
+//! a real migration/deploy command just because its task-runner is not on a fixed
+//! list. A runner that CONSUMES env vars silently (sqlx, cargo, just, make, npm,
+//! psql, an unknown CLI) is SAFE here. The only shapes that genuinely leak a secret
+//! INTO the conversation context are an EXPLICIT print of an env value
+//! (`echo $X` / `printf` / `env` / `set` / `printenv` / `export`) or a raw shell
+//! that can do so (`bash -c '...echo $SECRET...'`) — those, and a destructive psql,
+//! stay unsafe. Everything else is allowed. (See the `FAILURE_MODE` note in the
+//! parent module: this replaces the old closed binary allowlist that fail-CLOSED on
+//! every unknown runner and strangled `source .env && just migrate`.)
 
-/// Return true when the post-source command is one that consumes env vars without
-/// echoing them — e.g. sqlx migrate, cargo run, npm run, or a non-destructive psql.
+/// Command segments whose job is to print a value/environment into context. Matched
+/// at a command boundary so a piped/chained print is caught but an identifier
+/// substring inside an argument is not. (`cat` is intentionally absent: reading the
+/// `.env` file itself is owned by `check_dotenv_read`; `cat mig.sql` is harmless.)
+const ENV_PRINTERS: &[&str] = &["echo ", "printf ", "printenv ", "env ", "set ", "export "];
+
+/// Return true when the post-source command does NOT leak a secret into context.
+/// Fail-OPEN: only the explicitly-dangerous shapes below are rejected; an
+/// unrecognised runner that silently consumes env vars is treated as safe.
 ///
-/// Python is BANNED per ~/.claude/rules/04-anti-patterns.md global Python ban.
-/// `psql` is allowed for READ/INSERT/UPDATE/CREATE — but a destructive verb
-/// (DELETE/DROP/TRUNCATE) anywhere in the command makes it unsafe here, and the
-/// dedicated psql write-bypass gate hard-blocks it regardless. This is the
-/// defense-in-depth first line so the env-leak gate doesn't wave it through.
-/// `kavach` is allowed so `source .env && kavach db pg-fix-checksum ...` works —
-/// kavach sub-commands take DSN via --dsn flag and never print env values.
+/// Hard-rejected (these print/expose an env value, or can): `echo`/`printf`/`cat`/
+/// `env`/`printenv`/`set`/`export`-with-print, and a raw `bash`/`sh`/`zsh -c` that
+/// could echo a secret. Python stays banned per the global anti-pattern rule.
+/// `psql` is conditionally safe: allowed for READ/INSERT/UPDATE/CREATE but a
+/// destructive verb (DELETE/DROP/TRUNCATE) makes it unsafe here (the dedicated psql
+/// write-bypass gate also hard-blocks it — defense in depth).
 pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
     let lc = downstream.trim().to_lowercase();
-    if lc.starts_with("database_url=") || lc.starts_with("cd ") {
-        return true;
-    }
     let Some(first_token) = lc.split_whitespace().next() else {
-        return false;
+        // empty downstream loads nothing -> nothing to expose
+        return true;
     };
     let basename = std::path::Path::new(first_token)
         .file_name()
         .and_then(|n| n.to_str())
         .map_or(first_token, |b| b);
+    // A `cd <dir>` or `DATABASE_URL=<val>` PREFIX is harmless on its own, but it must
+    // not MASK a leaky command chained after it (`cd /x; printenv`). The whole-string
+    // leak classifier below already scans every `;`/`|`/`&` segment, so fall through
+    // to it rather than blanket-allowing on the prefix. A bare `cd`/assignment with
+    // no chained leak is allowed there (no printer segment present).
     // psql is conditionally safe: allowed only when it carries no destructive
-    // SQL verb. Shared classifier keeps identifier substrings (deleted_at) safe.
-    // Recognise psql as the leading binary OR anywhere in a compound downstream
-    // (`echo ..; psql ..`, `psql .. | head`) — a harmless prefix/pipe must not mask
-    // a safe psql. The destructive-verb classifier stays the real safety gate.
+    // SQL verb. Recognise psql as the leading binary OR anywhere in a compound
+    // downstream (`echo ..; psql ..`, `psql .. | head`) — a harmless prefix/pipe
+    // must not mask a safe psql; the destructive-verb classifier is the real gate.
     if basename == "psql" || invokes_psql(&lc) {
         return crate::gates::sql_destructive::destructive_sql_keyword(&lc).is_none();
     }
-    let safe_binaries = [
-        "sqlx",
-        "cargo",
-        "bun",
-        "make",
-        "npm",
-        "pnpm",
-        "node",
-        "deno",
-        "go",
-        "diesel",
-        "flyway",
-        "liquibase",
-        "alembic",
-        "migrate",
-        "kavach",
-    ];
-    safe_binaries.contains(&basename)
+    // The ONLY genuinely-leaky shapes: an explicit print of an env value, or a raw
+    // shell that can echo one. A secret reaches the context only through these.
+    !leaks_env_value(&lc, basename)
+}
+
+/// True when the downstream EXPLICITLY prints or can print an env value into the
+/// conversation context. This is the narrow, real risk — everything else is a
+/// runner that consumes env silently and is allowed (fail-open).
+///
+/// `cat` is deliberately NOT here: `source .env && cat mig.sql` reads a SQL file,
+/// not the secret. Reading the `.env` file itself is owned by `check_dotenv_read`.
+fn leaks_env_value(lc: &str, basename: &str) -> bool {
+    // A raw shell-with-command (or any python) can `echo $SECRET` — treat as leaky.
+    if basename.starts_with("python") {
+        return true;
+    }
+    if matches!(basename, "bash" | "sh" | "zsh" | "fish") && lc.contains("-c") {
+        return true;
+    }
+    // Builtins whose JOB is to print values/environment, matched at a command
+    // boundary (start, or after a `;`/`|`/`&` separator) so a piped/chained print
+    // (`just info | echo $X`, `cd /x; printenv`) is caught, but an identifier
+    // substring inside an argument is not.
+    lc.split([';', '|', '&'])
+        .map(str::trim)
+        .any(prints_env_value)
+}
+
+/// True when a single command segment is (or begins with) a value-printing builtin.
+fn prints_env_value(seg: &str) -> bool {
+    // Bare dump-the-environment builtins.
+    if matches!(seg, "env" | "printenv" | "export") {
+        return true;
+    }
+    // `set` is special: BARE `set` (or `set VAR=x`) dumps/mutates the environment and
+    // IS leaky, but `set -a` / `set +a` / `set -e` / `set -o pipefail` are shell-OPTION
+    // toggles — the standard idiom for exporting a sourced `.env` to a child runner —
+    // and must NOT be flagged. Leaky only when `set`'s first arg is not a `-`/`+` flag.
+    if seg == "set" {
+        return true;
+    }
+    if let Some(rest) = seg.strip_prefix("set ") {
+        let first = rest.trim_start();
+        return !(first.starts_with('-') || first.starts_with('+'));
+    }
+    // The remaining printers always take a (possibly `$SECRET`) argument.
+    ENV_PRINTERS.iter().any(|p| seg.starts_with(p))
 }
 
 /// True when a `psql` command appears at any command boundary in a compound

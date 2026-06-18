@@ -106,6 +106,8 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         updated_at: None,
         priority: None,
         lane: None,
+        occupied_by: None,
+        occupied_until: None,
     };
     // u2 declares DEPENDS_ON: u1; u3 depends on u2 + an absent 'ghost' key.
     // An absent key is NOT dropped (that falsely marked the dependent ready —
@@ -133,4 +135,26 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
 fn empty_dag_is_safe() {
     let out = render_tiered_text(&RoadmapDag::default());
     assert!(out.contains("0 node(s), 0 edge(s)"), "empty boundary:\n{out}");
+}
+
+#[test]
+fn closed_cards_not_in_ready_now() {
+    // Verify that verified/done cards do NOT appear in TIER 0 "ready now",
+    // even if all their prerequisites are satisfied.
+    // Bug: is_ready() checked prereqs only, ignoring node.entry_status.
+    let d = RoadmapDag {
+        nodes: vec![
+            node("a", "todo"),
+            node("b", "verified"), // closed: should NOT be in ready now
+            node("c", "done"),     // closed: should NOT be in ready now
+        ],
+        edges: vec![],
+    };
+    let out = render_tiered_text(&d);
+    // 'a' is todo with no deps -> READY in TIER 0.
+    assert!(out.contains("a — title a  ✓READY"), "open todo is ready:\n{out}");
+    // 'b' and 'c' are closed -> should NOT appear in the tier output at all.
+    // They have no dependencies, so they would appear in TIER 0 if the bug existed.
+    assert!(!out.contains("b — title b"), "verified card must NOT appear in tiers:\n{out}");
+    assert!(!out.contains("c — title c"), "done card must NOT appear in tiers:\n{out}");
 }

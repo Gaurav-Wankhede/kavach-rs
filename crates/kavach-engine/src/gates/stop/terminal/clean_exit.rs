@@ -83,10 +83,29 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push('\n');
         full.push_str(loophole_ctx);
     }
+    // DB-C dynamic injection: the owner-editable `gate.injection.clean_exit` DB row,
+    // if present, rides along here — proving the binary carries NO advisory prose
+    // for this gate; the text is data-driven + hot-editable (no rebuild). Absent →
+    // nothing appended (fail-open). Any gate adopts this with one `gate_injection` call.
+    if let Some(inj) =
+        crate::gates::stop_dispatch::query::gate_injection(&ctx.session.project, "clean_exit")
+    {
+        full.push('\n');
+        full.push_str(&inj);
+    }
     let shallow_ctx = ctx.shallow_advisory.as_deref().unwrap_or("");
     if !shallow_ctx.is_empty() {
         full.push('\n');
         full.push_str(shallow_ctx);
+    }
+    // Continuation-menu ride-along: the final message asked "continue or pause?"
+    // while THIS verdict already commands continuation. Append the imperative
+    // nudge so the stop context itself contradicts the permission-seeking question
+    // (advisory — the stop still proceeds; the next turn must continue, not re-ask).
+    let continuation_ctx = ctx.continuation_advisory.as_deref().unwrap_or("");
+    if !continuation_ctx.is_empty() {
+        full.push('\n');
+        full.push_str(continuation_ctx);
     }
     super::super::pattern_extract::trigger_on_verify(ctx.session);
 

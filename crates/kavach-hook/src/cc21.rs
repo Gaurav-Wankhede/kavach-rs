@@ -63,6 +63,14 @@ pub fn exit_prompt_context(context: &str) -> HookAction {
     HookAction::Done
 }
 
+/// `UserPromptSubmit`: block with reason via hookSpecificOutput.
+#[must_use]
+pub fn exit_prompt_submit_block(reason: &str) -> HookAction {
+    let resp = HookResponse::new_user_prompt_submit_block(reason);
+    output(&resp);
+    HookAction::Done
+}
+
 /// `SessionStart`: context via systemMessage (no hookSpecificOutput).
 #[must_use]
 pub fn exit_session_start_context(context: &str) -> HookAction {

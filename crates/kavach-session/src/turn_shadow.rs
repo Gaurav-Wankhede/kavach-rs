@@ -1,6 +1,57 @@
 //! Turn shadow + post-tool advisory queue for Cursor relay (Phases 1 & 5).
 use crate::state::SessionState;
 
+/// The realized verify outcome for a card, on the `[REWARD:last]` followup.
+///
+/// Four states, NOT a bool: the mechanical 3-witness oracle yields `Passed`
+/// (+1) / `Failed` (-1); a genuine no-signal turn yields `Abstain` (0, not a
+/// graded sample); and — RLAIF (Reinforcement Learning from AI Feedback, Bai
+/// et al. 2022) — when the mechanical oracle would otherwise abstain, an
+/// AUTONOMOUS AI judgment supplies `AiJudged(good)` so the bandit keeps
+/// learning off AI feedback (a graded ±1 sample) where the mechanical signal
+/// is blind. SOURCE: kavach `decision.arch.harness-rl.design-2026-06-05`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RewardOutcome {
+    /// A verified-clean receipt landed (+1, mechanical 3-witness).
+    Passed,
+    /// A PROVEN failure (-1, mechanical 3-witness).
+    Failed,
+    /// RLAIF: no mechanical receipt, but the AI judged the action's observed
+    /// effect — `true` = net advance (+1), `false` = net regression (-1).
+    AiJudged(bool),
+    /// No verification signal at all — neither +1 nor -1, does NOT count toward
+    /// the session total (the false-negative-reward fix, preserved).
+    Abstain,
+}
+
+impl RewardOutcome {
+    /// `Some(true/false)` for a graded ±1 sample (mechanical OR AI-judged),
+    /// `None` for a true abstention. The single place the four states collapse
+    /// to the bandit's pass/total accounting so RLAIF and mechanical samples are
+    /// counted identically.
+    #[must_use]
+    pub const fn graded(self) -> Option<bool> {
+        match self {
+            Self::Passed | Self::AiJudged(true) => Some(true),
+            Self::Failed | Self::AiJudged(false) => Some(false),
+            Self::Abstain => None,
+        }
+    }
+
+    /// The human-readable `[REWARD:last]` tag for this outcome.
+    #[must_use]
+    pub const fn tag(self) -> &'static str {
+        match self {
+            Self::Passed => "PASSED (+1.0)",
+            Self::Failed => "FAILED (-1.0)",
+            Self::AiJudged(true) => "AI_JUDGED good (+1.0, RLAIF)",
+            Self::AiJudged(false) => "AI_JUDGED bad (-1.0, RLAIF)",
+            Self::Abstain => "ABSTAINED (no verification signal; 0.0, not penalized)",
+        }
+    }
+}
+
 /// Max bytes for the compact per-turn shadow (never compete with `[AUTONOMY_CONTRACT]`).
 const TURN_SHADOW_CAP: usize = 800;
 /// Max FIFO advisories queued between flushes.
@@ -123,24 +174,20 @@ impl SessionState {
 
     /// Record verify outcome for `[REWARD:last]` stop followup.
     ///
-    /// Tri-state, NOT a bool: `Some(true)` = a verified-clean receipt landed
-    /// (+1); `Some(false)` = a PROVEN failure (-1); `None` = no verification
-    /// signal at all (abstain — neither +1 nor -1, and it does NOT count toward
-    /// the session total). FIX [false-negative reward / L2]: the old `bool`
-    /// conflated "no receipt" with "failed", so an out-of-band-verified card
-    /// (e.g. an HTTP-200 release with no machine receipt) was scored -1.0. An
-    /// absent signal is an abstention, never a penalty.
-    pub fn record_reward_outcome(&mut self, card: &str, outcome: Option<bool>) {
+    /// Four-state [`RewardOutcome`], NOT a bool: `Passed` (+1) / `Failed` (-1)
+    /// are the mechanical 3-witness oracle; `AiJudged(good)` is the RLAIF path
+    /// that supplies a graded ±1 from an AUTONOMOUS AI judgment where the
+    /// mechanical oracle is blind; `Abstain` is a true no-signal turn (neither
+    /// +1 nor -1, does NOT count toward the session total). FIX [false-negative
+    /// reward / L2]: the old `bool` conflated "no receipt" with "failed", so an
+    /// out-of-band-verified card was scored -1.0 — `Abstain` keeps that fix while
+    /// RLAIF converts the formerly-inert 0.0 into a learnable signal.
+    pub fn record_reward_outcome(&mut self, card: &str, outcome: RewardOutcome) {
         let card = if card.is_empty() { "(card)" } else { card };
-        let tag = match outcome {
-            Some(true) => "PASSED (+1.0)",
-            Some(false) => "FAILED (-1.0)",
-            None => "ABSTAINED (no verification signal; 0.0, not penalized)",
-        };
-        self.last_reward_summary = format!("last_action: {card} → verify {tag}");
-        // Abstention is NOT a graded sample: it must not inflate the total or
-        // depress the pass-rate. Only a definite outcome counts.
-        if let Some(passed) = outcome {
+        self.last_reward_summary = format!("last_action: {card} → verify {}", outcome.tag());
+        // Only a GRADED sample (mechanical or AI-judged) counts toward the total;
+        // a true abstention must not inflate the total or depress the pass-rate.
+        if let Some(passed) = outcome.graded() {
             self.reward_session_total = self.reward_session_total.saturating_add(1);
             if passed {
                 self.reward_session_pass = self.reward_session_pass.saturating_add(1);

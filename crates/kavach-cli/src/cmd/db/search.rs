@@ -2,7 +2,7 @@
 // SOURCE: https://docs.rs/kavach-surreal — FilterBuilder API
 use kavach_surreal::{FilterBuilder, FilterExpr};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::RecordId;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};

@@ -27,6 +27,53 @@ pub(super) fn run(
         return 1;
     }
 
+    // EVIDENCE GATE (owner directive 2026-06-18): a roadmap promotion to
+    // `done`/`verified` is REFUSED unless the objective workspace witnesses
+    // (cargo check+clippy+nextest+diff, or KAVACH_VERIFY_CMD) pass NOW. This binds
+    // proof to the claim at the agent-facing entry point — the DB can no longer
+    // record a completion claim that the build does not support (the false-`done`
+    // hole). Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band owner override.
+    if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() != Ok("1") {
+        use kavach_engine::StatusGateVerdict;
+        match kavach_engine::verify_status_promotion(category, status) {
+            StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {}
+            StatusGateVerdict::RefusedWitnessFailed => {
+                let msg = format!(
+                    "REFUSED: cannot promote [{category}] {key} -> {status}: workspace witnesses \
+                     FAILED (build/clippy/nextest/diff). Fix the implementation until it builds \
+                     and tests pass, then retry. (evidence-over-inference: a `{status}` claim must \
+                     be backed by a passing build, not self-report.)"
+                );
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+            StatusGateVerdict::RefusedUnprovable => {
+                let msg = format!(
+                    "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
+                     here (no Rust workspace and no KAVACH_VERIFY_CMD). Set KAVACH_VERIFY_CMD to a \
+                     command that proves the work, or KAVACH_VERIFY_BYPASS=1 for an owner override."
+                );
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+            // Fail-closed on any future verdict variant (`StatusGateVerdict` is
+            // #[non_exhaustive]): an unrecognized verdict REFUSES the promotion
+            // rather than silently allowing an unproven claim.
+            _ => {
+                if let Err(io_err) = ewrite_or_exit(
+                    "REFUSED: status gate returned an unrecognized verdict (fail-closed).",
+                ) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+        }
+    }
+
     // RPC-first: try daemon, fall back to direct DB on unavailable
     match super::rpc_client::status_update(project_slug, category, key, status) {
         Ok(result) if result.success => {
@@ -142,7 +189,7 @@ pub(super) fn run(
 /// because the primary status-update already succeeded. The graph refresh is
 /// a secondary signal; primary stream success is the user-facing contract.
 async fn refresh_memory_entry_graph(
-    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     category: &str,
     entry_key: &str,
     project_slug: &str,

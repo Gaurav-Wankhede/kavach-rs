@@ -22,7 +22,7 @@ fn unit_vec(hot: usize) -> Vec<f32> {
 /// Helper returns `Result` and propagates with `?` — it asserts nothing, so it
 /// does not trip `panic_in_result_fn` (which fires only on asserting bodies).
 async fn seed(
-    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     gate: &str,
     fix: &str,
     emb: &[f32],

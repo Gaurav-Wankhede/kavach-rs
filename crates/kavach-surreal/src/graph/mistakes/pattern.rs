@@ -2,7 +2,7 @@
 // correct_action centroid. Stored on entity table with entity_type='anti_pattern'.
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 /// Upsert an anti-pattern entity with a centroid embedding.

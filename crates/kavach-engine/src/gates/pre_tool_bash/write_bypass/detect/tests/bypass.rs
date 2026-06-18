@@ -37,6 +37,42 @@ fn test_write_bypass_allowed() {
 }
 
 #[test]
+fn quoted_redirect_glyph_in_arg_not_a_bypass() {
+    // FP fixed: a `>` (or `<placeholder>`) INSIDE a quoted argument is data, not
+    // a shell redirect. `kavach db write --content "...<cmd>... a>b ..."` writes a
+    // DB row through the single-writer daemon, not a file — must NOT be blocked.
+    assert!(!is_write_bypass(
+        "kavach db write --new --project p --category decision --key k --title t --content \"use set -a && . ./.env && set +a && <cmd>; CREATE TABLE IF NOT EXISTS x; widens 3 -> 4\""
+    ));
+    assert!(!is_write_bypass(
+        "kavach db write --content 'derive <canonical def> then run <bin>'"
+    ));
+    assert!(!is_write_bypass("echo 'a>b and c>d are data'"));
+    assert!(!is_write_bypass("printf '%s' \"len > 5 ? yes : no\""));
+}
+
+#[test]
+fn multibyte_utf8_in_content_does_not_panic() {
+    // Malformed-input lens: a multi-byte char (→, em-dash, emoji) adjacent to a
+    // separator must not panic the byte-indexed splitter. Must classify as data.
+    assert!(!is_write_bypass(
+        "kavach db write --content \"step 3 → 4; widens — see 日本語 and 🚀; CREATE TABLE x\""
+    ));
+    assert!(!is_write_bypass("echo 'café → résumé; naïve'"));
+}
+
+#[test]
+fn real_redirect_outside_quotes_still_blocked() {
+    // The quote-skip must NOT weaken detection: a genuine redirect to a source
+    // file, even after a quoted arg, is still a bypass.
+    assert!(is_write_bypass(
+        "kavach db get x --content 'note' > /Users/me/proj/src/lib.rs"
+    ));
+    assert!(is_write_bypass("echo 'safe text' > config.toml"));
+    assert!(is_write_bypass("printf '%s' \"$DATA\" >> out.sql"));
+}
+
+#[test]
 fn python_subprocess_with_open_in_arg_not_blocked() {
     assert!(!is_write_bypass(
         "python3 -c \"import subprocess,os; subprocess.run(['psql', os.environ['DATABASE_URL']], input=sql, capture_output=True)\""

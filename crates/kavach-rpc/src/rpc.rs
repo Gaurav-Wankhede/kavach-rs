@@ -5,7 +5,7 @@
 use crate::error::{internal, invalid_params};
 use crate::methods::{
     bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates, graph,
-    lease, mistake, mistake_top, projects, rag, replay, roadmap, session, system, trust,
+    lease, mistake, mistake_top, projects, rag, replay, roadmap, run, session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
@@ -118,6 +118,51 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             projects::ancestry(&ctx, p).await
         })
         .map_err(|e| internal(format!("register projects.ancestry: {e}")))?;
+
+    module
+        .register_async_method("run.list", |params, ctx, _ext| async move {
+            let p: run::ListParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::list(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.list: {e}")))?;
+
+    module
+        .register_async_method("run.record", |params, ctx, _ext| async move {
+            let p: run::RecordParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::record(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.record: {e}")))?;
+
+    module
+        .register_async_method("run.update_status", |params, ctx, _ext| async move {
+            let p: run::UpdateStatusParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::update_status(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.update_status: {e}")))?;
+
+    module
+        .register_async_method("run.cancel", |params, ctx, _ext| async move {
+            let p: run::CancelParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::cancel(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.cancel: {e}")))?;
+
+    module
+        .register_async_method("run.spawn", |params, ctx, _ext| async move {
+            let p: run::SpawnParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::spawn(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.spawn: {e}")))?;
 
     module
         .register_async_method(

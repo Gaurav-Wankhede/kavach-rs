@@ -15,7 +15,7 @@
 //   TIME: O(N log N), N = anti_pattern count. SPACE: O(N). YEAR: 2026.
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// One recurrence-ranked anti-pattern: the clustered behavioral lesson plus how

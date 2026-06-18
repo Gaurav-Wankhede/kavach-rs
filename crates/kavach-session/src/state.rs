@@ -159,6 +159,12 @@ pub struct SessionState {
     /// Turn when a file was last written/edited. Used by `completion_guard`
     /// to skip review isolation when recent turns were read-only.
     pub last_write_turn: i32,
+    /// Turn at which the USER issued a directive (set by the intent gate on every
+    /// `UserPromptSubmit`). When this equals `turn_count` at a Stop, the user is
+    /// STEERING this turn -> the stop gate must NOT dispatch a DIFFERENT kanban
+    /// card over the user's live instruction (the user-focus override). The
+    /// autonomous loop resumes only on a stop where the user did NOT just speak.
+    pub user_directive_turn: i32,
     /// User explicitly confirmed creating a new package manifest in this workspace.
     /// Set by intent gate when user says "create new crate", "yes proceed", etc.
     /// Cleared after the Write succeeds (post-write gate).
@@ -276,6 +282,15 @@ pub struct SessionState {
     /// proof-gated completion signal — the stop gate trusts THIS, not the
     /// self-asserted `goal_achieved`. A hallucinated "done" cannot set it.
     pub goal_receipt_pass: bool,
+    /// RLAIF (Reinforcement Learning from AI Feedback) verdict for the active
+    /// goal: `Some(true)` = the AI judged the work a net advance, `Some(false)` =
+    /// a net regression, `None` = no AI judgment this session. Read ONLY when the
+    /// mechanical `goal_receipt_pass` is false (no machine receipt) — it fills the
+    /// reward blind spot where the 3-witness oracle would otherwise abstain, so
+    /// the bandit keeps learning off AI feedback. The mechanical receipt always
+    /// wins; this never overrides ground truth. SOURCE: kavach
+    /// `decision.arch.harness-rl.design-2026-06-05` (Bai et al. 2022, RLAIF).
+    pub ai_verdict: Option<bool>,
     /// Turn when `goal_state` was last set. For staleness detection.
     pub goal_set_turn: i32,
 

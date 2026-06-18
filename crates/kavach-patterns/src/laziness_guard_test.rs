@@ -1,7 +1,16 @@
 //! Tests for the laziness guard — block lazy-recommendation, allow real direction.
 
-use super::detect_lazy_recommendation;
+use super::{detect_lazy_recommendation, detect_researchable_question};
 use serde_json::json;
+
+/// Build a single-question payload with an explicit STEM (the researchable
+/// detector reads the question stem for factual forms, unlike the lazy detector).
+fn ask_q(stem: &str, opts: &[(&str, &str)]) -> serde_json::Value {
+    json!({ "questions": [ {
+        "question": stem, "header": "h", "multiSelect": false,
+        "options": opts.iter().map(|(l, d)| json!({"label": l, "description": d})).collect::<Vec<_>>()
+    } ] })
+}
 
 fn ask(opts: &[(&str, &str)]) -> serde_json::Value {
     json!({ "questions": [ {
@@ -137,4 +146,64 @@ fn silent_on_empty_or_malformed_input() {
     assert!(
         detect_lazy_recommendation(&json!({"questions": [{"options": [{"label": 1}]}]})).is_none()
     );
+}
+
+// ── detect_researchable_question (D4) ───────────────────────────────────────
+
+#[test]
+fn fires_on_researchable_library_choice() {
+    // "Which library — Reqwest or Hyper?" is internet-answerable, not the user's call.
+    let input = ask_q(
+        "Which HTTP library should I use?",
+        &[("Reqwest", "high-level client"), ("Hyper", "low-level")],
+    );
+    let r = detect_researchable_question(&input).expect("researchable question must nudge");
+    assert!(r.contains("[RESEARCH_FIRST]"));
+    assert!(r.contains("WebSearch") || r.contains("authoritative"));
+}
+
+#[test]
+fn fires_on_api_signature_and_flag_questions() {
+    for (stem, opt) in [
+        ("What is the correct flag for cargo to check the workspace?", "--workspace"),
+        ("Which version of Dioxus supports this feature?", "0.7.9"),
+        ("What is the method name on the reqwest Client?", "get"),
+    ] {
+        let input = ask_q(stem, &[(opt, "a"), ("other", "b")]);
+        assert!(
+            detect_researchable_question(&input).is_some(),
+            "researchable factual question must fire: {stem}"
+        );
+    }
+}
+
+#[test]
+fn silent_on_genuine_direction_question() {
+    // A real tradeoff scoped to THIS project / priority is the user's call — never nudge.
+    let input = ask_q(
+        "Which approach fits our latency budget better?",
+        &[("In-process cache", "lower latency, more memory"), ("Redis", "shared, network hop")],
+    );
+    assert!(
+        detect_researchable_question(&input).is_none(),
+        "a genuine direction tradeoff must not be nudged toward WebSearch"
+    );
+}
+
+#[test]
+fn silent_on_authorization_question() {
+    // Irreversible-action authorization is never researchable.
+    let input = ask_q(
+        "Should I push these commits and deploy to production?",
+        &[("Push + deploy", "go live"), ("Hold", "wait")],
+    );
+    assert!(detect_researchable_question(&input).is_none(), "authz question is the user's call");
+}
+
+#[test]
+fn researchable_silent_on_empty_or_malformed() {
+    assert!(detect_researchable_question(&json!({})).is_none());
+    assert!(detect_researchable_question(&json!({"questions": []})).is_none());
+    assert!(detect_researchable_question(&json!("nope")).is_none());
+    assert!(detect_researchable_question(&json!({"questions": "x"})).is_none());
 }

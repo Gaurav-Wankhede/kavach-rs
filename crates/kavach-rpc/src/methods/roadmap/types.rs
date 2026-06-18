@@ -23,6 +23,13 @@ pub struct NextOpenTaskParams {
     /// then the unlaned (NULL) backlog, never a foreign lane.
     #[serde(default)]
     pub lane: Option<String>,
+    /// The dispatching session's `KAVACH_SESSION_ID`. A card held by a LIVE lease
+    /// of a DIFFERENT session is excluded from selection (multi-session
+    /// task-steal fix — two terminals/tools no longer grab the same card).
+    /// `None`/empty ⇒ any live-leased card is treated as foreign (fail-closed:
+    /// an un-identified session never steals another's active card).
+    #[serde(default)]
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

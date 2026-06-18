@@ -29,7 +29,8 @@ pub use cc21::{
     exit_notification_context, exit_notification_with_sequence, exit_post_tool_block,
     exit_post_tool_context, exit_post_tool_failure_context, exit_post_tool_trimmed,
     exit_pre_tool_allow, exit_pre_tool_ask, exit_pre_tool_deny, exit_prompt_context,
-    exit_session_start_context, exit_session_start_full, exit_stop_block, exit_stop_context,
+    exit_prompt_submit_block, exit_session_start_context, exit_session_start_full,
+    exit_stop_block, exit_stop_context,
 };
 
 // Re-export lifecycle functions at crate root

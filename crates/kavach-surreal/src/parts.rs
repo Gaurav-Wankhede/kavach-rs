@@ -2,7 +2,7 @@
 // sql-safe: queries use static literals + .bind() for params, no user input concatenation
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 #[derive(Debug, Clone, SurrealValue)]

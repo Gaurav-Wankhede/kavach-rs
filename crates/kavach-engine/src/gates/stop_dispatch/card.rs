@@ -106,15 +106,3 @@ pub(crate) fn claim_card(project_slug: &str, key: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// True iff a single in-flight card is SATURATED — the re-block breaker is past
-/// its spin ceiling AND no progress (file/DB write) happened since the last
-/// Stop. Only then may the terminal proceed despite a non-empty queue, so one
-/// stuck card cannot wedge the session forever. While progress is being made
-/// this is FALSE no matter how high the breaker climbed.
-pub(crate) const fn is_backlog_saturated(
-    stop_reblock_count: i32,
-    has_progress_since_last_stop: bool,
-) -> bool {
-    stop_reblock_count > kavach_session::SessionState::max_stop_reblocks()
-        && !has_progress_since_last_stop
-}

@@ -128,6 +128,148 @@ fn extract_option_groups(tool_input: &serde_json::Value) -> Vec<Vec<Opt>> {
     groups
 }
 
+/// Tokens that mark a question's subject as a CONCRETE EXTERNAL artifact whose
+/// correct value lives on the internet (docs / source / RFC), not in the user's
+/// head: a library, an API, a version, a flag, an algorithm. A question framed
+/// around these is RESEARCHABLE — the agent must `WebSearch` the authoritative
+/// source, not ask the user to recall it.
+const RESEARCHABLE_SUBJECT: &[&str] = &[
+    "library",
+    "crate",
+    "package",
+    "dependency",
+    "api ",
+    "endpoint",
+    "signature",
+    "function name",
+    "method name",
+    "flag",
+    "cli option",
+    "command-line",
+    "version",
+    "semver",
+    "compatible",
+    "supported",
+    "algorithm",
+    "data structure",
+    "protocol",
+    "rfc",
+    "spec",
+    "syntax",
+    "config key",
+    "env var",
+    "environment variable",
+    "default value",
+    "which method",
+    "which function",
+    "correct way to",
+    "right way to",
+];
+
+/// Question phrasings that ask for a FACTUAL/TECHNICAL answer ("which / what is")
+/// rather than a DIRECTION tradeoff. Combined with a researchable subject, these
+/// mark a question the internet answers definitively.
+const FACTUAL_QUESTION_FORMS: &[&str] = &[
+    "which ",
+    "what is the",
+    "what's the",
+    "whats the",
+    "how do i",
+    "how to",
+    "does it support",
+    "is it compatible",
+    "what version",
+    "what flag",
+    "what api",
+];
+
+/// Markers of a GENUINE direction / authorization decision — the user's call,
+/// never researchable. Their presence SUPPRESSES the researchable-question flag
+/// so a real tradeoff ("which approach fits OUR latency budget", "priority",
+/// "should I push/delete/deploy") is never nudged toward `WebSearch`.
+const DIRECTION_OR_AUTH_MARKERS: &[&str] = &[
+    "priority",
+    "which approach",
+    "tradeoff",
+    "trade-off",
+    "design a",
+    "architecture",
+    "scope",
+    "push",
+    "delete",
+    "deploy",
+    "send",
+    "merge",
+    "release",
+    "our ",
+    "this project",
+    "business",
+    "user-facing",
+    "prefer",
+    "preference",
+    "irreversible",
+];
+
+/// Return `Some(advisory)` when an `AskUserQuestion` poses a RESEARCHABLE
+/// factual/technical question.
+///
+/// "Researchable" = a library / API / version / flag / algorithm choice
+/// answerable by `WebSearch`, with NO genuine direction or authorization marker.
+/// `None` for real direction/authorization questions. ADVISORY tier (not a hard
+/// block): the false-positive surface is wider than the effort-split case, and the
+/// correct response is "research first", a nudge — not a deny.
+#[must_use]
+pub fn detect_researchable_question(tool_input: &serde_json::Value) -> Option<String> {
+    let questions = tool_input.get("questions").and_then(|q| q.as_array())?;
+    for q in questions {
+        let stem = q
+            .get("question")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_lowercase();
+        // Fold the option text in too: the subject often lives in the options
+        // ("Reqwest" / "Hyper") while the stem only says "which".
+        let opts_text = q
+            .get("options")
+            .and_then(|o| o.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|o| {
+                        let l = o.get("label").and_then(|v| v.as_str()).unwrap_or("");
+                        let d = o.get("description").and_then(|v| v.as_str()).unwrap_or("");
+                        format!("{l} {d}")
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .unwrap_or_default()
+            .to_lowercase();
+        let haystack = format!("{stem} {opts_text}");
+        // A genuine direction/authorization question is the user's call — never nudge it.
+        if any_marker(&haystack, DIRECTION_OR_AUTH_MARKERS) {
+            continue;
+        }
+        let researchable_subject = any_marker(&haystack, RESEARCHABLE_SUBJECT);
+        let factual_form = any_marker(&stem, FACTUAL_QUESTION_FORMS);
+        if researchable_subject && factual_form {
+            return Some(researchable_advisory());
+        }
+    }
+    None
+}
+
+fn researchable_advisory() -> String {
+    "[RESEARCH_FIRST] This AskUserQuestion asks a FACTUAL/TECHNICAL question \
+     (a library / API / version / flag / algorithm choice) whose authoritative \
+     answer lives on the internet — official docs, the dependency's own \
+     --help/source, the upstream RFC/issue — NOT in the user's head. Do NOT ask: \
+     WebSearch the current authoritative source, corroborate across 2+ references \
+     (2026), adopt the precise contract, and sync the finding to the kavach DB. \
+     Ask the user ONLY for a genuine DIRECTION tradeoff or IRREVERSIBLE \
+     authorization (global CLAUDE.md §research_before_building / §act_not_narrate)."
+        .to_owned()
+}
+
 /// Return `Some(reason)` when an `AskUserQuestion` recommends the lower-effort
 /// path over a higher-effort do-the-work sibling — the labor-as-direction
 /// loophole. `None` for genuine direction questions.

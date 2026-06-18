@@ -30,6 +30,64 @@ fn safe_downstream_rejects_python_and_bash() {
 }
 
 #[test]
+fn safe_downstream_allows_just_make_and_unknown_runners() {
+    // THE FIX: a task-runner that consumes env silently is SAFE here, even if it is
+    // not on any fixed list. `just` (the omission that strangled `source .env && just
+    // migrate`), `task`, `mise`, `dotenv`, and any unknown runner all pass — the gate
+    // must not hard-block a genuine migration command.
+    assert!(is_safe_downstream("just migrate"));
+    assert!(is_safe_downstream("just migrate-info"));
+    assert!(is_safe_downstream("task db:migrate"));
+    assert!(is_safe_downstream("mise run migrate"));
+    assert!(is_safe_downstream("dotenv -- sqlx migrate run"));
+    assert!(is_safe_downstream("some-unknown-runner deploy"));
+}
+
+#[test]
+fn safe_downstream_runner_with_pager_pipe_stays_safe() {
+    // Piping a SAFE runner's output to a pager must NOT flip it to unsafe — the
+    // pager shows the runner's stdout (migration status), never the raw env value.
+    assert!(is_safe_downstream("just migrate-info | tail -8"));
+    assert!(is_safe_downstream("sqlx migrate info 2>&1 | tail"));
+    assert!(is_safe_downstream("cargo run | head -20"));
+}
+
+#[test]
+fn safe_downstream_rejects_explicit_env_value_print() {
+    // The narrow REAL risk: a command whose job is to print the secret into context.
+    assert!(!is_safe_downstream("echo $DATABASE_URL"));
+    assert!(!is_safe_downstream("printf '%s' \"$SECRET\""));
+    assert!(!is_safe_downstream("printenv"));
+    assert!(!is_safe_downstream("env"));
+    assert!(!is_safe_downstream("set"));
+    // ...and a leaky print hiding behind a safe-looking prefix/pipe.
+    assert!(!is_safe_downstream("just info | echo $DATABASE_URL"));
+    assert!(!is_safe_downstream("cd /x; printenv"));
+}
+
+#[test]
+fn safe_downstream_allows_cat_of_non_env_file() {
+    // `source .env && cat mig.sql` reads a SQL file, not the secret — allowed.
+    // (Reading the .env file itself is owned by the separate check_dotenv_read gate.)
+    assert!(is_safe_downstream("cat migrations_local/341_step_up.sql"));
+}
+
+#[test]
+fn safe_downstream_allows_set_shell_option_toggles() {
+    // `set -a` / `set +a` / `set -e` / `set -o pipefail` are shell-OPTION toggles —
+    // the standard idiom for exporting a sourced .env to a child runner — NOT an
+    // environment dump. They must NOT be flagged (regression: blocked the exact
+    // `set -a && . ./.env && set +a && cargo run …` migration command).
+    assert!(is_safe_downstream("set -a && . ./.env && set +a && cargo run --bin x"));
+    assert!(is_safe_downstream("set -e; cargo build"));
+    assert!(is_safe_downstream("set +a && just migrate"));
+    assert!(is_safe_downstream("set -o pipefail; sqlx migrate run"));
+    // ...but a BARE `set` (or piped to a pager) still dumps the env — stays blocked.
+    assert!(!is_safe_downstream("set"));
+    assert!(!is_safe_downstream("set | grep DATABASE"));
+}
+
+#[test]
 fn safe_downstream_psql_is_operation_aware() {
     // psql consuming a DSN for a read/write op is safe — it never echoes the env.
     assert!(is_safe_downstream("psql $DATABASE_URL -c 'SELECT 1'"));

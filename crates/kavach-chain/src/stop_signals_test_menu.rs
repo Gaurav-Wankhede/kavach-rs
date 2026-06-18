@@ -10,6 +10,12 @@ fn continuation_menu_blocks_choice_offering() {
         "Want me to continue with the migration or switch to the API work?",
         "I can continue here, or pivot to the other thread — let me know which to proceed.",
         "say go and i'll continue, or redirect me to the other task",
+        // EXACT verbatim transcript the user reported (2026-06-17): the
+        // continue-or-PAUSE form, with `[AUTO_CONTINUE] runnable=0` from the gate.
+        // "pause here" is NOT in the or-target alternation, but the `(?:want|...)
+        // me to (?:continue|proceed|keep going) ... \bor\b` arm fires on the
+        // "Want me to continue ... or" prefix regardless of the post-`or` clause.
+        "Want me to continue to a new card, or pause here?",
     ] {
         assert!(detect_continuation_menu(m).unwrap(), "missed: {m}");
     }

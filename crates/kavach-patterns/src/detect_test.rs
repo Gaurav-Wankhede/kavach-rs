@@ -75,6 +75,55 @@ fn test_stub_body_in_handler() {
 }
 
 #[test]
+fn empty_response_in_prod_handler_still_flags() {
+    // EMPTY_RESPONSE (pattern 58) MUST still fire on a production handler.
+    let code = "async fn get_user() -> impl IntoResponse {\n    Json(json!({}))\n}";
+    assert!(
+        detect_antiprod("src/routes/handler.rs", code)
+            .iter()
+            .any(|x| x.code == "EMPTY_RESPONSE"),
+        "EMPTY_RESPONSE must still fire on a production handler"
+    );
+}
+
+#[test]
+fn empty_response_in_tests_dir_handler_is_not_flagged() {
+    // Same content under tests/ is a fixture — NO EMPTY_RESPONSE false-positive.
+    let code = "async fn get_user() -> impl IntoResponse {\n    Json(json!({}))\n}";
+    assert!(
+        !detect_antiprod("crates/x/tests/roundtrip_handler.rs", code)
+            .iter()
+            .any(|x| x.code == "EMPTY_RESPONSE"),
+        "tests/ path must not raise EMPTY_RESPONSE"
+    );
+}
+
+#[test]
+fn empty_response_in_tools_binary_main_is_not_flagged() {
+    // A CLI/migrator binary under /tools/ is NOT an HTTP handler — its `main`
+    // ending in `Ok(())` is correct, not an "empty response". FP that blocked dbx.
+    let code = "async fn main() -> anyhow::Result<()> {\n    run().await?;\n    Ok(())\n}";
+    assert!(
+        !detect_antiprod("crates/tools/dbx/src/main.rs", code)
+            .iter()
+            .any(|x| x.code == "EMPTY_RESPONSE"),
+        "/tools/ binary main must not raise EMPTY_RESPONSE"
+    );
+}
+
+#[test]
+fn empty_response_under_cfg_test_is_not_flagged() {
+    // A #[cfg(test)] module inside a handler file is a test context — no FP.
+    let code = "#[cfg(test)]\nmod tests {\n    async fn get_user() -> impl IntoResponse { Json(json!({})) }\n}";
+    assert!(
+        !detect_antiprod("src/routes/handler.rs", code)
+            .iter()
+            .any(|x| x.code == "EMPTY_RESPONSE"),
+        "#[cfg(test)] module must not raise EMPTY_RESPONSE"
+    );
+}
+
+#[test]
 fn test_n_plus_1_in_handler() {
     let code = "for user in users {\n    let posts = query(\"SELECT id, name FROM posts WHERE user_id = $1\");\n}";
     assert!(

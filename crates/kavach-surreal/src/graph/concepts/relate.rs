@@ -8,7 +8,7 @@
 use crate::error::{Error, Result};
 use crate::graph::dynamic::{ALLOWED_ONTOLOGY_RELS, is_bridge_rel};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 fn validate_ontology(rel: &str) -> Result<()> {
     if ALLOWED_ONTOLOGY_RELS.contains(&rel) {

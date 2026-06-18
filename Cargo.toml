@@ -78,16 +78,18 @@ tokio-util = { version = "0.7", features = ["rt"] }
 parking_lot = "0.12"
 aho-corasick = "1"
 tracing = "0.1"
-surrealdb = { version = "3.1.4", default-features = false, features = ["kv-rocksdb", "kv-mem"] }
+surrealdb = { version = "3.1.4", default-features = false, features = ["kv-rocksdb", "kv-mem", "protocol-ws"] }
 surrealdb-types = "3.1.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "signal", "net"] }
 jsonrpsee = { version = "0.24", features = ["server", "macros"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-# Dioxus 0.7 umbrella crate. Default features include the prelude (signals, rsx,
-# component macro, hooks) — leave defaults on; per-platform feature is set in the
-# consumer crate (e.g. dioxus/desktop in kavach-app).
-# SOURCE: https://dioxuslabs.com/learn/0.7/guides/platforms/
-dioxus = { version = "0.7" }
+# kavach-web — server-rendered HTMX UI (replaces the removed Dioxus desktop GUI).
+# axum 0.8 HTTP server on 127.0.0.1:777; maud for compile-time-checked HTML
+# (no axum feature — handlers return axum::response::Html<String> via
+# Markup::into_string(), sidestepping maud<->axum version coupling).
+# SOURCE: https://docs.rs/axum/0.8 + https://docs.rs/maud/0.26
+axum = { version = "0.8", features = ["macros"] }
+maud = "0.26"
 tower-http = { version = "0.6", features = ["fs", "cors", "validate-request"] }
 # Pinned to 0.4 to match jsonrpsee 0.24's tower — set_http_middleware takes
 # jsonrpsee's tower::ServiceBuilder; a 0.5 ServiceBuilder is a distinct type.

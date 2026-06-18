@@ -1,5 +1,5 @@
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::RecordId;
 
 use super::kanban::is_done_title;

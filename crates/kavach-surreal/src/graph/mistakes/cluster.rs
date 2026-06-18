@@ -1,7 +1,7 @@
 // split: utility graph clustering module, not a handler
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 pub const COSINE_THRESHOLD: f32 = 0.85;

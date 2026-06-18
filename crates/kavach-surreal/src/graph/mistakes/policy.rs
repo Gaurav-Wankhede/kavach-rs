@@ -8,7 +8,7 @@
 // See roadmap/unit.harness-rl.p6-policy-promotion-loop.
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 /// The promoted advisory policy distribution plus the OPE evidence that won it.

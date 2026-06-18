@@ -22,7 +22,7 @@ const SESSION: &str = "sess_abc";
 
 /// Seed the lease row the way the live system does before a first acquire
 /// (acquire itself returns `RecordNotFound` on a missing record).
-async fn seed(db: &surrealdb::Surreal<surrealdb::engine::local::Db>) {
+async fn seed(db: &surrealdb::Surreal<surrealdb::engine::any::Any>) {
     db.query(
         "CREATE type::record($t, $k) SET occupied_by=NONE, occupied_until=NONE, occupied_epoch=0",
     )

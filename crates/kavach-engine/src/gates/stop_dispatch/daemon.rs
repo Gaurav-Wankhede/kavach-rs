@@ -2,8 +2,10 @@
 //! When RPC stays unreachable (e.g. Cursor hook sandbox blocks the Unix socket),
 //! fall back to direct `SurrealDB` — same resilient open as session-start.
 mod direct;
+mod directive;
 mod spawn;
 
+pub(super) use directive::rpc_get_directive;
 use spawn::try_spawn_rpc_daemon;
 
 /// RPC ok+task -> `Ok(Some(json))` · ok+empty -> `Ok(None)` ·
@@ -23,10 +25,20 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     // two-pass logic lives in roadmap::next_open_task). Unset/empty lane => the
     // field is absent and dispatch sees the whole project backlog as before.
     let lane = std::env::var("KAVACH_LANE").ok().filter(|l| !l.is_empty());
+    // Session identity: a card LIVE-leased by a DIFFERENT session is excluded from
+    // this session's selection (multi-session task-steal fix — two terminals/tools
+    // no longer grab the same card). Same env source as the lease holder
+    // (`KAVACH_SESSION_ID`, set at SessionStart) so the selector's
+    // `is_live_leased_by_other(me)` compares like-for-like. Empty => fail-closed
+    // (any live lease is foreign), so an un-identified session never steals.
+    let session_id = std::env::var("KAVACH_SESSION_ID").ok().filter(|s| !s.is_empty());
     let mut map = serde_json::Map::new();
     map.insert("project".to_owned(), serde_json::Value::String(project_slug.to_owned()));
     if let Some(l) = lane {
         map.insert("lane".to_owned(), serde_json::Value::String(l));
+    }
+    if let Some(s) = session_id {
+        map.insert("session_id".to_owned(), serde_json::Value::String(s));
     }
     let params = serde_json::Value::Object(map);
     let classify = |v: serde_json::Value| {
@@ -94,6 +106,14 @@ pub(super) fn rpc_census_only(project_slug: &str) -> Option<(u64, u64, u64)> {
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
         .ok()
         .and_then(|v| parse_census(&v))
+}
+
+/// E1 lease heartbeat (crate-visible): extend `occupied_until` for every lease this
+/// session still holds on an in-progress card. Best-effort fire-and-forget from the
+/// `PostToolUse` hook — direct DB (the hook subprocess may be sandboxed off the RPC
+/// socket, like the other direct paths). Returns the count renewed (0 on any fault).
+pub(crate) fn renew_my_leases() -> usize {
+    direct::renew_my_leases()
 }
 
 /// RPC-ONLY next-task name: bounded single call, no self-heal, no direct DB.

@@ -7,7 +7,7 @@
 // an `in_progress` card whose lease has lapsed (or was never set) is reclaimed to `todo`.
 use chrono::Utc;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 use crate::error::{Error, Result};
 use surrealdb_types::SurrealValue;
