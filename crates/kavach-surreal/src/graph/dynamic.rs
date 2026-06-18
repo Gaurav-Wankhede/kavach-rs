@@ -50,7 +50,23 @@ const ALLOWED_RELS: &[&str] = &[
     "fired_gate",
     "triggered_in_session",
     "correct_action_ref",
+    // Citation-tier edges (unified docs-awareness DAG):
+    //   {decision,research,pattern,mistake,roadmap} -cite-> citation
+    //   citation -parent-> citation, citation -depends_on-> citation
+    "cite",
+    "parent",
 ];
+
+/// Subset of `ALLOWED_RELS` valid for citation-DAG relations. `cite` anchors a
+/// knowledge node to its official-docs citation; `parent`/`depends_on` link
+/// citations into the documentation hierarchy DAG.
+pub(crate) const ALLOWED_CITATION_RELS: &[&str] = &["cite", "parent", "depends_on"];
+
+/// Returns true if `rel` is a citation-DAG edge.
+#[must_use]
+pub fn is_citation_rel(rel: &str) -> bool {
+    ALLOWED_CITATION_RELS.contains(&rel)
+}
 
 /// Subset of `ALLOWED_RELS` valid for ontology relations (concept <-> concept).
 /// Used by `graph::concepts` to reject workflow edges on concept-only relate calls.
@@ -197,6 +213,45 @@ pub async fn relate_dynamic(
     Ok(())
 }
 
+/// Relate a knowledge node to a citation (or a citation to a parent/dependency).
+/// Rejects any edge not in `ALLOWED_CITATION_RELS` so a workflow/ontology edge
+/// cannot leak into the citation DAG.
+///
+/// # Errors
+/// `Error::Migration` when `rel_type` is not a citation edge; `Error::Surreal`
+/// from the RELATE.
+pub async fn relate_citation(
+    db: &Surreal<Db>,
+    from: &RecordId,
+    to: &RecordId,
+    rel_type: &str,
+    weight: f64,
+) -> Result<()> {
+    if !is_citation_rel(rel_type) {
+        return Err(Error::Migration(format!(
+            "rel_type '{rel_type}' is not a citation edge (cite|parent|depends_on)"
+        )));
+    }
+    relate_dynamic(db, from, to, rel_type, weight).await
+}
+
+/// Single-query traversal: in ONE `SurrealDB` round-trip via the `<-cite` graph
+/// arrow, return the record ids of every node that cites `citation` (no N+1).
+///
+/// # Errors
+/// Propagates `Error::Surreal` from the query.
+pub async fn traverse_with_citations(
+    db: &Surreal<Db>,
+    citation: &RecordId,
+) -> Result<Vec<RecordId>> {
+    let ids: Vec<RecordId> = db
+        .query("SELECT VALUE in FROM $cit<-cite")
+        .bind(("cit", citation.clone()))
+        .await?
+        .take(0)?;
+    Ok(ids)
+}
+
 /// One row of the related-entity result set: outgoing edge → target entity.
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
@@ -300,3 +355,7 @@ pub async fn get_related(
     }
     Ok(out)
 }
+
+#[cfg(test)]
+#[path = "dynamic_citation_test.rs"]
+mod citation_edge_tests;
