@@ -136,6 +136,15 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         super::super::intent::append_live_kanban_block(&mut context, &session.project);
     }
 
+    // E7 compaction-seam reconcile: if an in_progress card's TOUCHES paths match
+    // the dirty tree and no status-update was recorded, auto-compact likely fired
+    // between the edit and its status-update — surface a [RECONCILE] directive to
+    // resume at the VERIFY step rather than re-edit. Emitted ONLY in the seam case;
+    // fail-soft otherwise (omitted on a clean tree / no hint / RPC miss).
+    if let Some(reconcile_ctx) = super::reconcile::reconcile_context(&session.project) {
+        context.push_str(&reconcile_ctx);
+    }
+
     // `date` module dropped: superseded by the live [TEMPORAL_AWARENESS] line
     // above (a static module froze the date at authoring time).
     let module_ctx = session.inject_modules_once(&["critical-rules"]);

@@ -500,6 +500,18 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register roadmap.list_done_cards: {e}")))?;
 
     module
+        .register_async_method(
+            "roadmap.list_in_progress_cards",
+            |params, ctx, _ext| async move {
+                let p: roadmap::NextOpenTaskParams = params
+                    .parse()
+                    .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+                roadmap::list_in_progress_cards(&ctx, p).await
+            },
+        )
+        .map_err(|e| internal(format!("register roadmap.list_in_progress_cards: {e}")))?;
+
+    module
         .register_async_method("roadmap.verify_card", |params, ctx, _ext| async move {
             let p: roadmap::ClaimCardParams = params
                 .parse()

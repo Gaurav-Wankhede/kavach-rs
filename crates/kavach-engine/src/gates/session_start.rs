@@ -10,6 +10,7 @@ mod flows;
 mod memory;
 mod patterns;
 mod rag;
+mod reconcile;
 mod state;
 
 #[cfg(test)]

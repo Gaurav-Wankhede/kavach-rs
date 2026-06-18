@@ -1,4 +1,6 @@
-use super::super::types::{ListTitlesParams, NextOpenTaskParams, NextTaskResult, TitleRow};
+use super::super::types::{
+    InProgressCardRow, ListTitlesParams, NextOpenTaskParams, NextTaskResult, TitleRow,
+};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
@@ -79,4 +81,38 @@ pub async fn list_done_cards(
         })
         .collect();
     Ok(done)
+}
+
+/// Every roadmap card currently `in_progress`, with its full content.
+///
+/// The `SessionStart` reconcile (E7) reads each card's `TOUCHES:` hint to decide
+/// resume-verify vs re-dispatch after a possible compaction seam.
+///
+/// # Errors
+/// Returns an RPC `ErrorObjectOwned` when the database query fails.
+pub async fn list_in_progress_cards(
+    state: &AppState,
+    params: NextOpenTaskParams,
+) -> Result<Vec<InProgressCardRow>, ErrorObjectOwned> {
+    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+        .await
+        .map_err(surreal_to_rpc)?
+    else {
+        return Ok(Vec::new());
+    };
+    let Some(project_id) = project.id else {
+        return Ok(Vec::new());
+    };
+    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+        .await
+        .map_err(surreal_to_rpc)?;
+    let in_progress = entries
+        .iter()
+        .filter(|e| e.entry_status_str() == "in_progress")
+        .map(|e| InProgressCardRow {
+            key: e.entry_key.clone(),
+            content: e.content.clone(),
+        })
+        .collect();
+    Ok(in_progress)
 }

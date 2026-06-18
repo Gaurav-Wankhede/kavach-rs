@@ -40,6 +40,18 @@ pub struct NextTaskResult {
     pub status: String,
 }
 
+/// An `in_progress` roadmap card with its full content.
+///
+/// The `SessionStart` compaction-seam reconcile (E7) needs the body to read the
+/// card's `TOUCHES:` expected-paths hint, which the title-only [`NextTaskResult`]
+/// cannot carry.
+#[derive(Debug, Clone, Serialize)]
+#[non_exhaustive]
+pub struct InProgressCardRow {
+    pub key: String,
+    pub content: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[non_exhaustive]
 pub struct ListTitlesParams {
