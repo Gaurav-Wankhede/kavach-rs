@@ -32,9 +32,15 @@ pub async fn next_open_task(
     if let Err(e) = kavach_surreal::lease::reclaim_orphaned_in_progress(&state.db).await {
         tracing::warn!(error = %e, "crash-orphan reclaim failed before dispatch; proceeding with current runnable set");
     }
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let mut entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
+    // E3 priority-ceiling: re-rank so a low-urgency BLOCKER inherits the priority
+    // of its most-urgent dependent — otherwise a pri-1 card starves forever
+    // behind its pri-9 blocker (priority inversion). The DB read sorts by RAW
+    // priority; this lifts blockers to their ceiling before selection. SOURCE:
+    // decision.harness.loop-edge-cases-and-db-optimization E3.
+    super::priority_ceiling::sort_by_effective_priority(&mut entries);
     let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
