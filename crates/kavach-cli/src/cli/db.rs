@@ -43,6 +43,11 @@ pub(crate) enum DbAction {
         /// Include DONE items (filtered out by default for roadmap)
         #[arg(long)]
         all: bool,
+        /// Per-row content depth: a char count (e.g. `--depth 400`) or `all` for
+        /// the whole body. Omitted prints titles only (breadth). `KAVACH_NO_TRUNCATE=1`
+        /// forces `all` everywhere.
+        #[arg(long)]
+        depth: Option<String>,
     },
     // ALGO: CLI arg parsing — clap derive macro, no DSA
     /// Search with metadata filters (`entry_status`, since, contains)

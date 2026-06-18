@@ -7,7 +7,66 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
 const ALL_CATEGORIES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
 
-pub(super) fn run(project_slug: &str, category: Option<&str>, include_done: bool) -> i32 {
+/// Resolved per-row content depth for query output.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Depth {
+    /// Titles only — the breadth view (no `--depth` given, no override).
+    None,
+    /// At most N chars of content per row.
+    Chars(usize),
+    /// The whole content body (`--depth all` or `KAVACH_NO_TRUNCATE=1`).
+    All,
+}
+
+/// Resolve the depth from the `--depth` flag and the `KAVACH_NO_TRUNCATE` env.
+/// The env override wins (forces `All`); else `all`/empty→`All`, an integer→
+/// `Chars(n)`, a non-integer→`None` (fail-safe: a typo never dumps huge bodies).
+#[must_use]
+pub(crate) fn resolve_depth(flag: Option<&str>, no_truncate_env: bool) -> Depth {
+    if no_truncate_env {
+        return Depth::All;
+    }
+    match flag {
+        None => Depth::None,
+        Some(s) if s.eq_ignore_ascii_case("all") => Depth::All,
+        Some(s) => s.trim().parse::<usize>().map_or(Depth::None, Depth::Chars),
+    }
+}
+
+/// Truncate `content` to the resolved depth on a UTF-8 char boundary, appending an
+/// ellipsis marker only when the body was actually cut. `Depth::None` yields `None`
+/// (no content line). Never indexes by byte, so a multi-byte boundary cannot panic.
+#[must_use]
+pub(crate) fn render_content(content: &str, depth: Depth) -> Option<String> {
+    let max = match depth {
+        Depth::None => return None,
+        Depth::All => return Some(content.to_owned()),
+        Depth::Chars(n) => n,
+    };
+    let mut out = String::with_capacity(max.min(content.len()));
+    for ch in content.chars().take(max) {
+        out.push(ch);
+    }
+    if content.chars().nth(max).is_some() {
+        out.push_str(" …[truncated; --depth all for full]");
+    }
+    Some(out)
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "RPC-first with direct-DB fallback requires both print paths inline"
+)]
+pub(super) fn run(
+    project_slug: &str,
+    category: Option<&str>,
+    include_done: bool,
+    depth_flag: Option<&str>,
+) -> i32 {
+    let depth = resolve_depth(
+        depth_flag,
+        std::env::var("KAVACH_NO_TRUNCATE").as_deref() == Ok("1"),
+    );
     // ALGO: linear iteration to format output
     // PROBLEM_CLASS: print
     // TIME: O(n) | SPACE: O(1)
@@ -21,6 +80,12 @@ pub(super) fn run(project_slug: &str, category: Option<&str>, include_done: bool
                     entry.category, entry.key, entry.title, entry.status, entry.access_count
                 );
                 if let Err(io_err) = print_or_exit(&line) {
+                    return into_exit_code(io_err);
+                }
+                if let Some(body) =
+                    entry.content.as_deref().and_then(|c| render_content(c, depth))
+                    && let Err(io_err) = print_or_exit(&format!("    {body}"))
+                {
                     return into_exit_code(io_err);
                 }
             }
@@ -120,6 +185,11 @@ pub(super) fn run(project_slug: &str, category: Option<&str>, include_done: bool
             if let Err(io_err) = print_or_exit(&line) {
                 return into_exit_code(io_err);
             }
+            if let Some(body) = render_content(&entry.content, depth)
+                && let Err(io_err) = print_or_exit(&format!("    {body}"))
+            {
+                return into_exit_code(io_err);
+            }
         }
         0
     })
@@ -153,3 +223,7 @@ async fn resolve_project_id(db: &Surreal<Db>, slug: &str) -> Result<RecordId, i3
         }
     }
 }
+
+#[cfg(test)]
+#[path = "query_depth_test.rs"]
+mod tests;

@@ -23,7 +23,8 @@ pub(crate) fn run(action: DbAction) -> i32 {
             project,
             category,
             all,
-        } => query::run(&project, category.as_deref(), all),
+            depth,
+        } => query::run(&project, category.as_deref(), all, depth.as_deref()),
         DbAction::Search {
             project,
             category,
