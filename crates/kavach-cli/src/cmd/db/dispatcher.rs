@@ -2,7 +2,8 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    archive, backfill_relationships, bridge, concept, delete, delete_prefix, event, expire, find,
+    archive, backfill_relationships, bridge, citation, concept, delete, delete_prefix, event,
+    expire, find,
     flow, gate_config, get,
     graph_query, infer_deps, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query,
     register,
@@ -177,6 +178,18 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         DbAction::ConceptDeletePrefix { prefix, confirm } => {
             concept::delete_by_prefix(&prefix, confirm)
         }
+        DbAction::CitationAdd {
+            project,
+            entry_key,
+            name,
+            slug,
+            url,
+        } => citation::add(&project, &entry_key, &name, &slug, &url),
+        DbAction::CitationGet { project, entry_key } => citation::get(&project, &entry_key),
+        DbAction::CitationList { project } => citation::list(&project),
+        DbAction::CitationLink { node, citation } => citation::link(&node, &citation),
+        DbAction::CitationTraverse { citation } => citation::traverse(&citation),
+        DbAction::CitationRefresh { citation, delta } => citation::refresh(&citation, delta),
         gc @ (DbAction::GateConfigGet { .. }
         | DbAction::GateConfigSet { .. }
         | DbAction::GateConfigDelete { .. }

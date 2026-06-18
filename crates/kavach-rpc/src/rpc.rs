@@ -4,8 +4,9 @@
 // split: intentional - RpcModule construction wiring all method namespaces
 use crate::error::{internal, invalid_params};
 use crate::methods::{
-    brain, bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates,
-    graph, lease, mistake, mistake_top, projects, rag, replay, roadmap, run, session, system, trust,
+    brain, bridge, bulk, change, citation, concept, db, db_harness, decisions, events,
+    gate_patterns, gates, graph, lease, mistake, mistake_top, projects, rag, replay, roadmap, run,
+    session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
@@ -332,6 +333,60 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             concept::delete_by_prefix(&ctx, p).await
         })
         .map_err(|e| internal(format!("register/concept-purge-prefix failed: {e}")))?;
+
+    module
+        .register_async_method("citation.add", |params, ctx, _ext| async move {
+            let p: citation::AddParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::add(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.add: {e}")))?;
+
+    module
+        .register_async_method("citation.get", |params, ctx, _ext| async move {
+            let p: citation::GetParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::get(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.get: {e}")))?;
+
+    module
+        .register_async_method("citation.list", |params, ctx, _ext| async move {
+            let p: citation::ListParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::list(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.list: {e}")))?;
+
+    module
+        .register_async_method("citation.link", |params, ctx, _ext| async move {
+            let p: citation::LinkParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::link(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.link: {e}")))?;
+
+    module
+        .register_async_method("citation.traverse", |params, ctx, _ext| async move {
+            let p: citation::TraverseParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::traverse(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.traverse: {e}")))?;
+
+    module
+        .register_async_method("citation.refresh", |params, ctx, _ext| async move {
+            let p: citation::RefreshParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::refresh(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.refresh: {e}")))?;
 
     // SPEC: docs/architecture/session-occupancy-lease.md — lease.{acquire,heartbeat,unlock,status}
     module

@@ -482,6 +482,71 @@ pub(super) fn concept_list(limit: usize) -> Result<Vec<kavach_surreal::Entity>, 
     call::<_, Vec<kavach_surreal::Entity>>("concept.list", Some(params)).map_err(format_err)
 }
 
+// -------------------------------------------------------------------------
+// Citation tier RPCs (official-docs context awareness — C9)
+// -------------------------------------------------------------------------
+
+pub(super) fn citation_add(
+    project: &str,
+    entry_key: &str,
+    name: &str,
+    metadata: Vec<kavach_surreal::CitationMeta>,
+) -> Result<kavach_rpc::methods::citation::IdResult, String> {
+    let params = kavach_rpc::methods::citation::AddParams {
+        project: project.to_owned(),
+        entry_key: entry_key.to_owned(),
+        name: name.to_owned(),
+        metadata,
+    };
+    call::<_, kavach_rpc::methods::citation::IdResult>("citation.add", Some(params))
+        .map_err(format_err)
+}
+
+pub(super) fn citation_get(
+    project: &str,
+    entry_key: &str,
+) -> Result<Option<kavach_surreal::Citation>, String> {
+    let params = kavach_rpc::methods::citation::GetParams {
+        project: project.to_owned(),
+        entry_key: entry_key.to_owned(),
+    };
+    call::<_, Option<kavach_surreal::Citation>>("citation.get", Some(params)).map_err(format_err)
+}
+
+pub(super) fn citation_list(project: &str) -> Result<Vec<kavach_surreal::Citation>, String> {
+    let params = kavach_rpc::methods::citation::ListParams {
+        project: project.to_owned(),
+    };
+    call::<_, Vec<kavach_surreal::Citation>>("citation.list", Some(params)).map_err(format_err)
+}
+
+pub(super) fn citation_link(node: &str, citation: &str) -> Result<String, String> {
+    let params = kavach_rpc::methods::citation::LinkParams {
+        node: node.to_owned(),
+        citation: citation.to_owned(),
+    };
+    call::<_, String>("citation.link", Some(params)).map_err(format_err)
+}
+
+pub(super) fn citation_traverse(citation: &str) -> Result<Vec<String>, String> {
+    let params = kavach_rpc::methods::citation::TraverseParams {
+        citation: citation.to_owned(),
+    };
+    call::<_, kavach_rpc::methods::citation::CitersResult>("citation.traverse", Some(params))
+        .map(|r| r.citers)
+        .map_err(format_err)
+}
+
+pub(super) fn citation_refresh(citation: &str, delta: f64) -> Result<usize, String> {
+    let params = kavach_rpc::methods::citation::RefreshParams {
+        citation: citation.to_owned(),
+        delta,
+    };
+    call::<_, kavach_rpc::methods::citation::RewardResult>("citation.refresh", Some(params))
+        .map(|r| r.rewarded)
+        .map_err(format_err)
+}
+
 pub(super) fn gate_config_get(
     project: &str,
     gate_key: &str,

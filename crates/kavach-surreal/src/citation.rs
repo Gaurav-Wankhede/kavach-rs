@@ -214,6 +214,22 @@ pub struct CitationMeta {
     pub tradeoff: String,
 }
 
+impl CitationMeta {
+    #[must_use]
+    pub const fn new(slug: String, url: String) -> Self {
+        Self {
+            slug,
+            desc: String::new(),
+            url,
+            parent: None,
+            depends_on: None,
+            best_practice: String::new(),
+            worst_practice: String::new(),
+            tradeoff: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
 pub struct Citation {

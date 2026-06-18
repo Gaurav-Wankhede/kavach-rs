@@ -2,6 +2,7 @@ pub mod brain;
 pub mod bridge;
 pub mod bulk;
 pub mod change;
+pub mod citation;
 pub mod concept;
 pub mod db;
 pub mod db_harness;

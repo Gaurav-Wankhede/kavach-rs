@@ -469,6 +469,63 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         #[arg(long)]
         confirm: bool,
     },
+    /// Add or refresh a citation (official-docs context) keyed by (project, entry-key)
+    CitationAdd {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Stable entry key (`snake_case`)
+        #[arg(long = "entry-key")]
+        entry_key: String,
+        /// Display name (e.g. `SurrealDB`)
+        #[arg(long)]
+        name: String,
+        /// One metadata slug (e.g. "records")
+        #[arg(long)]
+        slug: String,
+        /// Official-docs URL (non-empty)
+        #[arg(long)]
+        url: String,
+    },
+    /// Fetch one citation (bumps `access_count`)
+    CitationGet {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Entry key
+        #[arg(long = "entry-key")]
+        entry_key: String,
+    },
+    /// List every citation for a project (newest-updated first)
+    CitationList {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+    },
+    /// Merge a node into a citation via a `->cite->` edge (`table:key` ids)
+    CitationLink {
+        /// Source node record id (`decision:foo`, `entity:bar`)
+        #[arg(long)]
+        node: String,
+        /// Target citation record id (`citation:baz`)
+        #[arg(long)]
+        citation: String,
+    },
+    /// List the nodes that cite a citation (single `<-cite` walk)
+    CitationTraverse {
+        /// Citation record id (`citation:baz`)
+        #[arg(long)]
+        citation: String,
+    },
+    /// Flow RLAIF reward along a citation's `cite` edges (bumps edge weight)
+    CitationRefresh {
+        /// Citation record id (`citation:baz`)
+        #[arg(long)]
+        citation: String,
+        /// Reward delta (negative = penalty)
+        #[arg(long, default_value_t = 1.0)]
+        delta: f64,
+    },
     /// Resolve a gate-config override (project-then-global), or report the miss
     GateConfigGet {
         /// Project slug (`*` for the global row)

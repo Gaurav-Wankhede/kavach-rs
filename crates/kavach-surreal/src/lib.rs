@@ -88,6 +88,13 @@ pub use graph::{
     concepts_for_project as graph_concepts_for_project,
     projects_for_concept as graph_projects_for_concept,
 };
+// Citation tier (official-docs context awareness)
+pub use citation::{
+    Citation, CitationMeta, UpsertCitation, citations_for_nodes as citation_citations_for_nodes,
+    get_citation as citation_get, list_citations_by_project as citation_list,
+    merge_node_into_citation as citation_merge_node, reward_citation_edges as citation_reward,
+    traverse as citation_traverse, upsert_citation as citation_upsert,
+};
 // L3 mistake-event RPCs
 pub use archive::{ArchiveReport, archive_irrelevant};
 pub use bandit::{

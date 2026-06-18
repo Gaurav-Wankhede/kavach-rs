@@ -7,6 +7,7 @@
 mod archive;
 mod backfill_relationships;
 mod bridge;
+mod citation;
 mod concept;
 mod delete;
 mod delete_prefix;
