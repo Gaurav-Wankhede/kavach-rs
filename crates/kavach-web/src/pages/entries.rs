@@ -64,7 +64,7 @@ pub fn table(project: &str, category: &str, entries: &[Entry]) -> Markup {
     }
 }
 
-fn edit_url(project: &str, category: &str, key: &str) -> String {
+pub(crate) fn edit_url(project: &str, category: &str, key: &str) -> String {
     format!("/entries/edit?project={project}&category={category}&key={key}")
 }
 

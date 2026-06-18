@@ -40,6 +40,8 @@ pub struct KanbanItem {
     pub title: String,
     pub status: String,
     pub category: String,
+    #[serde(default)]
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -64,6 +64,7 @@ pub async fn kanban(
                 title: entry.title.clone(),
                 status: status_str.to_owned(),
                 category: entry.category_str().to_owned(),
+                content: entry.content.clone(),
             });
         }
     }

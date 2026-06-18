@@ -56,6 +56,17 @@ td.num, .num { text-align: right; font-variant-numeric: tabular-nums; }
 .kard { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
 .kard-title { font-size: 13px; }
 .kard-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+details.kard > summary.kard-summary { cursor: pointer; list-style: none; }
+details.kard > summary.kard-summary::-webkit-details-marker { display: none; }
+details.kard > summary.kard-summary::before { content: "▸ "; color: var(--muted); }
+details.kard[open] > summary.kard-summary::before { content: "▾ "; }
+.kard-summary:hover .kard-title { color: var(--accent); }
+.kard-body { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.kard-content { white-space: pre-wrap; word-break: break-word; font-size: 12px; max-height: 240px; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px; margin: 0 0 8px; }
+.kard-edit textarea, .kard-title-input { width: 100%; box-sizing: border-box; background: var(--panel); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 6px; font: inherit; }
+.kard-edit textarea { margin-top: 6px; font-size: 12px; }
+.kard-actions { margin-top: 6px; }
+.kard-status { margin-top: 6px; }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .panel pre { white-space: pre-wrap; }
