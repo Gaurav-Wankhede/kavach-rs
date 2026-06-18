@@ -33,6 +33,7 @@ pub mod projects;
 pub mod rag_trees;
 pub mod read;
 pub mod retry;
+pub mod rrf;
 pub mod runs;
 pub mod schema;
 pub mod schema_engine;
@@ -52,6 +53,7 @@ pub use gate_config::{
     set_with_kind as gate_config_set_with_kind,
 };
 pub use error::{Error, Result};
+pub use rrf::{RRF_K, rrf_fuse};
 pub use graph::upsert_relationships;
 pub use graph::{DagEdge, DagNode, RoadmapDag, roadmap_dag_fetch};
 pub use graph::{Edge, Entity, RelateParams, RelationType};
