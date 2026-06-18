@@ -57,7 +57,22 @@ fn build_inproc() -> Result<InProc, String> {
 
 fn inproc() -> Result<&'static InProc, ClientError> {
     static CELL: OnceLock<Result<InProc, String>> = OnceLock::new();
-    match CELL.get_or_init(build_inproc) {
+    // `build_inproc` does `rt.block_on(...)` to open the DB. If the FIRST
+    // caller is already inside a tokio runtime (a CLI command in its own
+    // `block_on`, a gate hook on an async thread), running that init on the
+    // current thread panics with "Cannot start a runtime from within a
+    // runtime". Build on a dedicated thread so the init `block_on` is never
+    // nested. The result is cached in the OnceLock either way, so the
+    // thread-spawn is paid at most ONCE per process.
+    let built = CELL.get_or_init(|| {
+        if tokio::runtime::Handle::try_current().is_ok() {
+            std::thread::scope(|s| s.spawn(build_inproc).join())
+                .unwrap_or_else(|_| Err("inproc init worker panicked".to_owned()))
+        } else {
+            build_inproc()
+        }
+    });
+    match built {
         Ok(ip) => Ok(ip),
         Err(e) => Err(ClientError::NotReachable(e.clone())),
     }
@@ -83,10 +98,28 @@ pub fn call<P: Serialize, R: for<'de> Deserialize<'de>>(
     });
     let request_str = serde_json::to_string(&request)?;
 
-    let (response, _stream) = ip
-        .rt
-        .block_on(async { ip.module.raw_json_request(&request_str, 1).await })
-        .map_err(|e| ClientError::NotReachable(format!("dispatch {method}: {e}")))?;
+    // `call` is SYNC but the dispatch is async on the InProc runtime. If the
+    // CALLER is already inside a tokio runtime (e.g. a CLI command that built
+    // its own `Runtime` and is in `block_on`, or a gate hook on an async
+    // thread), calling `ip.rt.block_on` on THIS thread panics with "Cannot
+    // start a runtime from within a runtime". Detect the ambient runtime and,
+    // when present, run the blocking dispatch on a SEPARATE thread so the
+    // current thread is never blocked-on twice. Off-runtime callers keep the
+    // direct `block_on` (no thread-spawn cost). The InProc runtime is
+    // multi-thread and independent of the caller's, so the helper thread's
+    // `block_on` is safe.
+    let dispatch = |ip: &InProc| {
+        ip.rt
+            .block_on(async { ip.module.raw_json_request(&request_str, 1).await })
+    };
+    let raw_result = if tokio::runtime::Handle::try_current().is_ok() {
+        std::thread::scope(|s| s.spawn(|| dispatch(ip)).join())
+            .map_err(|_| ClientError::NotReachable(format!("dispatch {method}: worker panicked")))?
+    } else {
+        dispatch(ip)
+    };
+    let (response, _stream) =
+        raw_result.map_err(|e| ClientError::NotReachable(format!("dispatch {method}: {e}")))?;
 
     // Parse the JSON-RPC response: distinguish present-but-null `result` (valid
     // empty answer) from an absent `result` key (protocol error). Mirrors the
