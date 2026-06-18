@@ -4,7 +4,7 @@
 //! a hub+leaf module hierarchy; the LOC ceiling does not apply.
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Applies the schema DDL to the `SurrealDB` instance.
 ///
@@ -218,6 +218,22 @@ DEFINE FIELD updated_at ON part TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_part_project_name ON part FIELDS project, part_name UNIQUE;
 DEFINE INDEX idx_part_path ON part FIELDS part_path;
 
+-- Run records (execution history and status tracking)
+DEFINE TABLE run SCHEMAFULL;
+DEFINE FIELD project ON run TYPE option<record<project>>;
+DEFINE FIELD entry_key ON run TYPE string;
+DEFINE FIELD branch ON run TYPE option<string>;
+DEFINE FIELD status ON run TYPE string;
+DEFINE FIELD command ON run TYPE option<string>;
+DEFINE FIELD pid ON run TYPE option<int>;
+DEFINE FIELD started_at ON run TYPE option<string>;
+DEFINE FIELD finished_at ON run TYPE option<string>;
+DEFINE FIELD exit_code ON run TYPE option<int>;
+DEFINE FIELD cost_usd ON run TYPE option<float>;
+DEFINE FIELD created_at ON run TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_run_project ON run FIELDS project;
+DEFINE INDEX idx_run_project_started ON run FIELDS project, started_at;
+
 -- Graph edge tables (created dynamically via RELATE)
 -- Example edges:
 --   session->works_on->project
@@ -323,9 +339,39 @@ DEFINE ANALYZER IF NOT EXISTS concept_analyzer
 DEFINE INDEX IF NOT EXISTS idx_concept_fts
     ON TABLE entity COLUMNS properties.description
     FULLTEXT ANALYZER concept_analyzer BM25;
-DEFINE FIELD IF NOT EXISTS embedding ON entity TYPE option<array<float>>;
-DEFINE INDEX IF NOT EXISTS idx_entity_embedding ON entity
-    FIELDS embedding HNSW DIMENSION 384 DIST COSINE TYPE F32;
+
+-- =============================================================================
+-- BRAIN-OS Gap 1 — BM25/FTS retrieval corpus (roadmap.unit.harness.brain-os.g1a).
+-- Extends full-text search from concept-only to the whole memory corpus so
+-- hybrid retrieval (FTS-rank fused with graph-proximity-rank — NO vectors, the
+-- ONNX embedder was removed) can rank decisions/roadmap/research/patterns by
+-- keyword relevance. Reuses concept_analyzer (lowercase + snowball(english)).
+-- title + content are the searchable text on every typed memory table. A
+-- SurrealDB FULLTEXT index covers EXACTLY ONE field, so each table gets two
+-- indexes (one per field); a query matches with `field @@ 'terms'` and ranks
+-- with `search::score(n)` via the `@n@` reference form. BM25(1.2, 0.75) =
+-- canonical k1/b. IF NOT EXISTS: idempotent on already-running stores.
+-- =============================================================================
+DEFINE INDEX IF NOT EXISTS idx_decision_title_fts
+    ON TABLE decision FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_decision_content_fts
+    ON TABLE decision FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_roadmap_title_fts
+    ON TABLE roadmap FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_roadmap_content_fts
+    ON TABLE roadmap FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_research_title_fts
+    ON TABLE research FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_research_content_fts
+    ON TABLE research FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_pattern_title_fts
+    ON TABLE pattern FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_pattern_content_fts
+    ON TABLE pattern FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_app_spec_title_fts
+    ON TABLE app_spec FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_app_spec_content_fts
+    ON TABLE app_spec FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
 
 -- =============================================================================
 -- bulk_manifest — single-RCA-bound batch edit authority for mechanical sweeps.

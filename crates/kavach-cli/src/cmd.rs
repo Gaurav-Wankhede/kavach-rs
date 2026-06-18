@@ -1,10 +1,8 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
-mod app;
 mod ask;
 pub(crate) mod bg;
 pub(crate) mod bulk;
 mod context;
-pub(crate) mod daemon;
 pub(crate) mod goal;
 // `pub(crate)` so `cli::db` reaches `db::write::CATEGORY_HELP` (SSoT for the
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
@@ -16,13 +14,11 @@ mod heal;
 mod install;
 mod loophole;
 pub(crate) mod io_safe;
-pub(crate) mod mcp;
 pub(crate) mod mistake;
 mod oversized;
 mod phase;
 pub(crate) mod pipeline;
 mod rag;
-mod rpc;
 mod rules;
 mod schema;
 mod security;
@@ -32,6 +28,7 @@ mod status;
 mod tailwind_plus;
 mod tasks;
 pub(crate) mod team;
+mod think;
 mod todos;
 mod toolbelt;
 pub(crate) mod verify;
@@ -44,6 +41,15 @@ use crate::cli::Commands;
 pub(crate) fn dispatch(command: Commands) -> i32 {
     match command {
         Commands::Status => status::run(),
+        Commands::Web { port } => match kavach_web::serve(port) {
+            Ok(()) => 0,
+            Err(e) => {
+                if let Err(io_err) = io_safe::ewrite_or_exit(&format!("kavach web: {e}")) {
+                    return io_safe::into_exit_code(io_err);
+                }
+                1
+            }
+        },
         Commands::Gates {
             gate_name,
             hook,
@@ -53,11 +59,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Session { action } => session::run(&action),
         Commands::Rules { action } => rules::run(action),
         Commands::Db { action } => db::run(action),
-        Commands::Rpc {
-            transport,
-            apply_schema,
-        } => rpc::run(&transport, apply_schema),
-        Commands::Daemon(args) => daemon::run(&args),
         Commands::Install { vendor, dry_run } => install::run(&vendor, dry_run),
         Commands::Schema { vendor, all } => schema::run(vendor.as_deref(), all),
         Commands::Heal { action } => match action {
@@ -86,7 +87,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             key,
             crate_name,
         } => verify::run(&project, &key, crate_name.as_deref()),
-        Commands::Deploy { skip_tests, bundle } => deploy::run(skip_tests, bundle),
+        Commands::Deploy { skip_tests } => deploy::run(skip_tests),
         Commands::VerifyFrontend {
             path,
             skip_tests,
@@ -113,7 +114,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Spec { action } => spec::run(action),
         Commands::Tasks { action } => tasks::run(action),
         Commands::Todos { action } => todos::run(action),
-        Commands::App => app::run(),
         Commands::Context {
             project,
             limit,
@@ -125,7 +125,11 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Bg(args) => bg::run(args),
         Commands::Goal(args) => goal::run(args),
         Commands::Team(args) => team::run(args),
-        Commands::Mcp => mcp::run(),
+        Commands::Think {
+            project,
+            query,
+            limit,
+        } => think::run(&project, &query, limit),
         Commands::Toolbelt { action } => toolbelt::run(action),
     }
 }

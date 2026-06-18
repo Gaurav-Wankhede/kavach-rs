@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::graph::types::{Entity, RelationType};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::RecordId;
 
 /// # Errors

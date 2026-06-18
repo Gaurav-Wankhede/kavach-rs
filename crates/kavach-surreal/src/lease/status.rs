@@ -2,7 +2,7 @@
 // SOURCE: https://surrealdb.com/3.0
 use chrono::Utc;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 use super::types::{Lease, LeaseRow};
 use crate::error::{Error, Result};

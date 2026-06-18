@@ -17,6 +17,7 @@ fn ctx_with<'a>(
         capture_advisory: None,
         loophole_advisory: loophole,
         shallow_advisory: None,
+        continuation_advisory: None,
     }
 }
 

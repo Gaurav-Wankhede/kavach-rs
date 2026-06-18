@@ -6,11 +6,21 @@ use kavach_rule_engine::{EvalContext, RuleAction, RuleEngine, RuleResult};
 use kavach_types::HookInput;
 
 /// Evaluate rules from skills directory against hook input.
+///
+/// Returns empty Vec if skills directory is legitimately absent (no custom rules).
+/// If directory exists but cannot be read, still proceeds (engine logs warnings).
 #[must_use]
 pub(crate) fn evaluate_rules(input: &HookInput) -> Vec<RuleResult> {
     let Some(skills_dir) = skills_dir() else {
         return Vec::new();
     };
+
+    // Check if the directory exists. If it doesn't, that's fine — no custom rules.
+    if !skills_dir.exists() {
+        return Vec::new();
+    }
+
+    // Directory exists: load and evaluate. The engine will log warnings on parse errors.
     let mut engine = RuleEngine::new(skills_dir);
     engine.load_skills();
 

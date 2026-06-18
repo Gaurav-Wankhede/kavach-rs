@@ -1,12 +1,12 @@
 //! Operation-scoped transient-fault retry for `SurrealDB` queries.
 //!
-//! Connection-level recovery (`connection::open_default_daemon`) heals the
-//! daemon at OPEN time. This module heals an individual query that hits a
+//! Connection-level recovery (`connection::open_default_held`) heals the
+//! server at OPEN time. This module heals an individual query that hits a
 //! TRANSIENT fault on an already-connected handle — a momentary `RocksDB`
 //! busy/lock spike or a brief connection blip mid-session — which the open-time
 //! backoff never covers. Self-healing must be operation-scoped, not only
 //! process-scoped: a durability-critical write must survive a blip, not just the
-//! daemon surviving.
+//! server surviving.
 //!
 //! Classification is the safety boundary: ONLY transient faults retry. A
 //! permanent error (parse error, type mismatch, missing field, record-not-found,

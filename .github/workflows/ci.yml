@@ -42,26 +42,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # The Dioxus desktop app (kavach-app) links wry/webkit2gtk-4.1 + libsoup-3,
-      # so glib-sys/webkit2gtk-sys build scripts need the GTK/WebKit dev headers.
-      # Without these, `cargo clippy --all-targets` fails compiling glib-sys.
-      # Authoritative webkit2gtk-4.1 set per Tauri v2 GitHub pipelines docs
-      # (https://v2.tauri.app/distribute/pipelines/github/). wry here uses
-      # webkit2gtk-sys 2.0.1 + soup3-sys = the 4.1 / libsoup-3 generation, which
-      # is the only one packaged on ubuntu-latest (24.04); 4.0 was dropped there.
-      - name: Install Linux GUI system deps (GTK/WebKit for Dioxus desktop)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            pkg-config \
-            libssl-dev \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libxdo-dev
+      # No GUI system deps needed: the Dioxus/Tauri desktop app (kavach-app) was
+      # removed. The web UI is now `kavach-web` (Axum + maud, server-rendered HTML)
+      # — pure Rust, no wry/webkit2gtk/glib, so the whole workspace builds with
+      # only the stock runner + OpenSSL (vendored where required). If a leaf crate
+      # ever needs a system lib, add it here; do NOT reintroduce the GTK/WebKit set.
 
       # No `toolchain:` input → the action reads the channel + components from
       # rust-toolchain.toml, making that file the SINGLE source of truth. The
@@ -110,6 +95,47 @@ jobs:
         run: |
           test -f "$HOME/.claude/CLAUDE.md"
           echo "OK: $HOME/.claude/CLAUDE.md"
+
+  # ── Cross-platform compile gate (macOS + Windows — runs on EVERY PR + push) ──
+  # The Linux leg above is the full build+test; the heavy macOS/Windows full-test
+  # legs stay push-only (10x/2x runner cost). But Kavach targets all three OSes
+  # and has real per-OS code paths (cfg!(windows) branches, path separators, the
+  # per-OS default_db_path in kavach-surreal), so a Linux-only PR can merge an
+  # OS-specific BREAK that only surfaces post-merge. This cheap leg closes that
+  # gap: `just lint` is `cargo clippy --all-targets --all-features -D warnings`,
+  # which COMPILES the whole workspace on each OS (catching cfg/path/dep breaks)
+  # WITHOUT the nextest + release recompile the full legs pay. Compile-only, so
+  # the PR cost is a fraction of a full macOS/Windows leg.
+  cross-check:
+    name: Cross-compile (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain + cache (channel from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache-shared-key: ci-cross-${{ matrix.os }}
+
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      # The justfile pins `set shell := ["bash", "-uc"]`; on the Windows runner
+      # that resolves to the Git Bash on the image. Fail fast with a clear message
+      # if a future image ever drops bash, instead of an opaque recipe error.
+      - name: Verify bash is available (just recipes require it)
+        shell: bash
+        run: bash --version
+
+      # Clippy compiles the whole workspace on this OS, so a cfg!()-gated or
+      # path-separator break that builds on Linux is caught here pre-merge. No
+      # `just test`/`just release` — full test coverage stays on the push-only legs.
+      - name: Clippy (just lint — cross-platform compile gate)
+        run: just lint
 
   # ── Policy (Linux only — OS-independent gates, run ONCE) ─────────────────────
   # Routes the supply-chain + hygiene gates through `just` too, so the WHOLE

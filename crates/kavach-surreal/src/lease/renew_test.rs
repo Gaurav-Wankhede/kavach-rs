@@ -10,7 +10,7 @@ use super::renew_active_leases;
 use crate::open_memory;
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// Seed one roadmap card with explicit lease columns + status.

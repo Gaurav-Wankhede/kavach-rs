@@ -47,12 +47,35 @@ fn cycle_deadlock_context_refuses_stop_and_directs_the_fix() {
 }
 
 #[test]
-fn all_blocked_context_names_the_dependency_without_stop_language() {
+fn all_blocked_context_directs_dependency_first_resolution_not_user_handoff() {
     let c = all_blocked_context(Some((2, 2, 0)));
     assert!(c.contains("ALL_BLOCKED"), "tag present: {c}");
     assert!(
         c.contains("dependency"),
         "names the prerequisite class: {c}"
+    );
+    // The bug fix: a dependency block is AI-repairable work, NOT a user hand-off.
+    // The verdict must direct the agent to WALK to the blocker and BUILD it, and
+    // must NOT defer the unblock to the user.
+    assert!(
+        c.contains("Do NOT hand the unblock to the user"),
+        "refuses the user hand-off (the reported bug): {c}"
+    );
+    assert!(
+        c.contains("BUILD the blocker"),
+        "directs dependency-first build of the blocker: {c}"
+    );
+    assert!(
+        c.contains("WALK to the blocking card"),
+        "directs a walk to the blocking card (leaf-first): {c}"
+    );
+    assert!(
+        c.contains("STALE/FALSE"),
+        "directs correcting a stale/false dependency edge: {c}"
+    );
+    assert!(
+        c.contains("owner-only"),
+        "reserves escalation for genuinely owner-only blockers only: {c}"
     );
     // The verdict must STAMP the census it read (verdict_needs_leaf_evidence):
     // the live counts + proof the gate read the DB this stop.

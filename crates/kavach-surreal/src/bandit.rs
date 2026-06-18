@@ -11,7 +11,7 @@
 
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 #[cfg(test)]
@@ -37,7 +37,7 @@ struct BanditPayloadRow {
 /// crate stays decoupled from `kavach-patterns`, so the typed row is serialized by
 /// the caller and stored opaquely. Content-addressed by a BLAKE3 digest of the
 /// payload so an identical replayed decision dedups to one row (append-only,
-/// idempotent). Single-writer invariant: only the daemon reaches this.
+/// idempotent). Single-writer invariant: only the RPC server reaches this.
 ///
 /// # Errors
 /// Returns an error if the `bandit_log` create fails.

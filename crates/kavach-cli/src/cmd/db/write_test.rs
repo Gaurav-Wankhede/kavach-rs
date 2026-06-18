@@ -1,4 +1,44 @@
-use super::{CATEGORY_HELP, STRICT_CATEGORIES};
+use super::{mirror_depends_on_into_content, CATEGORY_HELP, STRICT_CATEGORIES};
+
+/// No flag deps → body is returned unchanged (no spurious `DEPENDS_ON` line).
+#[test]
+fn no_flag_deps_leaves_body_unchanged() {
+    let body = "Some plan body.".to_owned();
+    assert_eq!(mirror_depends_on_into_content(body.clone(), &[]), body);
+}
+
+/// A flag dep is mirrored into a `DEPENDS_ON` content line the readiness parser reads.
+#[test]
+fn flag_dep_is_mirrored_into_content() {
+    let out = mirror_depends_on_into_content(
+        "body".to_owned(),
+        &["roadmap.unit.x".to_owned()],
+    );
+    assert!(out.starts_with("DEPENDS_ON: roadmap.unit.x"));
+    assert!(out.contains("body"));
+}
+
+/// Idempotent: a target already on a `DEPENDS_ON` content line is NOT re-added.
+#[test]
+fn already_declared_dep_is_not_duplicated() {
+    let body = "DEPENDS_ON: roadmap.unit.x\nrest".to_owned();
+    let out = mirror_depends_on_into_content(body.clone(), &["roadmap.unit.x".to_owned()]);
+    assert_eq!(out, body, "must not duplicate an already-declared dep");
+}
+
+/// An empty body + a flag dep yields exactly the `DEPENDS_ON` line (no leading newline).
+#[test]
+fn empty_body_yields_bare_dep_line() {
+    let out = mirror_depends_on_into_content(String::new(), &["roadmap.unit.x".to_owned()]);
+    assert_eq!(out, "DEPENDS_ON: roadmap.unit.x");
+}
+
+/// Blank/whitespace flag targets are dropped (no empty `DEPENDS_ON` entry).
+#[test]
+fn blank_flag_targets_are_dropped() {
+    let out = mirror_depends_on_into_content("body".to_owned(), &["  ".to_owned()]);
+    assert_eq!(out, "body");
+}
 
 /// `SSoT` guard (rca.kavach-db-write-category-enum-inconsistent): the clap
 /// `--category` help text MUST enumerate exactly `STRICT_CATEGORIES`.

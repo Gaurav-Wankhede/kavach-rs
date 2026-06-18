@@ -108,6 +108,7 @@ pub(crate) fn parse_field(state: &mut SessionState, key: &str, value: &str, in_f
         "last_api_error_time" => state.last_api_error_time = value.into(),
         "intent_risk" => state.intent_risk = value.into(),
         "last_write_turn" => state.last_write_turn = pi32(value, 0),
+        "user_directive_turn" => state.user_directive_turn = pi32(value, 0),
         "last_db_write_turn" => state.last_db_write_turn = pi32(value, 0),
         "subagent_files_read" => state.subagent_files_read = pi32(value, 0),
         "new_crate_confirmed" => state.new_crate_confirmed = value == "true",
@@ -189,6 +190,7 @@ pub(crate) fn parse_field(state: &mut SessionState, key: &str, value: &str, in_f
         "goal_state" => state.goal_state = value.into(),
         "goal_achieved" => state.goal_achieved = value == "true",
         "goal_receipt_pass" => state.goal_receipt_pass = value == "true",
+        "ai_verdict" => state.ai_verdict = Some(value == "true"),
         "goal_set_turn" => state.goal_set_turn = pi32(value, 0),
         // ARCH: AutonomousLoopParsing — field parsing for loop state
         // PATTERN: pev_loop | SCOPE: session | CAP: AP | SEARCHED: 2026-05

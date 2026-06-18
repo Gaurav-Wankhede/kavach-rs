@@ -1,38 +1,21 @@
 // RPC methods for the mistake/anti_pattern tier: hit-count (read) and record
-// (embed + append event + cluster to anti_pattern). `record` runs INSIDE the
-// daemon — the single RocksDB writer — so the embed+append+cluster sequence
-// happens under the daemon's exclusive lock instead of an ephemeral hook child
+// (append event + cluster to anti_pattern by content key). `record` runs INSIDE
+// the server process — the single RocksDB writer — so the append+cluster
+// sequence happens under the exclusive lock instead of an ephemeral hook child
 // fighting it for the lock (the single-writer-invariant violation that left the
 // mistake ledger silently empty: the hook's `open_default()` would SIGTERM the
 // daemon and race, landing nothing). SOURCE: rca.mistake-ledger-dark-via-direct-open.
-use std::sync::OnceLock;
-
+//
+// Mistakes are tracked structurally in the DAG (no embeddings): a mistake_event
+// is text-clustered to its anti_pattern by a deterministic content key, recurrence
+// is counted via inbound instance_of edges, and RLAIF grades the node. The former
+// ONNX embedder + cosine retrieval were removed — decision/onnx-removal-dag-rlaif-only.
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
-use jsonrpsee::types::{ErrorObjectOwned, error::INTERNAL_ERROR_CODE};
+use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
-use kavach_surreal::{Embedder, graph_nearest_anti_patterns, graph_query_anti_pattern_hit_count};
+use kavach_surreal::graph_query_anti_pattern_hit_count;
 use serde::{Deserialize, Serialize};
-
-/// Process-cached BGE-small embedder. The daemon is long-lived, so the ONNX
-/// model loads exactly once on the first `mistake.record` and is reused for
-/// every subsequent call — embedding a mistake on a hot daemon is then just a
-/// forward pass, not a model reload.
-static EMBEDDER: OnceLock<Embedder> = OnceLock::new();
-
-fn embedder() -> Result<&'static Embedder, ErrorObjectOwned> {
-    if let Some(e) = EMBEDDER.get() {
-        return Ok(e);
-    }
-    let built = Embedder::try_new().map_err(|e| {
-        ErrorObjectOwned::owned(
-            INTERNAL_ERROR_CODE,
-            format!("embedder init: {e}"),
-            None::<()>,
-        )
-    })?;
-    Ok(EMBEDDER.get_or_init(|| built))
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -113,25 +96,16 @@ pub struct RecordResult {
 
 /// Record one mistake observation into the knowledge graph.
 ///
-/// Embeds the gate/banned/correct triple, appends an append-only
-/// `mistake_event`, then clusters it under the nearest `anti_pattern`
-/// (cosine kNN, threshold 0.85). Runs entirely inside the daemon, which
-/// already holds the `RocksDB` exclusive lock, so there is no second-opener
-/// race — the exact fault that made the hook-invoked direct-open path land
-/// nothing.
+/// Appends an append-only `mistake_event`, then clusters it under its
+/// `anti_pattern` by content key (`anti.<gate>.<blake3(correct_action)[..8]>` —
+/// no vectors). Runs entirely inside the server process, which already holds the
+/// `RocksDB` exclusive lock, so there is no second-opener race — the exact fault
+/// that made the hook-invoked direct-open path land nothing.
 ///
 /// # Errors
 ///
-/// Returns an RPC error if embedder init, embedding, event append, or pattern
-/// clustering fails.
+/// Returns an RPC error if the event append or pattern clustering fails.
 pub async fn record(state: &AppState, p: RecordParams) -> Result<RecordResult, ErrorObjectOwned> {
-    let text = format!(
-        "gate={} | banned: {} | correct: {}",
-        p.gate, p.banned_sample, p.correct_action
-    );
-    let embedding = embedder()?.embed_one(&text).await.map_err(|e| {
-        ErrorObjectOwned::owned(INTERNAL_ERROR_CODE, format!("embed: {e}"), None::<()>)
-    })?;
     let event_id = append_mistake_event(
         &state.db,
         &p.gate,
@@ -139,89 +113,13 @@ pub async fn record(state: &AppState, p: RecordParams) -> Result<RecordResult, E
         &p.banned_sample,
         &p.session_id,
         p.project.as_deref(),
-        embedding.clone(),
     )
     .await
     .map_err(surreal_to_rpc)?;
-    let pattern_id =
-        cluster_event_to_pattern(&state.db, &event_id, &embedding, &p.gate, &p.correct_action)
-            .await
-            .map_err(surreal_to_rpc)?;
-    Ok(RecordResult {
-        ids: format!("{event_id:?} -> {pattern_id:?}"),
-    })
-}
-
-/// Default number of relevant mistakes surfaced at the point of action.
-const NEAREST_DEFAULT_K: usize = 3;
-/// Default cosine floor: below this a past mistake is not relevant to the edit.
-const NEAREST_DEFAULT_FLOOR: f32 = 0.6;
-
-#[derive(Debug, Serialize, Deserialize)]
-#[non_exhaustive]
-pub struct NearestParams {
-    /// Free text to relevance-match against — e.g. the file content being written.
-    pub text: String,
-    /// How many hits to return (defaults to `NEAREST_DEFAULT_K`).
-    pub k: Option<usize>,
-    /// Cosine relevance floor (defaults to `NEAREST_DEFAULT_FLOOR`).
-    pub floor: Option<f32>,
-}
-
-impl NearestParams {
-    /// Construct params for a `mistake.nearest` call (`#[non_exhaustive]` ⇒ no
-    /// cross-crate struct literal).
-    #[must_use]
-    pub const fn new(text: String, k: Option<usize>, floor: Option<f32>) -> Self {
-        Self { text, k, floor }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[non_exhaustive]
-pub struct NearestHit {
-    pub gate: String,
-    pub correct_action: String,
-    pub score: f32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[non_exhaustive]
-pub struct NearestResult {
-    pub hits: Vec<NearestHit>,
-}
-
-/// Cosine-retrieve the `anti_patterns` most relevant to `text`.
-///
-/// The read side of the `[MISTAKE_GUARD]` pre-write frame: embeds the query once
-/// (cached BGE model) and runs the kNN over the HNSW-indexed centroid set,
-/// keeping only hits at or above the floor. Empty result (no relevant mistake /
-/// fresh graph) is a success, never an error — the gate must fail open on benign
-/// emptiness.
-///
-/// # Errors
-/// Returns an RPC error only on embedder init/embedding failure or a real DB
-/// query failure.
-pub async fn nearest(
-    state: &AppState,
-    p: NearestParams,
-) -> Result<NearestResult, ErrorObjectOwned> {
-    let embedding = embedder()?.embed_one(&p.text).await.map_err(|e| {
-        ErrorObjectOwned::owned(INTERNAL_ERROR_CODE, format!("embed: {e}"), None::<()>)
-    })?;
-    let k = p.k.unwrap_or(NEAREST_DEFAULT_K);
-    let floor = p.floor.unwrap_or(NEAREST_DEFAULT_FLOOR);
-    let hits = graph_nearest_anti_patterns(&state.db, &embedding, k, floor)
+    let pattern_id = cluster_event_to_pattern(&state.db, &event_id, &p.gate, &p.correct_action)
         .await
         .map_err(surreal_to_rpc)?;
-    Ok(NearestResult {
-        hits: hits
-            .into_iter()
-            .map(|h| NearestHit {
-                gate: h.gate,
-                correct_action: h.correct_action,
-                score: h.score,
-            })
-            .collect(),
+    Ok(RecordResult {
+        ids: format!("{event_id:?} -> {pattern_id:?}"),
     })
 }

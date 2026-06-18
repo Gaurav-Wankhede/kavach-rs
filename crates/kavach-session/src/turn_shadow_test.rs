@@ -1,4 +1,4 @@
-use super::SessionState;
+use super::{RewardOutcome, SessionState};
 
 #[test]
 fn store_turn_shadow_caps_and_marks_pending() {
@@ -88,11 +88,23 @@ fn queue_lifecycle_relay_merges_into_shadow() {
 #[test]
 fn record_reward_outcome_tracks_pass_rate() {
     let mut s = SessionState::default();
-    s.record_reward_outcome("unit.a", Some(true));
-    s.record_reward_outcome("unit.b", Some(false));
+    s.record_reward_outcome("unit.a", RewardOutcome::Passed);
+    s.record_reward_outcome("unit.b", RewardOutcome::Failed);
     assert_eq!(s.reward_session_pass, 1);
     assert_eq!(s.reward_session_total, 2);
     assert!(s.last_reward_summary.contains("unit.b"));
+}
+
+#[test]
+fn ai_judged_outcomes_are_graded_samples() {
+    // RLAIF: an AI-judged verdict is a first-class ±1 sample (NOT an abstention),
+    // so the bandit learns where the mechanical 3-witness oracle would be blind.
+    let mut s = SessionState::default();
+    s.record_reward_outcome("unit.ai-good", RewardOutcome::AiJudged(true));
+    s.record_reward_outcome("unit.ai-bad", RewardOutcome::AiJudged(false));
+    assert_eq!(s.reward_session_pass, 1, "AI-good is a pass");
+    assert_eq!(s.reward_session_total, 2, "both AI verdicts count");
+    assert!(s.last_reward_summary.contains("RLAIF"));
 }
 
 #[test]
@@ -100,8 +112,8 @@ fn abstention_is_neutral_not_a_failure() {
     // L2 regression: a card with NO verification signal (None) must not be
     // scored a failure, and must NOT count toward the graded total/pass rate.
     let mut s = SessionState::default();
-    s.record_reward_outcome("unit.a", Some(true));
-    s.record_reward_outcome("unit.no-receipt", None);
+    s.record_reward_outcome("unit.a", RewardOutcome::Passed);
+    s.record_reward_outcome("unit.no-receipt", RewardOutcome::Abstain);
     assert_eq!(s.reward_session_pass, 1, "abstention adds no pass");
     assert_eq!(
         s.reward_session_total, 1,

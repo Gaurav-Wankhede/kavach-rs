@@ -3,13 +3,6 @@
 //   cargo build --release -p kavach-cli
 //   cargo nextest run -p kavach-cli
 //   cp target/release/kavach ~/.local/bin/kavach
-//
-// With `--bundle` it additionally builds the KavachApp.app GUI via `dx bundle`,
-// embedding the kavach CLI as a sidecar (Dioxus `external_bin`), codesigns the
-// whole .app, installs it to /Applications, and symlinks ~/.local/bin/kavach
-// into the bundle so the terminal CLI and GUI share one binary.
-// SOURCE: https://dioxuslabs.com/learn/0.7/tutorial/bundle/
-// SOURCE: https://dioxuslabs.com/learn/0.7/guides/tools/configure/
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -69,13 +62,8 @@ const BINARY_NAME: &str = "kavach";
 const RELEASE_PROFILE: &str = "release";
 const CLI_PKG: &str = "kavach-cli";
 const ENGINE_PKG: &str = "kavach-engine";
-const APP_PKG: &str = "kavach-app";
-// dx derives the bundle name from the crate name (kavach-app -> KavachApp),
-// not from Dioxus.toml [application] name. Verified empirically against
-// `dx bundle` 0.7.7 output. SOURCE: dx bundle run, 2026-05.
-const APP_BUNDLE_NAME: &str = "KavachApp.app";
 
-pub(crate) fn run(skip_tests: bool, bundle: bool) -> i32 {
+pub(crate) fn run(skip_tests: bool) -> i32 {
     // Serialize the whole deploy under a workspace-root advisory flock: two
     // concurrent `kavach deploy` runs (CI parallelism or a manual double-run)
     // would otherwise interleave the binary copy + the daemon restart, letting
@@ -111,25 +99,14 @@ pub(crate) fn run(skip_tests: bool, bundle: bool) -> i32 {
         }
     };
 
-    // Track A: strict gates + build + (for a CLI-only install) write the binary
-    // to ~/.local/bin/kavach. In --bundle mode the standalone install is SKIPPED:
-    // the bundle track installs the CLI INTO KavachApp.app and re-points the
-    // symlink, so a plain install_binary would (correctly) refuse to clobber it.
-    let cli = deploy_cli(skip_tests, bundle);
-    if cli != 0 {
-        return cli;
-    }
-    // Track B (opt-in): build the GUI .app/.dmg with the CLI embedded.
-    if bundle {
-        return deploy_bundle();
-    }
-    0
+    // Strict gates + build + write the binary to ~/.local/bin/kavach.
+    deploy_cli(skip_tests)
 }
 
-/// Track A — the 8-step CLI deploy: strict gates + build + install + restart the
+/// The 8-step CLI deploy: strict gates + build + install + restart the
 /// RPC daemon so the new binary's code actually takes effect (step 8).
 #[expect(clippy::too_many_lines, reason = "deploy orchestrator with 8 steps")]
-fn deploy_cli(skip_tests: bool, bundle: bool) -> i32 {
+fn deploy_cli(skip_tests: bool) -> i32 {
     if let Err(io_err) = print_or_exit("[DEPLOY] step 1/8: cargo check --release -D warnings") {
         return into_exit_code(io_err);
     }
@@ -241,21 +218,6 @@ fn deploy_cli(skip_tests: bool, bundle: bool) -> i32 {
         return 1;
     }
 
-    // Steps 7/8 install the standalone CLI to ~/.local/bin and restart the
-    // daemon. In --bundle mode BOTH are the bundle track's job: it installs the
-    // CLI into KavachApp.app, re-points the symlink, and restarts the daemon off
-    // the app binary. Running install_binary here would (correctly) refuse to
-    // clobber the bundle symlink, aborting the deploy before the bundle runs —
-    // so skip 7/8 entirely when bundling.
-    if bundle {
-        if let Err(io_err) = print_or_exit(
-            "[DEPLOY] step 7/8: SKIPPED (--bundle installs the CLI into KavachApp.app)",
-        ) {
-            return into_exit_code(io_err);
-        }
-        return 0;
-    }
-
     if let Err(io_err) = print_or_exit("[DEPLOY] step 7/8: install to ~/.local/bin/kavach") {
         return into_exit_code(io_err);
     }
@@ -283,348 +245,19 @@ fn deploy_cli(skip_tests: bool, bundle: bool) -> i32 {
         return 1;
     }
 
-    // Step 8/8: restart the long-running RPC daemon so it loads the NEW binary.
-    // The install replaces the on-disk file, but a daemon started from the OLD
-    // binary keeps the OLD code in memory — every gate (dispatch, stop, kanban)
-    // routes through that stale process, so deploys silently never took effect.
-    // ROOT CAUSE of the "stop-gate fixes don't apply" loop. Kill it; the next
-    // hook respawns it on the fresh binary.
-    if let Err(io_err) = print_or_exit("[DEPLOY] step 8/8: restart RPC daemon (load new binary)") {
+    // Step 8/8: nothing to restart. There is no long-running kavach process to
+    // reload — the data path is in-process ws dispatch to the standalone
+    // `surreal start` server (launchd `ai.shared.kavach-surreal`), which owns
+    // the DB independently of the kavach binary. The next `kavach` invocation
+    // picks up the freshly installed binary automatically.
+    if let Err(io_err) =
+        print_or_exit("[DEPLOY] step 8/8: no daemon to restart (surreal server owns the DB)")
+    {
         return into_exit_code(io_err);
     }
-    restart_rpc_daemon();
 
     let ok_msg = format!("[DEPLOY] OK: kavach installed to {}", dst.display());
     if let Err(io_err) = print_or_exit(&ok_msg) {
-        return into_exit_code(io_err);
-    }
-    0
-}
-
-/// Terminate the running `kavach rpc` daemon so the next hook respawns it on the
-/// freshly installed binary. Best-effort: a missing/unreadable lockfile means no
-/// daemon is running (nothing to restart) — never fail the deploy over it. The
-/// lockfile is removed so a stale entry can't block the respawn's `write_lockfile`.
-fn restart_rpc_daemon() {
-    // The lockfile read + SIGTERM is Unix-only: the sync UDS daemon never runs on
-    // Windows (the RPC client is `cfg(not(unix))` and the gates open SurrealDB
-    // directly), so there is no pid to signal — `lock` would be an unused binding
-    // there (`-D unused-variables`). On Windows we fall straight through to the
-    // unconditional lockfile cleanup below, which is a harmless no-op when absent.
-    #[cfg(unix)]
-    {
-        let Ok(lock) = kavach_rpc::lockfile::read_lockfile() else {
-            // No lockfile → no daemon running. The next hook starts one fresh.
-            print_or_exit("[DEPLOY] step 8/8: no running daemon (nothing to restart)").ok();
-            return;
-        };
-        // SIGTERM lets the daemon run its shutdown (remove_lockfile, close socket).
-        let killed = Command::new("kill")
-            .arg(lock.pid.to_string())
-            .status()
-            .is_ok_and(|s| s.success());
-        let msg = if killed {
-            // GRACEFUL HANDOFF (race-free restart): SIGTERM is async and the
-            // daemon fsyncs RocksDB on shutdown, so it may still hold the OS
-            // `fcntl` LOCK for tens of ms after `kill` returns. Returning here
-            // (and removing the lockfile) immediately lets the next hook spawn a
-            // new daemon that opens the DB while the old one still holds the
-            // LOCK -> "Resource temporarily unavailable" (the post-deploy race,
-            // unit.daemon-restart-race-free). Block until the old PID is gone
-            // before releasing — bounded so a wedged daemon cannot hang deploy.
-            if wait_for_pid_exit(lock.pid) {
-                format!(
-                    "[DEPLOY] step 8/8: daemon pid {} exited (LOCK released)",
-                    lock.pid
-                )
-            } else {
-                format!(
-                    "[DEPLOY] step 8/8: WARNING daemon pid {} did not exit within budget; \
-                     respawn may hit transient LOCK contention (self-heals via backoff)",
-                    lock.pid
-                )
-            }
-        } else {
-            format!(
-                "[DEPLOY] step 8/8: daemon pid {} not running (stale lockfile)",
-                lock.pid
-            )
-        };
-        print_or_exit(&msg).ok();
-    }
-    // Remove the lockfile unconditionally: if the daemon was already dead the
-    // entry is stale; if we just killed it (and waited for exit above), removing
-    // now lets the respawn claim a clean lock without racing the dying process.
-    kavach_rpc::lockfile::remove_lockfile();
-}
-
-/// Poll until process `pid` has exited (the `RocksDB` LOCK is released only when
-/// the holding process is fully gone), bounded so a wedged daemon cannot hang
-/// the deploy. Returns true if it exited within the budget, false on timeout.
-///
-/// Budget mirrors the proven daemon-eviction wait in
-/// `kavach_surreal::connection::try_stop_daemon` (20 x 50ms = 1s) — long enough
-/// for a SIGTERM-handled `RocksDB` fsync-and-exit, short enough that a stuck
-/// daemon degrades to the self-healing backoff path rather than blocking deploy.
-///
-/// Unix-only: the daemon is signalled via POSIX kill; on non-unix there is no
-/// daemon to wait on (the restart block is itself `#[cfg(unix)]`). Uses the
-/// `kill -0 <pid>` existence probe — the same `Command::new("kill")` tool the
-/// restart already shells out to, so no new crate dependency is pulled in.
-#[cfg(unix)]
-fn wait_for_pid_exit(pid: u32) -> bool {
-    // `kill -0 <pid>` sends no signal; it only checks the process exists.
-    // Exit 0 = alive, non-zero (ESRCH) = gone. One final probe after the loop
-    // so a daemon exiting in the last window is not a false timeout.
-    let alive = || {
-        Command::new("kill")
-            .args(["-0", &pid.to_string()])
-            .status()
-            .is_ok_and(|s| s.success())
-    };
-    for _ in 0..20 {
-        if !alive() {
-            return true;
-        }
-        std::thread::sleep(std::time::Duration::from_millis(50));
-    }
-    !alive()
-}
-
-/// Track B — build the GUI app bundle with the CLI embedded as a sidecar,
-/// codesign, install to /Applications, and symlink the terminal CLI into it.
-///
-/// Steps:
-///   B1. Resolve the target triple (sidecar filename suffix).
-///   B2. Stage the freshly built CLI as crates/kavach-app/bin/kavach-<triple>.
-///   B3. `dx bundle --release --platform desktop --package-types macos --package-types dmg`.
-///   B4. codesign --deep --force --sign - KavachApp.app  (macOS amfid).
-///   B5. Install KavachApp.app to /Applications (fresh, remove-then-copy).
-///   B6. Symlink ~/.local/bin/kavach -> /Applications/KavachApp.app/Contents/MacOS/kavach.
-#[expect(clippy::too_many_lines, reason = "bundle orchestrator with 6 steps")]
-fn deploy_bundle() -> i32 {
-    if !cfg!(target_os = "macos") {
-        if let Err(io_err) = ewrite_or_exit(
-            "[BUNDLE] FAIL: --bundle currently supports macOS only (codesign + .app/.dmg).",
-        ) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-    if Command::new("dx").arg("--version").output().is_err() {
-        if let Err(io_err) = ewrite_or_exit(
-            "[BUNDLE] FAIL: `dx` (Dioxus 0.7 CLI) not found. \
-             Install via `cargo binstall dioxus-cli` and re-run.",
-        ) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-    let Some(root) = workspace_root() else {
-        if let Err(io_err) = ewrite_or_exit("[BUNDLE] FAIL: cannot resolve cwd") {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    };
-
-    // B1: target triple.
-    let triple = match host_triple() {
-        Ok(t) => t,
-        Err(msg) => {
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-    };
-
-    // B2: stage the CLI as the triple-suffixed sidecar. The CLI was already
-    // built in release by Track A (step 6/7).
-    if let Err(io_err) = print_or_exit(&format!(
-        "[BUNDLE] step 1/6: stage CLI sidecar (bin/kavach-{triple})"
-    )) {
-        return into_exit_code(io_err);
-    }
-    let cli_release = root.join("target").join(RELEASE_PROFILE).join(BINARY_NAME);
-    let sidecar_dir = root.join("crates").join(APP_PKG).join("bin");
-    let sidecar = sidecar_dir.join(format!("{BINARY_NAME}-{triple}"));
-    if let Err(e) = std::fs::create_dir_all(&sidecar_dir) {
-        if let Err(io_err) = ewrite_or_exit(&format!("[BUNDLE] FAIL: mkdir bin/: {e}")) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-    if let Err(msg) = install_binary(&cli_release, &sidecar) {
-        if let Err(io_err) = ewrite_or_exit(&msg) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-
-    // B3: dx bundle. Run from the app crate dir so dx picks up its Dioxus.toml.
-    if let Err(io_err) =
-        print_or_exit("[BUNDLE] step 2/6: dx bundle --release --platform desktop (macos + dmg)")
-    {
-        return into_exit_code(io_err);
-    }
-    let app_dir = root.join("crates").join(APP_PKG);
-    let dx_ok = Command::new("dx")
-        .current_dir(&app_dir)
-        .args([
-            "bundle",
-            "--release",
-            "--platform",
-            "desktop",
-            "--package-types",
-            "macos",
-            "--package-types",
-            "dmg",
-        ])
-        .status()
-        .is_ok_and(|s| s.success());
-    if !dx_ok {
-        // The staged sidecar is a consumed build artifact; don't leave it in
-        // the tree to be silently reused by a later run. Non-fatal but logged.
-        cleanup_stage(&sidecar_dir);
-        if let Err(io_err) = ewrite_or_exit("[BUNDLE] FAIL: dx bundle failed. See output above.") {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-    // Bundle succeeded — dx has embedded the sidecar, so the staged copy is no
-    // longer needed. Cleanup keeps the working tree clean.
-    cleanup_stage(&sidecar_dir);
-
-    // Resolve produced .app. dx 0.7.7 emits to
-    // target/dx/<pkg>/bundle/macos/macos/<Name>.app (single macos/macos —
-    // not the doubly-nested bundle/macos/bundle/macos the older docs show).
-    // Verified empirically. SOURCE: dx bundle run, 2026-05.
-    let app_src = root
-        .join("target")
-        .join("dx")
-        .join(APP_PKG)
-        .join("bundle")
-        .join("macos")
-        .join("macos")
-        .join(APP_BUNDLE_NAME);
-    if !app_src.exists() {
-        if let Err(io_err) = ewrite_or_exit(&format!(
-            "[BUNDLE] FAIL: expected {} after dx bundle — not found.",
-            app_src.display()
-        )) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-
-    // B4: codesign the whole bundle (ad-hoc). --deep signs nested binaries
-    // (the embedded kavach sidecar) before the outer bundle. macOS amfid.
-    if let Err(io_err) =
-        print_or_exit("[BUNDLE] step 3/6: codesign --deep --force --sign - KavachApp.app")
-    {
-        return into_exit_code(io_err);
-    }
-    if !codesign_deep(&app_src) {
-        if let Err(io_err) = ewrite_or_exit(&format!(
-            "[BUNDLE] FAIL: codesign failed for {}. The app will be killed by \
-             amfid on launch. Resign manually: codesign --deep --force --sign - {}",
-            app_src.display(),
-            app_src.display()
-        )) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-
-    // B5: install KavachApp.app to /Applications (fresh: remove-then-copy).
-    if let Err(io_err) = print_or_exit("[BUNDLE] step 4/6: install KavachApp.app to /Applications")
-    {
-        return into_exit_code(io_err);
-    }
-    let app_dst = PathBuf::from("/Applications").join(APP_BUNDLE_NAME);
-    if app_dst.exists()
-        && let Err(e) = std::fs::remove_dir_all(&app_dst)
-    {
-        if let Err(io_err) = ewrite_or_exit(&format!(
-            "[BUNDLE] FAIL: remove existing {}: {e}",
-            app_dst.display()
-        )) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-    // .app is a directory tree — use `cp -R` to preserve the bundle layout +
-    // symlinks + the codesignature. std::fs has no recursive copy.
-    let cp_ok = Command::new("cp")
-        .arg("-R")
-        .arg(&app_src)
-        .arg(&app_dst)
-        .status()
-        .is_ok_and(|s| s.success());
-    if !cp_ok {
-        // The destination was removed before the copy, so a mid-copy failure
-        // leaves a half-populated .app at app_dst. Remove it so the next run's
-        // existence check doesn't see — and trust — a corrupt bundle. Fail
-        // closed: report cp's failure even if cleanup also fails.
-        if let Err(e) = std::fs::remove_dir_all(&app_dst)
-            && app_dst.exists()
-        {
-            if let Err(io_err) = ewrite_or_exit(&format!(
-                "[BUNDLE] FAIL: cp -R failed AND could not clean partial {}: {e} — \
-                 remove it manually before re-running.",
-                app_dst.display()
-            )) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-        if let Err(io_err) = ewrite_or_exit(&format!(
-            "[BUNDLE] FAIL: cp -R {} -> {} (partial copy cleaned up)",
-            app_src.display(),
-            app_dst.display()
-        )) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-
-    // B6: symlink ~/.local/bin/kavach into the installed bundle so the
-    // terminal CLI and the GUI's embedded sidecar are one binary.
-    if let Err(io_err) = print_or_exit(
-        "[BUNDLE] step 5/7: symlink ~/.local/bin/kavach -> KavachApp.app/Contents/MacOS/kavach",
-    ) {
-        return into_exit_code(io_err);
-    }
-    let embedded_cli = app_dst.join("Contents").join("MacOS").join(BINARY_NAME);
-    let Some(link) = install_dest() else {
-        if let Err(io_err) = ewrite_or_exit("[BUNDLE] FAIL: cannot resolve $HOME") {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    };
-    if let Err(msg) = symlink_force(&embedded_cli, &link) {
-        if let Err(io_err) = ewrite_or_exit(&msg) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-
-    // B7: restart the RPC daemon so it loads the NEW embedded binary. Without
-    // this, a --bundle deploy leaves the long-running daemon on the OLD code —
-    // every gate routes through that stale process and the deploy silently never
-    // takes effect (the same failure the CLI track's step 8 fixes).
-    if let Err(io_err) =
-        print_or_exit("[BUNDLE] step 6/7: restart RPC daemon (load new binary)")
-    {
-        return into_exit_code(io_err);
-    }
-    restart_rpc_daemon();
-
-    if let Err(io_err) = print_or_exit(&format!(
-        "[BUNDLE] step 7/7: OK — installed {} and symlinked CLI to {}",
-        app_dst.display(),
-        link.display()
-    )) {
         return into_exit_code(io_err);
     }
     0
@@ -642,28 +275,9 @@ fn install_binary(src: &Path, dst: &Path) -> Result<(), String> {
     };
     std::fs::create_dir_all(parent)
         .map_err(|e| format!("[DEPLOY] FAIL: mkdir {}: {e}", parent.display()))?;
-    // Refuse to silently clobber a `--bundle` install: there, `dst` is a symlink
-    // into /Applications/KavachApp.app so the CLI and the GUI's embedded sidecar
-    // are ONE signed binary. A plain `deploy` that overwrote it with a standalone
-    // file would diverge the two — the CLI runs the new build, the daemon/GUI the
-    // stale embedded one. Direct the user to the matching mode instead.
-    if let Ok(target) = std::fs::read_link(dst)
-        && target
-            .components()
-            .any(|c| c.as_os_str() == "KavachApp.app")
-    {
-        return Err(format!(
-            "[DEPLOY] FAIL: {} is a symlink into KavachApp.app (a --bundle install). \
-             A plain `deploy` would replace it with a standalone copy and diverge the \
-             CLI from the GUI/daemon binary. Re-run `kavach deploy --bundle` to update \
-             both together, or remove the symlink first to switch to a CLI-only install.",
-            dst.display()
-        ));
-    }
     // Use symlink_metadata (does NOT follow links) so a DANGLING symlink is still
     // detected and removed — `Path::exists()` follows the link and returns false
-    // for a dangling one, leaving it to collide with the copy below. Mirrors the
-    // correct check already used by symlink_force.
+    // for a dangling one, leaving it to collide with the copy below.
     if dst.symlink_metadata().is_ok() {
         std::fs::remove_file(dst)
             .map_err(|e| format!("[DEPLOY] FAIL: unlink {}: {e}", dst.display()))?;
@@ -746,85 +360,6 @@ fn verify_runs(dst: &Path) -> Result<(), String> {
     ))
 }
 
-/// Remove the staged-sidecar directory. Cleanup is non-fatal — a leftover
-/// build artifact does not invalidate the bundle — but the failure is logged
-/// so a persistently un-removable stage dir is observable rather than silent.
-fn cleanup_stage(sidecar_dir: &Path) {
-    if let Err(e) = std::fs::remove_dir_all(sidecar_dir)
-        && sidecar_dir.exists()
-    {
-        // Already on an error/exit path or about to return Ok; surface, don't fail.
-        ewrite_or_exit(&format!(
-            "[BUNDLE] WARN: could not clean staged sidecar {}: {e}",
-            sidecar_dir.display()
-        ))
-        .ok();
-    }
-}
-
-/// Ad-hoc codesign a whole .app bundle, signing nested binaries first.
-fn codesign_deep(app: &Path) -> bool {
-    Command::new("codesign")
-        .args(["--deep", "--force", "--sign", "-"])
-        .arg(app)
-        .status()
-        .is_ok_and(|s| s.success())
-}
-
-/// Force-create a symlink at `link` pointing to `target` (replacing any
-/// existing file/symlink). Returns Err(message) on failure.
-fn symlink_force(target: &Path, link: &Path) -> Result<(), String> {
-    let Some(parent) = link.parent() else {
-        return Err(format!("[BUNDLE] FAIL: {} has no parent", link.display()));
-    };
-    std::fs::create_dir_all(parent)
-        .map_err(|e| format!("[BUNDLE] FAIL: mkdir {}: {e}", parent.display()))?;
-    // symlink_metadata does not follow the link, so a dangling/old symlink is
-    // still detected and removed.
-    if link.symlink_metadata().is_ok() {
-        std::fs::remove_file(link)
-            .map_err(|e| format!("[BUNDLE] FAIL: unlink {}: {e}", link.display()))?;
-    }
-    platform_symlink(target, link).map_err(|e| {
-        format!(
-            "[BUNDLE] FAIL: symlink {} -> {}: {e}",
-            link.display(),
-            target.display()
-        )
-    })
-}
-
-/// Create a file symlink in a platform-portable way. The `--bundle` flow that
-/// calls this is macOS-only at runtime, but the function is compiled on every
-/// target, so the syscall must resolve on each: `std::os::unix::fs::symlink`
-/// on Unix, `std::os::windows::fs::symlink_file` on Windows.
-#[cfg(unix)]
-fn platform_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
-    std::os::unix::fs::symlink(target, link)
-}
-
-#[cfg(windows)]
-fn platform_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
-    std::os::windows::fs::symlink_file(target, link)
-}
-
-/// Resolve the host target triple via `rustc --print host-tuple`. The bundler
-/// appends this to the sidecar filename (Dioxus `external_bin`).
-fn host_triple() -> Result<String, String> {
-    let out = Command::new("rustc")
-        .args(["--print", "host-tuple"])
-        .output()
-        .map_err(|e| format!("[BUNDLE] FAIL: run rustc --print host-tuple: {e}"))?;
-    if !out.status.success() {
-        return Err("[BUNDLE] FAIL: rustc --print host-tuple exited non-zero".to_owned());
-    }
-    let triple = String::from_utf8_lossy(&out.stdout).trim().to_owned();
-    if triple.is_empty() {
-        return Err("[BUNDLE] FAIL: rustc returned an empty host triple".to_owned());
-    }
-    Ok(triple)
-}
-
 /// Run cargo with given args. Returns true on success.
 fn run_cargo(args: &[&str]) -> bool {
     Command::new("cargo")
@@ -890,35 +425,6 @@ fn install_dest() -> Option<PathBuf> {
 mod tests {
     use super::install_binary;
     use std::fs;
-
-    // A `--bundle` install leaves `dst` as a symlink into KavachApp.app. Plain
-    // `install_binary` must REFUSE rather than clobber it into a standalone copy
-    // (the divergence that breaks CLI↔GUI/daemon binary identity).
-    #[test]
-    fn refuses_to_clobber_a_bundle_symlink() {
-        let dir = std::env::temp_dir().join(format!("kavach-deploytest-{}", std::process::id()));
-        fs::create_dir_all(&dir).unwrap();
-        let src = dir.join("src-bin");
-        fs::write(&src, b"#!/bin/sh\n").unwrap();
-        let dst = dir.join("kavach");
-        // Simulate the bundle symlink target path component.
-        let bundle_target = dir
-            .join("KavachApp.app")
-            .join("Contents")
-            .join("MacOS")
-            .join("kavach");
-        std::os::unix::fs::symlink(&bundle_target, &dst).unwrap();
-
-        let err = install_binary(&src, &dst).expect_err("must refuse bundle symlink clobber");
-        assert!(
-            err.contains("KavachApp.app"),
-            "error must name the bundle: {err}"
-        );
-        // The symlink must survive untouched.
-        assert!(dst.symlink_metadata().unwrap().file_type().is_symlink());
-
-        fs::remove_dir_all(&dir).ok();
-    }
 
     // A DANGLING symlink (target deleted) must still be removed before copy —
     // `Path::exists()` follows the link and returns false, so the pre-fix code

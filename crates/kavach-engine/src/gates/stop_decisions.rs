@@ -73,10 +73,15 @@ fn write_auto_decision(kind: &str, body: &str, project: &str, turn: i64) {
         "update_key": serde_json::Value::Null,
         "priority": serde_json::Value::Null,
     });
-    drop(kavach_rpc::client::call::<_, serde_json::Value>(
+    // Non-blocking decision persist, but a dropped write on a daemon blip must
+    // be observable — log to stderr rather than swallow it silently.
+    if let Err(e) = kavach_rpc::client::call::<_, serde_json::Value>(
         "db.write",
         Some(params),
-    ));
+    ) {
+        use std::io::Write as _;
+        drop(writeln!(std::io::stderr(), "[DECISION_PERSIST_FAIL] {key}: {e}"));
+    }
 }
 
 #[cfg(test)]

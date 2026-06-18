@@ -1,4 +1,4 @@
-use kavach_session::SessionState;
+use kavach_session::{RewardOutcome, SessionState};
 
 use super::build_loop_compact;
 use super::build_loop_stop;
@@ -54,7 +54,7 @@ fn loop_stop_frame_is_legible_goal_iteration_termination() {
 #[test]
 fn reward_session_stats_emits_when_data_present() {
     let mut session = SessionState::default();
-    session.record_reward_outcome("unit.a", Some(true));
+    session.record_reward_outcome("unit.a", RewardOutcome::Passed);
     let stats = super::build_reward_session_stats(&session).expect("stats");
     assert!(stats.contains("[REWARD:stats]"));
     assert!(stats.contains("session_pass_rate"));

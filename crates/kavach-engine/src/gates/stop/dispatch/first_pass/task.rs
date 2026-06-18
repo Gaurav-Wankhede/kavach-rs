@@ -1,12 +1,16 @@
 //! PRIORITY 1: dispatch the next kanban task.
 use core::ops::ControlFlow;
 
+mod envelope;
+use envelope::{EnvelopeCtx, dispatch_envelope};
+
 use super::source_down;
 use crate::gates::event_log::log_gate_decision;
 use crate::gates::loop_frame;
 use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{
     SOURCE_DOWN_KEY, card_entry_status, claim_card, get_next_task_info, live_lease_holder,
+    next_task_directive,
 };
 
 /// `Break` with an `[AUTO_CONTINUE]` envelope if a task is pending; `Continue`
@@ -61,6 +65,27 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             &ctx.session.project,
         );
     }
+    // Read-back verify (closes the narrate-without-persist gap): claim_card
+    // returns the RPC's `claimed` flag, but a transport blip AFTER the row flip,
+    // or a lease fence applied mid-write, can leave the DB NOT showing
+    // `in_progress`. If the gate then announces "CLAIMED and in_progress in the
+    // Kavach DB", the next stop's census reports runnable=0 while the transcript
+    // claims a live card — the exact contradiction the user reported. So confirm
+    // the row actually reads `in_progress` before asserting it landed. An
+    // unobservable status (RPC down) is fail-open: we keep the resume path the
+    // `claimed`/`resume` logic already decided, but we don't FALSELY claim the
+    // write is durable — the claim line drops to the softer "resume" phrasing.
+    let persisted_in_progress = card_entry_status(&ctx.session.project, &priority)
+        .is_some_and(|s| s == "in_progress");
+    if claimed && !persisted_in_progress {
+        log_gate_decision(
+            &ctx.session.session_id,
+            "stop:claim_not_persisted",
+            "block",
+            &format!("claim={priority} reported won but DB read-back != in_progress"),
+            &ctx.session.project,
+        );
+    }
     if ctx.session.current_kanban_card != priority {
         ctx.session.current_kanban_card.clone_from(&priority);
         ctx.session.save_or_log();
@@ -77,29 +102,20 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             &ctx.session.project,
         );
     }
-    let proj = &ctx.session.project;
     let loop_prefix = loop_frame::build_loop_stop(ctx.session, Some(&title));
     let reward_prefix = loop_frame::build_reward_stop_last(ctx.session);
-    let claim_line = if claimed {
-        "This card is CLAIMED and in_progress in the Kavach DB. Start it now."
-    } else {
-        "This card is IN_PROGRESS. Resume it now — you are mid-work."
-    };
-    drop(kavach_hook::exit_stop_block(&format!(
-        "{loop_prefix}{reward_prefix}[AUTO_CONTINUE] Do NOT stop. Build the next card THIS turn.\n\
-         NEXT TASK [{priority}]: {title}\n\
-         {claim_line}\n\n\
-         Do this now, in order:\n\
-         1. Read the card:\n\
-           kavach db get --project {proj} --category roadmap --key {priority} --full\n\
-         2. Open a phase iteration on the first file you'll edit:\n\
-           kavach phase iteration-start <path>\n\
-         3. Implement it. Then close:\n\
-           kavach db status-update --project {proj} --category roadmap --key {priority} --status done\n\
-           kavach phase iteration-done\n\
-         CONTRACT: claim -> implement -> 3-witness verify (artifact exists -> diff landed -> build passes) \
-         -> close, ALL this turn. Run the loophole lenses before you claim done. Do NOT stop mid-card. \
-         Your VERY NEXT action must be step 1 above — do not end this turn describing the card."
-    )));
+    // The envelope emits STATE + the project's DYNAMIC directive (DB row
+    // `gate.dispatch_directive`) — no fixed procedure prose in the binary.
+    let directive = next_task_directive(&ctx.session.project);
+    drop(kavach_hook::exit_stop_block(&dispatch_envelope(&EnvelopeCtx {
+        proj: &ctx.session.project,
+        priority: &priority,
+        title: &title,
+        loop_prefix: &loop_prefix,
+        reward_prefix: &reward_prefix,
+        claimed,
+        persisted_in_progress,
+        directive: directive.as_deref(),
+    })));
     ControlFlow::Break(())
 }

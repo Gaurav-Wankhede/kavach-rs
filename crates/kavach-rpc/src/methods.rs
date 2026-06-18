@@ -1,3 +1,4 @@
+pub mod brain;
 pub mod bridge;
 pub mod bulk;
 pub mod change;
@@ -16,6 +17,7 @@ pub mod projects;
 pub mod rag;
 pub mod replay;
 pub mod roadmap;
+pub mod run;
 pub mod session;
 pub mod system;
 pub mod trust;

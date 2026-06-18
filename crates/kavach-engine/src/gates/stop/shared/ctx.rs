@@ -35,4 +35,16 @@ pub(crate) struct StopCtx<'a> {
     /// NON-blocking nudge; recorded to the mistake ledger at the computation site
     /// so the learning loop sees it on every stop, not just clean exits.
     pub(crate) shallow_advisory: Option<String>,
+    /// Continuation-menu advisory: set when the final assistant message ENDED
+    /// THE TURN on a "continue or pause?" / "want me to proceed, or redirect?"
+    /// permission question while the loop directive (the `[AUTO_CONTINUE]` verdict
+    /// this very gate emits) already commands autonomous continuation. The model
+    /// satisfied the loop in the gate's OUTPUT while its own final message asked
+    /// the user for permission to do what the gate already ordered — the exact
+    /// loop-stall the user reported. Appended to the clean-exit context as a
+    /// NON-blocking nudge (loop-safe — the next turn either continues or, if the
+    /// board is genuinely drained, STATES the clean stop without a question);
+    /// recorded to the mistake ledger at the computation site so the learning loop
+    /// sees it on every stop.
+    pub(crate) continuation_advisory: Option<String>,
 }

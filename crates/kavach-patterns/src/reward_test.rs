@@ -28,6 +28,23 @@ fn write(path: &str, content: &str) -> TrajectoryEvent {
 }
 
 #[test]
+fn paraphrased_handoff_stop_scores_negative_via_semantic_backstop() {
+    // The card VERIFY: a paraphrased handoff that EVADES the literal regex still
+    // scores negative — the semantic backstop applies DEFERRAL_HANDOFF_PENALTY.
+    let msg = "Scoped the card. I'll leave that to you — you can run the build next.";
+    let score = score_trajectory(&[stop(msg)]);
+    assert_eq!(score, DEFERRAL_HANDOFF_PENALTY, "semantic deferral debited: {score}");
+}
+
+#[test]
+fn regex_caught_deferral_is_not_double_penalized() {
+    // A literal-regex hit must NOT also trip the semantic backstop (single debit).
+    let msg = "the next step is yours";
+    let score = score_trajectory(&[stop(msg)]);
+    assert_eq!(score, DEFERRAL_HANDOFF_PENALTY, "exactly one debit, not two: {score}");
+}
+
+#[test]
 fn score_is_deterministic() {
     // AC-1: same trajectory -> same score, every time.
     let traj = vec![
@@ -130,4 +147,137 @@ fn build_then_block_nets_below_a_clean_build() {
 #[test]
 fn empty_trajectory_scores_zero() {
     assert_eq!(score_trajectory(&[]), 0);
+}
+
+fn stop(msg: &str) -> TrajectoryEvent {
+    TrajectoryEvent {
+        timestamp_ms: 0,
+        session_id: "t".into(),
+        event_kind: EventKind::Stop {
+            final_message: msg.into(),
+        },
+    }
+}
+
+#[test]
+fn clean_stop_scores_zero() {
+    assert_eq!(score_trajectory(&[stop("Done — card closed, build green.")]), 0);
+}
+
+#[test]
+fn deferral_handoff_stop_is_strongly_penalized() {
+    let s = score_trajectory(&[stop("The next step is yours — start a new session.")]);
+    assert_eq!(s, DEFERRAL_HANDOFF_PENALTY);
+}
+
+#[test]
+fn handoff_turn_cannot_outscore_a_real_build() {
+    // The make-or-break strict-RLAIF invariant: a turn that reads files and then
+    // hands work back nets below a clean build, so RLAIF can never reward it.
+    let handoff = score_trajectory(&[
+        write("notes.md", "diagnosis"),
+        stop("I cannot do this from this session; the work must run in another session."),
+    ]);
+    let honest = score_trajectory(&[bash("cargo check --workspace")]);
+    assert!(
+        handoff < honest && handoff < 0,
+        "handoff turn ({handoff}) must be negative and below a real build ({honest})"
+    );
+}
+
+#[test]
+fn cannot_from_this_session_is_a_deferral() {
+    let s = score_trajectory(&[stop("I cannot execute the edits from this session.")]);
+    assert_eq!(s, DEFERRAL_HANDOFF_PENALTY);
+}
+
+// --- Project-adaptive rubric (owner directive 2026-06-17: expand the RLAIF) ---
+
+#[test]
+fn default_rubric_blind_to_bun_test() {
+    // The bug the rubric fixes: the Rust default scores a `bun test` as 0 — a TS
+    // project was invisible to the RLAIF.
+    assert_eq!(score_trajectory(&[bash("bun test")]), 0);
+}
+
+#[test]
+fn ts_bun_rubric_scores_bun_test_positive() {
+    // The fix: under the ts-bun rubric, `bun test` is a real verify (+4), not 0.
+    let s = score_trajectory_with(
+        &[bash("bun test")],
+        &presets::ts_bun(),
+    );
+    assert!(s > 0, "ts-bun rubric must score `bun test` positive, got {s}");
+}
+
+#[test]
+fn ts_bun_rubric_scores_tsc_as_build() {
+    let s = score_trajectory_with(
+        &[bash("tsc --noEmit")],
+        &presets::ts_bun(),
+    );
+    assert!(s >= 10, "tsc is a build-class verify under ts-bun: {s}");
+}
+
+#[test]
+fn python_uv_rubric_scores_pytest_positive() {
+    let s = score_trajectory_with(
+        &[bash("uv run pytest")],
+        &presets::python_uv(),
+    );
+    assert!(s > 0, "python-uv rubric must score pytest positive: {s}");
+}
+
+#[test]
+fn deferral_is_universal_across_rubrics() {
+    // The deferral-handoff debit is stack-independent — every preset carries it.
+    let s = score_trajectory_with(
+        &[stop("the next step is yours")],
+        &presets::ts_bun(),
+    );
+    assert!(s < 0, "deferral must be penalized under every rubric: {s}");
+}
+
+// --- Phase 4 enriched universal signals ---
+
+#[test]
+fn shipped_stub_is_penalized() {
+    // A write introducing todo!()/unimplemented! is incomplete work → net negative
+    // even though the file landed (+1) and is a test (+4): stub debit (-5) dominates.
+    let s = score_trajectory(&[write("src/x.rs", "fn f() { todo!() }")]);
+    assert!(s < 0, "a shipped todo! stub must net negative: {s}");
+}
+
+#[test]
+fn rca_block_is_a_credit() {
+    // A write documenting a root cause earns the RCA credit on top of file-landed.
+    let with_rca = score_trajectory(&[write("notes.rs", "// ROOT CAUSE: the lock was held across await")]);
+    let plain = score_trajectory(&[write("notes.rs", "// just a note")]);
+    assert!(with_rca > plain, "RCA block ({with_rca}) must outscore a plain write ({plain})");
+}
+
+#[test]
+fn silent_failure_is_penalized() {
+    let s = score_trajectory(&[write("src/x.rs", "let cfg = load().unwrap_or_default();")]);
+    assert!(s < 1, "a swallowed error must drag below the file-landed floor: {s}");
+}
+
+#[test]
+fn enriched_signals_are_universal_across_stacks() {
+    // Phase-4 signals apply under every rubric, not just Rust.
+    let s = score_trajectory_with(
+        &[write("x.py", "def f():\n    raise NotImplementedError  # not implemented")],
+        &presets::ts_bun(),
+    );
+    assert!(s < 0, "stub penalty must apply under a non-Rust rubric too: {s}");
+}
+
+#[test]
+fn by_name_unknown_falls_back_to_rust() {
+    // An unknown stack name resolves to the Rust default (fail-safe).
+    let s = score_trajectory_with(
+        &[bash("cargo check")],
+        &presets::by_name("totally-unknown-stack"),
+    );
+    assert!(s >= 10, "unknown stack falls back to rust-cargo: {s}");
 }

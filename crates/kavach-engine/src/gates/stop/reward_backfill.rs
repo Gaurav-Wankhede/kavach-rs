@@ -7,7 +7,7 @@
 //! session's un-rewarded decisions. Fire-and-forget: a down daemon must never
 //! block or alter the Stop hook (which carries security duties).
 
-use kavach_session::SessionState;
+use kavach_session::{RewardOutcome, SessionState};
 
 #[cfg(test)]
 #[path = "reward_backfill_test.rs"]
@@ -29,23 +29,54 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     if session.session_id.is_empty() {
         return;
     }
+    // E5 (reward only on a real transition, owner directive 2026-06-18): the
+    // back-fill runs on EVERY stop, BEFORE the guard pipeline decides allow-stop
+    // vs dispatch. So a user-focus / foreign-tree ALLOW-STOP — which skips the
+    // card without any work — would otherwise still bank a reward (the spurious
+    // `[REWARD:last] +1.0` on a skip). A reward must reflect WORK: grade only when
+    // this turn produced a real signal — a mechanical 3-witness receipt
+    // (`goal_receipt_pass`) OR an actual `kavach db status-update` to done/verified
+    // on a card. Neither → no transition happened → abstain (write no reward).
+    let transitioned = session.goal_receipt_pass
+        || session.recent_commands.iter().any(|c| {
+            c.contains("status-update")
+                && (c.contains("--status done") || c.contains("--status verified"))
+        });
+    if !transitioned {
+        return;
+    }
     let card = if session.current_kanban_card.is_empty() {
         "session".to_owned()
     } else {
         session.current_kanban_card.clone()
     };
-    // FIX [false-negative reward / L2]: `goal_receipt_pass` is true ONLY when a
-    // verified-clean oracle receipt landed. Its `false` means "no clean receipt",
-    // NOT "proven failure" — an out-of-band-verified card (e.g. an HTTP-200
-    // release with no machine receipt) is correct yet has no receipt. Treating
-    // absence as `verified_clean:false` graded a let-through as -1.0 (the bug).
-    // There is no "proven failure" channel today, so the only definite signal is
-    // a clean receipt -> Some(true); everything else -> None (abstain).
-    let outcome = session.goal_receipt_pass.then_some(true);
+    // Reward resolution order (RLAIF, owner directive 2026-06-17): the MECHANICAL
+    // 3-witness receipt is ground truth and always wins; only when it is absent
+    // does the AUTONOMOUS AI verdict supply the reward, filling the blind spot
+    // where the oracle would otherwise abstain (the dominant 0.0 case that
+    // starved the bandit). With neither signal it still abstains.
+    //
+    // FIX [false-negative reward / L2] preserved: `goal_receipt_pass == false`
+    // means "no clean receipt", NOT "proven failure" — so absence never grades a
+    // let-through as -1.0 by itself; it falls through to the AI verdict or abstain.
+    // Reward resolution order: (1) mechanical 3-witness receipt (ground truth),
+    // (2) autonomous AI verdict, (3) the PROJECT-ADAPTIVE rubric score over the
+    // turn's trajectory — the last filling the abstain blind spot with an
+    // objective, stack-aware signal (a non-cargo project's `bun test`/`pytest`
+    // now scores, not zero). Rubric loaded from the project's `gate.reward_rubric`
+    // DB row; absent → Rust default. Owner directive 2026-06-17 (expand the RLAIF).
+    let outcome = if session.goal_receipt_pass {
+        RewardOutcome::Passed
+    } else if let Some(v) = session.ai_verdict {
+        RewardOutcome::AiJudged(v)
+    } else {
+        rubric_outcome(session)
+    };
     session.record_reward_outcome(&card, outcome);
     // Abstention writes no reward — a missing signal must never become a -1
-    // penalty on the bandit log. Only a definite outcome fires the grader.
-    let Some(verified_clean) = outcome else {
+    // penalty on the bandit log. Only a GRADED outcome (mechanical OR AI-judged)
+    // fires the grader, carrying its ±1 sign as the `verified_clean` signal.
+    let Some(verified_clean) = outcome.graded() else {
         return;
     };
     let params = serde_json::json!({
@@ -61,6 +92,30 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     )]
     let _: Result<serde_json::Value, _> =
         kavach_rpc::client::call("db.bandit_backfill_session", Some(params));
+}
+
+/// Score the session's trajectory under its PROJECT-ADAPTIVE rubric and map the
+/// scalar to a reward outcome: positive (verified work outweighs penalties) →
+/// clean, negative (gate-block / deferral-handoff dominates) → not-clean, zero
+/// (no signal either way) → abstain. The rubric is loaded per-project so a
+/// non-Rust stack scores its own verify commands. Any read error → abstain
+/// (a missing tape must never fabricate a reward). Owner directive 2026-06-17.
+fn rubric_outcome(session: &SessionState) -> RewardOutcome {
+    let Ok(path) =
+        kavach_patterns::eval_replay::default_trajectory_path(&session.session_id)
+    else {
+        return RewardOutcome::Abstain;
+    };
+    let Ok(events) = kavach_patterns::eval_replay::read_jsonl(&path) else {
+        return RewardOutcome::Abstain;
+    };
+    let rubric =
+        crate::gates::stop_dispatch::reward_rubric_for(&session.project);
+    match kavach_patterns::reward::score_trajectory_with(&events, &rubric) {
+        s if s > 0 => RewardOutcome::AiJudged(true),
+        s if s < 0 => RewardOutcome::AiJudged(false),
+        _ => RewardOutcome::Abstain,
+    }
 }
 
 /// z-score for ~95% pessimism in the stop-time learning pass.

@@ -78,6 +78,9 @@ impl SessionState {
         if self.last_write_turn > 0 {
             write_kv(s, "last_write_turn", &self.last_write_turn.to_string());
         }
+        if self.user_directive_turn > 0 {
+            write_kv(s, "user_directive_turn", &self.user_directive_turn.to_string());
+        }
         if self.last_db_write_turn > 0 {
             write_kv(
                 s,

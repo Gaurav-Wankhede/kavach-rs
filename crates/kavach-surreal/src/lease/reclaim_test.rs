@@ -11,7 +11,7 @@ use super::reclaim_orphaned_in_progress;
 use crate::open_memory;
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// Seed one roadmap card. `until_offset_secs` is relative to now; pass `None`

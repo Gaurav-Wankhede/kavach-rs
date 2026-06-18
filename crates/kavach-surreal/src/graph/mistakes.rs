@@ -5,7 +5,6 @@
 pub mod append;
 pub mod cluster;
 pub mod count;
-pub mod nearest;
 pub mod pattern;
 pub mod policy;
 pub mod policy_read;
@@ -14,7 +13,6 @@ pub mod top;
 pub use append::append_mistake_event;
 pub use cluster::cluster_event_to_pattern;
 pub use count::query_anti_pattern_hit_count;
-pub use nearest::{AntiPatternHit, nearest_anti_patterns};
 pub use pattern::upsert_anti_pattern;
 pub use policy::{DeployedPolicyProps, upsert_deployed_policy};
 pub use policy_read::{DeployedPolicyRow, top_deployed_policies};

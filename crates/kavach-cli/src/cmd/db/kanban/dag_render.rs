@@ -102,9 +102,16 @@ fn tiers(order: &[String], edges: &[DagEdge]) -> HashMap<String, usize> {
     depth
 }
 
-/// True when `node` has zero unmet prerequisites — i.e. every node it depends on
-/// is already `verified`/`done`. That is the "ready to dispatch NOW" signal.
+/// True when `node` is dispatchable (`todo`/`in_progress` with unmet prerequisites
+/// = 0) — i.e. every node it depends on is already `verified`/`done` AND the
+/// node itself is not yet closed. That is the "ready to dispatch NOW" signal.
+/// Closed nodes (verified/done) are NOT dispatchable, even if deps are met.
 fn is_ready(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) -> bool {
+    // Node must be dispatchable (not closed).
+    if matches!(node.entry_status.as_str(), "verified" | "done") {
+        return false;
+    }
+    // All prerequisites must be satisfied.
     edges
         .iter()
         .filter(|e| DEP_RELS.contains(&e.rel.as_str()) && e.target == node.id)
@@ -153,7 +160,16 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
     let depth = tiers(&order, &dag.edges);
     let max_tier = depth.values().copied().max().unwrap_or(0);
     for tier in 0..=max_tier {
-        let mut ids: Vec<&String> = order.iter().filter(|id| depth.get(*id) == Some(&tier)).collect();
+        let mut ids: Vec<&String> = order
+            .iter()
+            .filter(|id| depth.get(*id) == Some(&tier))
+            // Exclude closed nodes (verified/done) from tier display.
+            .filter(|id| {
+                by_id
+                    .get(id.as_str())
+                    .is_none_or(|n| !matches!(n.entry_status.as_str(), "verified" | "done"))
+            })
+            .collect();
         ids.sort();
         if ids.is_empty() {
             continue;

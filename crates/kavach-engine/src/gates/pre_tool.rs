@@ -26,6 +26,46 @@ fn perturn_nudge(session: &mut kavach_session::SessionState) -> Option<String> {
     ))
 }
 
+/// Helper to format rule context and apply nudge if needed.
+fn apply_rule_context_and_nudge(
+    rule_results: &[kavach_rule_engine::RuleResult],
+    session: &mut kavach_session::SessionState,
+) -> Option<String> {
+    let mut ctx = rule_eval::results_to_context(rule_results);
+    if ctx.is_empty() && let Some(nudge) = perturn_nudge(session) {
+        ctx.push_str(&nudge);
+    }
+    if ctx.is_empty() {
+        None
+    } else {
+        Some(ctx)
+    }
+}
+
+/// Handle default tool in default arm: check rule engine output and enforce blocks.
+fn handle_unmatched_tool(
+    input: &HookInput,
+    mut session: kavach_session::SessionState,
+) {
+    let rule_results = rule_eval::evaluate_rules(input);
+
+    // Check if any rule produced a Block action. If so, fail-closed: deny.
+    let worst = kavach_rule_engine::RuleEngine::worst_action(&rule_results);
+    if worst == kavach_rule_engine::RuleAction::Block {
+        let reason = rule_eval::results_to_context(&rule_results);
+        let deny_reason = if reason.is_empty() {
+            String::from("Rule engine: Block action enforced (no details)")
+        } else {
+            reason
+        };
+        super::turn_relay::exit_pre_tool_deny(&deny_reason);
+    } else {
+        // Warn and Allow/other: both allow relay, with optional context/nudge.
+        let ctx = apply_rule_context_and_nudge(&rule_results, &mut session);
+        super::turn_relay::exit_pre_tool_allow_relay(&mut session, ctx.as_deref());
+    }
+}
+
 /// Pre-tool umbrella gate: bash blocklist + read validation + subagent budget.
 /// Runs before any tool use (except Write/Edit which go through pre-write).
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
@@ -134,24 +174,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&ctx));
                 return Ok(());
             }
-            let mut rule_ctx = rule_eval::results_to_context(&rule_eval::evaluate_rules(input));
-            // RATE-LIMITED per-turn quality nudge. Reuses `turn_count` as the
-            // session counter: fire at most once per turn, and only every Nth
-            // turn, so it can never spam (≤1 per turn, ~1/NUDGE_EVERY_N_TURNS of
-            // turns). Skip entirely when a rule already produced context (avoid
-            // doubling the advisory) or when a fresh advisory recovery is already
-            // pending. SOURCE: gate-severity advisory budget — default-advisory,
-            // never spam. See pre_tool.rs §perturn-nudge.
-            if rule_ctx.is_empty()
-                && let Some(nudge) = perturn_nudge(&mut session)
-            {
-                rule_ctx.push_str(&nudge);
-            }
-            if rule_ctx.is_empty() {
-                super::turn_relay::exit_pre_tool_allow_relay(&mut session, None);
-            } else {
-                super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&rule_ctx));
-            }
+            handle_unmatched_tool(input, session);
             Ok(())
         }
     }

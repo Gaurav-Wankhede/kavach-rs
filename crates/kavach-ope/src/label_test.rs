@@ -67,3 +67,29 @@ fn an_inconsistent_log_fails_closed_to_neutral() {
     // an invented reward.
     assert_eq!(label(Action::Allow, VerifyOutcome::BlockedAndAccepted), 0.0);
 }
+
+#[test]
+fn rlaif_ai_judged_good_is_plus_one_regardless_of_action() {
+    // RLAIF: an AI verdict scores the OUTCOME, not the gate decision class — so
+    // it is +1 for any action. This is the signal that replaces the inert 0.0.
+    assert_eq!(label(Action::Block, VerifyOutcome::AiJudged { good: true }), 1.0);
+    assert_eq!(label(Action::Allow, VerifyOutcome::AiJudged { good: true }), 1.0);
+    assert_eq!(label(Action::Ask, VerifyOutcome::AiJudged { good: true }), 1.0);
+}
+
+#[test]
+fn rlaif_ai_judged_bad_is_minus_one_regardless_of_action() {
+    assert_eq!(label(Action::Block, VerifyOutcome::AiJudged { good: false }), -1.0);
+    assert_eq!(label(Action::Allow, VerifyOutcome::AiJudged { good: false }), -1.0);
+}
+
+#[test]
+fn rlaif_tags_round_trip_through_reward_scalar() {
+    use crate::label::{reward_scalar, reward_tag};
+    let g = reward_tag(Action::Block, VerifyOutcome::AiJudged { good: true });
+    let b = reward_tag(Action::Block, VerifyOutcome::AiJudged { good: false });
+    assert_eq!(g, "ai_judged_good");
+    assert_eq!(b, "ai_judged_bad");
+    assert_eq!(reward_scalar(g), Some(1.0));
+    assert_eq!(reward_scalar(b), Some(-1.0));
+}

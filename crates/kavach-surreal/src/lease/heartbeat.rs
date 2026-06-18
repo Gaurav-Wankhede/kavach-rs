@@ -2,7 +2,7 @@
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 use super::types::{LEASE_TTL_SECS, Lease, LeaseRow};
 use crate::error::{Error, Result};

@@ -2,7 +2,7 @@
 // SOURCE: https://surrealdb.com/docs/surrealql/statements/update
 // SOURCE: https://docs.rs/crate/surrealdb/latest
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 use crate::error::{Error, Result};
 

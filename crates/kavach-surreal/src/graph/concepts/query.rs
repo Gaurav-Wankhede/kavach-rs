@@ -2,7 +2,7 @@
 use crate::error::Result;
 use crate::graph::types::Entity;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 pub(crate) const SEARCH_LIMIT_MAX: i64 = 200;
 

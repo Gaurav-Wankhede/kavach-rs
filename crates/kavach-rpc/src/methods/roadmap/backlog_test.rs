@@ -21,6 +21,8 @@ fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry 
         updated_at: None,
         priority: None,
         lane: None,
+        occupied_by: None,
+        occupied_until: None,
     }
 }
 
@@ -45,6 +47,8 @@ fn entry_with_priority(
         updated_at: None,
         priority,
         lane: None,
+        occupied_by: None,
+        occupied_until: None,
     }
 }
 

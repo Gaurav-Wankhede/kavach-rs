@@ -10,7 +10,7 @@
 //   TIME: O(N log N), N = deployed_policy count. SPACE: O(N). YEAR: 2026.
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// One deployed advisory policy: the promoted action distribution plus the

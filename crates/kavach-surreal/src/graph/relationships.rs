@@ -31,7 +31,7 @@
 // SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Allowed inter-entry relationship types. Subset of `graph::dynamic::ALLOWED_RELS`
 /// that makes semantic sense between memory rows (not skill/algorithm/project).

@@ -78,6 +78,7 @@ pub mod production_patterns;
 pub mod prompt_injection_guard;
 pub mod reflect;
 pub mod reward;
+pub mod reward_ledger;
 pub mod rust_196_guard;
 pub mod rust_lint_guard;
 pub mod security_scanner;

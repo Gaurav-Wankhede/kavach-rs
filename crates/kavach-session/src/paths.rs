@@ -179,8 +179,8 @@ pub(crate) fn ensure_parent_dir(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// Detect project slug from kavach-rpc daemon using path lookup.
-/// Falls back to directory name if daemon not running or no match.
+/// Detect project slug from the kavach-rpc server using path lookup.
+/// Falls back to directory name if the server is not running or no match.
 pub(crate) fn detect_project() -> String {
     let Ok(cwd) = std::env::current_dir() else {
         return "unknown".into();

@@ -19,6 +19,8 @@ fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry 
         updated_at: None,
         priority: None,
         lane: None,
+        occupied_by: None,
+        occupied_until: None,
     }
 }
 
@@ -187,6 +189,8 @@ fn dispatcher_picks_first_runnable_dependency_satisfied_leaf() {
             updated_at: None,
             priority,
             lane: None,
+        occupied_by: None,
+        occupied_until: None,
         }
     }
     fn pick_first(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {

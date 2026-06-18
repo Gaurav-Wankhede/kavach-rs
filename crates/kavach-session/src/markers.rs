@@ -76,6 +76,23 @@ impl SessionState {
         self.save_or_log();
     }
 
+    /// Stamp THIS turn as user-directed (called by the intent gate on every
+    /// `UserPromptSubmit`). The stop gate reads `user_directive_turn == turn_count`
+    /// to grant the user-focus override: a turn the user just steered must not be
+    /// hijacked by the autonomous dispatcher onto a different kanban card.
+    pub fn mark_user_directive(&mut self) {
+        self.user_directive_turn = self.turn_count;
+        self.save_or_log();
+    }
+
+    /// True iff the USER issued a directive on the CURRENT turn — the stop gate's
+    /// user-focus override predicate (the user is STEERING; do not dispatch a
+    /// different card over their live instruction).
+    #[must_use]
+    pub const fn user_is_steering_this_turn(&self) -> bool {
+        self.user_directive_turn == self.turn_count && self.turn_count > 0
+    }
+
     pub fn record_failure(&mut self, tool: &str) {
         self.last_failure_tool = tool.into();
         self.last_failure_turn = self.turn_count;

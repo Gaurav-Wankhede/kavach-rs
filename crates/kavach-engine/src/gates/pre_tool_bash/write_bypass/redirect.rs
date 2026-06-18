@@ -16,11 +16,33 @@
 /// Fd-duplication (`>&N`, `>& N`, `&>`) is not a file redirect because its
 /// target is a descriptor; operator glyphs (`->`, `=>`, `>=`) and a `>`
 /// followed by a digit (numeric comparison such as `len>80`) are excluded.
+///
+/// A `>` INSIDE a single- or double-quoted span is DATA, not a redirect operator
+/// (e.g. the `<cmd>`/`a>b` text in a `kavach db write --content "..."` payload),
+/// so quoted regions are skipped. A real `cmd > file` redirect lives outside
+/// quotes and is still found. This is byte-scoped to the redirect detector;
+/// capability signatures matched elsewhere (`open('f','w')`, `| psql`) keep
+/// working inside quotes, where those launders genuinely live.
 fn redirect_op_pos(part: &str) -> Option<usize> {
     let b = part.as_bytes();
     let mut i = 0;
+    let mut quote: Option<u8> = None;
     while i < b.len() {
-        if b.get(i) != Some(&b'>') {
+        let c = b.get(i).copied();
+        // Track quote state; a `>` enclosed in quotes is an argument, not an op.
+        if let Some(q) = quote {
+            if c == Some(q) {
+                quote = None;
+            }
+            i = i.saturating_add(1);
+            continue;
+        }
+        if c == Some(b'\'') || c == Some(b'"') {
+            quote = c;
+            i = i.saturating_add(1);
+            continue;
+        }
+        if c != Some(b'>') {
             i = i.saturating_add(1);
             continue;
         }
@@ -62,16 +84,64 @@ fn redirect_op_pos(part: &str) -> Option<usize> {
     None
 }
 
+/// Split a compound command on `&&`/`||`/`;` separators that lie OUTSIDE any
+/// quoted span, so a `;`/`&&` INSIDE a quoted argument (a `--content "...; ..."`
+/// payload) does not shred the quote — keeping the quoted region intact as one
+/// fragment lets `redirect_op_pos` mask its interior `>`. Bare `&` is NOT a
+/// split point (it would cut `2>&1`); `redirect_op_pos` classifies fd-dup itself.
+fn split_outside_quotes(lower: &str) -> Vec<&str> {
+    let b = lower.as_bytes();
+    let mut parts = Vec::new();
+    let mut start = 0;
+    let mut i = 0;
+    let mut quote: Option<u8> = None;
+    // All separators/quotes are single-byte ASCII, so every `start`/`i` recorded
+    // here lands on a UTF-8 char boundary. We still slice via `str::get` so a
+    // multi-byte char in the payload can never panic (clippy `string_slice`).
+    while let Some(&c) = b.get(i) {
+        if let Some(q) = quote {
+            if c == q {
+                quote = None;
+            }
+            i = i.saturating_add(1);
+            continue;
+        }
+        if c == b'\'' || c == b'"' {
+            quote = Some(c);
+            i = i.saturating_add(1);
+            continue;
+        }
+        // Separators (outside quotes): `&&`, `||`, `;`.
+        let two = b.get(i..i.saturating_add(2));
+        if two == Some(b"&&".as_slice()) || two == Some(b"||".as_slice()) {
+            if let Some(seg) = lower.get(start..i) {
+                parts.push(seg);
+            }
+            i = i.saturating_add(2);
+            start = i;
+            continue;
+        }
+        if c == b';' {
+            if let Some(seg) = lower.get(start..i) {
+                parts.push(seg);
+            }
+            i = i.saturating_add(1);
+            start = i;
+            continue;
+        }
+        i = i.saturating_add(1);
+    }
+    if let Some(seg) = lower.get(start..) {
+        parts.push(seg);
+    }
+    parts
+}
+
 /// Check each subcommand in a compound command for file redirects. Splits on
-/// `&&`/`||`/`;` so a safe redirect in one part cannot exempt a dangerous one
-/// in another. Does NOT split on bare `&` — that would shred `2>&1`;
-/// `redirect_op_pos` already classifies fd-dup vs file by target.
+/// `&&`/`||`/`;` (outside quotes) so a safe redirect in one part cannot exempt a
+/// dangerous one in another, while a separator INSIDE a quoted arg is preserved.
 pub(super) fn has_file_redirect(lower: &str) -> bool {
-    let parts = lower
-        .split("&&")
-        .flat_map(|p| p.split("||"))
-        .flat_map(|p| p.split(';'));
-    for part in parts {
+    for part in split_outside_quotes(lower) {
         let p = part.trim();
         let Some(pos) = redirect_op_pos(p) else {
             continue;

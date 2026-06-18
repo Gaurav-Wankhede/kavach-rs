@@ -1,6 +1,6 @@
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 /// Queries the hit count for an anti-pattern.

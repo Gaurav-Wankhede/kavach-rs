@@ -38,7 +38,7 @@ use crate::error::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 /// A row plus its inbound + outbound graph neighbours grouped by relation type.

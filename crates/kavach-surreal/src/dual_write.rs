@@ -58,9 +58,57 @@ pub struct MemoryEntry {
     // Defined on roadmap only; the cross-category SELECT yields NONE elsewhere.
     #[serde(default)]
     pub lane: Option<String>,
+    // Session-occupancy lease (lease/types.rs `LeaseRow`). `occupied_by` is the
+    // holder's `KAVACH_SESSION_ID`; `occupied_until` the lease expiry. Surfaced on
+    // the entry so the DISPATCH SELECTOR can skip a card live-leased by a DIFFERENT
+    // session — the multi-session task-steal fix (two terminals no longer grab the
+    // same card). NONE/absent = no live holder (free to dispatch). roadmap only.
+    #[serde(default)]
+    pub occupied_by: Option<String>,
+    #[serde(default)]
+    pub occupied_until: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl MemoryEntry {
+    /// True iff this card is held by a LIVE lease owned by a DIFFERENT session
+    /// than `me` — i.e. another terminal/agent is actively working it, so this
+    /// session MUST NOT dispatch it (the multi-session task-steal fix). A lease
+    /// is "live" only while `occupied_until > now`; an expired lease is free, and
+    /// a lease held by `me` (re-dispatch of my own card) is NOT foreign. `me`
+    /// empty (no `KAVACH_SESSION_ID`) treats ANY live lease as foreign — the
+    /// fail-closed default so an un-identified session never steals.
+    #[must_use]
+    pub fn is_live_leased_by_other(&self, me: &str) -> bool {
+        let Some(until) = self.occupied_until else {
+            return false; // no lease recorded → free to dispatch
+        };
+        if until <= chrono::Utc::now() {
+            return false; // lease expired → free (reclaim path resets it)
+        }
+        match self.occupied_by.as_deref() {
+            Some(holder) if !me.is_empty() && holder == me => false, // my own card
+            Some(holder) => !holder.is_empty(), // a different live holder → foreign
+            None => true, // until-set but holder-null is malformed → fail closed
+        }
+    }
+
+    /// STALE CLAIM (E4): a card marked `in_progress` whose lease has EXPIRED — the
+    /// owning session crashed between the status-flip and the witness, leaving the
+    /// card stuck `in_progress` forever (the lease lapsed but the status did not
+    /// reset). The dispatch sweep resets such a card to `todo` so it is reclaimable.
+    /// A LIVE lease (`occupied_until > now`) is NOT stale — that session is working.
+    /// An un-leased `in_progress` (no `occupied_until`) is NOT swept here: it predates
+    /// the lease system or was set out-of-band; only an EXPIRED lease proves abandonment.
+    #[must_use]
+    pub fn is_stale_claim(&self) -> bool {
+        if self.entry_status_str() != "in_progress" {
+            return false;
+        }
+        // Some(until <= now) → lease lapsed → abandoned; None → no lease to prove
+        // abandonment, leave it alone.
+        self.occupied_until.is_some_and(|until| until <= chrono::Utc::now())
+    }
+
     /// Category as `&str`, empty when the row's table omits the field.
     #[must_use]
     pub const fn category_str(&self) -> &str {

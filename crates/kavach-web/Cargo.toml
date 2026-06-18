@@ -1,0 +1,31 @@
+[package]
+name = "kavach-web"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license.workspace = true
+
+# Server-rendered HTMX web UI on http://127.0.0.1:777, replacing the removed
+# Dioxus desktop GUI. Talks to the running kavach-rpc daemon over the Unix-socket
+# JSON-RPC client (kavach_rpc::client::call) — it NEVER opens SurrealDB directly
+# (RocksDB is single-process; the daemon is the sole opener).
+
+[lib]
+name = "kavach_web"
+path = "src/lib.rs"
+
+[[bin]]
+name = "kavach-web"
+path = "src/main.rs"
+
+[dependencies]
+kavach-rpc = { path = "../kavach-rpc" }
+axum.workspace = true
+maud.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+futures.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

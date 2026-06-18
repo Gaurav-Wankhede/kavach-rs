@@ -99,10 +99,17 @@ fn cycle_deadlock_context() -> String {
     )
 }
 
-/// Case 1: every remaining runnable card is blocked by an unmet dependency.
-/// Breaking a dependency is a DECISION for the user, so the AI cannot force these
-/// cards — but the loop still re-scans the DB for any unblocked actionable item
-/// and never self-terminates. Only the user halts it, with `Esc`.
+/// Case 1: every remaining runnable card is blocked by an unmet dependency. A
+/// dependency block is NOT a stop — it is dependency-first work (leaf-first DAG
+/// traversal): the blocker is, in the overwhelming majority of cases, ITSELF an
+/// AI-buildable card. The agent walks to that blocker, RESEARCHES the real
+/// conflict, and BUILDS it (recursively) until a leaf becomes dispatchable — the
+/// same "AI-repairable, do NOT stop" stance the cycle case takes. Only a
+/// GENUINELY owner-only blocker (a missing credential, an unclear-authorization
+/// irreversible op, or an external gate the agent cannot touch) escalates to the
+/// user; a plain build prerequisite NEVER does. Mirrors the no-parking rule ("a
+/// task is RUNNABLE or DELETED — no park-flag, no block-marker escape") + the
+/// autonomous-loop precedence #4 (drain the queue, dependency-first).
 fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
     let stamp = census_stamp(census);
     let block = kavach_hook::context_block(
@@ -111,21 +118,30 @@ fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
             ("census", &stamp),
             (
                 "why",
-                "Every dispatchable-status card is held back by an unmet dependency, \
-                 so none can be force-started without its prerequisite. That bounds \
-                 THESE cards — it does not end the loop.",
+                "Every dispatchable-status card is held back by an unmet dependency. \
+                 That is NOT a stop and NOT a user hand-off: a dependency is just the \
+                 NEXT thing to build (leaf-first DAG traversal). The blocker is almost \
+                 always itself an AI-buildable card — so resolve it, do not defer it.",
             ),
             (
                 "action",
-                "Do NOT stop. The gate ALREADY read the DB this stop (counts in `census` \
-                 above) — do NOT re-run `kavach db kanban` just to repeat it. (1) \
-                 EXTEND the census the dependency tiers do not cover: `kavach db query \
-                 --category decision` and `--category roadmap` for a todo/unexecuted, \
-                 non-blocked row; RESEARCH it against current truth, then claim and \
-                 START it THIS turn. (2) Name, in one line each, the unmet dependency \
-                 blocking every remaining card so the user can unblock it. (3) When the \
-                 DB holds nothing actionable, keep the loop open and yield to the user's \
-                 `Esc` — never invent PLAN phases.",
+                "Do NOT stop. Do NOT hand the unblock to the user. The gate ALREADY read \
+                 the DB this stop (counts in `census` above) — do NOT re-run `kavach db \
+                 kanban` to repeat it. RESOLVE-AND-CONTINUE, dependency-first: (1) For \
+                 each remaining card, read its `DEPENDS_ON:`/`BLOCKED_BY:` line and WALK \
+                 to the blocking card (`kavach db get --category roadmap --key \
+                 <blocker>`). (2) RESEARCH the ACTUAL conflict — WebSearch the current \
+                 authoritative source for the precise contract — and decide: is the \
+                 blocker AI-buildable, or genuinely owner-only (missing credential / \
+                 unclear-auth irreversible op / external gate)? (3) If AI-buildable: \
+                 claim and BUILD the blocker THIS turn (recurse to ITS blocker if \
+                 needed) until a leaf becomes dispatchable, then dispatch the dependent. \
+                 (4) If the dependency edge is STALE/FALSE (the prerequisite already \
+                 shipped, or never really applied): correct the `DEPENDS_ON:` line \
+                 (`kavach db write`) and dispatch. (5) ONLY a genuinely owner-only \
+                 blocker escalates — name it in one line, then KEEP BUILDING every \
+                 other reachable leaf; never let one owner-gated card halt the loop. \
+                 Yield to the user's `Esc`, never to a self-imposed stop.",
             ),
         ],
     );

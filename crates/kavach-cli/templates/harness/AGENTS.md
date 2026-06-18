@@ -23,6 +23,12 @@ the gates stay quiet.
   decision|research|pattern|roadmap --key <k> --title <t> --content <c>`.
 - Before starting: `kavach db kanban --project <slug>` — the DB decides what is
   open/in_progress/done, NOT chat memory.
+- **Memory is auto-recalled FOR you.** The harness consults the brain on every
+  prompt (hybrid BM25 + concept-graph retrieval, RRF-ranked) and injects a
+  `[RECALL]` block of citable row keys. When you see `[RECALL]`, read those rows
+  (`kavach db get --key <k>`) BEFORE re-researching or re-deciding what they cover,
+  and cite the key you used. An empty `[RECALL]` means the corpus is thin — research,
+  then persist a row so the next prompt recalls it. You never type a retrieval query.
 - The Stop gate is authoritative: it dispatches the next runnable card and blocks a
   premature stop. Close a card the same turn its three witnesses pass.
 

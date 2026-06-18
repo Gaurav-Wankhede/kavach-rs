@@ -3,7 +3,7 @@
 // main schema string.
 use crate::error::Result;
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 const ENGINE_DDL: &str = include_str!("schema_engine.surql");
 

@@ -16,7 +16,7 @@
 //! wins) without duplicate edges.
 
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 use crate::error::{Error, Result};
 

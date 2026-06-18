@@ -28,6 +28,19 @@ pub enum VerifyOutcome {
     /// The gate blocked but the dev OVERRODE it, and the change then verified
     /// clean — proof the block was a false positive.
     BlockedThenOverriddenClean,
+    /// RLAIF (Reinforcement Learning from AI Feedback, Bai et al. 2022,
+    /// Constitutional AI). The mechanical 3-witness oracle ABSTAINS on the
+    /// dominant case — a block that stood with no counterfactual verify — so the
+    /// bandit barely learns. Here an AUTONOMOUS AI judgment of the action's
+    /// observed board effect supplies the reward instead of collapsing to `0.0`,
+    /// keeping the off-policy signal alive off AI feedback.
+    /// SOURCE: kavach `decision.arch.harness-rl.design-2026-06-05`.
+    AiJudged {
+        /// `true` iff the AI judged the action a net advance toward the goal
+        /// (a needed block that held, or work that genuinely moved a card
+        /// forward); `false` iff it judged the action a net regression.
+        good: bool,
+    },
 }
 
 /// The realized reward scalar for a logged decision, on the same scale the OPE
@@ -39,8 +52,16 @@ pub enum VerifyOutcome {
 /// - Block      + `BlockedAndAccepted` -> `0` (a needed stop; neutral, no proof either way)
 /// - Block      + `BlockedThenOverriddenClean` -> `-1` (false block: cost the dev a fight)
 /// - Ask        + `BlockedAndAccepted` -> `0` (abstention that held)
+/// - any         + `AiJudged{good}` -> `+1`/`-1` (RLAIF: AI feedback replaces the
+///   `0.0` abstention so the bandit keeps learning where the mechanical oracle is blind)
 #[must_use]
 pub const fn label(action: Action, outcome: VerifyOutcome) -> f64 {
+    // RLAIF: when the mechanical oracle would abstain, an autonomous AI judgment
+    // of the action's observed effect supplies the reward — independent of the
+    // action, since the AI scores the OUTCOME, not the gate decision class.
+    if let VerifyOutcome::AiJudged { good } = outcome {
+        return if good { 1.0 } else { -1.0 };
+    }
     // A false decision in EITHER direction is the costly error (-1): a false
     // allow shipped a break, and a false block (overridden, then verified clean)
     // cost the dev a fight. Scoring them equally is the reward-hacking guard.
@@ -65,6 +86,12 @@ pub const fn label(action: Action, outcome: VerifyOutcome) -> f64 {
 /// disagree: `+1` ⇒ `verified_clean`, `0` ⇒ `needed_ask`, `-1` ⇒ `false_decision`.
 #[must_use]
 pub fn reward_tag(action: Action, outcome: VerifyOutcome) -> &'static str {
+    // RLAIF rewards carry their own tags so an AI-fed scalar is auditable apart
+    // from a mechanically-verified one in `bandit_log` (same {+1,-1} magnitude,
+    // distinct provenance). `reward_scalar` parses these back identically.
+    if let VerifyOutcome::AiJudged { good } = outcome {
+        return if good { "ai_judged_good" } else { "ai_judged_bad" };
+    }
     let scalar = label(action, outcome);
     if scalar > 0.0 {
         "verified_clean"
@@ -93,15 +120,16 @@ pub fn action_from_tag(tag: &str) -> Option<Action> {
 /// Parse a `bandit_log` `reward` field (the `snake_case` wire enum) back to the
 /// OPE scalar — the inverse of [`reward_tag`].
 ///
-/// `verified_clean = +1`, `needed_ask = 0`, `false_decision = -1`;
-/// `null`/absent/unknown → `None`. The single definition every reader shares so
-/// the tag↔scalar mapping is canonical.
+/// `verified_clean = +1`, `needed_ask = 0`, `false_decision = -1`; the RLAIF
+/// tags `ai_judged_good = +1` / `ai_judged_bad = -1`; `null`/absent/unknown →
+/// `None`. The single definition every reader shares so the tag↔scalar mapping
+/// is canonical.
 #[must_use]
 pub fn reward_scalar(tag: &str) -> Option<f64> {
     match tag {
-        "verified_clean" => Some(1.0),
+        "verified_clean" | "ai_judged_good" => Some(1.0),
         "needed_ask" => Some(0.0),
-        "false_decision" => Some(-1.0),
+        "false_decision" | "ai_judged_bad" => Some(-1.0),
         _ => None,
     }
 }

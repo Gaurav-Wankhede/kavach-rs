@@ -4,8 +4,8 @@
 // split: intentional - RpcModule construction wiring all method namespaces
 use crate::error::{internal, invalid_params};
 use crate::methods::{
-    bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates, graph,
-    lease, mistake, mistake_top, projects, rag, replay, roadmap, session, system, trust,
+    brain, bridge, bulk, change, concept, db, db_harness, decisions, events, gate_patterns, gates,
+    graph, lease, mistake, mistake_top, projects, rag, replay, roadmap, run, session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
@@ -120,6 +120,51 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register projects.ancestry: {e}")))?;
 
     module
+        .register_async_method("run.list", |params, ctx, _ext| async move {
+            let p: run::ListParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::list(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.list: {e}")))?;
+
+    module
+        .register_async_method("run.record", |params, ctx, _ext| async move {
+            let p: run::RecordParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::record(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.record: {e}")))?;
+
+    module
+        .register_async_method("run.update_status", |params, ctx, _ext| async move {
+            let p: run::UpdateStatusParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::update_status(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.update_status: {e}")))?;
+
+    module
+        .register_async_method("run.cancel", |params, ctx, _ext| async move {
+            let p: run::CancelParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::cancel(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.cancel: {e}")))?;
+
+    module
+        .register_async_method("run.spawn", |params, ctx, _ext| async move {
+            let p: run::SpawnParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            run::spawn(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register run.spawn: {e}")))?;
+
+    module
         .register_async_method(
             "gate_pattern.find_autonomous",
             |params, ctx, _ext| async move {
@@ -215,6 +260,15 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             graph::get_related(&ctx, p).await
         })
         .map_err(|e| internal(format!("register graph.get_related: {e}")))?;
+
+    module
+        .register_async_method("brain.think", |params, ctx, _ext| async move {
+            let p: brain::ThinkParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            brain::think(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register brain.think: {e}")))?;
 
     module
         .register_async_method("concept.add", |params, ctx, _ext| async move {
@@ -369,15 +423,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             mistake_top::top(&ctx, p).await
         })
         .map_err(|e| internal(format!("register mistake.top: {e}")))?;
-
-    module
-        .register_async_method("mistake.nearest", |params, ctx, _ext| async move {
-            let p: mistake::NearestParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            mistake::nearest(&ctx, p).await
-        })
-        .map_err(|e| internal(format!("register mistake.nearest: {e}")))?;
 
     module
         .register_async_method("roadmap.entry_status", |params, ctx, _ext| async move {

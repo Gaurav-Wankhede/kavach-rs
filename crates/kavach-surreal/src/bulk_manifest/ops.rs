@@ -10,7 +10,7 @@ use crate::bulk_manifest::types::{
 use crate::error::{Error, Result};
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Create active `bulk_manifest`. UNIQUE index on `sweep_id` refuses dupes.
 ///

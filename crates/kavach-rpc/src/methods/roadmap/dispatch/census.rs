@@ -1,4 +1,6 @@
-use super::super::readiness::{deps_satisfied, dep_index, is_in_cycle, is_runnable_status};
+use super::super::readiness::{
+    deps_satisfied, dep_index, is_gate, is_in_cycle, is_runnable_status, is_umbrella,
+};
 use super::super::types::{NextOpenTaskParams, OpenSetCensus};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
@@ -48,6 +50,13 @@ pub async fn open_set_census(
         if !is_runnable_status(e.entry_status_str()) {
             continue;
         }
+        // Umbrella + gate cards are NEVER dispatch targets (mirrors pick_in_lane):
+        // an umbrella is an epic container; a gate is an owner-decision node. Counting
+        // them as `runnable` forges a false "you have runnable work" census that keeps
+        // the stop-gate blocked on owner-only / container cards it can never dispatch.
+        if is_umbrella(&e.title) || is_gate(&e.title) {
+            continue;
+        }
         census.runnable = census.runnable.saturating_add(1);
         // A cyclic card can never satisfy deps; count it as cyclic (NOT blocked)
         // so it cannot forge a legitimate-looking `[ALL_BLOCKED]` clean-stop.
@@ -56,6 +65,25 @@ pub async fn open_set_census(
             census.cyclic_keys.push(e.entry_key.clone());
         } else if !deps_satisfied(e, &dep_pool) {
             census.blocked = census.blocked.saturating_add(1);
+        }
+    }
+    // SECOND SOURCE: fold in the on-disk Claude Code TaskList store so the gate
+    // sees BOTH backlogs. The roadmap table alone reported `runnable: 0` while
+    // ~30 open TaskList items sat unseen, falsely "draining" the queue. A missing
+    // store contributes (0, 0); an unresolved root is logged so a silent zero
+    // stays observable rather than masquerading as a truly empty board.
+    match super::tasklist::tasklist_root() {
+        Some(root) => {
+            let (tl_runnable, tl_blocked) = super::tasklist::tasklist_census(&root);
+            census.runnable = census.runnable.saturating_add(tl_runnable);
+            census.blocked = census.blocked.saturating_add(tl_blocked);
+        }
+        None => {
+            tracing::warn!(
+                "tasklist census skipped: no store root (HOME unset and {} unset) — \
+                 census reflects roadmap table only",
+                super::tasklist::TASKLIST_DIR_ENV_NAME
+            );
         }
     }
     Ok(census)

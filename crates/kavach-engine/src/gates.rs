@@ -98,6 +98,7 @@ pub(crate) mod rules_manifest;
 pub mod session_end;
 pub mod session_start;
 pub(crate) mod sql_destructive;
+pub mod status_gate;
 pub mod stop;
 pub(crate) mod turn_relay;
 pub(crate) mod stop_decisions;

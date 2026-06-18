@@ -1,0 +1,85 @@
+//! Tests for the U5 advisory-detector dispatch table. Proves each wired detector
+//! fires on its stall phrasing AND that the `needs_write` gate suppresses the
+//! verification-claim detectors on a read-only turn. Exercises the dispatch
+//! THROUGH the engine entry point (`run`) via the queued pending-advisories, not
+//! the chain detectors in isolation — the "test it through the engine" rule that
+//! the dead-detector loophole violated.
+
+use super::run;
+use kavach_session::SessionState;
+
+/// Run the dispatch over `msg` with the given `wrote_this_turn` and return the
+/// pending advisories it queued. A fresh session per call isolates the assertion.
+fn advisories_for(msg: &str, wrote: bool) -> Vec<String> {
+    let mut session = SessionState::default();
+    run(&mut session, msg, wrote);
+    // drain returns None when nothing was queued; normalize to an empty Vec.
+    session.drain_pending_advisories().unwrap_or_default()
+}
+
+#[test]
+fn permission_seek_fires_and_is_write_independent() {
+    // The reported stall class: asking the user permission to proceed. Fires
+    // regardless of whether a file was written (needs_write = false).
+    let adv = advisories_for("I've finished the slice. Should I proceed to the next card?", false);
+    assert!(
+        adv.iter().any(|a| a.contains("[PERMISSION_SEEK]")),
+        "permission-seek must queue its advisory: {adv:?}"
+    );
+}
+
+#[test]
+fn permission_seek_silent_when_user_directed() {
+    // The NEG arm exempts user-directed asks — no advisory.
+    let adv = advisories_for("Continuing as you requested; should I proceed with the next step?", false);
+    assert!(
+        !adv.iter().any(|a| a.contains("[PERMISSION_SEEK]")),
+        "a user-directed ask must NOT fire: {adv:?}"
+    );
+}
+
+#[test]
+fn remaining_phases_fires_on_name_then_stop() {
+    let adv = advisories_for(
+        "The next phase is the Soundbak read path; remaining steps: wire the repo, add tests.",
+        false,
+    );
+    assert!(
+        adv.iter().any(|a| a.contains("[REMAINING_PHASES]")),
+        "naming remaining phases then stopping must fire: {adv:?}"
+    );
+}
+
+#[test]
+fn unverified_code_claim_suppressed_on_read_only_turn() {
+    // A verification-claim detector is gated behind wrote_this_turn: on a
+    // read-only Q&A turn (wrote = false) it must NOT fire, even if the prose
+    // describes past completion.
+    let msg = "Earlier I made the handler work and it's all done and ready.";
+    let read_only = advisories_for(msg, false);
+    assert!(
+        !read_only.iter().any(|a| a.contains("[UNVERIFIED_CODE]")),
+        "verification-claim detector must be silent on a read-only turn: {read_only:?}"
+    );
+}
+
+#[test]
+fn empty_message_queues_nothing() {
+    assert!(advisories_for("", false).is_empty(), "empty message must be inert");
+    assert!(advisories_for("", true).is_empty(), "empty message must be inert even with a write");
+}
+
+#[test]
+fn benign_completion_with_evidence_does_not_over_fire() {
+    // A turn that actually did the work and cited evidence must not trip the
+    // permission-seek or remaining-phases detectors (they key on asking/naming,
+    // not on doing). This guards against the opposite failure: never being able
+    // to cleanly report a finished turn.
+    let msg = "Card closed: wired the helper, cargo check --workspace exit 0, \
+               git diff --stat shows the change landed at stop.rs:148. Claiming the next card now.";
+    let adv = advisories_for(msg, true);
+    assert!(
+        !adv.iter().any(|a| a.contains("[PERMISSION_SEEK]") || a.contains("[REMAINING_PHASES]")),
+        "a doing-the-work turn must not be flagged as a stall: {adv:?}"
+    );
+}

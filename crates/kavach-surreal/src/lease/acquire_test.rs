@@ -17,7 +17,7 @@ use crate::lease::types::AcquireOutcome;
 use crate::open_memory;
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 
 /// Seed a roadmap card with an UNHELD lease (the fresh-claim shape: no owner,
 /// no `occupied_until`), so the first `acquire` must win it.

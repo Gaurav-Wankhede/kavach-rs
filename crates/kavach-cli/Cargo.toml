@@ -20,6 +20,7 @@ kavach-rule-generator = { path = "../kavach-rule-generator" }
 kavach-rag-core = { path = "../kavach-rag-core" }
 kavach-surreal = { path = "../kavach-surreal" }
 kavach-rpc = { path = "../kavach-rpc" }
+kavach-web = { path = "../kavach-web" }
 kavach-patterns = { path = "../kavach-patterns" }
 regex = { workspace = true }
 surrealdb = { workspace = true }

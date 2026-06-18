@@ -7,7 +7,6 @@
 // `prelude` holds the Stage 0 phase/iteration advisories; `advisory_ctx` builds
 // the Stage 4 allow-time context block.
 mod advisory_ctx;
-mod mistake_guard;
 mod prelude;
 mod skill_match;
 

@@ -10,7 +10,7 @@
 //! unrepresentable past `set`). `project = "*"` is the global row.
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
 
 use crate::error::{Error, Result};

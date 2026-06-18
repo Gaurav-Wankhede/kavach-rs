@@ -116,7 +116,7 @@ pub(super) fn run() -> i32 {
 }
 
 async fn resolve_project_id(
-    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     slug: &str,
     workdir: &str,
 ) -> Option<surrealdb_types::RecordId> {

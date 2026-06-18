@@ -16,12 +16,13 @@
 
 pub mod archive;
 pub mod bandit;
+pub mod brain;
+pub mod brain_query;
 pub mod bulk_manifest;
 pub mod connection;
 pub mod decisions;
 pub mod delete;
 pub mod dual_write;
-pub mod embed;
 pub mod error;
 pub mod filter;
 pub mod gate_config;
@@ -34,6 +35,8 @@ pub mod projects;
 pub mod rag_trees;
 pub mod read;
 pub mod retry;
+pub mod rrf;
+pub mod runs;
 pub mod schema;
 pub mod schema_engine;
 pub mod schema_v2;
@@ -42,7 +45,7 @@ pub mod wipe;
 pub mod write;
 
 pub use connection::{
-    default_db_path, open_db, open_default, open_default_daemon, open_default_resilient,
+    default_db_path, open_db, open_default, open_default_held, open_default_resilient,
     open_memory,
 };
 pub use dual_write::MemoryEntry;
@@ -51,11 +54,10 @@ pub use gate_config::{
     gate_config_delete, gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
     set_with_kind as gate_config_set_with_kind,
 };
-pub use embed::{
-    EMBED_DIM, Embedder, ORT_DYLIB_ENV, conventional_dylib_path, cosine, os_dylib_name,
-    resolve_dylib_path,
-};
+pub use brain::{BrainHit, GapReport, KavachBrain, hybrid_search};
+pub use brain_query::{gap_for, search_corpus};
 pub use error::{Error, Result};
+pub use rrf::{RRF_K, rrf_fuse};
 pub use graph::upsert_relationships;
 pub use graph::{DagEdge, DagNode, RoadmapDag, roadmap_dag_fetch};
 pub use graph::{Edge, Entity, RelateParams, RelationType};
@@ -106,10 +108,9 @@ pub use gate_patterns::{
     tokenize as gate_pattern_tokenize, upsert as gate_pattern_upsert,
 };
 pub use graph::{
-    AntiPatternHit, AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
+    AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
     append_mistake_event as graph_append_mistake_event,
     cluster_event_to_pattern as graph_cluster_event_to_pattern,
-    nearest_anti_patterns as graph_nearest_anti_patterns,
     query_anti_pattern_hit_count as graph_query_anti_pattern_hit_count,
     top_anti_patterns as graph_top_anti_patterns,
     top_deployed_policies as graph_top_deployed_policies,
@@ -127,6 +128,9 @@ pub use projects::{
     get_ancestry as project_get_ancestry, get_by_slug as project_get_by_slug,
     list_all as projects_list_all, register as project_register,
     relative_to_parent as project_relative_to_parent, set_parent as project_set_parent,
+};
+pub use runs::{
+    RunRecord, run_get, run_insert, run_list_by_project, run_reconcile_orphans, run_update_status,
 };
 pub use rag_trees::{
     RagTreeLabel, RagTreeRefreshable, RagTreeRow, get as rag_tree_get, list as rag_tree_list,
