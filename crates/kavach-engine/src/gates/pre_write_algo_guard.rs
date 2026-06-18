@@ -1,21 +1,12 @@
 //! Algorithm Hunter pre-write guard.
 //!
-//! ALGO: aho-corasick
-//! `PROBLEM_CLASS`: `string_match`
-//! REJECTED: [{"name":"naive-scan","reason":"O(n*k) per keyword, degrades with trigger list growth"}]
-//! TIME: O(n+m) | SPACE: O(m*sigma)
-//! YEAR: 1975 | SEARCHED: 2026-04
-//! TRADEOFF: DFA construction cost upfront; for small static keyword sets, linear scan is comparable
-//! BENCHMARK: <https://crates.io/crates/aho-corasick>
+//! Block Rust writes that introduce non-trivial algorithmic logic without a
+//! prior `/arch` invocation this turn, or auto-inject a prior algorithm
+//! decision from kavach-db. The skill invocation is the only satisfier — never
+//! an inline comment.
 //!
-//! Blocks writes to Rust files that introduce non-trivial algorithmic logic
-//! without prior `/arch` invocation this turn, OR auto-injects prior algorithm
-//! decisions from kavach-db when available.
-//!
-//! Three outcomes:
-//! - `Allow` — no trigger, hunter already invoked, or `// ALGO:` comment present
-//! - `AutoInject(ctx)` — trigger found, but prior DB decision exists; advisory
-//! - `Block(msg)` — trigger found, no prior decision, hunter not invoked
+//! Outcomes: `Allow` (no trigger / hunter invoked), `AutoInject` (prior DB
+//! decision), `Block` (trigger, no decision, hunter not invoked).
 mod check;
 mod decision;
 mod outcome;

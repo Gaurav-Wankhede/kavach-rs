@@ -5,7 +5,7 @@
 //! prior architecture decisions from kavach-db when available.
 //!
 //! Three outcomes:
-//! - `Allow` — no trigger found, or arch skill invoked, or `// ARCH:` comment present
+//! - `Allow` — no trigger found, or arch skill invoked (never via a comment)
 //! - `AutoInject(ctx)` — trigger found, but prior DB decision exists; inject as advisory
 //! - `Block(msg)` — trigger found, no prior decision, arch skill not invoked
 
