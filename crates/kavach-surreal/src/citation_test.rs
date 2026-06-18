@@ -11,7 +11,7 @@
 use super::{
     Citation, CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation,
     citations_cited_by, citations_for_nodes, freshness, get_citation, list_citations_by_project,
-    mark_if_stale, merge_node_into_citation, plan_refresh, upsert_citation,
+    mark_if_stale, merge_node_into_citation, plan_refresh, reward_citation_edges, upsert_citation,
 };
 use crate::{apply_schema, open_memory};
 use surrealdb::Surreal;
@@ -307,4 +307,51 @@ async fn citations_for_nodes_dedupes_across_recalled_rows() {
 
     let empty = citations_for_nodes(&db, &[]).await.expect("empty batch");
     assert!(empty.is_empty(), "no recalled nodes -> no citations");
+}
+
+#[tokio::test]
+async fn reward_flows_along_cite_edges() {
+    let db = seed().await;
+    let project = RecordId::new("project", "p");
+    upsert_citation(
+        &db,
+        &UpsertCitation {
+            project,
+            entry_key: "surreal",
+            name: "SurrealDB",
+            metadata: vec![meta("records", "https://surrealdb.com/docs")],
+        },
+    )
+    .await
+    .expect("citation");
+    let citation: RecordId = db
+        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
+        .await
+        .expect("cite id")
+        .take::<Vec<RecordId>>(0)
+        .expect("take")
+        .pop()
+        .expect("one citation");
+    db.query("CREATE decision:d SET project = project:p, entry_key = 'k', title = 't', content = 'c'")
+        .await
+        .expect("decision");
+    let node = RecordId::new("decision", "d");
+    merge_node_into_citation(&db, &node, &citation).await.expect("merge");
+
+    let n = reward_citation_edges(&db, &citation, 0.5).await.expect("reward");
+    assert_eq!(n, 1, "the single cite edge into the citation is rewarded");
+
+    let weights: Vec<f64> = db
+        .query("SELECT VALUE weight FROM cite WHERE out = $cit")
+        .bind(("cit", citation.clone()))
+        .await
+        .expect("weights")
+        .take::<Vec<f64>>(0)
+        .expect("take");
+    assert_eq!(weights, vec![1.5], "edge weight climbed from the merge default 1.0 by delta 0.5");
+
+    let unlinked = reward_citation_edges(&db, &RecordId::new("citation", "absent"), 1.0)
+        .await
+        .expect("reward on unlinked citation");
+    assert_eq!(unlinked, 0, "a citation with no cite edges rewards nothing, no error");
 }

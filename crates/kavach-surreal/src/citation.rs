@@ -78,6 +78,33 @@ pub async fn citations_for_nodes(db: &Surreal<Db>, nodes: &[RecordId]) -> Result
     Ok(out)
 }
 
+/// RLAIF reward: when a citation contributed to a successful turn, flow `delta`
+/// reward along every `cite` edge pointing into it, bumping each edge `weight`.
+///
+/// Returns the number of edges rewarded. Reward accrues on the EDGE (the
+/// node→citation link), so a node that repeatedly draws on a citation that keeps
+/// helping climbs in recall ranking — the self-improving loop closes here.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from the UPDATE.
+pub async fn reward_citation_edges(
+    db: &Surreal<Db>,
+    citation: &RecordId,
+    delta: f64,
+) -> Result<usize> {
+    let mut response = db
+        .query("UPDATE cite SET weight += $delta WHERE out = $cit RETURN id")
+        .bind(("cit", citation.clone()))
+        .bind(("delta", delta))
+        .await?;
+    let updated: Vec<RecordId> = match response.take(0) {
+        Ok(rows) => rows,
+        Err(e) if crate::error::is_missing_table_error(&e) => Vec::new(),
+        Err(e) => return Err(e.into()),
+    };
+    Ok(updated.len())
+}
+
 /// Seconds in the freshness window: a citation whose `updated_at` is older than
 /// this is STALE and must be re-researched against the official docs (C5).
 pub const FRESHNESS_WINDOW_SECS: i64 = 7 * 24 * 60 * 60;
