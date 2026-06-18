@@ -36,6 +36,22 @@ pub(super) fn env_session_id() -> String {
     SESSION_ID_CTX.with(|c| c.borrow().clone())
 }
 
+/// Process-stable session id the lease selector keys on — NEVER empty.
+///
+/// Prefers env / armed cell (`env_session_id`); when both are empty, returns a
+/// per-process `auto-<pid>` cached for the process lifetime. Each terminal is a
+/// distinct process, so leases shard with zero env setup; a crashed holder's
+/// lease expires by TTL (pid reuse is reclaimable, never a permanent steal).
+#[must_use]
+pub fn resolved_session_id() -> String {
+    static AUTO_ID: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    let resolved = env_session_id();
+    if !resolved.is_empty() {
+        return resolved;
+    }
+    AUTO_ID.get_or_init(|| format!("auto-{}", std::process::id())).clone()
+}
+
 #[cfg(test)]
 #[path = "session_id_test.rs"]
 mod tests;

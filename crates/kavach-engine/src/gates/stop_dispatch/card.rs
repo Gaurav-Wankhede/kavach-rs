@@ -97,7 +97,7 @@ pub(crate) fn claim_card(project_slug: &str, key: &str) -> bool {
     // be told from a crashed one's, and a 2nd live session would resume it. The
     // id source matches `mistake_ledger.rs`/`env_session_id`: the env var set by
     // the Claude Code / Cursor hook edge. Absent (legacy) => status-only claim.
-    let session_id = std::env::var("KAVACH_SESSION_ID").unwrap_or_default();
+    let session_id = kavach_session::resolved_session_id();
     let params = serde_json::json!({
         "project": project_slug,
         "key": key,

@@ -13,7 +13,7 @@ use crate::state::SessionState;
 
 pub(crate) use filter::filter_test_pending_for_project;
 use session_id::env_session_id;
-pub use session_id::set_session_context;
+pub use session_id::{resolved_session_id, set_session_context};
 
 /// Load existing session or create a new one.
 ///

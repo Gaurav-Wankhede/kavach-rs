@@ -147,7 +147,7 @@ Install these **before** running Kavach. The harness fails closed — if its mem
 <table>
 <tr><th>Requirement</th><th>Why</th><th>Install</th></tr>
 <tr>
-<td><strong>SurrealDB</strong> ≥ 2.0<br><sub>(the memory <em>server</em>)</sub></td>
+<td><strong>SurrealDB</strong> ≥ 3.1<br><sub>(the memory <em>server</em>)</sub></td>
 <td>Kavach's durable store. A standalone <code>surreal start</code> server owns the DB and serializes all writers; every <code>kavach</code> process is a thin WebSocket client of it (default <code>ws://127.0.0.1:7710</code>).</td>
 <td><strong>macOS / Linux:</strong> <code>curl -sSf https://install.surrealdb.com | sh</code><br><strong>macOS (brew):</strong> <code>brew install surrealdb/tap/surreal</code><br><strong>Windows:</strong> <code>iwr https://windows.surrealdb.com -useb | iex</code><br><sub>or grab a binary from <a href="https://surrealdb.com/install">surrealdb.com/install</a></sub></td>
 </tr>
@@ -250,8 +250,8 @@ kavach --version
 Kavach ships a **server-rendered** web UI (Axum + maud — no desktop app, no webview to install). It reads everything through the running SurrealDB server and renders the memory graph, kanban, decisions, and mistake ledger as plain HTML:
 
 ```bash
-kavach web --port 8787
-# → serves the dashboard at http://127.0.0.1:8787
+kavach web
+# → serves the dashboard at http://127.0.0.1:7777 (default; override with --port)
 ```
 
 </details>

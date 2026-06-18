@@ -424,6 +424,24 @@ DEFINE FIELD IF NOT EXISTS status ON bulk_manifest TYPE string DEFAULT "active";
 DEFINE FIELD IF NOT EXISTS closed_at ON bulk_manifest TYPE option<datetime>;
 DEFINE INDEX IF NOT EXISTS idx_bulk_manifest_sweep ON bulk_manifest FIELDS sweep_id UNIQUE;
 DEFINE INDEX IF NOT EXISTS idx_bulk_manifest_status ON bulk_manifest FIELDS status;
+
+-- =============================================================================
+-- nlm_doc — NanoLM live-fetched documentation corpus (roadmap.unit.nlm.p1c).
+-- The NanoLM NEVER trusts frozen weights: every fetched official-docs chunk is
+-- stored here and retrieved live by BM25, vectorless. One row per (source_url,
+-- heading) chunk so re-fetching a page is idempotent. `body` carries the FTS
+-- index; `source_url` is the provenance every retrieval cites. Reuses
+-- concept_analyzer (lowercase + snowball(english)); BM25(1.2, 0.75) canonical.
+-- =============================================================================
+DEFINE TABLE IF NOT EXISTS nlm_doc SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS source_url ON nlm_doc TYPE string;
+DEFINE FIELD IF NOT EXISTS heading ON nlm_doc TYPE string;
+DEFINE FIELD IF NOT EXISTS body ON nlm_doc TYPE string;
+DEFINE FIELD IF NOT EXISTS captured_at ON nlm_doc TYPE string;
+DEFINE FIELD IF NOT EXISTS updated_at ON nlm_doc TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_nlm_doc_chunk ON nlm_doc FIELDS source_url, heading UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_nlm_doc_body_fts
+    ON nlm_doc FIELDS body FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
 "#;
 
 #[cfg(test)]

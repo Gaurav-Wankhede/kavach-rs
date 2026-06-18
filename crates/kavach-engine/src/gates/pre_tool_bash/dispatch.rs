@@ -46,7 +46,7 @@ pub(crate) fn handle_bash(input: &HookInput) -> Result<(), EngineError> {
 /// learned controller would defer" — is the offline signal the promotion gate
 /// (`ope.evaluate` + `controller::promote`) later evaluates. No-op when disarmed.
 fn record_canary_shadow(command: &str, decision: &Decision) {
-    let session_id = std::env::var("KAVACH_SESSION_ID").unwrap_or_default();
+    let session_id = kavach_session::resolved_session_id();
     let shadow = controller_shadow_action();
     let verb = command.split_whitespace().next().unwrap_or("");
     shadow::record_shadow(
@@ -83,7 +83,7 @@ fn controller_shadow_action() -> kavach_patterns::bandit_log::GateAction {
 /// fire-and-forget. `session_id` comes from the env (the pre-tool path is
 /// stateless — it never loads full session state).
 fn log_bandit_decision(command: &str, decision: &Decision) {
-    let session_id = std::env::var("KAVACH_SESSION_ID").unwrap_or_default();
+    let session_id = kavach_session::resolved_session_id();
     if session_id.is_empty() {
         return;
     }

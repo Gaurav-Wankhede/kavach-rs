@@ -38,7 +38,7 @@ mod turn_shadow;
 pub use turn_shadow::{RelayFlush, RewardOutcome};
 
 pub use get_or_create::{
-    get_or_create_session, get_or_create_session_for, set_session_context,
+    get_or_create_session, get_or_create_session_for, resolved_session_id, set_session_context,
 };
 pub use load::{load_session_state, load_session_state_for, parse_ini_str};
 pub use mistake_ledger::{Mistake, record as record_mistake};

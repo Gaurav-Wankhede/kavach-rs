@@ -31,6 +31,7 @@ pub mod gate_patterns;
 pub mod graph;
 pub mod harness_link;
 pub mod lease;
+pub mod nlm;
 pub mod parts;
 pub mod projects;
 pub mod rag_trees;
@@ -58,6 +59,7 @@ pub use gate_config::{
 pub use brain::{BrainHit, GapReport, KavachBrain, hybrid_search};
 pub use brain_query::{gap_for, search_corpus};
 pub use error::{Error, Result};
+pub use nlm::{NlmHit, query_docs as nlm_query_docs, upsert_doc as nlm_upsert_doc};
 pub use rrf::{RRF_K, rrf_fuse};
 pub use graph::upsert_relationships;
 pub use graph::{DagEdge, DagNode, RoadmapDag, roadmap_dag_fetch};

@@ -30,7 +30,9 @@ fn err(msg: &str) -> i32 {
 /// Best-effort ensure the `SurrealDB` server is running (called before serving
 /// the web UI). Silent — the offline panel still covers a genuine failure.
 pub(crate) fn ensure_db_up() {
-    drop(ensure_surreal());
+    if let Err(e) = ensure_surreal() {
+        drop(ewrite_or_exit(&format!("warning: surreal autostart failed: {e}")));
+    }
 }
 
 pub(crate) fn run(action: &ServersAction) -> i32 {
@@ -139,7 +141,7 @@ fn down(port: u16) -> i32 {
     let Some(pids) = killed else {
         return ok(&format!("web not running on :{port} (surreal left up — launchd-owned)"));
     };
-    for pid in pids.split_whitespace() {
+    for pid in pids.split_whitespace().filter(|p| p.bytes().all(|b| b.is_ascii_digit())) {
         drop(Command::new("kill").arg(pid).status());
     }
     ok(&format!(

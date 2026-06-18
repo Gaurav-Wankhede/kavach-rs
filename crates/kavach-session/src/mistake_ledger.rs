@@ -55,7 +55,7 @@ pub struct Mistake<'a> {
 #[must_use = "if you ignore the returned key the gate cannot log the persisted row"]
 pub fn record(m: &Mistake<'_>) -> String {
     if crate::mistake_ledger_graph::graph_path_enabled() {
-        let session_id = std::env::var("KAVACH_SESSION_ID").unwrap_or_default();
+        let session_id = crate::resolved_session_id();
         // Synchronous: the graph path is now an RPC round-trip to the server
         // (the single RocksDB writer), not a direct embedded-DB open — so no
         // tokio runtime is built here. SOURCE: rca.mistake-ledger-dark-via-direct-open.

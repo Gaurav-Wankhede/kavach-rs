@@ -52,7 +52,10 @@ pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
 
 fn is_http_url(url: &str) -> bool {
     let lower = url.trim().to_ascii_lowercase();
-    lower.starts_with("http://") || lower.starts_with("https://")
+    let host = lower
+        .strip_prefix("https://")
+        .or_else(|| lower.strip_prefix("http://"));
+    host.is_some_and(|h| !h.is_empty() && !h.starts_with('/'))
 }
 
 /// `POST /citations/add` — upsert a citation, then return the refreshed list.

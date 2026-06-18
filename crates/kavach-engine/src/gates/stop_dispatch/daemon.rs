@@ -31,7 +31,7 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     // (`KAVACH_SESSION_ID`, set at SessionStart) so the selector's
     // `is_live_leased_by_other(me)` compares like-for-like. Empty => fail-closed
     // (any live lease is foreign), so an un-identified session never steals.
-    let session_id = std::env::var("KAVACH_SESSION_ID").ok().filter(|s| !s.is_empty());
+    let session_id = Some(kavach_session::resolved_session_id()).filter(|s| !s.is_empty());
     let mut map = serde_json::Map::new();
     map.insert("project".to_owned(), serde_json::Value::String(project_slug.to_owned()));
     if let Some(l) = lane {

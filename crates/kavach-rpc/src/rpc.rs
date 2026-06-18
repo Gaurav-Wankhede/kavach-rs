@@ -5,8 +5,9 @@
 use crate::error::{internal, invalid_params};
 use crate::methods::{
     brain, bridge, bulk, change, citation, concept, db, db_harness, decisions, events,
-    gate_patterns, gates, graph, lease, mistake, mistake_top, projects, rag, replay, roadmap, run,
-    session, system, trust,
+    gate_patterns, gates, graph, lease, mistake, mistake_top, nlm, nlm_serve, projects, rag, replay,
+    roadmap,
+    run, session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
@@ -315,6 +316,33 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             concept::list(&ctx, p).await
         })
         .map_err(|e| internal(format!("register concept.list: {e}")))?;
+
+    module
+        .register_async_method("nlm.store", |params, ctx, _ext| async move {
+            let p: nlm::StoreParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            nlm::store(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register nlm.store: {e}")))?;
+
+    module
+        .register_async_method("nlm.query", |params, ctx, _ext| async move {
+            let p: nlm::QueryParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            nlm::query(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register nlm.query: {e}")))?;
+
+    module
+        .register_async_method("nlm.advise", |params, ctx, _ext| async move {
+            let p: nlm_serve::AdviseParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            nlm_serve::advise(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register nlm.advise: {e}")))?;
 
     module
         .register_async_method("concept.delete", |params, ctx, _ext| async move {
