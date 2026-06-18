@@ -67,11 +67,6 @@ pub(super) fn run(
         depth_flag,
         std::env::var("KAVACH_NO_TRUNCATE").as_deref() == Ok("1"),
     );
-    // ALGO: linear iteration to format output
-    // PROBLEM_CLASS: print
-    // TIME: O(n) | SPACE: O(1)
-    // YEAR: 2026 | SEARCHED: 2026-05
-    // BENCHMARK: https://doc.rust-lang.org/std/iter/trait.Iterator.html
     match super::rpc_client::query(project_slug, category, include_done) {
         Ok(result) => {
             for entry in &result.entries {
