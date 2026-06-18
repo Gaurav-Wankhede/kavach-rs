@@ -80,7 +80,8 @@ pub(crate) fn run(action: DbAction) -> i32 {
             category,
             key,
             full,
-        } => get::run(&project, &category, &key, full),
+            snippet,
+        } => get::run(&project, &category, &key, full, snippet),
         DbAction::Event {
             event_type,
             payload,

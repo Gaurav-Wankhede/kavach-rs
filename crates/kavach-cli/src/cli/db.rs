@@ -211,6 +211,10 @@ pub(crate) enum DbAction {
         /// Show all metadata (tags, ttl, source, timestamps)
         #[arg(long)]
         full: bool,
+        /// Return the SHORT snippet body (single-key get returns FULL content by
+        /// default — naming one exact key is a depth request)
+        #[arg(long)]
+        snippet: bool,
     },
     /// Delete events older than N days (TIME-BASED — transitional, prefer `archive`)
     Rotate {

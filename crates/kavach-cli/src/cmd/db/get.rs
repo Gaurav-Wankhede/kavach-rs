@@ -1,11 +1,18 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
+/// A single-key get is a DEPTH request → full content by default; `--snippet`
+/// opts back into the short body, but `--full` always wins (it implies content).
+#[must_use]
+pub(crate) const fn want_full_content(full: bool, snippet: bool) -> bool {
+    full || !snippet
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "multi-stage fallback from RPC to direct DB access with error handling"
 )]
-pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool) -> i32 {
-    match super::rpc_client::get(project_slug, category, key, full) {
+pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool, snippet: bool) -> i32 {
+    match super::rpc_client::get(project_slug, category, key, want_full_content(full, snippet)) {
         Ok(result) if result.found => {
             if let Some(entry) = result.entry {
                 let head = format!(
@@ -155,4 +162,22 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool) -> 
             }
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::want_full_content;
+
+    #[test]
+    fn default_get_is_full() {
+        assert!(want_full_content(false, false));
+    }
+    #[test]
+    fn snippet_opts_into_short() {
+        assert!(!want_full_content(false, true));
+    }
+    #[test]
+    fn full_wins_over_snippet() {
+        assert!(want_full_content(true, true));
+    }
 }
