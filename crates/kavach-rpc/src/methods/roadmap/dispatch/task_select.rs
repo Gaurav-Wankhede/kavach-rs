@@ -47,7 +47,22 @@ pub async fn next_open_task(
     let me = params.session_id.as_deref().unwrap_or_default();
     let selected = pick_in_lane(&entries, &dep_pool, me, |e| lane_matches(e, want))
         .or_else(|| pick_in_lane(&entries, &dep_pool, me, |e| e.lane.is_none()));
-    Ok(selected)
+    if selected.is_some() {
+        return Ok(selected);
+    }
+    // E2: picking NOTHING can mean an unsatisfiable DEPENDS_ON CYCLE (A→B→A) —
+    // every card in it waits on the next, so none is ever runnable and the loop
+    // would stall silently. Surface the cycle as a [DAG_CYCLE] allow-stop NAMING
+    // the keys, instead of an invisible "picked neither". SOURCE:
+    // decision.harness.loop-edge-cases-and-db-optimization E2.
+    if let Some(cycle) = super::dag_cycle::detect_cycle(&entries) {
+        return Ok(Some(NextTaskResult {
+            key: "[DAG_CYCLE]".to_owned(),
+            title: super::dag_cycle::cycle_message(&cycle),
+            status: "dag_cycle".to_owned(),
+        }));
+    }
+    Ok(None)
 }
 
 /// # Errors

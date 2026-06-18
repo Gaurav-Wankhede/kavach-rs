@@ -1,4 +1,5 @@
 pub mod census;
+mod dag_cycle;
 pub mod hunt_select;
 mod lane_pick;
 pub mod task_select;
