@@ -1,9 +1,6 @@
 //! Witness-machinery tests (sibling of witness.rs per §`MICRO_FILE`; `super` is the
 //! `witness` module). decision.kavach.verify-rs-microfile-split-2026-06-17.
-use super::{
-    WitnessRun, discover_rust_workspace, has_uncommitted_changes, is_rust_workspace,
-    verify_command_env,
-};
+use super::{WitnessRun, discover_rust_workspace, is_rust_workspace, verify_command_env};
 
 #[test]
 fn non_cargo_dir_is_not_rust() {
@@ -52,11 +49,6 @@ fn spawn_error_failed_unprovable_are_distinct() {
     assert_ne!(WitnessRun::SpawnError, WitnessRun::Unprovable);
     assert_ne!(WitnessRun::Failed, WitnessRun::Unprovable);
     assert_eq!(WitnessRun::Passed, WitnessRun::Passed);
-}
-
-#[test]
-fn has_uncommitted_changes_does_not_panic() {
-    let _ = has_uncommitted_changes();
 }
 
 #[test]

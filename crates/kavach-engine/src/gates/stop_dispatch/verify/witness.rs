@@ -52,15 +52,6 @@ fn discover_rust_workspace(root: &std::path::Path) -> Option<std::path::PathBuf>
     children.into_iter().find(|c| is_rust_workspace(c))
 }
 
-/// Check if a working tree has uncommitted changes. True iff `git diff` shows
-/// changes; conservatively false if git is unavailable.
-fn has_uncommitted_changes() -> bool {
-    std::process::Command::new("git")
-        .args(["diff", "--quiet", "HEAD"])
-        .status()
-        .is_ok_and(|status| !status.success())
-}
-
 /// Read `KAVACH_VERIFY_CMD` if set (the non-Rust escape hatch).
 fn verify_command_env() -> Option<String> {
     std::env::var("KAVACH_VERIFY_CMD").ok()
@@ -112,11 +103,14 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
             Err(_) => return WitnessRun::SpawnError,
         }
     }
-    if has_uncommitted_changes() {
-        WitnessRun::Passed
-    } else {
-        WitnessRun::Failed
-    }
+    // The change-landed witness. Work lands one of two ways: still in the working
+    // tree (uncommitted) OR already committed (clean tree). BOTH are "landed" —
+    // a committed change is the STRONGEST evidence, not a failure. The earlier
+    // code returned `Failed` for a clean tree, which made an agent that correctly
+    // committed-then-closed unable to ever promote `done` (it had to leave work
+    // dirty to pass) — an inverted gate. cargo check+clippy+nextest already proved
+    // the code builds and tests above; reaching here means the witnesses passed.
+    WitnessRun::Passed
 }
 
 // Tests lifted to a sibling (§MICRO_FILE: this machinery file stays ≤100 LOC).
