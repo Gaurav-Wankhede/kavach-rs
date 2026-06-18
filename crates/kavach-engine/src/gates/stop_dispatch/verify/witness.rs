@@ -57,13 +57,8 @@ fn verify_command_env() -> Option<String> {
     std::env::var("KAVACH_VERIFY_CMD").ok()
 }
 
-/// Extract a per-card `WITNESS_ROOT:` declaration from a card's content. A card
-/// whose code lives in another repo than the dispatch CWD names its real repo on
-/// a `WITNESS_ROOT: <path>` line (the same convention as `DEPENDS_ON:`), so the
-/// gate verifies it in the RIGHT workspace WITHOUT the operator having to export a
-/// process-wide env var. Tolerant: no such line yields `None`. The first match
-/// wins; the path is trimmed but otherwise used verbatim (`~` is NOT expanded —
-/// declare an absolute path).
+/// First non-empty `WITNESS_ROOT: <path>` line in a card (trimmed, verbatim, `~`
+/// NOT expanded), or `None`. Lets a cross-repo card name its real workspace.
 #[must_use]
 pub(crate) fn witness_root_from_card(content: &str) -> Option<String> {
     content.lines().find_map(|raw| {
@@ -75,17 +70,8 @@ pub(crate) fn witness_root_from_card(content: &str) -> Option<String> {
     })
 }
 
-/// Run the objective build+test witnesses ONCE over the whole workspace.
-///
-/// Workspace-discovery precedence, most-specific first:
-/// 1. `card_root` — a per-card `WITNESS_ROOT:` hint (the card names its own repo);
-/// 2. the `WITNESS_ROOT` process env (a session-wide override);
-/// 3. the dispatch CWD (root, or an immediate monorepo subdir);
-/// 4. else `KAVACH_VERIFY_CMD`, else `Unprovable`.
-///
-/// The per-card hint (1) is what lets a cross-repo card (e.g. a kavach-rs
-/// harness-self-improvement card dispatched while CWD is the project's Backend)
-/// pass: it is verified in the repo it actually edits, not the dispatch CWD.
+/// Run the build+test witnesses ONCE. Workspace precedence, most-specific first:
+/// per-card `card_root` hint → `WITNESS_ROOT` env → CWD → `KAVACH_VERIFY_CMD` → Unprovable.
 pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
     // 1. Per-card hint wins — the card declares the repo its code lives in.
     if let Some(root) = card_root
@@ -133,13 +119,7 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
             Err(_) => return WitnessRun::SpawnError,
         }
     }
-    // The change-landed witness. Work lands one of two ways: still in the working
-    // tree (uncommitted) OR already committed (clean tree). BOTH are "landed" —
-    // a committed change is the STRONGEST evidence, not a failure. The earlier
-    // code returned `Failed` for a clean tree, which made an agent that correctly
-    // committed-then-closed unable to ever promote `done` (it had to leave work
-    // dirty to pass) — an inverted gate. cargo check+clippy+nextest already proved
-    // the code builds and tests above; reaching here means the witnesses passed.
+    // Change-landed witness: a committed (clean) tree is landed too, not a failure.
     WitnessRun::Passed
 }
 
