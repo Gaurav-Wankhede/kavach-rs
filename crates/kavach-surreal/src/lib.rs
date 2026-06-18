@@ -16,6 +16,7 @@
 
 pub mod archive;
 pub mod bandit;
+pub mod brain;
 pub mod bulk_manifest;
 pub mod connection;
 pub mod decisions;
@@ -52,6 +53,7 @@ pub use gate_config::{
     gate_config_delete, gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
     set_with_kind as gate_config_set_with_kind,
 };
+pub use brain::{BrainHit, GapReport, KavachBrain, hybrid_search};
 pub use error::{Error, Result};
 pub use rrf::{RRF_K, rrf_fuse};
 pub use graph::upsert_relationships;
