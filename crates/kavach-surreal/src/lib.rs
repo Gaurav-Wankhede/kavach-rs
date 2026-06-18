@@ -19,6 +19,7 @@ pub mod bandit;
 pub mod brain;
 pub mod brain_query;
 pub mod bulk_manifest;
+pub mod citation;
 pub mod connection;
 pub mod decisions;
 pub mod delete;
