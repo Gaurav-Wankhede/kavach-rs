@@ -14,12 +14,17 @@
 //! dead detector must never false-fire; the patterns are proven to compile by the
 //! chain crate's own tests).
 //!
-//! WIRED (7) — invoked every Stop: `detect_continuation_menu` (in `stop.rs`),
+//! WIRED (8) — invoked every Stop: `detect_continuation_menu` (in `stop.rs`),
 //! and in `TABLE` below: `detect_permission_seek`, `detect_incomplete_work`,
 //! `detect_remaining_phases`, `detect_unverified_code_claim`,
-//! `detect_inference_as_evidence`, `detect_lazy_verification_claim`. The last
-//! three are gated behind `wrote_this_turn` (a verification claim is meaningless
-//! on a read-only turn).
+//! `detect_inference_as_evidence`, `detect_lazy_verification_claim`, and
+//! `semantic_deferral_backstop` (the `classify_semantic_deferral` adapter — an
+//! LLM-judge-shaped semantic backstop for PARAPHRASED handoffs the lexical
+//! `detect_strategic_deferral` regex misses; FP-bounded by its own
+//! `CoveredByRegex`/`PRESENT_ACTION` arms, proven in
+//! `phase_a_semantic_deferral_test.rs`). The verification-claim three are gated
+//! behind `wrote_this_turn` (a verification claim is meaningless on a read-only
+//! turn).
 //!
 //! DEFERRED ROSTER (15) — each is EXPLICITLY held back; none is "etc." Wire it
 //! the day its FP bound is proven < 1% in a test, then move it to WIRED. Until
@@ -44,7 +49,15 @@
 //!                                          copy is an orphan (not mod-declared) —
 //!                                          DELETE it, do not wire.
 
-use kavach_chain::stop_signals;
+use kavach_chain::stop_signals::{self, SemanticDeferral, classify_semantic_deferral};
+
+/// Backstop adapter: fire ONLY on a paraphrased handoff the lexical
+/// `detect_strategic_deferral` regex missed. `CoveredByRegex`/`Clear` → false, so
+/// this never double-counts a regex hit and never fires on an actively-working
+/// turn (the classifier's `PRESENT_ACTION` arm negates it).
+fn semantic_deferral_backstop(msg: &str) -> Result<bool, regex::Error> {
+    Ok(classify_semantic_deferral(msg)? == SemanticDeferral::ParaphrasedHandoff)
+}
 
 /// One detector in the dispatch table: a chain predicate, the advisory it emits
 /// when it fires, and the mistake-ledger metadata. `needs_write` gates the
@@ -116,6 +129,14 @@ const TABLE: &[Entry] = &[
         banned: "claimed verification without the 3-witness artifacts",
         correct: "produce the rg hit + git diff --stat + cargo check exit 0, or drop the verified claim",
         advisory: "[LAZY_VERIFICATION] last turn claimed verification without the artifacts. A CLEAN verdict is noise unless it cites the leaf it reached (global CLAUDE.md §verdict_needs_leaf_evidence). Produce the three witnesses THIS turn (rg hit + git diff --stat + cargo check exit 0) and cite them, or drop the claim.",
+    },
+    Entry {
+        detect: semantic_deferral_backstop,
+        needs_write: false,
+        gate: "semantic_deferral_at_stop",
+        banned: "paraphrased a handoff (\"good stopping point\", \"handing the rest off\", \"as far as makes sense\") the lexical deferral regex missed",
+        correct: "do NOT hand off — query the kavach DB, claim the next runnable card, and START it THIS turn",
+        advisory: "[SEMANTIC_DEFERRAL] last turn read as a paraphrased handoff the lexical deferral regex did not catch (\"natural stopping point\", \"handing the remainder off\", \"as far as it makes sense\"). A paraphrase is still a deferral (global CLAUDE.md §autonomous_loop §4a_describe_is_not_done). Do NOT hand work off in prose: check the kavach DB, claim the next runnable card, and START it THIS turn. If the board is genuinely empty, state that as a fact.",
     },
 ];
 

@@ -5,8 +5,9 @@
 //! split into micro-modules under `stop_signals/` to honor the ≤100-LOC file rule.
 
 pub use self::phase_a::{
-    detect_continuation_menu, detect_self_imposed_limit, detect_strategic_deferral,
-    detect_strong_scope_ask, detect_unsolicited_reprioritization, detect_value_gating,
+    SemanticDeferral, classify_semantic_deferral, detect_continuation_menu,
+    detect_self_imposed_limit, detect_strategic_deferral, detect_strong_scope_ask,
+    detect_unsolicited_reprioritization, detect_value_gating,
 };
 
 pub use self::phase_b::{
@@ -30,6 +31,7 @@ mod signal;
 mod phase_a;
 mod phase_a_deferral;
 mod phase_a_limits;
+mod phase_a_semantic_deferral;
 mod phase_a_menu;
 mod phase_a_value;
 
