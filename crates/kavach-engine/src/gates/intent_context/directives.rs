@@ -33,7 +33,9 @@ pub(crate) fn append_verify_existing(context: &mut String, intent_type: &str) {
 /// Enforces offensive deep investigation — forbids surface patches.
 /// SOURCES: five-whys RCA + `RCAEval` (FSE'26) + sjmyuan/prompts.
 // ARCH: prompt-cache-tier-split | PROBLEM_CLASS: cache
+// REJECTED: [{"name":"keep-30-line-inline","reason":"700 tokens/turn uncached"},{"name":"remove-injection","reason":"loses [RCA] gate enforcement"}]
 // TIME: O(1) | SPACE: O(1) | YEAR: 2026 | SEARCHED: 2026-04
+// BENCHMARK: https://www.dbreunig.com/2026/04/04/how-claude-code-builds-a-system-prompt.html
 pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str) {
     if intent_type != "debug" && intent_type != "refactor" && intent_type != "implement" {
         return;
