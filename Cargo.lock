@@ -2939,6 +2939,7 @@ dependencies = [
  "chrono",
  "dirs",
  "itertools 0.13.0",
+ "kavach-rag-core",
  "kavach-types",
  "rustix",
  "serde",
