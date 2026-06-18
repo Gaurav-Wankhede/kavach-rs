@@ -62,6 +62,13 @@ pub(crate) enum Commands {
     /// Show session status, build identity, and enforcement flags.
     #[command(after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates.")]
     Status,
+    /// Launch the HTMX web UI (server-rendered) on <http://127.0.0.1>:<port>.
+    #[command(after_help = "EXAMPLES:\n  kavach web              # serve on :777\n  kavach web --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the RPC daemon; start it first if pages show the offline panel.")]
+    Web {
+        /// TCP port to bind on loopback (default 777).
+        #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
+        port: u16,
+    },
     /// Run a gate hook (called by Claude Code / Cursor hooks).
     #[command(after_help = "EXAMPLES:\n  kavach gates stop --help          # gate purpose (no stdin)\n  echo '{\"hook_event_name\":\"Stop\",\"cwd\":\".\"}' | kavach gates stop --hook --vendor cursor\n\nWHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.")]
     Gates {
@@ -95,17 +102,6 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: DbAction,
     },
-    /// Run JSON-RPC 2.0 server backed by kavach-surreal (stdio or http)
-    Rpc {
-        /// Transport mode: stdio (default, for Claude Code) or http (random ephemeral port + lockfile)
-        #[arg(long, default_value = "stdio")]
-        transport: String,
-        /// Apply schema on startup (idempotent)
-        #[arg(long, default_value_t = true)]
-        apply_schema: bool,
-    },
-    /// Manage the launchd RPC-daemon `LaunchAgent` (code-owned plist generation).
-    Daemon(crate::cmd::daemon::DaemonArgs),
     /// Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…).
     #[command(after_help = "EXAMPLES:\n  kavach install --vendor all --dry-run\n  kavach install --vendor cursor\n\nWHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent.")]
     Install {
@@ -204,16 +200,12 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
     },
     /// One-shot deploy: build, test, install binary to ~/.local/bin/kavach.
     #[command(
-        after_help = "EXAMPLES:\n  just install              # from kavach-rs (plain CLI)\n  just bundle               # KavachApp.app + symlink (~/.local/bin/kavach)\n  kavach deploy --skip-tests --bundle\n\nWHEN: After engine/cli changes; restarts RPC daemon on success."
+        after_help = "EXAMPLES:\n  just install              # from kavach-rs (plain CLI)\n  kavach deploy --skip-tests\n\nWHEN: After engine/cli changes; restarts RPC daemon on success."
     )]
     Deploy {
         /// Skip the cargo nextest step (build + install only).
         #[arg(long)]
         skip_tests: bool,
-        /// Also build + install the GUI app bundle (Kavach.app + .dmg) with the
-        /// CLI embedded. Requires the `dx` CLI (Dioxus 0.7). macOS only.
-        #[arg(long)]
-        bundle: bool,
     },
     /// Strict TS/frontend gate: detect biome/eslint/tsc, auto-fix safe rewrites,
     /// fail on any warning. Mirror of `kavach deploy` for non-Rust projects.
@@ -253,8 +245,6 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[command(subcommand)]
         action: TasksAction,
     },
-    /// Launch the kavach desktop app (Dioxus 0.7) — visualizes projects, roadmap, kanban, decisions, knowledge graph.
-    App,
     /// Unified JSON snapshot: kanban counts, session, phase, loop state.
     #[command(
         long_about = "Emits one JSON object for agent harness startup: project slug, \
@@ -291,9 +281,6 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
     /// roadmap. Independent tasks fan out; blocked tasks wait for prerequisites.
     /// SOURCE: roadmap.unit.dag-parallel-dispatch.
     Team(crate::cmd::team::TeamArgs),
-    /// MCP (Model Context Protocol) stdio server bridging Claude Code to kavach-db.
-    /// Register with: `claude mcp add kavach -- kavach mcp`.
-    Mcp,
     /// Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …)
     /// via `cargo binstall` — ships *with* kavach, no per-machine setup.
     /// SOURCE: arch.decision.toolbelt-binstall-subcommand.

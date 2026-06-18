@@ -603,19 +603,15 @@ pub(super) fn should_fallback_to_direct(rpc_err: &str) -> bool {
     rpc_err == DAEMON_UNAVAILABLE
 }
 
-/// True when a *direct* `SurrealDB` open failed because the `RocksDB` single-writer
-/// `fcntl` lock is held by another process — a daemon mid-restart took the lock
-/// between our `socket_path.exists()` check and our open (errno `EAGAIN`).
+/// True when a `SurrealDB` open failed because the `RocksDB` single-writer
+/// `fcntl` lock is held by another process (errno `EAGAIN`).
 ///
-/// Closes the daemon-restart TOCTOU (CWE-367, `rca.db-event-daemon-restart-race`):
-/// `NotReachable` (socket gone) does NOT imply the lock is free during a
-/// restart — `kavach_rpc::run` opens `RocksDB` *before* binding the socket, so
-/// there is a window where the socket is absent yet the lock is held. Instead
-/// of inferring lock-freeness from the socket proxy (non-atomic, wrong
-/// resource), the caller treats THIS error from the action itself as "daemon
-/// is restarting — re-attempt RPC". Mirrors osquery's adopted fix for the
-/// identical rapid-restart stale-lock race (rocksdb#3114).
-/// SOURCE: <https://github.com/facebook/rocksdb/issues/3114>
+/// Retained as a defensive transient-error classifier: the DB is now owned by
+/// the standalone `surreal start` server, so kavach clients connect via ws and
+/// do not contend for the RocksDB lock themselves. This only matches the
+/// surreal server's own startup window (it opens `RocksDB` before binding the
+/// ws port), letting a racing client treat the error as "server starting —
+/// retry" rather than a hard failure. SOURCE: <https://github.com/facebook/rocksdb/issues/3114>
 pub(super) fn is_rocksdb_lock_contention(open_err: &str) -> bool {
     open_err.contains("Resource temporarily unavailable") || open_err.contains("LOCK:")
 }
@@ -646,7 +642,7 @@ pub(super) fn fallback_backoff_schedule() -> impl Iterator<Item = std::time::Dur
 /// stale lock from an unclean shutdown must NOT loop — rocksdb#3114 pattern).
 /// SOURCE: <https://github.com/facebook/rocksdb/issues/3114>
 pub(super) async fn open_direct_resilient()
--> Result<surrealdb::Surreal<surrealdb::engine::local::Db>, String> {
+-> Result<surrealdb::Surreal<surrealdb::engine::any::Any>, String> {
     let mut last = match kavach_surreal::open_default().await {
         Ok(db) => return Ok(db),
         Err(e) => e.to_string(),
