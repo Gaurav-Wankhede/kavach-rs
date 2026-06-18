@@ -48,6 +48,7 @@ fn extract_field_returns_none_when_absent() {
 fn extracts_inline_searched_from_year_line() {
     // Skill template uses "YEAR: 2021 | SEARCHED: 2026-04" on one line.
     let content = "// ALGO: pdqsort\n\
+                   // PROBLEM_CLASS: sorting\n\
                    // YEAR: 2021 | SEARCHED: 2026-04\n\
                    fn sort() {}";
     let Some(algo) = extract_algo_comment(content) else {

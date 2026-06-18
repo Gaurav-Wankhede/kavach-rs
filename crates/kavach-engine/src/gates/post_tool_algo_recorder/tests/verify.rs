@@ -45,9 +45,12 @@ fn verify_passes_valid_comment_no_benchmark() {
     // No BENCHMARK field — skip URL check. SEARCHED on its own line.
     let content = format!(
         "// ALGO: pdqsort\n\
+         // PROBLEM_CLASS: sorting\n\
+         // REJECTED: []\n\
          // TIME: O(n log n) | SPACE: O(log n)\n\
          // YEAR: 2021\n\
          // SEARCHED: {now}-04\n\
+         // TRADEOFF: none\n\
          fn sort() {{}}"
     );
     let Some(algo) = extract_algo_comment(&content) else {
