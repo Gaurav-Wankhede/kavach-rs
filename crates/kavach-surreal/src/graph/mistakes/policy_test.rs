@@ -22,12 +22,11 @@ fn props(allow: f64, lcb: f64) -> DeployedPolicyProps {
 #[tokio::test]
 async fn upsert_is_singleton_then_read_returns_latest() {
     let db = open_memory().await.expect("open in-memory db");
-    let emb = [0.1_f32, 0.2, 0.3];
-    upsert_deployed_policy(&db, "policy.advisory.global", &props(0.7, 0.5), &emb)
+    upsert_deployed_policy(&db, "policy.advisory.global", &props(0.7, 0.5))
         .await
         .expect("first upsert");
     // Re-upsert the SAME scope with a different distribution.
-    upsert_deployed_policy(&db, "policy.advisory.global", &props(0.2, 0.6), &emb)
+    upsert_deployed_policy(&db, "policy.advisory.global", &props(0.2, 0.6))
         .await
         .expect("re-upsert same scope");
 
@@ -42,11 +41,10 @@ async fn upsert_is_singleton_then_read_returns_latest() {
 #[tokio::test]
 async fn ranks_by_lcb_descending() {
     let db = open_memory().await.expect("open in-memory db");
-    let emb = [0.1_f32, 0.2, 0.3];
-    upsert_deployed_policy(&db, "policy.advisory.global", &props(0.5, 0.5), &emb)
+    upsert_deployed_policy(&db, "policy.advisory.global", &props(0.5, 0.5))
         .await
         .expect("upsert global");
-    upsert_deployed_policy(&db, "policy.advisory.bash", &props(0.5, 0.9), &emb)
+    upsert_deployed_policy(&db, "policy.advisory.bash", &props(0.5, 0.9))
         .await
         .expect("upsert bash");
 
@@ -66,6 +64,6 @@ async fn empty_graph_returns_no_rows() {
 #[tokio::test]
 async fn empty_name_is_rejected() {
     let db = open_memory().await.expect("open in-memory db");
-    let err = upsert_deployed_policy(&db, "", &props(0.5, 0.5), &[0.1_f32]).await;
+    let err = upsert_deployed_policy(&db, "", &props(0.5, 0.5)).await;
     assert!(err.is_err(), "empty name must fail closed");
 }

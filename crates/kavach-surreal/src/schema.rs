@@ -339,9 +339,6 @@ DEFINE ANALYZER IF NOT EXISTS concept_analyzer
 DEFINE INDEX IF NOT EXISTS idx_concept_fts
     ON TABLE entity COLUMNS properties.description
     FULLTEXT ANALYZER concept_analyzer BM25;
-DEFINE FIELD IF NOT EXISTS embedding ON entity TYPE option<array<float>>;
-DEFINE INDEX IF NOT EXISTS idx_entity_embedding ON entity
-    FIELDS embedding HNSW DIMENSION 384 DIST COSINE TYPE F32;
 
 -- =============================================================================
 -- bulk_manifest — single-RCA-bound batch edit authority for mechanical sweeps.

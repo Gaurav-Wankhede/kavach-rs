@@ -9,52 +9,32 @@ use crate::error::Result;
 use crate::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
 use crate::open_memory;
 
-/// 384-dim BGE-shaped vector with a single hot dimension, so two different
-/// `hot` indices are orthogonal (cosine 0 < 0.85 threshold ⇒ distinct clusters)
-/// while the same index is identical (cosine 1.0 ⇒ same cluster).
-fn unit_vec(hot: usize) -> Vec<f32> {
-    let mut v = vec![0.0_f32; 384];
-    v[hot] = 1.0;
-    v
-}
-
 /// Route one mistake observation through the capture path under `gate`/`fix`.
+/// Distinct (gate, fix) pairs cluster to distinct anti_patterns by content key
+/// (`anti.<gate>.<blake3(fix)[..8]>`); the same pair re-clusters to the same node.
 /// Helper returns `Result` and propagates with `?` — it asserts nothing, so it
 /// does not trip `panic_in_result_fn` (which fires only on asserting bodies).
 async fn seed(
     db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     gate: &str,
     fix: &str,
-    emb: &[f32],
 ) -> Result<()> {
-    let ev = append_mistake_event(
-        db,
-        gate,
-        fix,
-        "banned phrase",
-        "sess",
-        Some("proj"),
-        emb.to_vec(),
-    )
-    .await?;
-    cluster_event_to_pattern(db, &ev, emb, gate, fix).await?;
+    let ev = append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj")).await?;
+    cluster_event_to_pattern(db, &ev, gate, fix).await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn ranks_anti_patterns_by_recurrence() {
     let db = open_memory().await.expect("open in-memory db");
-    let emb_a = unit_vec(0);
-    let emb_b = unit_vec(1);
-
     // Cluster A: 3 recurrences of the same behavioral mistake → hit_count 3.
     for _ in 0..3 {
-        seed(&db, "gate_a", "do A instead", &emb_a)
+        seed(&db, "gate_a", "do A instead")
             .await
             .expect("seed cluster A");
     }
     // Cluster B: 1 recurrence → hit_count 1.
-    seed(&db, "gate_b", "do B instead", &emb_b)
+    seed(&db, "gate_b", "do B instead")
         .await
         .expect("seed cluster B");
 
@@ -73,13 +53,13 @@ async fn ranks_anti_patterns_by_recurrence() {
 #[tokio::test]
 async fn limit_truncates_to_top_n() {
     let db = open_memory().await.expect("open in-memory db");
-    seed(&db, "gate_a", "fix a", &unit_vec(0))
+    seed(&db, "gate_a", "fix a")
         .await
         .expect("seed a");
-    seed(&db, "gate_b", "fix b", &unit_vec(1))
+    seed(&db, "gate_b", "fix b")
         .await
         .expect("seed b");
-    seed(&db, "gate_c", "fix c", &unit_vec(2))
+    seed(&db, "gate_c", "fix c")
         .await
         .expect("seed c");
 

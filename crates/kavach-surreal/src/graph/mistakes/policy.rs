@@ -70,7 +70,6 @@ pub async fn upsert_deployed_policy(
     db: &Surreal<Db>,
     name: &str,
     props: &DeployedPolicyProps,
-    definition_embedding: &[f32],
 ) -> Result<RecordId> {
     #[derive(SurrealValue)]
     struct IdRow {
@@ -93,14 +92,13 @@ pub async fn upsert_deployed_policy(
     });
     let q = "UPSERT entity \
              SET entity_type = 'deployed_policy', name = $name, properties = $props, \
-                 embedding = $emb, updated_at = time::now() \
+                 updated_at = time::now() \
              WHERE entity_type = 'deployed_policy' AND name = $name \
              RETURN id";
     let mut resp = db
         .query(q)
         .bind(("name", name.to_owned()))
         .bind(("props", properties))
-        .bind(("emb", definition_embedding.to_vec()))
         .await?;
     let row: Option<IdRow> = resp.take(0)?;
     row.map(|r| r.id)

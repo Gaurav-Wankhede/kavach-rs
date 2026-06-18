@@ -145,7 +145,7 @@ pub async fn policy_improve(
         trust.coverage_ratio,
         samples.len(),
     );
-    if let Err(e) = graph_upsert_deployed_policy(&ctx.db, POLICY_SCOPE, &props, &[]).await {
+    if let Err(e) = graph_upsert_deployed_policy(&ctx.db, POLICY_SCOPE, &props).await {
         return Ok(load_failed(e.to_string()));
     }
     Ok(finish(true, None, m))

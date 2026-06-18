@@ -28,9 +28,9 @@ pub use flow_dag::{
 };
 pub use list_with_links::{LinkedRow, list_with_links as list_rows_with_links};
 pub use mistakes::{
-    AntiPatternHit, AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow, append_mistake_event,
-    cluster_event_to_pattern, nearest_anti_patterns, query_anti_pattern_hit_count,
-    top_anti_patterns, top_deployed_policies, upsert_anti_pattern, upsert_deployed_policy,
+    AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow, append_mistake_event,
+    cluster_event_to_pattern, query_anti_pattern_hit_count, top_anti_patterns,
+    top_deployed_policies, upsert_anti_pattern, upsert_deployed_policy,
 };
 pub use relationships::upsert_relationships;
 pub use roadmap_dag::{DagEdge, DagNode, RoadmapDag, fetch as roadmap_dag_fetch};

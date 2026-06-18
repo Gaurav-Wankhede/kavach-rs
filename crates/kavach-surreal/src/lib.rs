@@ -21,7 +21,6 @@ pub mod connection;
 pub mod decisions;
 pub mod delete;
 pub mod dual_write;
-pub mod embed;
 pub mod error;
 pub mod filter;
 pub mod gate_config;
@@ -51,10 +50,6 @@ pub use gate_config::{
     GLOBAL_PROJECT, GateConfigEntry, GateConfigKind, GateConfigValue,
     gate_config_delete, gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
     set_with_kind as gate_config_set_with_kind,
-};
-pub use embed::{
-    EMBED_DIM, Embedder, ORT_DYLIB_ENV, conventional_dylib_path, cosine, os_dylib_name,
-    resolve_dylib_path,
 };
 pub use error::{Error, Result};
 pub use graph::upsert_relationships;
@@ -107,10 +102,9 @@ pub use gate_patterns::{
     tokenize as gate_pattern_tokenize, upsert as gate_pattern_upsert,
 };
 pub use graph::{
-    AntiPatternHit, AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
+    AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
     append_mistake_event as graph_append_mistake_event,
     cluster_event_to_pattern as graph_cluster_event_to_pattern,
-    nearest_anti_patterns as graph_nearest_anti_patterns,
     query_anti_pattern_hit_count as graph_query_anti_pattern_hit_count,
     top_anti_patterns as graph_top_anti_patterns,
     top_deployed_policies as graph_top_deployed_policies,

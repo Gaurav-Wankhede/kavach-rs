@@ -416,15 +416,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register mistake.top: {e}")))?;
 
     module
-        .register_async_method("mistake.nearest", |params, ctx, _ext| async move {
-            let p: mistake::NearestParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            mistake::nearest(&ctx, p).await
-        })
-        .map_err(|e| internal(format!("register mistake.nearest: {e}")))?;
-
-    module
         .register_async_method("roadmap.entry_status", |params, ctx, _ext| async move {
             let p: roadmap::EntryStatusParams = params
                 .parse()

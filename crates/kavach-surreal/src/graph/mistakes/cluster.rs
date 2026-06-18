@@ -1,66 +1,49 @@
 // split: utility graph clustering module, not a handler
+//
+// Vector-free clustering: a mistake_event is mapped to its anti_pattern by a
+// DETERMINISTIC content key — `anti.<gate>.<blake3(correct_action)[..8]>`. Two
+// events with the same gate + correct_action upsert to the SAME node (exact-key
+// dedup via the DAG). This replaces the former cosine k-NN over ONNX embeddings:
+// the embedder is gone (decision/onnx-removal-dag-rlaif-only), and the only
+// thing the k-NN bought — fuzzy merge of differently-worded same mistakes — is
+// intentionally dropped. Recurrence is still counted via inbound instance_of
+// edges; RLAIF grading still rides on the node.
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
-
-pub const COSINE_THRESHOLD: f32 = 0.85;
-const KNN_K: i64 = 1;
 
 #[derive(SurrealValue)]
 struct IdRow {
     id: RecordId,
 }
 
-#[derive(SurrealValue)]
-struct Hit {
-    id: RecordId,
-    score: f32,
-}
-
-/// Maps an event to a clustered anti-pattern.
+/// Maps an event to a clustered anti-pattern by content key (no vectors).
 ///
 /// # Errors
 /// Propagates `Error::Surreal` when database queries fail.
 pub async fn cluster_event_to_pattern(
     db: &Surreal<Db>,
     event_id: &RecordId,
-    event_embedding: &[f32],
-    fallback_gate: &str,
-    fallback_correct_action: &str,
+    gate: &str,
+    correct_action: &str,
 ) -> Result<RecordId> {
-    let neighbor = nearest_anti_pattern(db, event_embedding).await?;
-    let pattern_id = match neighbor {
-        Some((id, score)) if score >= COSINE_THRESHOLD => id,
-        Some((_id, _score)) => {
-            super::pattern::upsert_anti_pattern(
-                db,
-                &derive_pattern_name(fallback_gate, fallback_correct_action),
-                fallback_gate,
-                fallback_correct_action,
-                event_embedding,
-            )
-            .await?
-        }
-        None => {
-            super::pattern::upsert_anti_pattern(
-                db,
-                &derive_pattern_name(fallback_gate, fallback_correct_action),
-                fallback_gate,
-                fallback_correct_action,
-                event_embedding,
-            )
-            .await?
-        }
-    };
+    let pattern_id = super::pattern::upsert_anti_pattern(
+        db,
+        &derive_pattern_name(gate, correct_action),
+        gate,
+        correct_action,
+    )
+    .await?;
     let q = "RELATE $src->instance_of->$tgt SET weight = 1.0 RETURN id";
     let mut resp = db
         .query(q)
         .bind(("src", event_id.clone()))
         .bind(("tgt", pattern_id.clone()))
         .await?;
-    let _: Option<IdRow> = resp.take(0)?;
-    Ok(pattern_id)
+    let row: Option<IdRow> = resp.take(0)?;
+    row.map(|_| pattern_id)
+        .ok_or_else(|| Error::RecordNotFound("instance_of relate empty".into()))
 }
 
 fn derive_pattern_name(gate: &str, correct_action: &str) -> String {
@@ -73,22 +56,4 @@ fn derive_pattern_name(gate: &str, correct_action: &str) -> String {
     name.push('.');
     name.push_str(&short);
     name
-}
-
-async fn nearest_anti_pattern(
-    db: &Surreal<Db>,
-    embedding: &[f32],
-) -> Result<Option<(RecordId, f32)>> {
-    let q = "SELECT id, vector::similarity::cosine(embedding, $q) AS score \
-             FROM entity WHERE entity_type = 'anti_pattern' AND embedding IS NOT NONE \
-             ORDER BY score DESC LIMIT $k";
-    let mut resp = db
-        .query(q)
-        .bind(("q", embedding.to_vec()))
-        .bind(("k", KNN_K))
-        .await?;
-    let hits: Vec<Hit> = resp
-        .take(0)
-        .map_err(|e| Error::Migration(format!("knn: {e}")))?;
-    Ok(hits.into_iter().next().map(|h| (h.id, h.score)))
 }

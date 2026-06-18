@@ -23,7 +23,6 @@ pub async fn append_mistake_event(
     banned_sample: &str,
     session_id: &str,
     project_slug: Option<&str>,
-    embedding: Vec<f32>,
 ) -> Result<RecordId> {
     if gate.is_empty() {
         return Err(Error::Migration(
@@ -41,14 +40,9 @@ pub async fn append_mistake_event(
              entity_type = 'mistake_event', \
              name = rand::ulid(), \
              properties = $props, \
-             embedding = $emb, \
              created_at = time::now() \
              RETURN id";
-    let mut resp = db
-        .query(q)
-        .bind(("props", props))
-        .bind(("emb", embedding))
-        .await?;
+    let mut resp = db.query(q).bind(("props", props)).await?;
     let row: Option<IdRow> = resp.take(0)?;
     row.map(|r| r.id)
         .ok_or_else(|| Error::RecordNotFound("mistake_event create empty".into()))

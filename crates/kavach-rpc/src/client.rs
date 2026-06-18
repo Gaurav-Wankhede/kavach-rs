@@ -108,15 +108,15 @@ pub fn call<P: Serialize, R: for<'de> Deserialize<'de>>(
     // direct `block_on` (no thread-spawn cost). The InProc runtime is
     // multi-thread and independent of the caller's, so the helper thread's
     // `block_on` is safe.
-    let dispatch = |ip: &InProc| {
+    let dispatch = || {
         ip.rt
             .block_on(async { ip.module.raw_json_request(&request_str, 1).await })
     };
     let raw_result = if tokio::runtime::Handle::try_current().is_ok() {
-        std::thread::scope(|s| s.spawn(|| dispatch(ip)).join())
+        std::thread::scope(|s| s.spawn(dispatch).join())
             .map_err(|_| ClientError::NotReachable(format!("dispatch {method}: worker panicked")))?
     } else {
-        dispatch(ip)
+        dispatch()
     };
     let (response, _stream) =
         raw_result.map_err(|e| ClientError::NotReachable(format!("dispatch {method}: {e}")))?;
