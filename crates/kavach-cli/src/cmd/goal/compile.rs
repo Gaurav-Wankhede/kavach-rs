@@ -16,6 +16,7 @@ mod escape;
 mod fan_out_synthesize;
 mod generate_filter;
 mod loop_until_done;
+mod model_tier;
 mod pairwise_tournament;
 mod worker_critic;
 
