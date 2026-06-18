@@ -4,6 +4,7 @@
 //
 // SOURCE: youtube.com/watch?v=l5rae4LMKBc · Anthropic agent-design patterns.
 use super::escape::js_str;
+use super::model_tier::{Role, agent_opts};
 use crate::cmd::goal::loop_yaml::GoalLoopYaml;
 
 /// Hard ceiling on fan-out width — caps worst-case token spend per goal. The
@@ -17,6 +18,9 @@ pub(super) fn emit(g: &GoalLoopYaml, shards: u32) -> String {
     let intent = js_str(&g.intent);
     let check = js_str(g.oracle.check_str());
     let n = shards.clamp(1, MAX_SHARDS);
+    // Shards are doers (cheap tier); the synthesis is brain work (frontier).
+    let fanout_opts = agent_opts("FanOut", Role::Doer);
+    let synth_opts = agent_opts("Synthesize", Role::Brain);
 
     format!(
         r"export const meta = {{
@@ -35,14 +39,14 @@ const SHARDS = {n}
 const shardResults = (await parallel(
   Array.from({{ length: SHARDS }}, (_, i) => () =>
     agent(`Shard ${{i + 1}}/${{SHARDS}} of: ${{INTENT}}. Work only your slice; ignore the rest.`,
-          {{ phase: 'FanOut' }}))
+          {{ {fanout_opts} }}))
 )).filter(Boolean)
 
 // SYNTHESIZE: one agent merges every shard, gated by the oracle.
 const merged = await agent(
   `Merge these ${{shardResults.length}} shard outputs into one coherent result for: ${{INTENT}}.\n` +
   `It must satisfy: ${{ORACLE_CHECK}}\n\n` + shardResults.map((r, i) => `--- shard ${{i + 1}} ---\n${{r}}`).join('\n'),
-  {{ phase: 'Synthesize' }})
+  {{ {synth_opts} }})
 
 return {{ goal_id: GOAL_ID, shards: shardResults.length, merged }}
 "

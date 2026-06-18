@@ -4,6 +4,7 @@
 //
 // SOURCE: youtube.com/watch?v=l5rae4LMKBc · Anthropic agent-design patterns.
 use super::escape::js_str;
+use super::model_tier::{Role, agent_opts};
 use crate::cmd::goal::loop_yaml::GoalLoopYaml;
 
 /// Upper bound on emitted routes — a runaway YAML list must not balloon the
@@ -15,6 +16,9 @@ pub(super) fn emit(g: &GoalLoopYaml, routes: &[String]) -> String {
     let goal = js_str(&g.goal_id);
     let intent = js_str(&g.intent);
     let check = js_str(g.oracle.check_str());
+    // Classification is a routing DECISION (brain); the specialist Act is a doer.
+    let classify_opts = agent_opts("Classify", Role::Brain);
+    let act_opts = agent_opts("Act", Role::Doer);
     // Each route becomes a JS string literal in the choices array, bounded so a
     // pathological YAML list cannot blow up the generated source.
     let route_arr = routes
@@ -45,14 +49,14 @@ const ROUTE_SCHEMA = {{
 // CLASSIFY: a single agent picks exactly one route from the declared set.
 const decision = await agent(
   `Classify this objective into one of ${{JSON.stringify(ROUTES)}}: ${{INTENT}}`,
-  {{ phase: 'Classify', schema: ROUTE_SCHEMA }})
+  {{ {classify_opts}, schema: ROUTE_SCHEMA }})
 
 const chosen = decision && decision.route ? decision.route : ROUTES[0]
 
 // ACT: dispatch the specialist for the chosen route, gated by the oracle.
 const result = await agent(
   `You are the '${{chosen}}' specialist. Handle: ${{INTENT}}. Make this pass: ${{ORACLE_CHECK}}`,
-  {{ phase: 'Act' }})
+  {{ {act_opts} }})
 
 return {{ goal_id: GOAL_ID, route: chosen, result }}
 "

@@ -4,6 +4,7 @@
 //
 // SOURCE: youtube.com/watch?v=l5rae4LMKBc · Anthropic agent-design patterns.
 use super::escape::js_str;
+use super::model_tier::{Role, agent_opts};
 use crate::cmd::goal::loop_yaml::GoalLoopYaml;
 
 /// Ceiling on candidate count — bounds generation spend.
@@ -15,6 +16,9 @@ pub(super) fn emit(g: &GoalLoopYaml, candidates: u32) -> String {
     let intent = js_str(&g.intent);
     let check = js_str(g.oracle.check_str());
     let n = candidates.clamp(1, MAX_CANDIDATES);
+    // Candidate generation is doer work; the keep/reject filter is a brain judge.
+    let generate_opts = agent_opts("Generate", Role::Doer);
+    let filter_opts = agent_opts("Filter", Role::Brain);
 
     format!(
         r"export const meta = {{
@@ -39,9 +43,9 @@ const FILTER_SCHEMA = {{
 const judged = await pipeline(
   Array.from({{ length: CANDIDATES }}, (_, i) => i),
   (i) => agent(`Generate distinct candidate ${{i + 1}}/${{CANDIDATES}} for: ${{INTENT}}`,
-               {{ phase: 'Generate' }}),
+               {{ {generate_opts} }}),
   (candidate) => agent(`Does this candidate satisfy ${{ORACLE_CHECK}}? Set keep accordingly.\n\n${{candidate}}`,
-                       {{ phase: 'Filter', schema: FILTER_SCHEMA }})
+                       {{ {filter_opts}, schema: FILTER_SCHEMA }})
 )
 
 // Dedup survivors by exact candidate text.

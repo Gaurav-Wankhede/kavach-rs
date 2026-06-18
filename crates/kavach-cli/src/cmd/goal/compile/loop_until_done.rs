@@ -5,6 +5,7 @@
 //
 // SOURCE: youtube.com/watch?v=l5rae4LMKBc · decision.goal-oracle-workflow.
 use super::escape::js_str;
+use super::model_tier::{Role, agent_opts};
 use crate::cmd::goal::loop_yaml::{GoalLoopYaml, OnMaxAttempts};
 
 impl OnMaxAttempts {
@@ -34,6 +35,10 @@ pub(super) fn emit(g: &GoalLoopYaml) -> String {
 
     let lenses: Vec<String> = (0..diag).map(|i| format!("'lens-{i}'")).collect();
     let lens_arr = lenses.join(", ");
+    // Work is doer; Verify (oracle judge) and Diagnose (root-cause) are brain.
+    let work_opts = agent_opts("Work", Role::Doer);
+    let verify_opts = agent_opts("Verify", Role::Brain);
+    let diagnose_opts = agent_opts("Diagnose", Role::Brain);
 
     format!(
         r#"export const meta = {{
@@ -67,7 +72,7 @@ while (attempt < MAX && budget.remaining() > BUDGET_FLOOR) {{
 
   // WORK: a worker tries to make the oracle pass.
   await agent(`Attempt ${{attempt}}/${{MAX}}: ${{INTENT}}. Make this pass: ${{ORACLE_CHECK}}`,
-              {{ phase: 'Work' }})
+              {{ {work_opts} }})
 
   // VERIFY: run the oracle. Its exit code is the proof. The same agent records
   // the receipt in SurrealDB via the kavach CLI — the stop gate reads it back.
@@ -77,7 +82,7 @@ while (attempt < MAX && budget.remaining() > BUDGET_FLOOR) {{
     `  kavach db event --type goal_loop_attempt --project ${{GOAL_ID}} \\\n` +
     `    --payload '{{"goal_id":"${{GOAL_ID}}","attempt":${{attempt}},"oracle_result":"<pass|fail>"}}'\n` +
     `Return the structured result.`,
-    {{ phase: 'Verify', schema: RECEIPT_SCHEMA }}
+    {{ {verify_opts}, schema: RECEIPT_SCHEMA }}
   )
 
   if (receipt && receipt.oracle_result === 'pass') break
@@ -85,7 +90,7 @@ while (attempt < MAX && budget.remaining() > BUDGET_FLOOR) {{
   // DIAGNOSE: fan out independent root-cause hunters on a failed attempt.
   await parallel([{lens_arr}].map((lens) => () =>
     agent(`Oracle failed (exit ${{receipt ? receipt.exit_code : '?'}}). Diagnose from the ${{lens}} angle.`,
-          {{ phase: 'Diagnose' }})))
+          {{ {diagnose_opts} }})))
 }}
 
 if (!(receipt && receipt.oracle_result === 'pass')) {{

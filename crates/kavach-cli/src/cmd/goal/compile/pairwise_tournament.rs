@@ -5,6 +5,7 @@
 //
 // SOURCE: youtube.com/watch?v=l5rae4LMKBc · Anthropic agent-design patterns.
 use super::escape::js_str;
+use super::model_tier::{Role, agent_opts};
 use crate::cmd::goal::loop_yaml::GoalLoopYaml;
 
 /// Ceiling on bracket size — bounds total judge comparisons (N-1 matches).
@@ -16,6 +17,9 @@ pub(super) fn emit(g: &GoalLoopYaml, competitors: u32) -> String {
     let intent = js_str(&g.intent);
     let check = js_str(g.oracle.check_str());
     let n = competitors.clamp(2, MAX_COMPETITORS);
+    // Entrants are doers (each solves); the head-to-head judge is brain work.
+    let compete_opts = agent_opts("Compete", Role::Doer);
+    let judge_opts = agent_opts("Judge", Role::Brain);
 
     format!(
         r"export const meta = {{
@@ -39,7 +43,7 @@ const JUDGE_SCHEMA = {{
 let bracket = (await parallel(
   Array.from({{ length: COMPETITORS }}, (_, i) => () =>
     agent(`Entrant ${{i + 1}}/${{COMPETITORS}}: solve ${{INTENT}} via a DISTINCT approach. Target: ${{ORACLE_CHECK}}`,
-          {{ phase: 'Compete' }}))
+          {{ {compete_opts} }}))
 )).filter(Boolean)
 
 // JUDGE: single-elimination. Each round pairs entrants; the judge picks a winner
@@ -51,7 +55,7 @@ while (bracket.length > 1) {{
     const a = bracket[i], b = bracket[i + 1]
     const verdict = await agent(
       `Judge against ${{ORACLE_CHECK}}. Pick the stronger: 'a' or 'b'.\n\n[a]\n${{a}}\n\n[b]\n${{b}}`,
-      {{ phase: 'Judge', schema: JUDGE_SCHEMA }})
+      {{ {judge_opts}, schema: JUDGE_SCHEMA }})
     next.push(verdict && verdict.winner === 'b' ? b : a)
   }}
   bracket = next

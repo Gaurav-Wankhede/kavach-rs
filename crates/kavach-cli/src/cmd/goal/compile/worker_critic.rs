@@ -5,6 +5,7 @@
 //
 // SOURCE: youtube.com/watch?v=l5rae4LMKBc · Anthropic agent-design patterns.
 use super::escape::js_str;
+use super::model_tier::{Role, agent_opts};
 use crate::cmd::goal::loop_yaml::GoalLoopYaml;
 
 /// Ceiling on critic count — an odd-friendly bound; majority needs few voters.
@@ -16,6 +17,9 @@ pub(super) fn emit(g: &GoalLoopYaml, critics: u32) -> String {
     let intent = js_str(&g.intent);
     let check = js_str(g.oracle.check_str());
     let n = critics.clamp(1, MAX_CRITICS);
+    // The worker produces (doer); each critic is an adversarial judge (brain).
+    let work_opts = agent_opts("Work", Role::Doer);
+    let critique_opts = agent_opts("Critique", Role::Brain);
 
     format!(
         r"export const meta = {{
@@ -37,14 +41,14 @@ const VERDICT_SCHEMA = {{
 
 // WORK: produce the artifact.
 const artifact = await agent(`Produce the artifact for: ${{INTENT}}. Target: ${{ORACLE_CHECK}}`,
-                             {{ phase: 'Work' }})
+                             {{ {work_opts} }})
 
 // CRITIQUE: each critic independently tries to REJECT against the oracle rubric.
 const verdicts = (await parallel(
   Array.from({{ length: CRITICS }}, (_, i) => () =>
     agent(`Critic ${{i + 1}}: adversarially grade this artifact against ${{ORACLE_CHECK}}. ` +
           `Default to approved=false on any doubt.\n\n${{artifact}}`,
-          {{ phase: 'Critique', schema: VERDICT_SCHEMA }}))
+          {{ {critique_opts}, schema: VERDICT_SCHEMA }}))
 )).filter(Boolean)
 
 const approvals = verdicts.filter((v) => v.approved).length

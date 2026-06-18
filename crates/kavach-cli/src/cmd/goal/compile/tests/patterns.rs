@@ -80,6 +80,37 @@ fn pairwise_tournament_floors_competitors_at_two() {
 
 // --- Every pattern is valid, runnable-shaped JS: meta + a return. ---
 
+// --- Model tiering: doers pin the cheap model, brains inherit the frontier. ---
+
+#[test]
+fn fan_out_tiers_shards_cheap_and_synthesis_frontier() {
+    // Shards (doers) pin the cheap model; the synthesis (brain) does NOT — it
+    // inherits the session frontier model. This is the token-saving contract.
+    let js = to_workflow_js(&with_harness(Harness::FanOutSynthesize { shards: 4 }));
+    // The FanOut agent line carries the cheap model.
+    assert!(
+        js.contains("phase: 'FanOut', model: 'claude-haiku-4-5'"),
+        "shards must pin the cheap model:\n{js}"
+    );
+    // The Synthesize agent line carries NO model (frontier-inherited).
+    assert!(
+        js.contains("phase: 'Synthesize' }"),
+        "synthesis must not pin a model:\n{js}"
+    );
+    assert!(
+        !js.contains("phase: 'Synthesize', model:"),
+        "synthesis must inherit frontier, not pin a model:\n{js}"
+    );
+}
+
+#[test]
+fn worker_is_cheap_and_critic_is_frontier() {
+    let js = to_workflow_js(&with_harness(Harness::WorkerCritic { critics: 3 }));
+    assert!(js.contains("phase: 'Work', model: 'claude-haiku-4-5'"), "worker cheap:\n{js}");
+    // Critic is an adversarial judge → brain → no model pin (keeps its schema).
+    assert!(!js.contains("phase: 'Critique', model:"), "critic must be frontier:\n{js}");
+}
+
 #[test]
 fn every_pattern_declares_meta_and_returns() {
     let patterns = [
