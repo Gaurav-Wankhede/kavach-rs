@@ -341,6 +341,39 @@ DEFINE INDEX IF NOT EXISTS idx_concept_fts
     FULLTEXT ANALYZER concept_analyzer BM25;
 
 -- =============================================================================
+-- BRAIN-OS Gap 1 — BM25/FTS retrieval corpus (roadmap.unit.harness.brain-os.g1a).
+-- Extends full-text search from concept-only to the whole memory corpus so
+-- hybrid retrieval (FTS-rank fused with graph-proximity-rank — NO vectors, the
+-- ONNX embedder was removed) can rank decisions/roadmap/research/patterns by
+-- keyword relevance. Reuses concept_analyzer (lowercase + snowball(english)).
+-- title + content are the searchable text on every typed memory table. A
+-- SurrealDB FULLTEXT index covers EXACTLY ONE field, so each table gets two
+-- indexes (one per field); a query matches with `field @@ 'terms'` and ranks
+-- with `search::score(n)` via the `@n@` reference form. BM25(1.2, 0.75) =
+-- canonical k1/b. IF NOT EXISTS: idempotent on already-running stores.
+-- =============================================================================
+DEFINE INDEX IF NOT EXISTS idx_decision_title_fts
+    ON TABLE decision FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_decision_content_fts
+    ON TABLE decision FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_roadmap_title_fts
+    ON TABLE roadmap FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_roadmap_content_fts
+    ON TABLE roadmap FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_research_title_fts
+    ON TABLE research FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_research_content_fts
+    ON TABLE research FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_pattern_title_fts
+    ON TABLE pattern FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_pattern_content_fts
+    ON TABLE pattern FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_app_spec_title_fts
+    ON TABLE app_spec FIELDS title FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+DEFINE INDEX IF NOT EXISTS idx_app_spec_content_fts
+    ON TABLE app_spec FIELDS content FULLTEXT ANALYZER concept_analyzer BM25(1.2, 0.75);
+
+-- =============================================================================
 -- bulk_manifest — single-RCA-bound batch edit authority for mechanical sweeps.
 -- ONE manifest binds N edits sharing identical root_cause + fix_strategy.
 -- Per-edit, the gate verifies {sweep_id env matches, file matches scope_glob,
