@@ -1,4 +1,3 @@
-// ALGO: Point query
 // TIME: O(1) avg | SPACE: O(1)
 //! db.get RPC method — fetch single entry by key.
 

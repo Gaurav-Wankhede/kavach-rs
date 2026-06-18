@@ -38,9 +38,7 @@ pub fn is_stale(cache_path: &Path, current_hash: &str) -> bool {
 
 // ARCH: hash_based_cache_invalidation
 // PATTERN: write-through cache with content-hash staleness
-// REJECTED: [{"name":"mtime","reason":"unreliable across filesystems"},{"name":"polling","reason":"latency on cold start"}]
 // INVARIANT: fresh.hash != cached.hash triggers rebuild
-// TRADEOFF: reads skills_dir on every call; O(n) where n=skill files
 // FAILURE_MODE: concurrent writes race; last-write-wins acceptable for local CLI
 // CAPACITY: <100 skill files, <1ms rebuild latency
 // MONITORING: none (CLI tool, no telemetry)

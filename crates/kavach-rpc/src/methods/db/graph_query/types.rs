@@ -1,4 +1,3 @@
-// ALGO: DTO definitions
 //! Graph query types.
 
 use serde::{Deserialize, Serialize};

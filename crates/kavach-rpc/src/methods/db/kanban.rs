@@ -1,10 +1,5 @@
-// ALGO: Linear scan
-// PROBLEM_CLASS: filter
-// REJECTED: [{"name":"DB-side WHERE","reason":"adds query complexity, <10K rows"},{"name":"index","reason":"SurrealDB handles indexing internally"}]
 // TIME: O(n) | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Fetches all then filters; acceptable for <10K entries where RPC latency dominates
-// BENCHMARK: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.filter
 //! db.kanban RPC method — thin hub + leaf types.
 
 use super::util::{ROADMAP_TABLE, resolve_project_id};

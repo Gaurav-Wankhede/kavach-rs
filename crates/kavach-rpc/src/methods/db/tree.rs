@@ -1,5 +1,3 @@
-// ALGO: forest assembly (parent-indexed BFS)
-// PROBLEM_CLASS: tree-build
 // TIME: O(n) projects | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.tree` RPC method — the project hierarchy forest.

@@ -1,4 +1,3 @@
-// ALGO: Conditional delete + confirmation gate
 //! db.delete RPC method — thin hub.
 
 use crate::error::internal;

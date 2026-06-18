@@ -1,4 +1,3 @@
-// ALGO: Cascade delete + confirmation gate
 // TIME: O(n) | SPACE: O(n)
 //! `db.wipe_project` RPC method — delete all tables for project.
 

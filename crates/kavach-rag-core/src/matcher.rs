@@ -64,7 +64,6 @@ impl<'a> Matcher<'a> {
     }
 }
 
-// ALGO: depth-first tree traversal O(n) / BENCHMARK: standard graph pattern; Rust RFC 160 if-let (2015)
 fn walk(
     node: &TreeNode,
     query: &Query,

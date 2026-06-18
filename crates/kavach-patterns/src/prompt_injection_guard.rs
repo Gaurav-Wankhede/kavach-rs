@@ -1,15 +1,11 @@
 // split: Prompt injection detection guard for UserPromptSubmit hook.
 //
-// ALGO: regex-set classifier for adversarial prompt patterns
-// PROBLEM_CLASS: adversarial-prompt-intent classifier
-// REJECTED: [
 //   {"name":"LLM-based classifier","reason":"latency + recursion risk in hook path"},
 //   {"name":"embedding similarity","reason":"requires model inference, not suitable for sync gate"},
 //   {"name":"naive keyword match","reason":"defeated by unicode/spacing obfuscation"}
 // ]
 // TIME: O(n) per prompt (single pass through regex set) | SPACE: O(patterns)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: regex can miss novel injection; false positives surface as P0 block.
 // SOURCE: https://github.com/nousresearch/hermes-agent — allowlist-based command approval
 // SOURCE: https://brainblend-ai.github.io/atomic-agents/ — schema validation as safety layer
 // SOURCE: https://owasp.org/www-project-llm-applications/ — LLM01 Prompt Injection

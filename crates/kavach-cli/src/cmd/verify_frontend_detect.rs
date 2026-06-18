@@ -1,6 +1,4 @@
 // ARCH: FrontendStackDetector
-// PROBLEM_CLASS: project_tool_chain_detection
-// REJECTED: [
 //   {"name":"read package.json scripts","reason":"scripts are conventional, not authoritative; biome.json/eslint.config.* are the contract"},
 //   {"name":"git-tracked file scan","reason":"requires git, fails in source distributions"}
 // ]

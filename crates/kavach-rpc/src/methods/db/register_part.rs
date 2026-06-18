@@ -1,5 +1,3 @@
-// ALGO: resolve project + UPSERT (part)
-// PROBLEM_CLASS: write
 // TIME: O(1) | SPACE: O(1)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.register_part` RPC method — register or update a project part.

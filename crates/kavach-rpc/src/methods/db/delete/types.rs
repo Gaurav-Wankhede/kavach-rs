@@ -1,4 +1,3 @@
-// ALGO: String concatenation
 //! Delete RPC types and helpers.
 
 use serde::{Deserialize, Serialize};

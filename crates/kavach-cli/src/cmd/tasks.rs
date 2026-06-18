@@ -1,15 +1,10 @@
 // split: intentional — single-module Tasks CLI handler, mirrors todos.rs pattern.
-// ALGO: linear-scan + keyword-bag inference
-// PROBLEM_CLASS: cross-project task attribution
-// REJECTED: [
 //   {"name":"AST parse of Claude Code TaskCreate source","reason":"Claude Code is closed; no source access"},
 //   {"name":"hook into ~/.claude logs","reason":"log format unstable; not contract"},
 //   {"name":"editing ~/.claude/tasks/*.json schema","reason":"Claude Code overwrites on next TaskUpdate"}
 // ]
 // TIME: O(t * p) where t=task count, p=project count | SPACE: O(t)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: keyword inference is heuristic — false positives possible when projects share vocabulary.
-// BENCHMARK: 47 tasks * 7 projects = 329 substring checks, sub-millisecond.
 // SOURCE: ~/.claude/tasks/<user>/<id>.json schema confirmed by direct inspection 2026-05.
 //
 //! `kavach tasks audit` — diagnose Claude Code's user-global `TaskCreate` storage.

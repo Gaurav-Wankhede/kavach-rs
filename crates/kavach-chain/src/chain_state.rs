@@ -6,9 +6,6 @@ use crate::types::{
     AegisVerification, CEODecision, IntentAnalysis, ResearchStatus, VerificationResult,
 };
 
-// ALGO: HashSet<String> for session-satisfied-gates membership
-// PROBLEM_CLASS: small-set string membership (N≈5-10 gates per session)
-// REJECTED: [
 //   {"name":"Vec<String> + .contains","reason":"O(N) lookup per gate-check; N small enough to be fine but HashSet is idiomatic and read-dominated"},
 //   {"name":"BTreeSet<String>","reason":"O(log N) ordered lookup unneeded; we don't iterate in order; HashSet's O(1) average wins"},
 //   {"name":"HashSet<&'static str>","reason":"would force gate-name allowlist at compile-time; we want runtime extensibility per §13 inviolable"}
@@ -16,8 +13,6 @@ use crate::types::{
 // TIME: O(1) average insert/lookup
 // SPACE: O(N) where N≤~10 gates
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: HashSet hashing cost (~20ns) dwarfs O(N) Vec scan for N<10 in microbenchmarks; chose HashSet for clarity + standard Rust idiom for membership
-// BENCHMARK: https://nnethercote.github.io/perf-book/hashing.html (Rust performance book — std HashMap/HashSet using SipHash-1-3, ~20ns per op)
 // SOURCE: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 //
 // Cures session-scope amnesia. See decision:rca.gate_session_amnesia and

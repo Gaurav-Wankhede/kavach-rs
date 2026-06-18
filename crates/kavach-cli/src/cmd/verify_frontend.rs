@@ -1,13 +1,10 @@
 // ARCH: FrontendStrictGate
-// PROBLEM_CLASS: install_time_lint_enforcement_for_typescript_projects
-// REJECTED: [
 //   {"name":"single-tool-only-biome","reason":"existing eslint projects can't migrate atomically"},
 //   {"name":"single-tool-only-eslint","reason":"slower; new biome projects gain nothing"},
 //   {"name":"per-write gate only","reason":"warnings pile up between writes; install-time gate is the §10 contract enforcement"}
 // ]
 // TIME: O(n) over project files (delegated to biome/eslint/tsc) | SPACE: O(1) in this orchestrator
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: detector picks ONE tool stack per project; --prefer overrides priority.
 // PATTERN: language_agnostic_strict_gate | SCOPE: kavach-cli | CAP: AP
 // FAILURE_MODE: missing tool binary → fail with install instructions; never silently skip.
 // SOURCES:

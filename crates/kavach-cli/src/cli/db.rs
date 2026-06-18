@@ -49,7 +49,6 @@ pub(crate) enum DbAction {
         #[arg(long)]
         depth: Option<String>,
     },
-    // ALGO: CLI arg parsing — clap derive macro, no DSA
     /// Search with metadata filters (`entry_status`, since, contains)
     /// SOURCE: <https://docs.rs/clap/latest/clap>/_derive/_tutorial/index.html
     Search {

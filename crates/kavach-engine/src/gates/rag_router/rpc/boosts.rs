@@ -9,13 +9,8 @@ use super::rpc_entity_find;
 /// Load graph boosts for all skill entities via kavach-rpc.
 /// Returns `None` if RPC unavailable or no skills have edges.
 /// Boost weight = `min(edge_count, 3) * 30` — mirrors the prior storage impl.
-// ALGO: PerSkillEdgeCountViaRPC
-// PROBLEM_CLASS: graph_traversal
-// REJECTED: [{"name":"DedicatedEdgeCountRPC","reason":"new method + handler — defer until profiling shows it matters"},{"name":"InProcEdgeCountCache","reason":"cache invalidation cost > win at n<=16 edges per skill"}]
 // TIME: O(n*k) where n=skills (<50), k=edges/skill (capped at 16) | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: pulls full edge rows when only count is needed; tolerable at n<=50 skills, hot path runs once per session
-// BENCHMARK: https://surrealdb.com/blog/surrealdb-3-0-benchmarks-a-new-foundation-for-performance
 pub(in crate::gates::rag_router) fn load_graph_boosts(
     trees: &[RagTree],
 ) -> Option<HashMap<String, u32>> {

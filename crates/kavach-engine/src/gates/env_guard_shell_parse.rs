@@ -1,13 +1,9 @@
 // ARCH: ShellSegmentParse
-// PROBLEM_CLASS: shell_command_segmentation
-// REJECTED: [{"name":"full-shell-parser","reason":"crates like shell-words add weight; we only need command-position detection"},{"name":"regex","reason":"per-call compile cost"}]
 // TIME: O(n) per command — n = command length | SPACE: O(1) const separator slice
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Approximate parser — handles `&&`, `||`, `;`, `|`, `(`, `{`, `\n`
 //           segments + 6 redirect tokens. Exotic shell constructs (process
 //           substitution, here-strings, command groups) may be misclassified.
 //           Acceptable for advisory-grade gating.
-// BENCHMARK: existing env_guard tests preserved across split.
 // PATTERN: lexical_segmentation | SCOPE: pre_tool_bash | CAP: AP
 // FAILURE_MODE: false negative on exotic syntax → command sees first-word that
 //               isn't actually executed. False positive blocks legitimate cases.

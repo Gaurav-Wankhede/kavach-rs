@@ -1,4 +1,3 @@
-// ALGO: Upsert
 // TIME: O(1) avg | SPACE: O(1)
 //! db.write RPC method — create or update entry.
 

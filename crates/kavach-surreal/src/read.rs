@@ -177,7 +177,6 @@ pub async fn list_by_status(
     Ok(stamp_category(table, entries))
 }
 
-// ALGO: String concatenation for WHERE clause — O(n) append, no DSA required
 /// Query entries with metadata filtering, ordered by `updated_at` desc.
 ///
 /// # Errors

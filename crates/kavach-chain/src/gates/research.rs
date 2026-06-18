@@ -17,9 +17,6 @@ fn agent_is_research_class(agent_type: &str) -> bool {
         .is_some_and(|a| a.is_research_class())
 }
 
-// ALGO: HashSet O(1) membership check for session-scope gate satisfaction
-// PROBLEM_CLASS: idempotent-gate short-circuit (one bool check per gate per turn)
-// REJECTED: [
 //   {"name":"per-turn re-eval (status quo)","reason":"verified FP storm — gate re-fires every turn despite prior satisfaction; chain_*.json evidence in this session"},
 //   {"name":"timestamp-based TTL","reason":"adds clock dependency; satisfaction is session-scoped not time-scoped per CLAUDE.md §13"},
 //   {"name":"tag-by-topic-hash","reason":"correct long-term but defers fix; first-cut uses gate-name only, accepting cross-topic carry-over as documented tradeoff"}
@@ -27,8 +24,6 @@ fn agent_is_research_class(agent_type: &str) -> bool {
 // TIME: O(1) HashSet contains
 // SPACE: O(N) where N≤~10 gates per session
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: gate-name-only key means switching topic mid-session keeps satisfaction; acceptable per "research-once-per-session" contract documented in decision:rca.gate_session_amnesia
-// BENCHMARK: https://nnethercote.github.io/perf-book/hashing.html (std HashSet ~20ns; dwarfed by file I/O elsewhere in chain)
 // SOURCE: https://doc.rust-lang.org/std/collections/struct.HashSet.html#method.contains
 
 pub(crate) fn run_gate(

@@ -7,9 +7,6 @@ use chrono::Local;
 use crate::chain_state::ChainState;
 use crate::helpers::debug_stderr;
 
-// ALGO: linear scan of fs::read_dir, max-by-timestamp from filename
-// PROBLEM_CLASS: most-recent-file-by-prefix lookup (N≈10s of files per session-cache)
-// REJECTED: [
 //   {"name":"WalkDir + sort_by_key","reason":"sorts ALL entries; we only need max — single pass O(N) beats sort O(N log N)"},
 //   {"name":"glob crate","reason":"adds dependency for prefix match that Path already supports; overkill"},
 //   {"name":"fs::metadata mtime","reason":"mtime can lie under cp/touch; filename embeds the trusted Local::now().timestamp() the writer used"}
@@ -17,8 +14,6 @@ use crate::helpers::debug_stderr;
 // TIME: O(N) single pass over directory entries
 // SPACE: O(1) — only tracks (max_ts, path)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: filesystem syscalls are the cost, not algorithm; O(N) is optimal lower bound for unsorted dir scan
-// BENCHMARK: https://doc.rust-lang.org/std/fs/fn.read_dir.html (std lib reference; no special perf chars beyond syscall cost)
 // SOURCE: https://doc.rust-lang.org/std/fs/fn.read_dir.html
 
 /// Load the most recent chain_*.json for `session_id` from `cache_dir`.

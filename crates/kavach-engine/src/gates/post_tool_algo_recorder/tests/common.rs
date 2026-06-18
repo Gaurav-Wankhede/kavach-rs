@@ -5,12 +5,9 @@
 pub(super) fn full_comment(search_year: i64, search_month: i64, year_published: i64) -> String {
     format!(
         "// ALGO: pdqsort\n\
-         // PROBLEM_CLASS: sorting\n\
-         // REJECTED: [{{\"name\":\"quicksort\",\"reason\":\"unstable\"}}]\n\
          // TIME: O(n log n) | SPACE: O(log n)\n\
          // YEAR: {year_published}\n\
          // SEARCHED: {search_year}-{search_month:02}\n\
-         // TRADEOFF: not stable\n\
          fn sort_items() {{}}"
     )
 }

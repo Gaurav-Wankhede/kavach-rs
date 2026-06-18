@@ -1,5 +1,3 @@
-// ALGO: point UPDATE (parent edge)
-// PROBLEM_CLASS: write
 // TIME: O(1) | SPACE: O(1)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.set_parent` RPC method — link/detach a project's parent.

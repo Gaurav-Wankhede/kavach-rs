@@ -1,5 +1,3 @@
-// ALGO: SELECT ... ORDER BY slug (index-ordered scan)
-// PROBLEM_CLASS: ordered-read
 // TIME: O(n log n) sort by slug | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.list_projects` RPC method — registry read of all projects.

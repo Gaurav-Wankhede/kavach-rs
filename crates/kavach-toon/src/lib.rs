@@ -3,17 +3,12 @@ use std::fmt;
 
 use thiserror::Error;
 
-// ALGO: thiserror-typed-enum
-// PROBLEM_CLASS: error-type-design
-// REJECTED: [
 //   {"name":"Result<T,String>","reason":"stringly-typed; callers cannot match variants"},
 //   {"name":"Box<dyn std::error::Error>","reason":"erases source type; no #[from]"},
 //   {"name":"anyhow::Error","reason":"app-layer ergonomic; lib consumers want typed match"}
 // ]
 // TIME: O(1) construction | SPACE: O(1) per variant
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: every new failure mode requires an enum variant — intentional to force documentation.
-// BENCHMARK: https://docs.rs/thiserror (deliberately absent from public API; zero runtime cost)
 // SOURCE: https://oneuptime.com/blog/post/2026-01-25-error-types-thiserror-anyhow-rust/view
 #[derive(Debug, Error)]
 #[expect(

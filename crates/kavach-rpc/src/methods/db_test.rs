@@ -1,4 +1,3 @@
-// ALGO: Test suite
 //! Tests for db module.
 
 use super::delete::{delete_confirm_phrase, delete_confirm_phrase_prefix};

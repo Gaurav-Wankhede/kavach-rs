@@ -32,7 +32,6 @@ fn is_governed_path(path: &str) -> bool {
 /// every sanctioned env reader (fragment, dotenvy loader, `main.rs`, startup
 /// validator), so a hit is a genuine LAW violation — `env_var_test.rs` proves the
 /// false-positive set is empty. Promotion authorized by the user.
-// ALGO: linear single-pass `str::contains` over `content.lines()` — O(n) bytes,
 // O(1) extra space. The LAW bans one fixed call shape, so a two-needle substring
 // test per line is optimal; a regex/Aho-Corasick automaton would add build cost
 // with no gain for a literal match. Mirrors every other rust_guard leaf scanner.

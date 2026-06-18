@@ -14,7 +14,6 @@ pub(crate) fn active_rules() -> Vec<String> {
     } else {
         legacy
     };
-    // ALGO: Linear scan of rules directory with extension filtering (O(n) where n = rule files).
     // No optimization needed: rules directory is typically <10 files.
     let mut rules = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&rules_dir) {

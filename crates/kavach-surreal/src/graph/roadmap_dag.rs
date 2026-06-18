@@ -14,19 +14,13 @@
 // CONSISTENCY: snapshot-on-fetch; eventual consistency with concurrent writers
 // FAILURE_MODE: project missing -> empty default; edge query failure -> nodes only
 // OBSERVABILITY: caller (knowledge.rs) tracing::error on Err
-// TRADEOFF: 6 queries (1 project + 5 category metadata + 1 entity scan) vs
 //           one giant join; clearer types and small constant factor accepted.
 //
-// ALGO: ProjectGraphFetch
-// PROBLEM_CLASS: graph
-// REJECTED: [
 //   {"name":"per_node_get_related","reason":"O(n) round-trips; rejected"},
 //   {"name":"category_partition_then_union","reason":"5 separate edge queries -> 5x RTT"}
 // ]
 // TIME: O(n + e) | SPACE: O(n + e)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: HashMap allocation O(n); acceptable since n <= 2K rows/project.
-// BENCHMARK: https://surrealdb.com/blog/data-analysis-using-graph-traversal-recursion-and-shortest-path
 // SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
 // SOURCE: https://surrealdb.com/docs/surrealql/statements/select
 use crate::error::Result;

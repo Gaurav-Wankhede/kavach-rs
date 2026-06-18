@@ -1,4 +1,3 @@
-// ALGO: Entity lookup + edge traversal
 //! Named entity query handler.
 
 use crate::error::internal;

@@ -1,11 +1,7 @@
 // ARCH: DotenvFilenameAndDownstream
-// PROBLEM_CLASS: filename_pattern_detection + binary_allowlist
-// REJECTED: [{"name":"glob-match","reason":"adds dep, slower than substring scan"},{"name":"regex","reason":"compile cost per call"},{"name":"hardcoded .env only","reason":"misses .env.local, .envrc, .env.production etc."}]
 // TIME: O(n*v) where n = command length, v = ~7 variants | SPACE: O(1) const slice
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Substring scan is approximate but covers Astro/Next/Vite/Nuxt
 //           conventions. False negative on exotic filenames falls back to ".env".
-// BENCHMARK: existing env_guard tests preserved across split.
 // PATTERN: filename_pattern + binary_allowlist | SCOPE: pre_tool_bash | CAP: AP
 // FAILURE_MODE: detect_env_filename returns ".env" fallback if nothing matches —
 //               error message stays generic but blocking still works.

@@ -1,8 +1,5 @@
 use std::collections::HashSet;
 
-// ALGO: HashSet O(1) membership check for tools/disallowed_tools classification
-// PROBLEM_CLASS: small-set string membership (≤20 tools per agent)
-// REJECTED: [
 //   {"name":"Vec<String> + .contains","reason":"O(N) scan; HashSet idiomatic for membership"},
 //   {"name":"phf::Set perfect-hash","reason":"compile-time hash overhead unjustified for runtime-loaded data"},
 //   {"name":"&'static str slice","reason":"agent files load at runtime; compile-time impossible"}
@@ -10,8 +7,6 @@ use std::collections::HashSet;
 // TIME: O(1) average is_research_class check
 // SPACE: O(N) per agent where N≤20
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: HashSet hashing cost (~20ns) dwarfed by file I/O during load
-// BENCHMARK: https://nnethercote.github.io/perf-book/hashing.html
 // SOURCE: ~/.claude/agents/*.md frontmatter shape verified via bat -p
 //   (research-director, research-evolutionist, pattern-extractor) — fields
 //   `tools:` and `disallowedTools:` are comma-separated YAML scalars between

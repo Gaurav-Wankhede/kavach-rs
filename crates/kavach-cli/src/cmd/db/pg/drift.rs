@@ -1,5 +1,4 @@
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
-// ALGO: HashMap+HashSet lookup for FK drift detection (preserved verbatim; not modified by this silent-IO migration). TIME: O(T+F+C). SOURCE: https://doc.rust-lang.org/std/collections/struct.HashMap.html
 use std::collections::{HashMap, HashSet};
 
 use super::schema::{

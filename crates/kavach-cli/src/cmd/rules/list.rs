@@ -1,5 +1,4 @@
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
-// ALGO: linear scan over registry.skills (preserved verbatim; not modified by this silent-IO migration). TIME: O(N) where N=enforced skills. SOURCE: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
 /// Show skill registry entries with enforcement tiers and file patterns.

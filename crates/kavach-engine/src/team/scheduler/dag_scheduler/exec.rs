@@ -43,10 +43,8 @@ impl DagScheduler {
         // Only roadmap units are dispatchable tasks; decision/research/pattern
         // rows live in the same DAG (they can satisfy deps) but are never work
         // a teammate executes. Filter dispatch to category == "roadmap".
-        // ALGO: HashSet O(1)-avg membership for the ready predicate over n<=2000
         // nodes (roadmap_dag CAPACITY). Beats BTreeSet O(log n) / linear O(n) at
         // this scale. TIME: O(n+e) | YEAR: 2026
-        // BENCHMARK: https://github.com/rust-lang/hashbrown#performance
         let runnable: HashSet<&str> = dag
             .nodes
             .iter()

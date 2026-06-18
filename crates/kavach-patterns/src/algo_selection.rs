@@ -1,13 +1,9 @@
-// ALGO: lookup-table static initialization + flat_map aggregation
-// PROBLEM_CLASS: data-structure recommendation lookup (workload class -> best-fit algorithm)
-// REJECTED: [
 //   {"name":"database-backed recommendations","reason":"adds I/O; lookup is write-time only; static table is sufficient"},
 //   {"name":"ML classifier","reason":"overkill; deterministic rubric is sufficient and verifiable"},
 //   {"name":"trait-per-workload-class","reason":"premature abstraction; enum + match is clearer"}
 // ]
 // TIME: O(classes) full scan | O(1) per match w/ HashMap index (future opt) | SPACE: O(table entries)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: hard-coded rubric becomes stale if std evolves; mitigated by multi-sourced recommendation + per-entry verification links
 //
 //! Algorithm Selection Rubric — When to Use Which (2026)
 //!

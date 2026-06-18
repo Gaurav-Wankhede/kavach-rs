@@ -6,10 +6,8 @@
 // read the legacy `pattern` memory_entries, never these nodes).
 // See decision/mistake-loop-close-read-graph.
 //
-// ALGO: rank a bounded anti_pattern set (one node per behavioral cluster — dozens,
 //   not millions) by recurrence count. CHOICE: materialize all rows, then
 //   slice::sort_by (Rust stdlib stable sort, Timsort-derived, O(N log N)).
-//   REJECTED: SurrealDB `ORDER BY <count-aggregate>` — ordering on a graph-count
 //   alias is non-portable across SurrealDB versions; a heap/quickselect partial
 //   sort gives no measurable win at N≈dozens and costs clarity.
 //   TIME: O(N log N), N = anti_pattern count. SPACE: O(N). YEAR: 2026.

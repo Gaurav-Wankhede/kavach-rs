@@ -1,4 +1,3 @@
-// ALGO: Update
 // TIME: O(1) avg | SPACE: O(1)
 //! `db.kanban_close` RPC method.
 

@@ -5,17 +5,13 @@
 //! large, so only the last window is read.
 //
 // ARCH: bounded-tail-window scan
-// PROBLEM_CLASS: stream (read newest record from a large append-only JSONL)
-// REJECTED: [{"name":"read_to_string whole file","reason":"O(file) IO+mem; \
 //   transcript grows unbounded across a long session"},
 //   {"name":"reverse line iterator (rev_lines crate)","reason":"adds a dep \
 //   to shift, not eliminate, complexity; std seek already suffices"}]
 // TIME: O(W) W=64KiB window | SPACE: O(W)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: a single assistant turn whose JSON exceeds 64KiB and is the only
 //   usage line in the window is missed (next turn re-accounts; budget is a
 //   slow safety valve, not exact metering — acceptable).
-// BENCHMARK: https://blog.liquid-technologies.com/json-lines-large-log-files
 // SOURCE: https://oneuptime.com/blog/post/2026-01-07-rust-file-io-efficient/view
 
 /// Sum of the most recent `usage` block in the transcript JSONL tail, or

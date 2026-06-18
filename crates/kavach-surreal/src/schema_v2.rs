@@ -1,8 +1,5 @@
 // ARCH: AgentMemorySchema — SurrealDB 3.0 patterns for self-improving agents
-// PROBLEM_CLASS: agent_memory | SCOPE: database | CAP: CP
-// REJECTED: [{"name":"SQLite","reason":"no graph/vector native"},{"name":"PostgreSQL","reason":"no live queries"}]
 // SEARCHED: 2026-05
-// BENCHMARK: https://surrealdb.com/blog/introducing-surrealdb-3-0--the-future-of-ai-agent-memory
 // SOURCE: https://arxiv.org/html/2603.10600v1 (Trajectory-Informed Memory)
 // SOURCE: https://arxiv.org/html/2512.18950v1 (MACLA hierarchical procedural memory)
 // SOURCE: https://github.com/surrealdb/agent-memory (official agent-memory schema)

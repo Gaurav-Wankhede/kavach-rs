@@ -66,15 +66,10 @@ pub fn load_patterns(filename: &str) -> HashMap<String, Vec<String>> {
         entry.last_access = Instant::now();
         return entry.data.clone();
     }
-    // ALGO: FirstReadableProbe (linear scan over ≤1 trusted path)
-    // PROBLEM_CLASS: bounded candidate selection
-    // REJECTED: [{"name":"glob/walkdir","reason":"reopens the directory
     //   traversal surface this CWE-363 fix closes"},{"name":"keep CWD
     //   ./config fallback","reason":"untrusted-dir gate-config tampering"}]
     // TIME: O(1) | SPACE: O(1)
     // YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: no CWD-relative override (intentional — security)
-    // BENCHMARK: https://doc.rust-lang.org/std/fs/fn.read_to_string.html
     // CWE-363 fix: CWD-relative "config/" fallback removed — a hook runs in
     // untrusted project dirs and must not read gate patterns from there.
     let mut paths = Vec::new();

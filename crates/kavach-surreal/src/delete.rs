@@ -171,13 +171,8 @@ pub async fn delete_category(
     validate_category(category)?;
     let pid = get_project_id(db, project_slug).await?;
 
-    // ALGO: prefix_match_via_string_starts_with
-    // PROBLEM_CLASS: string_match (entity name namespace cleanup)
-    // REJECTED: [{"name":"trie","reason":"single-pass DB scan; trie adds index overhead"},{"name":"regex","reason":"more expensive on a literal prefix"},{"name":"per-row delete loop","reason":"N round-trips vs single TX"}]
     // TIME: O(n) where n=entity table size | SPACE: O(1)
     // YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: full table scan; acceptable for category-level cleanup (rare op)
-    // BENCHMARK: https://surrealdb.com/docs/surrealql/datamodel/strings#startswith
     let (count_q, table_delete) = match category {
         "decision" => (
             "SELECT count() FROM decision WHERE project = $pid GROUP ALL",

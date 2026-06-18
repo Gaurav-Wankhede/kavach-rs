@@ -1,5 +1,3 @@
-// ALGO: Linear scan
-// DATA_STRUCTURE: Vec
 //! Query RPC request and response types.
 
 use serde::{Deserialize, Serialize};

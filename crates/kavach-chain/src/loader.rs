@@ -139,12 +139,8 @@ impl DynamicLoader {
     // CAPACITY: N≈40 agents × ~2KB each = ~80KB resident; trivial
     // SCALING: vertical only — fits in single process; no IPC
     // YEAR: 2026 | SEARCHED: 2026-05
-    // BENCHMARK: https://oneuptime.com/blog/post/2026-02-01-rust-caching-strategies/view
     // SOURCE: https://doc.rust-lang.org/std/sync/struct.RwLock.html
     //
-    // ALGO: directory scan + per-file load
-    // PROBLEM_CLASS: file-system enumeration (N≈40 agents)
-    // REJECTED: [
     //   {"name":"WalkDir recursive","reason":"agents are flat under agent_dir"},
     //   {"name":"glob crate","reason":"adds dependency for *.md filter that Path supports natively"},
     //   {"name":"manifest.json","reason":"forces agent authors to update a registry; current one-file-per-agent is convention"}
@@ -152,8 +148,6 @@ impl DynamicLoader {
     // TIME: O(N) read_dir + N×file-size for parse
     // SPACE: O(N) HashMap entries
     // YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: cold-cache scan ~80ms for 40 agents; one-time at session start
-    // BENCHMARK: https://doc.rust-lang.org/std/fs/fn.read_dir.html
     // SOURCE: https://doc.rust-lang.org/std/fs/struct.ReadDir.html (.flatten() idiom)
     /// Scan the entire `agent_dir`, parse every *.md frontmatter, populate cache.
     /// Idempotent — safe to call multiple times. Per-file errors silently skipped
@@ -199,9 +193,6 @@ impl DynamicLoader {
         self.agents.iter().map(|kv| kv.value().clone()).collect()
     }
 
-    // ALGO: case-insensitive substring scoring across description+name
-    // PROBLEM_CLASS: lightweight string-match ranking (no embeddings)
-    // REJECTED: [
     //   {"name":"AhoCorasick","reason":"agent descriptions are free-form prose, not keyword sets"},
     //   {"name":"Embedding similarity","reason":"requires kavach RAG warmup; deferred"},
     //   {"name":"BM25/TF-IDF","reason":"corpus too small (N≈40) for term-frequency to be meaningful"}
@@ -209,12 +200,7 @@ impl DynamicLoader {
     // TIME: O(N × W) where N = agents, W = prompt words (both small)
     // SPACE: O(N) result vector
     // YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: substring scoring is naive — sufficient for [ROUTE] one-line suggestion that user can override
-    // BENCHMARK: pure stdlib; profile is dominated by lock acquisition (~20ns)
     // SOURCE: https://doc.rust-lang.org/std/string/struct.String.html#method.contains
-    // ALGO: hybrid intent-match + semantic-overlap scoring
-    // PROBLEM_CLASS: routing dispatch (intent_type → ranked agents)
-    // REJECTED: [
     //   {"name":"Pure intent table (hardcoded)","reason":"violates CLAUDE.md §13 inviolable: 'agent allowlists FORBIDDEN'"},
     //   {"name":"Pure description ranking","reason":"loses signal when intent_type is explicit"},
     //   {"name":"ML classifier","reason":"requires training corpus we don't have; deferred to Phase 4 if needed"}
@@ -222,10 +208,8 @@ impl DynamicLoader {
     // TIME: O(N) cache scan + O(W) word filter
     // SPACE: O(N) result vector
     // YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: capability-tag bonus (100 pts) dominates description-overlap (≤W pts);
     //   agents WITHOUT capabilities can still surface via description overlap, preserving
     //   the wildcard-fallback contract for un-tagged agents in the existing 42-agent corpus.
-    // BENCHMARK: pure stdlib; lock acquisition dominates (~20ns)
     // SOURCE: decision:rca.intent_aware_capability_routing
     /// Suggest agents for the given `intent_type` + `prompt`.
     /// Score = (100 if agent.capabilities contains `intent_type` else 0) + description-overlap.

@@ -1,15 +1,10 @@
 use std::collections::HashMap;
-// ALGO: parking_lot::Mutex (futex / queue-based parking)
-// PROBLEM_CLASS: thread synchronisation (single-writer cache guard)
-// REJECTED: [
 //   {"name":"std::sync::Mutex","reason":"24-byte storage, OS-level pthread_mutex, 1.5x-5x slower"},
 //   {"name":"tokio::sync::Mutex","reason":"async-only; this code is sync — would force runtime"},
 //   {"name":"RwLock","reason":"read-and-write paths both mutate cache cell; reader-bias adds overhead"}
 // ]
 // TIME: lock O(1) uncontended | SPACE: 1 byte (vs 24 std)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: no poisoning — accept that a panic mid-mutation can leave cache inconsistent (we re-load anyway)
-// BENCHMARK: https://amanieu.github.io/parking_lot/parking_lot/struct.Mutex.html
 // SOURCE: https://docs.rs/parking_lot/latest/parking_lot/type.Mutex.html
 use crate::cache::{TTL, load_patterns};
 use parking_lot::Mutex;

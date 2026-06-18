@@ -1,4 +1,3 @@
-// ALGO: Update + validate
 // TIME: O(1) avg | SPACE: O(1)
 //! `db.status_update` RPC method.
 

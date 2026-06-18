@@ -5,7 +5,6 @@
 //! NEVER as an executable directive (the advisory-only / C2 boundary). On any RPC
 //! error returns `None`; boot must never block on memory injection.
 //
-// ALGO: none local — pass-through formatting of the lcb-ranked policy RPC result
 //   (ranking lives in kavach_surreal::graph_top_deployed_policies). One bounded
 //   loop builds the reinjection string. TIME: O(N), N ≤ REINJECT_TOP_N.
 //   SPACE: O(N). YEAR: 2026.

@@ -21,13 +21,8 @@ pub(super) fn skill_for_file(path: &str) -> &'static str {
 /// Extract referenced names from file content: `[[wikilinks]]` and
 /// `INVOKE skill-name` directives, sorted + deduped.
 //
-// ALGO: sort_unstable + dedup
-// PROBLEM_CLASS: deduplicate
-// REJECTED: [{"name":"HashSet","reason":"hash overhead dominates at n<=100; ~2x slower"},{"name":"BTreeSet","reason":"pointer-chase cache-unfriendly; strictly worse than sort+dedup at n<=100"}]
 // TIME: O(n log n) | SPACE: O(1) extra
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: not order-preserving (alphabetical output); fine for idempotent graph edge insertion
-// BENCHMARK: matches kavach-db proven workload; n=10-100 refs/file → ~200ns per call
 pub(super) fn extract_content_references(content: &str) -> Vec<String> {
     let mut refs: Vec<String> = Vec::new();
     for line in content.lines() {

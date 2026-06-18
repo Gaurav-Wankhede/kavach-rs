@@ -1,4 +1,3 @@
-// ALGO: Entity-type listing + intra-set edge resolution
 //! Graph fetch implementation.
 
 use crate::error::internal;

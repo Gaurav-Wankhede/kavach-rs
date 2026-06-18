@@ -1,5 +1,4 @@
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
-// ALGO: detect_patterns + generate_skill (preserved verbatim from kavach_rule_generator crate; not modified by this silent-IO migration). SOURCE: crates/kavach-rule-generator
 use std::path::Path;
 
 use kavach_rule_generator::{detect_patterns, emit_skill, generate_skill};

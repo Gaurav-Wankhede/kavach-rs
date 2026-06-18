@@ -39,7 +39,6 @@ impl SessionState {
     }
 
     // ARCH: lock-ordered mirror to durable store
-    // PROBLEM_CLASS: cache — dual-store coherence (local file + DB)
     // BOTTLENECK: state persistence must keep two stores (INI file, DB row)
     //   in the SAME commit order under concurrent writers (parallel hooks).
     // CAPACITY: save() fires ~1-5x/turn; INI write ~50us, RPC upsert ~1-3ms.
@@ -50,18 +49,15 @@ impl SessionState {
     //   (atomic rename); this is NOT lossy in-memory write-back. INI =
     //   hot-path cache; DB = durable cross-session queryability + the
     //   session_id-keyed drift fix.
-    // REJECTED: [
     //   {"name":"write-through AFTER unlock","reason":"lost update — two racing saves commit to the INI in one order, to the DB in the other; the DB row goes stale vs the file (caught in review)"},
     //   {"name":"DB-only, drop the INI","reason":"mandatory RPC round-trip on every hook; server outage = no state persistence at all"}
     // ]
     // TIME: O(1) per save | SPACE: O(state size) — one blob
     // YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: a save() whose RPC fails leaves the DB row stale vs the INI;
     //   the next successful save() reconciles it (idempotent upsert). Acceptable
     //   — load prefers the DB but the INI fallback is gated on session_id, so a
     //   stale DB row cannot cause cross-session drift. Fail-open: a dead server
     //   is logged, never propagated — it must not break a gate's save().
-    // BENCHMARK: https://www.dragonflydb.io/guides/ultimate-guide-to-caching
     // SOURCE: https://aws.amazon.com/caching/best-practices/
     //
     /// Best-effort durable mirror to the `session_runtime` `SurrealDB` table,

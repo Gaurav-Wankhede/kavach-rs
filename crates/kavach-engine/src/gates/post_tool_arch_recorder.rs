@@ -18,7 +18,6 @@ mod tests {
 // QPS: 10000 | PEAK: 3x
 // STORAGE: 10GB
 // FAILURE_MODE: stale reads
-// TRADEOFF: consistency
 // SEARCHED: 2026-04
 // REFERENCE: https://example.com
 fn setup_cache() {}";

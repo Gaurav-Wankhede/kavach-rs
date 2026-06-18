@@ -39,13 +39,8 @@ impl StoredRule {
     }
 }
 
-// ALGO: StdHashMapDefault
-// PROBLEM_CLASS: map
-// REJECTED: [{"name":"BTreeMap","reason":"O(log n) vs O(1)"}]
 // TIME: O(1) avg | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: pre-existing cache, no change
-// BENCHMARK: stdlib default
 #[derive(Debug)]
 pub struct RuleStore {
     pub(crate) rules_dir: PathBuf,

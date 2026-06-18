@@ -27,7 +27,6 @@ fn is_governed_path(path: &str) -> bool {
 
 /// Block (`P0Block`) when a name imported via `use` is re-defined by a local item
 /// in the same governed file: recall the import, don't redefine the object.
-// ALGO: two linear passes over `content.lines()` — pass 1 collects imported names
 // into a small `Vec`, pass 2 flags any local definition whose name is in that set.
 // O(n·k) worst case (k = distinct imports, tiny in practice); O(k) space. A hash
 // set would shave the membership test but k is small enough that linear `contains`

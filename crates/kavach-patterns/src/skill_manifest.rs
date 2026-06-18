@@ -1,10 +1,5 @@
-// ALGO: HashMap for O(1) skill/trigger lookup + OnceLock for single-init caching
-// PROBLEM_CLASS: lazy_index
-// REJECTED: [{"name":"Vec linear scan","reason":"O(n) per lookup"},{"name":"BTreeMap","reason":"O(log n) slower than O(1)"}]
 // TIME: O(1) lookup, O(n) build | SPACE: O(n) entries + O(k) triggers
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: filesystem read at startup — cached via OnceLock
-// BENCHMARK: https://doc.rust-lang.org/std/sync/struct.OnceLock.html
 // SOURCE: https://docs.rs/aho-corasick (trigger matching pattern)
 
 use std::collections::HashMap;

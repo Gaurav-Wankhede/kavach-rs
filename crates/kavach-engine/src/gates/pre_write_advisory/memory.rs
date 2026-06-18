@@ -6,20 +6,14 @@
 // CONSISTENCY: read-only, eventually-consistent (RPC may be ms behind)
 // FAILURE_MODE: rpc absent / db error -> return None -> no injection (graceful)
 // OBSERVABILITY: anchor `[MEMORY:project:<slug>]` so users can grep
-// TRADEOFF: per-write-call cost; mitigated by cap + early return when project empty
 // SOURCE: https://code.claude.com/docs/en/hooks (additionalContext patterns)
 use std::fmt::Write as _;
 
 /// Pull the active project's OPEN roadmap items (`in_progress` + `todo`) via the
 /// kavach-rpc daemon and return them as a factual context block.
 /// Returns None when daemon is unavailable or no open items exist.
-// ALGO: LinearFilterTakeN
-// PROBLEM_CLASS: stream
-// REJECTED: [{"name":"server_side_where_rpc","reason":"new method for marginal win at n<=2000"},{"name":"presorted_index","reason":"premature optimization at this scale"}]
 // TIME: O(n) bounded — early-exits at MAX_ITEMS via .take() | SPACE: O(MAX_ITEMS)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: client-side enumerate vs server-side filter; acceptable at n<=2000
-// BENCHMARK: sub-millisecond at 2000 entries (lazy iterator, no allocation in filter)
 pub(super) fn memory_awareness_advisory(project_slug: &str) -> Option<String> {
     const MAX_OPEN: usize = 6;
     const MAX_DECISIONS: usize = 3;

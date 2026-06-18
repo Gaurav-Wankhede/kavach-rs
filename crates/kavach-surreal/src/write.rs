@@ -398,15 +398,10 @@ pub async fn upsert_entry_full(
 
     let project_name = format!("{:?}", &project_id.key);
     let priority_i64 = priority.map(Priority::get);
-    // ALGO: DeterministicIdReturn (skip transaction-result deserialization)
-    // PROBLEM_CLASS: stream (multi-statement response decode)
-    // REJECTED: [{"name":"take::<Option<MemoryEntry>>(0)","reason":"RETURN AFTER on SCHEMAFULL row fails to bind when any strict field is absent -> false 'returned empty'"},{"name":"take::<Vec<UpdatedIdRow>>(0)","reason":"inside BEGIN..COMMIT the statement indices shift and RETURN id projects a bare id, not {id} -> 'Expected object, got none'"}]
     // TIME: O(1) | SPACE: O(1) | YEAR: 2026 | SEARCHED: 2026-05
-    // TRADEOFF: trusts response.check() for commit proof rather than echoing
     //   the row back; acceptable because the target RecordId is constructed
     //   deterministically in Rust (rid) before the query.
     // SOURCE: https://surrealdb.com/docs/sdk/rust/concepts/transaction
-    // BENCHMARK: https://surrealdb.com/docs/sdk/rust/methods/query (IndexedResults per-statement indexing, 3.0)
     //
     // SELF-HEALING: this UPSERT is durability-critical (a finding lives in the DB
     // or it is LOST), so it runs through the operation-scoped transient-fault

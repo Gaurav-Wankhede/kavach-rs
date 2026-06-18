@@ -8,10 +8,7 @@
 //   (already in Cargo.lock) + kavach-dtree; intent-classifier rejected (ML+
 //   async, nondeterministic, new supply-chain surface).
 //
-// ALGO: multi-pattern morphological regex (Thompson NFA → lazy DFA) feeding a
 //       boolean FeatureSet, then a hand-built decision tree (stop_intent_tree)
-// PROBLEM_CLASS: string_match / short-text intent classification (deterministic)
-// REJECTED: [
 //   {"name":"flat .contains() phrase lists (status quo)","reason":"paraphrase-fragile; a model defeats a literal OR-list by rewording — the exact observed bypass"},
 //   {"name":"intent-classifier crate (ML+few-shot)","reason":"async + model in a sync Stop hot-path; nondeterministic; new supply-chain surface — [CRATE_DECISION] reject"},
 //   {"name":"embedding cosine vs exemplars","reason":"needs an embedding model in-hook; latency + nondeterministic threshold false-positives on an exit gate"}
@@ -20,11 +17,9 @@
 //       fixed & small → effectively O(n); SPACE: O(1) (DFAs compiled once via
 //       `LazyLock<Result<Regex>>`, reused process-lifetime)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: cannot catch a genuinely novel phrasing sharing zero stems with
 //   any pattern (an embedding could). Accepted: determinism in the Stop
 //   hot-path > recall of unseen wordings, and `had_write_this_turn` is the
 //   model-incorruptible artifact backstop regardless of phrasing.
-// BENCHMARK: https://github.com/BurntSushi/regex-automata#performance (DFA O(m·n) guarantee, 2026)
 // SOURCE: https://docs.rs/linfa-trees/ (decision-tree classification pattern)
 //
 // ARCH: process-lifetime compiled-DFA cache in the Stop-hook hot-path
@@ -46,7 +41,6 @@
 // DECISION: one `LazyLock<Result<Regex, regex::Error>>` per pattern; first
 //   Stop compiles, all later Stops reuse — O(1) amortized, zero per-turn
 //   alloc; the stored `Err` is propagated (not panicked) to a named handler.
-// REJECTED: [lazy_static (superseded by std LazyLock 1.80+),
 //   recompile-per-call (µs–ms × every turn = unbounded waste),
 //   one mega-regex (loses per-feature boolean granularity the tree needs)].
 // CAPACITY: 4 DFAs, each a few KB compiled; bounded patterns (no nested

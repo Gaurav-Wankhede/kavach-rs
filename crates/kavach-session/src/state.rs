@@ -207,8 +207,6 @@ pub struct SessionState {
     // PATTERN: circuit_breaker
     // SCOPE: session (per-session state tracking)
     // DECISION: HashMap<category, count> for O(1) lookup/increment
-    // REJECTED: [{"name":"Vec<(String,i32)>","reason":"O(n) lookup per gate check"}]
-    // TRADEOFF: Memory grows with unique categories (bounded by gate count ~30)
     // FAILURE_MODE: If session corrupt, all circuits reset (fail-open for availability)
     // CAP: AP — availability over consistency (allow work to proceed)
     // SEARCHED: 2026-04

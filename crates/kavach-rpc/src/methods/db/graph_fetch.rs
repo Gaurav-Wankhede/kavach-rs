@@ -1,4 +1,3 @@
-// ALGO: Graph traversal + node limit enforcement
 //! `db.graph_fetch` RPC method — fetch connected nodes and edges.
 
 use crate::state::AppState;

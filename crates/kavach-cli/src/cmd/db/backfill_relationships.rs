@@ -9,11 +9,8 @@
 // fix:         Use kavach_engine::infer_relationships to derive edges from
 //              titles, content, key prefixes, status, and timestamps.
 //
-// ALGO: ProjectScopedInfer
-// PROBLEM_CLASS: graph_backfill
 // TIME: O(p * n^2) where p=projects, n=rows/project | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Idempotent via UPSERT in upsert_relationships; safe to re-run.
 // SOURCE: https://surrealdb.com/docs/surrealql/statements/relate
 // SOURCE: https://en.wikipedia.org/wiki/Jaccard_index
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};

@@ -622,13 +622,8 @@ impl HookResponse {
     }
 }
 
-// ALGO: declarative_macro_no_op
-// PROBLEM_CLASS: zero_cost_marker
-// REJECTED: [{"name":"proc-macro","reason":"requires build step"},{"name":"comment scan","reason":"untyped"}]
 // TIME: O(0) runtime — expands to () | SPACE: O(0)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: kavach binary must rescan source to sync; no compile-time enforcement
-// BENCHMARK: https://doc.rust-lang.org/reference/macros-by-example.html
 
 /// Zero-cost marker macro. The kavach binary scans source for these
 /// invocations and syncs them to kanban as roadmap entries keyed by <file:line>.

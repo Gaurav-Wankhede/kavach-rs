@@ -6,7 +6,6 @@
 //! read only the legacy `pattern` `memory_entries`. On any RPC error the caller
 //! falls back to that legacy ledger — boot must never block on memory injection.
 
-// ALGO: none local — pass-through formatting of an already recurrence-ranked RPC
 //   result (ranking lives in kavach_surreal::graph_top_anti_patterns; see its
 //   ALGO note). Here: one bounded loop building the reinjection string.
 //   TIME: O(N), N ≤ REINJECT_TOP_N. SPACE: O(N). YEAR: 2026.

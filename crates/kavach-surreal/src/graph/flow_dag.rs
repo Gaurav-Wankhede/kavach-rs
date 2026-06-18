@@ -10,7 +10,6 @@
 // CAPACITY: <= ~200 steps/flow; flows/project small
 // CONSISTENCY: upsert idempotent on (project, flow_key) + qualified step name
 // FAILURE_MODE: cyclic depends_on -> rejected (fail closed); project missing -> NotFound
-// TRADEOFF: structured ingest (no Mermaid parser); raw source cached for round-trip.
 //
 // SOURCE: https://surrealdb.com/docs/surrealql/statements/relate
 // SOURCE: https://mermaid.js.org/syntax/flowchart.html

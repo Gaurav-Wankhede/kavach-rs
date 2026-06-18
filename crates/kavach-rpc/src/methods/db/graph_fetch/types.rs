@@ -1,4 +1,3 @@
-// ALGO: DTO definitions
 //! Graph fetch types.
 
 use serde::{Deserialize, Serialize};

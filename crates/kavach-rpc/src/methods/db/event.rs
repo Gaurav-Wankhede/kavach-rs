@@ -1,4 +1,3 @@
-// ALGO: Append event + optional project resolution
 // TIME: O(1) avg for event, O(n) worst for project_find_by_path
 //! db.event RPC method — append audit event to log.
 

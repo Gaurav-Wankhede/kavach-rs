@@ -1,5 +1,3 @@
-// ALGO: bounded DELETE by age
-// PROBLEM_CLASS: retention-prune
 // TIME: O(n) matched events | SPACE: O(1)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.rotate` RPC method — delete events older than N days.

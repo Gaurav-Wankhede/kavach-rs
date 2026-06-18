@@ -1,5 +1,3 @@
-// ALGO: per-table archive-by-expiry scan
-// PROBLEM_CLASS: retention-archive
 // TIME: O(n) entries past expiry | SPACE: O(t) tables
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.expire` RPC method — archive entries past their `expires_at`.

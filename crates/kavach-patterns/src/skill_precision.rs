@@ -1,10 +1,5 @@
-// ALGO: AhoCorasick exact + Jaro-Winkler fuzzy fallback
-// PROBLEM_CLASS: keyword_routing
-// REJECTED: [{"name":"HashMap exact","reason":"no typo tolerance"},{"name":"Levenshtein","reason":"no prefix boost"},{"name":"regex alt","reason":"O(n*k) backtracking"}]
 // TIME: O(n) exact | O(k*m) fuzzy when no hit | SPACE: O(Σ·k)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: fuzzy step only when exact fails
-// BENCHMARK: https://github.com/BurntSushi/aho-corasick
 // SOURCE: https://github.com/rapidfuzz/strsim-rs
 // SOURCE: https://github.com/anthropics/claude-code/issues/42796
 

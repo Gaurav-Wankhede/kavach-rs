@@ -2,10 +2,8 @@
 //
 // ARCH: LspDiagSeenProducer
 // PATTERN: post_tool_recorder | SCOPE: session | CAP: AP | SEARCHED: 2026-05
-// PROBLEM_CLASS: signal-bridge
 // TIME: O(1) per tool call
 // SPACE: O(N) — N = distinct files diagnosed this session
-// REJECTED: [{"name":"global lsp probe","reason":"runs even on non-code tools; wasteful"}]
 //
 // SOURCE: ~/.claude/CLAUDE.md §LSP-FIRST — "PostToolUse on LSP tool calls
 //   populates lsp_diag_seen; PreToolUse on Edit/Write/MultiEdit checks it".

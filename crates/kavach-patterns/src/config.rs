@@ -22,13 +22,8 @@ pub struct AntiProdResult {
     pub message: &'static str,
 }
 
-// ALGO: StdHashMapAhash
-// PROBLEM_CLASS: map
-// REJECTED: [{"name":"BTreeMap","reason":"O(log n) lookup vs O(1)"}]
 // TIME: O(1) | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: pre-existing field, no change to data structure
-// BENCHMARK: stdlib default
 #[non_exhaustive]
 #[derive(Debug)]
 pub struct Config {

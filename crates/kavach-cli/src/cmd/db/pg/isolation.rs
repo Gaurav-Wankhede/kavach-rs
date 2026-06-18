@@ -1,5 +1,4 @@
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
-// ALGO: HashSet membership for FK-table classification (preserved verbatim; not modified by this silent-IO migration). TIME: O(F+T) for F FKs and T tables. SOURCE: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 use std::collections::HashSet;
 
 use super::schema::{connect, list_foreign_keys, list_tables};

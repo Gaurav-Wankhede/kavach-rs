@@ -1,5 +1,3 @@
-// ALGO: per-table filtered scan + merge-sort by recency
-// PROBLEM_CLASS: filtered-read
 // TIME: O(t·n log n) | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.search` RPC method — filtered multi-table entry search.

@@ -1,5 +1,3 @@
-// ALGO: longest-prefix path match
-// PROBLEM_CLASS: prefix-lookup
 // TIME: O(n) registered rows | SPACE: O(1)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.find_project` / `db.find_part` RPC methods — locate by absolute path.

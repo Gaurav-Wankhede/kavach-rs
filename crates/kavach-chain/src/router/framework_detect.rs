@@ -1,4 +1,3 @@
-// ALGO: duplicate elimination via HashSet (not HashMap<String,()>) for O(1) insert/contains on framework names (~100s max items)
 use std::collections::HashSet;
 
 #[must_use]

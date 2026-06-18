@@ -1,6 +1,4 @@
 // Iterative Tarjan SCC — avoids stack overflow on deep dependency graphs.
-// ALGO: Tarjan SCC (iterative)
-// PROBLEM_CLASS: graph_traversal
 // TIME: O(V+E) | SPACE: O(V+E)
 // YEAR: 1972 | SEARCHED: 2026-04
 

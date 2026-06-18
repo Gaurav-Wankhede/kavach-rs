@@ -7,13 +7,8 @@ use aho_corasick::AhoCorasick;
 /// Supports `context: fork` and `agent: <type>` frontmatter for subagent routing.
 /// Skills with `context: fork` should spawn as isolated subagents rather than
 /// injecting into main context.
-// ALGO: AhoCorasick
-// PROBLEM_CLASS: string_match
-// REJECTED: [{"name":"HashMap_per_word","reason":"O(k*n) per-word lookup, no single-pass"},{"name":"RegexAlternation","reason":"O(n*k) backtracking, cache-hostile"}]
 // TIME: O(n+m+z) single pass | SPACE: O(Σ·k)
 // YEAR: 1975 (Aho, Corasick) | SEARCHED: 2026-04
-// TRADEOFF: filesystem read at startup — cached via OnceLock
-// BENCHMARK: https://docs.rs/aho-corasick/latest/aho_corasick/
 use std::sync::OnceLock;
 
 /// Execution context for a skill.

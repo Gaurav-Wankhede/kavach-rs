@@ -2,7 +2,6 @@
 //! off-policy value, then pessimistically choose the best — the advisory-scope
 //! recommendation the three promotion gates then audit.
 //
-// ALGO: per-action Doubly-Robust value over the logged samples (3 fixed
 //   deterministic target policies), then RSCB-MC pessimistic `choose`. CHOICE:
 //   global (un-bucketed) estimate for V1 — coarse but high-coverage; finer
 //   context buckets fragment coverage and suppress promotion (see roadmap).

@@ -1,4 +1,3 @@
-// ALGO: Time-based filter + update
 // TIME: O(n) | SPACE: O(n)
 //! db.archive RPC method — archive stale entries.
 

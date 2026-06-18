@@ -56,17 +56,13 @@ fn main() -> ExitCode {
     }
 }
 
-// ALGO: iterative-stack DFS over the filesystem tree (explicit Vec stack, not
 // recursion — bounded stack memory, no overflow on deep monorepos).
-// PROBLEM_CLASS: directory-tree traversal (single pass, visit every file once).
-// REJECTED:
 //   - recursive DFS: clean but risks stack overflow on pathological depth; the
 //     micro-file rule itself caps src depth at 7 but vendor/target dirs can be deeper.
 //   - BFS (VecDeque): same O(n) work, worse locality, no ordering benefit here.
 //   - `walkdir`/`ignore` crates: heavier dep for a CI helper; std read_dir suffices.
 // TIME: O(n) over n filesystem entries. SPACE: O(d) stack, d = max live dir fan-out.
 // YEAR: 2026 | SEARCHED: 2026-06
-// BENCHMARK: https://doc.rust-lang.org/std/fs/fn.read_dir.html (std dir iter)
 fn collect_rs(root: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
     // A root may be a single file (CI / pre-commit pass changed-file paths) or a
     // directory (full-tree scan). Take a file path directly; only walk dirs.

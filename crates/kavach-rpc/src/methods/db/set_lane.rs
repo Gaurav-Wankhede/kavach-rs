@@ -1,4 +1,3 @@
-// ALGO: Update
 // TIME: O(1) avg | SPACE: O(1)
 //! `db.set_lane` RPC method — pin a roadmap card to a dispatch lane.
 

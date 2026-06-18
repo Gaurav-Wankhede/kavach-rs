@@ -1,11 +1,7 @@
 // ARCH: EnvVarSafelist
-// PROBLEM_CLASS: secret_exposure_prevention
-// REJECTED: [{"name":"deny-all-env","reason":"breaks legitimate $HOME/$PATH reads"},{"name":"regex match","reason":"slower + harder to audit than const slice"},{"name":"HashSet lookup","reason":"runtime alloc per call wasted on n=27 list"}]
 // TIME: O(n) where n = SAFE_SYSTEM_VARS.len() (~27) | SPACE: O(1) static slice
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Linear scan over const slice is O(n) but n is tiny + cache-friendly.
 //           A HashSet would alloc per call; a phf-table would add a build dep.
-// BENCHMARK: openclaw GHSA-xgf2-vxv2-rrmg — loader-injection vars must NOT be in
 //            this list (LD_*, DYLD_*, NODE_OPTIONS, RUBYOPT, PYTHONPATH).
 // PATTERN: allowlist | SCOPE: pre_tool_bash | CAP: AP
 // FAILURE_MODE: false negative (legitimate var rejected) → user complains, list extended;

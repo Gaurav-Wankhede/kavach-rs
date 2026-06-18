@@ -1,5 +1,3 @@
-// ALGO: indexed point-lookup (project) + WHERE filtered scan
-// PROBLEM_CLASS: filtered-read
 // TIME: O(p) parts for the project | SPACE: O(p)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.list_parts` RPC method — registry read of a project's parts.

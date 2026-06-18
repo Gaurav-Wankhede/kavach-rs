@@ -1,4 +1,3 @@
-// ALGO: linear filter composition + DB query — O(n) where n = filter count
 // SOURCE: https://docs.rs/kavach-surreal — FilterBuilder API
 use kavach_surreal::{FilterBuilder, FilterExpr};
 use surrealdb::Surreal;

@@ -1,4 +1,3 @@
-// ALGO: Graph traversal + rendering
 //! `db.graph_query` RPC method — entity search + edge lookup.
 
 use super::util::or_str;

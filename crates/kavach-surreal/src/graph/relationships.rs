@@ -21,13 +21,8 @@
 // failure_modes: unknown rel -> skip; empty qname -> skip
 // [/SDUI_DECISION]
 //
-// ALGO: SequentialUpsertRelate
-// PROBLEM_CLASS: graph
-// REJECTED: [{"name":"single_RELATE_no_upsert","reason":"target may not exist yet"},{"name":"hash_lookup_existing","reason":"UPSERT idempotency cheaper"}]
 // TIME: O(r) | SPACE: O(r)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: each rel is its own round-trip
-// BENCHMARK: https://surrealdb.com/docs/surrealql/statements/relate
 // SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
 use crate::error::Result;
 use surrealdb::Surreal;

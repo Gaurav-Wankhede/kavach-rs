@@ -1,11 +1,7 @@
 // ARCH: PublicPrefixGrepAllowlist
-// PROBLEM_CLASS: framework_public_var_distinction
-// REJECTED: [{"name":"block-all-grep-on-dotenv","reason":"breaks legitimate PUBLIC_ var inspection"},{"name":"allow-all-grep-on-dotenv","reason":"leaks secrets"}]
 // TIME: O(n*p) per check — n = command length, p = prefix list (6) | SPACE: O(1) static slices
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Substring match is approximate; theoretically a command containing both
 //           "public_" and "secret" returns false. Conservative bias = correct.
-// BENCHMARK: env_guard.rs original allows_grep_public_prefix_on_dotenv tests preserved.
 // PATTERN: prefix_allowlist | SCOPE: pre_tool_bash | CAP: AP
 // FAILURE_MODE: false negative (legitimate PUBLIC_ var reject) → user complains, list extended;
 //               false positive (secret var slip via prefix) → leak. Mitigated by

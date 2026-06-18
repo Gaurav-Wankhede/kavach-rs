@@ -215,13 +215,8 @@ fn is_hot_path_fn(file_path: &str, fn_name: &str, attrs_above: &str) -> bool {
         || file_path.contains("/handlers/")
 }
 
-// ALGO: brace_depth_walk + HashSet membership
-// PROBLEM_CLASS: scope_detection
-// REJECTED: [{"name":"syn AST","reason":"heavy parse dep"},{"name":"regex multi-line","reason":"backtracking"}]
 // TIME: O(n) bytes | SPACE: O(L) async-body lines
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: brace counting ignores braces inside strings; acceptable for guards
-// BENCHMARK: ~1µs/KB
 
 /// Scan content for async/sync pattern violations.
 /// P0 patterns are scope-checked: must appear inside an async fn body.

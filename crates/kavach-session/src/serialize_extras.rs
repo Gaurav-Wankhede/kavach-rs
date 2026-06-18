@@ -237,8 +237,6 @@ impl SessionState {
             s.push('\n');
         }
 
-        // ALGO: SortedCsvWithPercentEscape | PROBLEM_CLASS: HashMap-to-INI
-        // REJECTED: [{"name":"JSON-nested","reason":"breaks flat INI parse"},
         //            {"name":"bincode","reason":"binary blobs hostile to grep"},
         //            {"name":"per-key INI line","reason":"unbounded section bloat"}]
         // TIME: O(n log n) sort (deterministic order) | SPACE: O(n)

@@ -51,13 +51,8 @@ fn init(path: &str) -> i32 {
     0
 }
 
-// ALGO: recursive_walk with early-exit filter
-// PROBLEM_CLASS: directory_traversal
-// REJECTED: [{"name":"jwalk","reason":"parallel overhead for <10k files"},{"name":"ignore::WalkParallel","reason":"adds dependency, sequential sufficient"}]
 // TIME: O(n) where n=files | SPACE: O(d) where d=max_depth
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: sequential; parallel (jwalk) 4× faster for >100k files
-// BENCHMARK: https://users.rust-lang.org/t/walkdir-performance-a-small-experiment/24112
 fn scan(path: &str, output: Option<&str>) -> i32 {
     let output_path = output.map_or(DEFAULT_OUTPUT, |s| s);
     let root = Path::new(path);

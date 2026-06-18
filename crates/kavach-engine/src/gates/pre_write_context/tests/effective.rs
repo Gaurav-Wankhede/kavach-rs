@@ -3,7 +3,6 @@
 use crate::gates::pre_write_context::WriteContext;
 use kavach_types::HookInput;
 
-// ALGO: `SingleSyncReadOnce`; PROBLEM_CLASS io. Rejected `memmap2` (per-call
 // overhead > fs::read for <1MB). TIME O(file_bytes); one fs read per Edit hook.
 #[test]
 fn edit_populates_effective_content_with_full_file_body() {

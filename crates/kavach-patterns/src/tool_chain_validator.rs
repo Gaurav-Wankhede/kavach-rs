@@ -5,17 +5,12 @@
 //! Severity: `P1Advisory`. Host emits `[TOOL_CHAIN_MISMATCH]` context.
 //! SOURCE: kavach-engine/CLAUDE.md Gate Severity Policy
 
-// ALGO: vec_suffix_scan
-// PROBLEM_CLASS: bounded-FIFO + read-recent-N (N ≤ 10)
-// REJECTED: [
 //   {"name":"VecDeque","reason":"eviction adds correctness surface; perf gain immeasurable at N=10"},
 //   {"name":"SmallVec","reason":"workspace dep for ~80B inline savings; not justified"}
 // ]
 // TIME: O(N) read | SPACE: O(N) caller-bounded
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: caller owns the bound (no auto-eviction); acceptable because session
 //   state already enforces a recent-tools cap upstream.
-// BENCHMARK: https://nnethercote.github.io/perf-book/data-structures.html
 // SOURCE: https://doc.rust-lang.org/std/collections/struct.VecDeque.html#performance
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

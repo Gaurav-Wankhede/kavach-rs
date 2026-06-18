@@ -4,7 +4,6 @@
 // of the legacy `pattern` memory_entries the writers stopped populating.
 // Split out of methods/mistake.rs to keep each leaf ≤100 LOC.
 //
-// ALGO: none local — this is a thin RPC pass-through. Ranking/top-k is delegated
 //   to kavach_surreal::graph_top_anti_patterns (see that module's ALGO note:
 //   bounded in-memory sort). Here we only clamp the page size and map rows to the
 //   wire DTO. TIME: O(N) map over the already-ranked slice. YEAR: 2026.

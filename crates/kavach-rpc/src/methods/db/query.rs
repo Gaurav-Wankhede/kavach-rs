@@ -1,8 +1,5 @@
-// ALGO: Linear scan + filter
-// PROBLEM_CLASS: filter
 // TIME: O(n) | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Fetches all then filters; acceptable for <10K entries
 //! db.query RPC method — thin hub + types.
 
 use super::util::{ROADMAP_TABLE, or_str, resolve_project_id};

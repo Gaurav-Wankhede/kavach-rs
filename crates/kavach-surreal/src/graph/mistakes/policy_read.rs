@@ -1,7 +1,6 @@
 // Read side of the deployed_policy node — SessionStart + CLI + GUI all read the
 // SAME node db.policy_improve writes, closing any read/write split-brain.
 //
-// ALGO: rank a bounded deployed_policy set (one node per advisory scope — a
 //   handful, not millions) by pessimistic value (lcb), descending. CHOICE:
 //   materialize all rows, then slice::sort_by (Rust stdlib stable sort,
 //   Timsort-derived, O(N log N)). REJECTED: SurrealDB `ORDER BY properties.lcb`

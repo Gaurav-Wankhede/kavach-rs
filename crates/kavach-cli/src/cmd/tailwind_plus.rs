@@ -1,6 +1,5 @@
 // kavach tailwind-plus index — walk ~/.claude/tailwind-plus/, extract keywords, write index.json
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
-// ALGO: iterative DFS via explicit Vec stack (preserved verbatim; not modified by this silent-IO migration). TIME: O(N) over file tree. SOURCE: https://doc.rust-lang.org/std/collections/struct.VecDeque.html
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};

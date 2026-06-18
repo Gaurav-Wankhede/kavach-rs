@@ -1,6 +1,5 @@
 // split: intentional - cohesive pipeline subcommand (plan + status share the project resolver)
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
-// ALGO: LinearFilterPerStatusLabel for status report (preserved verbatim; not modified by this silent-IO migration). TIME: O(s*n) s=5 labels n=rows. SOURCE: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 // `kavach pipeline` — initializer→subagent pipeline (planner only).
 // SurrealDB-backed: app_spec → roadmap items via kavach_surreal::upsert_entry_full
 // (atomic memory entry + event + entity + graph edges in one transaction).

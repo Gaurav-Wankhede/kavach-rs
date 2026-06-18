@@ -1,11 +1,6 @@
 // split: intentional — single command handler module, not handlers
-// ALGO: regex_extract + HashMap diff
-// PROBLEM_CLASS: source_to_kanban_sync
-// REJECTED: [{"name":"proc-macro","reason":"requires build step"},{"name":"AST parse","reason":"adds syn dep, slower"}]
 // TIME: O(n) bytes scanned + O(m) keys diffed | SPACE: O(m) HashMap entries
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: regex misses macros split across lines; declarative single-line is supported form
-// BENCHMARK: regex single-pass ~1µs/KB
 //! `kavach todos sync` — extract `kavach_todo`!() macros from source files
 //! and synchronize them with kanban roadmap entries.
 

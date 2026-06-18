@@ -1,10 +1,5 @@
-// ALGO: MemchrMemmemSingleLiteral
-// PROBLEM_CLASS: string_match
-// REJECTED: [{"name":"aho_corasick","reason":"delegates to memmem for 1 literal"},{"name":"std_find","reason":"5x slower no SIMD"},{"name":"regex","reason":"compile cost dominates"}]
 // TIME: O(n) | SPACE: O(k)
 // YEAR: 2024 | SEARCHED: 2026-05
-// TRADEOFF: SIMD-bound; needles >>32 bytes lose advantage
-// BENCHMARK: https://github.com/BurntSushi/memchr#performance
 // SOURCE: https://github.com/ashvardanian/StringWars
 #![expect(
     clippy::arithmetic_side_effects,

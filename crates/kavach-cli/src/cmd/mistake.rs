@@ -1,13 +1,10 @@
 // kavach mistake — inspect / clear / disable the K-PRI mistake ledger.
 //
 // ARCH: MistakeLedgerCli
-// PROBLEM_CLASS: cli-admin
 // SCOPE: project | CAP: AP | SEARCHED: 2026-05
-// REJECTED: [{"name":"raw kavach db query","reason":"mixes mistake rows with other rows; no hit_count sort"}]
 // TIME: O(N) per list/stats (N = mistake rows; bounded by gate firing rate)
 // SPACE: O(N) per call
 // YEAR: 2026
-// TRADEOFF: shells out to `kavach db` rather than calling kavach-surreal in-process,
 //   to avoid an extra RocksDB-LOCK contention path (the daemon owns the lock).
 //
 // SOURCE: arxiv.org/html/2512.11485 (Mistake Notebook Learning) — ledger admin is part of the loop.

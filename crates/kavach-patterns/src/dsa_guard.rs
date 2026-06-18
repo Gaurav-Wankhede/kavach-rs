@@ -1,16 +1,11 @@
 // split: Single-module DSA gate. Test fixtures intentionally embed anti-pattern Rust source.
 //
-// ALGO: Aho-Corasick (via regex crate) + LazyLock-cached pattern set
-// PROBLEM_CLASS: multi-pattern static text scan over Rust source
-// REJECTED: [
 //   {"name":"syn AST walk","reason":"3-5x slower for write-time gate; needs full parse"},
 //   {"name":"tree-sitter","reason":"adds 2MB binary, overkill for ~16 regex matches"},
 //   {"name":"hand-rolled scanner","reason":"reinvents regex DFA poorly"}
 // ]
 // TIME: O(n) per file (single-pass NFA via regex crate) | SPACE: O(patterns)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: regex misses semantic context; we accept false-positives at P1/P2 advisory tier
-// BENCHMARK: https://docs.rs/regex/latest/regex/#performance
 //! DSA Gate — Data Structures & Algorithms for Rust Backends
 //!
 //! Detects accidental O(n) / O(n^2) / quadratic-allocation patterns that scale poorly under load.

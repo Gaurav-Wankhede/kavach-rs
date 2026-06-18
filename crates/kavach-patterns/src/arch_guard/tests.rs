@@ -77,7 +77,6 @@ fn count_fields_all_present() {
 // QPS: 10000 | PEAK: 3x
 // STORAGE: 10GB
 // FAILURE_MODE: stale reads
-// TRADEOFF: consistency
 // SEARCHED: 2026-04
 // REFERENCE: https://example.com
 fn foo() {}
@@ -114,7 +113,6 @@ fn check_allows_with_complete_comment() {
 // QPS: 10000
 // STORAGE: 10GB
 // FAILURE_MODE: stale reads
-// TRADEOFF: consistency
 // SEARCHED: 2026-04
 // REFERENCE: https://example.com
 let c = distributed_cache::new();

@@ -1,11 +1,7 @@
 // ARCH: EnvSourcingAdvisory
-// PROBLEM_CLASS: env_var_misuse_advisory
-// REJECTED: [{"name":"hard-block","reason":"too aggressive — false positive on legitimate env-only execution"},{"name":"silent-allow","reason":"misses real misuse"}]
 // TIME: O(n) per command — n = command length | SPACE: O(n) lowercase copy
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Substring match for $VAR is approximate (misses indirect refs).
 //           Acceptable for advisory output — false negative downgrades to no-msg.
-// BENCHMARK: env_guard.rs original tests; preserved across split.
 // PATTERN: advisory_message | SCOPE: pre_tool_bash | CAP: AP
 // FAILURE_MODE: false negative (advisory not emitted when it should be) → user sees
 //               nothing, not unsafe; false positive → noise but harmless.

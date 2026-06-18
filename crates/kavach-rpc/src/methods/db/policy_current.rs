@@ -2,7 +2,6 @@
 // (and the CLI/GUI) call this so the harness is INFORMED by the deployed_policy
 // node db.policy_improve writes — the advisory half of RL-in-the-loop.
 //
-// ALGO: none local — thin RPC pass-through; lcb-ranking + top-k is delegated to
 //   kavach_surreal::graph_top_deployed_policies (see its ALGO note). Here we only
 //   clamp the page size and map rows to the wire DTO. TIME: O(N) map. YEAR: 2026.
 use crate::error::surreal_to_rpc;

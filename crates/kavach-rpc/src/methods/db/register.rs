@@ -1,5 +1,3 @@
-// ALGO: UPSERT (project)
-// PROBLEM_CLASS: write
 // TIME: O(1) | SPACE: O(1)
 // YEAR: 2026 | SEARCHED: 2026-06
 //! `db.register` RPC method — register or update a project.

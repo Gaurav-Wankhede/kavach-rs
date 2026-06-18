@@ -13,13 +13,8 @@ impl Runner {
         // chain blocked or a gate carries a next_action.
         // SOURCE: research.trychroma.com/context-rot — verbose mid-context
         // tool feedback degrades every subsequent output.
-        // ALGO: linear scan (short-circuit any)
-        // PROBLEM_CLASS: membership predicate over tiny bounded slice
-        // REJECTED: [{"name":"HashSet pre-index","reason":"results.len() <= ~5 gates; hashing costs more than the scan"},{"name":"sort+binary_search","reason":"no ordering key; O(n log n) worse than O(n) here"}]
         // TIME: O(n) n<=5 | SPACE: O(1)
         // YEAR: 2026 | SEARCHED: 2026-05
-        // TRADEOFF: O(n) but n is gate-count (≤5); constant-factor wins
-        // BENCHMARK: https://research.trychroma.com/context-rot
         // Collapse whenever no gate carries a next_action and none blocked,
         // independent of the final_status string. `add_result` forces
         // final_status="blocked" on any block, and that block is itself

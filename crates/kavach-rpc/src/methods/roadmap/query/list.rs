@@ -7,12 +7,8 @@ use jsonrpsee::types::ErrorObjectOwned;
 
 const TABLE_ROADMAP: &str = "roadmap";
 
-// ALGO: ListThenTruncate
-// PROBLEM_CLASS: stream
 // TIME: O(n) read + O(limit) truncate | SPACE: O(n)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: read-all-then-truncate when limit small relative to n
-// BENCHMARK: list_by_project caps at 5000 rows; sub-10ms typical
 /// # Errors
 /// Returns an RPC `ErrorObjectOwned` when the database query fails.
 pub async fn list_titles(

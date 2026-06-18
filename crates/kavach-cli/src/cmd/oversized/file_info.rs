@@ -1,10 +1,5 @@
-// ALGO: Tarjan SCC + Leiden two-pass + line/fn density gates
-// PROBLEM_CLASS: graph_traversal + size_threshold
-// REJECTED: [{"name":"DFS/BFS","reason":"no boundary guarantee"},{"name":"Louvain","reason":"25% badly-connected communities"},{"name":"VAE-GNN","reason":"requires labeled training corpus, 73.53% accuracy"}]
 // TIME: O(V+E) | SPACE: O(V+E)
 // YEAR: 1972 | SEARCHED: 2026-04
-// TRADEOFF: does not detect soft coupling (high fan-in without import cycles)
-// BENCHMARK: https://crates.io/crates/petgraph
 
 const MIXED_CONCERNS_LINE_LIMIT: usize = 200;
 /// Hard line-count cap per file.

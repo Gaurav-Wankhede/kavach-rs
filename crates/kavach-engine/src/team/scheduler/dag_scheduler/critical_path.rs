@@ -25,13 +25,10 @@ pub(super) fn critical_path_lengths(
     dag: &RoadmapDag,
     topo_order: &[String],
 ) -> HashMap<String, u32> {
-    // ALGO: Critical Path Method — longest-path-in-DAG via a single backward
     // pass in reverse topological order: cp(n) = 1 + max(cp(succ)), cp(leaf)=1.
     // General longest-path is NP-hard (no optimal substructure); on a DAG the
     // topo order makes it LINEAR with no revisits.
-    // PROBLEM_CLASS: graph longest-path | TIME: O(n + e) | SPACE: O(n)
     // YEAR: 2026 | SEARCHED: 2026-06
-    // BENCHMARK: https://en.wikipedia.org/wiki/Longest_path_problem#Acyclic_graphs
     // SOURCE: https://algs4.cs.princeton.edu/44sp/ (CPM = longest path in DAG)
     let mut successors: HashMap<&str, Vec<&str>> = HashMap::with_capacity(dag.nodes.len());
     for e in &dag.edges {

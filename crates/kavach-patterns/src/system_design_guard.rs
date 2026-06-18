@@ -1,8 +1,5 @@
 // split: Single-module gate file for system architecture / system design at scale.
 //
-// ALGO: Aho-Corasick (regex crate) + linear post-checks
-// PROBLEM_CLASS: string_match (multi-pattern AST-free detection on source files)
-// REJECTED: [
 //   {"name":"DFA hand-rolled","reason":"reinvents what regex crate provides"},
 //   {"name":"tree-sitter AST","reason":"build-time + per-language grammars; over-engineered for a regex gate"},
 //   {"name":"Aho-Corasick raw","reason":"no group capture; we need source-line context for some checks"}
@@ -10,8 +7,6 @@
 // TIME: O(n*m) worst per pattern (regex), O(n) overall with regex crate's lazy DFA
 // SPACE: O(p) where p = pattern count (LazyLock<Vec<Regex>> = 16 entries)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: Regex post-checks for a11y/key contracts (alt=, key=) avoid look-around (regex crate disallows)
-// BENCHMARK: https://github.com/BurntSushi/regex (regex crate is the de-facto Rust string-match standard)
 
 //! System Architecture & System Design at Scale Gate
 //!

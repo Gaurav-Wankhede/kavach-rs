@@ -25,13 +25,8 @@
 // failure_modes: missing entity row -> empty link lists; cycle -> harmless
 // [/SDUI_DECISION]
 //
-// ALGO: TwoStatementJoin
-// PROBLEM_CLASS: graph
-// REJECTED: [{"name":"per_row_get_related","reason":"O(n) RTTs"},{"name":"client_side_stitch","reason":"loses single-query atomicity"}]
 // TIME: O(n + e) | SPACE: O(n + e)
 // YEAR: 2026 | SEARCHED: 2026-05
-// TRADEOFF: 2 statements per call; still ONE round-trip
-// BENCHMARK: https://surrealdb.com/docs/surrealql/statements/select
 // SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
 use crate::dual_write::MemoryEntry;
 use crate::error::Result;

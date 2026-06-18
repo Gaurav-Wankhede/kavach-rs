@@ -1,4 +1,3 @@
-// ALGO: Entity listing + limit enforcement
 //! Entity list query handler.
 
 use crate::error::internal;

@@ -2,10 +2,8 @@
 //
 // ARCH: LspFirstAdvisoryGate
 // PATTERN: pre_write_advisory | SCOPE: file | CAP: AP | SEARCHED: 2026-05
-// PROBLEM_CLASS: enforcement
 // TIME: O(N) — N = files diagnosed (typically <10 per session)
 // SPACE: O(1) per call
-// REJECTED: [{"name":"P0 hard block","reason":"per gates/CLAUDE.md severity policy, default to advisory until FP rate proven <1%"}]
 //
 // SOURCE: ~/.claude/CLAUDE.md §LSP-FIRST — enforcement clause.
 // SOURCE: crates/kavach-engine/CLAUDE.md — "default to P1Advisory unless
