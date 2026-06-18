@@ -344,6 +344,15 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register lease.acquire: {e}")))?;
 
     module
+        .register_async_method("lease.acquire_set", |params, ctx, _ext| async move {
+            let p: lease::AcquireSetParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            lease::acquire_set(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register lease.acquire_set: {e}")))?;
+
+    module
         .register_async_method("lease.heartbeat", |params, ctx, _ext| async move {
             let p: lease::HeartbeatParams = params
                 .parse()
