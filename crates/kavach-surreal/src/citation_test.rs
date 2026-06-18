@@ -9,8 +9,9 @@
 )]
 
 use super::{
-    CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation, freshness,
-    get_citation, list_citations_by_project, mark_if_stale, upsert_citation,
+    Citation, CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation,
+    freshness, get_citation, list_citations_by_project, mark_if_stale, plan_refresh,
+    upsert_citation,
 };
 use crate::{apply_schema, open_memory};
 use surrealdb::Surreal;
@@ -176,4 +177,39 @@ fn mark_if_stale_flags_only_stale() {
     let marked = mark_if_stale(Freshness::Stale, "docs");
     assert!(marked.starts_with(STALE_MARKER), "stale text is prefixed with the marker");
     assert!(marked.contains("docs"), "stale text still carries the content");
+}
+
+fn cite(entry_key: &str, name: &str, url: &str, updated_unix: Option<i64>) -> Citation {
+    Citation {
+        id: None,
+        project: RecordId::new("project", "p"),
+        entry_key: entry_key.to_owned(),
+        name: name.to_owned(),
+        metadata: vec![meta("s", url)],
+        access_count: 0,
+        created_unix: updated_unix,
+        updated_unix,
+    }
+}
+
+#[test]
+fn plan_refresh_partitions_stale_and_serves_all() {
+    let now = 2_000_000_000;
+    let fresh = cite("axum", "Axum", "https://docs.rs/axum", Some(now));
+    let stale = cite("surreal", "SurrealDB", "https://surrealdb.com/docs", Some(now - FRESHNESS_WINDOW_SECS - 1));
+    let plan = plan_refresh(&[fresh, stale], now);
+
+    assert_eq!(plan.refresh.len(), 1, "only the stale citation is queued for re-research");
+    assert_eq!(plan.refresh[0].entry_key, "surreal", "the stale one is named");
+    assert_eq!(plan.refresh[0].urls, vec!["https://surrealdb.com/docs".to_owned()], "its docs URL is the fetch target");
+
+    assert_eq!(plan.served.len(), 2, "every recalled citation is still served this turn");
+    assert_eq!(plan.served[0], "Axum", "fresh content serves clean");
+    assert!(plan.served[1].starts_with(STALE_MARKER), "stale content serves marked, never blocks on the network");
+}
+
+#[test]
+fn plan_refresh_empty_recall_is_empty_plan() {
+    let plan = plan_refresh(&[], 2_000_000_000);
+    assert!(plan.refresh.is_empty() && plan.served.is_empty(), "no recall -> no work, no served text");
 }

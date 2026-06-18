@@ -52,6 +52,51 @@ pub fn mark_if_stale(verdict: Freshness, text: &str) -> String {
     }
 }
 
+/// One stale citation queued for re-research: its `entry_key` plus every
+/// official-docs URL to re-fetch.
+///
+/// The harness/RPC (C9) drives the actual WebSearch/WebFetch; this struct is the
+/// pure work-list it consumes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct RefreshTarget {
+    pub entry_key: String,
+    pub urls: Vec<String>,
+}
+
+/// On-recall lazy refresh plan: which recalled citations are stale and must be
+/// re-researched THIS turn, and the marker-decorated text to serve meanwhile.
+///
+/// Pure — the caller injects `now` and executes the fetches.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct RefreshPlan {
+    pub refresh: Vec<RefreshTarget>,
+    pub served: Vec<String>,
+}
+
+/// Partition recalled citations by freshness.
+///
+/// Stale ones become `refresh` targets (queued for re-research) AND are still
+/// served with the `[STALE]` marker so the turn never blocks on the network;
+/// fresh ones serve clean.
+#[must_use]
+pub fn plan_refresh(citations: &[Citation], now: i64) -> RefreshPlan {
+    let mut refresh = Vec::new();
+    let mut served = Vec::with_capacity(citations.len());
+    for c in citations {
+        let verdict = freshness(c.updated_unix, now);
+        served.push(mark_if_stale(verdict, &c.name));
+        if verdict == Freshness::Stale {
+            refresh.push(RefreshTarget {
+                entry_key: c.entry_key.clone(),
+                urls: c.metadata.iter().map(|m| m.url.clone()).collect(),
+            });
+        }
+    }
+    RefreshPlan { refresh, served }
+}
+
 const COLS: &str = "id, project, entry_key, name, metadata, access_count, \
                     time::unix(created_at) AS created_unix, \
                     time::unix(updated_at) AS updated_unix";
