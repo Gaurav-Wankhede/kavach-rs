@@ -71,7 +71,10 @@ pub(crate) fn card_is_still_open(project_slug: &str, key: &str) -> bool {
     // Only `todo`/`in_progress` are dispatch-runnable; `done` awaits manual
     // `verified` promotion and `verified`/`deferred` are terminal — treat both
     // as clearable so the stale-pointer check stops looping.
-    matches!(status.as_deref(), Some("todo" | "in_progress"))
+    status
+        .as_deref()
+        .and_then(|s| s.parse::<kavach_types::MemoryStatus>().ok())
+        .is_some_and(kavach_types::MemoryStatus::is_runnable)
 }
 
 // PARKING ABOLISHED (owner directive 2026-06-16, reaffirmed 2026-06-17): there is

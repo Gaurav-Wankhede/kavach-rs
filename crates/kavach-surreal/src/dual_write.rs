@@ -101,7 +101,7 @@ impl MemoryEntry {
     /// the lease system or was set out-of-band; only an EXPIRED lease proves abandonment.
     #[must_use]
     pub fn is_stale_claim(&self) -> bool {
-        if self.entry_status_str() != "in_progress" {
+        if self.lifecycle() != Some(kavach_types::MemoryStatus::InProgress) {
             return false;
         }
         // Some(until <= now) → lease lapsed → abandoned; None → no lease to prove
@@ -134,5 +134,85 @@ impl MemoryEntry {
             Some(s) => s.as_str(),
             None => "",
         }
+    }
+
+    /// Roadmap/kanban lifecycle status PARSED into the typed `MemoryStatus` enum.
+    ///
+    /// This is the type-safe DB boundary: the raw `entry_status` string is parsed
+    /// exactly ONCE here, so an absent field OR a non-canonical value (a stale
+    /// pre-collapse row, a hand-edited typo like `"in-progress"`) yields `None`
+    /// instead of silently flowing through dispatch as a magic-string mismatch.
+    /// Callers branch on the typed variant (`is_runnable` / `is_complete`) and
+    /// fail-closed on `None`, never re-spelling status literals.
+    #[must_use]
+    pub fn lifecycle(&self) -> Option<kavach_types::MemoryStatus> {
+        self.entry_status.as_deref()?.parse().ok()
+    }
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::MemoryEntry;
+    use kavach_types::MemoryStatus;
+
+    /// Build an entry carrying only the `entry_status` we want to probe — every
+    /// other field is its empty/None form so the test targets the boundary parse.
+    fn with_status(status: Option<&str>) -> MemoryEntry {
+        MemoryEntry {
+            id: None,
+            project: surrealdb_types::RecordId::new("project", "t"),
+            category: Some("roadmap".into()),
+            entry_key: "k".to_owned(),
+            title: "t".to_owned(),
+            content: String::new(),
+            status: None,
+            entry_status: status.map(str::to_owned),
+            tags: None,
+            decay_score: None,
+            access_count: None,
+            created_at: None,
+            updated_at: None,
+            priority: None,
+            lane: None,
+            occupied_by: None,
+            occupied_until: None,
+        }
+    }
+
+    #[test]
+    fn canonical_status_parses_to_typed_variant() {
+        assert_eq!(with_status(Some("todo")).lifecycle(), Some(MemoryStatus::Todo));
+        assert_eq!(
+            with_status(Some("in_progress")).lifecycle(),
+            Some(MemoryStatus::InProgress)
+        );
+        assert_eq!(with_status(Some("verified")).lifecycle(), Some(MemoryStatus::Verified));
+    }
+
+    #[test]
+    fn absent_status_is_none_not_a_silent_default() {
+        // A row with no entry_status must NOT masquerade as any runnable state.
+        assert_eq!(with_status(None).lifecycle(), None);
+    }
+
+    #[test]
+    fn non_canonical_value_is_none_fail_closed() {
+        // The exact failure DB-A closes: a typo or stale pre-collapse value parses
+        // to None at the boundary instead of flowing as a magic-string mismatch.
+        for bad in ["in-progress", "Done", "blocked", "deferred", "planned", ""] {
+            assert_eq!(
+                with_status(Some(bad)).lifecycle(),
+                None,
+                "non-canonical {bad:?} must fail-close to None"
+            );
+        }
+    }
+
+    #[test]
+    fn stale_claim_requires_typed_in_progress_not_a_string_match() {
+        // A non-canonical "in-progress" (hyphen) is NOT InProgress → never a stale
+        // claim, proving is_stale_claim now rests on the typed parse.
+        assert!(!with_status(Some("in-progress")).is_stale_claim());
+        assert!(!with_status(Some("todo")).is_stale_claim());
     }
 }

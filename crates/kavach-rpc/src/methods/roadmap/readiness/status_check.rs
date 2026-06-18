@@ -8,9 +8,15 @@
 ///
 /// Any non-canonical status string (a stale value from a pre-collapse row) is
 /// fail-closed to non-runnable here — it can never be dispatched.
+///
+/// The string is parsed into the typed `MemoryStatus` at the boundary; an
+/// unparseable value is `None` → non-runnable. The runnable SET lives on the
+/// enum (`MemoryStatus::is_runnable`), not as a magic-string literal here.
 #[must_use]
 pub fn is_runnable_status(status: &str) -> bool {
-    matches!(status, "todo" | "in_progress")
+    status
+        .parse::<kavach_types::MemoryStatus>()
+        .is_ok_and(kavach_types::MemoryStatus::is_runnable)
 }
 
 // PARKING ABOLISHED (owner directive 2026-06-16, reaffirmed 2026-06-17): there is

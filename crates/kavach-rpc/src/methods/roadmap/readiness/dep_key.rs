@@ -1,9 +1,16 @@
 /// Check if a single dependency key is satisfied.
+///
+/// A blocker satisfies its dependent once its lifecycle is `Done`/`Verified`.
+/// The status is parsed through the typed boundary accessor (`MemoryEntry::lifecycle`)
+/// and the complete-set lives on the enum (`MemoryStatus::is_complete`) — a
+/// non-canonical/absent status is `None` → NOT satisfied (fail-closed: a stale
+/// row never silently unblocks a dependent).
 #[must_use]
 pub fn dep_key_satisfied(dep_key: &str, all: &[kavach_surreal::MemoryEntry]) -> bool {
     all.iter()
         .find(|e| e.entry_key == dep_key)
-        .is_some_and(|e| matches!(e.entry_status_str(), "verified" | "done"))
+        .and_then(kavach_surreal::MemoryEntry::lifecycle)
+        .is_some_and(kavach_types::MemoryStatus::is_complete)
 }
 
 /// `true` when `tok` is key-shaped, not prose.

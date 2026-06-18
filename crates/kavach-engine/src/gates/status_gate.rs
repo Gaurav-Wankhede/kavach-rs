@@ -31,9 +31,13 @@ pub enum StatusGateVerdict {
 }
 
 /// True iff `status` is a completion-claim status that must be evidence-backed.
+/// Parsed through the typed `MemoryStatus` boundary; the complete-set lives on
+/// the enum (`is_complete`), and a non-canonical value is not a completion claim.
 #[must_use]
 fn is_completion_status(status: &str) -> bool {
-    matches!(status, "done" | "verified")
+    status
+        .parse::<kavach_types::MemoryStatus>()
+        .is_ok_and(kavach_types::MemoryStatus::is_complete)
 }
 
 /// Gate a roadmap status promotion on the objective workspace witnesses.

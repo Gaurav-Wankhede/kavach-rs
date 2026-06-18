@@ -2,6 +2,7 @@ pub mod census;
 mod dag_cycle;
 pub mod hunt_select;
 mod lane_pick;
+mod priority_ceiling;
 pub mod task_select;
 pub mod tasklist;
 

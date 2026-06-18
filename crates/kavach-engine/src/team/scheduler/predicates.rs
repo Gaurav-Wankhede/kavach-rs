@@ -3,14 +3,20 @@ use std::collections::HashSet;
 
 use kavach_surreal::graph::roadmap_dag::RoadmapDag;
 
-/// A roadmap status the scheduler may dispatch.
+/// A roadmap status the scheduler may dispatch. Parsed through the typed
+/// `MemoryStatus` boundary; a non-canonical value fail-closes to non-runnable.
 pub(super) fn is_runnable_status(status: &str) -> bool {
-    matches!(status, "todo" | "in_progress")
+    status
+        .parse::<kavach_types::MemoryStatus>()
+        .is_ok_and(kavach_types::MemoryStatus::is_runnable)
 }
 
-/// A roadmap status that satisfies a dependency edge.
+/// A roadmap status that satisfies a dependency edge. Parsed through the typed
+/// `MemoryStatus` boundary; a non-canonical value fail-closes to non-terminal.
 pub(super) fn is_terminal_status(status: &str) -> bool {
-    matches!(status, "done" | "verified")
+    status
+        .parse::<kavach_types::MemoryStatus>()
+        .is_ok_and(kavach_types::MemoryStatus::is_complete)
 }
 
 /// All dependency edges into `node_id` resolve to a terminal (done/verified) node.

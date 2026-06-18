@@ -30,7 +30,8 @@ pub(super) fn memory_awareness_advisory(project_slug: &str) -> Option<String> {
         .filter(|row| {
             row.get("entry_status")
                 .and_then(|s| s.as_str())
-                .is_some_and(|s| matches!(s, "todo" | "in_progress"))
+                .and_then(|s| s.parse::<kavach_types::MemoryStatus>().ok())
+                .is_some_and(kavach_types::MemoryStatus::is_runnable)
         })
         .take(MAX_OPEN)
         .collect();

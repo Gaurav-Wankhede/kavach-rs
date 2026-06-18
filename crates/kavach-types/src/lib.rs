@@ -860,6 +860,27 @@ impl MemoryStatus {
         use strum::IntoEnumIterator;
         Self::iter().collect()
     }
+
+    /// `true` iff a card in this state is DISPATCHABLE to an agent.
+    ///
+    /// Exactly `Todo` and `InProgress`. `Done` awaits verification and `Verified`
+    /// is terminal — neither is runnable. The single typed source for every
+    /// dispatch predicate (replaces scattered `matches!(s, "todo" | "in_progress")`
+    /// magic-string checks that a typo could silently break at the DB boundary).
+    #[must_use]
+    pub const fn is_runnable(self) -> bool {
+        matches!(self, Self::Todo | Self::InProgress)
+    }
+
+    /// `true` iff a card in this state SATISFIES a dependency edge.
+    ///
+    /// Exactly `Done` and `Verified` — a dependent unblocks once its blocker
+    /// reaches either. The typed counterpart to `is_runnable`; the two sets are
+    /// disjoint and together partition the four-variant enum.
+    #[must_use]
+    pub const fn is_complete(self) -> bool {
+        matches!(self, Self::Done | Self::Verified)
+    }
 }
 
 #[cfg(test)]
@@ -912,6 +933,35 @@ mod memory_status_tests {
         assert!(!list.contains("planned"));
         assert!(!list.contains("blocked"));
         assert!(!list.contains("deferred"));
+    }
+
+    #[test]
+    fn runnable_set_is_exactly_todo_and_in_progress() {
+        assert!(MemoryStatus::Todo.is_runnable());
+        assert!(MemoryStatus::InProgress.is_runnable());
+        assert!(!MemoryStatus::Done.is_runnable());
+        assert!(!MemoryStatus::Verified.is_runnable());
+    }
+
+    #[test]
+    fn complete_set_is_exactly_done_and_verified() {
+        assert!(MemoryStatus::Done.is_complete());
+        assert!(MemoryStatus::Verified.is_complete());
+        assert!(!MemoryStatus::Todo.is_complete());
+        assert!(!MemoryStatus::InProgress.is_complete());
+    }
+
+    #[test]
+    fn runnable_and_complete_partition_the_enum_with_no_overlap() {
+        // Every variant is in exactly ONE of the two dispatch sets — they are
+        // disjoint (no card is both runnable and dependency-satisfying) and total
+        // (no variant falls through both predicates).
+        for s in MemoryStatus::all() {
+            assert!(
+                s.is_runnable() ^ s.is_complete(),
+                "{s} must be in exactly one of runnable/complete"
+            );
+        }
     }
 }
 
