@@ -12,7 +12,9 @@
 //!
 //! `§evidence_over_inference` + `§three_witness_verify`, enforced in code (not prose).
 
-use crate::gates::stop_dispatch::verify::witness::{WitnessRun, run_workspace_witnesses};
+use crate::gates::stop_dispatch::verify::witness::{
+    WitnessRun, run_workspace_witnesses, witness_root_from_card,
+};
 
 /// Whether a requested status promotion is allowed, given the objective witnesses.
 #[non_exhaustive]
@@ -47,12 +49,20 @@ fn is_completion_status(status: &str) -> bool {
 /// CWD (the project workspace), exactly as the auto-verify path does. This is the
 /// EVIDENCE binding the prior design lacked: a missing/failing build can no longer
 /// be promoted to a completion status on self-report alone.
+/// `card_content` is the promoting card's body, scanned for a per-card
+/// `WITNESS_ROOT:` hint so a cross-repo card is verified in the repo its code
+/// actually lives in (not the dispatch CWD). Pass `""` when no content is at hand.
 #[must_use]
-pub fn verify_status_promotion(category: &str, status: &str) -> StatusGateVerdict {
+pub fn verify_status_promotion(
+    category: &str,
+    status: &str,
+    card_content: &str,
+) -> StatusGateVerdict {
     if category != "roadmap" || !is_completion_status(status) {
         return StatusGateVerdict::NotGated;
     }
-    match run_workspace_witnesses() {
+    let card_root = witness_root_from_card(card_content);
+    match run_workspace_witnesses(card_root.as_deref()) {
         WitnessRun::Passed => StatusGateVerdict::Allowed,
         WitnessRun::Failed | WitnessRun::SpawnError => StatusGateVerdict::RefusedWitnessFailed,
         WitnessRun::Unprovable => StatusGateVerdict::RefusedUnprovable,
@@ -66,7 +76,7 @@ mod tests {
     #[test]
     fn non_roadmap_category_is_not_gated() {
         assert_eq!(
-            verify_status_promotion("decision", "done"),
+            verify_status_promotion("decision", "done", ""),
             StatusGateVerdict::NotGated
         );
     }
@@ -74,7 +84,7 @@ mod tests {
     #[test]
     fn todo_status_is_not_gated() {
         assert_eq!(
-            verify_status_promotion("roadmap", "todo"),
+            verify_status_promotion("roadmap", "todo", ""),
             StatusGateVerdict::NotGated
         );
     }
@@ -82,7 +92,7 @@ mod tests {
     #[test]
     fn in_progress_status_is_not_gated() {
         assert_eq!(
-            verify_status_promotion("roadmap", "in_progress"),
+            verify_status_promotion("roadmap", "in_progress", ""),
             StatusGateVerdict::NotGated
         );
     }

@@ -7,7 +7,7 @@
 
 pub(crate) mod witness;
 
-use witness::{WitnessRun, run_workspace_witnesses};
+use witness::{WitnessRun, run_workspace_witnesses, witness_root_from_card};
 
 /// Three-state outcome of an auto-verify pass. The caller MUST branch on this so
 /// a witness-failing `done` card (real AI repair work) is never confused with a
@@ -29,9 +29,10 @@ pub(crate) enum AutoVerify {
     Promoted(usize),
 }
 
-/// Keys of every roadmap card currently at `done` (work shipped, awaiting
-/// verification). Empty on any error — auto-verify is best-effort.
-fn list_done_card_keys(project_slug: &str) -> Vec<String> {
+/// Every roadmap card currently at `done` (work shipped, awaiting verification),
+/// as `(key, content)` so the caller can read a per-card `WITNESS_ROOT:` hint.
+/// Empty on any error — auto-verify is best-effort.
+fn list_done_cards(project_slug: &str) -> Vec<(String, String)> {
     if project_slug.is_empty() {
         return Vec::new();
     }
@@ -41,8 +42,14 @@ fn list_done_card_keys(project_slug: &str) -> Vec<String> {
         .and_then(|v| v.as_array().cloned())
         .unwrap_or_default()
         .iter()
-        .filter_map(|c| c.get("key").and_then(serde_json::Value::as_str))
-        .map(str::to_owned)
+        .filter_map(|c| {
+            let key = c.get("key").and_then(serde_json::Value::as_str)?;
+            let content = c
+                .get("content")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            Some((key.to_owned(), content.to_owned()))
+        })
         .collect()
 }
 
@@ -68,14 +75,20 @@ fn verify_card(project_slug: &str, key: &str) -> bool {
 /// failing `done` cards (AI repair) from an empty queue (clean stop) from
 /// unprovable work (non-Rust + no `KAVACH_VERIFY_CMD`).
 pub(crate) fn auto_verify_done_cards(project_slug: &str) -> AutoVerify {
-    let done = list_done_card_keys(project_slug);
+    let done = list_done_cards(project_slug);
     if done.is_empty() {
         return AutoVerify::NothingDone;
     }
-    match run_workspace_witnesses() {
+    // Per-card WITNESS_ROOT hint: if any done card declares the repo its code
+    // lives in (a cross-repo harness card dispatched while CWD is elsewhere), the
+    // witnesses run THERE. First declared root wins; absent → env/CWD discovery.
+    let card_root = done
+        .iter()
+        .find_map(|(_, content)| witness_root_from_card(content));
+    match run_workspace_witnesses(card_root.as_deref()) {
         WitnessRun::Passed => AutoVerify::Promoted(
             done.iter()
-                .filter(|key| verify_card(project_slug, key))
+                .filter(|(key, _)| verify_card(project_slug, key))
                 .count(),
         ),
         WitnessRun::Failed | WitnessRun::SpawnError => AutoVerify::WitnessFailed,

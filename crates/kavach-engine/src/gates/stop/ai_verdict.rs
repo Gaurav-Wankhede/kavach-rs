@@ -55,5 +55,7 @@ pub(super) fn extract_ai_verdict(_message: &str) -> Option<bool> {
     if std::env::var("KAVACH_RLAIF_WITNESS").as_deref() != Ok("1") {
         return None;
     }
-    verdict_from_witness(run_workspace_witnesses())
+    // No card content in this RLAIF path → no per-card WITNESS_ROOT hint; the env
+    // override + CWD discovery still apply inside run_workspace_witnesses.
+    verdict_from_witness(run_workspace_witnesses(None))
 }

@@ -35,7 +35,11 @@ pub(super) fn run(
     // hole). Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band owner override.
     if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() != Ok("1") {
         use kavach_engine::StatusGateVerdict;
-        match kavach_engine::verify_status_promotion(category, status) {
+        // No card body is in scope at this CLI entry point (we hold only
+        // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
+        // absent here; the WITNESS_ROOT env override + CWD discovery still apply
+        // inside the gate. A cross-repo card relies on its env/CWD here.
+        match kavach_engine::verify_status_promotion(category, status, "") {
             StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {}
             StatusGateVerdict::RefusedWitnessFailed => {
                 let msg = format!(
