@@ -10,8 +10,8 @@
 
 use super::{
     Citation, CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation,
-    citations_cited_by, freshness, get_citation, list_citations_by_project, mark_if_stale,
-    merge_node_into_citation, plan_refresh, upsert_citation,
+    citations_cited_by, citations_for_nodes, freshness, get_citation, list_citations_by_project,
+    mark_if_stale, merge_node_into_citation, plan_refresh, upsert_citation,
 };
 use crate::{apply_schema, open_memory};
 use surrealdb::Surreal;
@@ -266,4 +266,45 @@ async fn merge_node_wires_cite_edge_non_destructively() {
         .take::<Vec<RecordId>>(0)
         .expect("take");
     assert_eq!(edges.len(), 1, "replayed merge is idempotent — exactly one cite edge, no double-count");
+}
+
+#[tokio::test]
+async fn citations_for_nodes_dedupes_across_recalled_rows() {
+    let db = seed().await;
+    let project = RecordId::new("project", "p");
+    upsert_citation(
+        &db,
+        &UpsertCitation {
+            project,
+            entry_key: "surreal",
+            name: "SurrealDB",
+            metadata: vec![meta("records", "https://surrealdb.com/docs")],
+        },
+    )
+    .await
+    .expect("citation");
+    let citation: RecordId = db
+        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
+        .await
+        .expect("cite id")
+        .take::<Vec<RecordId>>(0)
+        .expect("take")
+        .pop()
+        .expect("one citation");
+    db.query("CREATE decision:d SET project = project:p, entry_key = 'k1', title = 't', content = 'c'")
+        .await
+        .expect("decision");
+    db.query("CREATE roadmap:r SET project = project:p, entry_key = 'k2', title = 't', content = 'c'")
+        .await
+        .expect("roadmap");
+    let decision = RecordId::new("decision", "d");
+    let roadmap = RecordId::new("roadmap", "r");
+    merge_node_into_citation(&db, &decision, &citation).await.expect("merge decision");
+    merge_node_into_citation(&db, &roadmap, &citation).await.expect("merge roadmap");
+
+    let cits = citations_for_nodes(&db, &[decision, roadmap]).await.expect("batch recall");
+    assert_eq!(cits, vec![citation], "both recalled rows cite the same citation -> deduped to one");
+
+    let empty = citations_for_nodes(&db, &[]).await.expect("empty batch");
+    assert!(empty.is_empty(), "no recalled nodes -> no citations");
 }

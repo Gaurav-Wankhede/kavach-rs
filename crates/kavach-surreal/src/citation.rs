@@ -47,6 +47,37 @@ pub async fn merge_node_into_citation(
     Ok(())
 }
 
+/// Recall bridge: for a batch of recalled decision/roadmap nodes, gather every
+/// citation they cite in ONE round-trip, deduped and order-stable.
+///
+/// This is how decision + roadmap recall is wired through the citation DAG — the
+/// `on_prompt` gate injects these citations alongside the recalled rows so the
+/// model sees the official-docs context the decision rested on.
+///
+/// # Errors
+/// Propagates `Error::Surreal` from the traversal.
+pub async fn citations_for_nodes(db: &Surreal<Db>, nodes: &[RecordId]) -> Result<Vec<RecordId>> {
+    if nodes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut response = db
+        .query("SELECT VALUE ->cite->citation FROM $nodes")
+        .bind(("nodes", nodes.to_vec()))
+        .await?;
+    let per_node: Vec<Vec<RecordId>> = match response.take(0) {
+        Ok(rows) => rows,
+        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(Vec::new()),
+        Err(e) => return Err(e.into()),
+    };
+    let mut out: Vec<RecordId> = Vec::new();
+    for cit in per_node.into_iter().flatten() {
+        if !out.contains(&cit) {
+            out.push(cit);
+        }
+    }
+    Ok(out)
+}
+
 /// Seconds in the freshness window: a citation whose `updated_at` is older than
 /// this is STALE and must be re-researched against the official docs (C5).
 pub const FRESHNESS_WINDOW_SECS: i64 = 7 * 24 * 60 * 60;
