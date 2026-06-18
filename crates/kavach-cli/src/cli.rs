@@ -63,11 +63,17 @@ pub(crate) enum Commands {
     #[command(after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates.")]
     Status,
     /// Launch the HTMX web UI (server-rendered) on <http://127.0.0.1>:<port>.
-    #[command(after_help = "EXAMPLES:\n  kavach web              # serve on :777\n  kavach web --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the RPC daemon; start it first if pages show the offline panel.")]
+    #[command(after_help = "EXAMPLES:\n  kavach web              # serve on :7777\n  kavach web --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the surreal server; run `kavach servers up` first if pages show the offline panel.")]
     Web {
-        /// TCP port to bind on loopback (default 777).
+        /// TCP port to bind on loopback (default 7777, unprivileged).
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
+    },
+    /// Start/stop/inspect the background servers (`SurrealDB` store + web UI).
+    #[command(after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel.")]
+    Servers {
+        #[command(subcommand)]
+        action: ServersAction,
     },
     /// Run a gate hook (called by Claude Code / Cursor hooks).
     #[command(after_help = "EXAMPLES:\n  kavach gates stop --help          # gate purpose (no stdin)\n  echo '{\"hook_event_name\":\"Stop\",\"cwd\":\".\"}' | kavach gates stop --hook --vendor cursor\n\nWHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.")]
@@ -304,6 +310,28 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
     Toolbelt {
         #[command(subcommand)]
         action: ToolbeltAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum ServersAction {
+    /// Ensure the `SurrealDB` store + web UI are running; print the URL.
+    Up {
+        /// Web UI port (loopback). Default 7777 (unprivileged).
+        #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
+        port: u16,
+    },
+    /// Stop the web UI (the launchd-owned `SurrealDB` server is left running).
+    Down {
+        /// Web UI port to stop. Default 7777.
+        #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
+        port: u16,
+    },
+    /// Report up/down for the `SurrealDB` store + web UI.
+    Status {
+        /// Web UI port to probe. Default 7777.
+        #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
+        port: u16,
     },
 }
 

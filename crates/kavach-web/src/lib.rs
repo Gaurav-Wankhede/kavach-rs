@@ -1,9 +1,8 @@
 //! kavach-web — server-rendered HTMX UI for the Kavach memory store.
 //!
-//! Runs an axum server on `127.0.0.1:<port>` (default 777). It is a pure
-//! consumer of the kavach-rpc daemon over the Unix socket; it never opens
-//! SurrealDB (RocksDB is single-process — the daemon is the sole opener).
-//! Replaces the removed Dioxus desktop GUI.
+//! Runs an axum server on `127.0.0.1:<port>` (default 7777, unprivileged). It is
+//! a thin ws client of the standalone `surreal start` server; it never opens the
+//! `RocksDB` store directly. Replaces the removed Dioxus desktop GUI.
 
 pub mod error;
 pub mod layout;
@@ -18,8 +17,9 @@ use axum::Router;
 use axum::routing::{get, post};
 use tower_http::services::ServeDir;
 
-/// Default loopback port for the web UI.
-pub const DEFAULT_PORT: u16 = 777;
+/// Default loopback port for the web UI. Unprivileged (>1024) so it binds
+/// without root; 777 is privileged and fails with `EACCES` on macOS/Linux.
+pub const DEFAULT_PORT: u16 = 7777;
 
 /// Build the axum router with all page, fragment, write, and SSE routes plus the
 /// `/static` asset mount.

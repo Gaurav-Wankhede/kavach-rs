@@ -1,8 +1,8 @@
 //! `kavach-web` binary — launches the HTMX UI server.
 //!
-//! Usage: `kavach-web [PORT]` (default 777). Reads everything through the
-//! running kavach-rpc daemon; start it first with `kavach daemon install` +
-//! launchctl bootstrap if the pages show the offline panel.
+//! Usage: `kavach-web [PORT]` (default 7777). Thin ws client of the standalone
+//! `surreal start` server; start it via `kavach servers up` if pages show the
+//! offline panel.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()

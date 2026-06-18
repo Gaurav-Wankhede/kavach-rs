@@ -22,6 +22,7 @@ mod rag;
 mod rules;
 mod schema;
 mod security;
+mod servers;
 mod session;
 mod spec;
 mod status;
@@ -41,15 +42,19 @@ use crate::cli::Commands;
 pub(crate) fn dispatch(command: Commands) -> i32 {
     match command {
         Commands::Status => status::run(),
-        Commands::Web { port } => match kavach_web::serve(port) {
-            Ok(()) => 0,
-            Err(e) => {
-                if let Err(io_err) = io_safe::ewrite_or_exit(&format!("kavach web: {e}")) {
-                    return io_safe::into_exit_code(io_err);
+        Commands::Web { port } => {
+            servers::ensure_db_up();
+            match kavach_web::serve(port) {
+                Ok(()) => 0,
+                Err(e) => {
+                    if let Err(io_err) = io_safe::ewrite_or_exit(&format!("kavach web: {e}")) {
+                        return io_safe::into_exit_code(io_err);
+                    }
+                    1
                 }
-                1
             }
-        },
+        }
+        Commands::Servers { action } => servers::run(&action),
         Commands::Gates {
             gate_name,
             hook,
