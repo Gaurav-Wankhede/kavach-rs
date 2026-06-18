@@ -135,6 +135,30 @@ DEFINE FIELD created_at ON app_spec TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON app_spec TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_app_spec_project_key ON app_spec FIELDS project, entry_key UNIQUE;
 
+-- Citation (official-docs awareness; hybrid table+graph DAG root). Data lives
+-- here; DAG edges (cite/parent/depends_on) are RELATE graph relations (C2).
+DEFINE TABLE citation SCHEMAFULL;
+DEFINE FIELD project ON citation TYPE record<project>;
+DEFINE FIELD entry_key ON citation TYPE string;
+DEFINE FIELD OVERWRITE category ON citation TYPE string VALUE $value OR 'citation';
+DEFINE FIELD name ON citation TYPE string;
+DEFINE FIELD metadata ON citation TYPE array<object> DEFAULT [];
+DEFINE FIELD metadata.*.slug ON citation TYPE string;
+DEFINE FIELD metadata.*.desc ON citation TYPE string DEFAULT '';
+DEFINE FIELD metadata.*.url ON citation TYPE string
+    ASSERT string::len($value) > 0;
+DEFINE FIELD metadata.*.parent ON citation TYPE option<string>;
+DEFINE FIELD metadata.*.depends_on ON citation TYPE option<string>;
+DEFINE FIELD metadata.*.best_practice ON citation TYPE string DEFAULT '';
+DEFINE FIELD metadata.*.worst_practice ON citation TYPE string DEFAULT '';
+DEFINE FIELD metadata.*.tradeoff ON citation TYPE string DEFAULT '';
+DEFINE FIELD metadata.*.created_at ON citation TYPE datetime DEFAULT time::now();
+DEFINE FIELD metadata.*.updated_at ON citation TYPE datetime DEFAULT time::now();
+DEFINE FIELD access_count ON citation TYPE int DEFAULT 0;
+DEFINE FIELD created_at ON citation TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON citation TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_citation_project_key ON citation FIELDS project, entry_key UNIQUE;
+
 -- Entity (graph nodes)
 DEFINE TABLE entity SCHEMAFULL;
 DEFINE FIELD entity_type ON entity TYPE string;
@@ -401,3 +425,43 @@ DEFINE FIELD IF NOT EXISTS closed_at ON bulk_manifest TYPE option<datetime>;
 DEFINE INDEX IF NOT EXISTS idx_bulk_manifest_sweep ON bulk_manifest FIELDS sweep_id UNIQUE;
 DEFINE INDEX IF NOT EXISTS idx_bulk_manifest_status ON bulk_manifest FIELDS status;
 "#;
+
+#[cfg(test)]
+mod citation_schema_tests {
+    use crate::{apply_schema, open_memory};
+
+    async fn db_with_project() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
+        let db = open_memory().await.expect("mem db");
+        apply_schema(&db).await.expect("schema applies with citation table");
+        db.query("CREATE project:p SET slug = 'p', name = 'p'")
+            .await
+            .expect("seed project");
+        db
+    }
+
+    #[tokio::test]
+    async fn citation_with_url_is_accepted() {
+        let db = db_with_project().await;
+        db.query(
+            "CREATE citation SET project = project:p, entry_key = 'c1', name = 'SurrealDB', \
+             metadata = [{ slug: 'records', url: 'https://surrealdb.com/docs' }]",
+        )
+        .await
+        .expect("query ran")
+        .check()
+        .expect("a citation with a non-empty url is accepted");
+    }
+
+    #[tokio::test]
+    async fn citation_with_empty_url_is_rejected() {
+        let db = db_with_project().await;
+        let rejected = db
+            .query(
+                "CREATE citation SET project = project:p, entry_key = 'c2', name = 'X', \
+                 metadata = [{ slug: 's', url: '' }]",
+            )
+            .await
+            .map_or(true, |resp| resp.check().is_err());
+        assert!(rejected, "empty metadata url must fail the evidence-gate ASSERT");
+    }
+}
