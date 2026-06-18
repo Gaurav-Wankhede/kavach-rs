@@ -3,6 +3,7 @@
 //! Full-page handlers (`page`) return the whole shell; `fragment`/`data`
 //! handlers return just the inner section HTMX swaps on `sse:refresh`.
 
+pub mod citations;
 pub mod concepts;
 pub mod decisions;
 pub mod editor;

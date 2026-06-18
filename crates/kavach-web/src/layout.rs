@@ -16,6 +16,7 @@ const NAV: &[(&str, &str)] = &[
     ("/decisions", "Decisions"),
     ("/knowledge", "Knowledge"),
     ("/concepts", "Concepts"),
+    ("/citations", "Citations"),
     ("/mistakes", "Mistakes"),
     ("/runs", "Runs"),
 ];
