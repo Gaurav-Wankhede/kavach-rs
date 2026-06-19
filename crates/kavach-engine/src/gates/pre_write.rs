@@ -1,11 +1,4 @@
-// hub: pre_write pipeline orchestrator — calls 4 stages in order.
-// Stage 1: Security (path, secrets, python, memory)
-// Stage 2: Enforcement (skills, research, evidence, tests, new crate)
-// Stage 3: Guards (chain, rust, ts, sql, algo, platform P0 blocks)
-// Stage 4: Advisory (RAG, P1 warnings, Karpathy, tailwind, algo inject)
-//
-// `prelude` holds the Stage 0 phase/iteration advisories; `advisory_ctx` builds
-// the Stage 4 allow-time context block.
+// pre_write pipeline orchestrator: security → enforcement → guards → advisory.
 mod advisory_ctx;
 mod prelude;
 mod skill_match;
@@ -28,9 +21,16 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let ctx = WriteContext::extract(input);
     let mut session = kavach_session::get_or_create_session();
 
+    let comment_noise =
+        kavach_patterns::comment_noise_guard::advise(ctx.file_path, &ctx.effective_content);
+
     // Stage 0: SDLC-phase + iteration-scope advisories (demoted-to-advisory nudges).
     if let Some(advisory) = prelude::check(&ctx, &session) {
-        super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&advisory));
+        let merged = match &comment_noise {
+            Some(n) => format!("{advisory}\n\n{n}"),
+            None => advisory,
+        };
+        super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&merged));
         return Ok(());
     }
 
@@ -41,23 +41,28 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             return Ok(());
         }
         SecurityResult::AllowEarly(warn) => {
-            super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&warn));
+            let merged = match &comment_noise {
+                Some(n) => format!("{warn}\n\n{n}"),
+                None => warn,
+            };
+            super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&merged));
             return Ok(());
         }
         SecurityResult::Pass => {}
     }
 
-    // Stage 2: Enforcement — DEMOTED to advisory per roadmap.unit.gate-severity-classification.
-    // Routed through router::emit; the per-call budget resets on each new tool_use_id
-    // and the per-turn budget caps total fires at 10 to prevent the "stack of blocks"
-    // anti-pattern. SOURCE: roadmap.unit.gate-severity-router.
+    // Stage 2: Enforcement — advisory via router::emit (per-turn cap 10).
     super::router::observe_tool_call(&mut session, &input.tool_use_id);
     if let Some(advisory) = super::pre_write_enforcement::check(&ctx, input, &mut session) {
+        let merged = match &comment_noise {
+            Some(n) => format!("{advisory}\n\n{n}"),
+            None => advisory,
+        };
         super::router::emit(
             &mut session,
             kavach_hook::GateSeverity::P2Advise,
             "pre_write_enforcement",
-            &advisory,
+            &merged,
         );
         return Ok(());
     }
@@ -83,7 +88,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     }
 
     // Stage 4: Advisory collection (includes P1 advisories from tiered guards).
-    let context = advisory_ctx::build(&ctx, input, &mut session, &guard_result);
+    let mut context = advisory_ctx::build(&ctx, input, &mut session, &guard_result);
+    if let Some(n) = comment_noise {
+        context.push_str("\n\n");
+        context.push_str(&n);
+    }
 
     super::event_log::log_gate_decision(
         &session.session_id,
