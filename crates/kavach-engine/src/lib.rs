@@ -24,11 +24,7 @@ pub use gates::status_gate::{StatusGateVerdict, verify_status_promotion};
 pub use graph_infer::{InferRow, InferredRel, infer_relationships};
 pub use team::{DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};
 
-/// Live open-set census for a project.
-///
-/// `Some((runnable, blocked, cyclic))` card counts, or `None` on RPC outage
-/// (caller fails closed — treat as non-empty). The `kanban:empty` loop target
-/// reads `runnable` to know the backlog is drained.
+/// Open-set census `(runnable, blocked, cyclic)` for a project; `None` on RPC outage.
 #[must_use]
 pub fn open_set_census(project_slug: &str) -> Option<(u64, u64, u64)> {
     gates::stop_dispatch::open_set_census(project_slug)

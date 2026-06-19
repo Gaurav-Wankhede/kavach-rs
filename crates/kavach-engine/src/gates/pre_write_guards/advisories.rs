@@ -23,6 +23,11 @@ pub(super) fn collect(ctx: &WriteContext<'_>, acc: &mut Acc) {
     if let Some(a) = kavach_patterns::a11y_guard::advise(ctx.file_path, &ctx.effective_content) {
         advisories.push_str(&a);
     }
+    if let Some(a) =
+        kavach_patterns::comment_noise_guard::advise(ctx.file_path, &ctx.effective_content)
+    {
+        advisories.push_str(&a);
+    }
     if !advisories.is_empty() {
         acc.algo_advisory = Some(advisories);
     }

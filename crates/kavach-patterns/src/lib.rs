@@ -38,6 +38,7 @@ pub mod algo_complexity_guard;
 pub mod alloc_guard;
 pub mod arch_guard;
 pub mod banned_css_guard;
+pub mod comment_noise_guard;
 pub mod complexity_guard;
 pub mod crypto_guard;
 pub mod db_security_guard;

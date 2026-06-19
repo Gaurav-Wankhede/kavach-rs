@@ -254,10 +254,7 @@ pub struct SessionState {
     // PATTERN: kanban_sequence | SCOPE: project | CAP: AP | SEARCHED: 2026-04
     /// Currently active kanban card key. Stop gate blocks until marked done.
     pub current_kanban_card: String,
-    /// Live runnable-card count (`todo`+`in_progress`) for the project, written by
-    /// the stop gate from its dispatch census each turn. The `kanban:empty` loop
-    /// target reads THIS, not `current_kanban_card` — holding no card is not a
-    /// drained backlog. `None` = never censused (fail-closed: treat as non-empty).
+    /// Runnable card count for `kanban:empty` loop target; `None` = uncensused (fail-closed).
     pub loop_kanban_runnable: Option<u64>,
     /// Kanban cards that cannot start yet (blocked by prior cards).
     pub blocked_cards: Vec<String>,
