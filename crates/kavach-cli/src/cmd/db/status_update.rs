@@ -27,12 +27,12 @@ pub(super) fn run(
         return 1;
     }
 
-    // EVIDENCE GATE (owner directive 2026-06-18): a roadmap promotion to
+    // EVIDENCE GATE (operator directive 2026-06-18): a roadmap promotion to
     // `done`/`verified` is REFUSED unless the objective workspace witnesses
     // (cargo check+clippy+nextest+diff, or KAVACH_VERIFY_CMD) pass NOW. This binds
     // proof to the claim at the agent-facing entry point — the DB can no longer
     // record a completion claim that the build does not support (the false-`done`
-    // hole). Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band owner override.
+    // hole). Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band operator override.
     if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() != Ok("1") {
         use kavach_engine::StatusGateVerdict;
         // No card body is in scope at this CLI entry point (we hold only
@@ -57,7 +57,7 @@ pub(super) fn run(
                 let msg = format!(
                     "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
                      here (no Rust workspace and no KAVACH_VERIFY_CMD). Set KAVACH_VERIFY_CMD to a \
-                     command that proves the work, or KAVACH_VERIFY_BYPASS=1 for an owner override."
+                     command that proves the work, or KAVACH_VERIFY_BYPASS=1 for an operator override."
                 );
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);

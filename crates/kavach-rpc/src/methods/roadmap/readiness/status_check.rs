@@ -19,9 +19,9 @@ pub fn is_runnable_status(status: &str) -> bool {
         .is_ok_and(kavach_types::MemoryStatus::is_runnable)
 }
 
-// PARKING ABOLISHED (owner directive 2026-06-16, reaffirmed 2026-06-17): there is
+// PARKING ABOLISHED (operator directive 2026-06-16, reaffirmed 2026-06-17): there is
 // no `is_parked` selector. A card is either RUNNABLE or DELETED — never gate-flagged
-// or block-parked. The former `AGENT_BLOCKED:`/`OWNER-GATED:` content markers no
+// or block-parked. The former `AGENT_BLOCKED:`/`OPERATOR-GATED:` content markers no
 // longer suppress dispatch; an un-buildable card is narrowed-and-shipped or DELETED
 // (`kavach db delete --category roadmap --key ...`), per global CLAUDE.md `§delete_not_park`. The dispatch
 // predicate is now status + deps + umbrella only (see `lane_pick.rs`).
@@ -48,22 +48,44 @@ pub fn is_umbrella(title: &str) -> bool {
     UMBRELLA_MARKERS.iter().any(|m| lowered.contains(m))
 }
 
-/// `true` iff the card is an OWNER-DECISION GATE.
+/// `true` iff the card is an OPERATOR-DECISION GATE.
 ///
-/// A node whose "work" is an owner action (open a DB maintenance window, run a
+/// A node whose "work" is an operator action (open a DB maintenance window, run a
 /// deploy, greenlight a cohort, supply a credential), NOT agent-buildable code.
 /// A gate exists to BLOCK its dependents
-/// until the owner acts; it is never itself dispatched. Recognized by the `GATE:`
-/// title prefix — the convention every `roadmap.unit.gate.*` card uses.
+/// until the operator acts; it is never itself dispatched. Recognized by the `GATE`
+/// title prefix in either the bare `GATE:` or the parenthetical `GATE (operator):`
+/// form — both conventions `roadmap.unit.gate.*` cards use.
 ///
 /// Without this the selector serves a gate card as `next_open_task` (a gate has no
 /// declared deps, so it is trivially deps-satisfied + runnable), and the loop
-/// dispatches owner-only work the agent cannot perform — the exact churn observed
-/// on `gate.owner-db-maintenance-window` / `gate.owner-greenlights-*`. Mirrors
+/// dispatches operator-only work the agent cannot perform — the exact churn observed
+/// on `gate.operator-db-maintenance-window` / `gate.operator-greenlights-*`. Mirrors
 /// `is_umbrella`: a non-status dispatch-exclusion predicate.
+///
+/// PREDICATE-DRIFT FIX (2026-06-19): the prior `starts_with("gate:")` never
+/// matched the real `GATE (operator): …` titles (parenthetical between `GATE` and
+/// `:`), so every operator gate leaked into dispatch and re-looped forever. Match
+/// the `GATE` word boundary, then any chars up to the first `:`, tolerating the
+/// `(operator)` qualifier — without admitting unrelated words like "GATES to BDF".
 #[must_use]
 pub fn is_gate(title: &str) -> bool {
-    title.trim_start().to_lowercase().starts_with("gate:")
+    let lowered = title.trim_start().to_lowercase();
+    let Some(rest) = lowered.strip_prefix("gate") else {
+        return false;
+    };
+    // Immediately after `GATE`: either the bare `:` form, or whitespace/`(`
+    // introducing a qualifier like `(operator):`. A following alnum (e.g. "gates",
+    // "gateway") is NOT a gate. The colon must appear before any `—`/`-` dash so
+    // a prose title that merely starts with "Gate…" without the `:` convention
+    // does not false-positive.
+    match rest.chars().next() {
+        Some(':') => true,
+        Some(c) if c.is_whitespace() || c == '(' => {
+            rest.split_once(':').is_some_and(|(head, _)| !head.contains('—'))
+        }
+        _ => false,
+    }
 }
 
 /// Title phrases that mark a card as too large to build in one dispatch — it must
@@ -82,7 +104,7 @@ const DECOMPOSITION_MARKERS: [&str; 3] = [
 ///
 /// (a 127-page port, a multi-phase MAJOR unit, …). The stop-gate uses this to
 /// switch the dispatch envelope from "build it" to "decompose it FIRST, then
-/// build the children" (owner directive 2026-06-17: auto-decompose-then-build).
+/// build the children" (operator directive 2026-06-17: auto-decompose-then-build).
 /// Without it, the selector serves the same undecomposed umbrella every turn —
 /// the exact loop observed on `soundbak.dms` and `dashboard.internal-shell`.
 #[must_use]
@@ -91,9 +113,9 @@ pub fn is_needs_decomposition(title: &str) -> bool {
     DECOMPOSITION_MARKERS.iter().any(|m| lowered.contains(m))
 }
 
-// PARKING FULLY ABOLISHED (owner directive 2026-06-17): the `has_inert_blocker`
+// PARKING FULLY ABOLISHED (operator directive 2026-06-17): the `has_inert_blocker`
 // detector + `INERT_BLOCKER_LINE_PREFIXES` are REMOVED. The gate no longer
-// recognizes `OWNER-GATED:`/`AGENT_BLOCKED:` as a signal at all — there is no
+// recognizes `OPERATOR-GATED:`/`AGENT_BLOCKED:` as a signal at all — there is no
 // "reconcile-first" special-casing. Dispatch is purely status + deps + umbrella;
 // a card is RUNNABLE or DELETED. Decision: decision.arch.harness-degate-stale-blocker.
 

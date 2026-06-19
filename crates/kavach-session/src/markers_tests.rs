@@ -1,6 +1,6 @@
 use crate::state::SessionState;
 
-// ── User-focus override predicate (owner directive 2026-06-18) ───────────────
+// ── User-focus override predicate (operator directive 2026-06-18) ───────────────
 // `user_is_steering_this_turn()` is the stop-gate's authority check: a turn the
 // user steered must NOT be hijacked onto a different kanban card.
 

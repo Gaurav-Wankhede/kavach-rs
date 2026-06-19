@@ -1,4 +1,4 @@
-//! Focus-supremacy + card-ownership predicates. Single responsibility: the two
+//! Focus-supremacy + card-holdership predicates. Single responsibility: the two
 //! pure `SessionState` checks that decide whether the user's pinned scope
 //! outranks the kanban, and whether the active card could own this turn's edits.
 

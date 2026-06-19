@@ -28,7 +28,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         // cosmetic behavioral nag. It does NOT route through the 3-strike
         // behavioral breaker — a card left in_progress while work proceeds is a
         // lie to the work-ledger, and an invariant that can be waited out in N
-        // turns is not enforced (CWE-840). PARKING ABOLISHED (owner directive
+        // turns is not enforced (CWE-840). PARKING ABOLISHED (operator directive
         // 2026-06-16, reaffirmed 2026-06-17): there is no honest-park escape — the
         // block lifts on EXACTLY ONE of:
         //   (a) a real `kavach db status-update` for THIS card this turn, or
@@ -44,7 +44,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
                  was NOT updated. The loop will NOT advance until the DB reflects reality.\n\
                  CLOSE it:  kavach db status-update --project {project} --category roadmap \\\n\
                             --key {card} --status <done|verified>  (or in_progress if mid-work)\n\
-                 OR, if it is genuinely un-buildable (owner-only / external prerequisite),\n\
+                 OR, if it is genuinely un-buildable (missing credential / external \
+                 prerequisite — FILE that gap as its own card first),\n\
                  DELETE it (parking is abolished — runnable or deleted):\n\
                    kavach db delete --project {project} --category roadmap --key {card}\n\
                  Then re-stop. There is no timeout escape and no marker escape — \

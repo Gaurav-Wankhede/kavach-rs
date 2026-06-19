@@ -154,8 +154,8 @@ fn unknown_status_is_not_runnable() {
 
 #[test]
 fn genuine_leaf_card_stays_dispatchable() {
-    // No owner-gate path exists any more: a card with a runnable status and no
-    // unmet dependency is dispatchable, full stop (owner directive 2026-06-16).
+    // No operator-gate path exists any more: a card with a runnable status and no
+    // unmet dependency is dispatchable, full stop (operator directive 2026-06-16).
     let body = "Reusable Dioxus virtualization organism in ui-organisms. \
                 Windowing + DOM node recycling + overscan buffer.";
     let e = entry("frontend.virtual-list-organism", "todo", body);

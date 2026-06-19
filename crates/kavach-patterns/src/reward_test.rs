@@ -191,7 +191,7 @@ fn cannot_from_this_session_is_a_deferral() {
     assert_eq!(s, DEFERRAL_HANDOFF_PENALTY);
 }
 
-// --- Project-adaptive rubric (owner directive 2026-06-17: expand the RLAIF) ---
+// --- Project-adaptive rubric (operator directive 2026-06-17: expand the RLAIF) ---
 
 #[test]
 fn default_rubric_blind_to_bun_test() {

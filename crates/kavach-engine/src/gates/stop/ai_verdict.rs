@@ -1,6 +1,6 @@
 //! Autonomous completion verdict — WITNESS-DERIVED, never self-assessed.
 //!
-//! ROOT CAUSE THIS REWRITE FIXES (owner directive 2026-06-18): the prior RLAIF
+//! ROOT CAUSE THIS REWRITE FIXES (operator directive 2026-06-18): the prior RLAIF
 //! labeler scored a ±1 reward by STRING-MATCHING the assistant's own end-of-turn
 //! prose (`ADVANCE_SIGNALS` like "3-witness"/"all tests pass" vs `REGRESSION_
 //! SIGNALS`). That is self-assessment-as-truth: an agent that merely WROTE
@@ -12,7 +12,7 @@
 //! check+clippy+nextest+diff, or `KAVACH_VERIFY_CMD`), NEVER from the message
 //! text. `Passed` => +1, `Failed`/`SpawnError` => -1, `Unprovable` => abstain
 //! (`None`). No prose is inspected; an agent cannot talk its way to a reward.
-//! SOURCE: owner directive 2026-06-18 (witnesses, not assumptions) ·
+//! SOURCE: operator directive 2026-06-18 (witnesses, not assumptions) ·
 //! kavach `decision.arch.harness-rl.design-2026-06-05` (RLAIF intent preserved,
 //! the AI-feedback signal is now the objective build outcome, not self-report).
 

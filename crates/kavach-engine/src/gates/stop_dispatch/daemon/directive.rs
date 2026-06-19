@@ -1,6 +1,6 @@
 //! Fetch the project's DYNAMIC dispatch directive from the kavach DB.
 //!
-//! The stop-gate emits this owner-editable text (a `decision` row) instead of
+//! The stop-gate emits this operator-editable text (a `decision` row) instead of
 //! procedure prose compiled into the binary — change gate behavior per-project
 //! without a rebuild.
 

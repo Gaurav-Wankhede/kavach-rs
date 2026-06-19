@@ -1,6 +1,6 @@
 //! Balance-sheet ledger over a scored trajectory.
 //!
-//! Owner directive 2026-06-17: "its Ledger to the Kavach Database as Records of
+//! Operator directive 2026-06-17: "its Ledger to the Kavach Database as Records of
 //! Balance Sheet with Mistakes and Learning Awareness". PURE: decomposes a
 //! trajectory's events into typed CREDIT (verified work) and DEBIT (penalties:
 //! gate-block, deferral-handoff) line items + a net. The engine persists the

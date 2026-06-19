@@ -1,5 +1,5 @@
 //! Guard (P0, filesystem-collision): the FOREIGN-DIRTY-TREE guard (Case B of the
-//! user-focus fix, owner directive 2026-06-18).
+//! user-focus fix, operator directive 2026-06-18).
 //!
 //! ROOT CAUSE: the session-occupancy LEASE isolates CARDS, not the FILESYSTEM. Two
 //! editing sessions sharing ONE git checkout collide at the file level — session B's

@@ -1,4 +1,4 @@
-//! Tests for the WITNESS-DERIVED completion verdict (owner directive 2026-06-18).
+//! Tests for the WITNESS-DERIVED completion verdict (operator directive 2026-06-18).
 //!
 //! The verdict is bound to the objective workspace witnesses, NEVER to prose.
 //! These target the PURE [`verdict_from_witness`] map so they run instantly —

@@ -15,7 +15,7 @@ pub(super) fn keystone_repair() -> ControlFlow<()> {
                 "why",
                 "a `done` card FAILED the workspace witnesses (cargo check / \
                  nextest) — it is unfinished, not finished, and blocks every \
-                 dependent. A witness-failing keystone IS your work, not the owner's.",
+                 dependent. A witness-failing keystone IS your work — fix it now.",
             ),
             (
                 "action",

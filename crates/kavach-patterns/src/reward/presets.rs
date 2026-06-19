@@ -15,7 +15,7 @@ use regex::Regex;
 pub(super) const GATE_BLOCK_WEIGHT: i64 = -6;
 pub(super) const DEFERRAL_WEIGHT: i64 = -12;
 
-// Phase-4 enriched UNIVERSAL signals (stack-independent quality, owner directive
+// Phase-4 enriched UNIVERSAL signals (stack-independent quality, operator directive
 // 2026-06-17 "consider more parameters"). Detectable from event text in any
 // language, so they live in `with_universal` and apply to every rubric.
 /// A shipped stub / placeholder (`todo!`, `unimplemented!`, `TODO:`, `FIXME`,

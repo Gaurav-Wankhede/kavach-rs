@@ -38,7 +38,7 @@ fn claim_params_accept_optional_session_id() {
         legacy.session_id.is_none(),
         "absent session_id => None => status-only claim (pre-lease behaviour)"
     );
-    // Modern payload carries the lease owner.
+    // Modern payload carries the lease holder.
     let modern: ClaimCardParams = serde_json::from_value(
         serde_json::json!({"project": "p", "key": "k", "session_id": "sess-A"}),
     )
@@ -46,7 +46,7 @@ fn claim_params_accept_optional_session_id() {
     assert_eq!(
         modern.session_id.as_deref(),
         Some("sess-A"),
-        "session_id must thread through so the RPC fuses an owner lease"
+        "session_id must thread through so the RPC fuses an operator lease"
     );
 }
 

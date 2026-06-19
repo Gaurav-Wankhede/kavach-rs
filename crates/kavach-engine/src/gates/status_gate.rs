@@ -1,4 +1,4 @@
-//! Evidence-bound status-promotion gate (owner directive 2026-06-18).
+//! Evidence-bound status-promotion gate (operator directive 2026-06-18).
 //!
 //! ROOT CAUSE THIS GATE FIXES: a roadmap card reached `done`/`verified` as a bare
 //! DB state write on the agent's say-so.

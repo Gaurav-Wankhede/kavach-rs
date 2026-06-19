@@ -34,7 +34,7 @@ pub(super) fn lane_drained_context(lane: &str) -> String {
                  decision`, filtered to the lane above) for an actionable item; claim \
                  and START it. (2) Never dispatch a foreign-lane card or invent a PLAN \
                  phase. (3) When this lane holds nothing actionable, keep the loop open \
-                 and yield to the user's `Esc`; new lane work is owner-assigned via \
+                 and yield to the user's `Esc`; new lane work is operator-assigned via \
                  `kavach db lane-set --key <k> --lane <lane>`.",
             ),
         ],

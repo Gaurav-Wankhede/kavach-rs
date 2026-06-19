@@ -54,12 +54,11 @@ fn all_blocked_context_directs_dependency_first_resolution_not_user_handoff() {
         c.contains("dependency"),
         "names the prerequisite class: {c}"
     );
-    // The bug fix: a dependency block is AI-repairable work, NOT a user hand-off.
-    // The verdict must direct the agent to WALK to the blocker and BUILD it, and
-    // must NOT defer the unblock to the user.
+    // Total abolition: a dependency block is build-it-now work. The verdict must
+    // WALK to the blocker and BUILD it, never hand the unblock back, never escalate.
     assert!(
-        c.contains("Do NOT hand the unblock to the user"),
-        "refuses the user hand-off (the reported bug): {c}"
+        c.contains("Never hand work back"),
+        "refuses every hand-off: {c}"
     );
     assert!(
         c.contains("BUILD the blocker"),
@@ -73,9 +72,14 @@ fn all_blocked_context_directs_dependency_first_resolution_not_user_handoff() {
         c.contains("STALE/FALSE"),
         "directs correcting a stale/false dependency edge: {c}"
     );
+    // A missing credential is FILED as a card, never escalated as an operator gate.
     assert!(
-        c.contains("owner-only"),
-        "reserves escalation for genuinely owner-only blockers only: {c}"
+        c.contains("FILE it as a card") && c.contains("never escalate"),
+        "files credential gaps instead of escalating to an operator: {c}"
+    );
+    assert!(
+        !c.contains("operator-only") && !c.contains("operator-gated"),
+        "carries no operator-gate language: {c}"
     );
     // The verdict must STAMP the census it read (verdict_needs_leaf_evidence):
     // the live counts + proof the gate read the DB this stop.

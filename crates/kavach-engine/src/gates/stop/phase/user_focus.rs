@@ -1,6 +1,6 @@
 //! Guard (P0, user-authority): the USER-FOCUS OVERRIDE.
 //!
-//! ROOT CAUSE THIS FIXES (owner directive 2026-06-18): the stop gate's job is to
+//! ROOT CAUSE THIS FIXES (operator directive 2026-06-18): the stop gate's job is to
 //! drain the kanban autonomously — good for unattended loop engineering. But when
 //! the USER gives a specific instruction THIS turn, the gate would still fire
 //! `STOP BLOCKED -> NEXT TASK [Y]` and drag the session onto a DIFFERENT queued

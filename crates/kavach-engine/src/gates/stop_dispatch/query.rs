@@ -3,13 +3,13 @@ use super::card::SOURCE_DOWN_KEY;
 use super::daemon::{rpc_census_only, rpc_get_directive, rpc_next, rpc_next_only, rpc_open_census};
 
 /// The DB key (category `decision`) holding the project's DYNAMIC dispatch
-/// directive — the owner-editable instruction text the stop-gate emits in place
+/// directive — the operator-editable instruction text the stop-gate emits in place
 /// of hardcoded prose. Per-project; absent → the gate uses a minimal fallback.
 const DISPATCH_DIRECTIVE_KEY: &str = "gate.dispatch_directive";
 
 /// Project's dynamic dispatch-directive text, or `None` to use the fallback.
 /// The binary carries NO procedure prose — it fetches the instruction from the
-/// DB so each project (and the owner) controls gate behavior without a rebuild.
+/// DB so each project (and the operator) controls gate behavior without a rebuild.
 pub(crate) fn next_task_directive(project_slug: &str) -> Option<String> {
     if project_slug.is_empty() {
         return None;
@@ -17,11 +17,11 @@ pub(crate) fn next_task_directive(project_slug: &str) -> Option<String> {
     rpc_get_directive(project_slug, DISPATCH_DIRECTIVE_KEY)
 }
 
-/// DB-C — DYNAMIC GATE INJECTION (the core ask, owner directive 2026-06-18).
+/// DB-C — DYNAMIC GATE INJECTION (the core ask, operator directive 2026-06-18).
 /// Resolve a gate's runtime advisory text from its `gate.injection.<gate_name>`
 /// DB row (category `decision`). Generalizes the proven `gate.dispatch_directive`
 /// pattern to EVERY gate: the binary ships NO advisory prose for `gate_name`; it
-/// fetches the text from the DB at runtime, so the owner hot-edits any gate's
+/// fetches the text from the DB at runtime, so the operator hot-edits any gate's
 /// guidance with one `kavach db write` — no rebuild. FAIL-OPEN: an empty slug, a
 /// missing row, or a down daemon all return `None`, and the caller emits nothing
 /// (an absent injection NEVER blocks the gate — awareness is additive, not gating).
@@ -43,7 +43,7 @@ const REWARD_RUBRIC_KEY: &str = "gate.reward_rubric";
 /// (a stack-preset name). Empty slug / absent row / unknown name all fall back to
 /// the Rust-cargo default via [`kavach_patterns::reward::presets::by_name`], so a
 /// non-Rust project (TS, Python) scores its own stack's verify commands instead
-/// of zero. Owner directive 2026-06-17: "each project has different tech stacks".
+/// of zero. Operator directive 2026-06-17: "each project has different tech stacks".
 #[must_use]
 pub(crate) fn reward_rubric_for(project_slug: &str) -> kavach_patterns::reward::rubric::RewardRubric {
     let name = if project_slug.is_empty() {

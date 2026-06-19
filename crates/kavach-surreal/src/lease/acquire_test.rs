@@ -1,7 +1,7 @@
 //! Proof of the occupancy-lease CAS that the fused `claim_card` rests on
-//! (roadmap.unit.dispatch-lease-fused-claim). The lease is the owner+liveness
+//! (roadmap.unit.dispatch-lease-fused-claim). The lease is the holder+liveness
 //! layer that bare `entry_status` lacks: it is what stops a second LIVE session
-//! resuming a hung owner's card. These tests pin the three load-bearing
+//! resuming a hung holder's card. These tests pin the three load-bearing
 //! guarantees — single-winner under contention, fence-epoch monotonicity, and
 //! TTL-expiry reclaimability — at the primitive level, with a real in-memory
 //! `SurrealDB` so the WHERE-clause CAS is exercised, not mocked.
@@ -19,7 +19,7 @@ use chrono::{Duration, Utc};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 
-/// Seed a roadmap card with an UNHELD lease (the fresh-claim shape: no owner,
+/// Seed a roadmap card with an UNHELD lease (the fresh-claim shape: no holder,
 /// no `occupied_until`), so the first `acquire` must win it.
 async fn seed_unheld(db: &Surreal<Db>, id: &str) {
     db.query(
@@ -58,9 +58,9 @@ async fn two_racers_exactly_one_acquires() {
 }
 
 #[tokio::test]
-async fn reacquire_by_owner_bumps_fence_epoch() {
-    // AC4: the fence is monotonic. The owner re-acquiring (the renew path) must
-    // bump occupied_epoch so a stale evicted owner cannot forge a current token.
+async fn reacquire_by_holder_bumps_fence_epoch() {
+    // AC4: the fence is monotonic. The holder re-acquiring (the renew path) must
+    // bump occupied_epoch so a stale evicted holder cannot forge a current token.
     let db = open_memory().await.expect("mem db");
     seed_unheld(&db, "card-e").await;
 
@@ -72,9 +72,9 @@ async fn reacquire_by_owner_bumps_fence_epoch() {
     };
     let AcquireOutcome::Acquired(second) = acquire(&db, "roadmap", "card-e", "sess-A")
         .await
-        .expect("owner re-acquire")
+        .expect("holder re-acquire")
     else {
-        panic!("owner re-acquire must win (WHERE includes occupied_by=ours)");
+        panic!("holder re-acquire must win (WHERE includes occupied_by=ours)");
     };
     assert!(
         second.epoch > first.epoch,
@@ -88,7 +88,7 @@ async fn reacquire_by_owner_bumps_fence_epoch() {
 async fn expired_lease_is_reacquirable_by_foreign_session() {
     // AC5c: TTL expiry is the crash-recovery edge. A lease whose occupied_until
     // is in the PAST must be acquirable by a different session — otherwise a
-    // crashed owner would wedge the card forever.
+    // crashed holder would wedge the card forever.
     let db = open_memory().await.expect("mem db");
     let past = Utc::now()
         .checked_sub_signed(Duration::seconds(10))

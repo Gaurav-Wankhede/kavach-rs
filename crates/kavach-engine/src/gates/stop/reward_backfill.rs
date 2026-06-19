@@ -29,7 +29,7 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     if session.session_id.is_empty() {
         return;
     }
-    // E5 (reward only on a real transition, owner directive 2026-06-18): the
+    // E5 (reward only on a real transition, operator directive 2026-06-18): the
     // back-fill runs on EVERY stop, BEFORE the guard pipeline decides allow-stop
     // vs dispatch. So a user-focus / foreign-tree ALLOW-STOP — which skips the
     // card without any work — would otherwise still bank a reward (the spurious
@@ -50,7 +50,7 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     } else {
         session.current_kanban_card.clone()
     };
-    // Reward resolution order (RLAIF, owner directive 2026-06-17): the MECHANICAL
+    // Reward resolution order (RLAIF, operator directive 2026-06-17): the MECHANICAL
     // 3-witness receipt is ground truth and always wins; only when it is absent
     // does the AUTONOMOUS AI verdict supply the reward, filling the blind spot
     // where the oracle would otherwise abstain (the dominant 0.0 case that
@@ -64,7 +64,7 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     // turn's trajectory — the last filling the abstain blind spot with an
     // objective, stack-aware signal (a non-cargo project's `bun test`/`pytest`
     // now scores, not zero). Rubric loaded from the project's `gate.reward_rubric`
-    // DB row; absent → Rust default. Owner directive 2026-06-17 (expand the RLAIF).
+    // DB row; absent → Rust default. Operator directive 2026-06-17 (expand the RLAIF).
     let outcome = if session.goal_receipt_pass {
         RewardOutcome::Passed
     } else if let Some(v) = session.ai_verdict {
@@ -99,7 +99,7 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
 /// clean, negative (gate-block / deferral-handoff dominates) → not-clean, zero
 /// (no signal either way) → abstain. The rubric is loaded per-project so a
 /// non-Rust stack scores its own verify commands. Any read error → abstain
-/// (a missing tape must never fabricate a reward). Owner directive 2026-06-17.
+/// (a missing tape must never fabricate a reward). Operator directive 2026-06-17.
 fn rubric_outcome(session: &SessionState) -> RewardOutcome {
     let Ok(path) =
         kavach_patterns::eval_replay::default_trajectory_path(&session.session_id)

@@ -99,17 +99,9 @@ fn cycle_deadlock_context() -> String {
     )
 }
 
-/// Case 1: every remaining runnable card is blocked by an unmet dependency. A
-/// dependency block is NOT a stop — it is dependency-first work (leaf-first DAG
-/// traversal): the blocker is, in the overwhelming majority of cases, ITSELF an
-/// AI-buildable card. The agent walks to that blocker, RESEARCHES the real
-/// conflict, and BUILDS it (recursively) until a leaf becomes dispatchable — the
-/// same "AI-repairable, do NOT stop" stance the cycle case takes. Only a
-/// GENUINELY owner-only blocker (a missing credential, an unclear-authorization
-/// irreversible op, or an external gate the agent cannot touch) escalates to the
-/// user; a plain build prerequisite NEVER does. Mirrors the no-parking rule ("a
-/// task is RUNNABLE or DELETED — no park-flag, no block-marker escape") + the
-/// autonomous-loop precedence #4 (drain the queue, dependency-first).
+/// Case 1: every runnable card is dependency-blocked. NOT a stop, NOT a hand-off:
+/// WALK to the blocker, BUILD it leaf-first; a missing credential gets FILED as a
+/// card while the loop keeps draining. Yields only to `Esc`.
 fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
     let stamp = census_stamp(census);
     let block = kavach_hook::context_block(
@@ -117,31 +109,20 @@ fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
         &[
             ("census", &stamp),
             (
-                "why",
-                "Every dispatchable-status card is held back by an unmet dependency. \
-                 That is NOT a stop and NOT a user hand-off: a dependency is just the \
-                 NEXT thing to build (leaf-first DAG traversal). The blocker is almost \
-                 always itself an AI-buildable card — so resolve it, do not defer it.",
-            ),
-            (
                 "action",
-                "Do NOT stop. Do NOT hand the unblock to the user. The gate ALREADY read \
-                 the DB this stop (counts in `census` above) — do NOT re-run `kavach db \
-                 kanban` to repeat it. RESOLVE-AND-CONTINUE, dependency-first: (1) For \
-                 each remaining card, read its `DEPENDS_ON:`/`BLOCKED_BY:` line and WALK \
+                "Do NOT stop. Gate ALREADY read the DB this stop (`census` above) — do \
+                 NOT re-run `kavach db kanban`. RESOLVE-AND-CONTINUE, dependency-first: \
+                 (1) For each card, read its `DEPENDS_ON:`/`BLOCKED_BY:` line and WALK \
                  to the blocking card (`kavach db get --category roadmap --key \
-                 <blocker>`). (2) RESEARCH the ACTUAL conflict — WebSearch the current \
-                 authoritative source for the precise contract — and decide: is the \
-                 blocker AI-buildable, or genuinely owner-only (missing credential / \
-                 unclear-auth irreversible op / external gate)? (3) If AI-buildable: \
-                 claim and BUILD the blocker THIS turn (recurse to ITS blocker if \
-                 needed) until a leaf becomes dispatchable, then dispatch the dependent. \
-                 (4) If the dependency edge is STALE/FALSE (the prerequisite already \
-                 shipped, or never really applied): correct the `DEPENDS_ON:` line \
-                 (`kavach db write`) and dispatch. (5) ONLY a genuinely owner-only \
-                 blocker escalates — name it in one line, then KEEP BUILDING every \
-                 other reachable leaf; never let one owner-gated card halt the loop. \
-                 Yield to the user's `Esc`, never to a self-imposed stop.",
+                 <blocker>`). (2) RESEARCH the ACTUAL conflict (WebSearch the current \
+                 authoritative source). (3) BUILD the blocker THIS turn — recurse to \
+                 ITS blocker until a leaf dispatches, then dispatch the dependent. \
+                 (4) If the dependency edge is STALE/FALSE (prerequisite already \
+                 shipped, or never applied): correct the `DEPENDS_ON:` line (`kavach db \
+                 write`) and dispatch. (5) Missing credential / external gate: FILE it \
+                 as a card naming the exact gap (`kavach db write`), then KEEP BUILDING \
+                 every other reachable leaf. Never hand work back, never escalate, \
+                 never self-stop. Yield only to the user's `Esc`.",
             ),
         ],
     );

@@ -175,7 +175,7 @@ static HOT_PATH_RULES: LazyLock<Vec<HotPathRule>> = LazyLock::new(|| {
         HotPathRule {
             checker: |line| line.contains("Arc::clone(") || line.contains(".clone()"),
             pattern: "clone()/Arc::clone in hot path — atomic RMW ~10ns or heap copy",
-            fix: "Pass `&T` instead, or move ownership. Arc::clone is an atomic increment — costly in tight loops.",
+            fix: "Pass `&T` instead, or move holdership. Arc::clone is an atomic increment — costly in tight loops.",
         },
         HotPathRule {
             checker: |line| {

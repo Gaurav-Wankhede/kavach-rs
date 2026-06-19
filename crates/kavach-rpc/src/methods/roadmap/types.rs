@@ -76,9 +76,9 @@ pub struct TitleRow {
 pub struct ClaimCardParams {
     pub project: String,
     pub key: String,
-    /// Dispatching session's id — the lease owner recorded on a winning claim.
+    /// Dispatching session's id — the lease holder recorded on a winning claim.
     /// `None`/empty (legacy callers) skips the lease and claims status-only, the
-    /// pre-lease behaviour. A live caller MUST pass it so a hung owner's card is
+    /// pre-lease behaviour. A live caller MUST pass it so a hung holder's card is
     /// protected from foreign resume by a renewable TTL lease, not bare status.
     #[serde(default)]
     pub session_id: Option<String>,
@@ -92,7 +92,7 @@ pub struct ClaimCardResult {
     pub claimed: bool,
     /// Monotonic fence token from the acquired lease (`occupied_epoch`). `None`
     /// when no lease was taken (legacy status-only claim, or a non-winning
-    /// claim). A renewer MUST present this epoch so a stale owner evicted by TTL
+    /// claim). A renewer MUST present this epoch so a stale holder evicted by TTL
     /// cannot push `occupied_until` forward after another session reclaimed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub epoch: Option<i64>,
@@ -109,7 +109,7 @@ pub struct VerifyCardResult {
 /// Open-set census for the stop gate's board-drained branch.
 ///
 /// `runnable` = cards in a dispatchable status; `blocked` = those of them held
-/// back (blocked deps / owner-gate). `runnable == 0` → board truly empty;
+/// back (blocked deps / operator-gate). `runnable == 0` → board truly empty;
 /// `runnable > 0 && blocked == runnable` → every remainder blocked → clean
 /// `[ALL_BLOCKED]` stop.
 ///

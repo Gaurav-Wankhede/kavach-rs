@@ -94,7 +94,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<CryptoFinding> {
     if file_path.contains("kavach-patterns/src/") {
         return vec![];
     }
-    // Skip IronGate auth crate — it is the LEGITIMATE crypto owner per project
+    // Skip IronGate auth crate — it is the LEGITIMATE crypto authority per project
     // rule IRONGATE_SEPARATION ("IronGate OWNS all crypto — PASETO, tokens, key
     // management"). pasetors + AES-GCM (XChaCha20Poly1305 wrapper) usage inside
     // crates/services/irongate/ is policy-allowed; only Backend (core-auth,
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn allows_irongate_pasetors_per_separation_rule() {
-        // IronGate is the LEGITIMATE PASETO owner per project rule
+        // IronGate is the LEGITIMATE PASETO authority per project rule
         // IRONGATE_SEPARATION ("IronGate OWNS all crypto"). Backend remains
         // pasetors-free; only IronGate writes new pasetors:: code.
         let code = ["use pas", "etors::keys::Symme", "tricKey;"].concat();

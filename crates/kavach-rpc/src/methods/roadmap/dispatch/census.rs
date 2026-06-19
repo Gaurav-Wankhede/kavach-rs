@@ -17,7 +17,7 @@ const TABLE_ROADMAP: &str = "roadmap";
 ///
 /// `runnable` = cards in a dispatchable status (`todo`/`in_progress`).
 /// `blocked`  = of those, the ones whose declared dependencies are not yet
-///              done — pure topological waiting. There is no owner-gate bucket
+///              done — pure topological waiting. There is no operator-gate bucket
 ///              (removed 2026-06-16): a card is either runnable, waiting on a
 ///              dependency, or deleted.
 ///
@@ -51,9 +51,9 @@ pub async fn open_set_census(
             continue;
         }
         // Umbrella + gate cards are NEVER dispatch targets (mirrors pick_in_lane):
-        // an umbrella is an epic container; a gate is an owner-decision node. Counting
+        // an umbrella is an epic container; a gate is an operator-decision node. Counting
         // them as `runnable` forges a false "you have runnable work" census that keeps
-        // the stop-gate blocked on owner-only / container cards it can never dispatch.
+        // the stop-gate blocked on operator-only / container cards it can never dispatch.
         if is_umbrella(&e.title) || is_gate(&e.title) {
             continue;
         }

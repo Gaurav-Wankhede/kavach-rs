@@ -1,9 +1,64 @@
-use crate::methods::roadmap::readiness::{deps_satisfied, is_runnable_status};
+use crate::methods::roadmap::readiness::{
+    deps_satisfied, is_gate, is_needs_decomposition, is_runnable_status, is_umbrella,
+};
 
-#[expect(
-    dead_code,
-    reason = "shared test fixture builder; not every test in this module exercises every helper"
-)]
+fn entry_titled(key: &str, title: &str, status: &str) -> kavach_surreal::MemoryEntry {
+    let mut e = entry(key, status, "");
+    e.title = title.into();
+    e
+}
+
+/// The backlog tier MUST exclude gates / umbrellas / needs-decomposition cards —
+/// the same predicate set the primary selectors apply. This is the BYPASS the
+/// backlog path previously missed (it filtered only status+deps), letting an
+/// operator gate + a platform umbrella ("P-BDF … umbrella (PLAN-FIRST)") re-loop.
+fn backlog_pick(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {
+    entries.iter().find(|e| {
+        is_runnable_status(e.entry_status_str())
+            && deps_satisfied(e, entries)
+            && !is_gate(&e.title)
+            && !is_umbrella(&e.title)
+            && !is_needs_decomposition(&e.title)
+    })
+}
+
+#[test]
+fn backlog_excludes_operator_gate() {
+    let entries = vec![entry_titled(
+        "roadmap.unit.gate.operator-greenlights-money-paths",
+        "GATE (operator): money-path greenlight",
+        "todo",
+    )];
+    assert!(
+        backlog_pick(&entries).is_none(),
+        "an operator gate must NOT be dispatched by the backlog tier"
+    );
+}
+
+#[test]
+fn backlog_excludes_platform_umbrella() {
+    let entries = vec![entry_titled(
+        "roadmap.unit.platform.black-diamond-fire",
+        "P-BDF Black Diamond Fire platform umbrella (PLAN-FIRST)",
+        "todo",
+    )];
+    assert!(
+        backlog_pick(&entries).is_none(),
+        "a platform umbrella must NOT be dispatched by the backlog tier"
+    );
+}
+
+#[test]
+fn backlog_picks_real_card_over_gate_and_umbrella() {
+    let entries = vec![
+        entry_titled("g", "GATE (operator): something", "todo"),
+        entry_titled("u", "Platform umbrella thing", "todo"),
+        entry_titled("real", "Author POST /api/foo handler", "todo"),
+    ];
+    let picked = backlog_pick(&entries).expect("the real buildable card must be found");
+    assert_eq!(picked.entry_key, "real");
+}
+
 fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {
     kavach_surreal::MemoryEntry {
         id: None,

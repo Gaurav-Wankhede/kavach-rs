@@ -60,7 +60,7 @@ pub(crate) fn append_agent_dispatch(context: &mut String, intent_type: &str) {
         }
         "refactor" => {
             "\n[INVOKE_AGENT: aegis-guardian] [INVOKE_SKILL: rust]\n\
-             aegis-guardian verifies invariants; engineer applies fix. Skill rust owns ownership/lifetime moves.\n"
+             aegis-guardian verifies invariants; engineer applies fix. Skill rust owns holdership/lifetime moves.\n"
         }
         "implement" => {
             "\n[INVOKE_SKILL: writing-plans]\n\

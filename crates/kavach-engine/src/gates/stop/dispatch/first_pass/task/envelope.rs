@@ -2,7 +2,7 @@
 //!
 //! The binary carries NO procedure prose. It emits STATE (card key, status,
 //! claim-state, shape signals) + the project's DYNAMIC directive text fetched
-//! from the kavach DB (`decision` row `gate.dispatch_directive`). The owner edits
+//! from the kavach DB (`decision` row `gate.dispatch_directive`). The operator edits
 //! that row to change gate behavior per-project — no rebuild. Absent directive →
 //! a minimal generic fallback so a fresh project still loops.
 
@@ -22,7 +22,7 @@ pub(super) struct EnvelopeCtx<'a> {
 /// Emit `{prefixes}[AUTO_CONTINUE] {state facts}\n{directive}`.
 ///
 /// State facts are objective (key, status, claim-state, shape signals); the
-/// directive is owner-authored DATA. No decompose/reconcile/RLAIF prose is
+/// directive is operator-authored DATA. No decompose/reconcile/RLAIF prose is
 /// compiled in — the LLM reasons from the project's own directive + the card.
 pub(super) fn dispatch_envelope(c: &EnvelopeCtx<'_>) -> String {
     let claim_state = match (c.claimed, c.persisted_in_progress) {

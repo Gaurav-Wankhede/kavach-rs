@@ -28,7 +28,7 @@ pub(super) const SCALE_CONSISTENCY: &[AlgoRecommendation] = &[
         algo: "Raft (openraft) / single-writer lease via etcd or Postgres advisory lock",
         crate_name: "openraft | etcd-client | sqlx pg_advisory_lock",
         when: "Need single-writer for serialization; durable log of decisions; cluster size <=7.",
-        avoid_when: "Stateless workload (use random shard owner); cluster size >7 (consensus overhead dominates).",
+        avoid_when: "Stateless workload (use random shard holder); cluster size >7 (consensus overhead dominates).",
         complexity: "Raft O(log n) commit; lease renew O(1) per heartbeat",
         edge_cases: "Split-brain under network partition (use lease + fence token); leader-step-down latency; clock-bounded leases need monotonic clock.",
         source: "https://docs.rs/openraft/latest/openraft/",

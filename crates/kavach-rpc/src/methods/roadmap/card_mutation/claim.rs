@@ -55,12 +55,12 @@ pub async fn claim_card(
 
 /// The status-CAS won (`todo -> in_progress`). Fuse the occupancy lease so the
 /// winning session OWNS the card with a renewable TTL — without this the card
-/// has no owner/heartbeat and a hung owner cannot be told from a crashed one, so
+/// has no holder/heartbeat and a hung holder cannot be told from a crashed one, so
 /// a second live session would resume it (the concurrent double-resume defect).
 ///
 /// A legacy caller with no `session_id` keeps the pre-lease status-only claim.
 /// If the lease acquire FAILS after the status flip, the card must NOT be left
-/// half-claimed (`in_progress`, owner-less) — roll the status back to `todo` so it
+/// half-claimed (`in_progress`, holder-less) — roll the status back to `todo` so it
 /// returns to the dispatch pool, and report `claimed: false`. Fail closed: a
 /// claim is "won" only when BOTH the status flip and the lease succeed.
 async fn claim_won(
@@ -69,7 +69,7 @@ async fn claim_won(
     params: ClaimCardParams,
 ) -> Result<ClaimCardResult, ErrorObjectOwned> {
     let Some(session_id) = params.session_id.as_deref().filter(|s| !s.is_empty()) else {
-        // Legacy status-only claim: no owner, no lease (pre-lease behaviour).
+        // Legacy status-only claim: no holder, no lease (pre-lease behaviour).
         return Ok(claimed(params.key, None));
     };
     match kavach_surreal::lease::acquire(&state.db, TABLE_ROADMAP, &params.key, session_id)
@@ -78,8 +78,8 @@ async fn claim_won(
     {
         AcquireOutcome::Acquired(lease) => Ok(claimed(params.key, Some(lease.epoch))),
         // We won the status flip but a live lease is held by ANOTHER session — an
-        // inconsistent interleave (e.g. a prior owner mid-reclaim). Roll the
-        // status back so no card is stranded owner-less in_progress, and lose.
+        // inconsistent interleave (e.g. a prior holder mid-reclaim). Roll the
+        // status back so no card is stranded holder-less in_progress, and lose.
         AcquireOutcome::HeldBy { .. } => {
             roll_back_to_todo(state, project_id, &params.key).await?;
             Ok(not_claimed(params.key, "todo".to_owned()))
@@ -89,7 +89,7 @@ async fn claim_won(
 
 /// Undo a status flip whose lease did not land. Best-effort CAS back
 /// `in_progress -> todo`; a failure is logged, not swallowed, since a stuck
-/// owner-less card is a dispatch leak the time-based reclaim still recovers.
+/// holder-less card is a dispatch leak the time-based reclaim still recovers.
 async fn roll_back_to_todo(
     state: &AppState,
     project_id: &surrealdb_types::RecordId,
@@ -105,7 +105,7 @@ async fn roll_back_to_todo(
     )
     .await
     {
-        tracing::warn!(error = %e, key, "claim rollback to todo failed; reclaim sweep will recover the owner-less card");
+        tracing::warn!(error = %e, key, "claim rollback to todo failed; reclaim sweep will recover the holder-less card");
     }
     Ok(())
 }

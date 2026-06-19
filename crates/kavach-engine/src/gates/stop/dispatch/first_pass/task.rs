@@ -32,7 +32,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             .is_some_and(|s| s == "in_progress");
         // Lease-aware resume (closes concurrent double-resume): an in_progress card
         // is resumable by THIS session only if no OTHER session holds a live lease.
-        // A live foreign lease => its owner is still working (heartbeat-renewed), so
+        // A live foreign lease => its holder is still working (heartbeat-renewed), so
         // resuming would double-run it — fall through instead. No holder / my own
         // holder / unobservable lease (fail-open) => safe to resume.
         let foreign_live_lease = live_lease_holder(&priority)

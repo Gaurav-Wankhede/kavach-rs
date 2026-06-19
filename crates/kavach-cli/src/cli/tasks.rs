@@ -2,7 +2,7 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub(crate) enum TasksAction {
-    /// Audit Claude Code `TaskCreate` JSON store and infer per-task project ownership.
+    /// Audit Claude Code `TaskCreate` JSON store and infer per-task project holdership.
     /// Reads ~/.claude/tasks/<user>/<id>.json files and prints a table mapping each
     /// task to its likely project via keyword matching.
     Audit {

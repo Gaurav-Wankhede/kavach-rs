@@ -99,7 +99,7 @@ pub async fn write(ctx: &AppState, params: WriteParams) -> Result<WriteResult, E
     }
 
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
-    // DISPATCH-GATING FIX (owner directive 2026-06-17 "honor graph deps in
+    // DISPATCH-GATING FIX (operator directive 2026-06-17 "honor graph deps in
     // dispatch"): the daemon is the SINGLE writer for `kavach db write` (the CLI
     // routes here), but dispatch readiness (`deps_satisfied`) reads deps ONLY
     // from CONTENT (`parse_declared_deps`). Relationships arrive as graph edges

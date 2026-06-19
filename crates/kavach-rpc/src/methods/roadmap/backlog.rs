@@ -1,4 +1,6 @@
-use super::readiness::{deps_satisfied, is_runnable_status};
+use super::readiness::{
+    deps_satisfied, is_gate, is_needs_decomposition, is_runnable_status, is_umbrella,
+};
 use super::types::{NextOpenTaskParams, NextTaskResult};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
@@ -40,9 +42,16 @@ pub async fn promote_next_backlog(
     let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
+    // Backlog tier applies the SAME gate/umbrella/decomp exclusions as the primary selectors.
     let mut ready: Vec<_> = entries
         .into_iter()
-        .filter(|e| is_runnable_status(e.entry_status_str()) && deps_satisfied(e, &dep_pool))
+        .filter(|e| {
+            is_runnable_status(e.entry_status_str())
+                && deps_satisfied(e, &dep_pool)
+                && !is_gate(&e.title)
+                && !is_umbrella(&e.title)
+                && !is_needs_decomposition(&e.title)
+        })
         .collect();
     if ready.is_empty() {
         return Ok(None);

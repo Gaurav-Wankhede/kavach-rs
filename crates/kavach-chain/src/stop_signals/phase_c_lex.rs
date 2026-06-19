@@ -5,14 +5,14 @@ const DEFERRED_DISMISSAL_POS: &str = concat!(
     r"(?i)\b(?:I\s+)?(?:could|might|may)\s+(?:look|check|investigate)\s+(?:later|next\s+time)\b",
     r"|\b(?:deferred|postponed|left\s+for)\s+(?:later|future|another\s+time)\b",
     r"|\b(?:optional|nice[\s-]?to[\s-]?have|can\s+wait)\b",
-    // Blocked/deferred excuse patterns: owner decisions, infrastructure, external dependency
-    r"|\b(?:blocked|deferred)[\w\W]{0,80}?\b(?:owner|decision|infrastructure|external|dependency|stable|release)\b",
+    // Blocked/deferred excuse patterns: operator decisions, infrastructure, external dependency
+    r"|\b(?:blocked|deferred)[\w\W]{0,80}?\b(?:operator|decision|infrastructure|external|dependency|stable|release)\b",
     // Synonyms: shelved, tabled, parked, sidelined
     r"|\b(?:shelved|tabled|parked|sidelined)[\w\W]{0,60}?\b(?:awaiting|requires?|due\s+to|wait(?:ing)?)\b",
     // Design decision exemption (when no action was taken)
     r"|\b(?:design\s+decision)[\w\W]{0,60}?\b(?:not\s+a\s+bug|blocked|deferred)\b",
     // Markdown table or structured summary with excuse rows
-    r"|\|\s*\w+[\w\s]*\s*\|\s*(?:owner|decision|dependency|reason)\b",
+    r"|\|\s*\w+[\w\s]*\s*\|\s*(?:operator|decision|dependency|reason)\b",
     // Uppercase DEFERRED / BLOCKED patterns
     r"|\b(?:DEFERRED|BLOCKED|SIDELINED)[\w\s]*(?:DECISION|DEPENDENCY|ACTION)\b",
 );

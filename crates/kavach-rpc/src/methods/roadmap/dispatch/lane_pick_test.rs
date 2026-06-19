@@ -33,12 +33,12 @@ fn leased_card(key: &str, holder: &str, secs_from_now: i64) -> MemoryEntry {
 
 fn marked_card(key: &str, marker: &str) -> MemoryEntry {
     let mut c = card(key, "todo", None);
-    c.content = format!("{marker} owner-only, no agent code.");
+    c.content = format!("{marker} operator-only, no agent code.");
     c
 }
 
-// PARKING ABOLISHED (owner directive 2026-06-16, reaffirmed 2026-06-17): the
-// former `AGENT_BLOCKED:`/`OWNER-GATED:` content markers are INERT — they no
+// PARKING ABOLISHED (operator directive 2026-06-16, reaffirmed 2026-06-17): the
+// former `AGENT_BLOCKED:`/`OPERATOR-GATED:` content markers are INERT — they no
 // longer suppress dispatch (the `is_parked` selector was removed). A card is
 // runnable or DELETED. These tests pin the new contract: a runnable card is
 // selected on status + deps + umbrella alone, regardless of any leftover marker
@@ -55,8 +55,8 @@ fn agent_blocked_marker_does_not_suppress_dispatch() {
 }
 
 #[test]
-fn owner_gated_marker_does_not_suppress_dispatch() {
-    let cards = vec![marked_card("p", "OWNER-GATED:")];
+fn operator_gated_marker_does_not_suppress_dispatch() {
+    let cards = vec![marked_card("p", "OPERATOR-GATED:")];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
     assert_eq!(
         picked.expect("a runnable card dispatches despite the inert marker").key,
@@ -68,7 +68,7 @@ fn owner_gated_marker_does_not_suppress_dispatch() {
 fn priority_order_decides_between_two_runnable_cards() {
     // `entries` is pre-sorted by priority; the first match wins. A marker on the
     // first card no longer demotes it — both are runnable, the first is picked.
-    let cards = vec![marked_card("first", "OWNER-GATED:"), card("second", "todo", None)];
+    let cards = vec![marked_card("first", "OPERATOR-GATED:"), card("second", "todo", None)];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
     assert_eq!(picked.expect("the first runnable card").key, "first");
 }
@@ -138,7 +138,7 @@ fn two_pass_picks_own_lane_then_unlaned_never_foreign() {
     assert_ne!(foreign.expect("a card").key, "theirs");
 }
 
-// ── Multi-session task-steal guard (owner directive 2026-06-18) ──────────────
+// ── Multi-session task-steal guard (operator directive 2026-06-18) ──────────────
 // Two terminals (project + research) MUST NOT grab each other's live card. A
 // card LIVE-leased by a DIFFERENT session is skipped; my own / expired / unleased
 // cards remain selectable.
@@ -161,7 +161,7 @@ fn my_own_live_lease_is_still_selectable() {
 
 #[test]
 fn expired_lease_is_selectable_by_anyone() {
-    // An expired lease (crashed/abandoned owner) is free — the reclaim path.
+    // An expired lease (crashed/abandoned holder) is free — the reclaim path.
     let cards = vec![leased_card("orphan", "sess-A", -10)];
     let picked = pick_in_lane(&cards, &cards, "sess-B", |e| lane_matches(e, None));
     assert_eq!(picked.expect("expired lease is free").key, "orphan");
@@ -183,7 +183,7 @@ fn empty_me_treats_any_live_lease_as_foreign_fail_closed() {
     assert!(picked.is_none(), "empty session id fails closed — never steals a live card");
 }
 
-// ── Stale-claim sweep predicate (E4, owner directive 2026-06-18) ─────────────
+// ── Stale-claim sweep predicate (E4, operator directive 2026-06-18) ─────────────
 // A card stuck `in_progress` with an EXPIRED lease = a crashed session's orphan;
 // the dispatch sweep resets it to `todo`. A live lease or an un-leased card is NOT
 // stale.
@@ -203,7 +203,7 @@ fn expired_lease_on_in_progress_is_a_stale_claim() {
 
 #[test]
 fn live_lease_on_in_progress_is_not_stale() {
-    assert!(!claimed_card("active", "live-sess", 300).is_stale_claim(), "owner still working");
+    assert!(!claimed_card("active", "live-sess", 300).is_stale_claim(), "holder still working");
 }
 
 #[test]

@@ -56,7 +56,7 @@ fn is_test_context(fp: &str, content: &str) -> bool {
 /// patterns are P0 FALSE-POSITIVES there. A `fn main() -> Result<()>` MUST end in
 /// `Ok(())`, which the `EMPTY_RESPONSE` regex matched, blocking every binary `main`.
 /// Scope: `/tools/` + `/bin/` dirs + `main.rs` under a non-service crate.
-/// Ref: owner directive 2026-06-18 (dbx migrator binary blocked by this FP).
+/// Ref: operator directive 2026-06-18 (dbx migrator binary blocked by this FP).
 #[inline]
 fn is_binary_entrypoint(fp: &str) -> bool {
     let l = fp.to_lowercase();

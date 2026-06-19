@@ -83,7 +83,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push('\n');
         full.push_str(loophole_ctx);
     }
-    // DB-C dynamic injection: the owner-editable `gate.injection.clean_exit` DB row,
+    // DB-C dynamic injection: the operator-editable `gate.injection.clean_exit` DB row,
     // if present, rides along here — proving the binary carries NO advisory prose
     // for this gate; the text is data-driven + hot-editable (no rebuild). Absent →
     // nothing appended (fail-open). Any gate adopts this with one `gate_injection` call.

@@ -197,7 +197,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // `[AUTO_CONTINUE]`, and clean_exit is the only terminal stop.
     let pipeline: &[fn(&mut StopCtx<'_>) -> ControlFlow<()>] = &[
         phase::iteration,
-        // USER-FOCUS OVERRIDE (owner directive 2026-06-18): runs BEFORE the
+        // USER-FOCUS OVERRIDE (operator directive 2026-06-18): runs BEFORE the
         // dispatch chain. When the user steered THIS turn and no card is mid-work,
         // it allows a clean stop so the gate does NOT drag the session onto a
         // different queued card than the user's live instruction. On turns the user

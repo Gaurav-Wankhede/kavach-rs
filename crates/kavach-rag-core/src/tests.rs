@@ -7,7 +7,7 @@ fn sample_tree() -> RagTree {
     let rust_skill = TreeNode {
         id: "skills/rust".into(),
         title: "Rust production guard".into(),
-        summary: "error handling ownership clippy production code review".into(),
+        summary: "error handling holdership clippy production code review".into(),
         keywords: vec!["unwrap".into(), "clippy".into(), "clone".into()],
         file_patterns: vec!["*.rs".into()],
         body: "Use ? for error propagation.".into(),

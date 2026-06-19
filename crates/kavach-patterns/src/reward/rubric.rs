@@ -1,6 +1,6 @@
 //! Project-adaptive reward rubric — a weighted signal vector.
 //!
-//! Owner directive 2026-06-17: "expand the RLAIF — each project has different
+//! Operator directive 2026-06-17: "expand the RLAIF — each project has different
 //! patterns and tech stacks". Each [`SignalRule`] matches an event class via a
 //! regex and contributes a signed weight. The default rubric reproduces the
 //! Rust/cargo weights verbatim; a project supplies extra/override rules via the

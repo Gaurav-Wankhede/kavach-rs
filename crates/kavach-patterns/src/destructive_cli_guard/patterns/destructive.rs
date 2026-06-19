@@ -37,7 +37,7 @@ pub(super) const ROWS: &[RawRow] = &[
         C::PermissionsWipe,
         P0Block,
         "chown-recursive-system",
-        "chown -R on / or system path destroys ownership boundaries. Refuse.",
+        "chown -R on / or system path destroys holdership boundaries. Refuse.",
         r"(?i)\bchown\s+(?:[a-z]+\s+)*-[a-z]*r[a-z]*\s+\S+\s+(?:/|/etc|/usr|/bin|/var|/root)\b",
     ),
     (

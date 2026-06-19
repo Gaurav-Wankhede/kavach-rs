@@ -15,8 +15,8 @@ pub use status_check::{is_gate, is_needs_decomposition, is_runnable_status, is_u
 /// a card may legitimately declare a prerequisite owned by another project.
 ///
 /// Pure topological ordering: a card whose prerequisite is not yet done simply
-/// waits its turn. There is no owner-gate / block path — a card that cannot be
-/// built is deleted, never flagged (owner directive 2026-06-16).
+/// waits its turn. There is no operator-gate / block path — a card that cannot be
+/// built is deleted, never flagged (operator directive 2026-06-16).
 #[must_use]
 pub fn deps_satisfied(
     entry: &kavach_surreal::MemoryEntry,

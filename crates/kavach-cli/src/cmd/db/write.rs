@@ -200,7 +200,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
             Err(io_err) => return into_exit_code(io_err),
         },
     };
-    // DISPATCH-GATING FIX (owner directive 2026-06-17 "honor graph deps in
+    // DISPATCH-GATING FIX (operator directive 2026-06-17 "honor graph deps in
     // dispatch"): the `--depends-on` flag projects graph edges (below), but the
     // dispatch readiness check reads deps ONLY from the card's CONTENT
     // (`deps_satisfied` -> `parse_declared_deps(&entry.content)`), so a flag-only
