@@ -342,7 +342,7 @@ impl SessionState {
             return true;
         }
         match self.loop_target.as_str() {
-            "kanban:empty" => self.current_kanban_card.is_empty(),
+            "kanban:empty" => matches!(self.loop_kanban_runnable, Some(0)),
             // Proof-gated: a goal is "reached" only when a verified oracle
             // receipt set `goal_receipt_pass`. `goal_achieved` is a legacy
             // fallback for oracle-less goals — a self-asserted flag, kept solely
@@ -653,7 +653,7 @@ mod tests {
     fn loop_target_reached_kanban_empty() {
         let mut s = SessionState::default();
         s.start_loop("kanban:empty");
-        s.current_kanban_card = String::new();
+        s.loop_kanban_runnable = Some(0);
         assert!(s.loop_target_reached());
     }
 
@@ -661,7 +661,14 @@ mod tests {
     fn loop_target_reached_kanban_not_empty() {
         let mut s = SessionState::default();
         s.start_loop("kanban:empty");
-        s.current_kanban_card = "task-1".into();
+        s.loop_kanban_runnable = Some(6);
+        assert!(!s.loop_target_reached());
+    }
+
+    #[test]
+    fn loop_target_kanban_uncensused_fails_closed() {
+        let mut s = SessionState::default();
+        s.start_loop("kanban:empty");
         assert!(!s.loop_target_reached());
     }
 

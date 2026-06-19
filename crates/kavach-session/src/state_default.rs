@@ -126,6 +126,7 @@ impl Default for SessionState {
             // ARCH: KanbanSequenceDefaults
             // PATTERN: kanban_sequence | SCOPE: project | CAP: AP | SEARCHED: 2026-04
             current_kanban_card: String::new(),
+            loop_kanban_runnable: None,
             blocked_cards: Vec::new(),
             user_focus: String::new(),
 

@@ -106,7 +106,7 @@ fn stop() -> i32 {
 }
 
 fn status() -> i32 {
-    let session = kavach_session::get_or_create_session();
+    let mut session = kavach_session::get_or_create_session();
 
     if let Err(io_err) = print_or_exit("[LOOP_STATUS]") {
         return into_exit_code(io_err);
@@ -130,6 +130,10 @@ fn status() -> i32 {
         let start_line = format!("start_turn: {}", session.loop_start_turn);
         if let Err(io_err) = print_or_exit(&start_line) {
             return into_exit_code(io_err);
+        }
+        if session.loop_target == "kanban:empty" {
+            session.loop_kanban_runnable =
+                kavach_engine::open_set_census(&session.project).map(|(runnable, ..)| runnable);
         }
         let reached_line = format!("target_reached: {}", session.loop_target_reached());
         if let Err(io_err) = print_or_exit(&reached_line) {
