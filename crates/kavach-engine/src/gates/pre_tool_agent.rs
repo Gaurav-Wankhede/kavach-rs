@@ -10,7 +10,33 @@ mod tests;
 
 pub(crate) use contract::get_contract;
 
+use kavach_hook::Vendor;
 use kavach_types::HookInput;
+
+/// Smallest doer model per harness — orchestrate strong, execute cheap.
+const fn smallest_doer_model(vendor: Vendor) -> &'static str {
+    match vendor {
+        Vendor::Cursor => "composer-2.5",
+        _ => "haiku",
+    }
+}
+
+/// Build the full `BrainOS` spawn-injection block for a subagent spawn — shared by
+/// the `Agent` and `Task` tool paths. `None` only when nothing was injected.
+pub(crate) fn spawn_injection(description: &str, agent_type: &str) -> Option<String> {
+    let session = kavach_session::get_or_create_session();
+    let brain = context::BrainContext {
+        project: &session.project,
+        phase: session.current_phase.as_str(),
+        doer_model: smallest_doer_model(kavach_hook::output_vendor()),
+    };
+    let lines = context::build_agent_context(description, get_contract(agent_type), &brain);
+    if lines.is_empty() {
+        None
+    } else {
+        Some(lines.join("\n"))
+    }
+}
 
 /// PreToolUse:Agent handler. Exit 0 allows (with optional context); a research
 /// nudge is advisory-only. `Ok(())` always (uniform gate dispatch).
@@ -48,17 +74,11 @@ pub(crate) fn handle_agent(input: &HookInput) -> Result<(), crate::error::Engine
         return Ok(());
     }
 
-    // 2. Look up contract, persist session (spawn tracking is in subagent.rs).
-    let contract = get_contract(agent_type);
+    // 2. Persist session (spawn tracking is in subagent.rs).
     session.save().ok();
 
-    // 3. Build + emit context injection.
-    let ctx = context::build_agent_context(input.get_string("description"), contract);
-    let joined = ctx.join("\n");
-    drop(kavach_hook::exit_pre_tool_allow(if ctx.is_empty() {
-        None
-    } else {
-        Some(&joined)
-    }));
+    // 3. Emit BrainOS context injection (task + contract + model + research + return).
+    let injection = spawn_injection(input.get_string("description"), agent_type);
+    drop(kavach_hook::exit_pre_tool_allow(injection.as_deref()));
     Ok(())
 }
