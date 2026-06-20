@@ -42,10 +42,11 @@ fn free_bytes_on_db_volume() -> Option<u64> {
 /// holds: a full disk is a runnable task (reclaim space), not an external block.
 #[must_use]
 pub(super) fn self_heal_directive(free_mib: u64) -> String {
-    format!(
-        "[DISK_RECLAIM — ACT, DO NOT HAND BACK] The kanban source is unreachable \
-         because the DB volume is critically low ({free_mib} MiB free) — SurrealDB's \
-         WAL cannot append. This is NOT an external block and NOT an owner task: \
+    // Tag + {free_mib} + `Esc` yield-contract frozen; the reclaim procedure is
+    // research-refreshed (fail-soft to the proven literal that names `cargo clean`).
+    let body = crate::gates::directive_cache::dyn_directive(
+        "stop.disk-reclaim-procedure",
+        "This is NOT an external block and NOT an owner task: \
          build artifacts are regenerable and YOU hold the shell, so YOU free the \
          space NOW.\n\
          DO THIS TURN (do not narrate, do not 'Hold', do not write 'Owner — run …'):\n\
@@ -57,7 +58,12 @@ pub(super) fn self_heal_directive(free_mib: u64) -> String {
          decision row), then resume dispatch from the reconciled kanban.\n\
          Handing `rm` to the operator, 'Holding', or 'no agent action can change \
          it' are FORBIDDEN here — freeing your own build scratch IS the agent \
-         action. The loop yields only to the user's `Esc`."
+         action. The loop yields only to the user's `Esc`.",
+    );
+    format!(
+        "[DISK_RECLAIM — ACT, DO NOT HAND BACK] The kanban source is unreachable \
+         because the DB volume is critically low ({free_mib} MiB free) — SurrealDB's \
+         WAL cannot append. {body}"
     )
 }
 

@@ -48,16 +48,18 @@ pub(crate) fn run_task_completed(input: &HookInput) -> Result<(), EngineError> {
     let completed_str = session.tasks_completed.to_string();
     // A completed task may unblock dependents in the DAG. Emit a wake advisory
     // so the parent re-ticks the DagScheduler (event-driven, no polling loop).
+    // Tag + "DagScheduler" mechanic frozen; the imperative is research-refreshed.
+    let dag_wake = crate::gates::directive_cache::dyn_directive(
+        "teammate.dag-wake",
+        "[DAG_WAKE] re-tick DagScheduler — task closed may unblock dependents",
+    );
     let context = kavach_hook::context_block(
         "TASK_COMPLETED",
         &[
             ("id", task_id),
             ("subject", task_subject),
             ("n", &completed_str),
-            (
-                "advisory",
-                "[DAG_WAKE] re-tick DagScheduler — task closed may unblock dependents",
-            ),
+            ("advisory", &dag_wake),
         ],
     );
     drop(kavach_hook::exit_notification_context(&context));

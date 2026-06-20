@@ -14,6 +14,7 @@ pub(crate) mod bulk_event;
 pub(crate) mod completion_guard;
 pub mod config_change;
 pub mod cwd_changed;
+pub(crate) mod directive_cache;
 pub(crate) mod duplicate_tool_guard;
 pub mod elicitation;
 pub(crate) mod env_guard;

@@ -89,23 +89,27 @@ pub(super) fn append_context_blocks(
     if ultracode && in_subagent {
         // Already executing as a delegated agent — Workflow nesting is one level,
         // so DO the assigned task directly; do not spawn another Workflow.
-        context.push_str(
-            "\n[ULTRACODE] You are already running INSIDE a Workflow subagent — \
+        context.push_str("\n[ULTRACODE] ");
+        context.push_str(&crate::gates::directive_cache::dyn_directive(
+            "ultracode.in-subagent",
+            "You are already running INSIDE a Workflow subagent — \
              nesting is one level only, so do NOT call the Workflow tool again. \
              Execute the task you were dispatched with and return its result.",
-        );
+        ));
     } else if ultracode {
         // Top-level Claude Code loop: the Workflow tool is available and a call is
         // MANDATORY this turn. This is the lever against the failure mode where the
         // model answers with a hedging essay / option-menu instead of orchestrating.
-        context.push_str(
-            "\n[ULTRACODE] Workflow orchestration requested (CC 2.1.160). The \
+        context.push_str("\n[ULTRACODE] ");
+        context.push_str(&crate::gates::directive_cache::dyn_directive(
+            "ultracode.top-level",
+            "Workflow orchestration requested. The \
              Workflow tool IS available in this Claude Code session. You MUST call \
              Workflow this turn — author a multi-agent fan-out for the task and run \
              it. Do NOT answer with a prose essay, a two-readings hedge, an option \
              menu, or a \"want me to…?\" question in place of the call. Adversarially \
              verify each delegated result before trusting it.",
-        );
+        ));
     }
 
     if let Some(test_ctx) = super::super::test_inject::build_test_context(session) {

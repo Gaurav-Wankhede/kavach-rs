@@ -14,18 +14,30 @@ pub(crate) fn append_forbidden(context: &mut String, forbidden: &[String]) {
     }
 }
 
-/// Append memory DB reminder for memory-type intents.
+use crate::gates::directive_cache::dyn_directive;
+
+/// Append memory DB reminder for memory-type intents. The `[MEMORY_DB]` tag is a
+/// fixed contract; the imperative after it is research-cached (fail-soft literal).
 pub(crate) fn append_memory_db(context: &mut String, intent_type: &str) {
     if intent_type == "memory" {
-        context.push_str("\n[MEMORY_DB] Use kavach db write — NOT MEMORY.md files\n");
+        context.push_str("\n[MEMORY_DB] ");
+        context.push_str(&dyn_directive(
+            "intent.memory-db",
+            "Use kavach db write — NOT MEMORY.md files",
+        ));
+        context.push('\n');
     }
 }
 
 /// Append verify-existing reminder for implement-type intents.
 pub(crate) fn append_verify_existing(context: &mut String, intent_type: &str) {
     if intent_type == "implement" || intent_type == "debug" {
-        context
-            .push_str("\n[VERIFY_EXISTING] Read existing routes/handlers/models before planning\n");
+        context.push_str("\n[VERIFY_EXISTING] ");
+        context.push_str(&dyn_directive(
+            "intent.verify-existing",
+            "Read existing routes/handlers/models before planning",
+        ));
+        context.push('\n');
     }
 }
 
@@ -40,11 +52,14 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
     if intent_type != "debug" && intent_type != "refactor" && intent_type != "implement" {
         return;
     }
-    context.push_str(
-        "\n[ROOT_CAUSE_PROTOCOL] See CLAUDE.md §1. Output [RCA] block before Write/Edit:\n\
+    context.push_str("\n[ROOT_CAUSE_PROTOCOL] ");
+    context.push_str(&dyn_directive(
+        "intent.root-cause-protocol",
+        "See CLAUDE.md §1. Output [RCA] block before Write/Edit:\n\
          symptom · repro(file:line) · why1..why5(evidence) · root_cause · class · \
-         blast_radius · research(URL) · fix_strategy. Gate BLOCKS without it.\n",
-    );
+         blast_radius · research(URL) · fix_strategy. Gate BLOCKS without it.",
+    ));
+    context.push('\n');
 }
 
 /// Append agent dispatch directives, dynamically ranked when possible, else
@@ -97,25 +112,34 @@ fn try_dynamic_dispatch(context: &mut String, prompt: &str, research_topic: &str
 }
 
 /// Intent-keyed default table — the hybrid fallback when ranking is inconclusive.
+/// The `[INVOKE_AGENT/SKILL: …]` routing tags stay literal (parsed downstream);
+/// only the trailing imperative prose is research-cached, so the routing target
+/// is deterministic while its rationale stays current.
 fn append_static_dispatch(context: &mut String, intent_type: &str) {
-    let directive = match intent_type {
-        "debug" => {
-            "\n[INVOKE_AGENT: ceo] [INVOKE_SKILL: bug-bounty]\n\
-             Spawn ceo NOW; ceo routes to specialist. Skill bug-bounty owns the 5-why hunt.\n"
-        }
-        "refactor" => {
-            "\n[INVOKE_AGENT: aegis-guardian] [INVOKE_SKILL: rust]\n\
-             aegis-guardian verifies invariants; engineer applies fix. Skill rust owns holdership/lifetime moves.\n"
-        }
-        "implement" => {
-            "\n[INVOKE_SKILL: writing-plans]\n\
-             Plan first. iteration-start before edit. iteration-done before next file.\n"
-        }
-        "general" => {
-            "\n[INVOKE_AGENT: research-director]\n\
-             research-director runs read-only investigation; engineers act on findings.\n"
-        }
+    let (tags, key, prose) = match intent_type {
+        "debug" => (
+            "\n[INVOKE_AGENT: ceo] [INVOKE_SKILL: bug-bounty]\n",
+            "dispatch.debug",
+            "Spawn ceo NOW; ceo routes to specialist. Skill bug-bounty owns the 5-why hunt.",
+        ),
+        "refactor" => (
+            "\n[INVOKE_AGENT: aegis-guardian] [INVOKE_SKILL: rust]\n",
+            "dispatch.refactor",
+            "aegis-guardian verifies invariants; engineer applies fix. Skill rust owns holdership/lifetime moves.",
+        ),
+        "implement" => (
+            "\n[INVOKE_SKILL: writing-plans]\n",
+            "dispatch.implement",
+            "Plan first. iteration-start before edit. iteration-done before next file.",
+        ),
+        "general" => (
+            "\n[INVOKE_AGENT: research-director]\n",
+            "dispatch.general",
+            "research-director runs read-only investigation; engineers act on findings.",
+        ),
         _ => return,
     };
-    context.push_str(directive);
+    context.push_str(tags);
+    context.push_str(&dyn_directive(key, prose));
+    context.push('\n');
 }

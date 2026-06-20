@@ -11,9 +11,42 @@
 
 use crate::gates::pre_write_context::WriteContext;
 
-/// Intents that inspect existing local artifacts and need no external research.
+/// Canonical local-analysis intents — the fail-soft floor of intents that inspect
+/// existing local artifacts and need no external research. The dynamic path may
+/// ADD to this (Brain-OS-surfaced intents) but never removes one, so the P0 block
+/// can only ever loosen toward more carve-outs, never tighten away a safe one.
 const LOCAL_ANALYSIS_INTENTS: [&str; 6] =
     ["audit", "analyze", "explain", "read", "review", "explore"];
+
+/// True when `intent` is a local-analysis intent — canonical list OR a Brain-OS-
+/// surfaced synonym. The canonical set is checked first (cheap, no RPC); only an
+/// unknown intent pays the lookup. Fail-soft: a daemon blip ⇒ canonical-only.
+fn is_local_analysis_intent(intent: &str) -> bool {
+    if intent.is_empty() {
+        return false;
+    }
+    if LOCAL_ANALYSIS_INTENTS.contains(&intent) {
+        return true;
+    }
+    brain_local_analysis_synonyms().iter().any(|s| s == intent)
+}
+
+/// Brain-OS-surfaced local-analysis intent synonyms (e.g. "inspect", "trace",
+/// "investigate"). Bare entry keys mapped to their trailing segment; fail-soft to
+/// empty on any RPC error ⇒ canonical-only enforcement.
+fn brain_local_analysis_synonyms() -> Vec<String> {
+    let params =
+        serde_json::json!({ "query": "local code analysis intent synonyms no external research", "limit": 8 });
+    let hits: Vec<kavach_surreal::BrainHit> =
+        match kavach_rpc::client::call("brain.think", Some(params)) {
+            Ok(h) => h,
+            Err(_) => return Vec::new(),
+        };
+    hits.into_iter()
+        .filter_map(|h| h.id.rsplit('.').next().map(str::to_owned))
+        .filter(|s| !s.is_empty())
+        .collect()
+}
 
 /// Returns `Some(reason)` to BLOCK the write when research was required this turn
 /// and no evidence of it is present.
@@ -33,8 +66,8 @@ pub(super) fn check(
     if session.research_topic.is_empty() {
         return None;
     }
-    // Local-analysis intents inspect existing code; no external lookup needed.
-    if LOCAL_ANALYSIS_INTENTS.contains(&session.intent_type.as_str()) {
+    // Local-analysis intents (canonical OR Brain-OS synonym) need no external lookup.
+    if is_local_analysis_intent(session.intent_type.as_str()) {
         return None;
     }
     // Evidence path 1: the agent self-marked research done AND a live cache entry

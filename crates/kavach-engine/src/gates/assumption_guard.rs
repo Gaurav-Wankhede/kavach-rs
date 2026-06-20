@@ -3,6 +3,8 @@
 //! Blocks content containing "I think", "I believe", "based on my knowledge"
 //! and similar phrases that indicate ungrounded LLM output.
 
+use crate::gates::directive_cache::dyn_directive;
+
 /// Phrases that indicate ungrounded assumptions.
 const ASSUMPTION_PHRASES: &[&str] = &[
     "i think",
@@ -21,6 +23,29 @@ const ASSUMPTION_PHRASES: &[&str] = &[
     "in my experience",
 ];
 
+/// True when `phrase` occurs in `haystack` as a whole token sequence — i.e. the
+/// chars flanking the match are non-alphanumeric (or string edges). A raw
+/// `contains` false-positives on partial-token hits (e.g. "i think" inside a
+/// hypothetical identifier, or "presumably" as a substring of a longer word);
+/// the boundary check restricts the gate to genuine prose assertions.
+fn contains_phrase(haystack: &str, phrase: &str) -> bool {
+    let plen = phrase.len();
+    haystack.match_indices(phrase).any(|(start, _)| {
+        // Flanking chars via UTF-8-safe slices (`get` returns None on a non-boundary
+        // index, which can't happen here since match_indices returns char boundaries).
+        let before_ok = haystack
+            .get(..start)
+            .and_then(|s| s.chars().next_back())
+            .is_none_or(|c| !c.is_alphanumeric());
+        let after_ok = start
+            .checked_add(plen)
+            .and_then(|end| haystack.get(end..))
+            .and_then(|s| s.chars().next())
+            .is_none_or(|c| !c.is_alphanumeric());
+        before_ok && after_ok
+    })
+}
+
 /// Check written content for assumption phrases.
 /// Returns Some(warning) if assumptions detected.
 pub(crate) fn check_for_assumptions(content: &str) -> Option<String> {
@@ -28,7 +53,7 @@ pub(crate) fn check_for_assumptions(content: &str) -> Option<String> {
     let mut found: Vec<&str> = Vec::new();
 
     for phrase in ASSUMPTION_PHRASES {
-        if lower.contains(phrase) {
+        if contains_phrase(&lower, phrase) {
             found.push(phrase);
         }
     }
@@ -37,11 +62,16 @@ pub(crate) fn check_for_assumptions(content: &str) -> Option<String> {
         return None;
     }
 
+    // Tag + matched phrases literal; the remediation imperative is research-refreshed.
+    let remedy = dyn_directive(
+        "assumption.grounding-remedy",
+        "WebSearch to verify the claim, then cite the source explicitly. \
+         Replace with: \"According to [source]\", \"Docs show\", \"Verified via\".",
+    );
     Some(format!(
         "[ASSUMPTION_DETECTED]\n\
          Remove ungrounded phrases: {}\n\
-         WebSearch to verify the claim, then cite the source explicitly.\n\
-         Replace with: \"According to [source]\", \"Docs show\", \"Verified via\"",
+         {remedy}",
         found.join(", ")
     ))
 }
@@ -76,5 +106,17 @@ mod tests {
     fn code_comments_with_assumptions_caught() {
         let r = check_for_assumptions("// I think this might cause a race condition");
         assert!(r.is_some());
+    }
+
+    #[test]
+    fn partial_token_does_not_false_positive() {
+        // "presumably" must not fire when it is a substring of a longer token,
+        // and "i think" must not fire glued to surrounding alphanumerics.
+        assert!(check_for_assumptions("let presumablyx = compute();").is_none());
+        assert!(check_for_assumptions("xpresumably = 1;").is_none());
+        assert!(check_for_assumptions("the ithinker module").is_none());
+        // But the real standalone phrase still fires.
+        assert!(check_for_assumptions("presumably the cache is warm").is_some());
+        assert!(check_for_assumptions("i think so").is_some());
     }
 }

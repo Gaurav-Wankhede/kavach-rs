@@ -4,6 +4,8 @@
 //! it's often building a parallel system instead of extending existing code.
 //! Returns a context warning injected into the pre-write allow response.
 
+use crate::gates::directive_cache::dyn_directive;
+
 /// Package manifest filenames that signal new package creation.
 const MANIFESTS: &[&str] = &["Cargo.toml", "package.json", "pyproject.toml", "go.mod"];
 
@@ -18,17 +20,22 @@ pub(crate) fn check_new_package(file_path: &str) -> Option<String> {
     if std::path::Path::new(file_path).exists() {
         return None;
     }
+    // Tag + manifest data literal; the anti-parallel-system imperative is research-refreshed.
+    let imperative = dyn_directive(
+        "new-package.parallel-system-check",
+        "STOP AND VERIFY:\n\
+         1. Does an existing package already handle this functionality?\n\
+         2. Should you EXTEND an existing crate instead of creating a new one?\n\
+         3. Will this create a PARALLEL SYSTEM alongside existing code?\n\
+         4. If replacing old packages, are you REMOVING old route mounts?\n\
+         Extend an existing package instead of duplicating functionality. \
+         Remove old route mounts when adding new ones — never mount both in parallel.",
+    );
     Some(format!(
         "[NEW_PACKAGE_WARNING]\n\
          Creating NEW package manifest: {fname}\n\
          path: {file_path}\n\n\
-         STOP AND VERIFY:\n\
-         1. Does an existing package already handle this functionality?\n\
-         2. Should you EXTEND an existing crate instead of creating a new one?\n\
-         3. Will this create a PARALLEL SYSTEM alongside existing code?\n\
-         4. If replacing old packages, are you REMOVING old route mounts?\n\n\
-         Extend an existing package instead of duplicating functionality.\n\
-         Remove old route mounts when adding new ones — never mount both in parallel."
+         {imperative}"
     ))
 }
 

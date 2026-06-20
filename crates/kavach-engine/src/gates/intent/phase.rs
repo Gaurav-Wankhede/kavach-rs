@@ -23,25 +23,9 @@ pub(super) fn append_phase_and_rir(context: &mut String, session: &mut SessionSt
     )
     .ok();
 
-    // Claude Code's autonomous auto-compact reclaims context losslessly at the
-    // window boundary — it preserves state, the model does not. So this gate must
-    // NOT instruct the model to run /compact, nor tell it to "skip context" or
-    // "be terse" (both DROP signal the auto-compact would have kept). At every
-    // budget tier the model keeps working at full fidelity; auto-compact handles
-    // reclamation. Emit a neutral, non-actionable budget telemetry line only.
-    // SOURCE: <https://docs.claude.com/en/docs/claude-code/costs#auto-compact>
-    match session.context_phase.as_str() {
-        "critical" => {
-            context.push_str("\n[CONTEXT_BUDGET] >90% used — auto-compact will reclaim at the boundary; continue normally.\n");
-        }
-        "late" => {
-            context.push_str(
-                "\n[CONTEXT_BUDGET] >70% used — auto-compact active; continue normally.\n",
-            );
-        }
-        _ => {
-            let module_ctx = session.inject_modules_once(&["agi-flow", "memory"]);
-            context.push_str(&module_ctx);
-        }
-    }
+    // No budget-driven throttle: caps removed (decision.remove-context-budget-caps).
+    // The model works at full fidelity at every fill level; Claude Code auto-compact
+    // reclaims context losslessly at the boundary. Always inject the normal modules.
+    let module_ctx = session.inject_modules_once(&["agi-flow", "memory"]);
+    context.push_str(&module_ctx);
 }

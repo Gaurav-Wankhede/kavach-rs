@@ -14,6 +14,7 @@ use core::ops::ControlFlow;
 use kavach_types::HookInput;
 
 use crate::error::EngineError;
+use crate::gates::directive_cache::dyn_directive;
 
 mod advisory_detectors;
 mod ai_verdict;
@@ -261,7 +262,13 @@ fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Opti
     // turn_relay::queue_advisory): the latter is Cursor-gated via should_relay(),
     // so on Claude Code it would silently no-op and the loophole would vanish. The
     // intent-injector drain is harness-neutral, so the queue must be too.
-    session.queue_pending_advisory("[LOOPHOLE] last turn shipped risk-bearing work without a `Loopholes closed:` line — a loophole may be LIVE. FIX FIRST: run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and CLOSE each at its root this turn (or file a card), then emit `Loopholes closed:`. Do this BEFORE any new work — fixing beats documenting.");
+    // Tag + `Loopholes closed:` marker + lens names are the frozen contract; the
+    // surrounding imperative is research-refreshed (fail-soft to the proven literal).
+    let loophole_body = dyn_directive(
+        "stop.loophole-carry-forward",
+        "last turn shipped risk-bearing work without a `Loopholes closed:` line — a loophole may be LIVE. FIX FIRST: run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and CLOSE each at its root this turn (or file a card), then emit `Loopholes closed:`. Do this BEFORE any new work — fixing beats documenting.",
+    );
+    session.queue_pending_advisory(&format!("[LOOPHOLE] {loophole_body}"));
     // M4 TEETH: run the bounded lens DETECTOR over this turn's git-changed Rust
     // files and surface CONCRETE suspected sites (lens + file:line) — real targets,
     // not just a reminder. Bounded so the Stop path can't stall.
@@ -307,12 +314,15 @@ fn continuation_menu_check(
     // Re-surface the omission at the TOP of the next turn (harness-neutral
     // pending queue, not the Cursor-gated turn_relay), so the model sees it
     // BEFORE its next message — the only place that breaks the ask-again habit.
-    session.queue_pending_advisory(
-        "[CONTINUATION_MENU] last turn ended on a 'continue or pause?' question while the loop \
+    // Tag + §refs frozen; the deferral-correction imperative is research-refreshed.
+    let menu_body = dyn_directive(
+        "stop.continuation-menu-carry-forward",
+        "last turn ended on a 'continue or pause?' question while the loop \
          directive already commanded continuation. Do NOT ask to continue — check the kavach DB \
          (kanban + decision/roadmap) and START the next task THIS turn. Asking to continue is the \
          forbidden deferral (global CLAUDE.md §autonomous_loop / §act_not_narrate).",
     );
+    session.queue_pending_advisory(&format!("[CONTINUATION_MENU] {menu_body}"));
     Some(continuation_menu_advisory())
 }
 
@@ -320,15 +330,20 @@ fn continuation_menu_check(
 /// message asked permission to continue while the loop already commanded it.
 /// Imperative, fix-first — points the model back at the DB, not at the user.
 fn continuation_menu_advisory() -> String {
-    "[CONTINUATION_MENU] Your final message ended the turn on a 'continue or pause?' \
-     permission question — but the loop directive (the [AUTO_CONTINUE]/[ALL_BLOCKED] \
-     verdict in this same stop) ALREADY told you the next move. Asking the user for \
-     permission to do what the gate ordered is the forbidden deferral (global CLAUDE.md \
-     §autonomous_loop §4_continue_not_stop / §act_not_narrate). Do NOT ask: check the \
-     kavach DB (kanban + `kavach db query --category decision`/`--category roadmap`), \
-     claim the next task, and START it THIS turn. If the board is genuinely drained, \
-     STATE the clean stop as a fact — never as a question."
-        .to_owned()
+    // [CONTINUATION_MENU] tag literal; the body (still naming the frozen
+    // [AUTO_CONTINUE]/[ALL_BLOCKED] verdicts + §refs in its fallback) is research-refreshed.
+    let body = dyn_directive(
+        "stop.continuation-menu-ride-along",
+        "Your final message ended the turn on a 'continue or pause?' \
+         permission question — but the loop directive (the [AUTO_CONTINUE]/[ALL_BLOCKED] \
+         verdict in this same stop) ALREADY told you the next move. Asking the user for \
+         permission to do what the gate ordered is the forbidden deferral (global CLAUDE.md \
+         §autonomous_loop §4_continue_not_stop / §act_not_narrate). Do NOT ask: check the \
+         kavach DB (kanban + `kavach db query --category decision`/`--category roadmap`), \
+         claim the next task, and START it THIS turn. If the board is genuinely drained, \
+         STATE the clean stop as a fact — never as a question.",
+    );
+    format!("[CONTINUATION_MENU] {body}")
 }
 
 /// Append this Stop event to the session trajectory JSONL for offline replay.

@@ -10,6 +10,8 @@
 //! hard-block would false-positive on every trivial card. The model is reminded,
 //! scoped to where it counts; it is never stopped.
 
+mod lenses;
+
 /// Completion-claim phrases — the trigger half. Mirrors `completion_guard` but
 /// kept local so the two guards stay independently tunable.
 const DONE_PHRASES: &[&str] = &[
@@ -65,11 +67,18 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
     if !claims_done {
         return None;
     }
-    let touches_risk = RISK_MARKERS.iter().any(|m| lower.contains(m));
-    if !touches_risk {
+    // Collect WHICH risk markers fired — that is the change's risk surface, which
+    // steers the Brain-OS lens retrieval (multi-dimensional, not one frozen list).
+    let fired: Vec<&str> = RISK_MARKERS
+        .iter()
+        .filter(|m| lower.contains(*m))
+        .copied()
+        .collect();
+    if fired.is_empty() {
         return None;
     }
-    Some(
+    let lens_list = lenses::lens_block(&fired);
+    Some(format!(
         "[LOOPHOLE_CHECK]\n\
          This change claims completion on a risk-bearing path. A loophole found is \
          a loophole you FIX THIS TURN at its root — do NOT narrate it, do NOT defer \
@@ -79,24 +88,11 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
          - FILE: out-of-scope only -> create a roadmap card + decision row naming \
          the exact failure mode (a parked loophole is tracked, never silent).\n\
          - N/A: prove it cannot occur and cite the file:line that defends against it.\n\
-         The lenses:\n\
-         - concurrency: two actors at once -> TOCTOU / lost-update / double-claim. \
-         CLOSE with an atomic/compare-and-swap/lock, then cite it.\n\
-         - failure: process dies mid-op -> orphaned lock / half-write / leaked task. \
-         CLOSE with a guard/transaction/lease-expiry, then cite it.\n\
-         - malformed: null/huge/wrong-type/hostile input -> panic / injection. \
-         CLOSE by validating at the edge into a typed value, then cite it.\n\
-         - authz: caller without rights -> missing check / confused-deputy / IDOR. \
-         CLOSE by adding the check fail-closed, then cite it.\n\
-         - replay: same request twice -> non-idempotent mutation. \
-         CLOSE by making it idempotent, then cite it.\n\
-         - boundary: empty / max / negative / off-by-one. \
-         CLOSE by handling the bound, then cite it.\n\
+         The lenses (Brain-OS-selected for this change's risk surface):\n{lens_list}\n\
          Emit a `Loopholes closed:` line: each lens -> FIXED at file:line, FILED as \
          <card-key>, or N/A at file:line. A `considered`/`noted`/`should` verdict \
          without a fix or a card is NOT acceptable — close it or file it, now."
-            .into(),
-    )
+    ))
 }
 
 /// Marker the agent emits to show it CLOSED (not merely considered) the

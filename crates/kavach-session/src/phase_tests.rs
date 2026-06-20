@@ -20,13 +20,15 @@ fn test_update_context_phase() {
     s.update_context_phase();
     assert_eq!(s.context_phase, "mid");
 
+    // Budget-throttle tiers removed: high fill no longer escalates past "mid"
+    // (decision.remove-context-budget-caps). The model never gets a slow-down cap.
     s.token_budget_used = 140_000;
     s.update_context_phase();
-    assert_eq!(s.context_phase, "late");
+    assert_eq!(s.context_phase, "mid", "no 'late' throttle tier");
 
     s.token_budget_used = 170_000;
     s.update_context_phase();
-    assert_eq!(s.context_phase, "critical");
+    assert_eq!(s.context_phase, "mid", "no 'critical' throttle tier");
 }
 
 #[test]

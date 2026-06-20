@@ -64,10 +64,14 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
     // Inject blast radius warning if threshold exceeded.
     if session.is_blast_escalated() {
         let (files, apis, db) = session.get_blast_stats();
+        // Tag + stat lines frozen; the WARNING imperative is research-refreshed.
+        let warn = crate::gates::directive_cache::dyn_directive(
+            "subagent.blast-escalated-warning",
+            "WARNING: Cumulative subagent blast radius exceeded threshold. Gates escalated to P0.",
+        );
         writeln!(
             context,
-            "\n[BLAST_ESCALATED]\nfiles_written: {files}\nexternal_apis: {apis}\ndb_mutations: {db}\n\
-             WARNING: Cumulative subagent blast radius exceeded threshold. Gates escalated to P0."
+            "\n[BLAST_ESCALATED]\nfiles_written: {files}\nexternal_apis: {apis}\ndb_mutations: {db}\n{warn}"
         ).ok();
     }
 

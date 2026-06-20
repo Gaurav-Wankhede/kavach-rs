@@ -26,7 +26,10 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
         writeln!(msg, "  fix: {}\n", v.fix).ok();
     }
     msg.push_str("REQUIRED: Add auth/rate-limit middleware before this write can proceed.\n\n");
-    msg.push_str("RESEARCH: WebSearch \"api gateway middleware patterns {search_year}\"\n");
+    // BUGFIX: was a literal `{search_year}` placeholder that never interpolated —
+    // resolve the live year so the research query is always current.
+    let year = crate::gates::directive_cache::current_year();
+    writeln!(msg, "RESEARCH: WebSearch \"api gateway middleware patterns {year}\"").ok();
     msg.push_str("SKILL: Invoke `arch` skill for gateway layer design.\n");
     msg.push_str("FIX: Add auth layer before routes. Use tower middleware for rate limiting.");
     Some(msg)

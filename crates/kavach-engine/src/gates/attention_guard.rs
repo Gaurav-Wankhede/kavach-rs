@@ -1,6 +1,9 @@
-/// Attention dilution guard: warn when too many files processed in one pass.
-/// Processing 12+ files degrades analysis depth — split into multi-pass.
+//! Attention dilution guard: warn when too many files processed in one pass.
+
+use crate::gates::directive_cache::dyn_directive;
+
 /// Threshold above which attention dilution warning fires.
+/// Processing 12+ files degrades analysis depth — split into multi-pass.
 const ATTENTION_THRESHOLD: i32 = 12;
 
 /// Check if file read count just crossed attention threshold.
@@ -21,13 +24,17 @@ pub(crate) fn check_attention(session: &kavach_session::SessionState) -> Option<
         return None;
     }
 
+    // Tag + counts literal; the remediation imperative is research-refreshed.
+    let action = dyn_directive(
+        "attention.dilution-remedy",
+        "Analysis depth degrades beyond the threshold. Split into per-file analysis \
+         passes, then synthesize: Pass 1 = analyze each file. Pass 2 = cross-file integration.",
+    );
     Some(format!(
         "[ATTENTION_DILUTION]\n\
          files_processed: {count}\n\
          threshold: {ATTENTION_THRESHOLD}\n\
-         risk: Analysis depth degrades beyond {ATTENTION_THRESHOLD} files.\n\
-         action: Split into per-file analysis passes, then synthesize.\n\
-         pattern: Pass 1 = analyze each file. Pass 2 = cross-file integration."
+         {action}"
     ))
 }
 

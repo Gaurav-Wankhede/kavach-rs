@@ -57,13 +57,11 @@ impl SessionState {
         } else {
             0.0
         };
-        self.context_phase = match ratio {
-            r if r >= 0.9 => "critical",
-            r if r >= 0.7 => "late",
-            r if r >= 0.3 => "mid",
-            _ => "early",
-        }
-        .into();
+        // No budget-driven throttle tiers ("critical"/"late" removed): the model
+        // works at full fidelity at every fill level and Claude Code's auto-compact
+        // reclaims context losslessly at the window boundary. Only the benign
+        // injection-depth tiers remain. SOURCE: decision.remove-context-budget-caps.
+        self.context_phase = if ratio >= 0.3 { "mid" } else { "early" }.into();
         self.save_or_log();
     }
 }
