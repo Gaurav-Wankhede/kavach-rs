@@ -140,6 +140,112 @@ impl RoadmapDag {
             TopoOrder::Cycle(cycle)
         }
     }
+
+    /// Render the decision-architecture slice as a Mermaid `graph TD` for
+    /// injection at decision-time. Nodes are `decision`/`roadmap` entries only
+    /// (the architecture spine), status-styled so the model sees which choices are
+    /// settled (`verified`) versus open (`todo`). Edges kept: `depends_on` (hard
+    /// constraint, solid arrow) and `supersedes` (one decision retired another,
+    /// dotted "retires"). `focus` (qnames or bare keys) restricts to the relevant
+    /// neighbourhood + caps at `max_nodes` for token discipline; an empty `focus`
+    /// renders the whole decision spine. Returns `None` when no decision/roadmap
+    /// node survives the filter (nothing to show ⇒ inject nothing).
+    ///
+    /// SOURCE: <https://mermaid.js.org/syntax/flowchart.html>
+    #[must_use]
+    pub fn decision_mermaid(&self, focus: &[String], max_nodes: usize) -> Option<String> {
+        let in_focus = |id: &str| {
+            focus.is_empty()
+                || focus
+                    .iter()
+                    .any(|f| id == f || id.rsplit('/').next() == Some(f.as_str()))
+        };
+        let mut kept: Vec<&DagNode> = self
+            .nodes
+            .iter()
+            .filter(|n| n.category == "decision" || n.category == "roadmap")
+            .filter(|n| in_focus(&n.id))
+            .collect();
+        if kept.is_empty() {
+            return None;
+        }
+        // Highest-signal first: settled decisions anchor the architecture.
+        kept.sort_by_key(|n| status_rank(&n.entry_status));
+        kept.truncate(max_nodes);
+        let keep_ids: std::collections::HashSet<&str> =
+            kept.iter().map(|n| n.id.as_str()).collect();
+
+        let mut out = String::from("graph TD\n");
+        for n in &kept {
+            let id = dm_sanitize(&n.id);
+            let label = dm_escape(&n.title);
+            let st = n.entry_status.to_uppercase();
+            let cls = status_class(&n.entry_status);
+            out.push_str("  ");
+            out.push_str(&id);
+            out.push_str("[\"");
+            out.push_str(&label);
+            out.push_str("<br/>");
+            out.push_str(&st);
+            out.push_str("\"]:::");
+            out.push_str(cls);
+            out.push('\n');
+        }
+        for e in &self.edges {
+            if !keep_ids.contains(e.source.as_str()) || !keep_ids.contains(e.target.as_str()) {
+                continue;
+            }
+            let arrow = match e.rel.as_str() {
+                "depends_on" => Some(" --> "),
+                "supersedes" => Some(" -.retires.-> "),
+                _ => None,
+            };
+            if let Some(a) = arrow {
+                out.push_str("  ");
+                out.push_str(&dm_sanitize(&e.source));
+                out.push_str(a);
+                out.push_str(&dm_sanitize(&e.target));
+                out.push('\n');
+            }
+        }
+        out.push_str("  classDef done fill:#1a7f37,color:#fff;\n");
+        out.push_str("  classDef open fill:#9a3412,color:#fff;\n");
+        out.push_str("  classDef draft fill:#854d0e,color:#fff;\n");
+        Some(out)
+    }
+}
+
+/// Sort key: settled decisions first (lower = earlier). `verified` anchors the
+/// architecture, `todo` is still in flux.
+fn status_rank(status: &str) -> u8 {
+    match status {
+        "verified" => 0,
+        "active" | "done" => 1,
+        "todo" => 2,
+        _ => 3,
+    }
+}
+
+/// Map an entry status to its Mermaid `classDef` bucket.
+fn status_class(status: &str) -> &'static str {
+    match status {
+        "verified" | "active" | "done" => "done",
+        "todo" => "open",
+        _ => "draft",
+    }
+}
+
+/// Mermaid id sanitizer (mirrors `flow_dag::sanitize_id`; kept local so the two
+/// renderers stay independently tunable).
+fn dm_sanitize(name: &str) -> String {
+    name.chars()
+        .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+        .collect()
+}
+
+/// Escape a label for a Mermaid quoted string.
+fn dm_escape(label: &str) -> String {
+    label.replace('"', "&quot;").replace(['\n', '\r'], " ")
 }
 
 #[derive(surrealdb_types::SurrealValue)]
@@ -262,4 +368,71 @@ pub async fn fetch(db: &Surreal<Db>, project_slug: &str) -> Result<RoadmapDag> {
     }
 
     Ok(RoadmapDag { nodes, edges })
+}
+
+#[cfg(test)]
+mod decision_mermaid_tests {
+    use super::{DagEdge, DagNode, RoadmapDag};
+
+    fn node(id: &str, title: &str, status: &str, cat: &str) -> DagNode {
+        DagNode {
+            id: id.to_owned(),
+            entry_key: id.rsplit('/').next().unwrap_or(id).to_owned(),
+            title: title.to_owned(),
+            entry_status: status.to_owned(),
+            category: cat.to_owned(),
+        }
+    }
+
+    fn sample() -> RoadmapDag {
+        RoadmapDag {
+            nodes: vec![
+                node("p/decision/paseto", "paseto over jwt", "verified", "decision"),
+                node("p/decision/httpsig", "httpsig every call", "verified", "decision"),
+                node("p/decision/scylla", "scylla displaces redis", "todo", "decision"),
+                node("p/research/x", "noise", "active", "research"),
+            ],
+            edges: vec![
+                DagEdge { source: "p/decision/paseto".into(), target: "p/decision/httpsig".into(), rel: "depends_on".into() },
+                DagEdge { source: "p/decision/httpsig".into(), target: "p/decision/scylla".into(), rel: "supersedes".into() },
+            ],
+        }
+    }
+
+    #[test]
+    fn renders_status_styled_graph_td() {
+        let m = sample().decision_mermaid(&[], 8).expect("non-empty");
+        assert!(m.starts_with("graph TD\n"), "{m}");
+        assert!(m.contains(":::done"), "verified ⇒ done class: {m}");
+        assert!(m.contains(":::open"), "todo ⇒ open class: {m}");
+        // depends_on solid arrow, supersedes dotted 'retires'
+        assert!(m.contains(" --> "), "{m}");
+        assert!(m.contains("-.retires.-> "), "{m}");
+        // research noise excluded — only decision/roadmap nodes
+        assert!(!m.contains("noise"), "research excluded: {m}");
+    }
+
+    #[test]
+    fn focus_filter_restricts_nodes() {
+        let m = sample().decision_mermaid(&["paseto".to_owned()], 8).expect("non-empty");
+        assert!(m.contains("paseto"), "{m}");
+        assert!(!m.contains("scylla"), "out-of-focus excluded: {m}");
+    }
+
+    #[test]
+    fn no_decision_nodes_yields_none() {
+        let only_research = RoadmapDag {
+            nodes: vec![node("p/research/x", "noise", "active", "research")],
+            edges: vec![],
+        };
+        assert!(only_research.decision_mermaid(&[], 8).is_none());
+    }
+
+    #[test]
+    fn max_nodes_caps_output() {
+        let m = sample().decision_mermaid(&[], 1).expect("non-empty");
+        // Only 1 node kept ⇒ at most 1 node line (verified sorts first).
+        let node_lines = m.lines().filter(|l| l.contains(":::")).count();
+        assert_eq!(node_lines, 1, "{m}");
+    }
 }

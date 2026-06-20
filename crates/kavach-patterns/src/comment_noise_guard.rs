@@ -1,11 +1,22 @@
-//! Flags multi-line line-comment rationale blocks, language-agnostically.
+//! Flags comment BLOAT, language-agnostically — not mere comment count.
 //!
-//! A run of `THRESHOLD`+ consecutive line-comments (`//`, `#`, `--`, `;`) is noise
-//! per global `CLAUDE.md` §`comments_not_the_deliverable`. Exempt: doc/header and
-//! `SAFETY:`/shebang/directive markers. Markdown/text files are skipped upstream.
+//! Policy (§`comments_not_the_deliverable`): concise + precise comments are GOOD;
+//! a one-line "why" never fires. What fires is BLOAT — a long rationale paragraph
+//! that belongs in the Kavach DB (injectable as decision context), or an
+//! over-length wall-of-text line. Signal = prose VOLUME, not line count: a run is
+//! noise only when it is both long (`BLOAT_RUN`+ lines) AND prose-heavy (carries a
+//! `PROSE_LINE_MIN`-char line), OR any single comment exceeds `MAX_LEN`. Exempt:
+//! doc/header + `SAFETY:`/shebang/directive markers. Non-source files skipped.
 use std::fmt::Write as _;
 
-const THRESHOLD: usize = 3;
+/// A comment run must reach this many consecutive lines before it is even a
+/// candidate for bloat. Short groups (a 3-4 line precise note) are GOOD and never
+/// fire — only a genuine paragraph is suspect. Raised from the old count-trigger.
+const BLOAT_RUN: usize = 6;
+/// A candidate run is bloat only if it ALSO carries a prose-heavy line (this many
+/// chars+) — proving it's rationale narration, not a column of terse markers.
+const PROSE_LINE_MIN: usize = 60;
+/// Any single comment line longer than this is a wall-of-text — flagged alone.
 const MAX_LEN: usize = 100;
 
 const PREFIXES: &[&str] = &["///", "//!", "//", "#", "--", ";"];
@@ -54,24 +65,32 @@ pub fn advise(file_path: &str, content: &str) -> Option<String> {
     let mut long = Vec::new();
     let mut run_start = 0usize;
     let mut run = 0usize;
+    let mut run_has_prose = false;
     for (i, line) in content.lines().enumerate() {
         let t = line.trim_start();
         if is_line_comment(t) {
             if run == 0 {
                 run_start = i.saturating_add(1);
+                run_has_prose = false;
             }
             run = run.saturating_add(1);
-            if t.chars().count() > MAX_LEN {
+            let len = t.chars().count();
+            if len >= PROSE_LINE_MIN {
+                run_has_prose = true;
+            }
+            if len > MAX_LEN {
                 long.push(i.saturating_add(1));
             }
         } else {
-            if run >= THRESHOLD {
+            // Bloat = a long run that ALSO narrates (prose-heavy line). A short
+            // run, or a long column of terse markers, is precise — never fires.
+            if run >= BLOAT_RUN && run_has_prose {
                 blocks.push((run_start, run));
             }
             run = 0;
         }
     }
-    if run >= THRESHOLD {
+    if run >= BLOAT_RUN && run_has_prose {
         blocks.push((run_start, run));
     }
     if blocks.is_empty() && long.is_empty() {
@@ -79,14 +98,15 @@ pub fn advise(file_path: &str, content: &str) -> Option<String> {
     }
 
     let mut msg = format!(
-        "[COMMENT_NOISE] {file_path} — §comments_not_the_deliverable: \
-         concise, ≤1 line. Cut or move rationale to the commit:\n"
+        "[COMMENT_NOISE] {file_path} — §comments_not_the_deliverable: keep comments \
+         concise + precise; move long rationale to the Kavach DB (a decision row, \
+         injectable as context) — not a paragraph in the file:\n"
     );
     for (start, len) in blocks.iter().take(10) {
-        writeln!(msg, "  L{start}: {len}-line block").ok();
+        writeln!(msg, "  L{start}: {len}-line rationale paragraph → DB").ok();
     }
     for line in long.iter().take(10) {
-        writeln!(msg, "  L{line}: comment >{MAX_LEN} chars").ok();
+        writeln!(msg, "  L{line}: comment >{MAX_LEN} chars (wall-of-text)").ok();
     }
     Some(msg)
 }
@@ -96,9 +116,27 @@ mod tests {
     use super::advise;
 
     #[test]
-    fn flags_three_line_block() {
+    fn short_precise_block_is_clean() {
+        // 3 terse lines are precise, not bloat — must NOT fire (policy change).
         let c = "fn f() {}\n// one\n// two\n// three\nfn g() {}\n";
-        assert!(advise("src/x.rs", c).is_some());
+        assert!(advise("src/x.rs", c).is_none());
+    }
+
+    #[test]
+    fn long_rationale_paragraph_flagged() {
+        // 6+ lines AND prose-heavy (a ≥60-char narration line) = bloat → DB.
+        let prose = "x".repeat(70);
+        let c = format!(
+            "fn f() {{}}\n// {prose}\n// b\n// c\n// d\n// e\n// f\nfn g() {{}}\n"
+        );
+        assert!(advise("src/x.rs", &c).is_some());
+    }
+
+    #[test]
+    fn long_run_of_terse_markers_is_clean() {
+        // 8 short comment lines (no prose-heavy line) = precise column, not bloat.
+        let c = "// a\n// b\n// c\n// d\n// e\n// f\n// g\n// h\nfn f() {}\n";
+        assert!(advise("src/x.rs", c).is_none());
     }
 
     #[test]
@@ -126,15 +164,25 @@ mod tests {
     }
 
     #[test]
-    fn python_hash_block_flagged() {
+    fn python_short_hash_block_is_clean() {
+        // 3 terse lines = precise, not bloat (policy change).
         let c = "def f():\n    # one\n    # two\n    # three\n    pass\n";
-        assert!(advise("x.py", c).is_some());
+        assert!(advise("x.py", c).is_none());
     }
 
     #[test]
-    fn sql_dash_block_flagged() {
+    fn python_long_prose_paragraph_flagged() {
+        let prose = "y".repeat(70);
+        let c = format!(
+            "def f():\n    # {prose}\n    # b\n    # c\n    # d\n    # e\n    # f\n    pass\n"
+        );
+        assert!(advise("x.py", &c).is_some());
+    }
+
+    #[test]
+    fn sql_short_dash_block_is_clean() {
         let c = "-- one\n-- two\n-- three\nSELECT 1;\n";
-        assert!(advise("x.sql", c).is_some());
+        assert!(advise("x.sql", c).is_none());
     }
 
     #[test]
