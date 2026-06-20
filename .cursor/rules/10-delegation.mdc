@@ -1,0 +1,15 @@
+---
+description: How to fan out work — subagent spawning, model tiers, scale-for-correctness
+---
+
+- One focused pass when one context holds the task; fan out the moment it outgrows one —
+  a sweep too large for one context, an audit needing independent lenses, a many-file
+  migration, an adversarial verify. The most exhaustive correct answer is the goal.
+- Orchestrate on the strong model; execute on the smallest doer model the harness offers
+  (Cursor → composer-2.5, Claude Code → haiku). The orchestrator never writes code itself.
+- Spawn DYNAMIC subagents — an inline task, not a predefined agent type.
+- Inject into every spawn: project + phase, "read the Kavach DB don't re-derive",
+  research-first (skill + current sources, never weights), and a RETURN CONTRACT
+  (a writer persists its decision to Kavach the same turn; a read-only agent returns a
+  structured result for the orchestrator to persist). A finding not written is lost.
+- A delegated result is inference until its landed artifact proves it.

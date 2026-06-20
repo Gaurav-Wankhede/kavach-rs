@@ -9,6 +9,7 @@
 //! first to `Break` wins. `source_down` is the shared fail-closed block.
 mod backlog;
 mod budget;
+mod disk;
 mod hunt;
 mod source_down;
 mod task;

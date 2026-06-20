@@ -72,10 +72,15 @@ fn all_blocked_context_directs_dependency_first_resolution_not_user_handoff() {
         c.contains("STALE/FALSE"),
         "directs correcting a stale/false dependency edge: {c}"
     );
-    // A missing credential is FILED as a card, never escalated as an operator gate.
+    // A secret-bound DB op is DONE via a runtime script (env read in-process),
+    // never handed back; a card is filed ONLY when the env var is truly absent.
     assert!(
-        c.contains("FILE it as a card") && c.contains("never escalate"),
-        "files credential gaps instead of escalating to an operator: {c}"
+        c.contains("WRITE a runtime script") && c.contains("never escalate"),
+        "directs a runtime script for secret-bound ops instead of handing back: {c}"
+    );
+    assert!(
+        c.contains("genuinely ABSENT") && c.contains("FILE a card"),
+        "files a card only when the env var is genuinely absent: {c}"
     );
     assert!(
         !c.contains("operator-only") && !c.contains("operator-gated"),

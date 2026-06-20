@@ -1,4 +1,4 @@
-use super::super::readiness::{deps_satisfied, is_gate, is_runnable_status, is_umbrella};
+use super::super::readiness::{deps_satisfied, is_runnable_status, is_umbrella};
 use super::super::types::{NextOpenTaskParams, NextTaskResult};
 use super::lane_pick::{lane_matches, pick_in_lane};
 use crate::error::surreal_to_rpc;
@@ -101,7 +101,6 @@ pub async fn ready_set(
         .filter(|e| {
             is_runnable_status(e.entry_status_str())
                 && !is_umbrella(&e.title)
-                && !is_gate(&e.title)
                 && deps_satisfied(e, &dep_pool)
         })
         .map(|e| NextTaskResult {

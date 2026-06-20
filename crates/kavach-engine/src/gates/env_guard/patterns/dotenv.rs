@@ -17,15 +17,17 @@ pub(crate) fn check_source(lc: &str, command: &str) -> Option<String> {
             return None;
         }
         return Some(format!(
-            "BLOCKED: `source {env_file} && {downstream}` — downstream command may expose values. \
-             Use a safe runner (sqlx, cargo, kavach, bun run, make) that takes env vars \
-             without printing them."
+            "BLOCKED (`source {env_file} && {downstream}` may print values). NOT a hand-back. \
+             DO THE TASK: fold `{downstream}` into a runtime script that reads the env in-process \
+             (`dotenvy::from_path(\"{env_file}\")` + `std::env::var`), runs it, and emits ONLY a \
+             pass/fail receipt — never the value. Run it yourself; do NOT hand back to the user."
         ));
     }
     Some(format!(
-        "BLOCKED: bare `source {env_file}` with no downstream command loads secrets into context. \
-         Use `source {env_file} && <cmd>` with a safe runner, or list names only with: \
-         `rg -o '^[A-Z][A-Z0-9_]*' {env_file} | sort` (toolbelt: rg is 5-13x faster than awk)."
+        "BLOCKED (bare `source {env_file}` loads secrets into context). NOT a hand-back. \
+         DO THE TASK: WRITE a runtime Rust script that loads `{env_file}` via dotenvy INSIDE its \
+         own process, performs the needed operation, and prints ONLY a receipt — never the value. \
+         To see only names (no values): `rg -o '^[A-Z][A-Z0-9_]*' {env_file} | sort`."
     ))
 }
 
@@ -38,9 +40,14 @@ pub(crate) fn check_dotenv_read(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED: Reading a .env file via Bash exposes all secret values. \
-         Use the Read tool instead (it reads .env files directly). \
-         Or `grep '^PUBLIC_' .env` to extract only public (non-sensitive) variables."
+        "BLOCKED (would leak every .env value into context). This is NOT a hand-back. \
+         DO THE TASK: WRITE a runtime Rust script (or `cargo run`-able bin / `rust-script`) \
+         that calls `dotenvy::from_path(\".env\")` then `std::env::var(..)` INSIDE its own \
+         process, performs the operation the task needs (migration / deletion / query / op), \
+         and prints ONLY a pass/fail receipt — never the secret value. The value lives in the \
+         child process, never in your context. If a required key is absent after the load, \
+         print `{\"ok\":false,\"missing\":[\"KEY\"]}` and file a card naming KEY. \
+         (TypeScript with strict types only if Rust cannot reach the engine.) Do NOT ask the user to run it."
             .into(),
     )
 }
@@ -53,9 +60,11 @@ pub(crate) fn check_dotenv_grep(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED: `grep`/`rg` on .env file exposes secret values. \
-         Use `rg '^PUBLIC_' .env` to read only public (non-sensitive) vars (toolbelt: rg), \
-         or use the Read tool to read .env files directly."
+        "BLOCKED (`grep`/`rg` on .env prints secret values). NOT a hand-back. \
+         DO THE TASK: if you need a value, consume it inside a runtime script \
+         (`dotenvy` + `std::env::var`) that runs the operation and prints ONLY a receipt — \
+         never the value. To inspect only NAMES: `rg -o '^[A-Z][A-Z0-9_]*' .env | sort`. \
+         To read only public vars: `rg '^PUBLIC_' .env`. Do NOT defer to the user."
             .into(),
     )
 }

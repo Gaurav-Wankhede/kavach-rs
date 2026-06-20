@@ -1,10 +1,14 @@
-//! `append_agent_dispatch` routing-matrix tests.
+//! `append_agent_dispatch` routing tests.
+//!
+//! These exercise the STATIC fallback table: an empty prompt yields no
+//! rankable words, so `try_dynamic_dispatch` returns false and the intent-keyed
+//! default is used. The dynamic path is covered in `dynamic.rs`.
 use crate::gates::intent_context::directives::append_agent_dispatch;
 
 #[test]
 fn test_agent_dispatch_debug_routes_to_ceo_and_bug_bounty() {
     let mut ctx = String::new();
-    append_agent_dispatch(&mut ctx, "debug");
+    append_agent_dispatch(&mut ctx, "debug", "", "");
     assert!(ctx.contains("INVOKE_AGENT: ceo"));
     assert!(ctx.contains("INVOKE_SKILL: bug-bounty"));
 }
@@ -12,7 +16,7 @@ fn test_agent_dispatch_debug_routes_to_ceo_and_bug_bounty() {
 #[test]
 fn test_agent_dispatch_refactor_routes_to_aegis_and_rust() {
     let mut ctx = String::new();
-    append_agent_dispatch(&mut ctx, "refactor");
+    append_agent_dispatch(&mut ctx, "refactor", "", "");
     assert!(ctx.contains("INVOKE_AGENT: aegis-guardian"));
     assert!(ctx.contains("INVOKE_SKILL: rust"));
 }
@@ -20,7 +24,7 @@ fn test_agent_dispatch_refactor_routes_to_aegis_and_rust() {
 #[test]
 fn test_agent_dispatch_implement_invokes_writing_plans() {
     let mut ctx = String::new();
-    append_agent_dispatch(&mut ctx, "implement");
+    append_agent_dispatch(&mut ctx, "implement", "", "");
     assert!(ctx.contains("INVOKE_SKILL: writing-plans"));
     assert!(ctx.contains("iteration-start"));
 }
@@ -28,20 +32,20 @@ fn test_agent_dispatch_implement_invokes_writing_plans() {
 #[test]
 fn test_agent_dispatch_general_invokes_research_director() {
     let mut ctx = String::new();
-    append_agent_dispatch(&mut ctx, "general");
+    append_agent_dispatch(&mut ctx, "general", "", "");
     assert!(ctx.contains("INVOKE_AGENT: research-director"));
 }
 
 #[test]
 fn test_agent_dispatch_skipped_for_memory() {
     let mut ctx = String::new();
-    append_agent_dispatch(&mut ctx, "memory");
+    append_agent_dispatch(&mut ctx, "memory", "", "");
     assert!(ctx.is_empty());
 }
 
 #[test]
 fn test_agent_dispatch_skipped_for_unknown() {
     let mut ctx = String::new();
-    append_agent_dispatch(&mut ctx, "frobnicate");
+    append_agent_dispatch(&mut ctx, "frobnicate", "", "");
     assert!(ctx.is_empty());
 }

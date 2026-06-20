@@ -1,6 +1,7 @@
 // ARCH: see kavach db get --category decision --key arch.decision.fourteen_prefix_const_table
 
 pub mod auto_draft;
+pub mod brain_synth;
 pub mod intent;
 pub mod post_implementation;
 pub mod pre_implementation;

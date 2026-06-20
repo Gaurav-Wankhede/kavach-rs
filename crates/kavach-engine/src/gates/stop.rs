@@ -18,6 +18,7 @@ use crate::error::EngineError;
 mod advisory_detectors;
 mod ai_verdict;
 mod dispatch;
+mod done_gaming;
 mod foreign_tree_logic;
 mod inflight;
 mod pattern_extract;
@@ -210,6 +211,10 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         // Falls through on a clean tree or own-only dirt (own git worktree => no-op).
         phase::foreign_tree,
         phase::kanban_status,
+        // DONE-GAMING BLOCK: after close-before-advance, before dispatch. REFUSES a
+        // stop that narrates completion ("✅ DONE", "documentation pass", "vacuously
+        // complete") while runnable cards remain and this turn mutated no code/DB.
+        done_gaming::check,
         phase::kanban_card,
         dispatch::retry,
         dispatch::first_pass,

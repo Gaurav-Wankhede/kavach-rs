@@ -48,46 +48,6 @@ pub fn is_umbrella(title: &str) -> bool {
     UMBRELLA_MARKERS.iter().any(|m| lowered.contains(m))
 }
 
-/// `true` iff the card is an OPERATOR-DECISION GATE.
-///
-/// A node whose "work" is an operator action (open a DB maintenance window, run a
-/// deploy, greenlight a cohort, supply a credential), NOT agent-buildable code.
-/// A gate exists to BLOCK its dependents
-/// until the operator acts; it is never itself dispatched. Recognized by the `GATE`
-/// title prefix in either the bare `GATE:` or the parenthetical `GATE (operator):`
-/// form — both conventions `roadmap.unit.gate.*` cards use.
-///
-/// Without this the selector serves a gate card as `next_open_task` (a gate has no
-/// declared deps, so it is trivially deps-satisfied + runnable), and the loop
-/// dispatches operator-only work the agent cannot perform — the exact churn observed
-/// on `gate.operator-db-maintenance-window` / `gate.operator-greenlights-*`. Mirrors
-/// `is_umbrella`: a non-status dispatch-exclusion predicate.
-///
-/// PREDICATE-DRIFT FIX (2026-06-19): the prior `starts_with("gate:")` never
-/// matched the real `GATE (operator): …` titles (parenthetical between `GATE` and
-/// `:`), so every operator gate leaked into dispatch and re-looped forever. Match
-/// the `GATE` word boundary, then any chars up to the first `:`, tolerating the
-/// `(operator)` qualifier — without admitting unrelated words like "GATES to BDF".
-#[must_use]
-pub fn is_gate(title: &str) -> bool {
-    let lowered = title.trim_start().to_lowercase();
-    let Some(rest) = lowered.strip_prefix("gate") else {
-        return false;
-    };
-    // Immediately after `GATE`: either the bare `:` form, or whitespace/`(`
-    // introducing a qualifier like `(operator):`. A following alnum (e.g. "gates",
-    // "gateway") is NOT a gate. The colon must appear before any `—`/`-` dash so
-    // a prose title that merely starts with "Gate…" without the `:` convention
-    // does not false-positive.
-    match rest.chars().next() {
-        Some(':') => true,
-        Some(c) if c.is_whitespace() || c == '(' => {
-            rest.split_once(':').is_some_and(|(head, _)| !head.contains('—'))
-        }
-        _ => false,
-    }
-}
-
 /// Title phrases that mark a card as too large to build in one dispatch — it must
 /// be DECOMPOSED into child roadmap rows before any leaf work is done. Unlike an
 /// umbrella (whose status is purely child-derived and is never dispatched), a

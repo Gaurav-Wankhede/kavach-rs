@@ -47,12 +47,57 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
     );
 }
 
-/// Append agent + skill dispatch directives by intent type.
-/// Routing matrix (validated 2026-04 via Anthropic subagent docs):
-///   debug → ceo + bug-bounty · refactor → aegis-guardian + rust ·
-///   implement → writing-plans · general → research-director.
-/// SOURCES: code.claude.com/docs/en/sub-agents · claudefa.st sub-agent best practices.
-pub(crate) fn append_agent_dispatch(context: &mut String, intent_type: &str) {
+/// Append agent dispatch directives, dynamically ranked when possible, else
+/// the intent-keyed default table (2026 hybrid routing best practice).
+/// SOURCE: <https://www.merge.dev/blog/llm-routing> · <https://arxiv.org/pdf/2511.02200>.
+pub(crate) fn append_agent_dispatch(
+    context: &mut String,
+    intent_type: &str,
+    prompt: &str,
+    research_topic: &str,
+) {
+    if try_dynamic_dispatch(context, prompt, research_topic) {
+        return;
+    }
+    append_static_dispatch(context, intent_type);
+}
+
+/// Minimum distinct prompt-word overlap for a ranked agent to be trusted over
+/// the static default. Below this the prompt is too generic — defer to the table.
+const DYNAMIC_DISPATCH_FLOOR: usize = 2;
+
+/// Try to inject a DB/research-ranked agent directive. Returns `true` when a
+/// confident match was injected, `false` to fall through to the static table.
+fn try_dynamic_dispatch(context: &mut String, prompt: &str, research_topic: &str) -> bool {
+    let Some(loader) = kavach_chain::loader::global_loader() else {
+        return false;
+    };
+    // Enrich the ranking query with the live research topic so a researched
+    // turn steers the agent choice (internet-first feeds dispatch).
+    let query = if research_topic.is_empty() {
+        prompt.to_owned()
+    } else {
+        format!("{prompt} {research_topic}")
+    };
+    let ranked = loader.rank_agents_for_prompt(&query, 1);
+    let Some((agent, score)) = ranked.into_iter().next() else {
+        return false;
+    };
+    if score < DYNAMIC_DISPATCH_FLOOR {
+        return false;
+    }
+    context.push_str("\n[INVOKE_AGENT: ");
+    context.push_str(&agent.name);
+    context.push_str("] (dynamic, score=");
+    context.push_str(&score.to_string());
+    context.push_str(")\n");
+    context.push_str(&agent.description);
+    context.push('\n');
+    true
+}
+
+/// Intent-keyed default table — the hybrid fallback when ranking is inconclusive.
+fn append_static_dispatch(context: &mut String, intent_type: &str) {
     let directive = match intent_type {
         "debug" => {
             "\n[INVOKE_AGENT: ceo] [INVOKE_SKILL: bug-bounty]\n\

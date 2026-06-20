@@ -73,10 +73,14 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     if kavach_session::SessionState::detect_new_crate_confirmation(prompt) {
         session.confirm_new_crate();
     }
-    if intent.requires_research {
+    // Internet-first: fire a background web-search NOW (hook budget forbids blocking).
+    let research_pending = intent.requires_research.then(|| {
         let topic = extract_research_topic(prompt, &intent.intent_type);
         session.set_research_topic(&topic);
-    }
+        kavach_advisor::clear(&session.session_id);
+        kavach_advisor::kickoff(&session.session_id, &topic);
+        topic
+    });
     session.set_intent_risk(&intent.risk_level);
     super::event_log::log_intent(
         &session.session_id,
@@ -95,6 +99,14 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let forbidden = kavach_chain::ResearchGate::new().check_forbidden_phrases(prompt);
 
     let mut context = build_base_context(&intent, &routing, &session);
+    if let Some(topic) = research_pending {
+        let pending = format!(
+            "\n[RESEARCH:PENDING] topic={topic} — internet-first lookup dispatched. \
+             Findings arrive in the turn cache; the pre-write gate BLOCKS edits until \
+             you cite a source URL or [RESEARCH] block.\n"
+        );
+        context.push_str(&pending);
+    }
     context.push_str(&harness_block);
     // Brain-OS auto-recall: consult memory on every prompt (fail-soft, advisory).
     context.push_str(&recall::recall_block(prompt));

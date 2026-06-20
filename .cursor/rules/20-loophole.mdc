@@ -1,0 +1,18 @@
+---
+description: Adversarial self-review before any done claim — the loophole lenses
+---
+
+Before any done claim, and after any auth/lease/lock/money/persistence/concurrency
+change, ask: how would a hostile/concurrent/malformed/crashed/replaying actor break this?
+
+Run each lens, then CLOSE it at its root this turn or FILE it as a typed Kavach task
+with the exact failure mode:
+- concurrency — TOCTOU, lost-update, double-claim (close with atomic/CAS/lock)
+- failure — process dies mid-op: orphaned lock, half-write, leaked task (guard/txn/lease-expiry)
+- malformed — null/huge/wrong-type/hostile input: panic, injection (validate at the edge)
+- authz — caller without rights: missing check, confused-deputy, IDOR (add the check, fail closed)
+- replay — same request twice: non-idempotent mutation (make it idempotent)
+- boundary — empty/max/negative/off-by-one (handle the bound)
+
+Emit a "Loopholes closed:" line citing each verdict (FIXED at file:line / FILED as
+<card> / N/A at file:line). Every loophole found feeds a Kavach mistake row.

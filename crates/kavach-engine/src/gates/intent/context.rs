@@ -40,7 +40,7 @@ pub(super) fn append_context_blocks(
     append_memory_db(context, intent_type);
     append_verify_existing(context, intent_type);
     append_root_cause_protocol(context, intent_type);
-    append_agent_dispatch(context, intent_type);
+    append_agent_dispatch(context, intent_type, prompt, &session.research_topic);
     append_db_query_required(context, prompt);
 
     // CC 2.1.133: surface the active effort tier so downstream gates' strictness

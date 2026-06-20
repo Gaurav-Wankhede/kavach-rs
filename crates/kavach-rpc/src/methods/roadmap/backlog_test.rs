@@ -1,5 +1,5 @@
 use crate::methods::roadmap::readiness::{
-    deps_satisfied, is_gate, is_needs_decomposition, is_runnable_status, is_umbrella,
+    deps_satisfied, is_needs_decomposition, is_runnable_status, is_umbrella,
 };
 
 fn entry_titled(key: &str, title: &str, status: &str) -> kavach_surreal::MemoryEntry {
@@ -8,30 +8,28 @@ fn entry_titled(key: &str, title: &str, status: &str) -> kavach_surreal::MemoryE
     e
 }
 
-/// The backlog tier MUST exclude gates / umbrellas / needs-decomposition cards —
-/// the same predicate set the primary selectors apply. This is the BYPASS the
-/// backlog path previously missed (it filtered only status+deps), letting an
-/// operator gate + a platform umbrella ("P-BDF … umbrella (PLAN-FIRST)") re-loop.
+/// Backlog tier excludes umbrellas / needs-decomposition cards — mirrors the
+/// primary selectors. Owner-gating abolished (2026-06-20): a `GATE:` card is NOT
+/// excluded; it is ordinary runnable work the agent claims and builds.
 fn backlog_pick(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {
     entries.iter().find(|e| {
         is_runnable_status(e.entry_status_str())
             && deps_satisfied(e, entries)
-            && !is_gate(&e.title)
             && !is_umbrella(&e.title)
             && !is_needs_decomposition(&e.title)
     })
 }
 
 #[test]
-fn backlog_excludes_operator_gate() {
+fn backlog_dispatches_gate_as_ordinary_work() {
     let entries = vec![entry_titled(
         "roadmap.unit.gate.operator-greenlights-money-paths",
         "GATE (operator): money-path greenlight",
         "todo",
     )];
     assert!(
-        backlog_pick(&entries).is_none(),
-        "an operator gate must NOT be dispatched by the backlog tier"
+        backlog_pick(&entries).is_some(),
+        "owner-gating abolished — a GATE card is ordinary runnable work"
     );
 }
 
@@ -49,14 +47,15 @@ fn backlog_excludes_platform_umbrella() {
 }
 
 #[test]
-fn backlog_picks_real_card_over_gate_and_umbrella() {
+fn backlog_skips_umbrella_but_takes_gate_or_real() {
     let entries = vec![
-        entry_titled("g", "GATE (operator): something", "todo"),
         entry_titled("u", "Platform umbrella thing", "todo"),
+        entry_titled("g", "GATE (operator): something", "todo"),
         entry_titled("real", "Author POST /api/foo handler", "todo"),
     ];
-    let picked = backlog_pick(&entries).expect("the real buildable card must be found");
-    assert_eq!(picked.entry_key, "real");
+    // Umbrella is skipped; the gate is now ordinary work and is taken first.
+    let picked = backlog_pick(&entries).expect("a buildable card must be found");
+    assert_eq!(picked.entry_key, "g");
 }
 
 fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {

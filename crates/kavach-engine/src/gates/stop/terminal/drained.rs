@@ -119,10 +119,15 @@ fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
                  ITS blocker until a leaf dispatches, then dispatch the dependent. \
                  (4) If the dependency edge is STALE/FALSE (prerequisite already \
                  shipped, or never applied): correct the `DEPENDS_ON:` line (`kavach db \
-                 write`) and dispatch. (5) Missing credential / external gate: FILE it \
-                 as a card naming the exact gap (`kavach db write`), then KEEP BUILDING \
-                 every other reachable leaf. Never hand work back, never escalate, \
-                 never self-stop. Yield only to the user's `Esc`.",
+                 write`) and dispatch. (5) Secret/credential-bound DB op (migration, deletion, query, \
+                 backfill): do NOT hand it back. WRITE a runtime script (Rust first: \
+                 `dotenvy` + `std::env::var`; TypeScript-typed only if Rust cannot reach \
+                 the engine) that reads the env var INSIDE its own process, RUNS the op, \
+                 and emits ONLY a pass/fail receipt — the value never enters your context. \
+                 ONLY if the required env var is genuinely ABSENT after loading `.env` do \
+                 you FILE a card naming the exact missing key, then KEEP BUILDING every \
+                 other reachable leaf. Never hand work back, never escalate, never \
+                 self-stop. Yield only to the user's `Esc`.",
             ),
         ],
     );

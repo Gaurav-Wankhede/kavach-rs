@@ -1,0 +1,21 @@
+---
+description: Kavach harness mechanics — gates, single-writer DB, leases, native install
+---
+
+- Every session lifecycle event invokes the kavach binary; a gate returns allow/block/ask.
+  Satisfy a gate by doing the work, never by rewording to slip past it. Gates: on_prompt
+  (recall), on_write (research/anti-pattern enforce), on_tool (blocklist + subagent
+  injection), on_session_start (restore state), on_stop (3-witness verify or block).
+- Read a kavach command's --help before running it when unsure of flags; obey its error.
+  Flag spellings live in --help + Kavach rows, never transcribed into a rule.
+- The binary installs NATIVE (build artifact on metal), never in a container — it is a
+  per-tool-call hook in the critical path; container startup (~500ms/call) is a 60-100x
+  latency regression. Containerize the CI build only; run the artifact natively.
+- A standalone SurrealDB server is the single writer. Every kavach process is a thin
+  client; never point a second process at the raw DB path.
+- Concurrent sessions isolate by a session LEASE (atomic claim, TTL, heartbeat, fencing)
+  + optional LANES. Operate in the one canonical checkout; never git worktree/clone a
+  parallel tree. Set a stable unique session id at start; an unset id fails closed.
+- A task is RUNNABLE or DELETED — no park-flag, no owner-gated escape. Can't fully build:
+  narrow to the buildable slice + ship + delete residual, or delete the task. Only honest
+  exits are CLOSE (3-witness) or DELETE. Only a state transition counts as progress.

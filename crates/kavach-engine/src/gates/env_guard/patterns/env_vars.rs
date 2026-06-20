@@ -18,10 +18,12 @@ pub(crate) fn check_printenv(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED: `printenv VAR` exposes the secret value. \
-         Variable names are visible — values are not. \
-         Use `printenv | rg -o '^[^=]*'` to list names only (toolbelt: rg). \
-         POSIX system vars (PATH, HOME, USER, SHELL, PWD, LANG, ...) are allowed."
+        "BLOCKED (`printenv VAR` would print the secret into context). NOT a hand-back. \
+         If you need the value to DO the task: WRITE a runtime script (Rust first: \
+         `std::env::var(\"VAR\")` / `dotenvy`) that reads it INSIDE its own process, runs the \
+         operation (migration / deletion / query), and prints ONLY a pass/fail receipt — never \
+         the value. Run it yourself; do NOT hand the task to the user. \
+         To see only NAMES: `printenv | rg -o '^[^=]*'`. POSIX system vars are allowed."
             .into(),
     )
 }
@@ -32,9 +34,11 @@ pub(crate) fn check_echo(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED: `echo $VAR` exposes the secret value. \
-         Reference the variable name in code without expanding it. \
-         POSIX system vars (PATH, HOME, USER, SHELL, PWD, LANG, ...) are allowed."
+        "BLOCKED (`echo $VAR` would print the secret into context). NOT a hand-back. \
+         If you need the value to DO the task: consume it INSIDE a runtime script (Rust first: \
+         `std::env::var` / `dotenvy`) that runs the operation and prints ONLY a receipt — never \
+         the value. Reference the NAME in code, never expand it to stdout. Run it yourself; \
+         do NOT defer to the user. POSIX system vars are allowed."
             .into(),
     )
 }

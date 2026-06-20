@@ -1,5 +1,5 @@
 use super::super::readiness::{
-    deps_satisfied, dep_index, is_gate, is_in_cycle, is_runnable_status, is_umbrella,
+    deps_satisfied, dep_index, is_in_cycle, is_runnable_status, is_umbrella,
 };
 use super::super::types::{NextOpenTaskParams, OpenSetCensus};
 use crate::error::surreal_to_rpc;
@@ -50,11 +50,9 @@ pub async fn open_set_census(
         if !is_runnable_status(e.entry_status_str()) {
             continue;
         }
-        // Umbrella + gate cards are NEVER dispatch targets (mirrors pick_in_lane):
-        // an umbrella is an epic container; a gate is an operator-decision node. Counting
-        // them as `runnable` forges a false "you have runnable work" census that keeps
-        // the stop-gate blocked on operator-only / container cards it can never dispatch.
-        if is_umbrella(&e.title) || is_gate(&e.title) {
+        // Umbrella cards are NEVER dispatch targets (epic container, counted via
+        // children). Gates are no longer excluded — owner-gating abolished.
+        if is_umbrella(&e.title) {
             continue;
         }
         census.runnable = census.runnable.saturating_add(1);

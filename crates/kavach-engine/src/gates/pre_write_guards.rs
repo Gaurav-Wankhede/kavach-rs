@@ -14,6 +14,7 @@ mod chain;
 mod guards2026;
 mod microfile;
 mod quality;
+mod research_consume;
 mod result;
 mod security;
 
@@ -40,7 +41,9 @@ pub(crate) fn check(
     let mut runner = kavach_chain::Runner::new(&session.session_id);
 
     // Ordered guard chain; the first `Some(reason)` blocks and short-circuits.
-    let block = chain::check(ctx, input, session, &mut runner)
+    // P0 internet-first enforcement runs FIRST: no researched edit slips through.
+    let block = research_consume::check(ctx, session)
+        .or_else(|| chain::check(ctx, input, session, &mut runner))
         .or_else(|| {
             quality::lang(ctx, &mut acc); // P1 rust/ts
             security::check(ctx) // P0 sql/db/owasp/silent/crypto/gnap/frontend-sec
