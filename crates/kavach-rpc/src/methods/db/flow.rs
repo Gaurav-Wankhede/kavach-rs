@@ -161,3 +161,54 @@ pub async fn render(state: &AppState, p: RenderParams) -> Result<RenderResult, E
         })
     }
 }
+
+/// Parameters for `db.decision_render` — the `DECISION_MAP` architecture graph.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct DecisionRenderParams {
+    /// Project slug whose decision architecture to render.
+    pub project_slug: String,
+    /// Optional focus keys (qnames or bare keys) to restrict the neighbourhood;
+    /// empty renders the whole decision spine.
+    #[serde(default)]
+    pub focus: Vec<String>,
+    /// Max nodes to keep (token discipline); defaults to 8.
+    #[serde(default)]
+    pub max_nodes: Option<usize>,
+}
+
+/// Result of `db.decision_render`: the Mermaid `graph TD`, or `None` when the
+/// project has no decision/roadmap nodes (nothing to inject).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct DecisionRenderResult {
+    /// Rendered status-styled `graph TD`, or `None` when empty.
+    pub mermaid: Option<String>,
+}
+
+/// Default node cap for the decision map (token discipline).
+const DECISION_MAP_DEFAULT_CAP: usize = 8;
+
+/// Render the decision-architecture slice of a project's graph as Mermaid.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on database failure (project missing ⇒ empty graph
+/// ⇒ `mermaid: None`, not an error).
+pub async fn decision_render(
+    state: &AppState,
+    p: DecisionRenderParams,
+) -> Result<DecisionRenderResult, ErrorObjectOwned> {
+    let dag = kavach_surreal::roadmap_dag_fetch(&state.db, &p.project_slug)
+        .await
+        .map_err(surreal_to_rpc)?;
+    let cap = p.max_nodes.unwrap_or(DECISION_MAP_DEFAULT_CAP);
+    Ok(DecisionRenderResult {
+        mermaid: dag.decision_mermaid(&p.focus, cap),
+    })
+}

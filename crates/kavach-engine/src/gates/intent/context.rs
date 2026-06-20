@@ -43,6 +43,13 @@ pub(super) fn append_context_blocks(
     append_agent_dispatch(context, intent_type, prompt, &session.research_topic);
     append_db_query_required(context, prompt);
 
+    // [DECISION_MAP]: inject the project's decision architecture as Mermaid so the
+    // model reads settled choices as hard constraints (anti-hallucination). VIEW
+    // over the decision DAG, relevance-filtered, fail-soft None.
+    if let Some(map) = super::decision_map::decision_map_block(&session.project, prompt) {
+        context.push_str(&map);
+    }
+
     // CC 2.1.133: surface the active effort tier so downstream gates' strictness
     // is legible to the model. `low` relaxes the pre-write research block.
     let effort = input.effort_level();

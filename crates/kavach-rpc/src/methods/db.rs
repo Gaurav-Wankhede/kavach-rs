@@ -53,9 +53,10 @@ pub use gate_cfg::{
     get as gate_config_get, list as gate_config_list, set as gate_config_set,
 };
 pub use flow::{
-    FlowSummary, ListParams as FlowListParams, RenderParams as FlowRenderParams,
-    RenderResult as FlowRenderResult, UpsertParams as FlowUpsertParams,
-    UpsertResult as FlowUpsertResult, list as flow_list, render as flow_render, upsert as flow_upsert,
+    DecisionRenderParams, DecisionRenderResult, FlowSummary, ListParams as FlowListParams,
+    RenderParams as FlowRenderParams, RenderResult as FlowRenderResult,
+    UpsertParams as FlowUpsertParams, UpsertResult as FlowUpsertResult, decision_render,
+    list as flow_list, render as flow_render, upsert as flow_upsert,
 };
 pub use get::{GetEntry, GetParams, GetResult, get};
 pub use graph_fetch::{GraphEdge, GraphFetchParams, GraphFetchResult, GraphNode, graph_fetch};

@@ -951,6 +951,14 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(e.to_string()))?;
 
     module
+        .register_async_method("db.decision_render", |params, ctx, _ext| async move {
+            let p: db::DecisionRenderParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::decision_render(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
         .register_async_method("db.gate_config_get", |params, ctx, _ext| async move {
             let p: db::GateCfgGetParams =
                 params.parse().map_err(|e| invalid_params(e.to_string()))?;

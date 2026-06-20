@@ -2,6 +2,7 @@
 //! Triggered by the `UserPromptSubmit` hook event.
 mod classify;
 mod context;
+mod decision_map;
 mod harness;
 mod kvs;
 mod phase;
