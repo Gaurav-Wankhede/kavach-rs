@@ -68,7 +68,7 @@ fn permission_seek_reports_handback_signal() {
     // The refuse-stop teeth: a permission-menu turn must set handback_or_menu so
     // clean_exit can REFUSE the stop (census-gated), not merely advise.
     let mut session = SessionState::default();
-    let stall = run(&mut session, "Want me to start the next card now, or pause here?", false);
+    let stall = run(&mut session, "I've finished the slice. Should I proceed to the next card?", false);
     assert!(stall.handback_or_menu, "permission-menu must flag the handback signal");
 }
 
