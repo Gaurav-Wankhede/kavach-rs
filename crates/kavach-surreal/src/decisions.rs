@@ -181,10 +181,18 @@ fn arch_record_key(project: &RecordId, pattern: &str, file_path: &str) -> String
 /// out so determinism is unit-testable without a DB. Shared by algo + arch
 /// upserts — both key one row per `(project, <pattern|class>, file_path)`.
 pub(crate) fn hash_decision_key(project_key: &str, discriminant: &str, file_path: &str) -> String {
-    let seed = format!("{project_key}:{discriminant}:{file_path}");
+    hash_keyed("decision", project_key, discriminant, file_path)
+}
+
+/// Table-namespaced deterministic record-id hash: `blake3(table:a:b:c)[..32]`.
+/// The `table` prefix keeps each table's keyspace independent (no cross-table
+/// seed aliasing); 32 hex chars = 128 bits puts the birthday bound far beyond
+/// any realistic row count, so a key collision is not a practical concern.
+pub(crate) fn hash_keyed(table: &str, a: &str, b: &str, c: &str) -> String {
+    let seed = format!("{table}:{a}:{b}:{c}");
     let hex = blake3::hash(seed.as_bytes()).to_hex();
-    // blake3 hex is ASCII, so [..16] is on a char boundary; .get is panic-free.
-    hex.get(..16).unwrap_or(&hex).to_owned()
+    // blake3 hex is ASCII, so [..32] is on a char boundary; .get is panic-free.
+    hex.get(..32).unwrap_or(&hex).to_owned()
 }
 
 /// List up to `limit` recent `arch_decision` rows for `project_id`.
@@ -209,6 +217,59 @@ pub async fn arch_list_recent(
 }
 
 #[cfg(test)]
+mod algo_upsert_tests {
+    use super::{AlgoUpsertParams, algo_list_recent, algo_upsert};
+    use crate::open_memory;
+    use surrealdb_types::RecordId;
+
+    // The whole point of the keyed-UPSERT race fix: two upserts of the same
+    // (project, problem_class, file_path) tuple converge to ONE row carrying
+    // the latest value — never two rows (the old DELETE;CREATE double-count).
+    #[tokio::test]
+    async fn re_upsert_same_tuple_converges_to_one_row() {
+        let db = open_memory().await.expect("open mem");
+        let pid = RecordId::new("project", "p");
+        let mk = |chosen: &'static str| AlgoUpsertParams {
+            project: pid.clone(),
+            problem_class: "sort",
+            chosen,
+            time_complexity: "O(n log n)",
+            space_complexity: "O(1)",
+            file_path: "src/x.rs",
+            search_year: 2026,
+            search_month: 6,
+        };
+        algo_upsert(&db, &mk("quicksort")).await.expect("first upsert");
+        algo_upsert(&db, &mk("heapsort")).await.expect("second upsert");
+
+        let rows = algo_list_recent(&db, &pid, 10).await.expect("list");
+        assert_eq!(rows.len(), 1, "re-upsert must converge to one row, not duplicate");
+        assert_eq!(rows[0].chosen, "heapsort", "row carries the latest value");
+    }
+
+    // A different tuple is a distinct row — the dedup key must not over-merge.
+    #[tokio::test]
+    async fn distinct_tuple_is_a_separate_row() {
+        let db = open_memory().await.expect("open mem");
+        let pid = RecordId::new("project", "p");
+        let mk = |file_path: &'static str| AlgoUpsertParams {
+            project: pid.clone(),
+            problem_class: "sort",
+            chosen: "quicksort",
+            time_complexity: "O(n log n)",
+            space_complexity: "O(1)",
+            file_path,
+            search_year: 2026,
+            search_month: 6,
+        };
+        algo_upsert(&db, &mk("src/x.rs")).await.expect("base");
+        algo_upsert(&db, &mk("src/y.rs")).await.expect("other");
+        let rows = algo_list_recent(&db, &pid, 10).await.expect("list");
+        assert_eq!(rows.len(), 2, "distinct file_path -> distinct row");
+    }
+}
+
+#[cfg(test)]
 mod algo_key_tests {
     use super::hash_decision_key;
 
@@ -219,7 +280,7 @@ mod algo_key_tests {
         let a = hash_decision_key("p1", "sort", "src/x.rs");
         let b = hash_decision_key("p1", "sort", "src/x.rs");
         assert_eq!(a, b);
-        assert_eq!(a.len(), 16);
+        assert_eq!(a.len(), 32); // 128-bit key (32 hex chars)
     }
 
     #[test]

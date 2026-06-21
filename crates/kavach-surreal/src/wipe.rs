@@ -80,6 +80,9 @@ const PROJECT_SCOPED_TABLES: &[&str] = &[
     "arch_decision",
     "algo_decision",
     "gate_pattern",
+    // project-scoped (project + gate_key cols); omitting it leaked operator
+    // gate overrides past a project wipe — caught in code review.
+    "gate_config",
 ];
 
 /// Wipe all data for a project. Returns counts per table.

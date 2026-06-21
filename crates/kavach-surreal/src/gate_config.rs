@@ -271,7 +271,7 @@ pub async fn set_with_kind(
     // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (two concurrent
     // setters double-write / a reader sees zero rows mid-swap).
     // SOURCE: decision.algo-upsert-idempotent-keyed.
-    let key = crate::decisions::hash_decision_key(project, gate_key, "");
+    let key = crate::decisions::hash_keyed("gate_config", project, gate_key, "");
     db.query(
         "UPSERT type::record('gate_config', $key) SET \
              project = $p, gate_key = $k, kind = $kind, \
