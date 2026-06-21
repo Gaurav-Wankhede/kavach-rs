@@ -7,6 +7,11 @@ publish = false
 [lints]
 workspace = true
 
+[features]
+# Exposes `paths::set_test_state_dir` to downstream crates so their tests can
+# redirect the spool/state dir to a temp path (engine spool-glue tests).
+test-support = []
+
 [dependencies]
 kavach-config = { path = "../kavach-config" }
 kavach-rpc = { path = "../kavach-rpc" }
