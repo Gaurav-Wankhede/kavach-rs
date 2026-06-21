@@ -54,16 +54,14 @@ fn is_source(path: &str) -> bool {
     SOURCE_EXTS.iter().any(|e| p.ends_with(e))
 }
 
-/// Count of bloat blocks + wall-of-text lines in `content` (the block trigger).
+/// Count of flagged bloat lines in `content` (the block trigger).
 fn bloat_count(file_path: &str, content: &str) -> usize {
     advise(file_path, content)
-        .map(|m| m.lines().filter(|l| l.trim_start().starts_with("L")).count())
-        .unwrap_or(0)
+        .map_or(0, |m| m.lines().filter(|l| l.trim_start().starts_with('L')).count())
 }
 
-/// True when the write INTRODUCES new bloat: the new content carries more bloat
-/// than the old. Pre-existing bloat (same count) never blocks, so the 444 legacy
-/// files stay editable while new bloat is denied. Empty `old` = a fresh Write.
+/// True when the write INTRODUCES new bloat (new count > old). Pre-existing bloat
+/// never blocks, so legacy files stay editable. Empty `old` = a fresh Write.
 #[must_use]
 pub fn introduces_bloat(file_path: &str, old: &str, new: &str) -> bool {
     bloat_count(file_path, new) > bloat_count(file_path, old)
