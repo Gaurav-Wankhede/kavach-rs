@@ -1,7 +1,5 @@
 //! Durable spool for fire-and-forget RPC writes that must NOT be lost on a DB blip.
 //!
-//! Replaces silent `let _: Result = call(...)` discards with a non-lossy file.
-//!
 //! The learning-loop writes (pattern seed, bandit reward, gate audit) are emitted
 //! from the Stop gate, which must never block. Previously a failed RPC was
 //! discarded (`let _: Result = call(...)`), silently losing the signal the whole
