@@ -1,13 +1,5 @@
-// ARCH: PublicPrefixGrepAllowlist
-// TIME: O(n*p) per check — n = command length, p = prefix list (6) | SPACE: O(1) static slices
-// YEAR: 2026 | SEARCHED: 2026-05
-//           "public_" and "secret" returns false. Conservative bias = correct.
-// PATTERN: prefix_allowlist | SCOPE: pre_tool_bash | CAP: AP
-// FAILURE_MODE: false negative (legitimate PUBLIC_ var reject) → user complains, list extended;
-//               false positive (secret var slip via prefix) → leak. Mitigated by
-//               blocked-substring check below.
-//
-// Extracted from env_guard.rs (split-env-guard-microservices roadmap, May 2026).
+// Framework-public env-var prefix allowlist for grep commands.
+// See decision.engine.env-guard-grep-prefix-arch.
 
 /// Detect grep commands that filter only on framework-public env-var prefixes.
 ///
