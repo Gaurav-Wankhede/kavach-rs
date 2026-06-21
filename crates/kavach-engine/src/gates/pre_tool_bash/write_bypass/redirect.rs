@@ -2,12 +2,8 @@
 //! (whitespace- and split-independent), excluding fd-duplication, numeric
 //! comparisons, and operator glyphs. `/dev/null` + `/tmp/kavach` are safe sinks.
 
-// FIX: [CWE-184 incomplete-denylist] redirect modeled as a whitespace-padded
-// substring missed `echo data>file` (POSIX allows zero blanks around `>`).
-// ROOT_CAUSE: redirect predicate narrower than the shell redirect grammar.
-// SOLUTION: detect `>`/`>>` whitespace-independently; keep the `2>&1`,
-// `/dev/null`, `/tmp/kavach`, and numeric-comparison exemptions.
-// RESEARCH: https://cwe.mitre.org/data/definitions/184.html
+// File-redirect detection: whitespace-independent > / >> target matching.
+// See decision.engine.file_redirect_detection.
 
 /// Byte position of the first file-redirect operator (`>` or `>>`, optionally
 /// fd-prefixed like `2>`) whose target is a path, or `None`. Classification is
