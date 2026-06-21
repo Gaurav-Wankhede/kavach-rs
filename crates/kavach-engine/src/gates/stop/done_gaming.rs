@@ -128,8 +128,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
          produced NO code/DB work — only narration (a status block / \"documentation pass\" / \
          \"vacuously complete\" / \"await features\"). Naming work done is NOT doing it \
          (§4a_describe_is_not_done). A phase is DONE only with a 3-witness artifact (rg file:line \
-         + git diff --stat + cargo check exit 0) — never by redefinition (\"0 rows\", \"await \
-         features\", \"gated\", \"doc pass\" are NOT done).\n\
+         + git diff --stat + cargo check exit 0) — NEVER redefine work as done; only \
+         3-witness proof counts (\"0 rows\", \"await features\", \"gated\", \"doc pass\" are NOT done).\n\
          DO THIS TURN: the census is already read ({runnable} runnable) — claim ONE runnable card \
          (`kavach db claim ...`) and MUTATE code/DB to advance it; if it is genuinely \
          secret/credential-bound, run it via a runtime script (env in-process, receipt out, value \
