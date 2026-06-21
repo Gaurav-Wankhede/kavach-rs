@@ -28,12 +28,9 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
              Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
         ));
     }
-    // The unit's test must have been OBSERVED RED this turn — a real `cargo
-    // test/nextest` run that printed FAILED for it, recorded in `tdd_red_units` by
-    // the post-tool Bash gate. A mere test-FILE touch is NOT enough: an
-    // after-the-fact vacuous test that was never run-and-failed cannot drive code.
-    // SOURCE: arxiv.org/pdf/2602.10522 (34-62% of LLM tests are invalid when written
-    // from the code); vijayanant.com TDD-for-LLMs.
+    // The unit's test must have been OBSERVED RED this turn (recorded in
+    // `tdd_red_units` by the post-tool Bash gate) — a test-FILE touch alone is a
+    // vacuous after-the-fact test. SOURCE: decision.tdd.red-phase-live-oracle.
     if session.tdd_red_units.iter().any(|u| u == stem) {
         return None;
     }
