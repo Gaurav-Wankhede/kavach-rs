@@ -59,6 +59,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             shallow_advisory: None,
             continuation_advisory: None,
             research_unsourced: false,
+            disobedience_handback: false,
         };
         if inflight::background(&mut ctx).is_break() {
             return Ok(());
