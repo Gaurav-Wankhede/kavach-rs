@@ -106,21 +106,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         _ => {
             let mut session = kavach_session::get_or_create_session();
             let cfg = kavach_config::load_gates_config();
-            // Hard block Agent tool when research required but not done.
-            // Agent spawns can generate code from training weights in subagent context
-            // where pre-write research gate is exempted for subagents.
-            //
-            // CARVE-OUT 1: audit/analyze/explain/read intents on local artifacts
-            // don't need external research — they inspect existing code.
-            // Per ~/.claude/CLAUDE.md §Research Cadence carve-outs.
-            //
-            // FIX: [contract_violation] pre_tool.rs:29
-            // SYMPTOM: Agent tool blocked for research-director which performs research
-            // WHY5: Gate blocked ALL agents without checking if agent CAN do research
-            // ROOT_CAUSE: Missing exemption for read_only agents that perform research
-            // BLAST_SITE: 1/1 — only site of agent research gate
-            // RESEARCH: github.com/NousResearch/hermes-agent/issues/21916 — similar deadlock
-            // SOLUTION: Check agent_type against AGENT_CONTRACTS; exempt read_only agents
+            // Block Agent tool when research required but not done (with read-only carve-out).
+            // See decision.engine.agent_research_requirement.
             let intent_is_local_analysis = matches!(
                 session.intent_type.as_str(),
                 "audit" | "analyze" | "explain" | "read" | "review" | "explore"
