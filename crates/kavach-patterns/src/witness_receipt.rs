@@ -61,9 +61,10 @@ impl std::fmt::Display for ReceiptError {
     }
 }
 
-/// Validate a receipt against the daemon's live view: the current `HEAD`, the
-/// current time, and the promoting session. Cheap and total — no I/O here; the
-/// caller supplies `head_now`/`now_ms`/`session_now` (the daemon reads HEAD once).
+/// Validate a receipt against the daemon's live view. Cheap and total — no I/O.
+///
+/// The caller supplies `head_now`/`now_ms`/`session_now`: the current `HEAD`, the
+/// current time, and the promoting session (the daemon reads HEAD once).
 ///
 /// # Errors
 /// Returns the specific [`ReceiptError`] for the first failed check so the agent
