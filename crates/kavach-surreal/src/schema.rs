@@ -1,4 +1,4 @@
-//! kavach:micro-file-exempt — one monolithic `SCHEMA_DDL` string constant.
+//! kavach:nano-file-exempt — one monolithic `SCHEMA_DDL` string constant.
 //!
 //! The body is a single `SurrealDB` DDL data literal that cannot decompose into
 //! a hub+leaf module hierarchy; the LOC ceiling does not apply.

@@ -1,17 +1,7 @@
-// Recurrence-ranked anti_pattern listing — the read side of the autonomous
-// mistake loop. The capture path (append_mistake_event + cluster_event_to_pattern)
-// writes anti_pattern centroids into the graph; this query surfaces the top-N by
-// recurrence so SessionStart reinjection, the CLI, and the GUI all read the SAME
-// store the daemon writes. Closes the read/write split-brain (reinjection used to
-// read the legacy `pattern` memory_entries, never these nodes).
-// See decision/mistake-loop-close-read-graph.
-//
-//   not millions) by recurrence count. CHOICE: materialize all rows, then
-//   slice::sort_by (Rust stdlib stable sort, Timsort-derived, O(N log N)).
-//   alias is non-portable across SurrealDB versions; a heap/quickselect partial
-//   sort gives no measurable win at N≈dozens and costs clarity.
-//   TIME: O(N log N), N = anti_pattern count. SPACE: O(N). YEAR: 2026.
+// Read side of the autonomous mistake loop: recurrence-ranked anti_pattern
+// listing + practice-delta renderer. See decision/mistake-loop-close-read-graph.
 use crate::error::Result;
+use std::fmt::Write as _;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
@@ -79,6 +69,74 @@ pub async fn top_anti_patterns(db: &Surreal<Db>, limit: usize) -> Result<Vec<Ant
             hit_count: r.hit_count,
         })
         .collect())
+}
+
+/// Render ranked anti-patterns as a `[PRACTICE_DELTA]` Mermaid contrast.
+///
+/// Each worst-practice (by recurrence) sits left, its known `correct_action` fix
+/// right, joined by a `-.fixed by.->` edge. `None` when there are no anti-patterns.
+/// SOURCE: roadmap.unit.mermaid-decision-architecture.
+#[must_use]
+pub fn practice_delta_mermaid(ranked: &[AntiPatternRanked]) -> Option<String> {
+    if ranked.is_empty() {
+        return None;
+    }
+    let mut out = String::from("graph LR\n  subgraph WORST[\"ledger hits (this codebase)\"]\n");
+    for (i, ap) in ranked.iter().enumerate() {
+        writeln!(
+            out,
+            "    w{i}[\"{}<br/>×{} via {}\"]",
+            pd_escape(short_name(&ap.name)),
+            ap.hit_count,
+            pd_escape(&ap.gate)
+        )
+        .ok();
+    }
+    out.push_str("  end\n  subgraph BEST[\"do-instead (research-backed)\"]\n");
+    for (i, ap) in ranked.iter().enumerate() {
+        writeln!(out, "    b{i}[\"{}\"]", pd_escape(&ap.correct_action)).ok();
+    }
+    out.push_str("  end\n");
+    for i in 0..ranked.len() {
+        writeln!(out, "  w{i} -.fixed by.-> b{i}").ok();
+    }
+    Some(out)
+}
+
+/// Trim the canonical `anti.<slug>.<hash>` name to its readable slug.
+fn short_name(name: &str) -> &str {
+    name.strip_prefix("anti.")
+        .and_then(|s| s.rsplit_once('.').map(|(slug, _)| slug))
+        .unwrap_or(name)
+}
+
+/// Escape a label for a Mermaid quoted string.
+fn pd_escape(label: &str) -> String {
+    label.replace('"', "&quot;").replace(['\n', '\r'], " ")
+}
+
+/// Render a SINGLE mistake observation as a Mermaid DAG (banned behavior
+/// `-.fixed by.->` correct action), in the same idiom as `practice_delta_mermaid`.
+///
+/// This is the stored `content` shape for a ledger row (#1699): a row's body is
+/// a graph, not prose, so reinjection surfaces a structured banned→fix edge the
+/// model parses directly. The `gate`/`turn`/`hit_count` ride on the banned node
+/// label as recurrence context. SOURCE: roadmap.unit.mermaid-decision-architecture.
+#[must_use]
+pub fn mistake_row_mermaid(gate: &str, banned: &str, fix: &str, hit_count: u32) -> String {
+    let mut out = String::from("graph LR\n");
+    writeln!(
+        out,
+        "  w[\"BANNED [{}]<br/>{}<br/>×{hit_count}\"]:::banned",
+        pd_escape(gate),
+        pd_escape(banned)
+    )
+    .ok();
+    writeln!(out, "  b[\"INSTEAD: {}\"]:::fix", pd_escape(fix)).ok();
+    out.push_str("  w -.fixed by.-> b\n");
+    out.push_str("  classDef banned fill:#9a3412,color:#fff;\n");
+    out.push_str("  classDef fix fill:#1a7f37,color:#fff;\n");
+    out
 }
 
 #[cfg(test)]

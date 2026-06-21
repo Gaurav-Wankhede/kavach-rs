@@ -16,4 +16,6 @@ pub use count::query_anti_pattern_hit_count;
 pub use pattern::upsert_anti_pattern;
 pub use policy::{DeployedPolicyProps, upsert_deployed_policy};
 pub use policy_read::{DeployedPolicyRow, top_deployed_policies};
-pub use top::{AntiPatternRanked, top_anti_patterns};
+pub use top::{
+    AntiPatternRanked, mistake_row_mermaid, practice_delta_mermaid, top_anti_patterns,
+};

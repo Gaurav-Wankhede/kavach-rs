@@ -1,11 +1,63 @@
-// Regression test for top_anti_patterns: seeds two anti_pattern clusters via the
-// REAL capture path (append_mistake_event + cluster_event_to_pattern) on an
-// in-memory SurrealDB, then asserts the read query ranks them by recurrence.
-// Proves the SurrealQL (`properties.gate AS gate`, multi-row
-// `count(<-instance_of<-entity)`, Rust-side rank) actually works end to end —
-// the read side of the loop the daemon writes.
-use super::top_anti_patterns;
+// Read-side proofs: ranking query + practice_delta_mermaid renderer.
+use super::{AntiPatternRanked, mistake_row_mermaid, practice_delta_mermaid, top_anti_patterns};
 use crate::error::Result;
+
+#[test]
+fn mistake_row_renders_single_banned_to_fix_dag() {
+    let m = mistake_row_mermaid(
+        "permission",
+        "should I proceed?",
+        "auto-continue; never ask",
+        4,
+    );
+    assert!(m.starts_with("graph LR\n"), "{m}");
+    assert!(m.contains("BANNED [permission]"), "{m}");
+    assert!(m.contains("should I proceed?"), "{m}");
+    assert!(m.contains("×4"), "recurrence count on banned node: {m}");
+    assert!(m.contains("INSTEAD: auto-continue; never ask"), "{m}");
+    assert!(m.contains("w -.fixed by.-> b"), "fix edge: {m}");
+}
+
+#[test]
+fn mistake_row_escapes_quotes_in_labels() {
+    // A banned sample containing a double-quote must not break the Mermaid
+    // quoted-string label (would corrupt the whole diagram).
+    let m = mistake_row_mermaid("g", "he said \"hi\"", "fix", 1);
+    assert!(!m.contains("\"hi\""), "raw quote leaked into label: {m}");
+    assert!(m.contains("&quot;"), "{m}");
+}
+
+#[test]
+fn practice_delta_renders_worst_vs_best_with_fix_edges() {
+    let ranked = vec![
+        AntiPatternRanked {
+            name: "anti.continuation_menu.395f9852".to_owned(),
+            gate: "stop".to_owned(),
+            correct_action: "auto-continue; never ask permission".to_owned(),
+            hit_count: 7,
+        },
+        AntiPatternRanked {
+            name: "anti.x_internal_secret.abcd".to_owned(),
+            gate: "pre_write".to_owned(),
+            correct_action: "RFC 9421 httpsig".to_owned(),
+            hit_count: 3,
+        },
+    ];
+    let m = practice_delta_mermaid(&ranked).expect("non-empty");
+    assert!(m.starts_with("graph LR\n"), "{m}");
+    assert!(m.contains("WORST") && m.contains("BEST"), "{m}");
+    // worst slug short-formed (hash stripped), hit count + gate shown
+    assert!(m.contains("continuation_menu"), "{m}");
+    assert!(m.contains("×7 via stop"), "{m}");
+    // fix edge worst -> best
+    assert!(m.contains("w0 -.fixed by.-> b0"), "{m}");
+    assert!(m.contains("RFC 9421 httpsig"), "{m}");
+}
+
+#[test]
+fn practice_delta_empty_yields_none() {
+    assert!(practice_delta_mermaid(&[]).is_none());
+}
 use crate::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
 use crate::open_memory;
 

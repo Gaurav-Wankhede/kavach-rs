@@ -1,5 +1,5 @@
 // bulk_manifest module entry — single-RCA-bound batch edit authority.
-// Splits into 3 micro-files: types (pure), sql (constants), ops (async I/O).
+// Splits into 3 nano-files: types (pure), sql (constants), ops (async I/O).
 // Re-exports the public surface so callers see one tidy path.
 mod ops;
 mod sql;

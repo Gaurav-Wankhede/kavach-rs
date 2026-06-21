@@ -213,6 +213,91 @@ impl RoadmapDag {
         out.push_str("  classDef draft fill:#854d0e,color:#fff;\n");
         Some(out)
     }
+
+    /// The retired patterns: every `pattern` node that is the TARGET of a
+    /// `supersedes` edge (something replaced it). Returns `(title, retired_by)`
+    /// pairs — `retired_by` is the superseding node's title — so a gate can cite
+    /// what the codebase moved to. Empty when nothing is retired.
+    #[must_use]
+    pub fn retired_patterns(&self) -> Vec<(String, String)> {
+        let title_of = |id: &str| {
+            self.nodes
+                .iter()
+                .find(|n| n.id == id)
+                .map(|n| n.title.clone())
+        };
+        self.edges
+            .iter()
+            .filter(|e| e.rel == "supersedes")
+            .filter_map(|e| {
+                // source supersedes target ⇒ target is retired, source is the
+                // replacement. Both must be pattern nodes we know.
+                let retired = title_of(&e.target)?;
+                let replacement = title_of(&e.source)?;
+                Some((retired, replacement))
+            })
+            .collect()
+    }
+
+    /// Render the `pattern`-category slice as a Mermaid `graph TD` supersession
+    /// DAG: each pattern node, status-styled by trust (`verified` = soaked,
+    /// `todo` = fresh-but-unsoaked), and `supersedes` edges showing which pattern
+    /// RETIRED which (`-.retires.->`). This is the research-refreshed pattern
+    /// layer's read-side VIEW — the model sees which detector the codebase has
+    /// already replaced, so it adopts the current one. `None` when the project has
+    /// no pattern nodes. SOURCE: roadmap.unit.mermaid-decision-architecture.
+    #[must_use]
+    pub fn pattern_dag_mermaid(&self, max_nodes: usize) -> Option<String> {
+        let mut kept: Vec<&DagNode> = self
+            .nodes
+            .iter()
+            .filter(|n| n.category == "pattern")
+            .collect();
+        if kept.is_empty() {
+            return None;
+        }
+        // Soaked (verified) patterns first — those are the trusted current set.
+        kept.sort_by_key(|n| status_rank(&n.entry_status));
+        kept.truncate(max_nodes);
+        let keep_ids: std::collections::HashSet<&str> =
+            kept.iter().map(|n| n.id.as_str()).collect();
+
+        let mut out = String::from("graph TD\n");
+        for n in &kept {
+            // Fresh-but-unsoaked patterns (todo) carry a trust tag so the model
+            // knows the boundary is live but not yet battle-tested.
+            let trust = if n.entry_status == "todo" {
+                " (fresh)"
+            } else {
+                ""
+            };
+            out.push_str("  ");
+            out.push_str(&dm_sanitize(&n.id));
+            out.push_str("[\"");
+            out.push_str(&dm_escape(&n.title));
+            out.push_str(trust);
+            out.push_str("\"]:::");
+            out.push_str(status_class(&n.entry_status));
+            out.push('\n');
+        }
+        for e in &self.edges {
+            if e.rel != "supersedes"
+                || !keep_ids.contains(e.source.as_str())
+                || !keep_ids.contains(e.target.as_str())
+            {
+                continue;
+            }
+            out.push_str("  ");
+            out.push_str(&dm_sanitize(&e.source));
+            out.push_str(" -.retires.-> ");
+            out.push_str(&dm_sanitize(&e.target));
+            out.push('\n');
+        }
+        out.push_str("  classDef done fill:#1a7f37,color:#fff;\n");
+        out.push_str("  classDef open fill:#854d0e,color:#fff;\n");
+        out.push_str("  classDef draft fill:#9a3412,color:#fff;\n");
+        Some(out)
+    }
 }
 
 /// Sort key: settled decisions first (lower = earlier). `verified` anchors the
@@ -434,5 +519,116 @@ mod decision_mermaid_tests {
         // Only 1 node kept ⇒ at most 1 node line (verified sorts first).
         let node_lines = m.lines().filter(|l| l.contains(":::")).count();
         assert_eq!(node_lines, 1, "{m}");
+    }
+
+    fn pattern_sample() -> RoadmapDag {
+        RoadmapDag {
+            nodes: vec![
+                node("p/pattern/dioxus-0.8", "dioxus-0.8 location via BFF", "todo", "pattern"),
+                node("p/pattern/dioxus-0.7", "dioxus-0.7 web-sys gap", "verified", "pattern"),
+                node("p/decision/x", "noise", "verified", "decision"),
+            ],
+            edges: vec![DagEdge {
+                source: "p/pattern/dioxus-0.8".into(),
+                target: "p/pattern/dioxus-0.7".into(),
+                rel: "supersedes".into(),
+            }],
+        }
+    }
+
+    #[test]
+    fn pattern_dag_renders_supersession_with_trust_tag() {
+        let m = pattern_sample().pattern_dag_mermaid(8).expect("non-empty");
+        assert!(m.starts_with("graph TD\n"), "{m}");
+        // fresh (todo) pattern carries the (fresh) trust tag
+        assert!(m.contains("(fresh)"), "unsoaked pattern tagged: {m}");
+        // supersession edge: newer retires older
+        assert!(m.contains("-.retires.-> "), "{m}");
+        // non-pattern (decision) node excluded
+        assert!(!m.contains("noise"), "non-pattern excluded: {m}");
+    }
+
+    #[test]
+    fn pattern_dag_no_pattern_nodes_yields_none() {
+        let only_decision = RoadmapDag {
+            nodes: vec![node("p/decision/x", "noise", "verified", "decision")],
+            edges: vec![],
+        };
+        assert!(only_decision.pattern_dag_mermaid(8).is_none());
+    }
+
+    #[test]
+    fn retired_patterns_returns_target_and_replacement() {
+        let r = pattern_sample().retired_patterns();
+        assert_eq!(r.len(), 1, "{r:?}");
+        // target (0.7 gap) is retired; source (0.8 location) is the replacement.
+        assert_eq!(r[0].0, "dioxus-0.7 web-sys gap");
+        assert_eq!(r[0].1, "dioxus-0.8 location via BFF");
+    }
+
+    #[test]
+    fn retired_patterns_empty_without_supersedes() {
+        let no_edge = RoadmapDag {
+            nodes: vec![node("p/pattern/x", "p", "verified", "pattern")],
+            edges: vec![],
+        };
+        assert!(no_edge.retired_patterns().is_empty());
+    }
+
+    // End-to-end: seeded supersedes entity edge -> fetch() -> retired pair.
+    // This is the read path the [RETIRED_PATTERN] guard consumes over RPC.
+    #[tokio::test]
+    async fn fetch_surfaces_supersedes_edge_as_retired_pair() {
+        use crate::{apply_schema, open_memory, project_register, upsert_entry_full, upsert_relationships};
+
+        let db = open_memory().await.expect("open mem db");
+        apply_schema(&db).await.expect("schema");
+        let proj = project_register(&db, "proofproj", "Proof", "/tmp", None)
+            .await
+            .expect("register project");
+
+        for (key, title) in [
+            ("old-pat", "old pattern: web-sys gap"),
+            ("new-pat", "new pattern: router hook"),
+        ] {
+            let qn = format!("proofproj/pattern/{key}");
+            upsert_entry_full()
+                .db(&db)
+                .category("pattern")
+                .project_id(&proj)
+                .entry_key(key)
+                .title(title)
+                .content("c")
+                .event_source("test")
+                .qualified_name(&qn)
+                .references(&[])
+                .build_for_call()
+                .await
+                .expect("upsert pattern");
+        }
+
+        let n = upsert_relationships(
+            &db,
+            "proofproj/pattern/new-pat",
+            &[(
+                "supersedes".to_owned(),
+                "proofproj/pattern/old-pat".to_owned(),
+            )],
+        )
+        .await
+        .expect("relate");
+        assert_eq!(n, 1, "one supersedes edge written");
+
+        let dag = super::fetch(&db, "proofproj").await.expect("fetch");
+        assert_eq!(dag.nodes.len(), 2, "two pattern nodes: {:?}", dag.nodes);
+        assert!(
+            dag.edges.iter().any(|e| e.rel == "supersedes"),
+            "supersedes edge survived into dag: {:?}",
+            dag.edges
+        );
+        let retired = dag.retired_patterns();
+        assert_eq!(retired.len(), 1, "exactly one retired pair: {retired:?}");
+        assert_eq!(retired[0].0, "old pattern: web-sys gap", "retired title");
+        assert_eq!(retired[0].1, "new pattern: router hook", "replacement title");
     }
 }

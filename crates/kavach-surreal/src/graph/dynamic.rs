@@ -28,6 +28,11 @@ const ALLOWED_RELS: &[&str] = &[
     "cross_invoke",
     "invoke",
     "uses_pattern",
+    // Inter-entry semantic edges projected by upsert_relationships — supersedes
+    // + blocks were written but never read (absent here => graph-query showed
+    // `(no edges)`). See decision.cli-supersedes-projection-silent-fail.
+    "supersedes",
+    "blocks",
     "in_scope",
     "uses_algorithm",
     "session_uses_skill",
@@ -354,14 +359,18 @@ pub async fn get_related(
     let mut out: Vec<RelatedRow> = Vec::new();
     for &rel in ALLOWED_RELS {
         // sql-safe: rel comes from compile-time const ALLOWED_RELS only.
+        // Bind the RecordId DIRECTLY (the proven `$node` form used by
+        // list_edges_among) — NOT type::record($tb,$id) with Debug-formatted
+        // table/key, which embeds quotes (`Table("entity")`/`String("…")`) and
+        // resolves to a phantom record => 0 edges for every real edge.
+        // See decision.cli-supersedes-projection-silent-fail.
         let q = format!(
             "SELECT '{rel}' AS rel_type, weight, out.* AS target \
-             FROM type::record($tb, $id)->{rel} LIMIT $limit"
+             FROM $from->{rel} LIMIT $limit"
         );
         let mut response = db
             .query(q)
-            .bind(("tb", format!("{:?}", &from.table)))
-            .bind(("id", format!("{:?}", &from.key)))
+            .bind(("from", from.clone()))
             .bind(("limit", i64::try_from(limit).unwrap_or(i64::MAX)))
             .await?;
         let rows: Vec<RelatedRow> = match response.take(0) {

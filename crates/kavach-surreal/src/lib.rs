@@ -1,6 +1,6 @@
 // hub: crate root — module declarations + public re-export surface only, no logic.
 // A re-export hub aggregates the crate's public API; it cannot decompose without a
-// mod.rs (which the micro-file rule forbids), so it carries the hub exemption.
+// mod.rs (which the nano-file rule forbids), so it carries the hub exemption.
 // SOURCE: https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#result_large_err
 // Reason: surrealdb::Error is enum-driven and large by design; boxing the entire
 // `Result<T, Error>` chain would touch every public API. Pre-existing latent lints
@@ -121,7 +121,9 @@ pub use graph::{
     AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
     append_mistake_event as graph_append_mistake_event,
     cluster_event_to_pattern as graph_cluster_event_to_pattern,
+    mistake_row_mermaid, practice_delta_mermaid,
     query_anti_pattern_hit_count as graph_query_anti_pattern_hit_count,
+    stack_fit_mermaid, stack_invariants,
     top_anti_patterns as graph_top_anti_patterns,
     top_deployed_policies as graph_top_deployed_policies,
     upsert_anti_pattern as graph_upsert_anti_pattern,

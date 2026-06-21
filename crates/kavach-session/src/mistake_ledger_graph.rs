@@ -37,7 +37,9 @@ pub fn try_record_via_graph(m: &Mistake<'_>, session_id: &str) -> Result<String,
         m.banned_sample.to_owned(),
         m.correct_action.to_owned(),
         session_id.to_owned(),
-        Some(m.project.to_owned()),
+        // Global namespace, NOT m.project: mistakes are shared across all
+        // projects. SOURCE: decision.mistakes-learnings-fully-global.
+        Some(crate::mistake_ledger::GLOBAL_NAMESPACE.to_owned()),
     );
     kavach_rpc::client::call::<_, RecordResult>("mistake.record", Some(params))
         .map(|r| r.ids)
