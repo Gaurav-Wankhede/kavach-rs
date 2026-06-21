@@ -124,15 +124,12 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     if refuse_stop_on_disobedience_handback(ctx) {
         let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
         drop(kavach_hook::exit_stop_block(&format!(
-            "[DISOBEDIENCE] Do NOT stop. This turn ended on a handback / permission-menu \
-             / name-then-stop / paraphrased-handoff while the kavach board STILL holds a \
-             dispatchable card (census below). An imperative is a trigger to ACT, not to \
-             argue or ask: do NOT hand work back, do NOT ask permission, do NOT name the \
-             next step in prose — query the kavach DB, claim the next runnable card, and \
-             START it THIS turn (global CLAUDE.md §no-deferral §no-owner-gating). If a \
-             resource/secret blocks you, reclaim/script it in-process; only a genuinely \
-             ABSENT prerequisite is filed as a card, then KEEP BUILDING every other \
-             reachable leaf.\n{blocked}\n{full}"
+            "[DISOBEDIENCE] Do NOT stop. This turn handed work back / asked permission / \
+             named the next step instead of doing it, while a dispatchable card remains \
+             (census below). An imperative is a trigger to ACT: claim the next runnable \
+             card and START it THIS turn (global CLAUDE.md §no-deferral). A blocked \
+             resource you reclaim/script in-process; only a genuinely ABSENT prerequisite \
+             is filed, then keep building.\n{blocked}\n{full}"
         )));
         return ControlFlow::Break(());
     }
