@@ -18,12 +18,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     session.increment_turn();
     session.clear_failure();
 
-    // E1 lease heartbeat: a tool call can run minutes (a build, a long test). Refresh
-    // this session's lease(s) on EVERY PostToolUse so a long op never lets the 300s
-    // TTL lapse mid-work and get the card(s) reclaimed by another session. Best-effort,
-    // fire-and-forget — never blocks the hook; a down DB is a silent no-op (the TTL +
-    // stale-claim sweep still guarantee correctness). Heartbeats the whole batch the
-    // session owns, since it renews by `occupied_by` + `in_progress`, not a single card.
+    // Refresh session lease heartbeat on every post-tool to prevent mid-op reclaim.
+    // See decision.engine.session_lease_heartbeat.
     let _renewed = crate::gates::stop_dispatch::renew_my_leases();
 
     // Scan assistant message for [RCA] block and persist to session.
