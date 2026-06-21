@@ -17,27 +17,30 @@ pub(crate) fn home_dir() -> PathBuf {
 // (chmod 0o000 is a Unix-only construct). On Windows the caller compiles out,
 // so a bare `#[cfg(test)]` here would leave `set_test_state_dir` dead-coded and
 // trip the workspace's denied `dead_code` lint under `-D warnings`.
-#[cfg(all(test, unix))]
+// Available when THIS crate is under test (fault-injection in enforcement.rs) OR
+// when a downstream crate enables `test-support` to isolate the spool path in its
+// own tests (kavach-engine's spool glue). Thread-local so parallel tests stay
+// isolated and no `unsafe` env mutation is needed (env::set_var is `unsafe` in
+// edition 2024; the workspace is `forbid(unsafe_code)`).
+#[cfg(any(test, feature = "test-support"))]
 thread_local! {
-    /// Test-only state-dir override. Thread-local so parallel tests are
-    /// isolated and no `unsafe` env mutation is needed (env::set_var is
-    /// `unsafe` in edition 2024; the workspace is `forbid(unsafe_code)`).
     static TEST_STATE_DIR: std::cell::RefCell<Option<PathBuf>> =
         const { std::cell::RefCell::new(None) };
 }
 
 /// Test-only: redirect `state_dir()` for the current thread. Pass `None` to
-/// clear. Used by fault-injection tests that need an unwritable state dir
-/// without touching the real session state or process-global env.
-#[cfg(all(test, unix))]
-pub(crate) fn set_test_state_dir(dir: Option<PathBuf>) {
+/// clear. Used by fault-injection tests and by downstream `test-support`
+/// consumers that need a temp state dir without touching real session state or
+/// process-global env.
+#[cfg(any(test, feature = "test-support"))]
+pub fn set_test_state_dir(dir: Option<PathBuf>) {
     TEST_STATE_DIR.with(|c| *c.borrow_mut() = dir);
 }
 
 /// Shared state directory (XDG on Linux, Library on macOS, LOCALAPPDATA on Windows).
 #[must_use]
 pub fn state_dir() -> PathBuf {
-    #[cfg(all(test, unix))]
+    #[cfg(any(test, feature = "test-support"))]
     if let Some(d) = TEST_STATE_DIR.with(|c| c.borrow().clone()) {
         return d;
     }
