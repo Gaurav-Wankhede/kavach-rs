@@ -92,7 +92,7 @@ pub(super) fn check(
 }
 
 /// Self-resolving internet-first advisory. Reads the live research cache; kicks a
-/// fresh background WebSearch (`kavach_advisor::kickoff`) when none is running;
+/// fresh background web search (`kavach_advisor::kickoff`) when none is running;
 /// returns the findings brief when `done`, else a pending/error directive. The
 /// write ALWAYS proceeds — the loop-level `[RESEARCH_FIRST]` Stop teeth ensure an
 /// unsourced claim can never terminate the turn.
