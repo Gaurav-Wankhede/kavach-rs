@@ -51,6 +51,7 @@ pub mod loophole_lens;
 pub mod owasp_guard;
 pub mod secrecy_guard;
 pub mod silent_io_guard;
+pub mod stop_vocab;
 pub mod ux_guard;
 
 pub mod algo_selection;

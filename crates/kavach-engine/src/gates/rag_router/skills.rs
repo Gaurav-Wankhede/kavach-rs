@@ -1,4 +1,4 @@
-//! Skill-name routing: rank persisted RAG trees, layer in intent-cluster +
+//! Skill-name routing: rank via `brain.think`, layer in intent-cluster +
 //! keyword routing, write feedback edges, and expand with graph neighbors.
 mod cluster;
 mod feedback;
@@ -7,19 +7,15 @@ mod neighbors;
 
 pub(crate) use match_top::{SkillMatch, SKILL_MATCH_FLOOR, top_skill_match};
 
-use kavach_rag_core::{MatchResult, Matcher, Query};
-
-use super::cache::load_trees;
+use super::cache::search_via_brain;
 use super::rpc::all_labels;
-use super::rpc::load_graph_boosts;
 use cluster::inject_intent_cluster;
 use feedback::write_skill_feedback_edges;
 use neighbors::expand_with_graph_neighbors;
 
-/// Return the top-k matching skill names ranked by score (no formatting), then
-/// layer in intent-cluster, keyword-router, and graph-neighbor expansions.
-/// Titles are SKILL.md root node titles (`rust/SKILL.md`); the name is the first
-/// path component.
+/// Return top-k skill names from brain.think, layer in intent-cluster,
+/// keyword-router, and graph-neighbor expansions.
+/// Skill name is the first `/`-component of the hit id.
 pub(crate) fn top_skill_names(
     label: &str,
     file_path: &str,
@@ -27,28 +23,14 @@ pub(crate) fn top_skill_names(
     intent: &str,
     top_k: usize,
 ) -> Vec<String> {
-    let trees = load_trees(label);
-    if trees.is_empty() {
+    let effective_k = top_k.max(1);
+    let hits = search_via_brain(label, file_path, raw_text, intent, effective_k);
+    if hits.is_empty() {
         return Vec::new();
     }
-    let effective_k = top_k.max(1);
-    let query = Query::new(file_path, raw_text, intent);
-    let boosts = load_graph_boosts(&trees);
-    let mut pooled: Vec<MatchResult> = Vec::new();
-    for tree in &trees {
-        let mut matcher = Matcher::new(tree).with_top_k(effective_k);
-        if let Some(ref b) = boosts {
-            matcher = matcher.with_graph_boosts(b.clone());
-        }
-        for hit in matcher.run(&query) {
-            pooled.push(hit);
-        }
-    }
-    pooled.sort_by_key(|h| std::cmp::Reverse(h.score));
-    pooled.truncate(effective_k);
-    let mut direct: Vec<String> = pooled
+    let mut direct: Vec<String> = hits
         .into_iter()
-        .map(|h| skill_name_from_title(&h.title))
+        .map(|(_, id)| skill_name_from_id(&id))
         .filter(|n| !n.is_empty())
         .collect();
     // Layer 3: imperative NLU — inject cluster skills based on intent type.
@@ -82,11 +64,10 @@ pub(crate) fn top_skill_names_all(
     all
 }
 
-/// Extract the bare skill name from a tree root title. Enriched trees use the
-/// SKILL.md path (`rust/SKILL.md`); the skill name is the first path component.
-pub(super) fn skill_name_from_title(title: &str) -> String {
-    title
-        .split('/')
+/// Extract the bare skill name from a hit id. Skill ids use the path format
+/// (`rust/SKILL.md`); the skill name is the first `/`-component.
+pub(super) fn skill_name_from_id(id: &str) -> String {
+    id.split('/')
         .next()
         .map(ToOwned::to_owned)
         .unwrap_or_default()

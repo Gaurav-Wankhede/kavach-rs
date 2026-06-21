@@ -25,6 +25,11 @@ pub(crate) enum AutoVerify {
     /// Work cannot be proven: not a Rust project, no `KAVACH_VERIFY_CMD`, so no
     /// witness can run. Do NOT promote; a genuine blocker requiring user decision.
     Unprovable,
+    /// Witnesses PASSED but EVERY `verify_card` RPC failed to flip its card — the
+    /// daemon is down or the write errored. This is NOT "nothing was done": the
+    /// work is proven, the DB write is the thing that failed. Surfaced loudly so the
+    /// loop never silently re-dispatches a finished card on a transient outage.
+    VerifyRpcDown,
     /// Promoted this many `done -> verified`. Dependents may now be dispatchable.
     Promoted(usize),
 }
@@ -53,17 +58,39 @@ fn list_done_cards(project_slug: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-/// Promote one `done` card to `verified`. True iff it flipped this call.
-/// Best-effort: a miss leaves the card at `done` (re-attempted next stop).
-fn verify_card(project_slug: &str, key: &str) -> bool {
+/// Outcome of one `verify_card` RPC — kept distinct so the caller can tell a
+/// genuine "card was not at done" (`NotFlipped`) apart from a daemon/transport
+/// outage (`RpcError`). Collapsing both to `false` is what let a transient DB
+/// outage masquerade as "work not done" and re-dispatch a finished card.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FlipResult {
+    /// The card flipped `done -> verified` this call.
+    Flipped,
+    /// RPC succeeded but the card did not flip (already verified, or not at done).
+    NotFlipped,
+    /// The RPC itself failed (daemon down / transport error) — the write never
+    /// reached the DB. NOT evidence the work is incomplete.
+    RpcError,
+}
+
+/// Promote one `done` card to `verified`, distinguishing a real miss from an RPC
+/// outage. Best-effort write; the tri-state lets the caller fail LOUD on outage
+/// instead of silently re-dispatching a finished card.
+fn verify_card(project_slug: &str, key: &str) -> FlipResult {
     if project_slug.is_empty() || key.is_empty() {
-        return false;
+        return FlipResult::NotFlipped;
     }
     let params = serde_json::json!({ "project": project_slug, "key": key });
-    kavach_rpc::client::call::<_, serde_json::Value>("roadmap.verify_card", Some(params))
-        .ok()
-        .and_then(|v| v.get("verified").and_then(serde_json::Value::as_bool))
-        .unwrap_or(false)
+    kavach_rpc::client::call::<_, serde_json::Value>("roadmap.verify_card", Some(params)).map_or(
+        FlipResult::RpcError,
+        |v| {
+            if v.get("verified").and_then(serde_json::Value::as_bool) == Some(true) {
+                FlipResult::Flipped
+            } else {
+                FlipResult::NotFlipped
+            }
+        },
+    )
 }
 
 /// Witness-gated auto-verify: find every `done` card, run the shared workspace
@@ -86,11 +113,25 @@ pub(crate) fn auto_verify_done_cards(project_slug: &str) -> AutoVerify {
         .iter()
         .find_map(|(_, content)| witness_root_from_card(content));
     match run_workspace_witnesses(card_root.as_deref()) {
-        WitnessRun::Passed => AutoVerify::Promoted(
-            done.iter()
-                .filter(|(key, _)| verify_card(project_slug, key))
-                .count(),
-        ),
+        WitnessRun::Passed => {
+            let mut promoted = 0_usize;
+            let mut rpc_error = false;
+            for (key, _) in &done {
+                match verify_card(project_slug, key) {
+                    FlipResult::Flipped => promoted = promoted.saturating_add(1),
+                    FlipResult::NotFlipped => {}
+                    FlipResult::RpcError => rpc_error = true,
+                }
+            }
+            // Witnesses PASSED (work is proven) but a flip RPC errored AND nothing
+            // was promoted ⇒ the DB write failed, not the work. Surface it loudly so
+            // the loop does not silently re-dispatch a finished card on an outage.
+            if promoted == 0 && rpc_error {
+                AutoVerify::VerifyRpcDown
+            } else {
+                AutoVerify::Promoted(promoted)
+            }
+        }
         WitnessRun::Failed | WitnessRun::SpawnError => AutoVerify::WitnessFailed,
         WitnessRun::Unprovable => AutoVerify::Unprovable,
     }

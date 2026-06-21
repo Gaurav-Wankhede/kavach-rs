@@ -2716,7 +2716,6 @@ dependencies = [
  "kavach-engine",
  "kavach-hook",
  "kavach-patterns",
- "kavach-rag-core",
  "kavach-rpc",
  "kavach-rule-engine",
  "kavach-rule-generator",
@@ -2774,7 +2773,6 @@ dependencies = [
  "kavach-hook",
  "kavach-ope",
  "kavach-patterns",
- "kavach-rag-core",
  "kavach-rpc",
  "kavach-rule-engine",
  "kavach-rule-storage",
@@ -2825,15 +2823,6 @@ dependencies = [
  "shell-words",
  "strsim",
  "tempfile",
-]
-
-[[package]]
-name = "kavach-rag-core"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -2941,7 +2930,6 @@ dependencies = [
  "chrono",
  "dirs",
  "itertools 0.13.0",
- "kavach-rag-core",
  "kavach-types",
  "rustix",
  "serde",

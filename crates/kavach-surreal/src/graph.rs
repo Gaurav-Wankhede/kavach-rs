@@ -4,6 +4,7 @@ pub mod dynamic;
 pub mod flow_dag;
 pub mod list_with_links;
 pub mod mistakes;
+pub mod raw_select;
 pub mod relationships;
 pub mod roadmap_dag;
 pub mod roadmap_deps;
@@ -31,10 +32,11 @@ pub use flow_dag::{
 pub use list_with_links::{LinkedRow, list_with_links as list_rows_with_links};
 pub use mistakes::{
     AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow, append_mistake_event,
-    cluster_event_to_pattern, mistake_row_mermaid, practice_delta_mermaid,
-    query_anti_pattern_hit_count, top_anti_patterns,
+    cluster_event_to_pattern, delete_anti_patterns_by_gate, mistake_row_mermaid,
+    practice_delta_mermaid, query_anti_pattern_hit_count, top_anti_patterns,
     top_deployed_policies, upsert_anti_pattern, upsert_deployed_policy,
 };
+pub use raw_select::raw_select;
 pub use relationships::upsert_relationships;
 pub use roadmap_dag::{DagEdge, DagNode, RoadmapDag, fetch as roadmap_dag_fetch};
 pub use roadmap_deps::{is_in_cycle_sql, mirror_card_deps};

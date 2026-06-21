@@ -1,11 +1,9 @@
 //! Top-1 skill match with score floor for `[SKILL]` pre-write injection.
-use kavach_rag_core::{MatchResult, Matcher, Query, TreeNode};
+use super::super::cache::search_via_brain;
+use super::super::rpc::all_labels;
+use super::skill_name_from_id;
 
-use super::super::cache::load_trees;
-use super::super::rpc::{all_labels, load_graph_boosts};
-use super::skill_name_from_title;
-
-/// Minimum matcher score to inject `[SKILL]` (≈ one keyword or intent-title hit).
+/// Minimum score to inject `[SKILL]` (synthesized rank from brain.think top hit).
 pub(crate) const SKILL_MATCH_FLOOR: u32 = 20;
 
 #[derive(Debug, Clone)]
@@ -28,60 +26,22 @@ pub(crate) fn top_skill_match(
     } else {
         labels.iter().map(String::as_str).collect()
     };
-    let query = Query::new(file_path, raw_text, intent);
-    let mut best: Option<(MatchResult, String)> = None;
+    let mut best: Option<(u32, String)> = None;
     for label in label_refs {
-        let trees = load_trees(label);
-        for tree in &trees {
-            let boosts = load_graph_boosts(std::slice::from_ref(tree));
-            let mut matcher = Matcher::new(tree).with_top_k(1);
-            if let Some(ref b) = boosts {
-                matcher = matcher.with_graph_boosts(b.clone());
+        let hits = search_via_brain(label, file_path, raw_text, intent, 1);
+        for (score, id) in hits {
+            if score < SKILL_MATCH_FLOOR {
+                continue;
             }
-            for hit in matcher.run(&query) {
-                if hit.score.0 < SKILL_MATCH_FLOOR {
-                    continue;
-                }
-                let blurb = node_blurb(&tree.root, &hit.node_id);
-                let replace = best.as_ref().is_none_or(|(prev, _)| hit.score > prev.score);
-                if replace {
-                    best = Some((hit, blurb));
-                }
+            let replace = best.as_ref().is_none_or(|(prev_score, _)| score > *prev_score);
+            if replace {
+                best = Some((score, id));
             }
         }
     }
-    best.map(|(hit, blurb)| SkillMatch {
-        name: skill_name_from_title(&hit.title),
-        score: hit.score.0,
-        blurb,
+    best.map(|(score, id)| SkillMatch {
+        name: skill_name_from_id(&id),
+        score,
+        blurb: id.clone(),
     })
-}
-
-fn node_blurb(root: &TreeNode, node_id: &str) -> String {
-    find_node(root, node_id)
-        .map(|n| {
-            if !n.body.is_empty() {
-                first_lines(&n.body, 3)
-            } else if !n.summary.is_empty() {
-                first_lines(&n.summary, 2)
-            } else {
-                n.title.clone()
-            }
-        })
-        .unwrap_or_default()
-}
-
-fn find_node<'a>(node: &'a TreeNode, id: &str) -> Option<&'a TreeNode> {
-    if node.id == id {
-        return Some(node);
-    }
-    node.children.iter().find_map(|c| find_node(c, id))
-}
-
-fn first_lines(text: &str, max: usize) -> String {
-    text.lines()
-        .filter(|l| !l.trim().is_empty())
-        .take(max)
-        .collect::<Vec<_>>()
-        .join("\n")
 }

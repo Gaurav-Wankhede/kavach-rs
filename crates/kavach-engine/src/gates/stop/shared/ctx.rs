@@ -47,4 +47,12 @@ pub(crate) struct StopCtx<'a> {
     /// recorded to the mistake ledger at the computation site so the learning loop
     /// sees it on every stop.
     pub(crate) continuation_advisory: Option<String>,
+    /// Research-witness signal: set when `detect_claim_without_research` fired this
+    /// turn — the final message asserted a current-knowledge fact (latest/version/
+    /// API/pricing/supports) from memory with no source URL. On a drained board the
+    /// clean-exit terminal REFUSES the stop while this is true (parity with the
+    /// loophole / roadmap-todos refuse-stops), bounded by the `research_unsourced`
+    /// behavioral breaker — giving internet-first (global CLAUDE.md) teeth instead
+    /// of an advisory the model can coast past.
+    pub(crate) research_unsourced: bool,
 }

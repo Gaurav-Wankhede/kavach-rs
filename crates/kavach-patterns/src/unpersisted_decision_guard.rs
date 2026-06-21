@@ -1,6 +1,6 @@
 //! Unpersisted-decision guard (advisory, NEVER blocking).
 //!
-//! `sync_to_kavach_db` says a finding lives in the DB or it is LOST. The
+//! A finding lives in the DB (`kavach db write`) or it is LOST. The
 //! `[RCA]`/`[DESIGN]` bracket scanner only captures EXPLICITLY-marked blocks;
 //! the common case is a decision SETTLED IN PROSE ("the root cause is …", "I'll
 //! use X because …") with no bracket and no DB write. This detector flags that
@@ -8,8 +8,8 @@
 //! persist it" — a non-blocking advisory, consistent with the kill-blocking
 //! stop-gate policy.
 //!
-//! SOURCE: global CLAUDE.md `sync_to_kavach_db` + `decision.stop-gate.kill-
-//! blocking-keep-autocontinue` (advisory, not HALT).
+//! SOURCE: global CLAUDE.md "persist decisions the turn you make them" +
+//! `decision.stop-gate.kill-blocking-keep-autocontinue` (advisory, not HALT).
 
 /// Prose cues that a DECISION was settled this turn (a conclusion, not a
 /// question or a plan). Phrased to catch the assertion, kept lowercase for a

@@ -153,10 +153,15 @@ pub(super) fn append_context_blocks(
     }
 }
 
-/// Append the three Mermaid-VIEW blocks (all read-side, fail-soft, never stored):
-/// `[DECISION_MAP]` settled architecture, `[PRACTICE_DELTA]` retired worst- vs
-/// best-practice, `[PATTERN_DAG]` research-refreshed pattern supersession.
-fn append_mermaid_views(context: &mut String, project: &str, prompt: &str) {
+/// The SINGLE canonical emitter of the three Mermaid-VIEW blocks (all read-side,
+/// fail-soft, never stored): `[DECISION_MAP]` settled architecture,
+/// `[PRACTICE_DELTA]` retired worst- vs best-practice, `[PATTERN_DAG]`
+/// research-refreshed pattern supersession. BOTH the user-prompt (intent) and
+/// the session-start hook call THIS function — never a hand-listed copy — so the
+/// triad can never drift out of one hook again (it once vanished from session-start
+/// for that reason). At session-start pass `prompt = ""` (whole-spine, not
+/// relevance-narrowed). See decision.harness.shared-mermaid-injection-emitter.
+pub(in crate::gates) fn append_mermaid_views(context: &mut String, project: &str, prompt: &str) {
     if let Some(map) = super::decision_map::decision_map_block(project, prompt) {
         context.push_str(&map);
     }

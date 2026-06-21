@@ -4,6 +4,7 @@
 // WHY this design: decision.arch.harness-rlaif-project-adaptive-rubric.
 // WHY un-gameable weighting + reward-hack RCA: decision.harness-reward-ungameable.
 
+pub mod oracle;
 pub mod presets;
 pub mod rubric;
 pub mod semantic_deferral;
@@ -88,10 +89,26 @@ fn score_event(event: &TrajectoryEvent, rubric: &RewardRubric) -> i64 {
 /// Read-only over `events` (INV-2): same input -> same output.
 #[must_use]
 pub fn score_trajectory_with(events: &[TrajectoryEvent], rubric: &RewardRubric) -> i64 {
-    events
+    score_trajectory_full(events, rubric, &oracle::OracleConfig::default())
+}
+
+/// Deterministic reward under an explicit `rubric` AND an explicit oracle `cfg`.
+///
+/// The engine threads a DB-refreshed `cfg`; the back-compat [`score_trajectory_with`]
+/// passes the compiled default. The oracle's weighted dimension vote contributes a
+/// dominant negative on a proven contradiction, leaving the self-report intact on
+/// agreement / insufficient evidence.
+#[must_use]
+pub fn score_trajectory_full(
+    events: &[TrajectoryEvent],
+    rubric: &RewardRubric,
+    cfg: &oracle::OracleConfig,
+) -> i64 {
+    let self_report = events
         .iter()
         .map(|e| score_event(e, rubric))
-        .fold(0_i64, i64::saturating_add)
+        .fold(0_i64, i64::saturating_add);
+    self_report.saturating_add(oracle::oracle_penalty_with(events, cfg))
 }
 
 /// Score under the default Rust/cargo rubric (back-compat: the original API).

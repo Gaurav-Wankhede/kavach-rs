@@ -21,6 +21,9 @@ use kavach_types::HookInput;
 // Re-export so `session_start` can inject the SAME live `[KANBAN]` block at
 // SessionStart that the UserPromptSubmit hook injects — both read the live board.
 pub(in crate::gates) use context::append_live_kanban_block;
+// SINGLE canonical emitter of the DECISION_MAP/PRACTICE_DELTA/PATTERN_DAG triad —
+// both this hook and SessionStart call it, so the triad can never drift out of one.
+pub(in crate::gates) use context::append_mermaid_views;
 
 use super::intent_context::extract_research_topic;
 use classify::{

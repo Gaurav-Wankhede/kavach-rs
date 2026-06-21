@@ -3,20 +3,21 @@
 //! transcript (gaming language + runnable>0 + no real write), and does NOT fire
 //! when ANY condition is absent (real source write · proof present · bypass env).
 //!
-//! `has_gaming_language` and `is_real_source_write` are unit-tested directly (pure,
-//! census-independent); the full `check()` AND-path is exercised where the census
-//! read is mockable. Census-dependent firing is asserted via the language+write
-//! predicates that gate it, since `open_set_census` needs a live RPC.
+//! The vocabulary is now DB-sourced ([`DoneGamingVocab`], `gate.done_gaming_vocab`),
+//! so the suite also proves the DYNAMIC contract: the compiled `Default` still
+//! matches the user transcript (fail-open floor), AND a DB-shaped override changes
+//! the verdict (the markers are DATA, not literals). `has_gaming_language` and
+//! `is_real_source_write` are unit-tested directly; census-dependent firing is
+//! asserted via the predicates that gate it (`open_set_census` needs a live RPC).
 
-use super::{
-    has_gaming_language, is_real_source_write, GAMING_PHRASES, HANDBACK_PHRASES, PROOF_TOKENS,
-};
+use kavach_patterns::stop_vocab::DoneGamingVocab;
 
-/// `true` iff any handback/surrender phrase is a lower-cased substring of `s`
-/// — mirrors the `check()` HANDBACK ARM predicate (which is proof-independent).
+use super::{PROOF_TOKENS, has_gaming_language, is_real_source_write};
+
+/// `true` iff any handback phrase in the DEFAULT vocab is a lower-cased substring
+/// of `s` — mirrors the `check()` HANDBACK ARM predicate (proof-independent).
 fn has_handback(s: &str) -> bool {
-    let lc = s.to_lowercase();
-    HANDBACK_PHRASES.iter().any(|p| lc.contains(p))
+    DoneGamingVocab::default().has_handback_phrase(&s.to_lowercase())
 }
 
 /// The ENOSPC transcript's surrender lines — each must trip the handback arm,
@@ -55,7 +56,8 @@ fn ordinary_completion_prose_is_not_handback() {
     );
 }
 
-/// The user's exact transcript fragments — each must trip the language detector.
+/// The user's exact transcript fragments — each must trip the language detector
+/// under the compiled DEFAULT vocab (the fail-open floor when the DB is down).
 const USER_TRANSCRIPT_GAMING: &[&str] = &[
     "The new status block:",
     "State: ✅ vacuously complete",
@@ -66,34 +68,68 @@ const USER_TRANSCRIPT_GAMING: &[&str] = &[
 ];
 
 #[test]
-fn fires_on_every_user_transcript_gaming_line() {
+fn default_vocab_fires_on_every_user_transcript_gaming_line() {
+    let vocab = DoneGamingVocab::default();
     for s in USER_TRANSCRIPT_GAMING {
         assert!(
-            has_gaming_language(&s.to_lowercase(), s),
-            "must flag the gaming line: {s}"
+            has_gaming_language(&vocab, &s.to_lowercase(), s),
+            "DEFAULT (floor) vocab must flag the gaming line: {s}"
         );
     }
 }
 
 #[test]
 fn emoji_status_block_line_is_gaming() {
-    // A ✅/⏸ on a Phase:/State:/DONE line is the decorated status-table signature.
+    // A ✅/⏸ on a Phase:/State:/DONE line is the decorated status-table signature —
+    // matched structurally, independent of the (DB-sourced) phrase list.
+    let vocab = DoneGamingVocab::default();
     assert!(has_gaming_language(
+        &vocab,
         "phase: schema  state: ✅ done",
         "Phase: Schema\nState: ✅ DONE — applied live"
     ));
-    assert!(has_gaming_language("⏸ gated", "Phase: 4\n⏸ State: gated"));
+    assert!(has_gaming_language(&vocab, "⏸ gated", "Phase: 4\n⏸ State: gated"));
 }
 
 #[test]
 fn plain_imperative_prose_is_not_gaming() {
-    // Real working prose with no gaming vocabulary + no emoji status table.
+    let vocab = DoneGamingVocab::default();
     let msg = "Claimed card #1428, edited send_message.rs to add the producer, \
                ran cargo check — compiles. Next: the consumer Worker.";
     assert!(
-        !has_gaming_language(&msg.to_lowercase(), msg),
+        !has_gaming_language(&vocab, &msg.to_lowercase(), msg),
         "ordinary work narration must NOT trip the gate: {msg}"
     );
+}
+
+// --- DYNAMIC contract: the vocab is DATA, sourced from the DB, not literals ------
+
+#[test]
+fn config_is_data_db_override_changes_the_gaming_verdict() {
+    // A DB row shaping a NEW phrase (deserialized exactly as `done_gaming_vocab_for`
+    // does) must make the gate fire on text the compiled floor would pass.
+    let row = r#"{"gaming_phrases":["mission accomplished"]}"#;
+    let vocab: DoneGamingVocab = serde_json::from_str(row).expect("valid override");
+    let msg = "mission accomplished — closing out.";
+    assert!(
+        vocab.has_gaming_phrase(&msg.to_lowercase()),
+        "DB-overridden phrase must drive the verdict (markers are data)"
+    );
+    // And `#[serde(default)]` keeps the handback floor the row omitted.
+    assert!(
+        vocab.has_handback_phrase("i am holding for the disk reclaim"),
+        "omitted handback list must fall back to the compiled floor"
+    );
+}
+
+#[test]
+fn malformed_db_row_degrades_to_the_default_floor() {
+    // Mirrors `done_gaming_vocab_for`'s `unwrap_or_default()`: a malformed blob is
+    // never a panic and never an empty vocab — it is the full compiled floor.
+    let vocab: DoneGamingVocab =
+        serde_json::from_str("{ not json").unwrap_or_default();
+    assert!(vocab.has_gaming_phrase("vacuously complete"));
+    assert!(vocab.has_handback_phrase("i am holding"));
 }
 
 #[test]
@@ -115,9 +151,7 @@ fn code_writes_are_real_source() {
 
 #[test]
 fn proof_tokens_cover_the_three_witnesses() {
-    // NEG-arm: narration that cites real artifacts must carry a proof token.
-    let with_proof =
-        "✅ done — git diff --stat shows 3 files changed, cargo check exit 0";
+    let with_proof = "✅ done — git diff --stat shows 3 files changed, cargo check exit 0";
     let lc = with_proof.to_lowercase();
     assert!(
         PROOF_TOKENS.iter().any(|t| lc.contains(t)),
@@ -126,14 +160,14 @@ fn proof_tokens_cover_the_three_witnesses() {
 }
 
 #[test]
-fn gaming_phrase_list_has_no_overbroad_single_words() {
-    // Guard against a future edit adding a word so generic it false-fires on
-    // ordinary prose. Every phrase must be >= 6 chars and not a bare common verb.
+fn default_gaming_phrases_have_no_overbroad_single_words() {
+    // Guard against a future floor edit adding a word so generic it false-fires on
+    // ordinary prose. Every default phrase must be >= 6 chars and not a bare verb.
     const BANNED_GENERIC: &[&str] = &["done", "complete", "ready", "fixed", "works"];
-    for p in GAMING_PHRASES {
+    for p in &DoneGamingVocab::default().gaming_phrases {
         assert!(p.len() >= 6, "phrase too short / over-broad: {p}");
         assert!(
-            !BANNED_GENERIC.contains(p),
+            !BANNED_GENERIC.contains(&p.as_str()),
             "phrase is a generic completion word that would over-fire: {p}"
         );
     }

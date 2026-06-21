@@ -34,7 +34,9 @@ fn risk_dimension(marker: &str) -> &'static str {
         "auth" | "token" | "session" | "password" | "permission" | "authorize" => {
             "authentication authorization session token loophole lens"
         }
-        "secret" => "secret key management crypto side-channel loophole lens",
+        "secret" | "encrypt" | "decrypt" | "nonce" | "cipher" | "hash" | "hmac" | "signature" => {
+            "crypto key-management nonce-reuse side-channel weak-algorithm loophole lens"
+        }
         "payment" | "balance" | "transfer" => {
             "money precision rounding idempotency double-spend loophole lens"
         }
@@ -46,6 +48,27 @@ fn risk_dimension(marker: &str) -> &'static str {
         }
         "status" | "state_transition" | "claim" | "acquire" => {
             "state machine transition invalid-state loophole lens"
+        }
+        "reqwest" | "http_client" | "fetch_url" | "redirect" | "webhook" | "callback_url" => {
+            "ssrf outbound-request url-validation redirect-follow dns-rebinding loophole lens"
+        }
+        "deserialize" | "from_str" | "from_slice" | "parse_json" | "untrusted" => {
+            "deserialization untrusted-input type-confusion gadget loophole lens"
+        }
+        "sql" | "query!" | "execute(" | "command::new" | "shell" | "render_template" => {
+            "injection sql command template parameterization escaping loophole lens"
+        }
+        "path::new" | "read_to_string" | "open(" | "join(" | "canonicalize" => {
+            "path-traversal symlink directory-escape canonicalization loophole lens"
+        }
+        "unbounded" | "with_capacity" | "loop {" | "recursion" | "read_to_end" => {
+            "resource-exhaustion dos unbounded-allocation infinite-loop backpressure loophole lens"
+        }
+        " as u" | " as i" | "wrapping_" | "overflow" => {
+            "integer-overflow truncation wrapping-cast sign-confusion loophole lens"
+        }
+        "debug!(" | "error!(" | "{:?}" | "to_string()" => {
+            "information-leak secret-in-log error-detail-exposure pii loophole lens"
         }
         _ => "loophole defect risk lens",
     }
@@ -113,6 +136,26 @@ mod tests {
         // Every marker resolves to a non-empty query (no panic, total mapping).
         for m in ["auth", "secret", "payment", "lock", "persist", "status", "xyz"] {
             assert!(!risk_dimension(m).is_empty());
+        }
+    }
+
+    #[test]
+    fn expanded_surfaces_map_to_distinct_dimensions() {
+        // The newly-routed risk surfaces each resolve to a SURFACE-SPECIFIC query,
+        // not the generic fallback — proving the router is no longer stuck on six.
+        let generic = risk_dimension("xyz");
+        for m in [
+            "reqwest",      // ssrf
+            "deserialize",  // deserialization
+            "sql",          // injection
+            "path::new",    // path-traversal
+            "unbounded",    // dos
+            " as u",        // integer-overflow
+            "debug!(",      // info-leak
+            "encrypt",      // crypto
+        ] {
+            let dim = risk_dimension(m);
+            assert_ne!(dim, generic, "marker {m} must map to a specific dimension, not the fallback");
         }
     }
 }

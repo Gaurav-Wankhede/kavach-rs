@@ -29,6 +29,7 @@ fn bash(cmd: &str) -> TrajectoryEvent {
         event_kind: EventKind::Bash {
             command: cmd.into(),
         },
+        outcome: None,
     }
 }
 

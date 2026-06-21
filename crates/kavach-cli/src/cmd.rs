@@ -19,7 +19,6 @@ pub(crate) mod mistake;
 mod oversized;
 mod phase;
 pub(crate) mod pipeline;
-mod rag;
 mod rules;
 mod schema;
 mod security;
@@ -82,7 +81,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             crate::cli::HealAction::Ingest { project } => heal::ingest::run(&project),
         },
         Commands::Loophole { action } => dispatch_loophole(action),
-        Commands::Rag { action } => rag::run(action),
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),
         Commands::TailwindPlus { action } => tailwind_plus::run(action),

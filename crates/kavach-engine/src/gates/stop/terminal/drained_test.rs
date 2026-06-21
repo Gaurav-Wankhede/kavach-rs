@@ -1,5 +1,6 @@
 use super::{
-    all_blocked_context, board_drained_plan_context, census_is_all_blocked, cycle_deadlock_context,
+    all_blocked_context, board_drained_plan_context, census_has_dispatchable_remainder,
+    census_is_all_blocked, cycle_deadlock_context,
 };
 
 #[test]
@@ -36,6 +37,26 @@ fn empty_board_is_not_all_blocked() {
 fn rpc_outage_fails_closed_to_nudge() {
     // None = census unobservable → never a wrong clean-stop.
     assert!(!census_is_all_blocked(None));
+}
+
+#[test]
+fn dispatchable_remainder_fires_when_runnable_exceeds_blocked_plus_cyclic() {
+    // The reported real-world bug: census runnable=21 blocked=0 cyclic=0, yet
+    // dispatch returned None — runnable, UNBLOCKED roadmap todos remain. The gate
+    // must REFUSE the clean-stop, not nudge.
+    assert!(census_has_dispatchable_remainder(Some((21, 0, 0))));
+    assert!(census_has_dispatchable_remainder(Some((3, 2, 0)))); // 1 dispatchable
+}
+
+#[test]
+fn dispatchable_remainder_silent_when_all_blocked_or_empty_or_outage() {
+    // Every runnable card blocked/cyclic → the all-blocked path owns it, not this.
+    assert!(!census_has_dispatchable_remainder(Some((3, 3, 0))));
+    assert!(!census_has_dispatchable_remainder(Some((3, 2, 1))));
+    // Empty board → drained-plan nudge, not a refuse-stop.
+    assert!(!census_has_dispatchable_remainder(Some((0, 0, 0))));
+    // RPC outage → false here (the outage nudge owns fail-closed elsewhere).
+    assert!(!census_has_dispatchable_remainder(None));
 }
 
 #[test]

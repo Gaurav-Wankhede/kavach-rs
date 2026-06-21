@@ -1,12 +1,9 @@
-//! Advisory context formatting: query trees, rank top-k hits, render compact
-//! `[RAG:<label>]` blocks for injection into a gate approval context.
-use kavach_rag_core::{MatchResult, Matcher, Query};
-
-use super::cache::load_trees;
+//! Advisory context: query via `brain.think`, format top-k hits.
+use super::cache::search_via_brain;
 use super::rpc::all_labels;
 
-/// Query a persisted tree and format the top-k hits as a context block.
-/// Empty string on any failure (db open, missing row, parse, zero hits).
+/// Query corpus via `brain.think` and format top-k hits as a context block.
+/// Empty string on any failure (RPC error, zero hits).
 pub(crate) fn advisory_context(
     label: &str,
     file_path: &str,
@@ -14,37 +11,22 @@ pub(crate) fn advisory_context(
     intent: &str,
     top_k: usize,
 ) -> String {
-    let trees = load_trees(label);
-    if trees.is_empty() {
-        return String::new();
-    }
     let effective_k = top_k.max(1);
-    let query = Query::new(file_path, raw_text, intent);
-    let mut pooled: Vec<MatchResult> = Vec::new();
-    for tree in &trees {
-        let matcher = Matcher::new(tree).with_top_k(effective_k);
-        for hit in matcher.run(&query) {
-            pooled.push(hit);
-        }
-    }
-    if pooled.is_empty() {
+    let hits = search_via_brain(label, file_path, raw_text, intent, effective_k);
+    if hits.is_empty() {
         return String::new();
     }
-    pooled.sort_by_key(|h| std::cmp::Reverse(h.score));
-    pooled.truncate(effective_k);
-    format_hits(label, &pooled, effective_k)
+    format_hits(label, &hits)
 }
 
-fn format_hits(label: &str, hits: &[MatchResult], max_lines: usize) -> String {
+fn format_hits(label: &str, hits: &[(u32, String)]) -> String {
     use std::fmt::Write as _;
-    // Compact format: score title (node_id) per line. TOON table overhead
-    // exceeds savings for small arrays (<10 items).
     let mut out = String::with_capacity(128);
     out.push_str("[RAG:");
     out.push_str(label);
     out.push_str("]\n");
-    for hit in hits.iter().take(max_lines) {
-        writeln!(out, "{} {} ({})", hit.score.0, hit.title, hit.node_id).ok();
+    for (score, id) in hits {
+        writeln!(out, "{score} {id} ({id})").ok();
     }
     out
 }

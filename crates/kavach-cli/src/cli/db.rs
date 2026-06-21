@@ -607,6 +607,23 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         #[arg(long)]
         name: String,
     },
+    /// Purge an `anti_pattern` cluster + its `mistake_event`s by the gate that
+    /// recorded them — removes a stale `correct_action` from `PRACTICE_DELTA` (requires `--confirm`).
+    MistakePurge {
+        /// Gate whose `anti_pattern` cluster(s) to delete (e.g. `capture_finding_unpersisted`)
+        #[arg(long)]
+        gate: String,
+        /// Confirm the destructive purge.
+        #[arg(long)]
+        confirm: bool,
+    },
+    /// Run a read-only `SurrealQL` query against the store (`SELECT`/`INFO` only).
+    /// Ad-hoc graph inspection; mutations go through typed verbs (write, mistake-purge, …).
+    QueryRaw {
+        /// The read-only `SurrealQL` to execute, e.g. `SELECT name FROM entity LIMIT 5`.
+        #[arg(long)]
+        query: String,
+    },
     /// Store an implementation-flow DAG (structured JSON ingest, render-on-read)
     #[command(
         long_about = "Persist an implementation flow as a DAG in the entity graph (store-as-DAG, \

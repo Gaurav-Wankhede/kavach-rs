@@ -8,6 +8,7 @@ fn ev_bash(cmd: &str) -> TrajectoryEvent {
         event_kind: EventKind::Bash {
             command: cmd.into(),
         },
+        outcome: None,
     }
 }
 fn ev_write(path: &str, content: &str) -> TrajectoryEvent {
@@ -18,6 +19,7 @@ fn ev_write(path: &str, content: &str) -> TrajectoryEvent {
             file_path: path.into(),
             content: content.into(),
         },
+        outcome: None,
     }
 }
 
@@ -72,6 +74,7 @@ fn replay_false_completion_detected() {
         event_kind: EventKind::Stop {
             final_message: "All done!".into(),
         },
+        outcome: None,
     };
     let outs = replay_event(&ev);
     assert!(outs.iter().any(|o| o.gate == "false_completion_detector"));
@@ -123,6 +126,7 @@ fn jsonl_emit_then_read_roundtrip() {
             event_kind: EventKind::Stop {
                 final_message: "All done!".into(),
             },
+            outcome: None,
         },
     ];
     for ev in &events {
@@ -166,6 +170,7 @@ fn capture_appends_event_to_the_tape() {
             event_kind: EventKind::Bash {
                 command: "cargo check --workspace".into(),
             },
+            outcome: None,
         },
     )
     .unwrap();
@@ -221,6 +226,7 @@ fn tape_survives_a_simulated_restart_and_still_replays() {
                 timestamp_ms: i64::try_from(i).unwrap(),
                 session_id: "restart".into(),
                 event_kind: kind.clone(),
+                outcome: None,
             },
         )
         .unwrap();

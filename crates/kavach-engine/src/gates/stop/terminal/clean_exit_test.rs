@@ -18,6 +18,7 @@ fn ctx_with<'a>(
         loophole_advisory: loophole,
         shallow_advisory: None,
         continuation_advisory: None,
+        research_unsourced: false,
     }
 }
 

@@ -54,6 +54,62 @@ pub(crate) fn reward_rubric_for(project_slug: &str) -> kavach_patterns::reward::
     kavach_patterns::reward::presets::by_name(name.trim())
 }
 
+/// DB key for the multidimensional-oracle config override (a JSON blob of weight /
+/// margin / penalty / failure-vocab overrides). Cross-project harness doctrine.
+const REWARD_ORACLE_KEY: &str = "gate.reward_oracle";
+
+/// Resolve the project's ground-truth oracle config from its `gate.reward_oracle`
+/// DB row (a JSON object whose present fields override the compiled defaults). This
+/// is what makes the oracle's weights / penalty / failure-vocab DATA, not source
+/// literals — research-refreshable per project. Empty slug / absent row / malformed
+/// JSON all fall back to [`OracleConfig::default`] (the compiled fail-safe), so the
+/// oracle is never worse than its hardcoded floor when the DB is unreachable.
+#[must_use]
+pub(crate) fn oracle_config_for(project_slug: &str) -> kavach_patterns::reward::oracle::OracleConfig {
+    use kavach_patterns::reward::oracle::OracleConfig;
+    if project_slug.is_empty() {
+        return OracleConfig::default();
+    }
+    let Some(json) = rpc_get_directive(project_slug, REWARD_ORACLE_KEY) else {
+        return OracleConfig::default();
+    };
+    // `#[serde(default)]` on OracleConfig fills every field the row omits from the
+    // compiled default, so a partial override is honored and a malformed blob
+    // degrades to the full default — never a panic, never a zeroed config.
+    serde_json::from_str(json.trim()).unwrap_or_default()
+}
+
+/// DB key for the done-gaming vocabulary override (a JSON object with optional
+/// `gaming_phrases` / `handback_phrases` string arrays). Cross-project harness
+/// doctrine — the Stop gate's completion-narration + operator-handback markers as
+/// DATA, research-refreshable per project, NOT source literals.
+const DONE_GAMING_VOCAB_KEY: &str = "gate.done_gaming_vocab";
+
+/// Resolve the project's done-gaming vocabulary from its `gate.done_gaming_vocab`
+/// DB row. This is what connects the Stop gate's done-detection to the kavach DB +
+/// Brain-OS instead of compiled `const` arrays: the operator (or a research refresh)
+/// hot-edits the gaming/handback phrase lists with one `kavach db write`, no rebuild.
+/// Empty slug / absent row / malformed JSON all fall back to
+/// [`DoneGamingVocab::default`] (the compiled phrase floor), so the gate is never
+/// weaker than its hardcoded baseline when the DB is unreachable. Mirrors
+/// [`oracle_config_for`].
+#[must_use]
+pub(crate) fn done_gaming_vocab_for(
+    project_slug: &str,
+) -> kavach_patterns::stop_vocab::DoneGamingVocab {
+    use kavach_patterns::stop_vocab::DoneGamingVocab;
+    if project_slug.is_empty() {
+        return DoneGamingVocab::default();
+    }
+    let Some(json) = rpc_get_directive(project_slug, DONE_GAMING_VOCAB_KEY) else {
+        return DoneGamingVocab::default();
+    };
+    // `#[serde(default)]` fills each list the row omits from the compiled default,
+    // so a partial override (only `gaming_phrases`) keeps the default handback list,
+    // and a malformed blob degrades to the full default — never a panic, never empty.
+    serde_json::from_str(json.trim()).unwrap_or_default()
+}
+
 fn source_down_sentinel() -> (String, String) {
     (
         SOURCE_DOWN_KEY.to_owned(),

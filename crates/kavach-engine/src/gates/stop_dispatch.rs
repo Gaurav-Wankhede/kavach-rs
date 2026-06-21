@@ -19,7 +19,8 @@ pub(crate) use card::{
 };
 pub(crate) use query::{
     census_rpc_only, get_next_backlog_info, get_next_hunt_info, get_next_task_info,
-    next_task_directive, next_task_rpc_only, open_set_census, reward_rubric_for,
+    done_gaming_vocab_for, next_task_directive, next_task_rpc_only, open_set_census,
+    oracle_config_for, reward_rubric_for,
 };
 pub(crate) use daemon::renew_my_leases;
 pub(crate) use verify::{AutoVerify, auto_verify_done_cards};

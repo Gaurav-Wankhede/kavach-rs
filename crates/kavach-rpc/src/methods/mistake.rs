@@ -14,7 +14,7 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
-use kavach_surreal::graph_query_anti_pattern_hit_count;
+use kavach_surreal::{graph_delete_anti_patterns_by_gate, graph_query_anti_pattern_hit_count};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -122,4 +122,41 @@ pub async fn record(state: &AppState, p: RecordParams) -> Result<RecordResult, E
     Ok(RecordResult {
         ids: format!("{event_id:?} -> {pattern_id:?}"),
     })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct PurgeParams {
+    /// The gate whose `anti_pattern` cluster(s) to delete (e.g. a stale gate name).
+    pub gate: String,
+}
+
+impl PurgeParams {
+    #[must_use]
+    pub const fn new(gate: String) -> Self {
+        Self { gate }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct PurgeResult {
+    /// Count of `anti_pattern` clusters removed for the gate.
+    pub removed: usize,
+}
+
+/// Purge the `anti_pattern` clusters recorded under `gate`, returning the count.
+///
+/// Also deletes each cluster's `mistake_event`s, so a stale or corrected do-instead
+/// rule stops being injected via `PRACTICE_DELTA`. Completes the ledger CRUD
+/// (record/read existed; this is delete).
+///
+/// # Errors
+///
+/// Returns an RPC error if the delete query fails.
+pub async fn purge(state: &AppState, p: PurgeParams) -> Result<PurgeResult, ErrorObjectOwned> {
+    let removed = graph_delete_anti_patterns_by_gate(&state.db, &p.gate)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(PurgeResult { removed })
 }

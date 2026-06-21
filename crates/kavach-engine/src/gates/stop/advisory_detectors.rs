@@ -14,10 +14,13 @@
 //! dead detector must never false-fire; the patterns are proven to compile by the
 //! chain crate's own tests).
 //!
-//! WIRED (8) — invoked every Stop: `detect_continuation_menu` (in `stop.rs`),
+//! WIRED (12) — invoked every Stop: `detect_continuation_menu` (in `stop.rs`),
 //! and in `TABLE` below: `detect_permission_seek`, `detect_incomplete_work`,
 //! `detect_remaining_phases`, `detect_unverified_code_claim`,
-//! `detect_inference_as_evidence`, `detect_lazy_verification_claim`, and
+//! `detect_inference_as_evidence`, `detect_lazy_verification_claim`, the four
+//! action-driven imperatives `detect_completion_without_witnesses`,
+//! `detect_decision_not_persisted`, `detect_verdict_without_citation`,
+//! `detect_claim_without_research` (Phase E — claim-without-action), and
 //! `semantic_deferral_backstop` (the `classify_semantic_deferral` adapter — an
 //! LLM-judge-shaped semantic backstop for PARAPHRASED handoffs the lexical
 //! `detect_strategic_deferral` regex misses; FP-bounded by its own
@@ -131,6 +134,38 @@ const TABLE: &[Entry] = &[
         advisory: "[LAZY_VERIFICATION] last turn claimed verification without the artifacts. A CLEAN verdict is noise unless it cites the leaf it reached (global CLAUDE.md §verdict_needs_leaf_evidence). Produce the three witnesses THIS turn (rg hit + git diff --stat + cargo check exit 0) and cite them, or drop the claim.",
     },
     Entry {
+        detect: stop_signals::detect_completion_without_witnesses,
+        needs_write: true,
+        gate: "completion_without_witnesses_at_stop",
+        banned: "declared the task done/complete/shipped without citing the three witnesses (rg artifact + git diff --stat + cargo/nextest)",
+        correct: "produce the three witnesses THIS turn (artifact via rg, diff via git diff --stat, build via cargo check/nextest) and cite them, or state the exact remaining step",
+        advisory: "[THREE_WITNESS] last turn narrated completion (done/complete/shipped/landed) without the three proofs. 'Done' requires THREE witnesses, not prose: (1) the artifact exists (`rg`), (2) the diff landed (`git diff --stat`), (3) the build passes (`cargo check`/`nextest`). Narrating completion is not completing it (global CLAUDE.md §three-witness). Produce + cite all three THIS turn, or name the exact remaining step and continue it.",
+    },
+    Entry {
+        detect: stop_signals::detect_decision_not_persisted,
+        needs_write: false,
+        gate: "decision_not_persisted_at_stop",
+        banned: "announced a settled design/decision/approach but did not persist it to the kavach DB the same turn",
+        correct: "write the decision row THIS turn (`kavach db write --category decision`) — choice + source + one-line why",
+        advisory: "[PERSIST_NOW] last turn settled a design choice/decision/approach but did not persist it. A settled decision is written the SAME turn — to the kavach DB (`kavach db write --category decision`: choice + source + one-line why), not into prose that evaporates (global CLAUDE.md §persist-decisions). A mistake corrected twice was never persisted once. Write the row THIS turn.",
+    },
+    Entry {
+        detect: stop_signals::detect_verdict_without_citation,
+        needs_write: false,
+        gate: "verdict_without_citation_at_stop",
+        banned: "issued a clean/wired/safe/no-defect verdict without citing the file:line read to reach it",
+        correct: "open the entry->logic call path and cite the file:line you read, or drop the verdict",
+        advisory: "[CITE_EVIDENCE] last turn issued a clean/wired/safe/no-defect verdict with no `file:line`. A verdict must name the leaf you READ to reach it (global CLAUDE.md §verdicts-cite-evidence). Open the entry->logic call path, cite the `file:line` THIS turn, or drop the verdict.",
+    },
+    Entry {
+        detect: stop_signals::detect_claim_without_research,
+        needs_write: false,
+        gate: "claim_without_research_at_stop",
+        banned: "asserted a current-knowledge fact (latest version/API/pricing/support) with no source URL or [RESEARCH]/SOURCE marker",
+        correct: "research a real source and cite its URL THIS turn before the claim stands; no source -> no claim",
+        advisory: "[RESEARCH_FIRST] last turn asserted a current-knowledge fact (latest/version/API/pricing/supports) from memory, with no source URL. Tabula rasa: the weights are stale, the web is truth (global CLAUDE.md §internet-first). Research a real source and cite its URL THIS turn — no source, no claim.",
+    },
+    Entry {
         detect: semantic_deferral_backstop,
         needs_write: false,
         gate: "semantic_deferral_at_stop",
@@ -147,7 +182,17 @@ const TABLE: &[Entry] = &[
 ///
 /// `wrote_this_turn` gates the verification-claim entries. A detector whose
 /// pattern fails to compile is treated as "did not fire" (fail-safe).
-pub(super) fn run(session: &mut kavach_session::SessionState, msg: &str, wrote_this_turn: bool) {
+///
+/// Returns `true` iff the research-witness detector (`detect_claim_without_research`)
+/// fired this turn — the caller (`clean_exit`) uses it to REFUSE the stop when an
+/// unsourced current-knowledge claim was made (breaker-bounded), giving the
+/// internet-first law teeth instead of an advisory the model can ignore.
+pub(super) fn run(
+    session: &mut kavach_session::SessionState,
+    msg: &str,
+    wrote_this_turn: bool,
+) -> bool {
+    let mut research_claim_fired = false;
     for entry in TABLE {
         if entry.needs_write && !wrote_this_turn {
             continue;
@@ -161,8 +206,12 @@ pub(super) fn run(session: &mut kavach_session::SessionState, msg: &str, wrote_t
                 turn: session.turn_count,
             }));
             session.queue_pending_advisory(entry.advisory);
+            if entry.gate == "claim_without_research_at_stop" {
+                research_claim_fired = true;
+            }
         }
     }
+    research_claim_fired
 }
 
 #[cfg(test)]

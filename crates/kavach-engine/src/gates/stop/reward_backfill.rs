@@ -111,7 +111,11 @@ fn rubric_outcome(session: &SessionState) -> RewardOutcome {
     };
     let rubric =
         crate::gates::stop_dispatch::reward_rubric_for(&session.project);
-    match kavach_patterns::reward::score_trajectory_with(&events, &rubric) {
+    // DB-sourced multidimensional-oracle config (weights/penalty/failure-vocab as
+    // DATA, not source literals); absent/malformed row → compiled default.
+    let oracle_cfg =
+        crate::gates::stop_dispatch::oracle_config_for(&session.project);
+    match kavach_patterns::reward::score_trajectory_full(&events, &rubric, &oracle_cfg) {
         s if s > 0 => RewardOutcome::AiJudged(true),
         s if s < 0 => RewardOutcome::AiJudged(false),
         _ => RewardOutcome::Abstain,

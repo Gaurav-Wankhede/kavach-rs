@@ -15,4 +15,10 @@ fn auto_verify_states_are_distinct() {
     assert_ne!(AutoVerify::WitnessFailed, AutoVerify::Unprovable);
     // Only Promoted(n>0) drives re-dispatch; Promoted(0) is a clean-stop branch.
     assert_ne!(AutoVerify::Promoted(0), AutoVerify::Promoted(1));
+    // VerifyRpcDown (work proven, DB write failed) must NOT collapse into
+    // Promoted(0)/NothingDone — that collapse re-dispatched a finished card on a
+    // transient daemon outage instead of surfacing the outage loudly.
+    assert_ne!(AutoVerify::VerifyRpcDown, AutoVerify::Promoted(0));
+    assert_ne!(AutoVerify::VerifyRpcDown, AutoVerify::NothingDone);
+    assert_ne!(AutoVerify::VerifyRpcDown, AutoVerify::WitnessFailed);
 }

@@ -628,6 +628,24 @@ pub(super) fn mistake_hit_count(
         .map_err(format_err)
 }
 
+pub(super) fn mistake_purge(
+    gate: &str,
+) -> Result<kavach_rpc::methods::mistake::PurgeResult, String> {
+    let params = kavach_rpc::methods::mistake::PurgeParams::new(gate.to_owned());
+    call::<_, kavach_rpc::methods::mistake::PurgeResult>("mistake.purge", Some(params))
+        .map_err(format_err)
+}
+
+pub(super) fn raw_query(
+    query: &str,
+) -> Result<kavach_rpc::methods::db::RawQueryResult, String> {
+    let params = kavach_rpc::methods::db::RawQueryParams {
+        query: query.to_owned(),
+    };
+    call::<_, kavach_rpc::methods::db::RawQueryResult>("db.raw_query", Some(params))
+        .map_err(format_err)
+}
+
 fn format_err(e: ClientError) -> String {
     match e {
         ClientError::NotReachable(_) => DAEMON_UNAVAILABLE.to_owned(),

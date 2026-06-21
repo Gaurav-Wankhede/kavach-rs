@@ -5,7 +5,8 @@ use super::{
     archive, backfill_relationships, bridge, citation, concept, delete, delete_prefix, event,
     expire, find,
     flow, gate_config, get,
-    graph_query, infer_deps, kanban, lane, list, mistake_hits, pg, populate_graph, priority, query,
+    graph_query, infer_deps, kanban, lane, list, mistake_hits, mistake_purge, pg, populate_graph,
+    priority, query, query_raw,
     register,
     register_part, rotate, search, status_update, sync, tree, wipe_project, write,
 };
@@ -203,6 +204,8 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         DbAction::BridgeConceptsFor { project } => bridge::concepts_for(&project),
         DbAction::BridgeProjectsFor { concept } => bridge::projects_for(&concept),
         DbAction::MistakeHitCount { name } => mistake_hits::run(&name),
+        DbAction::MistakePurge { gate, confirm } => mistake_purge::run(&gate, confirm),
+        DbAction::QueryRaw { query } => query_raw::run(&query),
         flow_action @ (DbAction::FlowAdd { .. } | DbAction::FlowShow { .. }) => {
             dispatch_flow(flow_action)
         }

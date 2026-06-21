@@ -127,4 +127,20 @@ pub struct OpenSetCensus {
     /// Keys of the runnable cards detected in a dependency cycle (for the gate
     /// message). Empty when `cyclic == 0`.
     pub cyclic_keys: Vec<String>,
+    /// DISPATCH-REACHABLE subset: the runnable/blocked/cyclic counts from the
+    /// `roadmap` table for THIS project ONLY — i.e. exactly the set the dispatch
+    /// probe (`next_open_task`/`promote_next_backlog`) can actually serve in this
+    /// lane. The plain `runnable`/`blocked` above ALSO fold the GLOBAL on-disk
+    /// Claude Code `TaskList` store (awareness stamp), which dispatch can NEVER
+    /// serve from a project session — so a refuse-stop MUST key off these
+    /// roadmap-only fields, never the inflated total, or any project session is
+    /// trapped forever whenever the global `TaskList` holds an open item. `#[serde(default)]`
+    /// keeps an older daemon's payload (without these fields) deserializing to 0,
+    /// which the gate treats as "no dispatch-reachable remainder" → fail-safe.
+    #[serde(default)]
+    pub roadmap_runnable: usize,
+    #[serde(default)]
+    pub roadmap_blocked: usize,
+    #[serde(default)]
+    pub roadmap_cyclic: usize,
 }

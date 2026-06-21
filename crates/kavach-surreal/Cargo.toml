@@ -19,9 +19,6 @@ blake3 = { workspace = true }
 kavach-types = { path = "../kavach-types" }
 
 [dev-dependencies]
-# retire-rag-core C1 recall-parity proof: compares SurrealDB `search_corpus`
-# against the native `kavach-rag-core` Matcher (tests/rag_core_recall_parity.rs).
-kavach-rag-core = { path = "../kavach-rag-core" }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1.1", features = ["process"] }

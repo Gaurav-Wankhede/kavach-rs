@@ -1,8 +1,5 @@
 //! kavach-rpc wrappers for the RAG router. All fail-closed: an RPC error yields
 //! `None`/empty/0 so the advisory gate degrades silently, never blocks.
-mod boosts;
-
-pub(in crate::gates::rag_router) use boosts::load_graph_boosts;
 
 /// RPC wrapper: find entity, return `RecordId` as "table:id" string.
 pub(in crate::gates::rag_router) fn rpc_entity_find(

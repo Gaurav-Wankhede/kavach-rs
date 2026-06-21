@@ -1,13 +1,5 @@
 use crate::cmd::db::rpc_client;
-use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-
-fn err_exit(msg: &str) -> i32 {
-    let line = format!("error: {msg}");
-    match ewrite_or_exit(&line) {
-        Ok(()) => 1,
-        Err(io) => into_exit_code(io),
-    }
-}
+use crate::cmd::io_safe::{err_exit, into_exit_code, print_or_exit};
 
 pub(super) fn run(anti_pattern_name: &str) -> i32 {
     match rpc_client::mistake_hit_count(anti_pattern_name) {

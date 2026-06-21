@@ -7,15 +7,19 @@ mod boot;
 mod concepts;
 mod context;
 mod flows;
+mod gui;
 mod memory;
 mod patterns;
-mod rag;
 mod reconcile;
 mod stack_fit;
 mod state;
 
 #[cfg(test)]
 mod tests;
+
+// Shared with the Stop gate: an auto-compact can fire a Stop before the next
+// SessionStart reconciles the seam, so the Stop terminal also checks it.
+pub(in crate::gates) use reconcile::reconcile_context;
 
 use kavach_types::HookInput;
 
@@ -43,14 +47,16 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     state::set_model(&mut session, input);
     state::reset_stale_state(&mut session);
 
-    // Heavy boot work (skill-dir scan + RAG-tree rebuild) is skipped under
+    // Heavy boot work (skill-dir scan + GUI bringup) is skipped under
     // `cargo test`/`nextest` and when KAVACH_SKIP_HEAVY_BOOT=1: rebuilding the
     // registry on every invocation would blow the per-test timeout under the
     // parallel workspace run (and is wasteful in CI). The gate's own logic still
     // runs; only the expensive registry refresh is bypassed.
     if !cfg!(test) && std::env::var("KAVACH_SKIP_HEAVY_BOOT").as_deref() != Ok("1") {
         boot::build_skill_registry();
-        rag::refresh_all_rag_trees();
+        // Bring up the GUI (:7777) + SurrealDB at session start, autonomously —
+        // idempotent + detached, so the dashboard is live without a manual command.
+        gui::ensure_gui_up();
     }
     let context = context::build(&mut session);
 

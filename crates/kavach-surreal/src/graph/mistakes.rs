@@ -8,11 +8,13 @@ pub mod count;
 pub mod pattern;
 pub mod policy;
 pub mod policy_read;
+pub mod purge;
 pub mod top;
 
 pub use append::append_mistake_event;
 pub use cluster::cluster_event_to_pattern;
 pub use count::query_anti_pattern_hit_count;
+pub use purge::delete_anti_patterns_by_gate;
 pub use pattern::upsert_anti_pattern;
 pub use policy::{DeployedPolicyProps, upsert_deployed_policy};
 pub use policy_read::{DeployedPolicyRow, top_deployed_policies};

@@ -29,30 +29,85 @@ const DONE_PHRASES: &[&str] = &[
 /// Risk-bearing path markers — the scope half. Only content touching one of
 /// these warrants the adversarial prompt; a docs/rename/format change does not.
 const RISK_MARKERS: &[&str] = &[
+    // authz / session
     "auth",
+    "token",
+    "session",
+    "password",
+    "permission",
+    "authorize",
+    // concurrency
     "lease",
     "lock",
     "mutex",
     "rwlock",
-    "token",
-    "session",
-    "password",
-    "secret",
-    "payment",
-    "balance",
-    "transfer",
-    "transaction",
-    "persist",
-    "commit",
     "concurren",
     "atomic",
     "race",
+    // money
+    "payment",
+    "balance",
+    "transfer",
+    // persistence
+    "transaction",
+    "persist",
+    "commit",
+    // secrets / crypto
+    "secret",
+    "encrypt",
+    "decrypt",
+    "nonce",
+    "cipher",
+    "hash",
+    "hmac",
+    "signature",
+    // state machine
     "status",
     "state_transition",
     "claim",
     "acquire",
-    "permission",
-    "authorize",
+    // ssrf / outbound request
+    "reqwest",
+    "http_client",
+    "fetch_url",
+    "redirect",
+    "webhook",
+    "callback_url",
+    // deserialization / parsing of untrusted input
+    "deserialize",
+    "from_str",
+    "from_slice",
+    "parse_json",
+    "untrusted",
+    // injection (sql / command / template)
+    "sql",
+    "query!",
+    "execute(",
+    "command::new",
+    "shell",
+    "render_template",
+    // path traversal / file
+    "path::new",
+    "read_to_string",
+    "open(",
+    "join(",
+    "canonicalize",
+    // resource exhaustion / DoS
+    "unbounded",
+    "with_capacity",
+    "loop {",
+    "recursion",
+    "read_to_end",
+    // numeric truncation / overflow
+    " as u",
+    " as i",
+    "wrapping_",
+    "overflow",
+    // information leakage
+    "debug!(",
+    "error!(",
+    "{:?}",
+    "to_string()",
 ];
 
 /// Return the loophole self-interrogation advisory when `content` BOTH claims

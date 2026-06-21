@@ -6,7 +6,6 @@ mod db;
 mod harness_loop;
 mod oversized;
 mod phase;
-mod rag;
 mod rules;
 mod security;
 mod session;
@@ -19,7 +18,6 @@ pub(crate) use db::DbAction;
 pub(crate) use harness_loop::LoopAction;
 pub(crate) use oversized::{OversizedAction, OversizedFormat};
 pub(crate) use phase::PhaseAction;
-pub(crate) use rag::RagAction;
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
@@ -145,11 +143,6 @@ pub(crate) enum Commands {
         /// List the schema source for every vendor.
         #[arg(long)]
         all: bool,
-    },
-    /// Build and query vectorless RAG trees
-    Rag {
-        #[command(subcommand)]
-        action: RagAction,
     },
     /// Ask the advisor (Haiku executor + Opus advisor)
     Ask {

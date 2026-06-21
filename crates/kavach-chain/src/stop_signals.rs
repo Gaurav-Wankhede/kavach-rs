@@ -25,6 +25,11 @@ pub use self::phase_d::{
     detect_unverified_code_claim, detect_unwired_frontend_claim,
 };
 
+pub use self::phase_e_action::{
+    detect_claim_without_research, detect_completion_without_witnesses,
+    detect_decision_not_persisted, detect_verdict_without_citation,
+};
+
 mod signal;
 
 // Phase A leaf modules
@@ -51,6 +56,9 @@ mod phase_d;
 mod phase_d_lex1;
 mod phase_d_lex2;
 mod phase_d_multi;
+
+// Phase E — action-driven imperatives (completion/decision/verdict/research)
+mod phase_e_action;
 
 #[cfg(test)]
 #[path = "stop_signals_test.rs"]

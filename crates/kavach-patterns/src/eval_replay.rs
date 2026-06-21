@@ -30,6 +30,24 @@ pub struct TrajectoryEvent {
     pub timestamp_ms: i64,
     pub session_id: String,
     pub event_kind: EventKind,
+    /// Objective outcome (exit code / test pass-fail), or `None` when no
+    /// ground-truth signal exists. `#[serde(default)]` keeps legacy rows valid.
+    /// The reward oracle reads THIS, not the agent's prose.
+    /// SOURCE: decision.harness-reward-ground-truth-oracle.
+    #[serde(default)]
+    pub outcome: Option<EventOutcome>,
+}
+
+/// Agent-independent outcome attached to a trajectory event — the ground truth
+/// the reward oracle scores a success/done claim against. SOURCE above.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum EventOutcome {
+    /// The operation objectively succeeded (exit 0 / tests passed).
+    Success,
+    /// The operation objectively failed (non-zero exit / tests failed / build error).
+    Failure,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -365,11 +383,33 @@ pub fn capture(
     if session_id.is_empty() {
         return Ok(());
     }
+    capture_with_outcome(session_id, timestamp_ms, event_kind, None)
+}
+
+/// Capture a trajectory event WITH its objective outcome.
+///
+/// The outcome is the ground-truth signal (a Bash exit code, a build/test result)
+/// the reward oracle scores against. Callers that observe an outcome (the
+/// `PostToolUse:Bash` hook has the exit code) pass `Some`; pure self-report events
+/// (`Stop`) pass `None`.
+///
+/// # Errors
+/// Propagates `EmitError` from path resolution or the JSONL append.
+pub fn capture_with_outcome(
+    session_id: &str,
+    timestamp_ms: i64,
+    event_kind: EventKind,
+    outcome: Option<EventOutcome>,
+) -> Result<(), EmitError> {
+    if session_id.is_empty() {
+        return Ok(());
+    }
     let path = default_trajectory_path(session_id)?;
     let event = TrajectoryEvent {
         timestamp_ms,
         session_id: session_id.to_owned(),
         event_kind,
+        outcome,
     };
     emit_to_jsonl(&path, &event)
 }

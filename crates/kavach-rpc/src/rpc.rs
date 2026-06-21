@@ -508,6 +508,15 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register mistake.record: {e}")))?;
 
     module
+        .register_async_method("mistake.purge", |params, ctx, _ext| async move {
+            let p: mistake::PurgeParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            mistake::purge(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register mistake.purge: {e}")))?;
+
+    module
         .register_async_method("mistake.top", |params, ctx, _ext| async move {
             let p: mistake_top::TopParams = params
                 .parse()
@@ -705,6 +714,14 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .register_async_method("db.query", |params, ctx, _ext| async move {
             let p: db::QueryParams = params.parse().map_err(|e| invalid_params(e.to_string()))?;
             db::query(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.raw_query", |params, ctx, _ext| async move {
+            let p: db::RawQueryParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::raw_query(&ctx, p).await
         })
         .map_err(|e| internal(e.to_string()))?;
 

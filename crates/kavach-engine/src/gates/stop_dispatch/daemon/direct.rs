@@ -82,10 +82,12 @@ pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, ()> 
         let state = open_state().await?;
         let params = dispatch_params(project_slug)?;
         let census = open_set_census(&state, params).await.map_err(|_| ())?;
+        // Dispatch-reachable (roadmap-only) counts, matching `parse_census` on the
+        // RPC path — never the TaskList-inflated totals, which would trap the loop.
         Ok(Some((
-            u64::try_from(census.runnable).map_err(|_| ())?,
-            u64::try_from(census.blocked).map_err(|_| ())?,
-            u64::try_from(census.cyclic).map_err(|_| ())?,
+            u64::try_from(census.roadmap_runnable).map_err(|_| ())?,
+            u64::try_from(census.roadmap_blocked).map_err(|_| ())?,
+            u64::try_from(census.roadmap_cyclic).map_err(|_| ())?,
         )))
     })
 }

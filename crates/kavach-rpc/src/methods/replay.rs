@@ -3,7 +3,7 @@
 // SOURCE: https://docs.rs/jsonrpsee/latest/jsonrpsee/struct.RpcModule.html
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_patterns::eval_replay::{
-    self, EventKind, GateOutcome, ReplaySeverity, ReplaySummary, TrajectoryEvent,
+    self, EventKind, EventOutcome, GateOutcome, ReplaySeverity, ReplaySummary, TrajectoryEvent,
 };
 use serde::{Deserialize, Serialize};
 
@@ -33,6 +33,10 @@ pub struct WireEvent {
     pub timestamp_ms: i64,
     pub session_id: String,
     pub event: WireEventKind,
+    /// Optional objective outcome (the ground-truth signal the reward oracle
+    /// scores against). Absent on legacy/self-report-only wire events.
+    #[serde(default)]
+    pub outcome: Option<EventOutcome>,
 }
 
 impl From<WireEvent> for TrajectoryEvent {
@@ -47,6 +51,7 @@ impl From<WireEvent> for TrajectoryEvent {
             timestamp_ms: w.timestamp_ms,
             session_id: w.session_id,
             event_kind,
+            outcome: w.outcome,
         }
     }
 }

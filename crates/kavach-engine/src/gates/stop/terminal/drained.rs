@@ -59,6 +59,63 @@ fn census_stamp(census: Option<(u64, u64, u64)>) -> String {
     }
 }
 
+/// True iff the census proves a DISPATCHABLE remainder the single-source dispatch
+/// probe failed to surface: at least one runnable-status card AND not every one of
+/// them is blocked/cyclic — i.e. a card the gate counts as runnable+unblocked yet
+/// `next_dispatch` returned None (census reads roadmap-by-status + the `TaskList`
+/// fold; dispatch reads only the roadmap table with lane/umbrella filters). This is
+/// the census/dispatch divergence: the loop must NOT clean-stop on it — runnable
+/// roadmap todos remain. `None` (RPC outage) → false (the outage path already fails
+/// closed to the non-empty nudge elsewhere; do not double-refuse here).
+const fn census_has_dispatchable_remainder(census: Option<(u64, u64, u64)>) -> bool {
+    match census {
+        Some((runnable, blocked, cyclic)) => {
+            runnable > 0 && blocked.saturating_add(cyclic) < runnable
+        }
+        None => false,
+    }
+}
+
+/// Public divergence check for the terminal callers: did the census prove a
+/// dispatchable roadmap todo the probe missed? When true the caller REFUSES the
+/// stop (parity with the loophole / cycle refuse-stops) so the loop always acts on
+/// remaining roadmap todos instead of clean-stopping on a single-source None.
+#[must_use]
+pub(in crate::gates::stop) fn roadmap_todos_remain(project: &str) -> bool {
+    census_has_dispatchable_remainder(crate::gates::stop_dispatch::open_set_census(project))
+}
+
+/// The REFUSE-STOP verdict emitted when `roadmap_todos_remain` is true: command a
+/// DIRECT roadmap-todo query (not the dispatch probe that just missed them) and a
+/// claim+start THIS turn. This makes "always check the roadmap for todos" an
+/// ENFORCED action, not advisory prose.
+pub(in crate::gates::stop) fn roadmap_todos_remain_context(project: &str) -> String {
+    let stamp = census_stamp(crate::gates::stop_dispatch::open_set_census(project));
+    let block = kavach_hook::context_block(
+        "ROADMAP_TODOS_REMAIN",
+        &[
+            ("census", &stamp),
+            (
+                "why",
+                "the census proves runnable, UNBLOCKED roadmap todos remain, but the \
+                 dispatch probe (lane-affinity + umbrella filter, roadmap table only) \
+                 returned nothing — a census/dispatch source divergence. Runnable work \
+                 exists; this is NOT a drained board and NOT a clean stop.",
+            ),
+            (
+                "action",
+                "Do NOT stop. Query the roadmap DIRECTLY for the remaining todos the \
+                 probe missed: `kavach db query-raw --query \"SELECT meta::id(id) AS k, \
+                 title FROM roadmap WHERE entry_status IN ['todo','in_progress']\"` (and \
+                 `--category decision` for unexecuted rows). Pick the highest-priority \
+                 todo, claim it (`kavach db status-update --status in_progress`), and \
+                 START it THIS turn. Yield only to the user's `Esc`.",
+            ),
+        ],
+    );
+    format!("{block}{RESEARCH_MODE_DIRECTIVE}")
+}
+
 /// True iff the census proves a BLOCKED remainder: at least one runnable-status
 /// card AND every one of them blocked by dependencies or cyclic. `None` (RPC
 /// outage) → false → fail closed to the PLAN nudge. An empty board (`runnable

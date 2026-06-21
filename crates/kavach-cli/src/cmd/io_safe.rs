@@ -48,6 +48,17 @@ pub(crate) fn ewrite_or_exit(line: &str) -> Result<(), IoExit> {
     Ok(())
 }
 
+/// Print `error: <msg>` to stderr and return the process exit code (1, or the
+/// IO failure's code if even stderr can't be written). The shared error path
+/// for `db` subcommand handlers.
+pub(crate) fn err_exit(msg: &str) -> i32 {
+    let line = format!("error: {msg}");
+    match ewrite_or_exit(&line) {
+        Ok(()) => 1,
+        Err(io) => into_exit_code(io),
+    }
+}
+
 /// Print a prompt (no trailing newline) and read one trimmed line from stdin.
 /// Used by destructive commands to collect the typed confirmation phrase.
 /// Returns the trimmed input, or an `IoExit` if stdout/stdin fails.

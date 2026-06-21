@@ -60,6 +60,19 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             ctx.session.increment_stop_reblock();
             return ControlFlow::Break(());
         }
+        AutoVerify::VerifyRpcDown => {
+            // Work is PROVEN but the promote-to-verified DB write failed (daemon
+            // down). Never exit treating a finished card as incomplete; surface the
+            // outage so the operator restarts the daemon and lands the status update.
+            drop(kavach_hook::exit_stop_block(
+                "[VERIFY_RPC_DOWN] done cards passed witnesses but the DB promotion \
+                 (done -> verified) FAILED — kavach RPC/daemon unreachable. The work is \
+                 NOT incomplete; the status write did not land. RECOVER: start `kavach rpc`, \
+                 then `kavach db status-update <key> --status verified --project <slug>`, then resume.",
+            ));
+            ctx.session.increment_stop_reblock();
+            return ControlFlow::Break(());
+        }
         AutoVerify::Unprovable => {
             // Work cannot be proven — surface the clear blocker.
             drop(kavach_hook::exit_stop_block(

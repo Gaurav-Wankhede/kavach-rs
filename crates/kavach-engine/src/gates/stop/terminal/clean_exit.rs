@@ -83,6 +83,14 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push('\n');
         full.push_str(loophole_ctx);
     }
+    // Compaction-seam ride-along (shared predicate with SessionStart): an
+    // auto-compact may have fired a Stop with an in_progress card done-but-
+    // UNRECORDED — surface [RECONCILE] so the next turn resumes at VERIFY, not a
+    // re-edit. Fail-soft (None on clean tree / no hint / RPC miss). Advisory only.
+    if let Some(reconcile) = super::super::super::session_start::reconcile_context(&ctx.session.project) {
+        full.push('\n');
+        full.push_str(&reconcile);
+    }
     // DB-C dynamic injection: the operator-editable `gate.injection.clean_exit` DB row,
     // if present, rides along here — proving the binary carries NO advisory prose
     // for this gate; the text is data-driven + hot-editable (no rebuild). Absent →
@@ -129,6 +137,38 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         return ControlFlow::Break(());
     }
 
+    // REFUSE-STOP on census/dispatch divergence: the dispatch probe returned None,
+    // but the census proves runnable, UNBLOCKED roadmap todos remain (the probe's
+    // lane/umbrella filter or the roadmap-only source hid them). A clean stop here
+    // would silently abandon real work — so DO NOT allow the stop: command a DIRECT
+    // roadmap-todo query + claim + start. Behavioral-breaker bounded (category
+    // "roadmap_todos_remain"): after N refusals it force-allows (loop-safety) while
+    // recording the surrender, so a genuinely un-actionable board can never spin.
+    if refuse_stop_on_roadmap_todos(ctx) {
+        let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
+        drop(kavach_hook::exit_stop_block(&format!("{blocked}\n{full}")));
+        return ControlFlow::Break(());
+    }
+
+    // REFUSE-STOP on an unsourced current-knowledge claim (internet-first teeth):
+    // this turn asserted a latest/version/API/pricing fact from memory with NO
+    // source URL (`detect_claim_without_research` fired). A clean stop would let
+    // the stale-weights claim stand unverified — so DO NOT allow it: command a
+    // WebSearch + cite-or-drop THIS turn. Breaker-bounded (`research_unsourced`):
+    // after N refusals it force-allows (loop-safety) while recording the surrender.
+    if refuse_stop_on_unsourced_research(ctx) {
+        let blocked = format!(
+            "[RESEARCH_FIRST] Do NOT stop. This turn asserted a current-knowledge \
+             fact (latest/version/API/pricing/supports) from memory with NO source \
+             URL. Tabula rasa: the weights are stale, the web is truth (global \
+             CLAUDE.md §internet-first). WebSearch a real source THIS turn and cite \
+             its URL, persist the finding (`kavach db write --category research`), or \
+             DROP the claim. No source -> no claim.\n{full}"
+        );
+        drop(kavach_hook::exit_stop_block(&blocked));
+        return ControlFlow::Break(());
+    }
+
     drop(kavach_hook::exit_stop_context(&full));
     ControlFlow::Break(())
 }
@@ -145,6 +185,28 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 fn refuse_stop_on_open_loophole(ctx: &mut StopCtx<'_>) -> bool {
     ctx.loophole_advisory.is_some()
         && super::super::shared::should_block_behavioral(ctx.session, "loophole_open")
+}
+
+/// Decide whether the drained-board clean-stop must be REFUSED because the census
+/// proves dispatchable roadmap todos the probe missed (census/dispatch divergence).
+/// Breaker-bounded (`roadmap_todos_remain`) so a board the model genuinely cannot
+/// act on force-allows after N refusals. Calling it mutates the breaker count, so
+/// invoke exactly once per stop. Order: checked AFTER the loophole refuse-stop, so
+/// an open loophole still takes precedence.
+fn refuse_stop_on_roadmap_todos(ctx: &mut StopCtx<'_>) -> bool {
+    super::drained::roadmap_todos_remain(&ctx.session.project)
+        && super::super::shared::should_block_behavioral(ctx.session, "roadmap_todos_remain")
+}
+
+/// Decide whether the clean-stop must be REFUSED because this turn made an
+/// unsourced current-knowledge claim (`detect_claim_without_research` fired).
+/// Breaker-bounded (`research_unsourced`) so a turn that genuinely cannot source a
+/// claim force-allows after N refusals. Calling it mutates the breaker count, so
+/// invoke exactly once per stop. Checked LAST (after loophole + roadmap-todos), so
+/// those higher-priority refuse-stops still take precedence.
+fn refuse_stop_on_unsourced_research(ctx: &mut StopCtx<'_>) -> bool {
+    ctx.research_unsourced
+        && super::super::shared::should_block_behavioral(ctx.session, "research_unsourced")
 }
 
 #[cfg(test)]

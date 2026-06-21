@@ -57,6 +57,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             loophole_advisory: None,
             shallow_advisory: None,
             continuation_advisory: None,
+            research_unsourced: false,
         };
         if inflight::background(&mut ctx).is_break() {
             return Ok(());
@@ -121,7 +122,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             project: &session.project,
             gate: "capture_finding_unpersisted",
             banned_sample: "settled a decision in prose without persisting it to the DB",
-            correct_action: "write a decision row the same turn (sync_to_kavach_db)",
+            correct_action: "persist it THIS turn with the kavach db CLI: \
+                             kavach db write --new --project <slug> --category decision \
+                             --key <key> --title <title> --content <text>",
             turn: session.turn_count,
         }));
         if let Some(ref adv) = capture_advisory {
@@ -167,7 +170,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // next-turn pending advisory. ADVISORY only (no HALT). The verification-claim
     // entries are gated behind `wrote_this_turn` inside the table.
     let wrote_this_turn = session.last_write_turn == session.turn_count;
-    advisory_detectors::run(&mut session, &msg, wrote_this_turn);
+    let research_unsourced = advisory_detectors::run(&mut session, &msg, wrote_this_turn);
 
     // Build the shared context once; guards thread it.
     let mut ctx = StopCtx {
@@ -178,6 +181,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         loophole_advisory,
         shallow_advisory,
         continuation_advisory,
+        research_unsourced,
     };
 
     // Ordered guard pipeline. `?`-style short-circuit via ControlFlow: the first
@@ -366,6 +370,9 @@ fn emit_trajectory(session: &kavach_session::SessionState, msg: &str) {
         event_kind: kavach_patterns::eval_replay::EventKind::Stop {
             final_message: msg.to_owned(),
         },
+        // A Stop is a pure self-report claim — no objective outcome of its own.
+        // The reward oracle scores it against the PRIOR Bash/build outcomes.
+        outcome: None,
     };
     drop(kavach_patterns::eval_replay::emit_to_jsonl(&path, &event));
 }

@@ -196,6 +196,19 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         context.push_str(&truncate_section(&stack_ctx, budget));
     }
 
+    // DECISION_MAP/PRACTICE_DELTA/PATTERN_DAG triad via the SINGLE canonical
+    // emitter both hooks share (no hand-listed copy → can't drift). "" prompt →
+    // whole-spine. The triad is budget-capped as a unit here (it self-truncates
+    // per-block via its own RPC max_nodes). See
+    // decision.harness.shared-mermaid-injection-emitter.
+    if !session.project.is_empty() {
+        let mut triad = String::new();
+        super::super::intent::append_mermaid_views(&mut triad, &session.project, "");
+        if !triad.is_empty() {
+            context.push_str(&truncate_section(&triad, budget));
+        }
+    }
+
     // [ALGO_EVOLUTION] removed — ~1kB/session token waste.
     // Algo decisions are on-demand: kavach db query --project <slug> --category decision
     context

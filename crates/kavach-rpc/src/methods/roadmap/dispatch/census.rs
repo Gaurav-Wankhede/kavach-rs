@@ -65,6 +65,15 @@ pub async fn open_set_census(
             census.blocked = census.blocked.saturating_add(1);
         }
     }
+    // SNAPSHOT the roadmap-only counts BEFORE the TaskList fold below. These are
+    // the DISPATCH-REACHABLE subset (this project's roadmap rows the dispatch probe
+    // can actually serve in this lane). The refuse-stop keys off THESE, not the
+    // post-fold totals — folding the GLOBAL TaskList into the stop decision would
+    // trap any project session forever whenever the global list holds an open item.
+    census.roadmap_runnable = census.runnable;
+    census.roadmap_blocked = census.blocked;
+    census.roadmap_cyclic = census.cyclic;
+
     // SECOND SOURCE: fold in the on-disk Claude Code TaskList store so the gate
     // sees BOTH backlogs. The roadmap table alone reported `runnable: 0` while
     // ~30 open TaskList items sat unseen, falsely "draining" the queue. A missing

@@ -77,10 +77,13 @@ pub(crate) fn reconcile_action(
     }
 }
 
-/// Impure `SessionStart` wrapper: emit a `[RECONCILE]` block only in the seam
-/// case. Fail-soft — any RPC/git miss or non-seam verdict returns `None`.
+/// Impure wrapper: emit a `[RECONCILE]` block only in the seam case. Fail-soft —
+/// any RPC/git miss or non-seam verdict returns `None`. Called by BOTH the
+/// session-start hook AND the Stop gate: an auto-compact can fire a Stop before the
+/// next session-start reconciles, so the Stop terminal also checks the seam (single
+/// shared predicate, no second copy). See decision.harness.autocompact-stop-seam-unified.
 #[must_use]
-pub(super) fn reconcile_context(project: &str) -> Option<String> {
+pub(in crate::gates) fn reconcile_context(project: &str) -> Option<String> {
     if project.is_empty() {
         return None;
     }

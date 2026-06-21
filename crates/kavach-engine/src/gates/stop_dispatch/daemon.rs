@@ -128,9 +128,22 @@ pub(super) fn rpc_next_only(project_slug: &str) -> Option<serde_json::Value> {
 /// Extract `(runnable, blocked, cyclic)` from a census RPC value. Absent `cyclic`
 /// (older daemon) defaults to 0; a missing `runnable`/`blocked` yields `None`.
 fn parse_census(v: &serde_json::Value) -> Option<(u64, u64, u64)> {
-    let runnable = v.get("runnable").and_then(serde_json::Value::as_u64)?;
-    let blocked = v.get("blocked").and_then(serde_json::Value::as_u64)?;
-    let cyclic = v.get("cyclic").and_then(serde_json::Value::as_u64).unwrap_or(0);
+    // Prefer dispatch-reachable `roadmap_*` counts over the TaskList-inflated
+    // totals (else a global open task traps any project session). Falls back to
+    // totals for an old daemon. See decision.harness.census-split-roadmap-vs-tasklist.
+    let runnable = v
+        .get("roadmap_runnable")
+        .or_else(|| v.get("runnable"))
+        .and_then(serde_json::Value::as_u64)?;
+    let blocked = v
+        .get("roadmap_blocked")
+        .or_else(|| v.get("blocked"))
+        .and_then(serde_json::Value::as_u64)?;
+    let cyclic = v
+        .get("roadmap_cyclic")
+        .or_else(|| v.get("cyclic"))
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
     Some((runnable, blocked, cyclic))
 }
 
@@ -145,4 +158,40 @@ pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64, u6
     let params = serde_json::json!({ "project": project_slug });
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
         .map_or_else(|_| direct::census(project_slug), |v| Ok(parse_census(&v)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_census;
+
+    #[test]
+    fn prefers_roadmap_only_counts_over_tasklist_inflated_totals() {
+        // The real-world bug: top-level totals fold the GLOBAL TaskList (21,1),
+        // but only the roadmap subset (0,0) is dispatch-reachable in this lane.
+        // The gate MUST see the roadmap-only counts or it traps the loop forever.
+        let v = serde_json::json!({
+            "runnable": 21, "blocked": 1, "cyclic": 0,
+            "roadmap_runnable": 0, "roadmap_blocked": 0, "roadmap_cyclic": 0,
+        });
+        assert_eq!(parse_census(&v), Some((0, 0, 0)));
+    }
+
+    #[test]
+    fn falls_back_to_totals_for_old_daemon_without_roadmap_fields() {
+        // An older daemon payload lacks `roadmap_*`; degrade to the totals so the
+        // gate still observes a board rather than panicking or zeroing.
+        let v = serde_json::json!({ "runnable": 3, "blocked": 1, "cyclic": 0 });
+        assert_eq!(parse_census(&v), Some((3, 1, 0)));
+    }
+
+    #[test]
+    fn roadmap_remainder_survives_when_real_local_work_exists() {
+        // A genuine kavach-rs roadmap todo (2 runnable, 0 blocked) must still be
+        // seen as a dispatchable remainder — the original clean-stop fix intact.
+        let v = serde_json::json!({
+            "runnable": 23, "blocked": 1, "cyclic": 0,
+            "roadmap_runnable": 2, "roadmap_blocked": 0, "roadmap_cyclic": 0,
+        });
+        assert_eq!(parse_census(&v), Some((2, 0, 0)));
+    }
 }

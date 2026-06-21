@@ -8,6 +8,7 @@ fn bash(cmd: &str) -> TrajectoryEvent {
         timestamp_ms: 0,
         session_id: "t".into(),
         event_kind: EventKind::Bash { command: cmd.into() },
+        outcome: None,
     }
 }
 
@@ -16,6 +17,7 @@ fn stop(msg: &str) -> TrajectoryEvent {
         timestamp_ms: 0,
         session_id: "t".into(),
         event_kind: EventKind::Stop { final_message: msg.into() },
+        outcome: None,
     }
 }
 

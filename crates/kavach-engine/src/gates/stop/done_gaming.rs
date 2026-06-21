@@ -21,52 +21,9 @@
 use core::ops::ControlFlow;
 use std::path::Path;
 
+use kavach_patterns::stop_vocab::DoneGamingVocab;
+
 use super::shared::StopCtx;
-
-/// Done-by-redefinition + narration/sign-off vocabulary. Lower-cased substring
-/// match. Kept deliberately specific — each phrase is a completion-claim the model
-/// uses to END a turn without doing the work, NOT generic prose.
-const GAMING_PHRASES: &[&str] = &[
-    // done-by-redefinition
-    "vacuously complete",
-    "vacuous",
-    "await features",
-    "awaiting features",
-    "shipped for live types",
-    "documentation pass",
-    "doc pass",
-    "safe-by-construction",
-    "nothing further is runnable",
-    "must not run",
-    // narration / sign-off
-    "the new status block",
-    "status block:",
-    "that completes",
-    "one-line summary",
-    "single source of truth for the migration",
-];
-
-/// Operator-handback / surrender phrases — the abolished "push it to the owner"
-/// pattern that re-leaked under infra-stress (the ENOSPC transcript: "Owner — run
-/// `rm -rf …`", "owner-authorization anchor", spinning "Holding" turns). These
-/// fire UNCONDITIONALLY of the proof NEG-arm: that transcript ran `cargo check`
-/// AND `df` (proof tokens) yet still handed work to the operator and held. A
-/// genuine hard limit is reported ONCE as an act-directive, never as a standing
-/// instruction for the operator to run a command. Lower-cased substring match.
-const HANDBACK_PHRASES: &[&str] = &[
-    "owner — run",
-    "owner - run",
-    "owner must free",
-    "owner must run",
-    "owner-authorization anchor",
-    "run in your terminal",
-    "no agent action can",
-    "only an external",
-    "holding for",
-    "holding until",
-    "i'm holding",
-    "i am holding",
-];
 
 /// Proof tokens whose presence means real work accompanies the prose — NEG-arm.
 /// Any one present → the turn cited an artifact, so it is NOT pure gaming.
@@ -97,8 +54,8 @@ fn is_real_source_write(path: &str) -> bool {
 
 /// `true` when the message carries gaming/narration vocabulary OR an emoji
 /// status-block line (a `✅`/`⏸`/`❌` on a `Phase:`/`State:`/`DONE` line).
-fn has_gaming_language(lc: &str, raw: &str) -> bool {
-    if GAMING_PHRASES.iter().any(|p| lc.contains(p)) {
+fn has_gaming_language(vocab: &DoneGamingVocab, lc: &str, raw: &str) -> bool {
+    if vocab.has_gaming_phrase(lc) {
         return true;
     }
     raw.lines().any(|line| {
@@ -118,15 +75,14 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     let raw = ctx.input.last_assistant_message.trim();
     let lc = raw.to_lowercase();
 
-    // HANDBACK ARM (fires regardless of the proof NEG-arm and census): the turn
-    // pushed the work to the operator ("Owner — run …") or is spinning a "Holding"
-    // hold turn. This is the abolished surrender pattern; under a genuine infra
-    // limit the answer is a ONE-SHOT act-directive (free your own scratch, run the
-    // op via a runtime script), never a standing command for the operator. The
-    // ENOSPC transcript proved the proof-token NEG-arm is not enough here — it ran
-    // `cargo check`/`df` yet still handed back — so this arm is checked first and
-    // does not consult PROOF_TOKENS.
-    if HANDBACK_PHRASES.iter().any(|p| lc.contains(p)) {
+    // Vocab is DB-sourced (gate.done_gaming_vocab) with the compiled phrase floor
+    // as fail-open default — the marker lists are DATA, hot-editable, not literals.
+    let vocab = crate::gates::stop_dispatch::done_gaming_vocab_for(&ctx.session.project);
+
+    // HANDBACK ARM fires regardless of the proof NEG-arm and census (the ENOSPC
+    // transcript ran cargo check/df yet still handed back), so it is checked first
+    // and does not consult PROOF_TOKENS. SOURCE: decision.done-gaming-vocab-dynamic.
+    if vocab.has_handback_phrase(&lc) {
         drop(kavach_hook::exit_stop_block(
             "[NO_HANDBACK] (non-surrenderable) This stop pushes work to the operator \
              (\"Owner — run …\" / \"owner must free\" / \"no agent action can\") or spins a \
@@ -144,7 +100,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     }
 
     // Cond 1: gaming/narration language present.
-    if !has_gaming_language(&lc, raw) {
+    if !has_gaming_language(&vocab, &lc, raw) {
         return ControlFlow::Continue(());
     }
     // NEG-arm: real proof accompanies the prose → not gaming.

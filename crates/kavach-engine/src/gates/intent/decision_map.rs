@@ -8,7 +8,7 @@
 /// relevant to `prompt` (via Brain-OS) so only the touched neighbourhood is shown.
 /// `None` when the project has no decision/roadmap rows or the daemon is down.
 #[must_use]
-pub(super) fn decision_map_block(project_slug: &str, prompt: &str) -> Option<String> {
+pub(in crate::gates) fn decision_map_block(project_slug: &str, prompt: &str) -> Option<String> {
     if project_slug.is_empty() {
         return None;
     }
