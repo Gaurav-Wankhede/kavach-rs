@@ -1,9 +1,8 @@
-//! Tests for the W4 local auto-commit gate. The git/RPC side effects need a repo
-//! + daemon (absent in unit context), and this crate forbids `unsafe` so we cannot
-//! mutate process env to exercise the disable switch. We therefore pin the parts
-//! that ARE deterministic and side-effect-free: `run` returns without panicking on
-//! both an empty and a populated card key (the fail-open contract), and a clean
-//! tree yields no commit receipt.
+//! Tests for the W4 local auto-commit gate. Git and RPC side effects need a repo
+//! and daemon (absent in unit context), and this crate forbids `unsafe` so the
+//! disable switch cannot be toggled via process env here. The deterministic
+//! contract is pinned instead: `run` never unwinds on an empty or populated card
+//! key (the fail-open path), and the disable-env constant name stays fixed.
 
 use super::*;
 
