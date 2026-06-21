@@ -163,18 +163,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 
 /// Decide whether a drained-board clean-stop must be REFUSED because the turn
 /// shipped risk-bearing work with an un-closed loophole.
-///
-/// True iff an un-answered loophole advisory is present AND the behavioral
-/// breaker for `loophole_open` has not yet tripped. The breaker bound is what
-/// makes this loop-safe: after N consecutive refusals it returns `false`
-/// (force-allow) while recording the surrender, so a turn that genuinely cannot
-/// answer is never trapped in an infinite refuse-stop. Calling it mutates the
-/// breaker count, so invoke exactly once per stop.
-fn refuse_stop_on_open_loophole(ctx: &mut StopCtx<'_>) -> bool {
-    ctx.loophole_advisory.is_some()
-        && super::super::shared::should_block_behavioral(ctx.session, "loophole_open")
-}
-
 /// Decide whether the drained-board clean-stop must be REFUSED because the census
 /// proves dispatchable roadmap todos the probe missed (census/dispatch divergence).
 /// Breaker-bounded (`roadmap_todos_remain`) so a board the model genuinely cannot
