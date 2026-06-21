@@ -88,7 +88,7 @@ fn is_comment_only(changed: &str) -> bool {
 }
 
 /// Basename without the `.rs` extension.
-pub(super) fn unit_stem(path: &str) -> &str {
+pub(crate) fn unit_stem(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path).trim_end_matches(".rs")
 }
 
