@@ -44,21 +44,8 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     } else {
         session.current_kanban_card.clone()
     };
-    // Reward resolution order (RLAIF, operator directive 2026-06-17): the MECHANICAL
-    // 3-witness receipt is ground truth and always wins; only when it is absent
-    // does the AUTONOMOUS AI verdict supply the reward, filling the blind spot
-    // where the oracle would otherwise abstain (the dominant 0.0 case that
-    // starved the bandit). With neither signal it still abstains.
-    //
-    // FIX [false-negative reward / L2] preserved: `goal_receipt_pass == false`
-    // means "no clean receipt", NOT "proven failure" — so absence never grades a
-    // let-through as -1.0 by itself; it falls through to the AI verdict or abstain.
-    // Reward resolution order: (1) mechanical 3-witness receipt (ground truth),
-    // (2) autonomous AI verdict, (3) the PROJECT-ADAPTIVE rubric score over the
-    // turn's trajectory — the last filling the abstain blind spot with an
-    // objective, stack-aware signal (a non-cargo project's `bun test`/`pytest`
-    // now scores, not zero). Rubric loaded from the project's `gate.reward_rubric`
-    // DB row; absent → Rust default. Operator directive 2026-06-17 (expand the RLAIF).
+    // Reward resolution: (1) 3-witness receipt, (2) AI verdict, (3) project rubric.
+    // See decision.engine.reward-resolution-rlaif.
     let outcome = if session.goal_receipt_pass {
         RewardOutcome::Passed
     } else if let Some(v) = session.ai_verdict {

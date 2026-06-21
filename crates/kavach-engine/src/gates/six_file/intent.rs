@@ -16,12 +16,8 @@ static INTENT_REGEX: LazyLock<Option<regex::Regex>> = LazyLock::new(|| {
     .ok()
 });
 
-// NON-FEATURE intent guard: prompts whose leading intent is fix/refactor/debug/
-// status/deploy/CI add NO feature surface, so the witness-chain mandate is pure
-// noise that competes with the real task. If the prompt opens with one of these,
-// suppress the gate even when a feature verb appears later in the sentence
-// ("fix the bug, then implement the patch"). Anchored to the prompt START so a
-// genuine feature request ("build a feature to fix latency") is unaffected.
+// NON-FEATURE intent guard: suppress witness-chain for fix/refactor/debug/deploy verbs.
+// See decision.engine.six_file_non_feature_lead.
 static NON_FEATURE_LEAD: LazyLock<Option<regex::Regex>> = LazyLock::new(|| {
     regex::RegexBuilder::new(
         r"^\s*(please\s+)?(fix|refactor|debug|investigate|diagnose|rename|move|revert|bump|upgrade|deploy|release|ci\b|lint|format|clean ?up|reword|status|show|list|explain|why|what is|where is|how does|check|verify|review|test)\b",
