@@ -157,14 +157,7 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         context.push_str(&truncate_section(&hot_ctx, budget));
     }
 
-    // FIX: [contract_violation/silent_failure] no awareness of repeat mistakes.
-    // SOURCE: arxiv.org/html/2512.11485 (Mistake Notebook Learning) — distill
-    //   shared error patterns into structured "mistake notes"; surface them at
-    //   the start of every turn so the model sees its own failure history
-    //   BEFORE it can repeat it.
-    // SOURCE: arxiv.org/pdf/2512.02389 — frame as anti-pattern (banned phrase
-    //   + correct alternative), NEVER as raw error text (parrots).
-    // OPTIONAL block: a large ledger must never displace the contract, so cap it.
+    // Inject mistake ledger for repeat-pattern awareness. SOURCE: decision.engine.mistake_ledger_session_injection.
     if let Some(ledger_ctx) = mistake_ledger_context() {
         context.push_str(&truncate_section(&ledger_ctx, budget));
     }
