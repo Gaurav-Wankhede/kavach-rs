@@ -34,12 +34,8 @@ pub(crate) fn handle_question(input: &HookInput) {
         drop(kavach_hook::exit_pre_tool_deny(&reason));
         return;
     }
-    // Researchable-question nudge (ADVISORY, not a block): a factual/technical
-    // question (library / API / version / flag / algorithm) is answerable on the
-    // internet, not by the user. The question still proceeds — but the model is
-    // reminded to WebSearch the authoritative source first instead of asking. Genuine
-    // direction/authorization questions carry no researchable+factual signal and pass
-    // silently. Wider FP surface than the effort-split → advisory, never a deny.
+    // Researchable-question nudge (ADVISORY): fact-based questions routed to WebSearch.
+    // SOURCE: decision.engine.researchable_question_advisory.
     let mut session = kavach_session::get_or_create_session();
     let research_ctx = kavach_patterns::laziness_guard::detect_researchable_question(&value);
     super::turn_relay::exit_pre_tool_allow_relay(&mut session, research_ctx.as_deref());
