@@ -10,7 +10,7 @@
 //! Format: line-delimited JSON (one `SpooledWrite` per line). An append of a
 //! single newline-terminated line is atomic on every mainstream filesystem, so a
 //! crash mid-append never corrupts an earlier line. SOURCE:
-//! https://users.rust-lang.org/t/correct-way-to-save-a-file-atomically-but-without-interferring-with-performance/89223
+//! <https://users.rust-lang.org/t/correct-way-to-save-a-file-atomically-but-without-interferring-with-performance/89223>
 
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
