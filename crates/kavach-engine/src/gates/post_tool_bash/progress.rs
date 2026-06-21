@@ -3,15 +3,7 @@
 
 /// Track substantive kavach DB progress + query calls. The stop gate's
 /// live-lock breaker reads `last_db_write_turn` as a "made progress" signal.
-///
-/// FIX [rca.stop-breaker-bookkeeping-resets-livelock]: ONLY a card STATE
-/// TRANSITION (status-update / kanban-close) counts as roadmap progress. A bare
-/// `kavach db write --content` (decision/research rows, or marker edits to dodge
-/// dispatch) is BOOKKEEPING, not progress — counting it let a trapped agent
-/// reset the breaker every turn by writing a decision row, so the live-lock
-/// guard never tripped and the loop spun for ~2h. The breaker must reset only on
-/// genuine card movement, never on the very writes an agent emits while stuck.
-/// SOURCE: Martin Fowler — CircuitBreaker.html (only real SUCCESS resets count).
+/// SOURCE: decision.engine.stop_breaker_card_state_transitions_only.
 pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, command: &str) {
     let is_status_update = command.contains("kavach db status-update");
     let is_kanban_close = command.contains("kavach db kanban-close");
