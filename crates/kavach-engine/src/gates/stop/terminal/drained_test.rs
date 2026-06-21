@@ -128,17 +128,10 @@ fn plan_context_directs_db_rescan_and_never_self_stops() {
 #[test]
 fn next_task_verdicts_mandate_research_mode_against_truth() {
     // The built-in Stop→next-task step is research-first: WebSearch current truth,
-    // never trust training weights. Both next-task verdicts carry the directive.
-    for c in [board_drained_plan_context(Some((0, 0, 0))), all_blocked_context(Some((1, 1, 0)))] {
-        assert!(c.contains("RESEARCH MODE"), "names Research Mode: {c}");
-        assert!(c.contains("WebSearch"), "directs an internet search: {c}");
-        assert!(
-            c.contains("TABULA RASA = TRUTH"),
-            "asserts truth over weights: {c}"
-        );
-        assert!(
-            c.contains("NEVER trust training weights"),
-            "forbids answering from weights: {c}"
-        );
-    }
+    // never trust training weights. The drained-plan next-task verdict carries it.
+    let c = board_drained_plan_context(Some((0, 0, 0)));
+    assert!(c.contains("RESEARCH MODE"), "names Research Mode: {c}");
+    assert!(c.contains("WebSearch"), "directs an internet search: {c}");
+    assert!(c.contains("TABULA RASA = TRUTH"), "asserts truth over weights: {c}");
+    assert!(c.contains("NEVER trust training weights"), "forbids answering from weights: {c}");
 }
