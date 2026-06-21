@@ -5,20 +5,8 @@ use std::sync::LazyLock;
 
 use crate::error::EngineError;
 
-// FEATURE-SURFACE intent: every verb is OBJECT-GUARDED — it must be followed by
-// a new-surface noun (feature/page/endpoint/component/service/module). The prior
-// regex had bare `implement ` and `decompose` alternatives with NO object, so any
-// "implement the fix" / "decompose this function" misfired the gate
-// (unit.gate-noise.six-file-gate-misfire). `implement` now demands the same noun
-// guard `create` always had; `decompose` is dropped (it is a refactor verb, never
-// new-surface). SOURCE: rca.six-file-gate-misfire (2026-06-15).
-// Each build/add/implement/create verb is followed by an OBJECT GUARD: up to a
-// few intervening adjective/noun words (`(?:\w+\s+){0,3}`) then a new-surface
-// noun. This allows natural phrasing ("implement the notification feature",
-// "build a new auth service") while still REQUIRING the surface noun — so a bare
-// "implement the fix" (no surface noun within 3 words) does NOT match. The prior
-// regex had bare `implement `/`decompose` with no object at all, the misfire
-// root cause (unit.gate-noise.six-file-gate-misfire, rca 2026-06-15).
+// FEATURE-SURFACE intent: verbs must be followed by a new-surface noun guard.
+// See decision.engine.six_file_object_guard.
 static INTENT_REGEX: LazyLock<Option<regex::Regex>> = LazyLock::new(|| {
     regex::RegexBuilder::new(
         r"(?:build|add|implement|create)\s+(?:a\s+|the\s+|new\s+)?(?:\w+\s+){0,3}(feature|module|service|page|endpoint|component)|draft (a )?spec|plan( |ning) (this|the|a) (build|feature|project)|new feature|next unit|what should i build|write (the|a) spec",

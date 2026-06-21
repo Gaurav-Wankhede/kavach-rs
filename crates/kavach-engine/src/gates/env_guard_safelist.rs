@@ -1,14 +1,5 @@
-// ARCH: EnvVarSafelist
-// TIME: O(n) where n = SAFE_SYSTEM_VARS.len() (~27) | SPACE: O(1) static slice
-// YEAR: 2026 | SEARCHED: 2026-05
-//           A HashSet would alloc per call; a phf-table would add a build dep.
-//            this list (LD_*, DYLD_*, NODE_OPTIONS, RUBYOPT, PYTHONPATH).
-// PATTERN: allowlist | SCOPE: pre_tool_bash | CAP: AP
-// FAILURE_MODE: false negative (legitimate var rejected) → user complains, list extended;
-//               false positive (unsafe var allowed) → secret leak. List MUST stay
-//               conservative; loader-injection vars stay OUT.
-//
-// Extracted from env_guard.rs (split-env-guard-microservices roadmap, May 2026).
+// POSIX-standard non-secret system variables safe to read via echo/printenv.
+// See decision.engine.env-guard-safelist-arch.
 
 /// POSIX-standard non-secret system variables — safe to read via `echo` or `printenv`.
 ///
