@@ -256,9 +256,9 @@ fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Opti
     let advisory = super::loophole_guard::check_stop_interrogation(msg, wrote_this_turn)?;
     drop(kavach_session::record_mistake(&kavach_session::Mistake {
         project: &session.project,
-        gate: "loophole_uninterrogated",
-        banned_sample: "shipped risk-bearing work without CLOSING the loopholes (no Loopholes closed: line)",
-        correct_action: "fix each of the 6 attack-lens loopholes at its root THIS turn (or file a card), then emit a Loopholes closed: line",
+        gate: "loophole_surface_unrecorded",
+        banned_sample: "shipped risk-bearing work; the lens scan surfaced the risk surface",
+        correct_action: "the lens scan records suspect sites + the native triage agent fixes them — awareness, not a narration demand",
         turn: session.turn_count,
     }));
     // Queue it for the NEXT turn's intent injector to drain (intent/context.rs
