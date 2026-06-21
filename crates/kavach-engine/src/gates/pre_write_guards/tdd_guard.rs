@@ -1,0 +1,57 @@
+//! TDD pre-write gate: block production code unless its test came first (Red).
+//! Fast-path = the unit's test was touched earlier this turn, or the write
+//! carries an in-file `#[test]`. Escape: `KAVACH_TDD_BYPASS=1`.
+
+use crate::gates::pre_write_context::WriteContext;
+
+/// `Some(reason)` blocks the write when production code lacks a test-first signal.
+pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionState) -> Option<String> {
+    if std::env::var_os("KAVACH_TDD_BYPASS").is_some() {
+        return None;
+    }
+    if ctx.is_test || !ctx.is_code {
+        return None;
+    }
+    if has_infile_test(&ctx.effective_content) {
+        return None;
+    }
+    let stem = unit_stem(ctx.file_path);
+    if session
+        .files_modified_this_turn
+        .iter()
+        .any(|f| test_matches_unit(f, &stem))
+    {
+        return None;
+    }
+    Some(format!(
+        "[TDD:P0] BLOCKED. Production code for `{stem}` has no test-first (Red). \
+         Write the FAILING test for this unit THIS turn (sibling `{stem}_test.rs` \
+         or an in-file `#[test]`), confirm it fails, THEN write the code. \
+         Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
+    ))
+}
+
+/// Basename without the `.rs` extension.
+pub(super) fn unit_stem(path: &str) -> &str {
+    path.rsplit('/').next().unwrap_or(path).trim_end_matches(".rs")
+}
+
+/// True when `test_path` is a recognised test for `stem`: sibling
+/// `{stem}_test(s).rs` or a `tests/{stem}.rs` integration test.
+pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
+    let name = test_path.rsplit('/').next().unwrap_or(test_path);
+    let s = test_path.replace('\\', "/");
+    if s.contains("/tests/") && name == format!("{stem}.rs") {
+        return true;
+    }
+    name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
+}
+
+/// True when the written content already carries an in-file `#[test]`.
+fn has_infile_test(content: &str) -> bool {
+    content.contains("#[test]") || content.contains("#[tokio::test]")
+}
+
+#[cfg(test)]
+#[path = "tdd_guard/tests.rs"]
+mod tests;
