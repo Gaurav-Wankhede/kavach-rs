@@ -28,12 +28,8 @@ pub(super) fn concept_context(project_slug: &str) -> Option<String> {
             continue;
         }
         let desc = concept_description(&hit);
-        // Surface the SOURCE alongside the concept (F5 cutoff-gap): a concept is
-        // only trustworthy as post-cutoff knowledge if its provenance is legible.
-        // concept.add enforces a source URL (KG-EVIDENCE-GATE), but the injection
-        // previously dropped it — so the agent could not tell sourced fresh
-        // knowledge from a hallucinable guess. Show it so it overrides stale
-        // training memory. SOURCE: unit.loop-eng-injection.f5-concept-awareness.
+        // Surface the SOURCE alongside the concept for post-cutoff awareness.
+        // SOURCE: decision.engine.concept_provenance_injection.
         let src = concept_source(&hit);
         match (desc.is_empty(), src.is_empty()) {
             (true, true) => writeln!(ctx, "• {name}").ok(),
