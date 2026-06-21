@@ -27,7 +27,7 @@ mod pattern_extract;
 mod phase;
 mod reward_backfill;
 mod shared;
-mod spool_writes;
+pub(crate) mod spool_writes;
 mod terminal;
 
 use shared::StopCtx;
