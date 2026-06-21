@@ -30,13 +30,8 @@ pub(super) fn trigger_on_verify(session: &SessionState) {
     let _: Result<serde_json::Value, _> =
         kavach_rpc::client::call("event.append", Some(params));
 
-    // Close the extract->retrieve loop (F4): the event above only REQUESTS async
-    // extraction — nothing consumes it synchronously, so a skill learned on this
-    // verify was never retrievable on a later similar write. Persist a durable
-    // `pattern` row NOW so the procedural memory lands in the queryable store the
-    // pattern-extractor + nearest-retrieval already read. The async agent can
-    // later enrich this seed; the row's existence is what makes the loop closed
-    // rather than open. SOURCE: unit.loop-eng-injection.f4-skill-procedural.
+    // Persist procedural-memory seed so retrieve-on-similar finds it.
+    // See decision.engine.extract-retrieve-closed-loop.
     persist_pattern_seed(session);
 }
 
