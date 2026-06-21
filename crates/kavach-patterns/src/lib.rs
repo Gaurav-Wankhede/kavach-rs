@@ -43,6 +43,7 @@ pub mod comment_noise_guard;
 pub mod complexity_guard;
 pub mod crypto_guard;
 pub mod db_security_guard;
+pub mod disobedience_guard;
 pub mod frontend_security_guard;
 pub mod gnap_guard;
 pub mod k_pri;
