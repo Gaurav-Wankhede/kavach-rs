@@ -52,9 +52,10 @@ const OBEYED: &[&str] = &[
     "[rca]",
 ];
 
-/// `Some(reason)` when the message dismisses a fired imperative WITHOUT proof it was
-/// obeyed: a dismissal phrase + an imperative marker + no obey-proof token. `None`
-/// otherwise (no marker, no dismissal, or proof present).
+/// `Some(reason)` when the message dismisses a fired imperative WITHOUT obey-proof.
+///
+/// Fires on a dismissal phrase + an imperative marker + no obey-proof token.
+/// Returns `None` otherwise (no marker, no dismissal, or proof present).
 #[must_use]
 pub fn detect_disobedience(message: &str) -> Option<String> {
     let m = message.to_lowercase();
