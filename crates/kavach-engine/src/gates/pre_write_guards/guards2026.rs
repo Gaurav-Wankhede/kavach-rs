@@ -39,6 +39,9 @@ pub(super) fn check(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if let Some(b) = dedup::dedup(ctx, acc) {
         return Some(b);
     }
+    if let Some(b) = bloatware::bloatware(ctx, acc) {
+        return Some(b);
+    }
     severity::webhook(ctx, acc)
 }
 
