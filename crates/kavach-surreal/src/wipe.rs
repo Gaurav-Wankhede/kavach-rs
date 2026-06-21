@@ -30,167 +30,41 @@ fn count_as_usize(c: i64) -> usize {
     usize::try_from(c).unwrap_or(0)
 }
 
-async fn delete_table(db: &Surreal<Db>, table: &'static str, pid: &RecordId) -> Result<usize> {
-    // Count first, then delete - avoids deserialization issues with RETURN BEFORE
-    let count: usize = match table {
-        "decision" => {
-            let mut resp = db
-                .query("SELECT count() FROM decision WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE decision WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "research" => {
-            let mut resp = db
-                .query("SELECT count() FROM research WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE research WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "pattern" => {
-            let mut resp = db
-                .query("SELECT count() FROM pattern WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE pattern WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "roadmap" => {
-            let mut resp = db
-                .query("SELECT count() FROM roadmap WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE roadmap WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "app_spec" => {
-            let mut resp = db
-                .query("SELECT count() FROM app_spec WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE app_spec WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "event" => {
-            let mut resp = db
-                .query("SELECT count() FROM event WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE event WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        other => return delete_extra_table(db, other, pid).await,
-    };
-    Ok(count)
+/// Allow-list of project-scoped tables a wipe may touch. A table NOT in this set
+/// is rejected (fail-closed) — `verified_delete` interpolates the table name into
+/// the query, so it must never accept an unvetted string.
+fn is_wipeable_table(table: &str) -> bool {
+    PROJECT_SCOPED_TABLES.contains(&table)
 }
 
-async fn delete_extra_table(
-    db: &Surreal<Db>,
-    table: &'static str,
-    pid: &RecordId,
-) -> Result<usize> {
-    let count: usize = match table {
-        "part" => {
-            let mut resp = db
-                .query("SELECT count() FROM part WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE part WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "entity" => {
-            let mut resp = db
-                .query("SELECT count() FROM entity WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE entity WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "session" => {
-            let mut resp = db
-                .query("SELECT count() FROM session WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE session WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "arch_decision" => {
-            let mut resp = db
-                .query("SELECT count() FROM arch_decision WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE arch_decision WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "algo_decision" => {
-            let mut resp = db
-                .query("SELECT count() FROM algo_decision WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE algo_decision WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        "gate_pattern" => {
-            let mut resp = db
-                .query("SELECT count() FROM gate_pattern WHERE project = $pid GROUP ALL")
-                .bind(("pid", pid.clone()))
-                .await?;
-            let row: Option<CountRow> = resp.take(0)?;
-            let c = row.map_or(0, |cr| cr.count);
-            db.query("DELETE gate_pattern WHERE project = $pid")
-                .bind(("pid", pid.clone()))
-                .await?;
-            count_as_usize(c)
-        }
-        other => return Err(Error::RecordNotFound(format!("unknown table: {other}"))),
-    };
-    Ok(count)
+/// Count → DELETE → re-count-and-assert-zero for one project-scoped table.
+///
+/// This is the Layer-2 read-back-assertion law (decision.kavach-self-watchdog-design):
+/// a self-DELETE must PROVE its effect, not assume it. The prior code counted
+/// before deleting and returned that count as "deleted" — but a partial delete
+/// (engine error mid-statement) would silently over-report. Here the post-count
+/// is asserted zero; a non-zero residual is a hard `Error`, not a swallowed
+/// success, so a partial wipe surfaces to the caller instead of reporting clean.
+async fn verified_delete(db: &Surreal<Db>, table: &'static str, pid: &RecordId) -> Result<usize> {
+    // Fail-closed: `table` is interpolated below, so reject anything off the
+    // allow-list before it reaches the query string.
+    if !is_wipeable_table(table) {
+        return Err(Error::RecordNotFound(format!("unknown table: {table}")));
+    }
+    let before = query_count(db, table, pid).await?;
+
+    let delete_q = format!("DELETE {table} WHERE project = $pid");
+    db.query(&delete_q).bind(("pid", pid.clone())).await?;
+
+    // Read-back proof: the table must be empty for this project now. A residual
+    // means the DELETE only partially applied — fail loudly, never report clean.
+    let after = query_count(db, table, pid).await?;
+    if after != 0 {
+        return Err(Error::RecordNotFound(format!(
+            "wipe read-back assertion failed: {table} had {before} rows, {after} remain after DELETE (partial delete)"
+        )));
+    }
+    Ok(before)
 }
 
 const PROJECT_SCOPED_TABLES: &[&str] = &[
@@ -229,7 +103,7 @@ pub async fn wipe_project(db: &Surreal<Db>, slug: &str) -> Result<WipeReport> {
     };
 
     for &table in PROJECT_SCOPED_TABLES {
-        let count = delete_table(db, table, &pid).await?;
+        let count = verified_delete(db, table, &pid).await?;
         report.tables.push((table, count));
     }
 
@@ -248,12 +122,12 @@ async fn query_count(db: &Surreal<Db>, table: &'static str, pid: &RecordId) -> R
 }
 
 async fn count_table(db: &Surreal<Db>, table: &'static str, pid: &RecordId) -> Result<usize> {
-    match table {
-        "decision" | "research" | "pattern" | "roadmap" | "app_spec" | "event" | "part"
-        | "entity" | "session" | "arch_decision" | "algo_decision" | "gate_pattern" => {
-            query_count(db, table, pid).await
-        }
-        other => Err(Error::RecordNotFound(format!("unknown table: {other}"))),
+    // Same fail-closed allow-list as verified_delete: `table` is interpolated
+    // into the count query, so reject anything unvetted.
+    if is_wipeable_table(table) {
+        query_count(db, table, pid).await
+    } else {
+        Err(Error::RecordNotFound(format!("unknown table: {table}")))
     }
 }
 
@@ -281,4 +155,33 @@ pub async fn preview_wipe(db: &Surreal<Db>, slug: &str) -> Result<WipeReport> {
     }
 
     Ok(report)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PROJECT_SCOPED_TABLES, count_as_usize, is_wipeable_table};
+
+    #[test]
+    fn allow_list_accepts_every_scoped_table() {
+        for &t in PROJECT_SCOPED_TABLES {
+            assert!(is_wipeable_table(t), "{t} must be wipeable");
+        }
+    }
+
+    #[test]
+    fn allow_list_rejects_unvetted_or_injected_names() {
+        // The name is interpolated into the DELETE/count query — anything off the
+        // allow-list must be rejected before it can reach the query string.
+        assert!(!is_wipeable_table("user"));
+        assert!(!is_wipeable_table(""));
+        assert!(!is_wipeable_table("decision WHERE 1=1; DELETE user"));
+        assert!(!is_wipeable_table("DECISION"), "case-sensitive: no upper alias");
+    }
+
+    #[test]
+    fn count_narrowing_is_saturating_not_panicking() {
+        assert_eq!(count_as_usize(0), 0);
+        assert_eq!(count_as_usize(42), 42);
+        assert_eq!(count_as_usize(-1), 0, "negative count floors to 0, never panics");
+    }
 }
