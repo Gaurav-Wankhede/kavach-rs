@@ -3,13 +3,8 @@ use std::fmt;
 
 use thiserror::Error;
 
-//   {"name":"Result<T,String>","reason":"stringly-typed; callers cannot match variants"},
-//   {"name":"Box<dyn std::error::Error>","reason":"erases source type; no #[from]"},
-//   {"name":"anyhow::Error","reason":"app-layer ergonomic; lib consumers want typed match"}
-// ]
-// TIME: O(1) construction | SPACE: O(1) per variant
-// YEAR: 2026 | SEARCHED: 2026-05
-// SOURCE: https://oneuptime.com/blog/post/2026-01-25-error-types-thiserror-anyhow-rust/view
+// Typed error via thiserror (vs Result<T,String>/Box<dyn Error>/anyhow — see
+// decision.toon.typed-error). SOURCE: https://oneuptime.com/blog/post/2026-01-25-error-types-thiserror-anyhow-rust/view
 #[derive(Debug, Error)]
 #[expect(
     clippy::exhaustive_enums,
