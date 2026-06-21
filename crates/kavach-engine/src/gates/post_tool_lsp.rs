@@ -1,17 +1,5 @@
-// PostToolUse producer for §LSP-FIRST state.
-//
-// ARCH: LspDiagSeenProducer
-// PATTERN: post_tool_recorder | SCOPE: session | CAP: AP | SEARCHED: 2026-05
-// TIME: O(1) per tool call
-// SPACE: O(N) — N = distinct files diagnosed this session
-//
-// SOURCE: ~/.claude/CLAUDE.md §LSP-FIRST — "PostToolUse on LSP tool calls
-//   populates lsp_diag_seen; PreToolUse on Edit/Write/MultiEdit checks it".
-// SOURCE: code.claude.com/docs/en/mcp — MCP tool names follow
-//   `mcp__<server>__<tool>`; LSP MCP servers expose `tool_input.file_path`
-//   (not `uri`) per lsp-mcp schema (mcpservers.org/servers/Tritlo/lsp-mcp).
-// SOURCE: github.com/nesaminua/claude-code-lsp-enforcement-kit — per-project
-//   state tracker pattern (PostToolUse populator, PreToolUse consumer).
+// LSP-FIRST state producer: record diagnosed files to session.
+// See decision.engine.lsp_first_producer.
 
 use kavach_types::HookInput;
 
