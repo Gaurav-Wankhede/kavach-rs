@@ -37,11 +37,15 @@ pub(super) fn unit_stem(path: &str) -> &str {
 }
 
 /// True when `test_path` is a recognised test for `stem`: sibling
-/// `{stem}_test(s).rs` or a `tests/{stem}.rs` integration test.
+/// `{stem}_test(s).rs`, a `tests/{stem}.rs` integration test, or the in-engine
+/// `{stem}/tests.rs` subdir module.
 pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
-    let name = test_path.rsplit('/').next().unwrap_or(test_path);
     let s = test_path.replace('\\', "/");
+    let name = s.rsplit('/').next().unwrap_or(&s);
     if s.contains("/tests/") && name == format!("{stem}.rs") {
+        return true;
+    }
+    if name == "tests.rs" && s.contains(&format!("/{stem}/tests.rs")) {
         return true;
     }
     name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
