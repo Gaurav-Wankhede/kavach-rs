@@ -23,18 +23,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             .recent_commands
             .iter()
             .any(|line| line.contains("kavach db status-update") && line.contains(&card));
-        // NON-SURRENDERABLE: close-before-advance is a DB-INTEGRITY invariant
-        // (global CLAUDE.md §autonomous_loop.3_close_before_advance), NOT a
-        // cosmetic behavioral nag. It does NOT route through the 3-strike
-        // behavioral breaker — a card left in_progress while work proceeds is a
-        // lie to the work-ledger, and an invariant that can be waited out in N
-        // turns is not enforced (CWE-840). PARKING ABOLISHED (operator directive
-        // 2026-06-16, reaffirmed 2026-06-17): there is no honest-park escape — the
-        // block lifts on EXACTLY ONE of:
-        //   (a) a real `kavach db status-update` for THIS card this turn, or
-        //   (b) DELETE the card (`kavach db delete --category roadmap --key ...`)
-        //       when it is genuinely un-buildable — runnable or DELETED, never
-        //       marker-parked (§delete_not_park). No timeout/marker escape.
+        // Close-before-advance is a DB-INTEGRITY invariant, non-surrenderable.
+        // See decision.engine.kanban-status-close-before-advance.
         if !updated {
             let n = ctx.session.files_modified_this_turn.len();
             let project = ctx.session.project.clone();
