@@ -1,8 +1,5 @@
 // Stage 3: Language guards — chain verification + tiered severity system.
-// ARCH: TieredGuardSeverity — per Meta-Harness research, complex verification degrades performance
-// PATTERN: tiered_severity | SCOPE: pre_write | CAP: AP | SEARCHED: 2026-04
-// P0 (block): Security-critical. P1 (advisory): Quality. P2 (silent): Style.
-//
+// See decision.engine.tiered_guard_severity and CLAUDE.md § WIRING MAP.
 // hub: re-exports `check` + `GuardResult`; the guard groups live in submodules.
 // Severity tiers (by comment convention):
 //   P0 = security-critical (hard block) — OWASP, crypto, DB security, frontend security
