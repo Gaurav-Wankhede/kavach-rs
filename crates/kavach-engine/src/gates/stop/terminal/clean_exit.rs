@@ -120,11 +120,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     }
 
     // REFUSE-STOP on an unsourced current-knowledge claim (internet-first teeth):
-    // this turn asserted a latest/version/API/pricing fact from memory with NO
-    // source URL (`detect_claim_without_research` fired). A clean stop would let
-    // the stale-weights claim stand unverified — so DO NOT allow it: command a
-    // WebSearch + cite-or-drop THIS turn. Breaker-bounded (`research_unsourced`):
-    // after N refusals it force-allows (loop-safety) while recording the surrender.
+    // command WebSearch + cite-or-drop. Breaker-bounded (force-allows after N).
+    // See decision.engine.refuse-stop-unsourced-research.
     if refuse_stop_on_unsourced_research(ctx) {
         let blocked = format!(
             "[RESEARCH_FIRST] Do NOT stop. This turn asserted a current-knowledge \
