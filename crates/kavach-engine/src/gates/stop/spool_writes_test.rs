@@ -38,10 +38,10 @@ fn drain_and_replay_re_spools_writes_that_fail_again() {
     isolate("respool");
     // Seed the spool via a failed call, then replay: the daemon is still down, so
     // each replay fails and is re-spooled — the signal survives across Stops.
-    call_or_spool("gate_pattern.upsert", serde_json::json!({"project": "p"}));
+    call_or_spool("gate_pattern.upsert", &serde_json::json!({"project": "p"}));
     assert_eq!(drain_write_spool().expect("seed").len(), 1);
     // Re-seed (drain above consumed it) and prove replay re-spools.
-    call_or_spool("gate_pattern.upsert", serde_json::json!({"project": "p"}));
+    call_or_spool("gate_pattern.upsert", &serde_json::json!({"project": "p"}));
     drain_and_replay();
     let after = drain_write_spool().expect("after replay");
     assert_eq!(after.len(), 1, "replay that fails again re-spools, never drops: {after:?}");
