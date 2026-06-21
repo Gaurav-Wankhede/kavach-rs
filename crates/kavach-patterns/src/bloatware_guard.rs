@@ -34,7 +34,10 @@ fn is_governed_path(path: &str) -> bool {
         || path.contains("crates/api/")
         || path.contains("crates/services/")
         || path.contains("crates/kavach-");
-    let source_ext = path.ends_with(".rs") || path.ends_with(".sql");
+    let source_ext = std::path::Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("rs") || e.eq_ignore_ascii_case("sql"));
     governed_tree && source_ext
 }
 
