@@ -1,7 +1,7 @@
 //! Self-resolving internet-first advisory: when THIS turn's prompt was classified
 //! `requires_research`, a Write/Edit to production code without research evidence
 //! does NOT block — it RESOLVES the conflict on the spot. The gate ensures the
-//! background WebSearch is running (`kavach_advisor::kickoff`), injects the live
+//! background web search is running (`kavach_advisor::kickoff`), injects the live
 //! findings (or a pending directive while they land) as advisory context, and
 //! ALLOWS the write. The internet-first LAW is enforced by DRIVING the Internet,
 //! never by suppressing the task. The loop-level backstop lives at the Stop gate
