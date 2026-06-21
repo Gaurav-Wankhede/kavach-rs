@@ -26,10 +26,19 @@ fn session_needing_research() -> SessionState {
 }
 
 #[test]
-fn blocks_code_write_when_research_required_and_no_evidence() {
+fn resolves_with_advisory_when_research_required_and_no_evidence() {
+    // The write is NOT suppressed: the gate RESOLVES on the spot — it attaches a
+    // research advisory (kicked / inflight / resolved) and the write proceeds.
     let s = session_needing_research();
     let c = ctx("crates/foo/src/lib.rs", "fn handler() {}");
-    assert!(super::check(&c, &s).is_some(), "must block: required, no evidence");
+    let advisory = super::check(&c, &s).expect("must attach a resolve advisory");
+    assert!(
+        advisory.contains("[RESEARCH_KICKED]")
+            || advisory.contains("[RESEARCH_INFLIGHT]")
+            || advisory.contains("[RESEARCH_RESOLVED]"),
+        "advisory must drive the Internet, never block: {advisory}"
+    );
+    assert!(!advisory.contains("BLOCKED"), "the gate must never suppress the write");
 }
 
 #[test]
