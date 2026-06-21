@@ -31,7 +31,7 @@ pub(crate) fn scope_advisory(files_this_turn: &[String]) -> Option<String> {
     Some(format!(
         "[SCOPE_WARNING]\n\
          files_this_turn: {}\n\
-         action: Many files modified. Consider splitting into focused passes.\n",
+         action: Many files modified — SPLIT this into focused single-concern passes now.\n",
         files_this_turn.len()
     ))
 }
