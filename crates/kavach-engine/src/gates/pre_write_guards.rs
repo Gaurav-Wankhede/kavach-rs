@@ -44,7 +44,12 @@ pub(crate) fn check(
 
     // TDD runs FIRST: no production code lands without a test-first (Red) signal.
     if let Some(block) = tdd_guard::check(ctx, session) {
-        return GuardResult { block: Some(block), ..GuardResult::default() };
+        return GuardResult {
+            block: Some(block),
+            algo_advisory: None,
+            runner_compact: runner.to_compact(),
+            p1_advisories: Vec::new(),
+        };
     }
 
     // Internet-first RESOLVES, never blocks: drives the lookup + attaches a P1
