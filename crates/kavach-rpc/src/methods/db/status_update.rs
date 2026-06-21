@@ -47,9 +47,8 @@ pub async fn status_update(
         });
     }
     // EVIDENCE GATE: a roadmap completion promotion over RPC must carry a valid,
-    // fresh witness receipt — mirrors the CLI's pre-dispatch witness so a DIRECT
-    // RPC caller cannot promote to `done`/`verified` unproven (the false-`done`
-    // hole). Cheap + non-blocking: no cargo runs in the daemon. NotGated otherwise.
+    // fresh witness receipt (mirrors the CLI's pre-dispatch witness). Cheap +
+    // non-blocking. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
     if let Some(msg) = enforce_receipt(&params.category, &params.status, params.receipt.as_ref()) {
         return Ok(StatusUpdateResult { success: false, error: Some(msg) });
     }
