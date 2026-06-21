@@ -33,14 +33,7 @@ fn token_is_dotenv_file(tok: &str) -> bool {
 }
 
 /// Known source roots whose presence in a multi-path search proves the command
-/// is a repository grep, not a dotenv read.
-fn is_source_root(tok: &str) -> bool {
-    // Only NAMED source dirs count. The bare `.`/`./`/`..` roots were deliberately
-    // removed: a lone `.` is the default search root and routinely co-occurs with a
-    // genuine `.env` target (`rg KEY . .env`, `grep -r SECRET . .env`), so treating
-    // it as "repo search" downgraded a real secret read to ALLOW — a fail-OPEN on a
-    // security gate. A named dir (crates/src/…) is real evidence of a multi-root
-    // repo grep; `.` is not. FAIL CLOSED: when in doubt, block the dotenv read.
+/// is a repository grep, not a dotenv read. See decision.engine.dotenv_named_roots_only.
     const ROOTS: &[&str] = &[
         "crates", "src", "tests", "lib", "app", "apps", "packages", "services", "core",
     ];
