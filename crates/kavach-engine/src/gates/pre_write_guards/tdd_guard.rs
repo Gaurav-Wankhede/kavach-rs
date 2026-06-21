@@ -53,6 +53,23 @@ fn is_test_path(path: &str) -> bool {
         || name.ends_with("_tests.rs")
 }
 
+/// True when every non-blank line of `changed` is a comment (`//`/`///`/`//!`) or
+/// an attribute — i.e. the change adds no executable code.
+fn is_comment_only(changed: &str) -> bool {
+    let mut saw_line = false;
+    for line in changed.lines() {
+        let t = line.trim_start();
+        if t.is_empty() {
+            continue;
+        }
+        saw_line = true;
+        if !(t.starts_with("//") || t.starts_with("#[") || t.starts_with("#!")) {
+            return false;
+        }
+    }
+    saw_line
+}
+
 /// Basename without the `.rs` extension.
 pub(super) fn unit_stem(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path).trim_end_matches(".rs")
