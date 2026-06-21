@@ -4,13 +4,8 @@
 
 use super::segment::{segment_first_word_is, segment_has_flag};
 
-// FIX: [CWE-184 incomplete-denylist] `wget -O f`, `curl -o f`, `cp s d`,
-// `dd of=f`, `install`, `mv` wrote files with no `>` redirect — bypassed.
-// ROOT_CAUSE: detection set sampled file-write commands instead of modelling
-// the file-write capability.
-// SOLUTION: command-position match on file-writing tools + their output flags;
-// exempt the /dev/null, /tmp/kavach, and kavach-binary safe sinks.
-// RESEARCH: https://cwe.mitre.org/data/definitions/184.html
+// Detect file-writing tools: wget, curl, cp, dd, mv, install with output flags.
+// See decision.engine.tool_write_detection.
 
 /// True when a file-writing tool in command position designates an output path.
 /// Read-only/stdout forms (`curl URL`, `wget -qO-`, `--help`) and the
