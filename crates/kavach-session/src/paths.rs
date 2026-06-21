@@ -25,10 +25,10 @@ thread_local! {
         const { std::cell::RefCell::new(None) };
 }
 
-/// Test-only: redirect `state_dir()` for the current thread. Pass `None` to
-/// clear. Used by fault-injection tests and by downstream `test-support`
-/// consumers that need a temp state dir without touching real session state or
-/// process-global env.
+/// Test-only: redirect `state_dir()` for the current thread (`None` clears).
+///
+/// Used by fault-injection tests and downstream `test-support` consumers that
+/// need a temp state dir without touching real session state or process env.
 #[cfg(any(test, feature = "test-support"))]
 pub fn set_test_state_dir(dir: Option<PathBuf>) {
     TEST_STATE_DIR.with(|c| *c.borrow_mut() = dir);
