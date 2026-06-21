@@ -28,15 +28,8 @@ pub(super) fn fetch_mistake_row(project: &str, key: &str) -> Option<MistakeRow> 
         return None;
     }
     let body = String::from_utf8(out.stdout).ok()?;
-    // SECURITY: extract title from the structured metadata header ONLY.
-    // The previous OR-fallback `l.contains("BANNED [")` was a false-positive
-    // sink: row CONTENT echoes the raw banned_sample verbatim (intentionally,
-    // for the learning diff trail), and a banned_sample like "should I proceed
-    // BANNED [permission]: ..." would let the fallback pick the content body
-    // and surface the raw banned phrase to the model — defeating the arxiv
-    // 2512.02389 anti-pattern-reinjection framing. Title-prefix is the only
-    // safe extraction path; mistake_ledger.rs always sets a title, so the
-    // fallback is dead-but-unsafe code.
+    // SECURITY: extract title from metadata header only (not row content).
+    // SOURCE: decision.engine.mistake_title_extraction_security.
     let title = body.lines().find(|l| l.starts_with("title:")).map_or_else(
         || key.to_owned(),
         |l| l.trim_start_matches("title:").trim().to_owned(),
