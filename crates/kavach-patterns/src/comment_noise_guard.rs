@@ -127,6 +127,10 @@ pub fn advise(file_path: &str, content: &str) -> Option<String> {
 }
 
 #[cfg(test)]
+#[path = "comment_noise_block_test.rs"]
+mod block_test;
+
+#[cfg(test)]
 mod tests {
     use super::advise;
 
