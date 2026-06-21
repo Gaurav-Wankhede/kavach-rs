@@ -2,8 +2,10 @@
 //! `db.kanban_close` RPC method.
 
 use super::util::{ROADMAP_TABLE, resolve_project_id};
+use super::witness_gate::enforce_receipt;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
+use kavach_patterns::witness_receipt::Receipt;
 use serde::{Deserialize, Serialize};
 
 const STATUS_VERIFIED: &str = "verified";
@@ -13,6 +15,10 @@ const STATUS_VERIFIED: &str = "verified";
 pub struct KanbanCloseParams {
     pub project: String,
     pub key: String,
+    /// Witness receipt — kanban-close always promotes roadmap→verified, so it is
+    /// ALWAYS gated. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+    #[serde(default)]
+    pub receipt: Option<Receipt>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
