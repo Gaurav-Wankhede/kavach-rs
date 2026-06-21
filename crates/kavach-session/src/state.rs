@@ -191,6 +191,11 @@ pub struct SessionState {
     /// Files modified in the current user prompt turn (reset on `UserPromptSubmit`).
     /// Surgical guard reads this to detect wide-scope edits.
     pub files_modified_this_turn: Vec<String>,
+    /// Unit stems whose test was OBSERVED to FAIL (Red) this turn — a real
+    /// `cargo test/nextest` run that printed `FAILED` for the unit's scope.
+    /// The TDD gate requires Red here (not a mere test-file touch) so an
+    /// after-the-fact vacuous test cannot satisfy test-first. Reset per turn.
+    pub tdd_red_units: Vec<String>,
     /// Files for which LSP diagnostics have been observed this session.
     /// Populated by `PostToolUse` on LSP tool calls (`mcp__cclsp`__*, native LSP tool),
     /// checked by §LSP-FIRST `PreToolUse` gate on Edit/Write/MultiEdit.
