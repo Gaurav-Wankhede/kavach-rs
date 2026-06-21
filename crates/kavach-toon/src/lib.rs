@@ -3,8 +3,8 @@ use std::fmt;
 
 use thiserror::Error;
 
-// Typed error via thiserror (vs Result<T,String>/Box<dyn Error>/anyhow — see
-// decision.toon.typed-error). SOURCE: https://oneuptime.com/blog/post/2026-01-25-error-types-thiserror-anyhow-rust/view
+// Typed error via thiserror (vs Result<T,String>/Box<dyn Error>/anyhow).
+// See decision.toon.typed-error.
 #[derive(Debug, Error)]
 #[expect(
     clippy::exhaustive_enums,
