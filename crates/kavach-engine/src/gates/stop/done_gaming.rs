@@ -93,8 +93,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
              install the tool, break the stale lock; (2) if it is genuinely \
              secret/credential-bound, run the op via a runtime script (env in-process, \
              receipt out, value never in context); (3) then COMPLETE the blocked write and \
-             resume. State a hard limit at most ONCE as a fact — never as a command for the \
-             operator to run, and never as a repeated hold. The loop yields only to `Esc`.",
+             resume. STATE a hard limit ONCE as a fact, then KEEP WORKING — never order the \
+             operator to run it, never repeat it, never hold. Only the user's `Esc` stops the loop.",
         ));
         return ControlFlow::Break(());
     }
