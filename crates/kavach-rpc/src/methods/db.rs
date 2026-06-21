@@ -38,6 +38,7 @@ mod status_update;
 mod tree;
 mod util;
 mod wipe_project;
+mod witness_gate;
 mod write;
 
 pub use archive::{ArchiveParams, ArchiveResult, archive};
