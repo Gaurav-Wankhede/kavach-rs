@@ -19,7 +19,7 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     if session
         .files_modified_this_turn
         .iter()
-        .any(|f| test_matches_unit(f, &stem))
+        .any(|f| test_matches_unit(f, stem))
     {
         return None;
     }
