@@ -117,24 +117,15 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     }
     super::super::pattern_extract::trigger_on_verify(ctx.session);
 
-    // REFUSE-STOP on an un-fixed loophole (parity with [CYCLE_DEADLOCK]): the
-    // board is drained, but this turn shipped risk-bearing work WITHOUT a
-    // `Loopholes closed:` line — a loophole may be LIVE. A clean stop here would
-    // terminate with the defect unfixed, so DO NOT allow the stop: emit
-    // exit_stop_block so the loop is forced to close (or file) the loophole this
-    // turn. Bounded by the behavioral breaker (category "loophole_open"): after N
-    // refusals it force-allows (loop-safety) while recording the surrender, so a
-    // model that genuinely cannot answer can never be trapped in an infinite spin.
-    if refuse_stop_on_open_loophole(ctx) {
-        let blocked = format!(
-            "[LOOPHOLE_OPEN] Do NOT stop. This turn shipped risk-bearing work \
-             without a `Loopholes closed:` line — a loophole may be LIVE and unfixed \
-             right now. FIX it at its root THIS turn (run the 6 attack lenses; close \
-             each at file:line or file a card), then emit `Loopholes closed:`. \
-             Fixing beats documenting.\n{full}"
-        );
-        drop(kavach_hook::exit_stop_block(&blocked));
-        return ControlFlow::Break(());
+    // Loophole surface on a drained board: RESOLVE, never block. The lens scan
+    // already recorded concrete suspect sites + queued a carry-forward advisory
+    // (`stop.rs::loophole_check`); the native triage agent fixes them. We attach
+    // the awareness as a clean-exit ride-along and let the stop proceed — no
+    // handback halt, no `Loopholes closed:` narration demand. (SOURCE: owner-gate/
+    // handback abolition — resolve on the spot, do not suppress the next move.)
+    if let Some(advisory) = ctx.loophole_advisory.as_deref() {
+        full.push('\n');
+        full.push_str(advisory);
     }
 
     // REFUSE-STOP on census/dispatch divergence: the dispatch probe returned None,
