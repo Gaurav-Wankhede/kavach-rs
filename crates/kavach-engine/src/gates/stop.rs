@@ -180,22 +180,15 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // See decision.engine.stop-no-halt-dispatch-only.
     let pipeline: &[fn(&mut StopCtx<'_>) -> ControlFlow<()>] = &[
         phase::iteration,
-        // USER-FOCUS OVERRIDE (operator directive 2026-06-18): runs BEFORE the
-        // dispatch chain. When the user steered THIS turn and no card is mid-work,
-        // it allows a clean stop so the gate does NOT drag the session onto a
-        // different queued card than the user's live instruction. On turns the user
-        // did NOT just speak, it falls through and the autonomous dispatch chain
-        // drives the loop exactly as before.
+        // USER-FOCUS OVERRIDE: user steered + no card mid-work -> allow clean stop
+        // (don't drag onto a queued card). See decision.engine.stop-pre-dispatch-overrides.
         phase::user_focus,
-        // FOREIGN-DIRTY-TREE GUARD (Case B): allow-stop when `git status` shows the
-        // shared checkout is dirty far beyond THIS session's own writes — another
-        // live session is mid-edit, so dispatching an editing card would clobber it.
-        // Falls through on a clean tree or own-only dirt (own git worktree => no-op).
+        // FOREIGN-DIRTY-TREE: allow-stop when the shared checkout is dirty beyond
+        // own writes (another session mid-edit). decision.engine.stop-pre-dispatch-overrides.
         phase::foreign_tree,
         phase::kanban_status,
-        // DONE-GAMING BLOCK: after close-before-advance, before dispatch. REFUSES a
-        // stop that narrates completion ("✅ DONE", "documentation pass", "vacuously
-        // complete") while runnable cards remain and this turn mutated no code/DB.
+        // DONE-GAMING BLOCK: refuse a completion-narrating stop with runnable cards
+        // + no code/DB mutation. decision.engine.stop-pre-dispatch-overrides.
         done_gaming::check,
         phase::kanban_card,
         dispatch::retry,
