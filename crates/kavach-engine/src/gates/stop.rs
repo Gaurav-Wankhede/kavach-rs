@@ -173,23 +173,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         research_unsourced,
     };
 
-    // Ordered guard pipeline. `?`-style short-circuit via ControlFlow: the first
-    // Break has emitted the hook decision.
-    //
-    // POLICY ("kill blocking, keep auto-continue"): a Stop must NEVER be HALTED.
-    // Only DISPATCH guards remain — they re-claim and re-dispatch the next kanban
-    // card (`[AUTO_CONTINUE]`), which is the autonomous loop the user wants
-    // preserved. Every pure-HALT guard (bounty CVE/unsafe/license/deps,
-    // behavioral deferral/incomplete/permission nags, tool/subagent/task/aegis/
-    // empty-test failure blocks, review-isolation, shallow-verdict, and the
-    // iteration "in progress" halt) was REMOVED from the pipeline so the gate can
-    // dispatch the next card or exit clean, but can no longer stop the loop dead.
-    //
-    // `phase::iteration` is retained ONLY for its stale-file auto-recovery side
-    // effect (clearing a crashed session's carry-over); its halt arm is disabled
-    // in that guard. The dispatch chain still drives the Ralph loop:
-    // kanban_status/kanban_card claim the next card, retry/first_pass emit
-    // `[AUTO_CONTINUE]`, and clean_exit is the only terminal stop.
+    // Ordered guard pipeline; first ControlFlow::Break emits the hook decision.
+    // POLICY "kill blocking, keep auto-continue": a Stop is NEVER HALTED — only
+    // DISPATCH guards remain ([AUTO_CONTINUE]); all pure-HALT guards removed.
+    // phase::iteration kept only for stale-file auto-recovery (halt arm disabled).
+    // See decision.engine.stop-no-halt-dispatch-only.
     let pipeline: &[fn(&mut StopCtx<'_>) -> ControlFlow<()>] = &[
         phase::iteration,
         // USER-FOCUS OVERRIDE (operator directive 2026-06-18): runs BEFORE the
