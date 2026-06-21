@@ -4,7 +4,26 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
 pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
-    match super::super::rpc_client::kanban_close(project_slug, key) {
+    // EVIDENCE GATE: kanban-close promotes roadmap→verified — run the workspace
+    // witness FIRST (mirrors `db status-update`), refuse on failure, else mint a
+    // receipt the daemon re-validates. Bypass: KAVACH_VERIFY_BYPASS=1.
+    let receipt = if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() == Ok("1") {
+        None
+    } else {
+        use kavach_engine::StatusGateVerdict;
+        match kavach_engine::verify_status_promotion("roadmap", "verified", "") {
+            StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {
+                super::super::rpc_client::mint_receipt()
+            }
+            _ => {
+                return write_err(&format!(
+                    "REFUSED: cannot close [roadmap] {key}: workspace witnesses FAILED or work \
+                     is unprovable. Fix the build/tests (or set KAVACH_VERIFY_CMD), then retry."
+                ));
+            }
+        }
+    };
+    match super::super::rpc_client::kanban_close(project_slug, key, receipt) {
         Ok(result) if result.success => {
             let ok = format!(
                 "closed [roadmap] {} (via rpc daemon)",
