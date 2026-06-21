@@ -38,3 +38,13 @@ fn clean_governed_file_passes_runner() {
         "recalling the import (no redefinition) must not block"
     );
 }
+
+#[test]
+fn tombstone_comment_blocks_through_runner() {
+    // A comment narrating a removal is bloat — blocked via the runner (§bloatware).
+    let src = "// the legacy retry field was removed in v3\nfn f() {}\n";
+    let mut acc = Acc::default();
+    let block = check(&ctx("/x/crates/core/billing/src/r.rs", src), &mut acc);
+    let reason = block.expect("tombstone comment must block via the runner");
+    assert!(reason.contains("BLOAT_P0"), "block reason tags the bloatware gate: {reason}");
+}
