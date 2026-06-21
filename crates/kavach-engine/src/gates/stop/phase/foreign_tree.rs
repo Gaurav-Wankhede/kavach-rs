@@ -32,12 +32,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     if ctx.input.stop_hook_active {
         return ControlFlow::Continue(());
     }
-    // OPT-IN ONLY (false-positive fix 2026-06-18): a DIRTY tree is NOT proof of a
-    // CONCURRENT editor — a chronically-dirty checkout (e.g. an in-flight lint
-    // sweep) would otherwise HALT the loop on every stop. The lease
-    // (KAVACH_SESSION_ID) is the real multi-session signal; this git-dirty
-    // heuristic is an OPTIONAL belt-and-suspenders for the rare two-editing-
-    // sessions-on-ONE-checkout setup. Default OFF → the loop never blocks on it.
+    // OPT-IN: guard concurrent editors via git-dirty heuristic (belt-and-suspenders).
+    // See decision.engine.foreign-tree-opt-in.
     if std::env::var("KAVACH_FOREIGN_TREE_GUARD").as_deref() != Ok("1") {
         return ControlFlow::Continue(());
     }

@@ -22,12 +22,8 @@ pub(super) fn append_context_blocks(
     prompt: &str,
     forbidden: &[String],
 ) {
-    // Carry-forward FIRST: an advisory queued by the PREVIOUS turn's stop gate
-    // (e.g. an un-interrogated loophole on a risk-bearing path) must lead this
-    // turn's context so it is answered BEFORE the next implementation — not left
-    // to die as stale prose in a transcript the next turn never reads. This is the
-    // harness-neutral drain (Claude Code + Cursor); the Cursor-only relay does NOT
-    // reach the UserPromptSubmit injector, which is why the omission was lost.
+    // Carry-forward queued advisories from the previous turn's stop gate
+    // before processing new work. See decision.engine.carry_forward.
     if let Some(carried) = session.drain_pending_advisories() {
         context.push_str("\n[CARRY_FORWARD] unfinished from last turn — FIX these at their root THIS turn, before any new work (close it or file a card; do not re-summarize):");
         for adv in carried {
