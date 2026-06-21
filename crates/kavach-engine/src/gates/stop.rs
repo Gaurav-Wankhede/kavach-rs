@@ -221,13 +221,9 @@ fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Opti
         correct_action: "the lens scan records suspect sites + the native triage agent fixes them — awareness, not a narration demand",
         turn: session.turn_count,
     }));
-    // Queue it for the NEXT turn's intent injector to drain (intent/context.rs
-    // [CARRY_FORWARD]). Call queue_pending_advisory DIRECTLY (not
-    // turn_relay::queue_advisory): the latter is Cursor-gated via should_relay(),
-    // so on Claude Code it would silently no-op and the loophole would vanish. The
-    // intent-injector drain is harness-neutral, so the queue must be too.
-    // Tag + `Loopholes closed:` marker + lens names are the frozen contract; the
-    // surrounding imperative is research-refreshed (fail-soft to the proven literal).
+    // Queue for next turn's intent-injector drain via queue_pending_advisory
+    // DIRECTLY (turn_relay is Cursor-gated, would no-op on CC). Tag + marker + lens
+    // names are frozen. See decision.engine.stop-loophole-carry-forward.
     let loophole_body = dyn_directive(
         "stop.loophole-carry-forward",
         "last turn touched a risk-bearing path; the lens scan recorded the suspect sites below. The native triage agent resolves them — surfaced for awareness, no narration required.",
