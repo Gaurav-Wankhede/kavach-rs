@@ -1,17 +1,5 @@
-// PreToolUse consumer for §LSP-FIRST state.
-//
-// ARCH: LspFirstAdvisoryGate
-// PATTERN: pre_write_advisory | SCOPE: file | CAP: AP | SEARCHED: 2026-05
-// TIME: O(N) — N = files diagnosed (typically <10 per session)
-// SPACE: O(1) per call
-//
-// SOURCE: ~/.claude/CLAUDE.md §LSP-FIRST — enforcement clause.
-// SOURCE: crates/kavach-engine/CLAUDE.md — "default to P1Advisory unless
-//   irreversible AND FP rate <1%". LSP-first is reversible (skip = grep).
-// SOURCE: github.com/anthropics/claude-code#37210, #33106, #52822 —
-//   permissionDecision-deny is unreliable; advisory-via-context is
-//   complementary (the gate output gets injected via [P1_ADVISORIES] block
-//   in pre_write.rs, which surfaces to the model on the next prompt).
+// LSP-FIRST enforcement: advisory when LSP diagnostics haven't been observed.
+// See decision.engine.lsp_first_advisory_gate.
 
 /// Build a P1 advisory string when the edit target hasn't had its LSP
 /// diagnostics observed this session. Returns None if either (a) the file
