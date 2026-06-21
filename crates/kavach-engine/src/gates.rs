@@ -1,11 +1,6 @@
-// split: module-tree root — pure `mod X;` routing table, NOT splittable.
-// hub: gate-module dispatch table. This file is intentionally a flat list of
-// `pub(crate) mod X;` declarations — it only routes; all logic lives in the
-// per-gate files below. Rust requires each `mod gate_x;` to live in this parent
-// module file for `gates/gate_x.rs` to resolve, so the declarations cannot move
-// to a sub-file. Per kavach microservice rule, hub files are exempt from the
-// 100-line oversized-file limit; the `// split:` marker tells `kavach oversized
-// scan` to honor that exemption.
+// split: module-tree root — flat `mod X;` routing table, NOT splittable.
+// hub: gate-module dispatch; all logic in per-gate files. Rust requires each
+// `mod` in this parent file for `gates/X.rs` to resolve. See decision.engine.hub_file_architecture.
 pub(crate) mod api_gateway_guard;
 pub(crate) mod assumption_guard;
 pub(crate) mod attention_guard;
