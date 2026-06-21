@@ -131,64 +131,42 @@ const fn census_is_all_blocked(census: Option<(u64, u64, u64)>) -> bool {
     }
 }
 
-/// A dependency cycle holds runnable cards hostage — no card in the cycle can ever
-/// become ready, so the loop would otherwise spin or falsely clean-stop. This is
-/// AI-repairable work (break the cycle), so REFUSE the stop and direct the fix.
-fn cycle_deadlock_context() -> String {
+/// Public all-blocked check for `clean_exit`: every runnable card blocked by deps
+/// (or a cycle). When true, `clean_exit` REFUSES the stop with `blocker_walk_context`
+/// — an all-blocked board is a blocker to BUILD, never a terminal.
+#[must_use]
+pub(in crate::gates::stop) fn board_is_all_blocked(project: &str) -> bool {
+    let census = crate::gates::stop_dispatch::open_set_census(project);
+    census.is_some_and(|(_, _, cyclic)| cyclic > 0) || census_is_all_blocked(census)
+}
+
+/// The single refuse-stop directive for a fully-blocked board (every runnable card
+/// held by a dependency or a cycle). NOT a stop, NOT a hand-off: WALK to the
+/// blocker and BUILD it leaf-first; a stale edge gets corrected, a cycle broken, a
+/// missing credential FILED while the loop keeps draining. Yields only to `Esc`.
+pub(in crate::gates::stop) fn blocker_walk_context() -> String {
     kavach_hook::context_block(
-        "CYCLE_DEADLOCK",
+        "BLOCKER_WALK",
         &[
             (
-                "why",
-                "one or more runnable cards declare a dependency CYCLE (a card depends \
-                 on itself, or A->B->A). No card in a cycle can ever satisfy its deps, \
-                 so it is permanently un-dispatchable — this is a deadlock, NOT a \
-                 legitimate block and NOT a clean stop.",
-            ),
-            (
                 "action",
-                "Do NOT stop. Run `kavach db kanban --format mermaid` to see the cycle, \
-                 then break it: edit the offending card's `DEPENDS_ON:`/`BLOCKED_BY:` \
-                 line to remove the back-edge (or re-order the work). Re-verify the \
-                 census has zero cyclic cards before stopping.",
+                "Do NOT stop. Every runnable card is held by a dependency or a cycle — \
+                 that is a blocker to BUILD, never a clean stop. WALK it, dependency- \
+                 first: (1) read each card's `DEPENDS_ON:`/`BLOCKED_BY:` line and get \
+                 the blocking card (`kavach db get --category roadmap --key <blocker>`). \
+                 (2) RESEARCH the actual conflict (WebSearch the current source). \
+                 (3) BUILD the blocker THIS turn — recurse to ITS blocker until a leaf \
+                 dispatches, then dispatch the dependent. (4) STALE/FALSE edge \
+                 (prerequisite already shipped): correct the `DEPENDS_ON:` line (`kavach \
+                 db write`) and dispatch. (5) CYCLE (A->B->A): `kavach db kanban --format \
+                 mermaid`, then edit the offending `DEPENDS_ON:` to remove the back-edge. \
+                 (6) Secret/credential-bound DB op: WRITE a runtime script (Rust + \
+                 `dotenvy`) that reads the env var inside its own process and emits ONLY \
+                 a pass/fail receipt. ONLY a genuinely ABSENT env var is FILED as a card; \
+                 then KEEP BUILDING every other reachable leaf. Yield only to `Esc`.",
             ),
         ],
     )
-}
-
-/// Case 1: every runnable card is dependency-blocked. NOT a stop, NOT a hand-off:
-/// WALK to the blocker, BUILD it leaf-first; a missing credential gets FILED as a
-/// card while the loop keeps draining. Yields only to `Esc`.
-fn all_blocked_context(census: Option<(u64, u64, u64)>) -> String {
-    let stamp = census_stamp(census);
-    let block = kavach_hook::context_block(
-        "ALL_BLOCKED",
-        &[
-            ("census", &stamp),
-            (
-                "action",
-                "Do NOT stop. Gate ALREADY read the DB this stop (`census` above) — do \
-                 NOT re-run `kavach db kanban`. RESOLVE-AND-CONTINUE, dependency-first: \
-                 (1) For each card, read its `DEPENDS_ON:`/`BLOCKED_BY:` line and WALK \
-                 to the blocking card (`kavach db get --category roadmap --key \
-                 <blocker>`). (2) RESEARCH the ACTUAL conflict (WebSearch the current \
-                 authoritative source). (3) BUILD the blocker THIS turn — recurse to \
-                 ITS blocker until a leaf dispatches, then dispatch the dependent. \
-                 (4) If the dependency edge is STALE/FALSE (prerequisite already \
-                 shipped, or never applied): correct the `DEPENDS_ON:` line (`kavach db \
-                 write`) and dispatch. (5) Secret/credential-bound DB op (migration, deletion, query, \
-                 backfill): do NOT hand it back. WRITE a runtime script (Rust first: \
-                 `dotenvy` + `std::env::var`; TypeScript-typed only if Rust cannot reach \
-                 the engine) that reads the env var INSIDE its own process, RUNS the op, \
-                 and emits ONLY a pass/fail receipt — the value never enters your context. \
-                 ONLY if the required env var is genuinely ABSENT after loading `.env` do \
-                 you FILE a card naming the exact missing key, then KEEP BUILDING every \
-                 other reachable leaf. Never hand work back, never escalate, never \
-                 self-stop. Yield only to the user's `Esc`.",
-            ),
-        ],
-    );
-    format!("{block}{RESEARCH_MODE_DIRECTIVE}")
 }
 
 /// Research-Mode directive appended to every "find the next task" verdict. The
