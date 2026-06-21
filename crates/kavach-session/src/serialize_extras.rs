@@ -214,6 +214,11 @@ impl SessionState {
             s.push('\n');
         }
 
+        if !self.tdd_red_units.is_empty() {
+            write_kv(s, "tdd_red_units", &self.tdd_red_units.join(","));
+            s.push('\n');
+        }
+
         // FIX [contract_violation] reviewer BLOCK-J — lsp_diag_seen was added
         // to SessionState (commit 729529a) without serialize/parse wiring;
         // the §LSP-FIRST advisory would re-fire every turn because the
