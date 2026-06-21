@@ -1,6 +1,8 @@
-//! Detects "willful disobedience": the model dismisses a fired imperative in prose
-//! instead of executing its mandated tool call. SOURCE: arxiv 2603.23806 (Willful
-//! Disobedience detector) + `decision.engine.disobedience-guard`.
+//! Detects "willful disobedience".
+//!
+//! The model dismisses a fired imperative in prose instead of executing its
+//! mandated tool call. SOURCE: arxiv 2603.23806 (Willful Disobedience detector)
+//! + `decision.engine.disobedience-guard`.
 
 /// Dismissal phrases the model uses to argue an imperative away rather than obey.
 const DISMISSAL: &[&str] = &[
