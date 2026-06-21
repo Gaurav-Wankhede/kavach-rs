@@ -40,19 +40,8 @@ pub fn lower(raw_payload: &str) -> Result<HookInput, String> {
         tool_name: cursor_tool_name(obj, &raw_event),
         hook_event_name: canonical_event(&raw_event),
         tool_input: cursor_tool_input(obj),
-        // Normalize Cursor's stateful stop-loop counter into the canonical pivot
-        // field the stop gate branches on. Cursor's `stop` hook carries
-        // `loop_count` (# of auto-follow-ups already fired this conversation,
-        // starts at 0); Claude Code carries the boolean `stop_hook_active`. The
-        // stop gate's dispatch tiers KEY on `stop_hook_active`: first_pass runs
-        // only when false (the initial stop), retry/verify runs only when true
-        // (re-entry — where `done -> verified` promotion + dependent unblocking
-        // happens). Without this map, `stop_hook_active` was ALWAYS false for
-        // Cursor, so Cursor never reached the retry/verify path: a freshly
-        // verified card was never promoted and its dependents never dispatched,
-        // stalling the loop after every verification. `loop_count > 0` == "we are
-        // already in a stop-driven follow-up loop" == CC's `stop_hook_active`.
-        // SOURCE: <https://cursor.com/docs/hooks> (loop_count / loop_limit).
+        // Cursor `loop_count>0` maps to CC `stop_hook_active` (the stop gate's
+        // retry/verify pivot). See decision.hook.cursor-loop-count-map.
         stop_hook_active: get_u64(obj, "loop_count") > 0,
         ..HookInput::default()
     };
