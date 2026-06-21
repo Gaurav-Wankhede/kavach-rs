@@ -91,7 +91,7 @@ const TABLE: &[Entry] = &[
         gate: "permission_seek_at_stop",
         banned: "asked the user permission to proceed/continue while [AUTO_CONTINUE] already commanded continuation",
         correct: "do NOT ask — query the kavach DB (kanban + roadmap/decision), claim the next card, START it THIS turn",
-        advisory: "[PERMISSION_SEEK] last turn asked the user for permission to proceed/continue — but the loop directive ([AUTO_CONTINUE]/[ALL_BLOCKED]) already commanded the next move. Do NOT ask: query the kavach DB (kanban + `kavach db query --category roadmap`/`--category decision`), claim the next runnable card, and START it THIS turn. Asking to proceed is the forbidden deferral (global CLAUDE.md §autonomous_loop §act_not_narrate).",
+        advisory: "[PERMISSION_SEEK] last turn asked the user for permission to proceed/continue — but the loop directive ([AUTO_CONTINUE]/[BLOCKER_WALK]) already commanded the next move. Do NOT ask: query the kavach DB (kanban + `kavach db query --category roadmap`/`--category decision`), claim the next runnable card, and START it THIS turn. Asking to proceed is the forbidden deferral (global CLAUDE.md §autonomous_loop §act_not_narrate).",
     },
     Entry {
         detect: stop_signals::detect_incomplete_work,
