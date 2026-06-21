@@ -134,14 +134,18 @@ pub async fn arch_upsert(db: &Surreal<Db>, p: &ArchUpsertParams<'_>) -> Result<R
 /// `Error::Surreal` on query failure; `Error::RecordNotFound` if CREATE
 /// yields no id row.
 pub async fn algo_upsert(db: &Surreal<Db>, p: &AlgoUpsertParams<'_>) -> Result<RecordId> {
-    let q = "DELETE algo_decision WHERE project = $project \
-                 AND problem_class = $problem_class AND file_path = $file_path; \
-             CREATE algo_decision SET project = $project, problem_class = $problem_class, \
+    // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (two concurrent
+    // recorders -> double row; reader mid-swap -> zero rows).
+    // SOURCE: decision.algo-upsert-idempotent-keyed.
+    let key = algo_record_key(&p.project, p.problem_class, p.file_path);
+    let q = "UPSERT type::record('algo_decision', $key) SET \
+                 project = $project, problem_class = $problem_class, \
                  chosen = $chosen, time_complexity = $time, space_complexity = $space, \
                  file_path = $file_path, search_year = $search_year, search_month = $search_month \
                  RETURN id";
     let mut response = db
         .query(q)
+        .bind(("key", key))
         .bind(("project", p.project.clone()))
         .bind(("problem_class", p.problem_class.to_owned()))
         .bind(("chosen", p.chosen.to_owned()))
@@ -151,10 +155,27 @@ pub async fn algo_upsert(db: &Surreal<Db>, p: &AlgoUpsertParams<'_>) -> Result<R
         .bind(("search_year", p.search_year))
         .bind(("search_month", p.search_month))
         .await?;
-    let row: Option<IdRow> = response.take(1)?;
+    let row: Option<IdRow> = response.take(0)?;
     row.map(|ir| ir.id).ok_or_else(|| {
-        crate::error::Error::RecordNotFound("algo_decision create returned no id".into())
+        crate::error::Error::RecordNotFound("algo_decision upsert returned no id".into())
     })
+}
+
+/// Deterministic `algo_decision` record key: `blake3(project:class:file)[..16]`.
+/// Identical inputs -> identical key, so the UPSERT is idempotent per dedup
+/// tuple — the same recipe `graph/mistakes/cluster.rs` uses for its content key.
+fn algo_record_key(project: &RecordId, problem_class: &str, file_path: &str) -> String {
+    // RecordId is not Display; its key component is the stable per-project token.
+    let project_key = format!("{:?}", project.key);
+    hash_algo_key(&project_key, problem_class, file_path)
+}
+
+/// Pure seed→key hash, split out so determinism is unit-testable without a DB.
+fn hash_algo_key(project_key: &str, problem_class: &str, file_path: &str) -> String {
+    let seed = format!("{project_key}:{problem_class}:{file_path}");
+    let hex = blake3::hash(seed.as_bytes()).to_hex();
+    // blake3 hex is ASCII, so [..16] is on a char boundary; .get is panic-free.
+    hex.get(..16).unwrap_or(&hex).to_owned()
 }
 
 /// List up to `limit` recent `arch_decision` rows for `project_id`.
@@ -176,4 +197,27 @@ pub async fn arch_list_recent(
         .await?;
     let rows: Vec<ArchDecision> = response.take(0)?;
     Ok(rows)
+}
+
+#[cfg(test)]
+mod algo_key_tests {
+    use super::hash_algo_key;
+
+    #[test]
+    fn same_tuple_yields_same_key() {
+        // Idempotency proof: identical (project, class, file) -> identical id,
+        // so the UPSERT collapses concurrent recordings to one row.
+        let a = hash_algo_key("p1", "sort", "src/x.rs");
+        let b = hash_algo_key("p1", "sort", "src/x.rs");
+        assert_eq!(a, b);
+        assert_eq!(a.len(), 16);
+    }
+
+    #[test]
+    fn distinct_tuples_yield_distinct_keys() {
+        let base = hash_algo_key("p1", "sort", "src/x.rs");
+        assert_ne!(base, hash_algo_key("p2", "sort", "src/x.rs"));
+        assert_ne!(base, hash_algo_key("p1", "search", "src/x.rs"));
+        assert_ne!(base, hash_algo_key("p1", "sort", "src/y.rs"));
+    }
 }
