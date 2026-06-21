@@ -1,18 +1,5 @@
-//! Extract the latest assistant-turn token usage from a Claude Code
-//! transcript so the harness loop can bound itself by spend
-//! (`SessionState::record_token_spend`). Mirrors the tail-read strategy of
-//! `pre_write_rca_guard::scan_transcript_for_rca` — the transcript can be
-//! large, so only the last window is read.
-//
-// ARCH: bounded-tail-window scan
-//   transcript grows unbounded across a long session"},
-//   {"name":"reverse line iterator (rev_lines crate)","reason":"adds a dep \
-//   to shift, not eliminate, complexity; std seek already suffices"}]
-// TIME: O(W) W=64KiB window | SPACE: O(W)
-// YEAR: 2026 | SEARCHED: 2026-05
-//   usage line in the window is missed (next turn re-accounts; budget is a
-//   slow safety valve, not exact metering — acceptable).
-// SOURCE: https://oneuptime.com/blog/post/2026-01-07-rust-file-io-efficient/view
+//! Extract latest token usage from transcript tail window for spend tracking.
+//! See decision.engine.token-usage-tail-window for design rationale.
 
 /// Sum of the most recent `usage` block in the transcript JSONL tail, or
 /// `None` if the path is empty/unreadable or no usage line is present.

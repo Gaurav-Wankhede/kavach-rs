@@ -15,11 +15,8 @@ pub(crate) fn handle_question(input: &HookInput) {
         super::turn_relay::exit_pre_tool_allow_relay(&mut session, None);
         return;
     }
-    // FAIL CLOSED: a real AskUserQuestion ALWAYS carries `tool_input.questions`.
-    // A call with no `tool_input` cannot be validated, so denying it costs zero
-    // legitimate traffic and shuts the fail-open hole where a malformed/absent
-    // payload would skip the laziness check entirely (global CLAUDE.md
-    // §handle_every_error: deny on uncertainty for anything touching correctness).
+    // Fail-closed: deny if tool_input is absent (cannot validate questions).
+    // See decision.engine.fail_closed_missing_tool_input.
     let Some(map) = input.tool_input.as_ref() else {
         drop(kavach_hook::exit_pre_tool_deny(
             "[LAZINESS_BLOCK] AskUserQuestion arrived with no tool_input — its options \
