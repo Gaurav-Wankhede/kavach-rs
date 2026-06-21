@@ -53,4 +53,12 @@ pub(crate) struct StopCtx<'a> {
     /// behavioral breaker — giving internet-first (global CLAUDE.md) teeth instead
     /// of an advisory the model can coast past.
     pub(crate) research_unsourced: bool,
+    /// Argue-not-obey signal: set when a handback / permission-menu / name-then-stop
+    /// / paraphrased-handoff fired this turn (the generalized disobedience class the
+    /// narrow lexical `disobedience_guard` misses). On a drained board the clean-exit
+    /// terminal REFUSES the stop while this is true AND census proves dispatchable
+    /// work (`roadmap_todos_remain`), bounded by the `disobedience_handback`
+    /// behavioral breaker — so detected disobedience + runnable work = REFUSE, not a
+    /// politely-appended advisory the model already coasted past.
+    pub(crate) disobedience_handback: bool,
 }
