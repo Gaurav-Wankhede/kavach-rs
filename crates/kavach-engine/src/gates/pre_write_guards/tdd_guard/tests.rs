@@ -44,11 +44,24 @@ fn allows_comment_only_change_without_a_test() {
 }
 
 #[test]
-fn allows_when_matching_test_touched_first_this_turn() {
-    // The unit's sibling test file was written EARLIER this turn -> Red came first.
+fn blocks_when_test_touched_but_not_observed_red() {
+    // A touched test file WITHOUT an observed Red run is a vacuous after-the-fact
+    // test — the gate must still BLOCK and direct the agent to RUN it red first.
     let s = session_with_turn_files(&["crates/foo/src/widget_test.rs"]);
     let c = ctx("crates/foo/src/widget.rs", "pub fn build() {}");
-    assert!(check(&c, &s).is_none(), "test-first satisfies the gate");
+    let out = check(&c, &s).expect("touch-without-red must block");
+    assert!(out.contains("observed-Red"), "names the missing red proof: {out}");
+    assert!(out.contains("NOT observed RED"), "directs RUN-it-red: {out}");
+}
+
+#[test]
+fn allows_when_test_observed_red_this_turn() {
+    // The unit's test was RUN and FAILED this turn (recorded in tdd_red_units) —
+    // genuine test-first. The gate must pass.
+    let mut s = session_with_turn_files(&["crates/foo/src/widget_test.rs"]);
+    s.tdd_red_units = vec!["widget".to_owned()];
+    let c = ctx("crates/foo/src/widget.rs", "pub fn build() {}");
+    assert!(check(&c, &s).is_none(), "observed-Red satisfies test-first");
 }
 
 #[test]
