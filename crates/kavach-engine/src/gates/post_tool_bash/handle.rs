@@ -45,7 +45,7 @@ pub(crate) fn handle(
             objective_outcome(input, command, output),
             Some(kavach_patterns::eval_replay::EventOutcome::Failure)
         ) {
-            tests_track::record_red_units(session);
+            super::tests_track::record_red_units(session);
         }
         if is_empty_test_suite(output) {
             session.add_case_fact("EMPTY_TEST_SUITE: 0 tests ran — not a pass");
