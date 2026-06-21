@@ -175,6 +175,31 @@ const TABLE: &[Entry] = &[
     },
 ];
 
+/// Which refuse-stop-eligible stall classes fired this turn. ADVISORY firing is a
+/// pure side-effect of `run`; these flags let `clean_exit` give two laws TEETH
+/// (refuse the stop, breaker-bounded) instead of an advisory the model can ignore.
+#[derive(Default)]
+pub(super) struct StallSignals {
+    /// `detect_claim_without_research` fired — an unsourced current-knowledge claim
+    /// (internet-first law). Refused unconditionally (breaker-bounded).
+    pub research_unsourced: bool,
+    /// A handback / permission-menu / name-then-stop / paraphrased-handoff fired —
+    /// the argue-not-obey class. Refused ONLY when census proves dispatchable work
+    /// (`roadmap_todos_remain`), breaker-bounded. This is the generalized
+    /// disobedience signal the narrow lexical `disobedience_guard` was blind to.
+    pub handback_or_menu: bool,
+}
+
+/// Gate keys whose firing means the turn ended on a HANDBACK or PERMISSION-MENU
+/// rather than the next action — the argue-not-obey class. Distinct from the
+/// verification-claim entries (which only mean "prove it", not "you disobeyed").
+const HANDBACK_GATES: &[&str] = &[
+    "permission_seek_at_stop",
+    "remaining_phases_at_stop",
+    "incomplete_work_at_stop",
+    "semantic_deferral_at_stop",
+];
+
 /// Run the advisory-detector table over the final message. For each firing
 /// entry, record a mistake-ledger row (learning loop) and queue a harness-neutral
 /// pending advisory (re-surfaces at the top of the next turn, before the next
@@ -183,16 +208,15 @@ const TABLE: &[Entry] = &[
 /// `wrote_this_turn` gates the verification-claim entries. A detector whose
 /// pattern fails to compile is treated as "did not fire" (fail-safe).
 ///
-/// Returns `true` iff the research-witness detector (`detect_claim_without_research`)
-/// fired this turn — the caller (`clean_exit`) uses it to REFUSE the stop when an
-/// unsourced current-knowledge claim was made (breaker-bounded), giving the
-/// internet-first law teeth instead of an advisory the model can ignore.
+/// Returns the `StallSignals` the caller (`clean_exit`) uses to REFUSE the stop:
+/// `research_unsourced` (internet-first teeth) and `handback_or_menu` (argue-not-obey
+/// teeth) — both breaker-bounded so a turn that genuinely cannot act force-allows.
 pub(super) fn run(
     session: &mut kavach_session::SessionState,
     msg: &str,
     wrote_this_turn: bool,
-) -> bool {
-    let mut research_claim_fired = false;
+) -> StallSignals {
+    let mut signals = StallSignals::default();
     for entry in TABLE {
         if entry.needs_write && !wrote_this_turn {
             continue;
@@ -207,11 +231,14 @@ pub(super) fn run(
             }));
             session.queue_pending_advisory(entry.advisory);
             if entry.gate == "claim_without_research_at_stop" {
-                research_claim_fired = true;
+                signals.research_unsourced = true;
+            }
+            if HANDBACK_GATES.contains(&entry.gate) {
+                signals.handback_or_menu = true;
             }
         }
     }
-    research_claim_fired
+    signals
 }
 
 #[cfg(test)]
