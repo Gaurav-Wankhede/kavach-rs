@@ -150,6 +150,20 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         return ControlFlow::Break(());
     }
 
+    // REFUSE-STOP when every runnable card is dependency-blocked or cyclic: an
+    // all-blocked board is a blocker to WALK and BUILD, never a terminal. Breaker-
+    // bounded so a board the model genuinely cannot act on force-allows after N.
+    // See decision.engine.all-blocked-is-not-a-stop.
+    if super::drained::board_is_all_blocked(&ctx.session.project)
+        && super::super::shared::should_block_behavioral(ctx.session, "board_all_blocked")
+    {
+        drop(kavach_hook::exit_stop_block(&format!(
+            "{}\n{full}",
+            super::drained::blocker_walk_context()
+        )));
+        return ControlFlow::Break(());
+    }
+
     drop(kavach_hook::exit_stop_context(&full));
     ControlFlow::Break(())
 }
