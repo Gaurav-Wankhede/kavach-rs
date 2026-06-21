@@ -4,15 +4,12 @@ use super::check_loophole_interrogation;
 fn fires_on_done_claim_touching_risk_path() {
     let c = "Done — the lease acquire is now atomic and the claim is race-free.";
     let out = check_loophole_interrogation(c).expect("should fire");
-    assert!(out.contains("[LOOPHOLE_CHECK]"));
-    assert!(out.contains("concurrency"));
-    // Imperative, fix-first language — NOT a passive "consider" prompt.
-    assert!(out.contains("FIX THIS TURN"), "commands a same-turn fix: {out}");
-    assert!(out.contains("Loopholes closed:"), "marker is the action verb: {out}");
-    assert!(
-        out.contains("do NOT narrate") && out.contains("do NOT defer"),
-        "forbids the summary/deferral path: {out}"
-    );
+    // RESOLVE-not-handback: surfaces the risk surface + lenses for awareness; no
+    // CTA to manually walk lenses or narrate a `Loopholes closed:` line.
+    assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag, not a CTA: {out}");
+    assert!(out.contains("concurrency"), "names the relevant lens: {out}");
+    assert!(!out.contains("RUN each lens"), "no handback CTA: {out}");
+    assert!(!out.contains("Loopholes closed:"), "no narration demand: {out}");
 }
 
 #[test]
