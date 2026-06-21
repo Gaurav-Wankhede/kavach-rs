@@ -60,73 +60,29 @@ fn dispatchable_remainder_silent_when_all_blocked_or_empty_or_outage() {
 }
 
 #[test]
-fn cycle_deadlock_context_refuses_stop_and_directs_the_fix() {
-    let c = cycle_deadlock_context();
-    assert!(c.contains("CYCLE_DEADLOCK"), "tag present: {c}");
+fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
+    // [ALL_BLOCKED] is abolished: a fully-blocked board (deps OR cycle) is a single
+    // BLOCKER_WALK directive — WALK to the blocker and BUILD it, never a clean stop,
+    // never a hand-off, never a separate "everything's blocked" terminal tag.
+    let c = blocker_walk_context();
+    assert!(c.contains("BLOCKER_WALK"), "single blocker-walk tag present: {c}");
+    assert!(!c.contains("ALL_BLOCKED"), "the abolished tag is gone: {c}");
     assert!(c.contains("Do NOT stop"), "refuses the clean stop: {c}");
-    assert!(c.contains("mermaid"), "points at the cycle view: {c}");
-}
-
-#[test]
-fn all_blocked_context_directs_dependency_first_resolution_not_user_handoff() {
-    let c = all_blocked_context(Some((2, 2, 0)));
-    assert!(c.contains("ALL_BLOCKED"), "tag present: {c}");
+    assert!(c.contains("BUILD the blocker"), "directs dependency-first build: {c}");
+    assert!(c.contains("CYCLE"), "folds in the cycle-break directive: {c}");
+    assert!(c.contains("mermaid"), "points at the cycle view for a cycle: {c}");
+    assert!(c.contains("STALE/FALSE"), "directs correcting a stale edge: {c}");
     assert!(
-        c.contains("dependency"),
-        "names the prerequisite class: {c}"
-    );
-    // Total abolition: a dependency block is build-it-now work. The verdict must
-    // WALK to the blocker and BUILD it, never hand the unblock back, never escalate.
-    assert!(
-        c.contains("Never hand work back"),
-        "refuses every hand-off: {c}"
+        c.contains("runtime script") && c.contains("dotenvy"),
+        "secret-bound ops go via a runtime script, never a hand-back: {c}"
     );
     assert!(
-        c.contains("BUILD the blocker"),
-        "directs dependency-first build of the blocker: {c}"
-    );
-    assert!(
-        c.contains("WALK to the blocking card"),
-        "directs a walk to the blocking card (leaf-first): {c}"
-    );
-    assert!(
-        c.contains("STALE/FALSE"),
-        "directs correcting a stale/false dependency edge: {c}"
-    );
-    // A secret-bound DB op is DONE via a runtime script (env read in-process),
-    // never handed back; a card is filed ONLY when the env var is truly absent.
-    assert!(
-        c.contains("WRITE a runtime script") && c.contains("never escalate"),
-        "directs a runtime script for secret-bound ops instead of handing back: {c}"
-    );
-    assert!(
-        c.contains("genuinely ABSENT") && c.contains("FILE a card"),
+        c.contains("genuinely ABSENT") && c.contains("FILED"),
         "files a card only when the env var is genuinely absent: {c}"
     );
-    assert!(
-        !c.contains("operator-only") && !c.contains("operator-gated"),
-        "carries no operator-gate language: {c}"
-    );
-    // The verdict must STAMP the census it read (verdict_needs_leaf_evidence):
-    // the live counts + proof the gate read the DB this stop.
-    assert!(
-        c.contains("census:") && c.contains("runnable=2 blocked=2 cyclic=0"),
-        "stamps the live census it read: {c}"
-    );
-    assert!(
-        c.contains("read the kavach DB roadmap table this stop"),
-        "cites the leaf it read this stop: {c}"
-    );
-    assert!(
-        c.contains("do NOT re-run `kavach db kanban`"),
-        "tells the AI not to redundantly re-query what the gate already read: {c}"
-    );
-    // The loop never self-terminates — even all-blocked re-scans the DB and
-    // yields to the user's Esc, never a hardcoded clean stop.
-    assert!(c.contains("Do NOT stop"), "refuses to self-terminate: {c}");
     assert!(c.contains("Esc"), "yields only to the user halt: {c}");
     assert!(
-        !c.contains("Clean stop") && !c.contains("clean stop"),
+        !c.contains("clean stop") && !c.contains("Clean stop"),
         "carries no clean-stop language: {c}"
     );
 }
