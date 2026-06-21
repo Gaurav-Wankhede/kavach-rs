@@ -117,12 +117,9 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     }
     super::super::pattern_extract::trigger_on_verify(ctx.session);
 
-    // Loophole surface on a drained board: RESOLVE, never block. The lens scan
-    // already recorded concrete suspect sites + queued a carry-forward advisory
-    // (`stop.rs::loophole_check`); the native triage agent fixes them. We attach
-    // the awareness as a clean-exit ride-along and let the stop proceed — no
-    // handback halt, no `Loopholes closed:` narration demand. (SOURCE: owner-gate/
-    // handback abolition — resolve on the spot, do not suppress the next move.)
+    // Loophole surface: RESOLVE, never block. Sites already recorded + carried
+    // forward; attach awareness as a ride-along and let the stop proceed.
+    // SOURCE: decision.loophole.resolve-not-handback.
     if let Some(advisory) = ctx.loophole_advisory.as_deref() {
         full.push('\n');
         full.push_str(advisory);
