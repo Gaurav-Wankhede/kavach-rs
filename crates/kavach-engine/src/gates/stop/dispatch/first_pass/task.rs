@@ -66,16 +66,8 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             &ctx.session.project,
         );
     }
-    // Read-back verify (closes the narrate-without-persist gap): claim_card
-    // returns the RPC's `claimed` flag, but a transport blip AFTER the row flip,
-    // or a lease fence applied mid-write, can leave the DB NOT showing
-    // `in_progress`. If the gate then announces "CLAIMED and in_progress in the
-    // Kavach DB", the next stop's census reports runnable=0 while the transcript
-    // claims a live card — the exact contradiction the user reported. So confirm
-    // the row actually reads `in_progress` before asserting it landed. An
-    // unobservable status (RPC down) is fail-open: we keep the resume path the
-    // `claimed`/`resume` logic already decided, but we don't FALSELY claim the
-    // write is durable — the claim line drops to the softer "resume" phrasing.
+    // Verify DB state after claim RPC: prevent narrate-without-persist
+    // contradiction when transport fails mid-write. See decision.engine.readback-verify.
     let persisted_in_progress = card_entry_status(&ctx.session.project, &priority)
         .is_some_and(|s| s == "in_progress");
     if claimed && !persisted_in_progress {
