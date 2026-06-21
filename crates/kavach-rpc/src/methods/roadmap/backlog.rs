@@ -43,8 +43,7 @@ pub async fn promote_next_backlog(
         .await
         .map_err(surreal_to_rpc)?;
     // Backlog tier applies the SAME umbrella/decomp exclusions as the primary
-    // selectors. Gates are NOT excluded — a `GATE:` card is ordinary runnable work
-    // the agent claims and builds (owner-gating abolished).
+    // selectors. A `GATE:`-titled card is ordinary runnable work the agent builds.
     let mut ready: Vec<_> = entries
         .into_iter()
         .filter(|e| {
