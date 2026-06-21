@@ -19,7 +19,7 @@ fn isolate(tag: &str) {
 fn call_or_spool_enqueues_when_daemon_is_down() {
     isolate("enqueue");
     // No daemon in tests → the live call Errs → the write must be spooled.
-    call_or_spool("db.write", serde_json::json!({"k": 1}));
+    call_or_spool("db.write", &serde_json::json!({"k": 1}));
     let spooled = drain_write_spool().expect("drain");
     assert_eq!(spooled.len(), 1, "failed call spooled, not dropped: {spooled:?}");
     assert_eq!(spooled[0].method, "db.write");
