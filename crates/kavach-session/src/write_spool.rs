@@ -37,7 +37,7 @@ impl SpooledWrite {
     /// Provided because the struct is `#[non_exhaustive]` (cross-crate callers
     /// like the engine glue cannot use a struct literal).
     #[must_use]
-    pub fn new(method: String, params_json: String) -> Self {
+    pub const fn new(method: String, params_json: String) -> Self {
         Self { method, params_json }
     }
 }
