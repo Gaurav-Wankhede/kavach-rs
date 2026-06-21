@@ -30,10 +30,10 @@ const TOMBSTONE_MARKERS: [&str; 8] = [
 /// Only governed source is policed (same surface as `dedup_guard` plus `.sql`):
 /// tombstones in docs/notes/markdown are out of scope.
 fn is_governed_path(path: &str) -> bool {
-    let governed_tree = path.contains("/crates/core/")
-        || path.contains("/crates/api/")
-        || path.contains("/crates/services/")
-        || path.contains("/crates/kavach-");
+    let governed_tree = path.contains("crates/core/")
+        || path.contains("crates/api/")
+        || path.contains("crates/services/")
+        || path.contains("crates/kavach-");
     let source_ext = path.ends_with(".rs") || path.ends_with(".sql");
     governed_tree && source_ext
 }
