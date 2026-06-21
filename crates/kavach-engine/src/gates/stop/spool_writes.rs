@@ -48,7 +48,7 @@ pub fn drain_and_replay() {
     let pending = match drain_write_spool() {
         Ok(p) => p,
         Err(e) => {
-            tracing::warn!(error = %e, "spool: drain failed; deferring replay to next Stop");
+            eprintln!("kavach spool: drain failed ({e}); deferring replay to next Stop");
             return;
         }
     };
@@ -56,7 +56,7 @@ pub fn drain_and_replay() {
         match serde_json::from_str::<serde_json::Value>(&write.params_json) {
             Ok(params) => call_or_spool(&write.method, params),
             Err(e) => {
-                tracing::warn!(method = write.method, error = %e, "spool: replay params corrupt; dropped");
+                eprintln!("kavach spool: replay params corrupt for {} ({e}); dropped", write.method);
             }
         }
     }
