@@ -297,11 +297,11 @@ fn continuation_menu_check(
 /// Imperative, fix-first — points the model back at the DB, not at the user.
 fn continuation_menu_advisory() -> String {
     // [CONTINUATION_MENU] tag literal; the body (still naming the frozen
-    // [AUTO_CONTINUE]/[ALL_BLOCKED] verdicts + §refs in its fallback) is research-refreshed.
+    // [AUTO_CONTINUE]/[BLOCKER_WALK] verdicts + §refs in its fallback) is research-refreshed.
     let body = dyn_directive(
         "stop.continuation-menu-ride-along",
         "Your final message ended the turn on a 'continue or pause?' \
-         permission question — but the loop directive (the [AUTO_CONTINUE]/[ALL_BLOCKED] \
+         permission question — but the loop directive (the [AUTO_CONTINUE]/[BLOCKER_WALK] \
          verdict in this same stop) ALREADY told you the next move. Asking the user for \
          permission to do what the gate ordered is the forbidden deferral (global CLAUDE.md \
          §autonomous_loop §4_continue_not_stop / §act_not_narrate). Do NOT ask: check the \
