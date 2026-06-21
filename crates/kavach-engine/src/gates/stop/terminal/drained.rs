@@ -150,20 +150,23 @@ pub(in crate::gates::stop) fn blocker_walk_context() -> String {
         &[
             (
                 "action",
-                "Do NOT stop. Every runnable card is held by a dependency or a cycle — \
-                 that is a blocker to BUILD, never a clean stop. WALK it, dependency- \
-                 first: (1) read each card's `DEPENDS_ON:`/`BLOCKED_BY:` line and get \
-                 the blocking card (`kavach db get --category roadmap --key <blocker>`). \
-                 (2) RESEARCH the actual conflict (WebSearch the current source). \
-                 (3) BUILD the blocker THIS turn — recurse to ITS blocker until a leaf \
-                 dispatches, then dispatch the dependent. (4) STALE/FALSE edge \
-                 (prerequisite already shipped): correct the `DEPENDS_ON:` line (`kavach \
-                 db write`) and dispatch. (5) CYCLE (A->B->A): `kavach db kanban --format \
-                 mermaid`, then edit the offending `DEPENDS_ON:` to remove the back-edge. \
-                 (6) Secret/credential-bound DB op: WRITE a runtime script (Rust + \
-                 `dotenvy`) that reads the env var inside its own process and emits ONLY \
-                 a pass/fail receipt. ONLY a genuinely ABSENT env var is FILED as a card; \
-                 then KEEP BUILDING every other reachable leaf. Yield only to `Esc`.",
+                "Do NOT stop. Every runnable card is ORDERED behind a `DEPENDS_ON:` edge \
+                 or a cycle — that is work to RESOLVE, never a parked 'blocked' state and \
+                 never a clean stop. There is NO blocked-and-waiting card: each one is \
+                 either built now or its edge is resolved. WALK it: (1) read each card's \
+                 `DEPENDS_ON:` line, get the prerequisite (`kavach db get --category \
+                 roadmap --key <dep>`). (2) BUILD the prerequisite THIS turn — recurse to \
+                 ITS dep until a leaf dispatches, then dispatch the dependent. (3) The dep \
+                 is already DONE: drop the satisfied edge and dispatch. (4) The dep is \
+                 STALE/obsolete (superseded, never coming): UPDATE the card to the current \
+                 version, or REMOVE it from the todos (`kavach db status-update \
+                 --status verified` / `kavach db delete`) — never leave it blocked. \
+                 (5) CYCLE (A->B->A): `kavach db kanban --format mermaid`, then edit the \
+                 offending `DEPENDS_ON:` to cut the back-edge. (6) Secret/credential-bound \
+                 op: WRITE a runtime script (Rust + `dotenvy`) that reads the env var in \
+                 its own process and emits ONLY a pass/fail receipt. ONLY a genuinely \
+                 ABSENT env var is FILED as a card; then KEEP BUILDING every reachable \
+                 leaf. Yield only to `Esc`.",
             ),
         ],
     )
