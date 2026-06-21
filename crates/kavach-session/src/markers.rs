@@ -223,6 +223,8 @@ impl SessionState {
     /// if `last_write_turn` advanced since the prior snapshot, the agent
     /// shipped code → reset to 0. Otherwise increment as before. Live-lock
     /// safety is preserved: 3 Stops with zero writes still trips the cap.
+    // Plain save() RMW is correct here: Stop-hook-only single-writer path, no
+    // concurrent same-session writer. SOURCE: decision.stop-reblock-rmw-single-writer-safe.
     pub fn increment_stop_reblock(&mut self) {
         if self.has_progress_since_last_stop() {
             self.stop_reblock_count = 0;
