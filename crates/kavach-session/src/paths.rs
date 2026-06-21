@@ -17,11 +17,8 @@ pub(crate) fn home_dir() -> PathBuf {
 // (chmod 0o000 is a Unix-only construct). On Windows the caller compiles out,
 // so a bare `#[cfg(test)]` here would leave `set_test_state_dir` dead-coded and
 // trip the workspace's denied `dead_code` lint under `-D warnings`.
-// Available when THIS crate is under test (fault-injection in enforcement.rs) OR
-// when a downstream crate enables `test-support` to isolate the spool path in its
-// own tests (kavach-engine's spool glue). Thread-local so parallel tests stay
-// isolated and no `unsafe` env mutation is needed (env::set_var is `unsafe` in
-// edition 2024; the workspace is `forbid(unsafe_code)`).
+// Thread-local override (no `unsafe` env mutation; workspace is forbid(unsafe)).
+// Live under own-tests OR a downstream `test-support` consumer (engine spool glue).
 #[cfg(any(test, feature = "test-support"))]
 thread_local! {
     static TEST_STATE_DIR: std::cell::RefCell<Option<PathBuf>> =
