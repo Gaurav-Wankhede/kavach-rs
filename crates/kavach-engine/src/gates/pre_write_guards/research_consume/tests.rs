@@ -90,7 +90,7 @@ fn allows_local_analysis_intents() {
 #[test]
 fn bypass_env_disables_the_gate() {
     // SAFETY note: this test reads the env var; it does not mutate it. The
-    // unset path is covered by the blocking test above (run without the var).
+    // unset path is covered by the resolve-advisory test above (no var set).
     if std::env::var_os("KAVACH_RESEARCH_BYPASS").is_some() {
         let s = session_needing_research();
         let c = ctx("crates/foo/src/lib.rs", "fn handler() {}");
