@@ -51,6 +51,28 @@ pub(crate) fn check(
             p1_advisories: Vec::new(),
         };
     }
+    // Comment-bloat BLOCK: deny only a write that INTRODUCES new bloat (pre-existing
+    // bloat stays editable). Escape: KAVACH_COMMENT_BLOCK_OFF=1.
+    if std::env::var_os("KAVACH_COMMENT_BLOCK_OFF").is_none() {
+        let old = std::fs::read_to_string(ctx.file_path).unwrap_or_default();
+        if kavach_patterns::comment_noise_guard::introduces_bloat(
+            ctx.file_path,
+            &old,
+            &ctx.effective_content,
+        ) {
+            return GuardResult {
+                block: Some(
+                    "[COMMENT_BLOAT:P0] BLOCKED. This write adds a 6+-line prose comment \
+                     block — keep comments concise; move rationale to a decision row. \
+                     Bypass: KAVACH_COMMENT_BLOCK_OFF=1."
+                        .to_owned(),
+                ),
+                algo_advisory: None,
+                runner_compact: runner.to_compact(),
+                p1_advisories: Vec::new(),
+            };
+        }
+    }
 
     // Internet-first RESOLVES, never blocks: drives the lookup + attaches a P1
     // advisory. The `[RESEARCH_FIRST]` Stop teeth enforce citation before the turn ends.
