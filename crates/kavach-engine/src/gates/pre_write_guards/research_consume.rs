@@ -1,13 +1,16 @@
-//! P0 enforced-consume gate: when THIS turn's prompt was classified
-//! `requires_research`, a Write/Edit to production code is BLOCKED until the
-//! turn presents research evidence — a source URL, an `[RESEARCH]` block, or a
-//! completed live research-cache entry. This is the teeth of the internet-first
-//! policy: the intent gate fires the lookup; this gate refuses code that ignored
-//! it.
+//! Self-resolving internet-first advisory: when THIS turn's prompt was classified
+//! `requires_research`, a Write/Edit to production code without research evidence
+//! does NOT block — it RESOLVES the conflict on the spot. The gate ensures the
+//! background WebSearch is running (`kavach_advisor::kickoff`), injects the live
+//! findings (or a pending directive while they land) as advisory context, and
+//! ALLOWS the write. The internet-first LAW is enforced by DRIVING the Internet,
+//! never by suppressing the task. The loop-level backstop lives at the Stop gate
+//! (`[RESEARCH_FIRST]` refuse-stop → continuation, not handback).
 //!
-//! Fail-safe: the default on any ambiguity is to BLOCK (no evidence ⇒ no write).
-//! Escape hatch: `KAVACH_RESEARCH_BYPASS=1` for emergencies. Carve-outs mirror
-//! the `pre_tool` research gate (local-analysis intents, test files).
+//! Returns `Some(advisory)` only to ATTACH context (never a block); `None` when
+//! research is satisfied or not applicable. Carve-outs mirror the `pre_tool`
+//! research gate (local-analysis intents, test files).
+//! Escape hatch: `KAVACH_RESEARCH_BYPASS=1` silences the advisory entirely.
 
 use crate::gates::pre_write_context::WriteContext;
 
