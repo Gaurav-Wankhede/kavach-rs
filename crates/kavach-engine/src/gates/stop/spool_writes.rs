@@ -20,7 +20,7 @@ use kavach_session::{SpooledWrite, drain_write_spool, enqueue_write_spool};
 /// learning signal. Never returns an error — the worst case is a best-effort
 /// spool-write failure that is logged and dropped (same floor as the old
 /// discard, but now only after the live call AND the durable append both fail).
-pub(super) fn call_or_spool(method: &str, params: serde_json::Value) {
+pub(crate) fn call_or_spool(method: &str, params: serde_json::Value) {
     let res: Result<serde_json::Value, _> =
         kavach_rpc::client::call(method, Some(params.clone()));
     if res.is_ok() {
