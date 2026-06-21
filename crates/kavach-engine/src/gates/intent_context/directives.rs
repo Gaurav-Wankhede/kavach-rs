@@ -42,7 +42,7 @@ pub(crate) fn append_verify_existing(context: &mut String, intent_type: &str) {
 }
 
 /// Append Root-Cause Analysis protocol for debug/fix/refactor intents.
-/// SOURCE: decision.engine.rca_protocol_inject
+/// SOURCE: `decision.engine.rca_protocol_inject`
 pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str) {
     if intent_type != "debug" && intent_type != "refactor" && intent_type != "implement" {
         return;
