@@ -54,7 +54,7 @@ pub(super) fn drain_and_replay() {
     };
     for write in pending {
         match serde_json::from_str::<serde_json::Value>(&write.params_json) {
-            Ok(params) => call_or_spool(&write.method, params),
+            Ok(params) => call_or_spool(&write.method, &params),
             Err(e) => {
                 eprintln!("kavach spool: replay params corrupt for {} ({e}); dropped", write.method);
             }
