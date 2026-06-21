@@ -51,7 +51,7 @@ pub async fn open_set_census(
             continue;
         }
         // Umbrella cards are NEVER dispatch targets (epic container, counted via
-        // children). Gates are no longer excluded — owner-gating abolished.
+        // children).
         if is_umbrella(&e.title) {
             continue;
         }
