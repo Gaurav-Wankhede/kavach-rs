@@ -25,7 +25,7 @@ pub(super) fn advisory(file_path: &str, content: &str) -> Option<String> {
         }
         if g.uncommitted > 0 {
             lines.push(format!("uncommitted: {} file(s) — not yet committed", g.uncommitted));
-            lines.push(format!("suggest: git add -A && git commit -m {:?}", commit_msg(file_path)));
+            lines.push(format!("RUN now: git add -A && git commit -m {:?}", commit_msg(file_path)));
         }
         if g.behind > 0 {
             lines.push("behind upstream — `git pull --rebase` before pushing to avoid a merge".into());
