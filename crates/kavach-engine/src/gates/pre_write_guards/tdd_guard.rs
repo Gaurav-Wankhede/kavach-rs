@@ -45,7 +45,7 @@ pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
     if s.contains("/tests/") && name == format!("{stem}.rs") {
         return true;
     }
-    if name == "tests.rs" && s.contains(&format!("/{stem}/tests.rs")) {
+    if name == "tests.rs" && s.contains(format!("/{stem}/tests.rs").as_str()) {
         return true;
     }
     name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
