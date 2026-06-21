@@ -133,20 +133,14 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
         return None;
     }
     let lens_list = lenses::lens_block(&fired);
+    // RESOLVE, do NOT hand back: surface the change's risk surface + the lenses the
+    // automated scan (`scan_changed_for_loopholes`) already runs over it. No CTA to
+    // manually walk lenses or narrate a `Loopholes closed:` line — the lens scan
+    // detects and records; the native triage agent fixes. This is awareness, not a
+    // labor demand. (SOURCE: owner-gate/handback abolition — decision row.)
     Some(format!(
-        "[LOOPHOLE_CHECK]\n\
-         This change claims completion on a risk-bearing path. A loophole found is \
-         a loophole you FIX THIS TURN at its root — do NOT narrate it, do NOT defer \
-         it, do NOT ship a summary in place of the fix.\n\
-         RUN each lens. For every lens, the verdict is exactly one of:\n\
-         - FIX NOW: write the guard/check at its root this turn, then cite file:line.\n\
-         - FILE: out-of-scope only -> create a roadmap card + decision row naming \
-         the exact failure mode (a parked loophole is tracked, never silent).\n\
-         - N/A: prove it cannot occur and cite the file:line that defends against it.\n\
-         The lenses (Brain-OS-selected for this change's risk surface):\n{lens_list}\n\
-         Emit a `Loopholes closed:` line: each lens -> FIXED at file:line, FILED as \
-         <card-key>, or N/A at file:line. A `considered`/`noted`/`should` verdict \
-         without a fix or a card is NOT acceptable — close it or file it, now."
+        "[LOOPHOLE_SURFACE] risk-bearing path touched. Relevant attack lenses for \
+         this surface (the lens scan checks these automatically):\n{lens_list}"
     ))
 }
 
