@@ -110,17 +110,29 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push_str(advisory);
     }
 
-    // REFUSE-STOP when census proves unblocked roadmap todos the probe hid: command
-    // a direct query+claim+start. Breaker-bounded (force-allows after N).
+    // Ordered refuse-stop checks (roadmap-todos → disobedience → research → all-blocked),
+    // each breaker-bounded. Extracted to keep `check` under the 100-LOC ceiling.
+    if try_refuse_stop(ctx, &full).is_break() {
+        return ControlFlow::Break(());
+    }
+
+    drop(kavach_hook::exit_stop_context(&full));
+    ControlFlow::Break(())
+}
+
+/// The ordered refuse-stop pipeline: each arm REFUSES the clean stop (emits an
+/// `exit_stop_block` and Breaks) when its breaker-bounded condition holds. Returns
+/// `Continue` when none fire, so the caller proceeds to the clean `exit_stop_context`.
+/// Order is priority: roadmap-todos → disobedience-handback → unsourced-research →
+/// all-blocked. Each `refuse_stop_on_*` mutates its breaker, so call each once.
+fn try_refuse_stop(ctx: &mut StopCtx<'_>, full: &str) -> ControlFlow<()> {
     // See decision.engine.refuse-stop-roadmap-todos.
     if refuse_stop_on_roadmap_todos(ctx) {
         let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
         drop(kavach_hook::exit_stop_block(&format!("{blocked}\n{full}")));
         return ControlFlow::Break(());
     }
-
-    // REFUSE-STOP on argue-not-obey (handback/permission-menu/name-then-stop) when
-    // census proves dispatchable work. See decision.engine.refuse-stop-disobedience-handback.
+    // See decision.engine.refuse-stop-disobedience-handback.
     if refuse_stop_on_disobedience_handback(ctx) {
         let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
         drop(kavach_hook::exit_stop_block(&format!(
@@ -133,26 +145,19 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         )));
         return ControlFlow::Break(());
     }
-
-    // REFUSE-STOP on an unsourced current-knowledge claim (internet-first teeth):
-    // command WebSearch + cite-or-drop. Breaker-bounded (force-allows after N).
     // See decision.engine.refuse-stop-unsourced-research.
     if refuse_stop_on_unsourced_research(ctx) {
-        let blocked = format!(
+        drop(kavach_hook::exit_stop_block(&format!(
             "[RESEARCH_FIRST] Do NOT stop. This turn asserted a current-knowledge \
              fact (latest/version/API/pricing/supports) from memory with NO source \
              URL. Tabula rasa: the weights are stale, the web is truth (global \
              CLAUDE.md §internet-first). WebSearch a real source THIS turn and cite \
              its URL, persist the finding (`kavach db write --category research`), or \
              DROP the claim. No source -> no claim.\n{full}"
-        );
-        drop(kavach_hook::exit_stop_block(&blocked));
+        )));
         return ControlFlow::Break(());
     }
-
-    // REFUSE-STOP when every runnable card is dependency-blocked or cyclic: an
-    // all-blocked board is a blocker to WALK and BUILD, never a terminal. Breaker-
-    // bounded so a board the model genuinely cannot act on force-allows after N.
+    // An all-blocked board is a blocker to WALK and BUILD, never a terminal.
     // See decision.engine.all-blocked-is-not-a-stop.
     if super::drained::board_is_all_blocked(&ctx.session.project)
         && super::super::shared::should_block_behavioral(ctx.session, "board_all_blocked")
@@ -163,9 +168,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         )));
         return ControlFlow::Break(());
     }
-
-    drop(kavach_hook::exit_stop_context(&full));
-    ControlFlow::Break(())
+    ControlFlow::Continue(())
 }
 
 /// Decide whether a drained-board clean-stop must be REFUSED because the turn
