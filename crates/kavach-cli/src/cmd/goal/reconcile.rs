@@ -26,8 +26,10 @@ fn apply_verdict(state: &mut kavach_session::SessionState, oracle_result: &str) 
 /// `kavach goal reconcile --goal-id <id> --oracle-result <pass|fail>`.
 pub(crate) fn run(goal_id: &str, oracle_result: &str) -> i32 {
     let mut session = kavach_session::get_or_create_session();
-    let pass = apply_verdict(&mut session, oracle_result);
-    if let Err(e) = session.save() {
+    // Locked read-modify-write — bare load+save() is a racy RMW (lost update).
+    // SOURCE: decision.goal-reconcile-lost-update-fix.
+    let mut pass = false;
+    if let Err(e) = session.atomic_update(|s| pass = apply_verdict(s, oracle_result)) {
         eprintln!("kavach goal reconcile: persist session: {e}");
         return 1;
     }

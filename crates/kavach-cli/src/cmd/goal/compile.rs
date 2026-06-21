@@ -55,7 +55,12 @@ pub(crate) fn compile_to_workflow(
     if let Some(parent) = abs.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(&abs, to_workflow_js(goal_yaml))?;
+    // Atomic write: a concurrent compile (or a reader mid-write) must never
+    // observe a half-written workflow.js. Write to a temp sibling then rename
+    // (atomic on the same filesystem). SOURCE: decision.goal-reconcile-lost-update-fix.
+    let tmp = abs.with_extension("js.tmp");
+    std::fs::write(&tmp, to_workflow_js(goal_yaml))?;
+    std::fs::rename(&tmp, &abs)?;
     Ok(rel)
 }
 

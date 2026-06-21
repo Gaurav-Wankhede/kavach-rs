@@ -125,7 +125,11 @@ impl LoopholeIteration {
         let yaml = self
             .to_yaml()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-        std::fs::write(&path, yaml)?;
+        // Atomic write: a reused run_id could collide two rounds on the same
+        // path — temp+rename so no reader sees a partial iter file.
+        let tmp = path.with_extension("yaml.tmp");
+        std::fs::write(&tmp, yaml)?;
+        std::fs::rename(&tmp, &path)?;
         Ok(path)
     }
 }
