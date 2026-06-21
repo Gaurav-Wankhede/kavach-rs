@@ -4,6 +4,7 @@
 //! `database_ops`, pii, migration, webhook) live in the `severity` submodule. This
 //! hub interleaves them in source order and returns the first block reason.
 mod advise;
+mod bloatware;
 mod dedup;
 mod severity;
 
