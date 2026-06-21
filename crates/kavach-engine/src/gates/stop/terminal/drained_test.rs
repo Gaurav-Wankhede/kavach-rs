@@ -71,7 +71,15 @@ fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
     assert!(c.contains("BUILD the blocker"), "directs dependency-first build: {c}");
     assert!(c.contains("CYCLE"), "folds in the cycle-break directive: {c}");
     assert!(c.contains("mermaid"), "points at the cycle view for a cycle: {c}");
-    assert!(c.contains("STALE/FALSE"), "directs correcting a stale edge: {c}");
+    assert!(c.contains("STALE/obsolete"), "names the stale-dep resolve path: {c}");
+    assert!(
+        c.contains("UPDATE the card") && c.contains("REMOVE it from the todos"),
+        "stale dep is resolved by updating or removing the card, never left blocked: {c}"
+    );
+    assert!(
+        c.contains("NO blocked-and-waiting card"),
+        "asserts there is no parked blocked state: {c}"
+    );
     assert!(
         c.contains("runtime script") && c.contains("dotenvy"),
         "secret-bound ops go via a runtime script, never a hand-back: {c}"
