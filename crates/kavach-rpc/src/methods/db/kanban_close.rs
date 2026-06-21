@@ -35,12 +35,27 @@ pub async fn kanban_close(
     ctx: &AppState,
     params: KanbanCloseParams,
 ) -> Result<KanbanCloseResult, ErrorObjectOwned> {
+    // EVIDENCE GATE: kanban-close always promotes roadmap→verified, so a valid
+    // fresh witness receipt is always required. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+    if let Some(msg) = enforce_receipt(ROADMAP_TABLE, STATUS_VERIFIED, params.receipt.as_ref()) {
+        return Ok(KanbanCloseResult { success: false, title: None, error: Some(msg) });
+    }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =
         kavach_surreal::update_status(&ctx.db, ROADMAP_TABLE, &pid, &params.key, STATUS_VERIFIED)
             .await;
 
     match result {
+        // FAIL CLOSED on a phantom key (matched-row count 0): a no-op move must not
+        // read back as a real close (silent-success class — same as status_update).
+        Ok(0) => Ok(KanbanCloseResult {
+            success: false,
+            title: None,
+            error: Some(format!(
+                "no roadmap row with key '{}' in project '{}' — nothing closed.",
+                params.key, params.project
+            )),
+        }),
         Ok(_) => Ok(KanbanCloseResult {
             success: true,
             title: Some(params.key.clone()),
