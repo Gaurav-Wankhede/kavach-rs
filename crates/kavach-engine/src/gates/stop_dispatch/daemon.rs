@@ -25,12 +25,8 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     // two-pass logic lives in roadmap::next_open_task). Unset/empty lane => the
     // field is absent and dispatch sees the whole project backlog as before.
     let lane = std::env::var("KAVACH_LANE").ok().filter(|l| !l.is_empty());
-    // Session identity: a card LIVE-leased by a DIFFERENT session is excluded from
-    // this session's selection (multi-session task-steal fix — two terminals/tools
-    // no longer grab the same card). Same env source as the lease holder
-    // (`KAVACH_SESSION_ID`, set at SessionStart) so the selector's
-    // `is_live_leased_by_other(me)` compares like-for-like. Empty => fail-closed
-    // (any live lease is foreign), so an un-identified session never steals.
+    // Session-lease isolation: prevent multi-session task steal via KAVACH_SESSION_ID.
+    // See decision.engine.session-lease-isolation.
     let session_id = Some(kavach_session::resolved_session_id()).filter(|s| !s.is_empty());
     let mut map = serde_json::Map::new();
     map.insert("project".to_owned(), serde_json::Value::String(project_slug.to_owned()));

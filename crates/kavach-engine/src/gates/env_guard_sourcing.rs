@@ -1,12 +1,5 @@
-// ARCH: EnvSourcingAdvisory
-// TIME: O(n) per command — n = command length | SPACE: O(n) lowercase copy
-// YEAR: 2026 | SEARCHED: 2026-05
-//           Acceptable for advisory output — false negative downgrades to no-msg.
-// PATTERN: advisory_message | SCOPE: pre_tool_bash | CAP: AP
-// FAILURE_MODE: false negative (advisory not emitted when it should be) → user sees
-//               nothing, not unsafe; false positive → noise but harmless.
-//
-// Extracted from env_guard.rs (split-env-guard-microservices roadmap, May 2026).
+// Advisory: detect env vars used without .env sourcing.
+// See decision.engine.env-guard-sourcing-arch.
 
 /// Check if a bash command references env vars that may need sourcing.
 ///

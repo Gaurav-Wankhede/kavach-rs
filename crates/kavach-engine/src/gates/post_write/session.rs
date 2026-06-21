@@ -15,15 +15,8 @@ pub(super) fn advance_session(session: &mut SessionState, file_path: &str) {
     }
     if !file_path.is_empty() {
         session.add_file_modified(file_path);
-        // A file edit advances the FILE-progress clock (`last_write_turn`) — NOT
-        // the DB-write clock. Conflating them (the old `last_db_write_turn = ...`)
-        // made a mere edit masquerade as a card status-update, so the close-before-
-        // advance check believed the DB was current and never demanded a
-        // `kavach db status-update` — the card silently drifted while work was
-        // "done". `last_write_turn` keeps the live-lock breaker reset on code
-        // progress (markers::has_progress_since_last_stop reads BOTH clocks); ONLY
-        // a real card transition (post_tool_bash::track_db_progress) may set
-        // `last_db_write_turn`. SOURCE: rca.card-status-drift-file-edit-masks-db.
+        // Advance FILE-progress clock, not DB-write clock (they are distinct).
+        // See decision.engine.file_vs_db_write_progress.
         session.last_write_turn = session.turn_count;
     }
 }
