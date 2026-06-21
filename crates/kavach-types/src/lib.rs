@@ -798,13 +798,8 @@ mod tests {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// MemoryStatus — typed lifecycle states for roadmap/decision entries.
-//
-// SOURCE: https://docs.rs/strum/0.28 (EnumString + Display + EnumIter derives)
-// [RCA] root_cause: stringly-typed VALID_STATUSES arrays duplicated in CLI + RPC
-// fix_strategy: single enum with strum derives — exhaustive parse + iter
-// ─────────────────────────────────────────────────────────────
+// MemoryStatus — typed lifecycle states (strum: parse + Display + iter).
+// SOURCE: https://docs.rs/strum/0.28 — see decision.types.memory-status-enum.
 
 #[derive(
     Debug,
