@@ -8,6 +8,7 @@ pub(crate) mod goal;
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
 pub(crate) mod db;
 pub(crate) mod deploy;
+mod doctor;
 mod gates;
 pub(crate) mod harness_loop;
 mod heal;
@@ -85,6 +86,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),
         Commands::TailwindPlus { action } => tailwind_plus::run(action),
+        Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Phase { action } => phase::run(action),
         Commands::Loop { action } => harness_loop::run(action),
         Commands::Verify {
@@ -140,7 +142,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 }
 
 /// Dispatch the `loophole` subcommands (sweep / loop / cron) — extracted from
-/// `dispatch` to keep that router under the 100-line micro-file ceiling.
+/// `dispatch` to keep that router under the 100-line nano-file ceiling.
 fn dispatch_loophole(action: crate::cli::LoopholeAction) -> i32 {
     use crate::cli::LoopholeAction;
     match action {
@@ -160,5 +162,22 @@ fn dispatch_loophole(action: crate::cli::LoopholeAction) -> i32 {
             hour,
             dry_run,
         } => loophole::cron::run(&project, hour, dry_run),
+    }
+}
+
+/// Resolve the kavach workspace root for `kavach doctor`: walk up from cwd to the
+/// nearest ancestor containing a `crates/` dir. Falls back to cwd so the command
+/// still runs (and reports the missing-path exit) rather than panicking.
+fn doctor_workspace_root() -> std::path::PathBuf {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let mut probe = cwd.as_path();
+    loop {
+        if probe.join("crates").is_dir() {
+            return probe.to_path_buf();
+        }
+        match probe.parent() {
+            Some(parent) => probe = parent,
+            None => return cwd.clone(),
+        }
     }
 }
