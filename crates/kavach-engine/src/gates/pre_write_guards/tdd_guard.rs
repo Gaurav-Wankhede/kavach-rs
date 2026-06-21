@@ -12,6 +12,11 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     if !ctx.is_code || is_test_path(ctx.file_path) {
         return None;
     }
+    // A comment/doc-only change carries no executable code → exempt (lets the
+    // comment sweep run without a test-first per file).
+    if is_comment_only(&ctx.effective_content) {
+        return None;
+    }
     let stem = unit_stem(ctx.file_path);
     // Inline tests are FORBIDDEN — tests live in a separate mapped file.
     if has_inline_test(&ctx.effective_content) {
