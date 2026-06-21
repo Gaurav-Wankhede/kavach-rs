@@ -186,13 +186,8 @@ fn append_live_kanban(context: &mut String, project: &str) -> bool {
     if project.is_empty() {
         return false;
     }
-    // RPC-ONLY: a hot entry hook must NOT trigger the daemon self-heal /
-    // direct-DB cold-open path (`open_set_census`) — that blocks the hook on a
-    // RocksDB open when no daemon is warm (observed as a nextest SIGTERM on the
-    // SessionStart lifecycle test). The Stop gate may use the heavy path because
-    // it only runs the census on its already-drained branch where a daemon is
-    // already warm; SessionStart / UserPromptSubmit have no such guarantee, so
-    // they read RPC-only and fail soft+fast to the legacy nag on any outage.
+    // Use RPC-only census to avoid blocking on daemon warm-up in entry hooks.
+    // See decision.engine.rpc_only_entry_kanban.
     let Some((runnable, blocked, cyclic)) =
         crate::gates::stop_dispatch::census_rpc_only(project)
     else {
