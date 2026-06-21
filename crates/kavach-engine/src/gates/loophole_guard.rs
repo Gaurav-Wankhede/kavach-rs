@@ -144,44 +144,24 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
     ))
 }
 
-/// Marker the agent emits to show it CLOSED (not merely considered) the
-/// loopholes. Matched case-insensitively; its presence satisfies the Stop-gate
-/// check. Imperative on purpose: `closed` means each lens was fixed at `file:line`
-/// or filed as a card — a passive `considered` line no longer satisfies the gate.
-const ANSWERED_MARKER: &str = "loopholes closed";
-
 /// Stop-gate variant: given the final assistant `message` of a turn, return the
-/// loophole advisory when the turn claimed completion on a risk-bearing path but
-/// emitted NO `Loopholes considered:` line. `None` otherwise — so a turn that
-/// either did no risk work, made no completion claim, OR already answered the
-/// self-interrogation exits clean.
+/// terse loophole-surface awareness advisory when the turn claimed completion on a
+/// risk-bearing path. `None` when the turn wrote no file or made no completion
+/// claim.
 ///
-/// This is the Stop-gate's teeth for the loophole directive: it does NOT halt
-/// (per the "kill blocking, keep auto-continue" policy) — the caller appends the
-/// result as a clean-exit ride-along advisory AND records a mistake-ledger row,
-/// feeding the learning loop so the omission is seen over time.
+/// RESOLVE, not handback: this NEVER halts and NEVER demands a `Loopholes closed:`
+/// narration. The caller appends it as a clean-exit ride-along AND records a
+/// ledger row; the automated lens scan (`scan_changed_for_loopholes`) + the native
+/// triage agent do the actual closing. Awareness over labor-demand.
 pub(crate) fn check_stop_interrogation(message: &str, wrote_this_turn: bool) -> Option<String> {
     // PRECISION GUARD: a loophole can only be LIVE if this turn actually WROTE a
     // risk-bearing path. Without this, the message-text trigger fires on a
     // read-only Q&A turn whose PROSE merely describes past risk fixes (words like
-    // `lock`/`atomic`/`lease`/`done`) — a false-positive refuse-stop with no real
-    // defect. A turn that wrote no file cannot have shipped a live loophole.
+    // `lock`/`atomic`/`lease`/`done`) — a false-positive on a turn with no defect.
     if !wrote_this_turn {
         return None;
     }
-    let base = check_loophole_interrogation(message)?;
-    // Already answered -> satisfied, no nudge.
-    if message.to_lowercase().contains(ANSWERED_MARKER) {
-        return None;
-    }
-    Some(format!(
-        "{base}\n\
-         [STOP] This turn shipped risk-bearing work without a `Loopholes closed:` \
-         line — meaning a loophole may be live and unfixed RIGHT NOW. Do NOT stop. \
-         Run the lenses on what you just shipped and CLOSE each one at its root this \
-         turn (or FILE it as a card), then emit the `Loopholes closed:` line. \
-         Recorded to the mistake ledger. Fixing beats documenting — fix it now."
-    ))
+    check_loophole_interrogation(message)
 }
 
 /// Max changed files scanned per Stop — the boundary brake so a huge multi-file
