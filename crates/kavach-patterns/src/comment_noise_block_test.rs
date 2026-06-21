@@ -1,7 +1,7 @@
 //! Proofs for the changed-content-aware comment-bloat BLOCK. A write is denied
 //! only when it INTRODUCES new bloat; pre-existing bloat stays editable.
 
-use super::comment_noise_guard::introduces_bloat;
+use super::introduces_bloat;
 
 fn bloat_block() -> String {
     let prose = "x".repeat(70);
