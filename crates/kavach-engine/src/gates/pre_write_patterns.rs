@@ -14,12 +14,8 @@ pub(crate) fn check_file_pattern_skills(
     if !matches.has_matches() {
         return None;
     }
-    // Narrow the critical list to the single top hit from the vectorless
-    // RAG matcher. Demoted criticals become advisories so the caller can
-    // still opt in. If no tree is persisted or the matcher finds nothing,
-    // the legacy critical list is preserved.
-    // Use research_topic as the query text — more signal than an empty string,
-    // which causes the RAG scorer to match on file-path tokens alone.
+    // Narrow to top RAG hit; demoted criticals become advisories.
+    // See decision.engine.rag_matcher_collapse.
     let rag_text = if session.research_topic.is_empty() {
         file_path
     } else {
