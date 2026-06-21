@@ -67,7 +67,7 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     });
     // Fire-and-forget but NON-LOSSY: daemon-down is spooled + replayed next Stop,
     // so a reward signal is never lost; the Stop gate still never blocks.
-    super::spool_writes::call_or_spool("db.bandit_backfill_session", params);
+    super::spool_writes::call_or_spool("db.bandit_backfill_session", &params);
 }
 
 /// Score the session's trajectory under its PROJECT-ADAPTIVE rubric and map the
