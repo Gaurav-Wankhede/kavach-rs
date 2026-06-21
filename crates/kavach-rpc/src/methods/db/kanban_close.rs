@@ -35,8 +35,8 @@ pub async fn kanban_close(
     ctx: &AppState,
     params: KanbanCloseParams,
 ) -> Result<KanbanCloseResult, ErrorObjectOwned> {
-    // EVIDENCE GATE: kanban-close always promotes roadmap→verified, so a valid
-    // fresh witness receipt is always required. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+    // EVIDENCE GATE: kanban-close always promotes roadmap→verified, so a fresh
+    // witness receipt is always required (see witness_gate + the decision row).
     if let Some(msg) = enforce_receipt(ROADMAP_TABLE, STATUS_VERIFIED, params.receipt.as_ref()) {
         return Ok(KanbanCloseResult { success: false, title: None, error: Some(msg) });
     }
