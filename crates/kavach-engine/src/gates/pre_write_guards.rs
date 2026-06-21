@@ -13,7 +13,7 @@ mod nanofile;
 mod quality;
 mod research_consume;
 mod result;
-mod tdd_guard;
+pub(crate) mod tdd_guard;
 mod retired_pattern;
 mod security;
 
