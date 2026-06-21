@@ -64,6 +64,26 @@ fn unverified_code_claim_suppressed_on_read_only_turn() {
 }
 
 #[test]
+fn permission_seek_reports_handback_signal() {
+    // The refuse-stop teeth: a permission-menu turn must set handback_or_menu so
+    // clean_exit can REFUSE the stop (census-gated), not merely advise.
+    let mut session = SessionState::default();
+    let stall = run(&mut session, "Want me to start the next card now, or pause here?", false);
+    assert!(stall.handback_or_menu, "permission-menu must flag the handback signal");
+}
+
+#[test]
+fn doing_the_work_turn_reports_no_handback() {
+    // The FP bound: a turn that closed a card and is claiming the next one must NOT
+    // flag handback — otherwise the refuse-stop would loop a genuinely-working turn.
+    let mut session = SessionState::default();
+    let msg = "Card closed: cargo check --workspace exit 0, git diff --stat landed at \
+               stop.rs:148. Claiming the next card now.";
+    let stall = run(&mut session, msg, true);
+    assert!(!stall.handback_or_menu, "a doing-the-work turn must not flag handback: {msg}");
+}
+
+#[test]
 fn empty_message_queues_nothing() {
     assert!(advisories_for("", false).is_empty(), "empty message must be inert");
     assert!(advisories_for("", true).is_empty(), "empty message must be inert even with a write");
