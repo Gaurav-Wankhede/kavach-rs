@@ -33,7 +33,14 @@ pub async fn event(ctx: &AppState, params: EventParams) -> Result<EventResult, E
     } else {
         match kavach_surreal::project_find_by_path(&ctx.db, &params.work_dir).await {
             Ok(Some(p)) => p.id,
-            Ok(None) | Err(_) => None,
+            // Genuinely-absent project: attribute to None (correct).
+            Ok(None) => None,
+            // Transient DB error: do NOT silently mis-attribute to None as if the
+            // project were absent — surface it (kavach-doctor finding D, self-watchdog).
+            Err(e) => {
+                tracing::warn!(error = %e, work_dir = %params.work_dir, "event: project lookup failed; attributing to None");
+                None
+            }
         }
     };
     match kavach_surreal::append_event(
