@@ -62,7 +62,7 @@ fn persist_pattern_seed(session: &SessionState) {
     });
     // Fire-and-forget but NON-LOSSY: a daemon-down call is spooled durably and
     // replayed on the next Stop, never silently dropped (Stop still never blocks).
-    super::spool_writes::call_or_spool("db.write", params);
+    super::spool_writes::call_or_spool("db.write", &params);
 }
 
 #[cfg(test)]
