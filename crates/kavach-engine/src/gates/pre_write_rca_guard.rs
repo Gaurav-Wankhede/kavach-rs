@@ -1,17 +1,5 @@
-// Pre-write RCA guard.
-//
-// Hardens CLAUDE.md §4 (Root-Cause Protocol) from instruction-tier to gate-tier.
-// Blocks Edit/Write when intent is {debug, refactor, implement} AND the agent's
-// last assistant message does not contain an [RCA] block.
-//
-// SOURCE: CLAUDE.md §4 — every debug/refactor/implement intent requires
-//         symptom · repro · why1..why5 · root_cause · class · blast_radius ·
-//         research · fix_strategy.
-// SOURCE: anthropic.com/news/measuring-agent-autonomy — hard enforcement
-//         (PreToolUse exit 2) vs soft instruction (CLAUDE.md prose).
-//
-// hub: re-exports `check` + the prose/transcript detectors consumed by sibling
-// gates; rules / detect / transcript / bypass live in submodules.
+// RCA enforcement gate: blocks debug/refactor/implement without [RCA] block.
+// See decision.engine.rca_protocol_enforcement.
 mod bypass;
 mod detect;
 mod rules;
