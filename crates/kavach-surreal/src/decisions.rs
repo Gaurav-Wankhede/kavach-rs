@@ -100,16 +100,18 @@ pub struct AlgoUpsertParams<'a> {
 /// `Error::Surreal` on query failure; `Error::RecordNotFound` if CREATE
 /// yields no id row.
 pub async fn arch_upsert(db: &Surreal<Db>, p: &ArchUpsertParams<'_>) -> Result<RecordId> {
-    // Idempotent on (project, pattern, file_path) per idx_arch_unique.
-    let q = "DELETE arch_decision WHERE project = $project \
-                 AND pattern = $pattern AND file_path = $file_path; \
-             CREATE arch_decision SET project = $project, pattern = $pattern, \
+    // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (sibling of
+    // algo_upsert). SOURCE: decision.algo-upsert-idempotent-keyed.
+    let key = arch_record_key(&p.project, p.pattern, p.file_path);
+    let q = "UPSERT type::record('arch_decision', $key) SET \
+                 project = $project, pattern = $pattern, \
                  scope = $scope, cap_choice = $cap, failure_mode = $failure_mode, \
                  tradeoff = $tradeoff, file_path = $file_path, \
                  search_year = $search_year, search_month = $search_month \
                  RETURN id";
     let mut response = db
         .query(q)
+        .bind(("key", key))
         .bind(("project", p.project.clone()))
         .bind(("pattern", p.pattern.to_owned()))
         .bind(("scope", p.scope.to_owned()))
@@ -120,10 +122,9 @@ pub async fn arch_upsert(db: &Surreal<Db>, p: &ArchUpsertParams<'_>) -> Result<R
         .bind(("search_year", p.search_year))
         .bind(("search_month", p.search_month))
         .await?;
-    // First statement is DELETE (index 0). The CREATE result is at index 1.
-    let row: Option<IdRow> = response.take(1)?;
+    let row: Option<IdRow> = response.take(0)?;
     row.map(|ir| ir.id).ok_or_else(|| {
-        crate::error::Error::RecordNotFound("arch_decision create returned no id".into())
+        crate::error::Error::RecordNotFound("arch_decision upsert returned no id".into())
     })
 }
 
@@ -167,12 +168,20 @@ pub async fn algo_upsert(db: &Surreal<Db>, p: &AlgoUpsertParams<'_>) -> Result<R
 fn algo_record_key(project: &RecordId, problem_class: &str, file_path: &str) -> String {
     // RecordId is not Display; its key component is the stable per-project token.
     let project_key = format!("{:?}", project.key);
-    hash_algo_key(&project_key, problem_class, file_path)
+    hash_decision_key(&project_key, problem_class, file_path)
 }
 
-/// Pure seed→key hash, split out so determinism is unit-testable without a DB.
-fn hash_algo_key(project_key: &str, problem_class: &str, file_path: &str) -> String {
-    let seed = format!("{project_key}:{problem_class}:{file_path}");
+/// Deterministic `arch_decision` record key — sibling of `algo_record_key`.
+fn arch_record_key(project: &RecordId, pattern: &str, file_path: &str) -> String {
+    let project_key = format!("{:?}", project.key);
+    hash_decision_key(&project_key, pattern, file_path)
+}
+
+/// Pure seed→key hash for a (project, discriminant, file) decision tuple, split
+/// out so determinism is unit-testable without a DB. Shared by algo + arch
+/// upserts — both key one row per `(project, <pattern|class>, file_path)`.
+fn hash_decision_key(project_key: &str, discriminant: &str, file_path: &str) -> String {
+    let seed = format!("{project_key}:{discriminant}:{file_path}");
     let hex = blake3::hash(seed.as_bytes()).to_hex();
     // blake3 hex is ASCII, so [..16] is on a char boundary; .get is panic-free.
     hex.get(..16).unwrap_or(&hex).to_owned()
@@ -201,23 +210,23 @@ pub async fn arch_list_recent(
 
 #[cfg(test)]
 mod algo_key_tests {
-    use super::hash_algo_key;
+    use super::hash_decision_key;
 
     #[test]
     fn same_tuple_yields_same_key() {
-        // Idempotency proof: identical (project, class, file) -> identical id,
-        // so the UPSERT collapses concurrent recordings to one row.
-        let a = hash_algo_key("p1", "sort", "src/x.rs");
-        let b = hash_algo_key("p1", "sort", "src/x.rs");
+        // Idempotency proof: identical (project, discriminant, file) -> identical
+        // id, so the UPSERT collapses concurrent recordings to one row.
+        let a = hash_decision_key("p1", "sort", "src/x.rs");
+        let b = hash_decision_key("p1", "sort", "src/x.rs");
         assert_eq!(a, b);
         assert_eq!(a.len(), 16);
     }
 
     #[test]
     fn distinct_tuples_yield_distinct_keys() {
-        let base = hash_algo_key("p1", "sort", "src/x.rs");
-        assert_ne!(base, hash_algo_key("p2", "sort", "src/x.rs"));
-        assert_ne!(base, hash_algo_key("p1", "search", "src/x.rs"));
-        assert_ne!(base, hash_algo_key("p1", "sort", "src/y.rs"));
+        let base = hash_decision_key("p1", "sort", "src/x.rs");
+        assert_ne!(base, hash_decision_key("p2", "sort", "src/x.rs"));
+        assert_ne!(base, hash_decision_key("p1", "search", "src/x.rs"));
+        assert_ne!(base, hash_decision_key("p1", "sort", "src/y.rs"));
     }
 }
