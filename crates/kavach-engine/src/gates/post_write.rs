@@ -5,6 +5,7 @@
 //! `concept` upserts `// CONCEPT:` markers. The rest (event log, algo/arch
 //! recorders, orphan/memory advisories) is orchestrated inline below.
 mod antiprod;
+mod autocommit;
 mod concept;
 mod git_sync;
 mod session;
@@ -38,6 +39,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // 4b. Git-sync advisory — read-only branch/commit/PR/conflict state (fails open).
     if let Some(git_ctx) = git_sync::advisory(file_path, &content) {
         context_parts.push(git_ctx);
+    }
+    // 4c. W4 LOCAL auto-commit + realtime kanban heartbeat (no push). Fails open.
+    // SOURCE: decision.git_sync.local-commit-supersede.
+    if let Some(commit_ctx) = autocommit::run(&sess.current_kanban_card) {
+        context_parts.push(commit_ctx);
     }
     // 5. Memory-file write reminder — also persist to kavach-db.
     if file_path.contains("/memory/") || file_path.ends_with("MEMORY.md") {
