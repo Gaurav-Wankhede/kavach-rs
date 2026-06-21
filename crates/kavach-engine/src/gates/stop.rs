@@ -92,6 +92,10 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     if !session.goal_receipt_pass {
         session.ai_verdict = ai_verdict::extract_ai_verdict(&msg);
     }
+    // Drain-before-write: replay any learning write a prior failed Stop spooled,
+    // BEFORE this turn's own fire-and-forget writes. Idempotent (drain removes the
+    // spool file first); best-effort (a DB-still-down replay re-spools).
+    spool_writes::drain_and_replay();
     // P3a reward back-fill: grade this session's logged bandit decisions against
     // its 3-witness verify outcome (or the RLAIF AI verdict above when the
     // mechanical oracle abstains). Fire-and-forget; never blocks the gate.
