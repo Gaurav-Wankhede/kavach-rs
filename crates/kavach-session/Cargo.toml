@@ -11,6 +11,7 @@ workspace = true
 kavach-config = { path = "../kavach-config" }
 kavach-rpc = { path = "../kavach-rpc" }
 kavach-surreal = { path = "../kavach-surreal" }
+serde = { workspace = true }
 serde_json = { workspace = true }
 blake3 = { workspace = true }
 chrono = { workspace = true }
