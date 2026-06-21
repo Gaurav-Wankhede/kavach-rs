@@ -84,5 +84,9 @@ fn test_matches_unit_recognizes_sibling_conventions() {
     assert!(test_matches_unit("crates/foo/src/widget_test.rs", "widget"));
     assert!(test_matches_unit("crates/foo/src/widget_tests.rs", "widget"));
     assert!(test_matches_unit("crates/foo/tests/widget.rs", "widget"));
+    // The dominant in-engine convention: a `widget/tests.rs` subdir module paired
+    // with `widget.rs` via #[path]. Must satisfy the gate.
+    assert!(test_matches_unit("crates/foo/src/widget/tests.rs", "widget"));
     assert!(!test_matches_unit("crates/foo/src/other_test.rs", "widget"));
+    assert!(!test_matches_unit("crates/foo/src/other/tests.rs", "widget"));
 }
