@@ -81,10 +81,8 @@ fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
         "files a card only when the env var is genuinely absent: {c}"
     );
     assert!(c.contains("Esc"), "yields only to the user halt: {c}");
-    assert!(
-        !c.contains("clean stop") && !c.contains("Clean stop"),
-        "carries no clean-stop language: {c}"
-    );
+    // The directive says "never a clean stop" — it must REFUSE, never permit one.
+    assert!(c.contains("never a clean stop"), "explicitly refuses a clean stop: {c}");
 }
 
 #[test]
