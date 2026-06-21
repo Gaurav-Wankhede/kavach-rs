@@ -111,11 +111,11 @@ pub(super) fn act_imperative(stripped: &str) -> String {
          2. DELETE: if the ENTIRE remaining card is un-buildable by an agent (it needs \
          only an owner deploy/greenlight/provision and no code is left to write), \
          DELETE the anchor — `kavach db delete --category roadmap --key <key>` — per \
-         §delete_not_park. A deleted gate cannot re-dispatch.\n\
-         3. Then resume dispatch from the reconciled kanban.\n\
-         Re-emitting this card unchanged, or answering 'Holding', re-creates the \
-         300-iteration loop this directive exists to kill. The loop yields only to \
-         the user's `Esc`.",
+         §delete_not_park; DELETE it so it never re-dispatches.\n\
+         3. Then RESUME dispatch from the reconciled kanban.\n\
+         Do NOT re-emit this card unchanged and do NOT answer 'Holding' — either \
+         re-creates the 300-iteration loop this directive exists to kill. KEEP WORKING; \
+         only the user's `Esc` stops the loop.",
     );
     format!(
         "[GATE_STRIPPED — ACT, DO NOT HOLD] The dispatched card was gate-shaped; \
