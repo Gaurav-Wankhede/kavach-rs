@@ -18,6 +18,7 @@ use crate::gates::directive_cache::dyn_directive;
 
 mod advisory_detectors;
 mod ai_verdict;
+mod disobedience;
 mod dispatch;
 mod done_gaming;
 mod foreign_tree_logic;
