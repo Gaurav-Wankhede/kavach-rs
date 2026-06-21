@@ -1,10 +1,5 @@
-//   {"name":"std HashMap","reason":"random iteration order — first-match-wins becomes non-deterministic"},
-//   {"name":"BTreeMap","reason":"sorts by key lexicographically — does not preserve config-file declaration order"},
-//   {"name":"Vec<(String, String)>","reason":"O(n) lookup; loses hashed-key access for .get()"}
-// ]
-// TIME: O(1) lookup, O(n) iteration | SPACE: O(n)
-// YEAR: 2026 | SEARCHED: 2026-05
-// SOURCE: https://docs.rs/indexmap/2 (uses hashbrown internally; same lookup perf as std HashMap)
+// IndexMap: O(1) lookup + preserves config declaration order (HashMap random,
+// BTreeMap lexical, Vec O(n)). See decision.config.router-indexmap.
 use crate::loaders::get_router_mappings;
 use indexmap::IndexMap;
 
