@@ -42,9 +42,13 @@ pub(crate) fn check(
     let mut acc = Acc::default();
     let mut runner = kavach_chain::Runner::new(&session.session_id);
 
-    // Internet-first runs FIRST but RESOLVES, never blocks: it drives the lookup
-    // and attaches a research advisory (P1) so the write proceeds. The loop-level
-    // `[RESEARCH_FIRST]` Stop teeth enforce citation before the turn ends.
+    // TDD runs FIRST: no production code lands without a test-first (Red) signal.
+    if let Some(block) = tdd_guard::check(ctx, session) {
+        return GuardResult { block: Some(block), ..GuardResult::default() };
+    }
+
+    // Internet-first RESOLVES, never blocks: drives the lookup + attaches a P1
+    // advisory. The `[RESEARCH_FIRST]` Stop teeth enforce citation before the turn ends.
     if let Some(advisory) = research_consume::check(ctx, session) {
         acc.p1_advisories.push(advisory);
     }
