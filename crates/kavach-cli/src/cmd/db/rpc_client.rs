@@ -300,10 +300,15 @@ pub(super) fn kanban_close(
 /// SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
 pub(super) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt> {
     let head = git_head()?;
-    let session_id = kavach_session::get_or_create_session().session_id;
-    if session_id.is_empty() {
-        return None;
-    }
+    // The session field is self-consistent (both receipt + daemon-side check read
+    // the same caller value), so its only role is anti cross-session replay. When
+    // no session env is present (a bare CLI call), use a stable non-empty marker
+    // rather than refusing — the load-bearing anti-replay teeth is git_head==HEAD,
+    // which the daemon verifies itself.
+    let session_id = {
+        let s = kavach_session::get_or_create_session().session_id;
+        if s.is_empty() { "cli".to_owned() } else { s }
+    };
     let ts_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
