@@ -270,22 +270,61 @@ pub(super) fn status_update(
     category: &str,
     key: &str,
     status: &str,
+    receipt: Option<kavach_patterns::witness_receipt::Receipt>,
 ) -> Result<StatusUpdateResult, String> {
     let params = StatusUpdateParams {
         project: project.to_owned(),
         category: category.to_owned(),
         key: key.to_owned(),
         status: status.to_owned(),
+        receipt,
     };
     call::<_, StatusUpdateResult>("db.status_update", Some(params)).map_err(format_err)
 }
 
-pub(super) fn kanban_close(project: &str, key: &str) -> Result<KanbanCloseResult, String> {
+pub(super) fn kanban_close(
+    project: &str,
+    key: &str,
+    receipt: Option<kavach_patterns::witness_receipt::Receipt>,
+) -> Result<KanbanCloseResult, String> {
     let params = KanbanCloseParams {
         project: project.to_owned(),
         key: key.to_owned(),
+        receipt,
     };
     call::<_, KanbanCloseResult>("db.kanban_close", Some(params)).map_err(format_err)
+}
+
+/// Mint a witness receipt for the current HEAD + session, stamped now. Called by
+/// a CLI command AFTER its workspace witness passed — the daemon validates it.
+/// SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+pub(super) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt> {
+    let head = git_head()?;
+    let session_id = kavach_session::get_or_create_session().session_id;
+    if session_id.is_empty() {
+        return None;
+    }
+    let ts_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
+    Some(kavach_patterns::witness_receipt::Receipt::new(
+        true, head, ts_ms, session_id,
+    ))
+}
+
+/// `git rev-parse HEAD` in the CWD, trimmed. `None` if not a repo — the caller
+/// then sends no receipt and the daemon refuses (fail-closed).
+fn git_head() -> Option<String> {
+    let out = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let s = String::from_utf8(out.stdout).ok()?;
+    let t = s.trim();
+    (!t.is_empty()).then(|| t.to_owned())
 }
 
 pub(super) fn delete(
