@@ -97,6 +97,7 @@ impl Default for SessionState {
             intent_set_turn: 0,
             think_first_injected: false,
             files_modified_this_turn: Vec::new(),
+            tdd_red_units: Vec::new(),
             lsp_diag_seen: Vec::new(),
             research_advisory_sent: false,
             arch_skill_invoked: false,
