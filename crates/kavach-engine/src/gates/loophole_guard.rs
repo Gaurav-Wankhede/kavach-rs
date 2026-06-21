@@ -1,14 +1,5 @@
-//! Loophole self-interrogation prompt — the enforcement teeth behind the
-//! `loophole_self_interrogation` directive in the global CLAUDE.md / Cursor rules.
-//!
-//! A loophole is a defect the happy path never exercises, so a clean build and a
-//! green test suite do NOT prove its absence — only an adversarial question does.
-//! This guard injects that question at the exact moment it matters: when written
-//! content claims completion AND touches a risk-bearing path (auth / lease / lock
-//! / money / persistence / concurrency / state transition). It is `P1Advisory`, NOT
-//! a block — per the engine severity policy, a "did you think about loopholes?"
-//! hard-block would false-positive on every trivial card. The model is reminded,
-//! scoped to where it counts; it is never stopped.
+//! Loophole-surface awareness on completion-claims over risk-bearing paths.
+//! P1 advisory only, never a block. SOURCE: decision.loophole.resolve-not-handback.
 
 mod lenses;
 
