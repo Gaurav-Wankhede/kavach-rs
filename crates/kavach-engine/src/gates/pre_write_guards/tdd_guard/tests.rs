@@ -1,6 +1,6 @@
 //! Red-Green proofs for the TDD pre-write gate. Outcomes drive the code.
 
-use super::{check, unit_stem, test_matches_unit};
+use super::{check, has_inline_test, unit_stem, test_matches_unit};
 use crate::gates::pre_write_context::WriteContext;
 use kavach_session::SessionState;
 
