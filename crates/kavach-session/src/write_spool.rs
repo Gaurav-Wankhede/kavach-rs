@@ -32,6 +32,16 @@ pub struct SpooledWrite {
     pub params_json: String,
 }
 
+impl SpooledWrite {
+    /// Construct a spooled write from a method name and its serialized params.
+    /// Provided because the struct is `#[non_exhaustive]` (cross-crate callers
+    /// like the engine glue cannot use a struct literal).
+    #[must_use]
+    pub fn new(method: String, params_json: String) -> Self {
+        Self { method, params_json }
+    }
+}
+
 /// Absolute path to the spool file under the session state dir.
 fn spool_path() -> PathBuf {
     state_dir().join("write_spool.jsonl")
