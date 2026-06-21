@@ -17,10 +17,8 @@ pub struct StatusUpdateParams {
     pub category: String,
     pub key: String,
     pub status: String,
-    /// Witness receipt proving the workspace passed for a `roadmap` completion
-    /// promotion (`done`/`verified`). Validated cheaply daemon-side (`git rev-parse
-    /// HEAD` only, no cargo). `None` is REFUSED for a gated promotion; ignored
-    /// otherwise. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+    /// Witness receipt; required for a `roadmap` completion promotion (validated
+    /// daemon-side). SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
     #[serde(default)]
     pub receipt: Option<Receipt>,
 }
