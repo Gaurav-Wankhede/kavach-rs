@@ -7,10 +7,13 @@
 //! 0. The session is pinned to a lane (`KAVACH_LANE`) and its lane + the unlaned
 //!    backlog are both drained → `[LANE_DRAINED]` (lane.rs). Never cross into a
 //!    foreign lane; that is another session's work.
-//! 1. The board still holds runnable-status cards, but EVERY one is held back by
-//!    an unmet dependency → `[ALL_BLOCKED]`: re-scan the DB, name the blockers.
-//! 2. No runnable-status card. Re-scan roadmap + decisions (ALL statuses) and the
+//! 1. No runnable-status card. Re-scan roadmap + decisions (ALL statuses) and the
 //!    active `[PLAN]` for the next actionable item → `[AUTO_CONTINUE]`.
+//!
+//! A board whose every runnable card is dependency-blocked is NOT a terminal state
+//! and has NO status tag: it is a blocker to WALK and BUILD, handled by a
+//! refuse-stop in `clean_exit` (`board_is_all_blocked`), identical in spirit to the
+//! cycle-deadlock refuse. There is no "everything is blocked, so the turn may end".
 //!
 //! Lives HERE (`pub(in crate::gates::stop)`) so BOTH the first-pass terminal
 //! (`clean_exit`) and the retry terminal emit the IDENTICAL verdict. The verdict
