@@ -12,10 +12,17 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     if ctx.is_test || !ctx.is_code {
         return None;
     }
-    if has_infile_test(&ctx.effective_content) {
-        return None;
-    }
     let stem = unit_stem(ctx.file_path);
+    // Inline tests are FORBIDDEN — tests live in a separate mapped file.
+    if has_inline_test(&ctx.effective_content) {
+        return Some(format!(
+            "[TDD:P0] BLOCKED. `{stem}` carries an inline test — tests must live in a \
+             SEPARATE file (e.g. `{stem}/tests.rs` mapped via `#[path]`), never inside \
+             the production file. Move the test out, then write the code. \
+             Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
+        ));
+    }
+    // The unit's separate test file must have come first THIS turn (Red).
     if session
         .files_modified_this_turn
         .iter()
@@ -25,9 +32,9 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     }
     Some(format!(
         "[TDD:P0] BLOCKED. Production code for `{stem}` has no test-first (Red). \
-         Write the FAILING test for this unit THIS turn (sibling `{stem}_test.rs` \
-         or an in-file `#[test]`), confirm it fails, THEN write the code. \
-         Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
+         Write the FAILING test in a SEPARATE file (`{stem}_test.rs` or \
+         `{stem}/tests.rs` mapped via `#[path]`) THIS turn, confirm it fails, THEN \
+         write the code. Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
     ))
 }
 
