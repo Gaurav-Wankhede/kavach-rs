@@ -98,12 +98,8 @@ pub(crate) fn claim_card(project_slug: &str, key: &str) -> bool {
         "key": key,
         "session_id": session_id,
     });
-    // FAIL-CLOSED on uncertainty: `true` ONLY for a server-confirmed flip. A
-    // transport error (`.ok()` -> None), a missing `claimed` field, or an explicit
-    // deny all collapse to `false`. This is the safe direction for an at-most-once
-    // claim — a lost-response claim reads as "not won here", so no caller can be
-    // tricked into double-dispatching a row the server actually flipped. No logging:
-    // this runs in the hook subprocess where stdout is the hook protocol.
+    // FAIL-CLOSED: `true` ONLY for a server-confirmed flip; transport error / missing
+    // field / deny all -> `false` (safe for at-most-once). See decision.engine.claim-card-fail-closed.
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.claim_card", Some(params))
         .ok()
         .and_then(|v| v.get("claimed").and_then(serde_json::Value::as_bool))
