@@ -43,12 +43,7 @@ pub(super) fn append_context_blocks(
     append_agent_dispatch(context, intent_type, prompt, &session.research_topic);
     append_db_query_required(context, prompt);
 
-    // [DECISION_MAP]: inject the project's decision architecture as Mermaid so the
-    // model reads settled choices as hard constraints (anti-hallucination). VIEW
-    // over the decision DAG, relevance-filtered, fail-soft None.
-    if let Some(map) = super::decision_map::decision_map_block(&session.project, prompt) {
-        context.push_str(&map);
-    }
+    append_mermaid_views(context, &session.project, prompt);
 
     // CC 2.1.133: surface the active effort tier so downstream gates' strictness
     // is legible to the model. `low` relaxes the pre-write research block.
@@ -155,6 +150,21 @@ pub(super) fn append_context_blocks(
     let top_skill = super::super::rag_router::top_skill_names_all("", prompt, intent_type, 1);
     if let Some(skill) = top_skill.first() {
         writeln!(context, "\n[RAG:skill] {skill}").ok();
+    }
+}
+
+/// Append the three Mermaid-VIEW blocks (all read-side, fail-soft, never stored):
+/// `[DECISION_MAP]` settled architecture, `[PRACTICE_DELTA]` retired worst- vs
+/// best-practice, `[PATTERN_DAG]` research-refreshed pattern supersession.
+fn append_mermaid_views(context: &mut String, project: &str, prompt: &str) {
+    if let Some(map) = super::decision_map::decision_map_block(project, prompt) {
+        context.push_str(&map);
+    }
+    if let Some(delta) = super::practice_delta::practice_delta_block() {
+        context.push_str(&delta);
+    }
+    if let Some(pd) = super::pattern_dag::pattern_dag_block(project) {
+        context.push_str(&pd);
     }
 }
 

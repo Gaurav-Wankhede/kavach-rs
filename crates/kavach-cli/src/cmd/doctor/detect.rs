@@ -60,7 +60,7 @@ pub(super) fn scan_source(file: &str, src: &str) -> Vec<Finding> {
         if let Some(hint) = match_swallowed_result(&line) {
             out.push(mk(Class::SwallowedResult, file, line_no, hint));
         }
-        if let Some(hint) = match_destructive_query(&line) {
+        if let Some(hint) = match_destructive_query(file, &line) {
             out.push(mk(Class::DestructiveQuery, file, line_no, hint));
         }
         if let Some(hint) = match_swallowed_arm(&line) {
@@ -107,13 +107,64 @@ fn match_swallowed_result(line: &str) -> Option<&'static str> {
     None
 }
 
-fn match_destructive_query(line: &str) -> Option<&'static str> {
-    // A DELETE/UPDATE inside a query string literal. Flag for read-back review.
-    let in_str = line.contains('"');
-    if in_str && (line.contains("DELETE ") || line.contains("UPDATE ")) {
-        return Some("destructive query — ensure a read-back assertion proves its effect");
+fn match_destructive_query(file: &str, line: &str) -> Option<&'static str> {
+    // Precision (kavach-doctor-FP-tighten): the read-back-assertion class targets
+    // unbounded row DELETION only. Exclude the false-positive families that
+    // drowned the real signal:
+    //  - UPDATE: mutates fields, not the unbounded-delete class — not flagged.
+    //  - test files: a fixture's DELETE is not a production mutation.
+    //  - the SQL-guard's OWN banned-pattern literals (it stores "DELETE " as data
+    //    to detect): a self-match, not a destructive op.
+    //  - bounded deletes keyed by an id/key/pid WHERE clause: already targeted.
+    if is_test_file(file) || is_sql_detector_source(file) {
+        return None;
     }
-    None
+    // Must be a real DELETE *statement*: `"DELETE <table>"` or `"DELETE $rec"`.
+    // This excludes error-message / data strings that merely contain the word
+    // "DELETE" (e.g. `"… after DELETE (partial)"`, `"serves; DELETE roadmap"`).
+    if !is_delete_statement(line) {
+        return None;
+    }
+    // Bounded → already targeted, not the unbounded class the check guards against:
+    //  - a keyed WHERE predicate, OR
+    //  - a record-id delete (`DELETE $pid` / `DELETE $ids`) which targets a row by id.
+    let keyed_where = line.contains("WHERE")
+        && (line.contains("$key")
+            || line.contains("$pid")
+            || line.contains("$id")
+            || line.contains("entry_key")
+            || line.contains("= $"));
+    let record_id_delete = line.contains("DELETE $");
+    if keyed_where || record_id_delete {
+        return None;
+    }
+    Some("unbounded DELETE — add a read-back assertion (count→delete→re-count) or a key predicate")
+}
+
+/// True iff the line opens a `DELETE` SQL statement inside a string literal —
+/// `"DELETE <ident>` or `"DELETE $rec`, NOT the word DELETE buried in prose.
+fn is_delete_statement(line: &str) -> bool {
+    line.contains("\"DELETE ") || line.contains("\" DELETE ") || line.contains("query(\"DELETE")
+}
+
+/// A test source: findings here are fixtures, not production mutations. Covers
+/// both `foo_test.rs`/`foo_tests.rs` and inline `tests.rs`/`test.rs` module files
+/// and any path under a `tests/`/`test/` dir.
+fn is_test_file(file: &str) -> bool {
+    file.ends_with("_test.rs")
+        || file.ends_with("_tests.rs")
+        || file.ends_with("/tests.rs")
+        || file.ends_with("/test.rs")
+        || file.contains("/tests/")
+        || file.contains("/test/")
+}
+
+/// kavach's OWN SQL-destructive guards store `"DELETE "` / `"UPDATE "` as
+/// detection DATA — scanning them for those tokens is a self-match.
+fn is_sql_detector_source(file: &str) -> bool {
+    file.ends_with("sql_destructive.rs")
+        || file.contains("write_bypass/")
+        || file.ends_with("destructive_cli_guard.rs")
 }
 
 fn match_swallowed_arm(line: &str) -> Option<&'static str> {

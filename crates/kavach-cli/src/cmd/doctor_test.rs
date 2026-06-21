@@ -16,8 +16,46 @@ fn ignores_let_underscore_on_pure_value() {
 
 #[test]
 fn flags_destructive_query_string() {
-    let f = scan_source("x.rs", r#"    db.query("DELETE pattern WHERE project = $pid")"#);
+    // Unbounded DELETE (no key predicate) is the flagged class.
+    let f = scan_source("x.rs", r#"    db.query("DELETE pattern")"#);
     assert!(f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn does_not_flag_update_only_a_delete() {
+    // UPDATE mutates fields, not the unbounded-delete class — must not flag.
+    let f = scan_source("x.rs", r#"    db.query("UPDATE decision SET priority = $p WHERE id = $i")"#);
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn does_not_flag_bounded_delete() {
+    // A DELETE bounded by a key predicate is already targeted.
+    let f = scan_source("x.rs", r#"    db.query("DELETE pattern WHERE project = $pid AND entry_key = $key")"#);
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn flags_unbounded_delete() {
+    let f = scan_source("x.rs", r#"    db.query("DELETE event")"#);
+    assert!(f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn does_not_flag_delete_in_test_file() {
+    // A DELETE fixture in a *_test.rs is not a production mutation.
+    let f = scan_source("foo_test.rs", r#"    db.query("DELETE event")"#);
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn does_not_flag_sql_guard_pattern_literals() {
+    // kavach's own sql_destructive guard stores "DELETE " as detection DATA.
+    let f = scan_source(
+        "crates/kavach-engine/src/gates/sql_destructive.rs",
+        r#"    const BANNED: &str = "DELETE ";"#,
+    );
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
 }
 
 #[test]

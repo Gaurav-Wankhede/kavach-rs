@@ -15,12 +15,11 @@ use std::fmt::Write as _;
 
 use row::fetch_mistake_row;
 
-pub(in crate::gates::session_start) fn mistake_ledger_context(
-    project_slug: &str,
-) -> Option<String> {
-    if project_slug.is_empty() {
-        return None;
-    }
+pub(in crate::gates::session_start) fn mistake_ledger_context() -> Option<String> {
+    // Mistakes are GLOBAL (decision.mistakes-learnings-fully-global): read the
+    // shared kavach-global namespace, never the session project — so a mistake
+    // learned anywhere reinjects everywhere.
+    let global = kavach_session::mistake_ledger::GLOBAL_NAMESPACE;
     // Primary: the graph anti_patterns the daemon embeds + clusters (the
     // autonomous loop). Closes the read/write split-brain — reinjection used to
     // read only the legacy `pattern` ledger below, never these nodes.
@@ -31,14 +30,7 @@ pub(in crate::gates::session_start) fn mistake_ledger_context(
     // capture path wrote when the graph RPC was down). Never block boot on drift.
     // 1. List candidate mistake.* keys from `kavach db query --category pattern`.
     let listing = std::process::Command::new("kavach")
-        .args([
-            "db",
-            "query",
-            "--project",
-            project_slug,
-            "--category",
-            "pattern",
-        ])
+        .args(["db", "query", "--project", global, "--category", "pattern"])
         .output()
         .ok()?;
     if !listing.status.success() {
@@ -56,7 +48,7 @@ pub(in crate::gates::session_start) fn mistake_ledger_context(
     let scored: Vec<(String, String, f64)> = keys
         .into_iter()
         .filter_map(|k| {
-            let r = fetch_mistake_row(project_slug, &k)?;
+            let r = fetch_mistake_row(global, &k)?;
             let sig = kavach_patterns::k_pri::Signals {
                 hit_count: r.hit_count,
                 #[expect(clippy::cast_precision_loss, reason="age_days is clamped to 86_400 buckets; f64 can represent all u64 div results")]

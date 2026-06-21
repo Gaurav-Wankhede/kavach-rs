@@ -8,7 +8,7 @@ fn mod_rs_blocked() {
     let v = detect("crates/foo/src/bar/mod.rs", "", "Write");
     assert!(
         v.iter()
-            .any(|x| x.severity == MicroSeverity::P0Block && x.pattern == "legacy mod.rs file")
+            .any(|x| x.severity == NanoSeverity::P0Block && x.pattern == "legacy mod.rs file")
     );
 }
 
@@ -25,7 +25,7 @@ fn depth_over_limit_blocked() {
     let v = detect(path, "fn x() {}\n", "Write");
     assert!(
         v.iter()
-            .any(|x| x.severity == MicroSeverity::P0Block
+            .any(|x| x.severity == NanoSeverity::P0Block
                 && x.pattern == "directory depth exceeds 7")
     );
 }
@@ -36,7 +36,7 @@ fn new_file_over_100_loc_blocked() {
     let v = detect("crates/foo/src/big.rs", &content, "Write");
     assert!(
         v.iter().any(
-            |x| x.severity == MicroSeverity::P0Block && x.pattern == "new file exceeds 100 LOC"
+            |x| x.severity == NanoSeverity::P0Block && x.pattern == "new file exceeds 100 LOC"
         )
     );
 }
@@ -49,7 +49,7 @@ fn edit_over_100_loc_blocked() {
     let v = detect("crates/foo/src/big.rs", &content, "Edit");
     assert!(
         v.iter()
-            .any(|x| x.severity == MicroSeverity::P0Block && x.pattern == "file exceeds 100 LOC")
+            .any(|x| x.severity == NanoSeverity::P0Block && x.pattern == "file exceeds 100 LOC")
     );
 }
 
@@ -69,7 +69,7 @@ fn non_rust_file_skipped() {
 fn loc_exempt_marker_in_header_allows_oversize_file() {
     // A monolithic data file (e.g. an SQL-DDL const) that declares the opt-out
     // marker up top is exempt from the LOC ceiling — it cannot be hub+leaf split.
-    let mut content = String::from("//! kavach:micro-file-exempt — single SQL DDL const\n");
+    let mut content = String::from("//! kavach:nano-file-exempt — single SQL DDL const\n");
     content.push_str(&"const X: &str = \"...\";\n".repeat(120));
     let v = detect("crates/foo/src/schema.rs", &content, "Edit");
     assert!(
@@ -83,12 +83,12 @@ fn loc_exempt_marker_buried_deep_still_blocks() {
     // The marker MUST be in the header region — burying it past line 15 does not
     // exempt, so ordinary logic files cannot smuggle the marker in to escape.
     let mut content = "fn x() {}\n".repeat(40);
-    content.push_str("// kavach:micro-file-exempt sneaky\n");
+    content.push_str("// kavach:nano-file-exempt sneaky\n");
     content.push_str(&"fn y() {}\n".repeat(80));
     let v = detect("crates/foo/src/big.rs", &content, "Write");
     assert!(
         v.iter().any(
-            |x| x.severity == MicroSeverity::P0Block && x.pattern == "new file exceeds 100 LOC"
+            |x| x.severity == NanoSeverity::P0Block && x.pattern == "new file exceeds 100 LOC"
         ),
         "a buried marker must NOT exempt"
     );

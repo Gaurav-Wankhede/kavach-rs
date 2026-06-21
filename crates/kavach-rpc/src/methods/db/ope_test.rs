@@ -15,7 +15,7 @@ use kavach_ope::label::reward_scalar;
 #[test]
 fn a_rewarded_row_projects_to_a_usable_sample() {
     let json = r#"{"session_id":"s1","timestamp_ms":1,
-        "context":{"gate":"micro_file","tool":"Write","file_ext":"rs",
+        "context":{"gate":"nano_file","tool":"Write","file_ext":"rs",
                    "diff_bytes":120,"intent_risk":"high","prior_fire_count":2},
         "action":"allow","propensity":1.0,"reward":"verified_clean"}"#;
     let s = sample_from_row(json).expect("rewarded row is usable");

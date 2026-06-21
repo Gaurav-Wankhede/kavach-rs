@@ -1,4 +1,4 @@
-//! Sidecar tests for `destructive_cli_guard` (micro-file rule: no inline tests).
+//! Sidecar tests for `destructive_cli_guard` (nano-file rule: no inline tests).
 use super::*;
 
 #[test]

@@ -5,6 +5,7 @@ use super::memory::auto_query_memory;
 use super::patterns::{hot_pattern_context, learned_policy_context, mistake_ledger_context};
 use super::concepts::concept_context;
 use super::flows::flow_context;
+use super::stack_fit::stack_fit_context;
 
 /// Soft per-section byte budget for OPTIONAL session-start blocks (hot patterns,
 /// mistake ledger, learned policy). The `[AUTONOMY_CONTRACT]` anchor is never
@@ -164,7 +165,7 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     // SOURCE: arxiv.org/pdf/2512.02389 — frame as anti-pattern (banned phrase
     //   + correct alternative), NEVER as raw error text (parrots).
     // OPTIONAL block: a large ledger must never displace the contract, so cap it.
-    if let Some(ledger_ctx) = mistake_ledger_context(&session.project) {
+    if let Some(ledger_ctx) = mistake_ledger_context() {
         context.push_str(&truncate_section(&ledger_ctx, budget));
     }
 
@@ -187,6 +188,12 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     // block: capped so a large flow never displaces the [AUTONOMY_CONTRACT].
     if let Some(flow_ctx) = flow_context(&session.project) {
         context.push_str(&truncate_section(&flow_ctx, budget));
+    }
+
+    // [STACK_FIT] chosen language/tech-stack bound to its non-negotiable
+    // boundaries — VIEW over stack.* app_spec rows, agnostic, fail-soft.
+    if let Some(stack_ctx) = stack_fit_context(&session.project) {
+        context.push_str(&truncate_section(&stack_ctx, budget));
     }
 
     // [ALGO_EVOLUTION] removed — ~1kB/session token waste.

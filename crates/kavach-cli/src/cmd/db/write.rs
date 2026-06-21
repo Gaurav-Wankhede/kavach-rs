@@ -1,5 +1,5 @@
 // split: intentional — single CLI command handler with helper async fns
-//! kavach:micro-file-exempt one cohesive `kavach db write` command handler —
+//! kavach:nano-file-exempt one cohesive `kavach db write` command handler —
 //! validation + strict-mode dedup + atomic upsert + edge projection are a
 //! single transaction-shaped flow; splitting fragments the handler with no
 //! reuse gain. Pure helpers (similarity, protected-closure) already factored.
@@ -482,7 +482,19 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                                 return into_exit_code(io_err);
                             }
                         }
-                        Ok(_) => {}
+                        Ok(_) => {
+                            // n == 0 with a non-empty edge set is NOT silent success.
+                            let asked: Vec<String> =
+                                normalised.iter().map(|(r, t)| format!("{r}->{t}")).collect();
+                            let warn = format!(
+                                "warning: 0 graph edges written despite {} requested: {}",
+                                asked.len(),
+                                asked.join(", ")
+                            );
+                            if let Err(io_err) = ewrite_or_exit(&warn) {
+                                return into_exit_code(io_err);
+                            }
+                        }
                         Err(e) => {
                             let warn = format!("warning: relationship projection failed: {e}");
                             if let Err(io_err) = ewrite_or_exit(&warn) {

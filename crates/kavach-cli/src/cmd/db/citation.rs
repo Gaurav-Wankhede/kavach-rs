@@ -1,5 +1,5 @@
 // `kavach db citation {add,get,list,link,traverse,refresh}` — official-docs context awareness (C9).
-//! kavach:micro-file-exempt — flat 1:1 verb→RPC-call table; one fn per verb is
+//! kavach:nano-file-exempt — flat 1:1 verb→RPC-call table; one fn per verb is
 //! the cohesive unit (each has exactly one dispatch call site, zero reuse gain
 //! from splitting).
 use crate::cmd::db::rpc_client;

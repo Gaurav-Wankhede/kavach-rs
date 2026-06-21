@@ -55,7 +55,7 @@ pub async fn kanban(
             }
             Ok(MemoryStatus::Done) => counts.done = counts.done.saturating_add(1),
             Ok(MemoryStatus::Verified) => counts.verified = counts.verified.saturating_add(1),
-            Ok(_) | Err(_) => {}
+            Ok(_) | Err(_) => {} // doctor:ok unknown/legacy status is simply not counted (no op needed)
         }
 
         if items.len() < params.limit {

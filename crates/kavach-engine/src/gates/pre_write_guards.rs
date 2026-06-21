@@ -12,10 +12,11 @@ mod advisories;
 mod algo_arch;
 mod chain;
 mod guards2026;
-mod microfile;
+mod nanofile;
 mod quality;
 mod research_consume;
 mod result;
+mod retired_pattern;
 mod security;
 
 #[cfg(test)]
@@ -43,6 +44,7 @@ pub(crate) fn check(
     // Ordered guard chain; the first `Some(reason)` blocks and short-circuits.
     // P0 internet-first enforcement runs FIRST: no researched edit slips through.
     let block = research_consume::check(ctx, session)
+        .or_else(|| retired_pattern::check(ctx, &session.project)) // F: ledger-retired pattern
         .or_else(|| chain::check(ctx, input, session, &mut runner))
         .or_else(|| {
             quality::lang(ctx, &mut acc); // P1 rust/ts
@@ -50,7 +52,7 @@ pub(crate) fn check(
         })
         .or_else(|| {
             quality::presentation(ctx, &mut acc); // P1 css/ux/complexity
-            microfile::micro_file(ctx, &mut acc) // P0/P1 micro-file
+            nanofile::nano_file(ctx, &mut acc) // P0/P1 nano-file
         })
         .or_else(|| {
             advisories::collect(ctx, &mut acc); // P2 algo/secrecy/alloc/a11y
@@ -77,7 +79,7 @@ fn platform(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if let Some(msg) = super::pre_write_response_guard::check(ctx.file_path, ctx.content) {
         acc.p1_advisories.push(format!("[RESPONSE_P1] {msg}"));
     }
-    if let Some(block) = microfile::microservice(ctx) {
+    if let Some(block) = nanofile::microservice(ctx) {
         return Some(block);
     }
     if let Some(msg) = super::pre_write_infra_guard::check(ctx.file_path, ctx.content) {

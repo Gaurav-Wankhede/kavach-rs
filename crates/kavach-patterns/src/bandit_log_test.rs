@@ -6,7 +6,7 @@ use super::*;
 
 fn ctx() -> BanditContext {
     BanditContext {
-        gate: "micro_file_guard".into(),
+        gate: "nano_file_guard".into(),
         tool: "Write".into(),
         file_ext: "rs".into(),
         diff_bytes: 1280,

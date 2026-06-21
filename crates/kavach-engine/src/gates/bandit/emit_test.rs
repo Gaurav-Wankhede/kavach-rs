@@ -8,7 +8,7 @@
 use super::*;
 
 fn ctx() -> BanditContext {
-    BanditContext::new("micro_file_guard", "Write", "rs", 2048, "low", 1)
+    BanditContext::new("nano_file_guard", "Write", "rs", 2048, "low", 1)
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn payload_is_the_wire_shape_the_rpc_stores() {
     assert!(json.contains("\"action\":\"ask\""), "got: {json}");
     assert!(json.contains("\"reward\":null"), "got: {json}");
     assert!(
-        json.contains("\"gate\":\"micro_file_guard\""),
+        json.contains("\"gate\":\"nano_file_guard\""),
         "got: {json}"
     );
     assert!(json.contains("\"session_id\":\"sess_wire\""), "got: {json}");

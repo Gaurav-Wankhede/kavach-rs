@@ -149,6 +149,6 @@ mod tests {
         let got = read_at(&path).expect("should read back");
         assert_eq!(got.status, "done");
         assert!(got.summary.contains("https://"));
-        let _ = fs::remove_file(&path);
+        fs::remove_file(&path).ok();
     }
 }

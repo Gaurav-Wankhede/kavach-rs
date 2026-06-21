@@ -3,7 +3,7 @@
 //! Severity tiers live in the shared `crate::severity` module (single source of
 //! truth); the detector arms are split into
 //! `rust_guard/{line_scan,multiline_core,multiline_canon}.rs` leaves to honor the
-//! ≤100-LOC micro-file law. `detect()` is the thin orchestrator that owns the
+//! ≤100-LOC nano-file law. `detect()` is the thin orchestrator that owns the
 //! early-exit guards + the shared `RUST_P` table.
 
 use crate::rust_patterns::RUST_P;

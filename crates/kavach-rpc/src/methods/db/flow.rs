@@ -212,3 +212,179 @@ pub async fn decision_render(
         mermaid: dag.decision_mermaid(&p.focus, cap),
     })
 }
+
+/// Parameters for `db.practice_render` — the `PRACTICE_DELTA` worst-vs-best graph.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct PracticeRenderParams {
+    /// Max anti-patterns to contrast (token discipline); defaults to 6.
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+/// Result of `db.practice_render`: the Mermaid `graph LR`, or `None` when the
+/// ledger holds no anti-patterns (nothing to contrast).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct PracticeRenderResult {
+    /// Rendered worst-vs-best `graph LR`, or `None` when empty.
+    pub mermaid: Option<String>,
+}
+
+/// Default anti-pattern cap for the practice delta (token discipline).
+const PRACTICE_DELTA_DEFAULT_CAP: usize = 6;
+
+/// Render the recurrence-ranked worst-vs-best practice contrast as Mermaid.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on database failure (empty ledger ⇒ `mermaid: None`).
+pub async fn practice_render(
+    state: &AppState,
+    p: PracticeRenderParams,
+) -> Result<PracticeRenderResult, ErrorObjectOwned> {
+    let cap = p.limit.unwrap_or(PRACTICE_DELTA_DEFAULT_CAP);
+    let ranked = kavach_surreal::graph_top_anti_patterns(&state.db, cap)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(PracticeRenderResult {
+        mermaid: kavach_surreal::practice_delta_mermaid(&ranked),
+    })
+}
+
+/// Parameters for `db.stack_render` — the `STACK_FIT` language/stack invariant graph.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct StackRenderParams {
+    /// Project slug whose stack invariants to render.
+    pub project_slug: String,
+}
+
+/// Result of `db.stack_render`: the Mermaid `graph TD`, or `None` when the
+/// project declares no `stack.*` `app_spec` rows (nothing to bind).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct StackRenderResult {
+    /// Rendered `graph TD` binding each component to its boundary, or `None`.
+    pub mermaid: Option<String>,
+}
+
+/// Render the project's chosen language/tech-stack invariants as Mermaid.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on database failure (project missing or no
+/// `stack.*` rows ⇒ `mermaid: None`, not an error).
+pub async fn stack_render(
+    state: &AppState,
+    p: StackRenderParams,
+) -> Result<StackRenderResult, ErrorObjectOwned> {
+    let invariants = kavach_surreal::stack_invariants(&state.db, &p.project_slug)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(StackRenderResult {
+        mermaid: kavach_surreal::stack_fit_mermaid(&invariants),
+    })
+}
+
+/// Parameters for `db.pattern_render` — the pattern supersession DAG.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct PatternRenderParams {
+    /// Project slug whose pattern layer to render.
+    pub project_slug: String,
+    /// Max pattern nodes to keep (token discipline); defaults to 8.
+    #[serde(default)]
+    pub max_nodes: Option<usize>,
+}
+
+/// Result of `db.pattern_render`: the Mermaid `graph TD`, or `None` when the
+/// project has no pattern nodes.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct PatternRenderResult {
+    /// Rendered supersession `graph TD`, or `None` when empty.
+    pub mermaid: Option<String>,
+}
+
+/// Default pattern-node cap (token discipline).
+const PATTERN_DAG_DEFAULT_CAP: usize = 8;
+
+/// Render the research-refreshed pattern layer's supersession DAG as Mermaid.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on database failure (project missing or no pattern
+/// rows ⇒ `mermaid: None`, not an error).
+pub async fn pattern_render(
+    state: &AppState,
+    p: PatternRenderParams,
+) -> Result<PatternRenderResult, ErrorObjectOwned> {
+    let dag = kavach_surreal::roadmap_dag_fetch(&state.db, &p.project_slug)
+        .await
+        .map_err(surreal_to_rpc)?;
+    let cap = p.max_nodes.unwrap_or(PATTERN_DAG_DEFAULT_CAP);
+    Ok(PatternRenderResult {
+        mermaid: dag.pattern_dag_mermaid(cap),
+    })
+}
+
+/// Parameters for `db.retired_patterns` — the enforcement-teeth lookup.
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC DTO constructed at handler boundary"
+)]
+pub struct RetiredPatternsParams {
+    /// Project slug whose retired patterns to fetch.
+    pub project_slug: String,
+}
+
+/// One retired pattern and what replaced it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO constructed at handler boundary"
+)]
+pub struct RetiredPattern {
+    /// Title of the pattern the codebase retired.
+    pub retired: String,
+    /// Title of the pattern that replaced it.
+    pub replacement: String,
+}
+
+/// Fetch the retired patterns (supersession edge targets) for a project.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on database failure (project missing ⇒ empty list).
+pub async fn retired_patterns(
+    state: &AppState,
+    p: RetiredPatternsParams,
+) -> Result<Vec<RetiredPattern>, ErrorObjectOwned> {
+    let dag = kavach_surreal::roadmap_dag_fetch(&state.db, &p.project_slug)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(dag
+        .retired_patterns()
+        .into_iter()
+        .map(|(retired, replacement)| RetiredPattern {
+            retired,
+            replacement,
+        })
+        .collect())
+}

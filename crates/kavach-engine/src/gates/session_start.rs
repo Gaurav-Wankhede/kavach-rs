@@ -11,6 +11,7 @@ mod memory;
 mod patterns;
 mod rag;
 mod reconcile;
+mod stack_fit;
 mod state;
 
 #[cfg(test)]

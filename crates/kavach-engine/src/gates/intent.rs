@@ -4,6 +4,8 @@ mod classify;
 mod context;
 mod decision_map;
 mod harness;
+mod pattern_dag;
+mod practice_delta;
 mod kvs;
 mod phase;
 mod recall;

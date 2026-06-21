@@ -80,7 +80,7 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
                 return classify(v);
             }
             Err(e) if dbg => eprintln!("[rpc_next] retry {attempt} ERR = {e:?}"),
-            Err(_) => {}
+            Err(_) => {} // doctor:ok retry fallthrough — logged when dbg; falls to direct-DB below
         }
     }
     if dbg {

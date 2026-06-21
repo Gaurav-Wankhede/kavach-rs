@@ -23,7 +23,7 @@ fn all_signal_patterns_compile() {
 }
 
 // Continuation-menu detector tests live in a sibling file to keep each test
-// file under the micro-file ceiling; included here as a nested submodule.
+// file under the nano-file ceiling; included here as a nested submodule.
 #[path = "stop_signals_test_menu.rs"]
 mod menu;
 

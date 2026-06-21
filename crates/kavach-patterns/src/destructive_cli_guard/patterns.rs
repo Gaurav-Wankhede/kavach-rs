@@ -1,6 +1,6 @@
 //! Compiled regex pattern table for the destructive-CLI guard (leaf hub).
 //!
-//! Rows are grouped into two leaves to stay within the micro-file budget:
+//! Rows are grouped into two leaves to stay within the nano-file budget:
 //! `destructive` (classic destructive shell ops) and `codeexec` (allowlisted-by-
 //! name tools weaponized via a code-exec / file-write flag — the FN class).
 use super::{DestructiveCategory, DestructiveSeverity};

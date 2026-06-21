@@ -92,3 +92,32 @@ fn extract_typed_wikilinks(content: &str, out: &mut Vec<ExtractedRelationship>) 
         }
     }
 }
+
+#[cfg(test)]
+mod supersedes_extraction_tests {
+    use super::extract_memory_entry_relationships as extract;
+
+    fn has_supersedes(body: &str, target: &str) -> bool {
+        extract(body)
+            .iter()
+            .any(|e| e.rel == "supersedes" && e.target == target)
+    }
+
+    #[test]
+    fn fenced_frontmatter_yields_supersedes() {
+        let body = "---\nsupersedes: dioxus-0.7-websys-gap\n---\nbody\n";
+        assert!(has_supersedes(body, "dioxus-0.7-websys-gap"), "{:?}", extract(body));
+    }
+
+    #[test]
+    fn loose_leading_kv_yields_supersedes() {
+        let body = "supersedes: dioxus-0.7-websys-gap\n";
+        assert!(has_supersedes(body, "dioxus-0.7-websys-gap"), "{:?}", extract(body));
+    }
+
+    #[test]
+    fn nlu_prose_yields_supersedes() {
+        let body = "This supersedes dioxus-0.7-websys-gap; adopt use_route.\n";
+        assert!(has_supersedes(body, "dioxus-0.7-websys-gap"), "{:?}", extract(body));
+    }
+}

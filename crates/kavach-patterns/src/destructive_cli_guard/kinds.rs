@@ -1,5 +1,5 @@
 //! Public types for the destructive-CLI guard: severity tier, category, and hit.
-//! Split from the hub to keep both within the ≤100-LOC micro-file budget.
+//! Split from the hub to keep both within the ≤100-LOC nano-file budget.
 
 #[expect(
     clippy::exhaustive_enums,

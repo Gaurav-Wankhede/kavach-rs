@@ -1,7 +1,7 @@
-//! Repo-wide micro-file linter: walks `.rs` files under the given roots and runs
-//! the SAME `micro_file_guard::detect()` the write-time gate uses, so a human
+//! Repo-wide nano-file linter: walks `.rs` files under the given roots and runs
+//! the SAME `nano_file_guard::detect()` the write-time gate uses, so a human
 //! commit or a legacy file is held to the identical rule. Exits 1 on any
-//! violation — wire into CI / pre-commit. Usage: `micro-file-lint <path>...`
+//! violation — wire into CI / pre-commit. Usage: `nano-file-lint <path>...`
 
 // This is a CLI reporting tool whose entire job is stdout/stderr output, so
 // print macros are correct here (not the library no-print rule). The counter
@@ -21,7 +21,7 @@ use std::process::ExitCode;
 fn main() -> ExitCode {
     let roots: Vec<String> = std::env::args().skip(1).collect();
     if roots.is_empty() {
-        eprintln!("usage: micro-file-lint <path>...  (scans *.rs recursively)");
+        eprintln!("usage: nano-file-lint <path>...  (scans *.rs recursively)");
         return ExitCode::FAILURE;
     }
 
@@ -38,18 +38,18 @@ fn main() -> ExitCode {
         let path_str = path.to_string_lossy();
         // tool_name "Edit" => existing-file LOC message; this is a repo scan of
         // files already on disk, never a fresh Write.
-        for v in kavach_patterns::micro_file_guard::detect(&path_str, &content, "Edit") {
+        for v in kavach_patterns::nano_file_guard::detect(&path_str, &content, "Edit") {
             violations += 1;
             println!("{path_str}: [{}] {}", v.pattern, v.fix);
         }
     }
 
     if violations == 0 {
-        println!("micro-file-lint: clean ({} files scanned)", files.len());
+        println!("nano-file-lint: clean ({} files scanned)", files.len());
         ExitCode::SUCCESS
     } else {
         eprintln!(
-            "micro-file-lint: {violations} violation(s) across {} files",
+            "nano-file-lint: {violations} violation(s) across {} files",
             files.len()
         );
         ExitCode::FAILURE
@@ -58,7 +58,7 @@ fn main() -> ExitCode {
 
 // recursion — bounded stack memory, no overflow on deep monorepos).
 //   - recursive DFS: clean but risks stack overflow on pathological depth; the
-//     micro-file rule itself caps src depth at 7 but vendor/target dirs can be deeper.
+//     nano-file rule itself caps src depth at 7 but vendor/target dirs can be deeper.
 //   - BFS (VecDeque): same O(n) work, worse locality, no ordering benefit here.
 //   - `walkdir`/`ignore` crates: heavier dep for a CI helper; std read_dir suffices.
 // TIME: O(n) over n filesystem entries. SPACE: O(d) stack, d = max live dir fan-out.

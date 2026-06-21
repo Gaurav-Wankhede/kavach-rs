@@ -102,7 +102,9 @@ fn fetch(key: &str) -> Option<Citation> {
         serde_json::json!({ "project": DIRECTIVE_PROJECT, "entry_key": key });
     match kavach_rpc::client::call("citation.get", Some(params)) {
         Ok(Some(c)) => Some(c),
-        Ok(None) | Err(_) => None,
+        // advisory cache — miss AND RPC-error both serve the compiled fallback
+        // directive; no behavioral impact, so silence is correct here.
+        Ok(None) | Err(_) => None, // doctor:ok
     }
 }
 

@@ -1,4 +1,4 @@
-//! kavach:micro-file-exempt single `match DbAction` dispatch table — one arm
+//! kavach:nano-file-exempt single `match DbAction` dispatch table — one arm
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
@@ -94,7 +94,7 @@ pub(crate) fn run(action: DbAction) -> i32 {
 
 #[expect(
     clippy::too_many_lines,
-    reason = "cohesive single `match DbAction` routing table — one arm per CLI verb; splitting fragments the dispatch surface with no reuse gain (same rationale as the file's micro-file exemption)"
+    reason = "cohesive single `match DbAction` routing table — one arm per CLI verb; splitting fragments the dispatch surface with no reuse gain (same rationale as the file's nano-file exemption)"
 )]
 fn dispatch_remaining(action: DbAction) -> i32 {
     match action {

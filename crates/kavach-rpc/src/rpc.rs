@@ -1,4 +1,4 @@
-// kavach:micro-file-exempt — RPC registration hub: a flat linear aggregator of
+// kavach:nano-file-exempt — RPC registration hub: a flat linear aggregator of
 // register_async_method calls. It cannot decompose into a hub+leaf tree (the
 // RpcModule is built in one pass); each verb is one ~6-line stanza.
 // split: intentional - RpcModule construction wiring all method namespaces
@@ -955,6 +955,38 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             let p: db::DecisionRenderParams =
                 params.parse().map_err(|e| invalid_params(e.to_string()))?;
             db::decision_render(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.practice_render", |params, ctx, _ext| async move {
+            let p: db::PracticeRenderParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::practice_render(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.stack_render", |params, ctx, _ext| async move {
+            let p: db::StackRenderParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::stack_render(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.pattern_render", |params, ctx, _ext| async move {
+            let p: db::PatternRenderParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::pattern_render(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
+        .register_async_method("db.retired_patterns", |params, ctx, _ext| async move {
+            let p: db::RetiredPatternsParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::retired_patterns(&ctx, p).await
         })
         .map_err(|e| internal(e.to_string()))?;
 

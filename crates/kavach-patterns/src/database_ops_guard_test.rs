@@ -1,5 +1,5 @@
 //! Test hub for `database_ops_guard` — declares the per-concern test leaves.
-//! Split out of the former inline `mod tests` to honor the ≤100-LOC micro-file law;
+//! Split out of the former inline `mod tests` to honor the ≤100-LOC nano-file law;
 //! each leaf is a child module so `crate::database_ops_guard::detect` resolves.
 
 #[path = "database_ops_guard/test_sql.rs"]

@@ -1,5 +1,5 @@
 // split: intentional — RPC client wrapper, one function per RPC method maps to a CLI command
-//! kavach:micro-file-exempt flat 1:1 RPC-method→CLI-command wrapper table; one fn
+//! kavach:nano-file-exempt flat 1:1 RPC-method→CLI-command wrapper table; one fn
 //! per RPC verb is the cohesive unit — splitting fragments one client boundary
 //! with zero reuse gain (each wrapper has exactly one call site).
 //! RPC-first client for CLI db commands.

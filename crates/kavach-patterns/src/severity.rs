@@ -3,7 +3,7 @@
 //! WHY this exists: every `*_guard.rs` used to define its own private
 //! `*Severity` enum (P0Block/P1Advisory/P2Warning) and `*Violation` struct —
 //! the same three/four-variant concept copy-pasted 10+ times. That is the
-//! duplication the micro-file + reuse laws forbid. Guards now import this one
+//! duplication the nano-file + reuse laws forbid. Guards now import this one
 //! type, so the tier ladder has a single source of truth.
 //! SOURCE: <https://martinfowler.com/bliki/SingleSourceOfTruth.html>
 //! SOURCE: <https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html>

@@ -2,7 +2,7 @@
 //!
 //! DECOMPOSED per Rust module organization best practice
 //! (Rust Book ch07, `LogRocket` web services patterns).
-//! Thin hub + micro-file leaves (≤100 LOC each), following `rust_guard.rs` template.
+//! Thin hub + nano-file leaves (≤100 LOC each), following `rust_guard.rs` template.
 //! All public API stable — zero change to rpc.rs callers.
 
 mod archive;
@@ -55,8 +55,11 @@ pub use gate_cfg::{
 pub use flow::{
     DecisionRenderParams, DecisionRenderResult, FlowSummary, ListParams as FlowListParams,
     RenderParams as FlowRenderParams, RenderResult as FlowRenderResult,
+    PatternRenderParams, PatternRenderResult, PracticeRenderParams, PracticeRenderResult,
+    RetiredPattern, RetiredPatternsParams, StackRenderParams, StackRenderResult,
     UpsertParams as FlowUpsertParams, UpsertResult as FlowUpsertResult, decision_render,
-    list as flow_list, render as flow_render, upsert as flow_upsert,
+    list as flow_list, pattern_render, practice_render, render as flow_render, retired_patterns,
+    stack_render, upsert as flow_upsert,
 };
 pub use get::{GetEntry, GetParams, GetResult, get};
 pub use graph_fetch::{GraphEdge, GraphFetchParams, GraphFetchResult, GraphNode, graph_fetch};

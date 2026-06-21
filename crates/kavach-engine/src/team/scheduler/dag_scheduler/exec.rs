@@ -8,10 +8,10 @@ use super::super::types::{DispatchPlan, Spawner, TeamDispatchError};
 use super::DagScheduler;
 
 /// The plan/dispatch behaviour, split into its own file from the constructors +
-/// getters in the parent for the <100-LOC micro-file layout.
+/// getters in the parent for the <100-LOC nano-file layout.
 #[expect(
     clippy::multiple_inherent_impl,
-    reason = "split impl across files for micro-file layout; one logical type, two source files"
+    reason = "split impl across files for nano-file layout; one logical type, two source files"
 )]
 impl DagScheduler {
     /// Compute the dispatch plan for `dag` given how many teammates are already

@@ -2,7 +2,7 @@
 //! shared workspace build+test witnesses pass (3-witness law; the diff witness
 //! is implicit — the card reached `done` because its work shipped).
 //!
-//! `§MICRO_FILE` split: the witness machinery (workspace discovery + cargo runs)
+//! `§NANO_FILE` split: the witness machinery (workspace discovery + cargo runs)
 //! lives in the `witness` child; this hub keeps the orchestration.
 
 pub(crate) mod witness;

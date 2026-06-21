@@ -436,8 +436,9 @@ pub async fn upsert_entry_full(
 /// # Errors
 /// Propagates `Error::Surreal` from the DELETE query.
 pub async fn rotate_events(db: &Surreal<Db>, days: i64) -> Result<usize> {
-    let query =
-        "DELETE event WHERE created_at < time::now() - duration::from::days($days) RETURN BEFORE";
+    // TTL GC sweep — bounded by a time predicate, RETURN BEFORE yields the
+    // deleted rows (count observed), not an unbounded blind delete.
+    let query = "DELETE event WHERE created_at < time::now() - duration::from::days($days) RETURN BEFORE"; // doctor:ok
     let mut response = db.query(query).bind(("days", days)).await?;
     let deleted: Vec<serde_json::Value> = response.take(0)?;
     Ok(deleted.len())

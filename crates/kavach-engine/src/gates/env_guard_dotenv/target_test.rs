@@ -1,4 +1,4 @@
-//! Sidecar tests for `target` (micro-file rule: no inline tests).
+//! Sidecar tests for `target` (nano-file rule: no inline tests).
 use super::*;
 
 #[test]

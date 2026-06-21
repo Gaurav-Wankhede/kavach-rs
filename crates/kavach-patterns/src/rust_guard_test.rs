@@ -1,5 +1,5 @@
 //! Test hub for `rust_guard` — declares the per-concern test leaves. Split out
-//! of the former inline `mod tests` to honor the ≤100-LOC micro-file law; each
+//! of the former inline `mod tests` to honor the ≤100-LOC nano-file law; each
 //! leaf is a child module so `crate::rust_guard::detect` + `RustSeverity` resolve.
 #[path = "rust_guard/test_async_db.rs"]
 mod async_db;

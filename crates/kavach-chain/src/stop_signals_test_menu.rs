@@ -1,5 +1,5 @@
 //! Continuation-menu detector tests — split from `stop_signals_test.rs` to keep
-//! each test file under the micro-file ceiling. Included as a submodule of the
+//! each test file under the nano-file ceiling. Included as a submodule of the
 //! parent `tests` module via `#[path]`, so `super::super::*` reaches the crate.
 use super::super::*;
 

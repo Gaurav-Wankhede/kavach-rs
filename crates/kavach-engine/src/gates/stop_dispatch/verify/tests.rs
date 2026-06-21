@@ -1,5 +1,5 @@
-//! Witness-machinery tests (sibling of witness.rs per §`MICRO_FILE`; `super` is the
-//! `witness` module). decision.kavach.verify-rs-microfile-split-2026-06-17.
+//! Witness-machinery tests (sibling of witness.rs per §`NANO_FILE`; `super` is the
+//! `witness` module). decision.kavach.verify-rs-nanofile-split-2026-06-17.
 use super::{
     WitnessRun, discover_rust_workspace, is_rust_workspace, verify_command_env,
     witness_root_from_card,

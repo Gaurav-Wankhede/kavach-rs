@@ -1,4 +1,4 @@
-//! The objective build+test witness machinery for auto-verify (`§MICRO_FILE` split
+//! The objective build+test witness machinery for auto-verify (`§NANO_FILE` split
 //! from `verify.rs`). Discovers the Rust workspace (root or monorepo subdir) and
 //! runs cargo check + clippy + nextest + git-diff; the orchestration that consumes
 //! [`WitnessRun`]/[`run_workspace_witnesses`] lives in the `verify.rs` hub.
@@ -123,8 +123,8 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
     WitnessRun::Passed
 }
 
-// Tests lifted to a sibling (§MICRO_FILE: this machinery file stays ≤100 LOC).
-// decision.kavach.verify-rs-microfile-split-2026-06-17 — mechanical, behavior-
+// Tests lifted to a sibling (§NANO_FILE: this machinery file stays ≤100 LOC).
+// decision.kavach.verify-rs-nanofile-split-2026-06-17 — mechanical, behavior-
 // identical; rca.keystone-trap + rca.monorepo-verify-blind preserved verbatim.
 #[cfg(test)]
 #[path = "tests.rs"]

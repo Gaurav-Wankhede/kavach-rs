@@ -59,7 +59,7 @@ impl Reward {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct BanditContext {
-    /// Which gate decided (e.g. `micro_file_guard`).
+    /// Which gate decided (e.g. `nano_file_guard`).
     pub gate: String,
     /// The tool under decision (`Bash`, `Write`, `Edit`, `Stop`, ...).
     pub tool: String,

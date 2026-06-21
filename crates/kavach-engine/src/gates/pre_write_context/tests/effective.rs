@@ -39,7 +39,7 @@ fn edit_populates_effective_content_with_full_file_body() {
     std::fs::remove_dir(&dir).ok();
 }
 
-// The catch-22 fix: an Edit that ADDS the //kavach:micro-file-exempt marker as a
+// The catch-22 fix: an Edit that ADDS the //kavach:nano-file-exempt marker as a
 // new first line must surface that marker in the post-edit body — else you could
 // never add it to an already-oversize file (the edit adding it would be blocked
 // because the marker isn't present yet). SOURCE: mistake.edit-effective-content-*.
@@ -58,12 +58,12 @@ fn edit_adding_exempt_marker_appears_in_effective_body() {
         ("old_string".into(), serde_json::json!("// header")),
         (
             "new_string".into(),
-            serde_json::json!("// kavach:micro-file-exempt — crate root\n// header"),
+            serde_json::json!("// kavach:nano-file-exempt — crate root\n// header"),
         ),
     ]));
     let ctx = WriteContext::extract(&input);
     assert!(
-        ctx.effective_content.contains("kavach:micro-file-exempt"),
+        ctx.effective_content.contains("kavach:nano-file-exempt"),
         "marker added by the edit must be in the post-edit body"
     );
 

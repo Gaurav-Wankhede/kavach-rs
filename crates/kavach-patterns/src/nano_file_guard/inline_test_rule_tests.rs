@@ -1,4 +1,4 @@
-use super::super::{MicroSeverity, detect};
+use super::super::{NanoSeverity, detect};
 
 #[test]
 fn inline_test_module_in_production_file_blocked() {
@@ -6,7 +6,7 @@ fn inline_test_module_in_production_file_blocked() {
     let v = detect("crates/foo/src/ladder.rs", content, "Write");
     assert!(
         v.iter()
-            .any(|x| x.severity == MicroSeverity::P0Block && x.pattern == "inline test module"),
+            .any(|x| x.severity == NanoSeverity::P0Block && x.pattern == "inline test module"),
         "a #[cfg(test)] block in a production file must P0-block"
     );
 }

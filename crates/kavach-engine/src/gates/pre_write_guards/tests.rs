@@ -1,16 +1,16 @@
-//! Micro-file split detector regression tests for the `PreWrite` guard dispatch.
+//! Nano-file split detector regression tests for the `PreWrite` guard dispatch.
 use crate::gates::pre_write_context::WriteContext;
 use kavach_types::HookInput;
 use std::collections::HashMap;
 
-// Regression: the micro-file split detector must see the WHOLE post-edit
+// Regression: the nano-file split detector must see the WHOLE post-edit
 // file, not just the Edit fragment. Before the fix, the dispatch passed
 // ctx.content (= new_string), so an Edit that left a 200-LOC file in place
 // never tripped the >100-LOC split advisory — it only fired for Write.
 // This proves the guard runs over ctx.effective_content (full file body)
 // and flags an oversized file edited in place.
 #[test]
-fn edit_on_oversized_file_trips_micro_file_split_detector() {
+fn edit_on_oversized_file_trips_nano_file_split_detector() {
     let dir = std::env::temp_dir().join(format!("kavach_micro_edit_{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("mk tmp dir");
     let path = dir.join("oversized.rs");
@@ -33,21 +33,21 @@ fn edit_on_oversized_file_trips_micro_file_split_detector() {
     assert!(ctx.content.lines().count() < 5);
 
     // The exact call the dispatch makes — must flag the oversized file.
-    let hits = kavach_patterns::micro_file_guard::detect(
+    let hits = kavach_patterns::nano_file_guard::detect(
         ctx.file_path,
         &ctx.effective_content,
         ctx.tool_name,
     );
     assert!(
         hits.iter().any(|v| v.pattern.contains("100 LOC")),
-        "Edit on a 200-LOC file must trip the micro-file split detector"
+        "Edit on a 200-LOC file must trip the nano-file split detector"
     );
     // An in-place Edit that keeps the file over 100 LOC HARD-BLOCKS too: it must
     // split into the same deep hub+leaf hierarchy as a new file (Rust 2024:
     // foo.rs + foo/ with pub use re-exports, no mod.rs).
     assert!(
         hits.iter().any(|v| v.pattern == "file exceeds 100 LOC"
-            && v.severity == kavach_patterns::micro_file_guard::MicroSeverity::P0Block),
+            && v.severity == kavach_patterns::nano_file_guard::NanoSeverity::P0Block),
         "an in-place Edit over 100 LOC must P0-block (forces the split)"
     );
 
@@ -61,7 +61,7 @@ fn edit_on_oversized_file_trips_micro_file_split_detector() {
 fn fragment_only_would_miss_oversized_file() {
     let fragment = "fn patched() {}\n";
     let hits =
-        kavach_patterns::micro_file_guard::detect("crates/foo/src/oversized.rs", fragment, "Edit");
+        kavach_patterns::nano_file_guard::detect("crates/foo/src/oversized.rs", fragment, "Edit");
     assert!(
         !hits.iter().any(|v| v.pattern.contains("100 LOC")),
         "a 2-line fragment is under 100 LOC — proves why the fragment path missed it"

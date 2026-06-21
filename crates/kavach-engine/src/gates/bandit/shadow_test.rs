@@ -28,7 +28,7 @@ fn record_shadow_is_a_noop_without_a_session_id() {
     // the gate would otherwise diverge. Independent of the env flag.
     record_shadow(
         "",
-        "micro_file",
+        "nano_file",
         "Write",
         GateAction::Allow,
         GateAction::Ask,

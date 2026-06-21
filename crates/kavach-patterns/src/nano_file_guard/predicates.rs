@@ -1,17 +1,17 @@
-//! Pure path/content predicates for the micro-file guard, split out of the hub
-//! to keep `micro_file_guard.rs` itself under the 100-LOC ceiling it enforces.
+//! Pure path/content predicates for the nano-file guard, split out of the hub
+//! to keep `nano_file_guard.rs` itself under the 100-LOC ceiling it enforces.
 
 /// Header-region markers that exempt a file from the LOC ceiling. All must be
 /// declared in the first 15 lines so they stay visible in review.
 ///
-/// - `kavach:micro-file-exempt` — file that genuinely cannot decompose (SQL-DDL
+/// - `kavach:nano-file-exempt` — file that genuinely cannot decompose (SQL-DDL
 ///   `const`, generated template, big static lookup table).
 /// - `// split:` / `// hub:` — the SAME intentional-split markers the sibling
 ///   microservice guard already honors. Without these here, a file marked
 ///   `// split: intentional` passes the microservice guard yet is still blocked
 ///   by this LOC guard — a contradiction between two guards on one file. Honoring
 ///   them keeps the two guards consistent and closes that false positive.
-const LOC_EXEMPT_MARKERS: [&str; 3] = ["kavach:micro-file-exempt", "// split:", "// hub:"];
+const LOC_EXEMPT_MARKERS: [&str; 3] = ["kavach:nano-file-exempt", "// split:", "// hub:"];
 
 /// True when the file declares any exempt marker in its header region (first 15
 /// lines), so it stays visible in review and cannot be buried.

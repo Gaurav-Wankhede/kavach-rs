@@ -1,30 +1,30 @@
-//! Micro-file guard (mod.rs ban, depth cap, <=100-LOC split) + microservice
-//! guard. The micro-file guard's `P0Block` path and the microservice guard's
+//! Nano-file guard (mod.rs ban, depth cap, <=100-LOC split) + microservice
+//! guard. The nano-file guard's `P0Block` path and the microservice guard's
 //! oversized-file path both return a block reason; P1 hits push advisories.
 use super::result::Acc;
 use crate::gates::pre_write_context::WriteContext;
 
-/// Micro-file guard: mod.rs forbidden, depth <=7 below src/, new files <=100 LOC.
+/// Nano-file guard: mod.rs forbidden, depth <=7 below src/, new files <=100 LOC.
 /// Severity-routed: `P0Block` returns a block reason; `P1Advisory` pushes context.
 /// Uses `effective_content` (the WHOLE resulting file), not `ctx.content`: on an
 /// Edit/Update, `ctx.content` is only the `new_string` fragment, so the LOC split
 /// check would never fire on in-place edits — it must see the post-edit file
 /// body, which `effective_content` holds (full file for Edit, content for Write).
-pub(super) fn micro_file(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
+pub(super) fn nano_file(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if !ctx.is_rust || ctx.is_test {
         return None;
     }
-    for v in kavach_patterns::micro_file_guard::detect(
+    for v in kavach_patterns::nano_file_guard::detect(
         ctx.file_path,
         &ctx.effective_content,
         ctx.tool_name,
     ) {
-        use kavach_patterns::micro_file_guard::MicroSeverity::{P0Block, P1Advisory};
+        use kavach_patterns::nano_file_guard::NanoSeverity::{P0Block, P1Advisory};
         match v.severity {
-            P0Block => return Some(format!("[MICRO_FILE_P0/{}] {}", v.pattern, v.fix)),
+            P0Block => return Some(format!("[NANO_FILE_P0/{}] {}", v.pattern, v.fix)),
             P1Advisory => acc
                 .p1_advisories
-                .push(format!("[MICRO_FILE_P1] {}: {}", v.pattern, v.fix)),
+                .push(format!("[NANO_FILE_P1] {}: {}", v.pattern, v.fix)),
         }
     }
     None
