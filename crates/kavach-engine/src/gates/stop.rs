@@ -270,7 +270,7 @@ fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Opti
     // surrounding imperative is research-refreshed (fail-soft to the proven literal).
     let loophole_body = dyn_directive(
         "stop.loophole-carry-forward",
-        "last turn shipped risk-bearing work without a `Loopholes closed:` line — a loophole may be LIVE. FIX FIRST: run the 6 attack lenses (concurrency/failure/malformed/authz/replay/boundary) and CLOSE each at its root this turn (or file a card), then emit `Loopholes closed:`. Do this BEFORE any new work — fixing beats documenting.",
+        "last turn touched a risk-bearing path; the lens scan recorded the suspect sites below. The native triage agent resolves them — surfaced for awareness, no narration required.",
     );
     session.queue_pending_advisory(&format!("[LOOPHOLE] {loophole_body}"));
     // M4 TEETH: run the bounded lens DETECTOR over this turn's git-changed Rust
