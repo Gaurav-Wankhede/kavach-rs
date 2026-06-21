@@ -32,17 +32,14 @@ pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String 
         return lane::lane_drained_context(&lane_name);
     }
     let census = crate::gates::stop_dispatch::open_set_census(project);
-    // A dependency cycle is NOT a legitimate block: it is a deadlock the AI must
-    // repair (break the cycle), never a clean stop. Surface it before any
-    // all-blocked / plan verdict so it cannot forge a false `[ALL_BLOCKED]`.
-    if census.is_some_and(|(_, _, cyclic)| cyclic > 0) {
-        return cycle_deadlock_context();
+    // A dependency cycle is a deadlock the AI must repair (break the cycle), never a
+    // clean stop. An all-blocked board is the SAME shape — walk to the blocker and
+    // build it — and is refused upstream in `clean_exit` (`board_is_all_blocked`).
+    // Both surface before the PLAN nudge so neither can forge a clean stop.
+    if census.is_some_and(|(_, _, cyclic)| cyclic > 0) || census_is_all_blocked(census) {
+        return blocker_walk_context();
     }
-    if census_is_all_blocked(census) {
-        all_blocked_context(census)
-    } else {
-        board_drained_plan_context(census)
-    }
+    board_drained_plan_context(census)
 }
 
 /// One-line census STAMP proving the gate read the kavach DB roadmap table THIS
