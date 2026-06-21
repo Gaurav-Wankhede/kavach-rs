@@ -33,13 +33,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         propensity,
         None,
     );
-    // P8: sample this same decision into the SOFT held-out channel at rate
-    // `KAVACH_RL_HELDOUT_RATE` (default 0 ⇒ off). The held-out row carries the same
-    // (action, propensity) but is tagged `held_out: true`; its reward is back-filled
-    // by an INDEPENDENT real re-verification, giving the reward-hacking audit
-    // (`db.ope_audit`) a soft channel to compare against the hard 3-witness. Without
-    // it the soft channel is always empty ⇒ the audit stays `Inconclusive` ⇒ a
-    // candidate policy can never be cleared. Fire-and-forget; never affects the stop.
+    // Also sample into the SOFT held-out channel (KAVACH_RL_HELDOUT_RATE, default
+    // 0=off) for the reward-hacking audit. See decision.engine.clean-exit-held-out.
     let roll = explore_emit::held_out_roll(&ctx.session.session_id, emit::now_ms());
     emit::maybe_emit_held_out(&ctx.session.session_id, ctx_for_emit, action, propensity, roll);
     // Work is genuinely done at the dispatch level — reset the pending-work
