@@ -28,19 +28,36 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
              Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
         ));
     }
-    // The unit's separate test file must have come first THIS turn (Red).
-    if session
-        .files_modified_this_turn
-        .iter()
-        .any(|f| test_matches_unit(f, stem))
-    {
+    // The unit's test must have been OBSERVED RED this turn — a real `cargo
+    // test/nextest` run that printed FAILED for it, recorded in `tdd_red_units` by
+    // the post-tool Bash gate. A mere test-FILE touch is NOT enough: an
+    // after-the-fact vacuous test that was never run-and-failed cannot drive code.
+    // SOURCE: arxiv.org/pdf/2602.10522 (34-62% of LLM tests are invalid when written
+    // from the code); vijayanant.com TDD-for-LLMs.
+    if session.tdd_red_units.iter().any(|u| u == stem) {
         return None;
     }
+    // Transitional fallback: the unit's test file was touched but no Red was
+    // observed yet — direct the agent to RUN it and watch it fail, naming the
+    // missing proof explicitly rather than silently passing on a touch.
+    let touched = session
+        .files_modified_this_turn
+        .iter()
+        .any(|f| test_matches_unit(f, stem));
+    let red_hint = if touched {
+        format!(
+            "Its test file is touched but was NOT observed RED. RUN `cargo nextest run` \
+             for `{stem}` and confirm it FAILS first"
+        )
+    } else {
+        format!(
+            "Write the FAILING test in a SEPARATE file (`{stem}_test.rs` or \
+             `{stem}/tests.rs` mapped via `#[path]`), RUN it, confirm it FAILS"
+        )
+    };
     Some(format!(
-        "[TDD:P0] BLOCKED. Production code for `{stem}` has no test-first (Red). \
-         Write the FAILING test in a SEPARATE file (`{stem}_test.rs` or \
-         `{stem}/tests.rs` mapped via `#[path]`) THIS turn, confirm it fails, THEN \
-         write the code. Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
+        "[TDD:P0] BLOCKED. Production code for `{stem}` has no observed-Red test-first. \
+         {red_hint}, THEN write the code. Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
     ))
 }
 
