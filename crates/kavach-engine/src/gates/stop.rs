@@ -161,7 +161,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // next-turn pending advisory. ADVISORY only (no HALT). The verification-claim
     // entries are gated behind `wrote_this_turn` inside the table.
     let wrote_this_turn = session.last_write_turn == session.turn_count;
-    let research_unsourced = advisory_detectors::run(&mut session, &msg, wrote_this_turn);
+    let stall = advisory_detectors::run(&mut session, &msg, wrote_this_turn);
 
     // Build the shared context once; guards thread it.
     let mut ctx = StopCtx {
@@ -172,7 +172,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         loophole_advisory,
         shallow_advisory,
         continuation_advisory,
-        research_unsourced,
+        research_unsourced: stall.research_unsourced,
+        disobedience_handback: stall.handback_or_menu,
     };
 
     // Ordered guard pipeline; first ControlFlow::Break emits the hook decision.
