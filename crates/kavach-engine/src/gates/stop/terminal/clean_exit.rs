@@ -10,14 +10,9 @@ use crate::gates::bandit::{emit, explore_emit};
 use kavach_patterns::bandit_log::{BanditContext, GateAction};
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    // Layer-A bandit log: a clean exit is the Stop gate's GREEDY `Allow` action.
-    // P7: pass it through epsilon-greedy so, when `KAVACH_RL_EXPLORE` is armed, the
-    // emit MAY log a non-argmax advisory action (`Ask`) with its TRUE propensity
-    // < 1.0 — giving the off-policy estimators non-degenerate overlap. Disarmed
-    // (default) this is `(Allow, 1.0)`, the exact prior behavior. C2: the advisory
-    // set bars `Block`, so exploration NEVER converts this allow into a block.
-    // Reward is None here — back-filled when the 3-witness verify resolves. Pure
-    // logging, fire-and-forget; never affects whether the stop proceeds.
+    // Clean exit = GREEDY Allow, logged via epsilon-greedy (explore only when
+    // KAVACH_RL_EXPLORE armed; never converts to Block). Reward back-filled at
+    // verify. Fire-and-forget. See decision.engine.clean-exit-bandit-log.
     let (action, propensity) = explore_emit::explore_action(
         GateAction::Allow,
         &ctx.session.session_id,
