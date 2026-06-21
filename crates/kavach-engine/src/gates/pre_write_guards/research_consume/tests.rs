@@ -1,4 +1,4 @@
-//! FP-bound + block proofs for the P0 research-consume gate.
+//! FP-bound + resolve-not-block proofs for the research-consume advisory gate.
 
 use super::{content_has_evidence, LOCAL_ANALYSIS_INTENTS};
 use crate::gates::pre_write_context::WriteContext;
