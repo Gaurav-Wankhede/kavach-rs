@@ -38,6 +38,15 @@ pub(crate) fn handle(
 
     if is_test_command(command) {
         clear_test_run(session, command);
+        // Red-phase capture: a test run that FAILED proves the tests touched this
+        // turn are genuinely Red (they fail without the production code). The TDD
+        // gate requires this — a mere test-file touch is not test-first.
+        if matches!(
+            objective_outcome(input, command, output),
+            Some(kavach_patterns::eval_replay::EventOutcome::Failure)
+        ) {
+            tests_track::record_red_units(session);
+        }
         if is_empty_test_suite(output) {
             session.add_case_fact("EMPTY_TEST_SUITE: 0 tests ran — not a pass");
             let context = "[EMPTY_TEST_SUITE] 0 tests ran. This is NOT a passing test suite. \
