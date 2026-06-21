@@ -18,15 +18,8 @@
 const ENV_PRINTERS: &[&str] = &["echo ", "printf ", "printenv ", "env ", "set ", "export "];
 
 /// Return true when the post-source command does NOT leak a secret into context.
-/// Fail-OPEN: only the explicitly-dangerous shapes below are rejected; an
-/// unrecognised runner that silently consumes env vars is treated as safe.
-///
-/// Hard-rejected (these print/expose an env value, or can): `echo`/`printf`/`cat`/
-/// `env`/`printenv`/`set`/`export`-with-print, and a raw `bash`/`sh`/`zsh -c` that
-/// could echo a secret. Python stays banned per the global anti-pattern rule.
-/// `psql` is conditionally safe: allowed for READ/INSERT/UPDATE/CREATE but a
-/// destructive verb (DELETE/DROP/TRUNCATE) makes it unsafe here (the dedicated psql
-/// write-bypass gate also hard-blocks it — defense in depth).
+/// Fail-OPEN: explicit printers + raw shells rejected; silent consumers allowed.
+/// See decision.engine.env_leak_fail_open_policy.
 pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
     let lc = downstream.trim().to_lowercase();
     let Some(first_token) = lc.split_whitespace().next() else {
