@@ -51,13 +51,15 @@ fn brain_local_analysis_synonyms() -> Vec<String> {
         .collect()
 }
 
-/// Returns `Some(reason)` to BLOCK the write when research was required this turn
-/// and no evidence of it is present.
+/// Returns `Some(advisory)` to ATTACH internet-first context to the write (never
+/// a block). Drives the Internet on the spot: ensures the background WebSearch is
+/// running and injects its live findings (or a pending directive while they
+/// land). `None` when research is satisfied, not applicable, or bypassed.
 pub(super) fn check(
     ctx: &WriteContext<'_>,
     session: &kavach_session::SessionState,
 ) -> Option<String> {
-    // Emergency escape hatch.
+    // Emergency escape hatch — silences the advisory entirely.
     if std::env::var_os("KAVACH_RESEARCH_BYPASS").is_some() {
         return None;
     }
@@ -65,7 +67,7 @@ pub(super) fn check(
     if ctx.is_test || !ctx.is_code {
         return None;
     }
-    // Research was not required this turn → nothing to enforce.
+    // Research was not required this turn → nothing to attach.
     if session.research_topic.is_empty() {
         return None;
     }
@@ -84,17 +86,41 @@ pub(super) fn check(
         return None;
     }
 
+    // No evidence yet → RESOLVE on the spot, do NOT suppress the write. Drive the
+    // Internet ourselves and attach the result as advisory context.
+    Some(resolve_with_internet(session))
+}
+
+/// Self-resolving internet-first advisory. Reads the live research cache; kicks a
+/// fresh background WebSearch (`kavach_advisor::kickoff`) when none is running;
+/// returns the findings brief when `done`, else a pending/error directive. The
+/// write ALWAYS proceeds — the loop-level `[RESEARCH_FIRST]` Stop teeth ensure an
+/// unsourced claim can never terminate the turn.
+fn resolve_with_internet(session: &kavach_session::SessionState) -> String {
     let topic = session.research_topic.as_str();
-    Some(format!(
-        "[RESEARCH_REQUIRED:P0] BLOCKED. This turn was classified \
-         requires_research (topic: \"{topic}\") and you are writing production \
-         code with NO evidence of an internet-first lookup.\n\
-         DO THIS NOW: WebSearch \"{topic}\", corroborate across 2+ current \
-         sources, then either (a) cite a source URL in the file/[RCA] block, or \
-         (b) record an [RESEARCH] block this turn. The pre-write gate re-checks \
-         and clears once evidence is present. Bypass (emergencies only): \
-         KAVACH_RESEARCH_BYPASS=1."
-    ))
+    let sid = session.session_id.as_str();
+    match kavach_advisor::read_findings(sid) {
+        Some(f) if f.status == "done" => format!(
+            "[RESEARCH_RESOLVED] internet-first lookup complete for \"{topic}\". \
+             CITE a source URL from these findings in the file or [RCA] block:\n{}",
+            f.summary
+        ),
+        Some(f) if f.status == "pending" => format!(
+            "[RESEARCH_INFLIGHT] internet-first lookup running for \"{topic}\". \
+             Findings land in the session cache; cite a source URL the moment \
+             they arrive (the Stop gate enforces this before the turn ends)."
+        ),
+        // No cache yet, or a prior error → (re)launch the lookup right now.
+        _ => {
+            kavach_advisor::kickoff(sid, topic);
+            format!(
+                "[RESEARCH_KICKED] launched an internet-first lookup for \
+                 \"{topic}\" in the background. Keep working; cite a source URL \
+                 once the findings land (the Stop gate enforces this before the \
+                 turn ends). Bypass (emergencies only): KAVACH_RESEARCH_BYPASS=1."
+            )
+        }
+    }
 }
 
 /// True when the live research cache for this session reports `done`.
