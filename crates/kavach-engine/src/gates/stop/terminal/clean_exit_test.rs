@@ -18,6 +18,7 @@ fn ctx_with<'a>(
         shallow_advisory: None,
         continuation_advisory: None,
         research_unsourced: false,
+        disobedience_handback: false,
     }
 }
 
