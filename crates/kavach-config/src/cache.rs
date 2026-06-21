@@ -60,12 +60,7 @@ pub fn load_patterns(filename: &str) -> HashMap<String, Vec<String>> {
         entry.last_access = Instant::now();
         return entry.data.clone();
     }
-    //   traversal surface this CWE-363 fix closes"},{"name":"keep CWD
-    //   ./config fallback","reason":"untrusted-dir gate-config tampering"}]
-    // TIME: O(1) | SPACE: O(1)
-    // YEAR: 2026 | SEARCHED: 2026-05
-    // CWE-363 fix: CWD-relative "config/" fallback removed — a hook runs in
-    // untrusted project dirs and must not read gate patterns from there.
+    // No CWD-relative "config/" fallback (CWE-363) — see config_dir above.
     let mut paths = Vec::new();
     if let Some(dir) = config_dir() {
         paths.push(dir.join(filename));
