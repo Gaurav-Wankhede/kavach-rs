@@ -1,24 +1,10 @@
-//! Owner-gate-shaped card detection + ACT-driven imperative.
+//! Gate-shaped card detection + ACT-driven imperative.
 //!
-//! ROOT CAUSE (real-project transcript, 300+ iterations): a card titled
-//! `GATE: …` / `OWNER-GATE: …` / `CLASS-B …` is dispatched as ordinary runnable
-//! work. The agent cannot BUILD un-built owner work, so it answers "Holding —
-//! CLASS-B owner gate" and stops without closing the card; the next stop tick
-//! re-claims the SAME card by title and re-dispatches it — an unbreakable loop
-//! of passive holds that yields only to the user's `Esc`.
-//!
-//! FIX (operator directive): the moment a gate-shaped title is dispatched,
-//! STRIP the gate words from what the agent sees and replace the neutral
-//! procedure with an imperative, action-driven directive — never a hold. This
-//! mirrors `dispatch::first_pass::disk::self_heal_directive`: the binary carries
-//! no fixed prose, the remedy text is fetched from `directive_cache`
-//! (`gate.owner-gate-act-imperative`, the DB + Brain-OS blend), and "Holding" /
-//! hand-back register is FORBIDDEN.
-//!
-//! This does NOT re-introduce owner-gating (abolished 2026-06-20): a gate card
-//! is still runnable. The difference is the agent is told to DECOMPOSE the
-//! buildable sub-task out of it OR DELETE the un-buildable anchor — both are
-//! agent actions completed THIS turn — rather than to passively hold it.
+//! A `GATE:`/`CLASS-B`-titled card is runnable work, but its title invites a
+//! passive "Holding" hand-back that loops forever. On dispatch: STRIP the gate
+//! words and replace the procedure with a DB-fetched imperative
+//! (`gate.owner-gate-act-imperative`) telling the agent to DECOMPOSE the
+//! buildable sub-task or DELETE the anchor — both completed this turn.
 
 use crate::gates::directive_cache::dyn_directive;
 
