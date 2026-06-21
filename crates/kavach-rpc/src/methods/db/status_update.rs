@@ -2,8 +2,10 @@
 //! `db.status_update` RPC method.
 
 use super::util::resolve_project_id;
+use super::witness_gate::enforce_receipt;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
+use kavach_patterns::witness_receipt::Receipt;
 use kavach_types::MemoryStatus;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr as _;
@@ -15,6 +17,12 @@ pub struct StatusUpdateParams {
     pub category: String,
     pub key: String,
     pub status: String,
+    /// Witness receipt proving the workspace passed for a `roadmap` completion
+    /// promotion (`done`/`verified`). Validated cheaply daemon-side (`git rev-parse
+    /// HEAD` only, no cargo). `None` is REFUSED for a gated promotion; ignored
+    /// otherwise. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+    #[serde(default)]
+    pub receipt: Option<Receipt>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
