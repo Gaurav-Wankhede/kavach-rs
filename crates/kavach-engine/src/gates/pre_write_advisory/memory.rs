@@ -1,12 +1,5 @@
-// ARCH: MemoryAwarenessAdvisory — surface OPEN roadmap titles, not counts.
-// PATTERN: pre_write_context_inject
-// CAPACITY: <=2 KB per gate fire, <=6 entries (cap to avoid premature compaction)
-// QPS: 1 invocation per write tool call (Edit|Write|MultiEdit)
-// LATENCY: <30ms via kavach-rpc daemon; degrades silently to empty if daemon down
-// CONSISTENCY: read-only, eventually-consistent (RPC may be ms behind)
-// FAILURE_MODE: rpc absent / db error -> return None -> no injection (graceful)
-// OBSERVABILITY: anchor `[MEMORY:project:<slug>]` so users can grep
-// SOURCE: https://code.claude.com/docs/en/hooks (additionalContext patterns)
+// Memory awareness advisory: surface OPEN roadmap items for context.
+// See decision.engine.memory_awareness_advisory.
 use std::fmt::Write as _;
 
 /// Pull the active project's OPEN roadmap items (`in_progress` + `todo`) via the
