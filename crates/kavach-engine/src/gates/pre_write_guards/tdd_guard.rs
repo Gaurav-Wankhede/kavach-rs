@@ -38,6 +38,15 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     ))
 }
 
+/// True for any test file — the shared detector OR the `_test(s).rs` suffix the
+/// shared `is_test_file` misses. A test write is never gated.
+fn is_test_path(path: &str) -> bool {
+    let name = path.rsplit('/').next().unwrap_or(path);
+    kavach_patterns::is_test_file(path)
+        || name.ends_with("_test.rs")
+        || name.ends_with("_tests.rs")
+}
+
 /// Basename without the `.rs` extension.
 pub(super) fn unit_stem(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path).trim_end_matches(".rs")
