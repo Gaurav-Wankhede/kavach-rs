@@ -78,8 +78,11 @@ pub(super) fn run(
         }
     }
 
+    // The witness gate above PASSED (or was NotGated) — mint a receipt so the
+    // daemon's RPC-boundary gate accepts the promotion (it re-validates HEAD+freshness).
+    let receipt = super::rpc_client::mint_receipt();
     // RPC-first: try daemon, fall back to direct DB on unavailable
-    match super::rpc_client::status_update(project_slug, category, key, status) {
+    match super::rpc_client::status_update(project_slug, category, key, status, receipt) {
         Ok(result) if result.success => {
             let msg = format!("status applied: [{category}] {key} -> {status} (via rpc)");
             if let Err(io_err) = print_or_exit(&msg) {
