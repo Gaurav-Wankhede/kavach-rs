@@ -30,15 +30,9 @@ pub(crate) fn config_dir() -> Option<PathBuf> {
     if let Ok(dir) = std::env::var("KAVACH_CONFIG_DIR") {
         return Some(PathBuf::from(dir));
     }
-    // FIX: [TOCTOU/config_tamper CWE-363/CWE-22] cache.rs:26
-    // WHY5: kavach runs as a Claude Code hook in arbitrary UNTRUSTED project
-    //       directories; resolving config from a CWD-relative "./config"
-    //       let a malicious repo plant pattern-config the gates TRUST
-    //       (gate-decision tampering), and .exists()->read was a symlink
-    //       TOCTOU. Config must come only from trusted, absolute locations.
-    // ROOT_CAUSE: untrusted-CWD-relative candidate in the search path.
-    // RESEARCH: cwe.mitre.org/data/definitions/363.html;
-    //           cwe.mitre.org/data/definitions/22.html.
+    // Trusted absolute dirs only — no CWD-relative fallback (CWE-363/CWE-22:
+    // a hook in an untrusted repo must not load gate config from it).
+    // See decision.config.trusted-config-dirs.
     let home = dirs_home();
     [
         home.join(".config").join("kavach"),
