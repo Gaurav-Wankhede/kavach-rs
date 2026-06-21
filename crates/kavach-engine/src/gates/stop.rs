@@ -108,15 +108,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         &msg,
         wrote_decision_this_turn,
     );
-    // U4 self-improve feed: record the unpersisted-decision finding to the
-    // mistake ledger HERE — before the guard pipeline runs — so it fires on
-    // EVERY stop regardless of which terminal branch wins. Wiring it into
-    // clean_exit alone was dark in practice: the autonomous loop almost always
-    // short-circuits at dispatch::reblock (runnable kanban work) and never
-    // reaches clean_exit, so the feed never fired (proven by execution: the
-    // gate emitted AUTO_CONTINUE, not CAPTURE_FINDING). Recording at the
-    // computation site restores the learning-loop data feed the deleted
-    // behavioral HALT guards used to provide — from the advisory path, no HALT.
+    // Record the unpersisted-decision finding at the computation site (before the
+    // pipeline) so it fires on EVERY stop — clean_exit alone was dark (loop short-
+    // circuits at dispatch::reblock). See decision.engine.stop-mistake-feed-site.
     if capture_advisory.is_some() {
         drop(kavach_session::record_mistake(&kavach_session::Mistake {
             project: &session.project,
