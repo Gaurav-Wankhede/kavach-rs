@@ -119,13 +119,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         return ControlFlow::Break(());
     }
 
-    // REFUSE-STOP on an argue-not-obey turn (handback / permission-menu / name-then-
-    // stop / paraphrased-handoff) WHEN census proves dispatchable work — the
-    // generalized disobedience teeth the narrow lexical `disobedience_guard` missed.
-    // Census-gated so a genuinely drained board never refuses; breaker-bounded so a
-    // board the model cannot act on force-allows after N. Checked BEFORE research so
-    // a turn that both deferred AND made an unsourced claim is told to ACT first.
-    // See decision.engine.refuse-stop-disobedience-handback.
+    // REFUSE-STOP on argue-not-obey (handback/permission-menu/name-then-stop) when
+    // census proves dispatchable work. See decision.engine.refuse-stop-disobedience-handback.
     if refuse_stop_on_disobedience_handback(ctx) {
         let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
         drop(kavach_hook::exit_stop_block(&format!(
