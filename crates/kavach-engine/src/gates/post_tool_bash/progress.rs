@@ -9,14 +9,10 @@ pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, comm
     let is_kanban_close = command.contains("kavach db kanban-close");
     if is_status_update || is_kanban_close {
         session.last_db_write_turn = session.turn_count;
-        // SELF-CLAIM TRACKING: a `status-update --status in_progress` is the agent
-        // claiming a card WITHOUT the stop-gate dispatcher. The dispatcher is the
-        // only OTHER writer of `current_kanban_card`, so without this a self-
-        // claimed card stays empty and the close-before-advance guard
-        // (stop/phase/kanban_status.rs) skips it ENTIRELY — the card then drifts
-        // with zero enforcement ("task done, DB stale"). Mirror the dispatcher:
-        // point `current_kanban_card` at the claimed key so the guard tracks it.
-        // SOURCE: rca.card-status-drift-self-claim-untracked.
+        // SELF-CLAIM TRACKING: a self status-update->in_progress claims a card
+        // without the dispatcher; mirror it into current_kanban_card so the
+        // close-before-advance guard tracks it. See
+        // `decision.engine.self-claim-card-tracking`.
         if is_status_update && command.contains("in_progress")
             && let Some(key) = extract_flag_value(command, "--key") {
                 session.current_kanban_card = key;
