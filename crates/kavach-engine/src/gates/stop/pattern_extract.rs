@@ -60,11 +60,9 @@ fn persist_pattern_seed(session: &SessionState) {
         "content": content,
         "update_key": key,
     });
-    #[expect(
-        clippy::let_underscore_must_use,
-        reason = "fire-and-forget RPC; daemon down is silent-fail by design (Stop must never block)"
-    )]
-    let _: Result<serde_json::Value, _> = kavach_rpc::client::call("db.write", Some(params));
+    // Fire-and-forget but NON-LOSSY: a daemon-down call is spooled durably and
+    // replayed on the next Stop, never silently dropped (Stop still never blocks).
+    super::spool_writes::call_or_spool("db.write", params);
 }
 
 #[cfg(test)]
