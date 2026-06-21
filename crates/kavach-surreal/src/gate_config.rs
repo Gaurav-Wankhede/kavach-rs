@@ -268,15 +268,17 @@ pub async fn set_with_kind(
         )));
     }
     let cols = Columns::for_value(value);
-    // Idempotent upsert: drop any existing row for this exact key, then create
-    // the single canonical row. The unique index makes a duplicate impossible;
-    // the DELETE makes a re-set last-writer-wins rather than an index conflict.
+    // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (two concurrent
+    // setters double-write / a reader sees zero rows mid-swap).
+    // SOURCE: decision.algo-upsert-idempotent-keyed.
+    let key = crate::decisions::hash_decision_key(project, gate_key, "");
     db.query(
-        "DELETE gate_config WHERE project = $p AND gate_key = $k; \
-         CREATE gate_config SET project = $p, gate_key = $k, kind = $kind, \
+        "UPSERT type::record('gate_config', $key) SET \
+             project = $p, gate_key = $k, kind = $kind, \
              value_num = $num, value_bool = $boolean, \
              value_list = $list, value_text = $text, updated_at = time::now();",
     )
+    .bind(("key", key))
     .bind(("p", project.to_owned()))
     .bind(("k", gate_key.to_owned()))
     .bind(("kind", kind.as_str().to_owned()))

@@ -180,7 +180,7 @@ fn arch_record_key(project: &RecordId, pattern: &str, file_path: &str) -> String
 /// Pure seed→key hash for a (project, discriminant, file) decision tuple, split
 /// out so determinism is unit-testable without a DB. Shared by algo + arch
 /// upserts — both key one row per `(project, <pattern|class>, file_path)`.
-fn hash_decision_key(project_key: &str, discriminant: &str, file_path: &str) -> String {
+pub(crate) fn hash_decision_key(project_key: &str, discriminant: &str, file_path: &str) -> String {
     let seed = format!("{project_key}:{discriminant}:{file_path}");
     let hex = blake3::hash(seed.as_bytes()).to_hex();
     // blake3 hex is ASCII, so [..16] is on a char boundary; .get is panic-free.
