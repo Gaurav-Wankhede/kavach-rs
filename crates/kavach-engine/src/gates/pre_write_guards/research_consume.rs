@@ -52,7 +52,7 @@ fn brain_local_analysis_synonyms() -> Vec<String> {
 }
 
 /// Returns `Some(advisory)` to ATTACH internet-first context to the write (never
-/// a block). Drives the Internet on the spot: ensures the background WebSearch is
+/// a block). Drives the Internet on the spot: ensures the background web search is
 /// running and injects its live findings (or a pending directive while they
 /// land). `None` when research is satisfied, not applicable, or bypassed.
 pub(super) fn check(
