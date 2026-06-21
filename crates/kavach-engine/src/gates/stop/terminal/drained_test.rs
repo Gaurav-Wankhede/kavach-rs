@@ -68,7 +68,7 @@ fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
     assert!(c.contains("BLOCKER_WALK"), "single blocker-walk tag present: {c}");
     assert!(!c.contains("ALL_BLOCKED"), "the abolished tag is gone: {c}");
     assert!(c.contains("Do NOT stop"), "refuses the clean stop: {c}");
-    assert!(c.contains("BUILD the blocker"), "directs dependency-first build: {c}");
+    assert!(c.contains("BUILD the prerequisite"), "directs dependency-first build: {c}");
     assert!(c.contains("CYCLE"), "folds in the cycle-break directive: {c}");
     assert!(c.contains("mermaid"), "points at the cycle view for a cycle: {c}");
     assert!(c.contains("STALE/obsolete"), "names the stale-dep resolve path: {c}");
