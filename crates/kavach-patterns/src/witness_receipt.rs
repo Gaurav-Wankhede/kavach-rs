@@ -86,7 +86,7 @@ pub fn validate(
     }
     // Stale (too old) OR future-dated (now < ts) — both refuse.
     let age = now_ms.saturating_sub(r.ts_ms);
-    if age < 0 || age > FRESHNESS_MS {
+    if !(0..=FRESHNESS_MS).contains(&age) {
         return Err(ReceiptError::Stale);
     }
     Ok(())
