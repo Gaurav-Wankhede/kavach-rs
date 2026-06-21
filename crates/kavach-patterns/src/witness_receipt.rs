@@ -1,10 +1,11 @@
 //! Witness receipt: the cheap, non-blocking proof token a `roadmap` completion
-//! promotion must carry across the RPC boundary. The CLI/agent runs the heavy
-//! workspace witness (cargo check+clippy+nextest), then mints a receipt; the
-//! daemon VALIDATES it in O(1) (one `git rev-parse HEAD`) without ever spawning
-//! cargo — so the same evidence contract the CLI enforces also binds every direct
-//! RPC caller, with no tokio-worker block and no nextest→hook→daemon re-entrancy.
-//! SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
+//! promotion must carry across the RPC boundary.
+//!
+//! The CLI/agent runs the heavy workspace witness (cargo check+clippy+nextest),
+//! then mints a receipt; the daemon VALIDATES it in O(1) (one `git rev-parse
+//! HEAD`) without ever spawning cargo — so the same evidence contract the CLI
+//! enforces also binds every direct RPC caller, with no tokio-worker block and no
+//! nextest→hook→daemon re-entrancy. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
 
 use serde::{Deserialize, Serialize};
 
