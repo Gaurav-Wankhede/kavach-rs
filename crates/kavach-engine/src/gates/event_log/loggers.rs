@@ -130,6 +130,6 @@ pub(crate) fn log_tool_failure(input: &ToolFailureLog<'_>) {
         });
         // Fire-and-forget but NON-LOSSY: daemon-down is spooled + replayed next
         // Stop, so an advisory gate-pattern signal is never lost.
-        crate::gates::stop::spool_writes::call_or_spool("gate_pattern.upsert", params);
+        crate::gates::stop::spool_writes::call_or_spool("gate_pattern.upsert", &params);
     }
 }
