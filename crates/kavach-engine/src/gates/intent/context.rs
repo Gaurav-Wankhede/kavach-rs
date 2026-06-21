@@ -48,12 +48,8 @@ pub(super) fn append_context_blocks(
         writeln!(context, "\n[EFFORT] level:{effort}").ok();
     }
 
-    // CC 2.1.160: detect the executing harness from the hook wire-shape so the
-    // model knows WHAT it is running under (and whether the Workflow tool is even
-    // reachable) instead of guessing. `transcript_path` is the Claude Code
-    // signature — every CC hook payload carries it; a non-empty `agent_type` means
-    // we are INSIDE a subagent (e.g. a Workflow-spawned agent), where authoring a
-    // new Workflow is illegal (nesting is one level only).
+    // Detect harness type from hook input (Claude Code vs subagent).
+    // See decision.engine.harness_detection.
     let in_subagent = !input.agent_type.is_empty();
     let is_claude_code = !input.transcript_path.is_empty() || in_subagent;
     if is_claude_code {
