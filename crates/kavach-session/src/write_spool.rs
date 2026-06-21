@@ -61,8 +61,9 @@ pub fn enqueue(write: &SpooledWrite) -> io::Result<()> {
     Ok(())
 }
 
-/// Read every spooled write and REMOVE the file, returning the parsed entries in
-/// append order. The caller replays each via `kavach_rpc::client::call`; any that
+/// Read every spooled write and REMOVE the file, returning entries in append order.
+///
+/// The caller replays each via `kavach_rpc::client::call`; any that
 /// fail again are re-`enqueue`d. Removing the file before replay is intentional:
 /// a replay that crashes mid-drain re-enqueues only the survivors, never
 /// double-replays a write that already landed.
