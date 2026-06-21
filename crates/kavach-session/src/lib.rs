@@ -37,6 +37,9 @@ mod team_tracking;
 mod turn_shadow;
 pub use turn_shadow::{RelayFlush, RewardOutcome};
 
+pub mod write_spool;
+pub use write_spool::{SpooledWrite, drain as drain_write_spool, enqueue as enqueue_write_spool};
+
 pub use get_or_create::{
     get_or_create_session, get_or_create_session_for, resolved_session_id, set_session_context,
 };
