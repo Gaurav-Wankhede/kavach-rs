@@ -97,3 +97,4 @@ pub mod tool_chain_validator;
 pub mod trust_score;
 pub mod unpersisted_decision_guard;
 pub mod webhook_signature_guard;
+pub mod witness_receipt;
