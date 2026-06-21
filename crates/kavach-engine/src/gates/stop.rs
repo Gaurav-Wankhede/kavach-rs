@@ -181,6 +181,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // See decision.engine.stop-no-halt-dispatch-only.
     let pipeline: &[fn(&mut StopCtx<'_>) -> ControlFlow<()>] = &[
         phase::iteration,
+        // Argue-not-obey teeth: refuse a stop whose turn dismissed a fired imperative
+        // in prose without obeying it. See decision.engine.disobedience-guard.
+        disobedience::check,
         // USER-FOCUS OVERRIDE: user steered + no card mid-work -> allow clean stop
         // (don't drag onto a queued card). See decision.engine.stop-pre-dispatch-overrides.
         phase::user_focus,
