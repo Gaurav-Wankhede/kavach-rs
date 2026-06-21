@@ -36,12 +36,8 @@ use crate::error::EngineError;
     reason = "signature is fixed by the run_gate dispatch table: every gate handler returns Result<(), EngineError>"
 )]
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
-    // Session-aware load: resolve the durable session_runtime DB row for THIS
-    // session_id. A /clear starts a new session_id, so this returns fresh
-    // state instead of rehydrating the prior conversation's INI file — the
-    // root cause of cross-session state drift (stale files_modified /
-    // research_done). SessionStart owns the session boundary; later gates'
-    // plain get_or_create_session() read back the corrected INI state.
+    // Load session row from DB — fresh state after /clear (session boundary).
+    // See decision.engine.session-start-aware-load.
     let mut session = kavach_session::get_or_create_session_for(&input.session_id);
 
     state::set_model(&mut session, input);

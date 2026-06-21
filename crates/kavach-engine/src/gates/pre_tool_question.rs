@@ -8,14 +8,8 @@ use kavach_types::HookInput;
 /// `kavach-patterns/src/laziness_guard_test.rs`: fires only on an effort split,
 /// never on a genuine direction question.
 pub(crate) fn handle_question(input: &HookInput) {
-    // VENDOR SCOPE: the laziness rule is a Claude-Code division-of-labor directive
-    // (global CLAUDE.md: Cursor runs Composer 2.5 and is exempt from the Kavach
-    // harness). Other harnesses spawn the same binary, so the gate would otherwise
-    // fire on their AskUserQuestion too. The hook layer already resolved the vendor
-    // and stashed it in a thread-local (kavach-hook::set_output_context); reading it
-    // here keeps the engine signature vendor-blind while honoring the exemption.
-    // Non-Claude-Code vendors skip the laziness check entirely (incl. the fail-closed
-    // arm below) — fall through to the normal allow-relay.
+    // Claude-Code only: check vendor before applying laziness gate.
+    // See decision.engine.vendor_scoped_laziness_gate.
     if vendor_is_exempt(kavach_hook::output_vendor()) {
         let mut session = kavach_session::get_or_create_session();
         super::turn_relay::exit_pre_tool_allow_relay(&mut session, None);
