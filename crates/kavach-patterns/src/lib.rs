@@ -9,6 +9,7 @@
 
 mod checks;
 mod config;
+pub mod bloatware_guard;
 pub mod dedup_guard;
 mod detect;
 mod file_types;
