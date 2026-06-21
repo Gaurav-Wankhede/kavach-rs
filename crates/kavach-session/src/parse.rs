@@ -149,6 +149,13 @@ pub(crate) fn parse_field(state: &mut SessionState, key: &str, value: &str, in_f
                 .map(str::to_owned)
                 .collect();
         }
+        "tdd_red_units" => {
+            state.tdd_red_units = value
+                .split(',')
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .collect();
+        }
         // FIX [contract_violation] reviewer BLOCK-J — see serialize_extras.rs
         // [LSP_FIRST] section. Without this parse arm, the §LSP-FIRST gate's
         // producer bookkeeping (post_tool_lsp.rs) would reset every session
