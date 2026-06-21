@@ -170,6 +170,18 @@ fn refuse_stop_on_roadmap_todos(ctx: &mut StopCtx<'_>) -> bool {
         && super::super::shared::should_block_behavioral(ctx.session, "roadmap_todos_remain")
 }
 
+/// Decide whether the clean-stop must be REFUSED because this turn argued instead
+/// of obeying (handback / permission-menu / name-then-stop / paraphrased-handoff)
+/// WHILE census proves a dispatchable roadmap todo remains. Census-gated so a
+/// drained board never refuses; breaker-bounded (`disobedience_handback`) so a
+/// board the model cannot act on force-allows after N. Mutates the breaker — call
+/// once per stop. Checked before research so "act first" wins over "cite first".
+fn refuse_stop_on_disobedience_handback(ctx: &mut StopCtx<'_>) -> bool {
+    ctx.disobedience_handback
+        && super::drained::roadmap_todos_remain(&ctx.session.project)
+        && super::super::shared::should_block_behavioral(ctx.session, "disobedience_handback")
+}
+
 /// Decide whether the clean-stop must be REFUSED because this turn made an
 /// unsourced current-knowledge claim (`detect_claim_without_research` fired).
 /// Breaker-bounded (`research_unsourced`) so a turn that genuinely cannot source a
