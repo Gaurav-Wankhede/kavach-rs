@@ -38,15 +38,15 @@ fn fires_on_payment_completion() {
 }
 
 #[test]
-fn stop_fires_when_risk_completion_lacks_answer() {
+fn stop_surfaces_awareness_when_risk_completion() {
     use super::check_stop_interrogation;
     let msg = "Done — the lease claim is now atomic and race-free.";
     // wrote_this_turn = true: a real risk-bearing write happened this turn.
-    let out = check_stop_interrogation(msg, true).expect("should nudge at stop");
-    assert!(out.contains("mistake ledger"));
-    // Imperative: command the fix, do not just record-and-move-on.
-    assert!(out.contains("Do NOT stop"), "refuses the stop, drives the fix: {out}");
-    assert!(out.contains("fix it now"), "fix-first language: {out}");
+    let out = check_stop_interrogation(msg, true).expect("should surface awareness");
+    // RESOLVE-not-block: terse surface advisory, NO refuse-stop / fix-now CTA.
+    assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag: {out}");
+    assert!(!out.contains("Do NOT stop"), "never refuses the stop: {out}");
+    assert!(!out.contains("RUN each lens"), "no handback CTA: {out}");
 }
 
 #[test]
