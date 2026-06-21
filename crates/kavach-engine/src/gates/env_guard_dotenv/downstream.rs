@@ -19,7 +19,7 @@ const ENV_PRINTERS: &[&str] = &["echo ", "printf ", "printenv ", "env ", "set ",
 
 /// Return true when the post-source command does NOT leak a secret into context.
 /// Fail-OPEN: explicit printers + raw shells rejected; silent consumers allowed.
-/// See decision.engine.env_leak_fail_open_policy.
+/// See `decision.engine.env_leak_fail_open_policy`.
 pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
     let lc = downstream.trim().to_lowercase();
     let Some(first_token) = lc.split_whitespace().next() else {
