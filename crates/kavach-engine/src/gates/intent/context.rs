@@ -41,8 +41,8 @@ pub(super) fn append_context_blocks(
 
     append_mermaid_views(context, &session.project, prompt);
 
-    // CC 2.1.133: surface the active effort tier so downstream gates' strictness
-    // is legible to the model. `low` relaxes the pre-write research block.
+    // Surface effort tier to downstream gates for strictness calibration.
+    // See decision.engine.effort_tier_context.
     let effort = input.effort_level();
     if !effort.is_empty() {
         writeln!(context, "\n[EFFORT] level:{effort}").ok();
