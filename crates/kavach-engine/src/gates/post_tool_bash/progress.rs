@@ -24,16 +24,8 @@ pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, comm
         session.save().ok();
     }
 
-    // A `kavach db write --category research` is a RESEARCH ARTIFACT, so it
-    // satisfies the TABULA_RASA gate — the same way a live `WebSearch` does.
-    // Without this, the gate was satisfiable ONLY by a WebSearch tool-result
-    // (post_tool_research::handle), so an agent that researched-then-PERSISTED a
-    // research row (the canon path) stayed blocked and rationalized the dead end
-    // as "gate working as intended". It was not: the gate had no input channel
-    // for a written research row. We mark research_done WITHOUT advancing
-    // last_db_write_turn — a research write proves research, but (per the
-    // circuit-breaker rule above) must NOT reset the live-lock progress signal.
-    // SOURCE: decision:rca.tabula_rasa_research_row_not_a_satisfier.
+    // A `kavach db write --category research` satisfies TABULA_RASA gate.
+    // SOURCE: decision.engine.tabula_rasa_research_row_satisfier.
     if command.contains("kavach db write") && command.contains("--category research") {
         let topic = extract_flag_value(command, "--key")
             .or_else(|| extract_flag_value(command, "--title"))
