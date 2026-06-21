@@ -31,26 +31,43 @@ pub(super) fn dispatch_envelope(c: &EnvelopeCtx<'_>) -> String {
         (false, _) => "already in_progress (resume)",
     };
     let needs_decomp = kavach_rpc::methods::roadmap::readiness::is_needs_decomposition(c.title);
-    let shape = if needs_decomp {
+    // Gate-shaped title (`GATE:`/owner-gate/CLASS-B): strip the gate words so the
+    // agent sees the WORK, and prepend an ACT imperative that forbids "Holding"
+    // and names the split/delete exits — kills the owner-gate dispatch loop.
+    let gate_shaped = super::gate_strip::is_gate_shaped(c.title);
+    let shown_title = if gate_shaped {
+        super::gate_strip::strip_gate_words(c.title)
+    } else {
+        c.title.to_owned()
+    };
+    let shape = if gate_shaped {
+        "  shape: GATE-STRIPPED (owner-gate words removed — this is runnable work)\n"
+    } else if needs_decomp {
         "  shape: NEEDS-DECOMPOSITION (title declares not-one-card)\n"
     } else {
         ""
     };
     let directive = c.directive.unwrap_or(FALLBACK_DIRECTIVE);
+    // For a gate card the act-imperative leads (never a hold); the project's
+    // dispatch directive rides along after it.
+    let directive_block = if gate_shaped {
+        format!("{}\n\n{directive}", super::gate_strip::act_imperative(&shown_title))
+    } else {
+        directive.to_owned()
+    };
     format!(
         "{lp}{rp}[AUTO_CONTINUE] Do NOT stop — work the dispatched card THIS turn.\n\
          STATE:\n\
          \x20 card: {key}\n\
-         \x20 title: {title}\n\
+         \x20 title: {shown_title}\n\
          \x20 claim: {claim_state}\n\
          {shape}\
          \x20 read: kavach db get --project {proj} --category roadmap --key {key} --full\n\n\
          DIRECTIVE (project-authored; the gate carries no fixed procedure):\n\
-         {directive}",
+         {directive_block}",
         lp = c.loop_prefix,
         rp = c.reward_prefix,
         key = c.priority,
-        title = c.title,
         proj = c.proj,
     )
 }

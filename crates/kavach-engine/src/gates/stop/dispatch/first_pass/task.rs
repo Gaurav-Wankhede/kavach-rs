@@ -2,6 +2,7 @@
 use core::ops::ControlFlow;
 
 mod envelope;
+mod gate_strip;
 use envelope::{EnvelopeCtx, dispatch_envelope};
 
 use super::source_down;

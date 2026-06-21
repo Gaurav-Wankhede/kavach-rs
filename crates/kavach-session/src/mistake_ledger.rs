@@ -1,7 +1,7 @@
 // MISTAKE LEDGER — observable record of every gate-block / behavioral violation.
 //
 // ARCH: AntiPatternReinjection
-// PATTERN: mistake_ledger | SCOPE: project | CAP: AP | SEARCHED: 2026-05
+// PATTERN: mistake_ledger | SCOPE: global (kavach-global) | CAP: AP | SEARCHED: 2026-05
 //
 // SOURCE: arxiv.org/html/2512.11485 (Mistake Notebook Learning) — distill
 //   shared error patterns into structured "mistake notes" in external memory.
@@ -22,6 +22,13 @@
 use std::process::Command;
 
 use blake3::Hasher;
+
+/// Shared cross-project namespace for mistakes + learnings.
+///
+/// Every ledger write/read uses this slug, NOT the session project, so a mistake
+/// learned in one repo is visible to all. See
+/// decision.mistakes-learnings-fully-global.
+pub const GLOBAL_NAMESPACE: &str = "kavach-global";
 
 /// One mistake observation.
 ///
@@ -69,7 +76,8 @@ pub fn record(m: &Mistake<'_>) -> String {
     // Probe the existing row so we can BUMP hit_count instead of overwriting
     // it back to 1. The K-PRI ranker (kavach_patterns::k_pri) reads hit_count
     // as the recurrence signal — losing it on every write breaks LFU ranking.
-    let (prev_hits, exists) = read_hit_count(m.project, &key);
+    // Global namespace, NOT m.project: a mistake is shared across all projects.
+    let (prev_hits, exists) = read_hit_count(GLOBAL_NAMESPACE, &key);
     let new_hits = prev_hits.saturating_add(1);
     let now_unix = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -82,7 +90,7 @@ pub fn record(m: &Mistake<'_>) -> String {
         fix = truncate(m.correct_action, 120),
     );
     let content = format!(
-        "anti-pattern row | gate={gate} turn={turn} hit_count={hits} last_seen_unix={ts}\n\
+        "anti-pattern row | gate={gate} turn={turn} hit_count={hits} last_seen_unix={ts} origin_project={origin}\n\
          BANNED PHRASE/BEHAVIOR (do NOT reproduce verbatim):\n  {sample}\n\
          CORRECT ALTERNATIVE (apply at the next site that would trigger this gate):\n  {fix}\n\
          REINJECTION FRAMING: arxiv 2512.02389 — store as do-not-do + alternative,\n\
@@ -91,6 +99,7 @@ pub fn record(m: &Mistake<'_>) -> String {
         turn = m.turn,
         hits = new_hits,
         ts = now_unix,
+        origin = m.project,
         sample = m.banned_sample,
         fix = m.correct_action,
     );
@@ -103,7 +112,7 @@ pub fn record(m: &Mistake<'_>) -> String {
         "db",
         "write",
         "--project",
-        m.project,
+        GLOBAL_NAMESPACE,
         "--category",
         "pattern",
         "--key",
