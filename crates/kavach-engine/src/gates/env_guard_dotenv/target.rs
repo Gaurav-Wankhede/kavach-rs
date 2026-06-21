@@ -33,7 +33,7 @@ fn token_is_dotenv_file(tok: &str) -> bool {
 }
 
 /// Known source roots whose presence in a multi-path search proves the command
-/// is a repository grep, not a dotenv read. See decision.engine.dotenv_named_roots_only.
+/// is a repository grep, not a dotenv read. See `decision.engine.dotenv_named_roots_only`.
 fn is_source_root(tok: &str) -> bool {
     const ROOTS: &[&str] = &[
         "crates", "src", "tests", "lib", "app", "apps", "packages", "services", "core",
