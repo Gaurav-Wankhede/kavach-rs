@@ -29,14 +29,8 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     if session.session_id.is_empty() {
         return;
     }
-    // E5 (reward only on a real transition, operator directive 2026-06-18): the
-    // back-fill runs on EVERY stop, BEFORE the guard pipeline decides allow-stop
-    // vs dispatch. So a user-focus / foreign-tree ALLOW-STOP — which skips the
-    // card without any work — would otherwise still bank a reward (the spurious
-    // `[REWARD:last] +1.0` on a skip). A reward must reflect WORK: grade only when
-    // this turn produced a real signal — a mechanical 3-witness receipt
-    // (`goal_receipt_pass`) OR an actual `kavach db status-update` to done/verified
-    // on a card. Neither → no transition happened → abstain (write no reward).
+    // Reward only on real work completion: 3-witness receipt or status-update to done/verified.
+    // See decision.engine.reward-gate-no-spurious-skip.
     let transitioned = session.goal_receipt_pass
         || session.recent_commands.iter().any(|c| {
             c.contains("status-update")
