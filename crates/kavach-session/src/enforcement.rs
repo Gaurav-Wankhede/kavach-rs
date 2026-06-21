@@ -143,6 +143,7 @@ impl SessionState {
         self.think_first_injected = false;
         self.research_advisory_sent = false;
         self.files_modified_this_turn = Vec::new();
+        self.tdd_red_units = Vec::new();
         // Reset RCA tracking — every new intent window requires fresh [RCA] block.
         self.rca_block_present = false;
         self.rca_set_turn = 0;
