@@ -58,9 +58,13 @@ pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
     name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
 }
 
-/// True when the written content already carries an in-file `#[test]`.
-fn has_infile_test(content: &str) -> bool {
-    content.contains("#[test]") || content.contains("#[tokio::test]")
+/// True when the content carries an inline test (forbidden in production files):
+/// a `#[test]`/`#[tokio::test]` fn or an inline `#[cfg(test)] mod`. A `#[path]`
+/// declaration pointing at an external test file is NOT inline.
+pub(super) fn has_inline_test(content: &str) -> bool {
+    content.contains("#[test]")
+        || content.contains("#[tokio::test]")
+        || (content.contains("#[cfg(test)]") && !content.contains("#[path"))
 }
 
 #[cfg(test)]
