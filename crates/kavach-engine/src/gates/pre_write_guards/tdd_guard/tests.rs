@@ -40,14 +40,25 @@ fn allows_when_matching_test_touched_first_this_turn() {
 }
 
 #[test]
-fn allows_when_in_file_test_module_present_in_content() {
-    // An in-file #[test] written alongside the unit is test-first within the file.
-    let s = SessionState::default();
+fn blocks_inline_test_in_production_file() {
+    // Inline #[test] in a production file is FORBIDDEN — tests live in a separate
+    // mapped file. An in-file test must NOT satisfy the gate; it must block.
+    let s = session_with_turn_files(&["crates/foo/src/widget/tests.rs"]);
     let c = ctx(
         "crates/foo/src/widget.rs",
         "pub fn build() {}\n#[cfg(test)]\nmod tests { #[test] fn t() {} }",
     );
-    assert!(check(&c, &s).is_none(), "in-file test satisfies the gate");
+    let out = check(&c, &s).expect("inline test must block");
+    assert!(out.contains("inline test"), "names the inline-test violation: {out}");
+}
+
+#[test]
+fn has_inline_test_detects_cfg_test_module() {
+    assert!(has_inline_test("fn a() {}\n#[cfg(test)]\nmod tests { }"));
+    assert!(has_inline_test("#[test]\nfn t() {}"));
+    assert!(!has_inline_test("pub fn build() {}\n// no tests here"));
+    // A `#[path]` to an external test file is NOT an inline test.
+    assert!(!has_inline_test("#[path = \"widget/tests.rs\"]\nmod tests;"));
 }
 
 #[test]
