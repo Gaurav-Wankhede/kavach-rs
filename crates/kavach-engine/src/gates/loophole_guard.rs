@@ -124,11 +124,7 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
         return None;
     }
     let lens_list = lenses::lens_block(&fired);
-    // RESOLVE, do NOT hand back: surface the change's risk surface + the lenses the
-    // automated scan (`scan_changed_for_loopholes`) already runs over it. No CTA to
-    // manually walk lenses or narrate a `Loopholes closed:` line — the lens scan
-    // detects and records; the native triage agent fixes. This is awareness, not a
-    // labor demand. (SOURCE: owner-gate/handback abolition — decision row.)
+    // Awareness only — the automated scan detects + records; no labor CTA.
     Some(format!(
         "[LOOPHOLE_SURFACE] risk-bearing path touched. Relevant attack lenses for \
          this surface (the lens scan checks these automatically):\n{lens_list}"
