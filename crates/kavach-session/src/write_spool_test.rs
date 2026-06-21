@@ -8,7 +8,8 @@ use crate::paths::set_test_state_dir;
 /// path. The index keeps parallel tests from sharing one spool file.
 fn isolate(tag: &str) {
     let dir = std::env::temp_dir().join(format!("kavach-spool-test-{tag}"));
-    let _ = std::fs::remove_dir_all(&dir);
+    // Best-effort: the dir is absent on first run; only a real removal failure matters.
+    drop(std::fs::remove_dir_all(&dir));
     std::fs::create_dir_all(&dir).expect("create temp state dir");
     set_test_state_dir(Some(dir));
 }
