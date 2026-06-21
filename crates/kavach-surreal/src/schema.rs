@@ -306,21 +306,10 @@ DEFINE FIELD IF NOT EXISTS workflow_path ON roadmap TYPE option<string>;
 -- harness-bearing cards for a project without a full-table scan.
 DEFINE INDEX IF NOT EXISTS idx_roadmap_harness ON roadmap FIELDS project, harness;
 
--- operator-gate / block machinery REMOVED (operator directive 2026-06-16): a card is
--- either runnable or DELETED — never gate-flagged, never block-parked. The legacy
--- `owner_gated` field + its index (the historical on-disk name) are dropped below
--- for existing stores; the physical identifier MUST stay `owner_gated` to match
--- the bytes already written by older builds.
+-- Legacy-store scrub: drop the `owner_gated` field+index, then UNSET its stored
+-- bytes (SCHEMAFULL needs REMOVE FIELD before UNSET; idempotent thereafter).
 REMOVE INDEX IF EXISTS idx_roadmap_owner_gated ON roadmap;
 REMOVE FIELD IF EXISTS owner_gated ON roadmap;
--- REMOVE FIELD drops the DEFINITION but NOT the bytes already stored per-row;
--- on a SCHEMAFULL table the orphan value then fails every subsequent UPDATE
--- ("Found field 'owner_gated', but no such field exists"). The companion
--- data-migration scrubs the stored value from existing rows. SCHEMAFULL order
--- is mandatory: REMOVE FIELD first (above), then UNSET (here). Idempotent: once
--- scrubbed the field is absent and UNSET is a no-op.
--- SOURCE: https://surrealdb.com/docs/surrealdb/surrealql/statements/update (UNSET)
---         https://github.com/orgs/surrealdb/discussions/191 (REMOVE FIELD then UNSET)
 UPDATE roadmap UNSET owner_gated;
 
 -- =============================================================================
