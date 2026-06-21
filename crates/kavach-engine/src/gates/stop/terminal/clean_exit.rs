@@ -41,14 +41,9 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // re-block breaker before composing the terminal verdict.
     ctx.session.clear_stop_reblock();
 
-    // BUG FIX (drained-board → plan-check): the dispatch tiers found nothing
-    // runnable, but a drained board is NOT a finished plan. Emit the SAME
-    // census-aware verdict the retry terminal uses (`[ALL_BLOCKED]` when every
-    // remainder is dependency-blocked, else the board-drained `[PLAN]` nudge) —
-    // never a silent stop that hides un-built plan phases. This terminal used to
-    // `exit_silent()` on an empty board, so an empty kanban stopped the loop
-    // immediately without ever checking the active `[PLAN]`. Loop-safe:
-    // `exit_stop_context` ALLOWS the stop, so the advisory can never spin.
+    // Drained board != finished plan: emit the census-aware verdict ([ALL_BLOCKED]
+    // or board-drained [PLAN]), never a silent stop hiding un-built phases.
+    // Loop-safe (ALLOWS the stop). See decision.engine.clean-exit-drained-plan.
     let mut full = super::drained::drained_terminal_context(&ctx.session.project);
 
     // Ride-alongs (all advisory; the stop still proceeds): an explicit user stop
