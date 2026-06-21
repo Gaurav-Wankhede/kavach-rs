@@ -1,6 +1,6 @@
 use super::{
-    all_blocked_context, board_drained_plan_context, census_has_dispatchable_remainder,
-    census_is_all_blocked, cycle_deadlock_context,
+    blocker_walk_context, board_drained_plan_context, census_has_dispatchable_remainder,
+    census_is_all_blocked,
 };
 
 #[test]
