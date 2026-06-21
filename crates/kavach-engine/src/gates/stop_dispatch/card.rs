@@ -77,13 +77,8 @@ pub(crate) fn card_is_still_open(project_slug: &str, key: &str) -> bool {
         .is_some_and(kavach_types::MemoryStatus::is_runnable)
 }
 
-// PARKING ABOLISHED (operator directive 2026-06-16, reaffirmed 2026-06-17): there is
-// no `card_is_honestly_parked` stop-gate escape. The former `AGENT_BLOCKED:`/
-// `OPERATOR-GATED:` content markers no longer escape the non-surrenderable
-// close-before-advance block. A card is either CLOSED (done/verified, 3-witness)
-// or DELETED (`kavach db delete --category roadmap --key ...`) — never marker-parked. The only honest
-// exits from the close block are now a real status-update or deletion of the card,
-// per global CLAUDE.md `§delete_not_park`.
+// Parking abolished: close-before-advance has no marker-park escape.
+// See decision.engine.delete-not-park.
 
 /// Atomically CLAIM the dispatched card (`todo -> in_progress`). Best-effort: a
 /// transport miss degrades to prior behavior (card stays `todo`, re-dispatched

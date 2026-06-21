@@ -89,12 +89,8 @@ mod tests {
 
     #[test]
     fn ignores_non_bug_non_trigger_prompts() {
-        // Neither a bug/fix token NOR a config research_trigger
-        // (implement/create/build/add/integrate/setup/configure) → no research.
-        // NOTE: "create"/"add" DO now require research — they are config
-        // research_triggers, and `requires_research` delegates to the canonical
-        // `kavach_config` path so all three gate sites agree (the unification
-        // that closed the TABULA_RASA disagreement).
+        // Neither a bug/fix token NOR a config research_trigger → no research.
+        // See decision.engine.research_guard_canonical_path.
         assert!(!requires_research("general", "explain how this code flows"));
         assert!(!requires_research("general", "walk me through the logic"));
     }
