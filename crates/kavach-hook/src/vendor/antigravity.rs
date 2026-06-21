@@ -1,10 +1,5 @@
-// split: Google Antigravity (agy) native edge — successor to the retired Gemini
-// CLI (gemini CLI retired 2026-06-18; agy is the migration target). Antigravity
-// hooks receive JSON on stdin and read a JSON object on stdout carrying a
-// `decision` key set to "allow" or "deny" — the block signal is the JSON body
-// (NOT exit code 2). Its `PreToolUse` event maps directly from Gemini's
-// `BeforeTool`. Config lives at ~/.gemini/config/hooks.json (CHANGELOG v1.0.8).
-//! Google Antigravity CLI (`agy`) native edge.
+//! Google Antigravity CLI (`agy`) native edge — migration target for the retired
+//! Gemini CLI (gemini CLI retired 2026-06-18; `BeforeTool` → `PreToolUse`).
 //!
 //! Antigravity's hook contract is JSON-stdin → JSON-stdout with a top-level
 //! `{"decision":"allow"|"deny","reason":...}` object; continuation/blocking is
