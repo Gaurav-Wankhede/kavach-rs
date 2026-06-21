@@ -9,7 +9,7 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     if std::env::var_os("KAVACH_TDD_BYPASS").is_some() {
         return None;
     }
-    if ctx.is_test || !ctx.is_code {
+    if !ctx.is_code || is_test_path(ctx.file_path) {
         return None;
     }
     let stem = unit_stem(ctx.file_path);
