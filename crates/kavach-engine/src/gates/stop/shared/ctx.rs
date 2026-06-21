@@ -22,12 +22,10 @@ pub(crate) struct StopCtx<'a> {
     /// decision in prose that was NOT persisted to the DB this turn. Appended to
     /// the clean-exit STOP context as a NON-blocking nudge — never a HALT.
     pub(crate) capture_advisory: Option<String>,
-    /// Loophole self-interrogation advisory: set when the turn claimed
-    /// completion on a risk-bearing path WITHOUT a `Loopholes closed:` line.
-    /// On a drained board the clean-exit terminal REFUSES the stop while this is
-    /// present (parity with `[CYCLE_DEADLOCK]`), bounded by the `loophole_open`
-    /// behavioral breaker; the omission is also recorded to the mistake ledger at
-    /// the computation site so the learning loop sees it on every stop.
+    /// Loophole-surface awareness advisory: set when the turn touched a
+    /// risk-bearing path. RESOLVE-not-block — clean-exit appends it as a
+    /// ride-along and the stop proceeds; the lens scan records suspect sites + the
+    /// native triage agent fixes them. Never refuses the stop.
     pub(crate) loophole_advisory: Option<String>,
     /// Shallow-verdict advisory: set when the turn asserted a clean/wired/
     /// no-defect verdict with no `file:line` citation and no `[RCA]` block — the
