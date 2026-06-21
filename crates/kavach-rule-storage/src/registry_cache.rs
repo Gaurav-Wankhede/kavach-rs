@@ -36,13 +36,9 @@ pub fn is_stale(cache_path: &Path, current_hash: &str) -> bool {
     }
 }
 
-// ARCH: hash_based_cache_invalidation
-// PATTERN: write-through cache with content-hash staleness
-// INVARIANT: fresh.hash != cached.hash triggers rebuild
-// FAILURE_MODE: concurrent writes race; last-write-wins acceptable for local CLI
-// CAPACITY: <100 skill files, <1ms rebuild latency
-// MONITORING: none (CLI tool, no telemetry)
-// SOURCE: Cargo fingerprint pattern
+// Content-hash cache: fresh.hash != cached.hash triggers rebuild (Cargo
+// fingerprint pattern). Local-CLI race is last-write-wins — see
+// decision.rule-storage.hash-cache.
 
 /// Load registry, auto-rebuilding from `skills_dir` if cache is stale or missing.
 /// Uses content-hash comparison (not mtime) for reliable invalidation.
