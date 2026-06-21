@@ -5,7 +5,7 @@ use crate::gates::stop::shared::StopCtx;
 use core::ops::ControlFlow;
 use kavach_types::HookInput;
 
-fn ctx_with(msg: &str, session: &mut kavach_session::SessionState) -> StopCtx<'_> {
+fn ctx_with<'a>(msg: &str, session: &'a mut kavach_session::SessionState) -> StopCtx<'a> {
     // Leak a HookInput so the borrow lives for the StopCtx; test-only.
     let input: &'static HookInput = Box::leak(Box::new(HookInput {
         last_assistant_message: msg.to_owned(),
