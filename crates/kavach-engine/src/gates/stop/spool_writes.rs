@@ -27,12 +27,12 @@ pub fn call_or_spool(method: &str, params: serde_json::Value) {
         return;
     }
     let Ok(params_json) = serde_json::to_string(&params) else {
-        tracing::warn!(method, "spool: params not serializable; learning write lost");
+        eprintln!("kavach spool: params not serializable for {method}; learning write lost");
         return;
     };
-    let write = SpooledWrite { method: method.to_owned(), params_json };
+    let write = SpooledWrite::new(method.to_owned(), params_json);
     if let Err(e) = enqueue_write_spool(&write) {
-        tracing::warn!(method, error = %e, "spool: enqueue failed; learning write lost");
+        eprintln!("kavach spool: enqueue failed for {method} ({e}); learning write lost");
     }
 }
 
