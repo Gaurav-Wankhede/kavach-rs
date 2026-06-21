@@ -1,7 +1,6 @@
-//! Proves the loophole refuse-stop decision (parity with the cycle deadlock):
-//! an un-closed loophole on a drained board REFUSES the clean stop, bounded by
-//! the behavioral breaker so it can never spin forever.
-use super::refuse_stop_on_open_loophole;
+//! Proves the loophole signal is RESOLVE-not-block: a loophole advisory on a
+//! drained board is attached as a clean-exit ride-along and NEVER refuses the
+//! stop. The refuse-stop block was removed (decision.loophole.resolve-not-handback).
 use crate::gates::stop::shared::StopCtx;
 use kavach_types::HookInput;
 
@@ -23,37 +22,19 @@ fn ctx_with<'a>(
 }
 
 #[test]
-fn no_loophole_advisory_never_refuses_stop() {
+fn loophole_advisory_is_carried_not_blocked() {
+    // The advisory is held on the ctx for clean_exit to append as a ride-along;
+    // there is no refuse-stop path that could halt the loop on it.
     let input = HookInput::default();
     let mut session = kavach_session::SessionState::default();
-    let mut ctx = ctx_with(&input, &mut session, None);
-    assert!(
-        !refuse_stop_on_open_loophole(&mut ctx),
-        "a clean turn (no open loophole) stops cleanly"
-    );
+    let ctx = ctx_with(&input, &mut session, Some("[LOOPHOLE_SURFACE] x".to_owned()));
+    assert!(ctx.loophole_advisory.is_some(), "advisory is surfaced, never suppressed");
 }
 
 #[test]
-fn open_loophole_refuses_stop_then_breaker_force_allows() {
+fn absent_loophole_advisory_is_none() {
     let input = HookInput::default();
     let mut session = kavach_session::SessionState::default();
-    // Default circuit-breaker threshold is 3: the 3rd consecutive block trips,
-    // after which the gate force-allows (loop-safety) while recording the
-    // surrender — so the refusal is bounded, never an infinite spin.
-    session.gate_circuit_breaker_threshold = 3;
-
-    let mut refusals = 0;
-    for _ in 0..6 {
-        let mut ctx = ctx_with(&input, &mut session, Some("[LOOPHOLE] open".to_owned()));
-        if refuse_stop_on_open_loophole(&mut ctx) {
-            refusals += 1;
-        }
-    }
-    // It refuses for the first (threshold - 1) calls, then the breaker trips and
-    // every subsequent call force-allows — so the count is bounded, NOT 6.
-    assert_eq!(refusals, 2, "refuses up to the breaker bound, then force-allows");
-    assert!(
-        session.is_gate_tripped("loophole_open"),
-        "the breaker tripped, guaranteeing loop-safety"
-    );
+    let ctx = ctx_with(&input, &mut session, None);
+    assert!(ctx.loophole_advisory.is_none());
 }
