@@ -131,20 +131,10 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
     ))
 }
 
-/// Stop-gate variant: given the final assistant `message` of a turn, return the
-/// terse loophole-surface awareness advisory when the turn claimed completion on a
-/// risk-bearing path. `None` when the turn wrote no file or made no completion
-/// claim.
-///
-/// RESOLVE, not handback: this NEVER halts and NEVER demands a `Loopholes closed:`
-/// narration. The caller appends it as a clean-exit ride-along AND records a
-/// ledger row; the automated lens scan (`scan_changed_for_loopholes`) + the native
-/// triage agent do the actual closing. Awareness over labor-demand.
+/// Stop-gate variant: terse surface advisory when the turn claimed completion on a
+/// risk path. Never halts. `None` when no file was written or no completion claim.
 pub(crate) fn check_stop_interrogation(message: &str, wrote_this_turn: bool) -> Option<String> {
-    // PRECISION GUARD: a loophole can only be LIVE if this turn actually WROTE a
-    // risk-bearing path. Without this, the message-text trigger fires on a
-    // read-only Q&A turn whose PROSE merely describes past risk fixes (words like
-    // `lock`/`atomic`/`lease`/`done`) — a false-positive on a turn with no defect.
+    // A loophole is only live if this turn WROTE — guards read-only prose-trigger FPs.
     if !wrote_this_turn {
         return None;
     }
