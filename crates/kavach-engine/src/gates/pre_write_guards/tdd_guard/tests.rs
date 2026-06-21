@@ -32,6 +32,18 @@ fn blocks_production_code_when_no_test_came_first() {
 }
 
 #[test]
+fn allows_comment_only_change_without_a_test() {
+    // A comment/doc edit changes no executable code — TDD must NOT block it, so
+    // the 444-file comment sweep can proceed without faking a test per file.
+    let s = SessionState::default();
+    let c = ctx(
+        "crates/foo/src/widget.rs",
+        "// just a tightened comment\n// another line\n",
+    );
+    assert!(check(&c, &s).is_none(), "comment-only edit is exempt from TDD");
+}
+
+#[test]
 fn allows_when_matching_test_touched_first_this_turn() {
     // The unit's sibling test file was written EARLIER this turn -> Red came first.
     let s = session_with_turn_files(&["crates/foo/src/widget_test.rs"]);
