@@ -19,15 +19,8 @@ use crate::gates::stop_dispatch::{
 /// Run the three-tier re-block while under the breaker ceiling. `Continue` only
 /// when the ceiling is spent or no terminal branch fired (falls through).
 pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    // DB-todo-driven loop: continuation follows the kavach board's open set, not a
-    // fixed attempt budget. The breaker `stop_reblock_count` is PROGRESS-GATED
-    // (`increment_stop_reblock` resets it to 0 on any code/DB write since the last
-    // Stop), so it can ONLY trip after `max_stop_reblocks` CONSECUTIVE no-progress
-    // Stops — i.e. a genuine live-lock where todos remain but the agent ships
-    // nothing. While the agent makes progress the count stays 0 and the loop
-    // re-blocks for as many todos as the board holds. This single check is the
-    // live-lock backstop the DB-todo model still needs (AWS/Fowler: success resets,
-    // no-progress trips). SOURCE: decision.loop-driven-by-db-todos.
+    // Progress-gated reblock breaker: trip after N consecutive no-progress stops.
+    // See decision.engine.progress-gated-reblock.
     if ctx.session.stop_reblock_count >= kavach_session::SessionState::max_stop_reblocks() {
         return ControlFlow::Continue(());
     }
