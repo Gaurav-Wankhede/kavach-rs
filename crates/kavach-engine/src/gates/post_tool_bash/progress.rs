@@ -3,7 +3,7 @@
 
 /// Track substantive kavach DB progress + query calls. The stop gate's
 /// live-lock breaker reads `last_db_write_turn` as a "made progress" signal.
-/// SOURCE: decision.engine.stop_breaker_card_state_transitions_only.
+/// SOURCE: `decision.engine.stop_breaker_card_state_transitions_only`.
 pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, command: &str) {
     let is_status_update = command.contains("kavach db status-update");
     let is_kanban_close = command.contains("kavach db kanban-close");
