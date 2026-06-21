@@ -8,12 +8,8 @@ use super::segment::segment_first_word_is;
 use crate::gates::pre_tool_bash::strip_quoted_regions;
 use crate::gates::sql_destructive::{destructive_sql_keyword, destructive_sql_reason};
 
-// FIX: [CWE-184 over-broad-trigger] a psql token inside another tool's quoted
-// arg (`rg -n 'a|psql' s`, `echo 'x | psql y'`) HARD-BLOCKED as pipeline-to-psql.
-// ROOT_CAUSE: lexical/separator detection without quote-state.
-// SOLUTION: strip quoted spans to inert placeholders via the shared
-// strip_quoted_regions primitive BEFORE the command-position check.
-// RESEARCH: https://cwe.mitre.org/data/definitions/184.html
+// psql gate: block DELETE/DROP/TRUNCATE, allow SELECT/INSERT/UPDATE/CREATE.
+// See decision.engine.psql_destructive_gate.
 
 /// `Some(reason)` only when `psql` is in command position AND the command
 /// carries a destructive SQL verb (DELETE/DROP/TRUNCATE). Non-destructive psql
