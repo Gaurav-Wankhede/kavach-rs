@@ -1,5 +1,5 @@
-//! Process-wide binary-availability cache for Tool::is_available.
-//! See decision.engine.toolbelt-cache-design for architecture.
+//! Process-wide binary-availability cache for `Tool::is_available`.
+//! See `decision.engine.toolbelt-cache-design` for architecture.
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
