@@ -236,21 +236,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     Ok(())
 }
 
-/// Loophole self-interrogation: if the turn claimed completion on a risk-bearing
-/// path WITHOUT a `Loopholes closed:` line, record a mistake-ledger row, queue
-/// the next-turn pending advisory, surface concrete suspect sites, and return the
-/// clean-exit ride-along advisory. Extracted from `run` to keep the orchestrator
-/// under the 100-LOC ceiling.
-///
-/// PRECISION GUARD (false-positive fix): a loophole can only be LIVE if this turn
-/// actually WROTE a risk-bearing path. `last_write_turn == turn_count` iff a file
-/// was Written/Edited this turn (set by the `post_write` gate), so the message-text
-/// trigger cannot fire on a read-only Q&A turn whose PROSE merely describes past
-/// risk fixes.
-///
-/// Recording at the computation site (not in `clean_exit`) is deliberate: the loop
-/// usually short-circuits at `dispatch::reblock` and never reaches `clean_exit`, so
-/// this is the only place the learning loop sees the omission on every stop.
+/// Record + surface the loophole signal for a risk-bearing turn: ledger row,
+/// next-turn carry-forward, concrete suspect sites, and the ride-along advisory.
+/// Gated on `last_write_turn == turn_count` (real write this turn) to avoid
+/// read-only prose-trigger FPs. Recorded here (not `clean_exit`) since the loop
+/// usually short-circuits at `dispatch::reblock`.
 fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Option<String> {
     let wrote_this_turn = session.last_write_turn == session.turn_count;
     let advisory = super::loophole_guard::check_stop_interrogation(msg, wrote_this_turn)?;
