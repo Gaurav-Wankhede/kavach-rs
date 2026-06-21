@@ -37,6 +37,31 @@ fn extract_cargo_job_key(cmd: &str) -> Option<String> {
     Some("__workspace__".into())
 }
 
+/// Record, as Red-confirmed, the unit stem of every test file the agent touched
+/// THIS turn — called only when a test run actually FAILED. A failing run proves
+/// those tests are genuinely Red (they fail without the production code), which is
+/// what test-first requires. The TDD gate reads `tdd_red_units` and refuses a
+/// production write whose unit has no Red here (a mere test-file touch is not
+/// enough — an after-the-fact vacuous test never failed).
+pub(super) fn record_red_units(session: &mut SessionState) {
+    let stems: Vec<String> = session
+        .files_modified_this_turn
+        .iter()
+        .filter(|f| kavach_patterns::is_test_file(f) || f.contains("_test."))
+        .map(|f| crate::gates::pre_write_guards::tdd_guard::unit_stem(f).to_owned())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if stems.is_empty() {
+        return;
+    }
+    for s in stems {
+        if !session.tdd_red_units.contains(&s) {
+            session.tdd_red_units.push(s);
+        }
+    }
+    session.save().ok();
+}
+
 /// Clear only pending files matching the test scope.
 /// `cargo test -p pkg-a` must NOT clear pending TypeScript files.
 pub(super) fn resolve_tested_files(session: &mut SessionState, command: &str) {
