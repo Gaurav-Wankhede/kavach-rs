@@ -128,11 +128,8 @@ pub(crate) fn log_tool_failure(input: &ToolFailureLog<'_>) {
             "tool_name": input.tool_name,
             "gate_name": input.gate_name,
         });
-        #[expect(
-            clippy::let_underscore_must_use,
-            reason = "fire-and-forget RPC; gate patterns are advisory"
-        )]
-        let _: Result<serde_json::Value, _> =
-            kavach_rpc::client::call("gate_pattern.upsert", Some(params));
+        // Fire-and-forget but NON-LOSSY: daemon-down is spooled + replayed next
+        // Stop, so an advisory gate-pattern signal is never lost.
+        crate::gates::stop::spool_writes::call_or_spool("gate_pattern.upsert", params);
     }
 }
