@@ -30,15 +30,10 @@ pub(crate) fn is_safe_downstream(downstream: &str) -> bool {
         .file_name()
         .and_then(|n| n.to_str())
         .map_or(first_token, |b| b);
-    // A `cd <dir>` or `DATABASE_URL=<val>` PREFIX is harmless on its own, but it must
-    // not MASK a leaky command chained after it (`cd /x; printenv`). The whole-string
-    // leak classifier below already scans every `;`/`|`/`&` segment, so fall through
-    // to it rather than blanket-allowing on the prefix. A bare `cd`/assignment with
-    // no chained leak is allowed there (no printer segment present).
-    // psql is conditionally safe: allowed only when it carries no destructive
-    // SQL verb. Recognise psql as the leading binary OR anywhere in a compound
-    // downstream (`echo ..; psql ..`, `psql .. | head`) — a harmless prefix/pipe
-    // must not mask a safe psql; the destructive-verb classifier is the real gate.
+    // A cd/assignment PREFIX is harmless alone but must not MASK a chained leak;
+    // fall through to the per-segment classifier below. psql is conditionally safe
+    // (no destructive verb), recognised as leading OR compound. See
+    // `decision.engine.env_leak_fail_open_policy`.
     if basename == "psql" || invokes_psql(&lc) {
         return crate::gates::sql_destructive::destructive_sql_keyword(&lc).is_none();
     }
