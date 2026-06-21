@@ -110,13 +110,9 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push_str(advisory);
     }
 
-    // REFUSE-STOP on census/dispatch divergence: the dispatch probe returned None,
-    // but the census proves runnable, UNBLOCKED roadmap todos remain (the probe's
-    // lane/umbrella filter or the roadmap-only source hid them). A clean stop here
-    // would silently abandon real work — so DO NOT allow the stop: command a DIRECT
-    // roadmap-todo query + claim + start. Behavioral-breaker bounded (category
-    // "roadmap_todos_remain"): after N refusals it force-allows (loop-safety) while
-    // recording the surrender, so a genuinely un-actionable board can never spin.
+    // REFUSE-STOP when census proves unblocked roadmap todos the probe hid: command
+    // a direct query+claim+start. Breaker-bounded (force-allows after N).
+    // See decision.engine.refuse-stop-roadmap-todos.
     if refuse_stop_on_roadmap_todos(ctx) {
         let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
         drop(kavach_hook::exit_stop_block(&format!("{blocked}\n{full}")));
