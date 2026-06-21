@@ -63,25 +63,16 @@ fn stop_silent_on_read_only_turn_even_with_risk_prose() {
 }
 
 #[test]
-fn stop_silent_when_loopholes_already_closed() {
+fn stop_surfaces_regardless_of_narration() {
     use super::check_stop_interrogation;
-    // The action marker `Loopholes closed:` satisfies the gate; a passive
-    // `considered:` no longer does.
+    // No `Loopholes closed:` satisfier exists anymore — the surface advisory is
+    // awareness, not a gate the agent must narrate past. It fires on the risk
+    // surface whether or not the message mentions loopholes.
     let msg = "Done — the lease claim is now atomic.\n\
-               Loopholes closed: concurrency -> fixed at acquire.rs:38; \
-               failure -> TTL reclaim at lease.rs:71; replay -> N/A at claim.rs:12.";
-    assert!(check_stop_interrogation(msg, true).is_none());
-}
-
-#[test]
-fn stop_still_fires_on_passive_considered_marker() {
-    use super::check_stop_interrogation;
-    // A passive "considered" line is NOT a fix — the gate must still drive action.
-    let msg = "Done — the lease claim is now atomic.\n\
-               Loopholes considered: concurrency might be an issue.";
+               Loopholes closed: concurrency -> fixed at acquire.rs:38.";
     assert!(
         check_stop_interrogation(msg, true).is_some(),
-        "passive consideration does not satisfy the fix-first gate"
+        "surface awareness is independent of any narration"
     );
 }
 
