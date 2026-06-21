@@ -133,14 +133,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // returns the clean-exit ride-along advisory.
     let loophole_advisory = loophole_check(&mut session, &msg);
 
-    // Shallow-verdict guard (re-enforced from the advisory path, NOT a HALT — the
-    // pure-HALT version was removed under the no-block policy and the detector was
-    // left orphaned: `shallow_verdict_guard` was a `pub mod` with ZERO call sites.
-    // A "clean / wired / no-defect / safe" verdict asserted without leaf-depth
-    // evidence (`file.rs:NN` or an [RCA] block) is the shallow-research signature.
-    // Same wiring as loophole/capture above: stash the advisory for clean-exit AND
-    // record a mistake row at the computation site so the learning loop sees it on
-    // every stop (the loop usually short-circuits before clean_exit).
+    // Shallow-verdict guard, advisory path (NOT a HALT): a clean/wired/safe verdict
+    // with no file:line or [RCA] evidence. Stash for clean-exit + record mistake at
+    // computation site. See decision.engine.stop-shallow-verdict-advisory.
     let shallow_advisory = kavach_patterns::shallow_verdict_guard::detect_shallow_verdict(&msg);
     if shallow_advisory.is_some() {
         drop(kavach_session::record_mistake(&kavach_session::Mistake {
