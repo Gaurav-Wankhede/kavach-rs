@@ -12,9 +12,10 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
     if !ctx.is_code || is_test_path(ctx.file_path) {
         return None;
     }
-    // A comment/doc-only change carries no executable code → exempt (lets the
-    // comment sweep run without a test-first per file).
-    if is_comment_only(&ctx.effective_content) {
+    // A comment/doc-only change (the written/edited text is all comments+blanks)
+    // carries no executable code → exempt, so the comment sweep needs no per-file
+    // test. Uses ctx.content (the changed text), not the whole post-edit file.
+    if is_comment_only(ctx.content) {
         return None;
     }
     let stem = unit_stem(ctx.file_path);
