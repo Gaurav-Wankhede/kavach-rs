@@ -14,7 +14,7 @@ pub(super) fn run(action: PhaseAction) -> i32 {
         PhaseAction::Status => handle_status(),
         PhaseAction::Advance => handle_advance(),
         PhaseAction::Set { phase } => handle_set(&phase),
-        PhaseAction::IterationStart { file } => handle_iteration_start(&file),
+        PhaseAction::IterationStart { file } => handle_iteration_start(file.as_deref()),
         PhaseAction::IterationDone => handle_iteration_done(),
         PhaseAction::IterationList => handle_iteration_list(),
         PhaseAction::TierSet {
@@ -166,13 +166,7 @@ fn handle_set(phase: &str) -> i32 {
     }
 }
 
-fn handle_iteration_start(file: &str) -> i32 {
-    if file.is_empty() {
-        if let Err(io_err) = ewrite_or_exit("file path required") {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
+fn handle_iteration_start(file: Option<&str>) -> i32 {
     match kavach_session::load_session_state() {
         Ok(Some(mut session)) => {
             if !session.current_iteration_file.is_empty() {
@@ -185,10 +179,33 @@ fn handle_iteration_start(file: &str) -> i32 {
                 }
                 return 1;
             }
-            let canonical = canonicalize_iteration_path(file);
-            session.current_iteration_file.clone_from(&canonical);
+            // Two modes: an explicit file path binds that file; NO arg auto-pulls
+            // the next runnable DAG card from the roadmap (kanban-driven phases —
+            // roadmap.phasemerge.w2). Auto-pull also sets current_kanban_card so the
+            // stop-gate close-before-advance invariant tracks the same card.
+            let (iteration, pulled_card) = if let Some(f) = file {
+                (canonicalize_iteration_path(f), None)
+            } else {
+                let Some((key, title)) = pull_next_dag_card(&session.project) else {
+                    if let Err(io_err) =
+                        ewrite_or_exit("no runnable roadmap card (board drained or all blocked)")
+                    {
+                        return into_exit_code(io_err);
+                    }
+                    return 1;
+                };
+                let ok = format!("auto-pulled next DAG card: {key} — {title}");
+                if let Err(io_err) = print_or_exit(&ok) {
+                    return into_exit_code(io_err);
+                }
+                (key.clone(), Some(key))
+            };
+            session.current_iteration_file.clone_from(&iteration);
+            if let Some(card) = pulled_card {
+                session.current_kanban_card = card;
+            }
             session.save_or_log();
-            let ok = format!("iteration started: {canonical}");
+            let ok = format!("iteration started: {iteration}");
             if let Err(io_err) = print_or_exit(&ok) {
                 return into_exit_code(io_err);
             }
@@ -208,6 +225,29 @@ fn handle_iteration_start(file: &str) -> i32 {
             1
         }
     }
+}
+
+/// Pull the next runnable DAG card via the `roadmap.next_open_task` RPC — the SAME
+/// dispatch the stop-gate loop uses, so the kanban DAG (`depends_on` + priority) is
+/// honored identically. Returns `(key, title)` or `None` when the board is drained,
+/// all-blocked, or the RPC is unreachable (fail-soft: the caller reports no card).
+fn pull_next_dag_card(project: &str) -> Option<(String, String)> {
+    let params = serde_json::json!({ "project": project });
+    let res: Option<serde_json::Value> =
+        kavach_rpc::client::call("roadmap.next_open_task", Some(params)).ok()?;
+    let v = res?;
+    let key = v.get("key").and_then(serde_json::Value::as_str)?.to_owned();
+    // A `[DAG_CYCLE]` sentinel key is not a runnable card — surface nothing so the
+    // caller reports "no runnable card" rather than binding the sentinel.
+    if key.starts_with('[') {
+        return None;
+    }
+    let title = v
+        .get("title")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .to_owned();
+    Some((key, title))
 }
 
 fn handle_iteration_done() -> i32 {

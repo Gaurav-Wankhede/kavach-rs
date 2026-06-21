@@ -25,10 +25,11 @@ pub(crate) enum PhaseAction {
         /// Phase name: PLAN, IMPLEMENT, TEST, or HARDEN
         phase: String,
     },
-    /// Start an iteration on a specific file
+    /// Start an iteration. With a file path, binds that file. With NO arg,
+    /// auto-pulls the next runnable DAG card from the roadmap (kanban-driven).
     IterationStart {
-        /// File path to work on (must match the file you will edit this turn)
-        file: String,
+        /// File path to work on. Omit to auto-pull the next runnable roadmap card.
+        file: Option<String>,
     },
     /// Mark the current iteration file as done
     IterationDone,
