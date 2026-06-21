@@ -44,7 +44,7 @@ pub(super) fn call_or_spool(method: &str, params: serde_json::Value) {
 ///
 /// Best-effort: a drain read/remove error is logged and swallowed, never blocking
 /// the gate.
-pub fn drain_and_replay() {
+pub(super) fn drain_and_replay() {
     let pending = match drain_write_spool() {
         Ok(p) => p,
         Err(e) => {
