@@ -6,9 +6,7 @@ use kavach_session::canonicalize_iteration_path;
 
 use crate::cli::PhaseAction;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-
-/// Valid phase names for validation.
-const VALID_PHASES: [&str; 4] = ["PLAN", "IMPLEMENT", "TEST", "HARDEN"];
+use crate::cmd::phase_registry;
 
 /// `kavach phase <action>` — manage SDLC development phases.
 pub(super) fn run(action: PhaseAction) -> i32 {
@@ -38,9 +36,9 @@ fn handle_status() -> i32 {
     match kavach_session::load_session_state() {
         Ok(Some(session)) => {
             let phase = if session.current_phase.is_empty() {
-                "PLAN"
+                phase_registry::first()
             } else {
-                &session.current_phase
+                session.current_phase.clone()
             };
             let iteration = if session.current_iteration_file.is_empty() {
                 "(none)"
@@ -81,30 +79,26 @@ fn handle_advance() -> i32 {
     match kavach_session::load_session_state() {
         Ok(Some(mut session)) => {
             let current = if session.current_phase.is_empty() {
-                "PLAN"
+                phase_registry::first()
             } else {
-                &session.current_phase
+                session.current_phase.clone()
             };
-            let next = match current {
-                "PLAN" => "IMPLEMENT",
-                "IMPLEMENT" => "TEST",
-                "TEST" => "HARDEN",
-                "HARDEN" => {
-                    if let Err(io_err) = print_or_exit("already at final phase: HARDEN") {
-                        return into_exit_code(io_err);
-                    }
-                    return 0;
+            if !phase_registry::is_valid(&current) {
+                let msg = format!("unknown phase: {current}");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
                 }
-                _ => {
-                    let msg = format!("unknown phase: {current}");
-                    if let Err(io_err) = ewrite_or_exit(&msg) {
-                        return into_exit_code(io_err);
-                    }
-                    return 1;
+                return 1;
+            }
+            let Some(next) = phase_registry::next_after(&current) else {
+                let msg = format!("already at final phase: {current}");
+                if let Err(io_err) = print_or_exit(&msg) {
+                    return into_exit_code(io_err);
                 }
+                return 0;
             };
             // Clear iteration tracking for new phase
-            session.current_phase = next.into();
+            session.current_phase.clone_from(&next);
             session.phase_start_turn = session.turn_count;
             session.iteration_files_done.clear();
             session.current_iteration_file.clear();
@@ -133,8 +127,11 @@ fn handle_advance() -> i32 {
 
 fn handle_set(phase: &str) -> i32 {
     let phase_upper = phase.to_uppercase();
-    if !VALID_PHASES.contains(&phase_upper.as_str()) {
-        let msg = format!("invalid phase: {phase}. Valid: PLAN, IMPLEMENT, TEST, HARDEN");
+    if !phase_registry::is_valid(&phase_upper) {
+        let msg = format!(
+            "invalid phase: {phase}. Valid: {}",
+            phase_registry::phases().join(", ")
+        );
         if let Err(io_err) = ewrite_or_exit(&msg) {
             return into_exit_code(io_err);
         }
@@ -272,9 +269,9 @@ fn handle_iteration_list() -> i32 {
     match kavach_session::load_session_state() {
         Ok(Some(session)) => {
             let phase = if session.current_phase.is_empty() {
-                "PLAN"
+                phase_registry::first()
             } else {
-                &session.current_phase
+                session.current_phase.clone()
             };
             let header = format!("[ITERATION_LIST] phase: {phase}");
             if let Err(io_err) = print_or_exit(&header) {
@@ -545,11 +542,11 @@ mod tests {
     }
 
     #[test]
-    fn valid_phases_contains_all_expected() {
-        assert!(VALID_PHASES.contains(&"PLAN"));
-        assert!(VALID_PHASES.contains(&"IMPLEMENT"));
-        assert!(VALID_PHASES.contains(&"TEST"));
-        assert!(VALID_PHASES.contains(&"HARDEN"));
+    fn registry_recognizes_all_builtin_phases() {
+        // Fail-soft default (no DB row) must accept every canonical SDLC phase.
+        for p in ["PLAN", "IMPLEMENT", "TEST", "HARDEN"] {
+            assert!(phase_registry::is_valid(p), "registry rejected {p}");
+        }
     }
 
     #[test]

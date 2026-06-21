@@ -6,6 +6,7 @@
 //! recorders, orphan/memory advisories) is orchestrated inline below.
 mod antiprod;
 mod concept;
+mod git_sync;
 mod session;
 
 use crate::error::EngineError;
@@ -33,6 +34,10 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // 4. Orphan detection — new files/exports without wiring.
     if let Some(orphan_ctx) = super::orphan_guard::check_orphan_risk(file_path, &content) {
         context_parts.push(orphan_ctx);
+    }
+    // 4b. Git-sync advisory — read-only branch/commit/PR/conflict state (fails open).
+    if let Some(git_ctx) = git_sync::advisory(file_path, &content) {
+        context_parts.push(git_ctx);
     }
     // 5. Memory-file write reminder — also persist to kavach-db.
     if file_path.contains("/memory/") || file_path.ends_with("MEMORY.md") {

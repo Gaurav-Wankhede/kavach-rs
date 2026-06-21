@@ -18,6 +18,7 @@ pub(crate) mod io_safe;
 pub(crate) mod mistake;
 mod oversized;
 mod phase;
+mod phase_registry;
 pub(crate) mod pipeline;
 mod rules;
 mod schema;
