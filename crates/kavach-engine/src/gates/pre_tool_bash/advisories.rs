@@ -16,3 +16,4 @@ pub(super) use commit::check_commit_message;
 pub(super) use git_add::is_git_add_all;
 pub(super) use nextest::{check_nextest_advisory, scaffold_nextest_config};
 pub(super) use secret_cli::check_secret_cli_read;
+pub(super) use toolbelt_cli::check_toolbelt_cli;
