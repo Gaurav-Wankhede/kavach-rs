@@ -73,6 +73,33 @@ fn harvest_concepts(query: &str, result_text: &str) {
     }
 }
 
+/// Store the research result into the NLM BM25 doc corpus so future prompts can
+/// retrieve it (`nlm.query`). Closes the NLM WRITE path (store was registered but
+/// had no producer). Fail-soft-but-observable: a daemon blip logs to stderr, never
+/// blocks. WebSearch has no single URL, so provenance is the `websearch:<query>`
+/// scheme. See decision.engine.nlm-store-wired-from-research.
+fn store_nlm_doc(query: &str, result_text: &str) {
+    if result_text.trim().is_empty() {
+        return;
+    }
+    let source_url = if query.is_empty() {
+        "websearch:unscoped".to_owned()
+    } else {
+        format!("websearch:{query}")
+    };
+    let captured_at = chrono::Utc::now().to_rfc3339();
+    let params = serde_json::json!({
+        "source_url": source_url,
+        "heading": query,
+        "body": result_text,
+        "captured_at": captured_at,
+    });
+    if let Err(e) = kavach_rpc::client::call::<_, serde_json::Value>("nlm.store", Some(params)) {
+        use std::io::Write as _;
+        drop(writeln!(std::io::stderr(), "[NLM_STORE_FAIL] {source_url}: {e}"));
+    }
+}
+
 fn scan_rfc(bytes: &[u8], into: &mut std::collections::BTreeSet<String>) {
     let finder = memmem::Finder::new(RFC_NEEDLE);
     for pos in finder.find_iter(bytes) {
