@@ -124,9 +124,8 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
         return None;
     }
     let lens_list = lenses::lens_block(&fired);
-    // Name the ACTUAL fired dimensions in the heading — not a frozen "this surface"
-    // label. The dimension set is data-driven from `fired`, so the header adapts to
-    // the change instead of reading one-size-fits-all. SOURCE: decision.loophole-surface-heading-dynamic.
+    // Heading names the ACTUAL fired dimensions, data-driven from `fired` — not a
+    // frozen label. SOURCE: decision.loophole-surface-heading-dynamic.
     let dims = lenses::fired_dimension_labels(&fired);
     Some(format!(
         "[LOOPHOLE_SURFACE] risk-bearing path touched — fired dimensions: {dims}. \
