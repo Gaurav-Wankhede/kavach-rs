@@ -109,15 +109,15 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // pipeline) so it fires on EVERY stop — clean_exit alone was dark (loop short-
     // circuits at dispatch::reblock). See decision.engine.stop-mistake-feed-site.
     if capture_advisory.is_some() {
-        drop(kavach_session::record_mistake_surfaced(&mut session, &kavach_session::Mistake {
-            project: &session.project,
-            gate: "capture_finding_unpersisted",
-            banned_sample: "settled a decision in prose without persisting it to the DB",
-            correct_action: "persist it THIS turn with the kavach db CLI: \
-                             kavach db write --new --project <slug> --category decision \
-                             --key <key> --title <title> --content <text>",
-            turn: session.turn_count,
-        }));
+        let turn = session.turn_count;
+        drop(kavach_session::record_mistake_surfaced(
+            &mut session,
+            "capture_finding_unpersisted",
+            "settled a decision in prose without persisting it to the DB",
+            "persist it THIS turn with the kavach db CLI: kavach db write --new \
+             --project <slug> --category decision --key <key> --title <title> --content <text>",
+            turn,
+        ));
         if let Some(ref adv) = capture_advisory {
             super::turn_relay::queue_advisory(&mut session, adv);
         }
