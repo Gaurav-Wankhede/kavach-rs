@@ -43,6 +43,7 @@ pub(crate) fn handle(
         .and_then(|v| v.as_str())
         .unwrap_or("");
     harvest_concepts(query, result_text);
+    store_nlm_doc(query, result_text);
 
     let context = kavach_hook::context_block("POST_TOOL:RESEARCH", &[]);
     drop(kavach_hook::exit_post_tool_context(&context));
