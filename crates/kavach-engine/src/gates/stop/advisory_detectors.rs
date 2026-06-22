@@ -226,6 +226,13 @@ const HANDBACK_GATES: &[&str] = &[
     "semantic_deferral_at_stop",
 ];
 
+/// Gate keys whose firing means the turn ARGUED WITH the user — refuted what the
+/// user reported, or value-gated the user's own request — rather than obeying the
+/// stated intent. Distinct from HANDBACK (which defers): these turns actively push
+/// BACK. Refuse-stop is census-INDEPENDENT for this class (arguing with the user is
+/// wrong whether or not a roadmap todo remains). SOURCE: decision.engine.anti-argue-block.
+const ARGUE_GATES: &[&str] = &["argued_with_user_at_stop", "value_gated_user_request_at_stop"];
+
 /// Run the advisory-detector table over the final message. For each firing
 /// entry, record a mistake-ledger row (learning loop) and queue a harness-neutral
 /// pending advisory (re-surfaces at the top of the next turn, before the next
