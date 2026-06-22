@@ -3,8 +3,6 @@
 //! pinned to ground truth, never to stale training weights.
 //! SOURCE: decision.research.version-pin-from-lockfile
 
-use std::path::PathBuf;
-
 /// Walk up from cwd to the nearest `Cargo.lock`; return its text.
 fn find_lockfile() -> Option<String> {
     let mut dir = std::env::current_dir().ok()?;
