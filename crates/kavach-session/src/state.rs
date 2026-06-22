@@ -140,15 +140,6 @@ pub struct SessionState {
     pub test_files_pending: Vec<String>,
     /// Number of times test reminder has been injected (for escalation).
     pub test_nudge_count: i32,
-    /// Last API error type from `StopFailure` event.
-    pub last_api_error: String,
-    /// Cumulative API error count in this session.
-    pub api_error_count: i32,
-    /// Count of lifestyle advice phrases detected (sleep, break, etc).
-    /// Advisory metric, not blocking. Tracks hygiene directive frequency.
-    pub lifestyle_advice_count: i32,
-    /// ISO timestamp of last API error for cooldown tracking.
-    pub last_api_error_time: String,
     /// Critical decisions/blockers/discoveries that MUST survive compaction.
     /// Never summarized — injected verbatim into post-compact context.
     pub case_facts: Vec<String>,
