@@ -120,6 +120,41 @@ fn obeying_the_user_does_not_flag_argued() {
 }
 
 #[test]
+fn cors_transcript_refutation_is_blocked() {
+    // Regression against the ORIGINAL CORS transcript: the turn refuted the user's
+    // request with "this is correct behavior as designed" instead of obeying the
+    // stated intent (use the workers.dev URLs for alpha). The live gate must flag it.
+    let mut session = SessionState::default();
+    let msg = "So * is doubly wrong here — the spec forbids it with credentials, AND the \
+               code treats it as a literal exact-match. This is correct behavior as designed; \
+               wildcard CORS is structurally impossible for it.";
+    let stall = run(&mut session, msg, false);
+    assert!(stall.argued_with_user, "the CORS refutation must flag argued_with_user");
+}
+
+#[test]
+fn cors_transcript_value_gate_is_blocked() {
+    // The other CORS failure shape: value-gating the user's own request ("adds zero
+    // value until the frontends ship ... it can wait").
+    let mut session = SessionState::default();
+    let msg = "Listing intended origins now adds zero value until the frontends ship; \
+               the entry is dormant but harmless, so it can wait.";
+    let stall = run(&mut session, msg, false);
+    assert!(stall.argued_with_user, "the CORS value-gate must flag argued_with_user");
+}
+
+#[test]
+fn cors_transcript_obey_path_is_allowed() {
+    // The corrected response from the SAME transcript context must pass clean: re-read
+    // the intent, act on the workers.dev URLs. No argue signal => no refuse-stop.
+    let mut session = SessionState::default();
+    let msg = "Re-read your instruction. Setting ALLOWED_ORIGINS to your workers.dev alpha \
+               URLs now via wrangler secret put.";
+    let stall = run(&mut session, msg, false);
+    assert!(!stall.argued_with_user, "the obey path must NOT be flagged");
+}
+
+#[test]
 fn empty_message_queues_nothing() {
     assert!(advisories_for("", false).is_empty(), "empty message must be inert");
     assert!(advisories_for("", true).is_empty(), "empty message must be inert even with a write");
