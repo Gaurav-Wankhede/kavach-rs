@@ -11,11 +11,54 @@ pub fn encode_kvs(kvs: &[(&str, &str)]) -> String {
     fallback_kvs(kvs)
 }
 
-/// Encode an array of uniform objects as compact table format.
-/// Format: "key=value key2=value2" per row — space-separated pairs.
+/// Encode an array of uniform objects as TOON tabular format.
+/// Format: `[N]{field1,field2}:` header (keys declared once) + one
+/// comma-separated value row per object — the header-dedup is the token win.
+/// SOURCE: <https://github.com/toon-format/toon> — uniform-array tabular grammar.
+/// Non-uniform rows (differing key sets) fall back to the plain per-row form,
+/// which the spec also prefers for ragged data.
 #[must_use]
 pub fn encode_table(rows: &[Vec<(&str, &str)>]) -> String {
-    fallback_table(rows)
+    encode_table_named("", rows)
+}
+
+/// Named variant: emits `name[N]{fields}:` so the frame is self-describing.
+/// Empty `name` omits the name token (`[N]{fields}:`).
+#[must_use]
+pub fn encode_table_named(name: &str, rows: &[Vec<(&str, &str)>]) -> String {
+    let Some(first) = rows.first() else {
+        return String::new();
+    };
+    let fields: Vec<&str> = first.iter().map(|(k, _)| *k).collect();
+    if !rows.iter().all(|r| row_matches_fields(r, &fields)) {
+        return fallback_table(rows); // ragged — plain per-row form per spec
+    }
+    let header = format!(
+        "{name}[{n}]{{{fields}}}:",
+        n = rows.len(),
+        fields = fields.join(",")
+    );
+    use itertools::Itertools as _;
+    let body = rows
+        .iter()
+        .map(|r| r.iter().map(|(_, v)| toon_cell(v)).join(","))
+        .join("\n  ");
+    format!("{header}\n  {body}")
+}
+
+/// A row matches when its keys equal `fields` in order — the uniformity TOON requires.
+fn row_matches_fields(row: &[(&str, &str)], fields: &[&str]) -> bool {
+    row.len() == fields.len() && row.iter().zip(fields).all(|((k, _), f)| k == f)
+}
+
+/// CSV-style cell: quote when the value holds a comma, newline, or quote;
+/// escape embedded quotes by doubling. SOURCE: TOON spec quoting (CSV-like).
+fn toon_cell(v: &str) -> String {
+    if v.contains([',', '\n', '"']) {
+        format!("\"{}\"", v.replace('"', "\"\""))
+    } else {
+        v.to_string()
+    }
 }
 
 /// Encode a list of strings as comma-separated values.
