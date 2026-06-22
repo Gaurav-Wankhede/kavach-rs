@@ -37,8 +37,6 @@
 //! then this roster IS the contract — a detector absent from BOTH lists is a bug,
 //! not a judgment call. Reason codes: [HF]=high-FP pattern · [OV]=overlaps a
 //! wired detector · [DUP]=duplicate definition, delete don't wire.
-//!   `detect_value_gating`               [HF] broad "is this worth it" prose match
-//!   `detect_user_report_dismissal`      [HF] fires on neutral "you reported X"
 //!   `detect_strong_scope_ask`           [HF] overlaps `continuation_menu`'s NEG arm
 //!   `detect_sycophancy`                 [HF] praise language is not a stall
 //!   `detect_false_inability`            [HF] "I cannot" is often a true limit
