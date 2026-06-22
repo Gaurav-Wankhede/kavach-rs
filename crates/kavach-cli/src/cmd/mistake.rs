@@ -116,6 +116,39 @@ pub(crate) fn run(args: MistakeArgs) -> i32 {
         } => clear(&project, &key, confirm),
         MistakeAction::ClearAll { project, confirm } => clear_all(&project, confirm),
         MistakeAction::Stats { project } => stats(&project),
+        MistakeAction::Record {
+            gate,
+            banned,
+            instead,
+        } => record(&gate, &banned, &instead),
+    }
+}
+
+fn record(gate: &str, banned: &str, instead: &str) -> i32 {
+    if gate.trim().is_empty() || banned.trim().is_empty() || instead.trim().is_empty() {
+        eprintln!("kavach mistake record: --gate, --banned, --instead must all be non-empty");
+        return 2;
+    }
+    // origin project is informational only; the row is written to the global
+    // namespace by record() regardless. SOURCE: decision.mistakes-learnings-fully-global.
+    let origin = std::env::var("KAVACH_PROJECT").unwrap_or_else(|_| "kavach-global".to_owned());
+    let outcome = kavach_session::record_mistake(&kavach_session::Mistake {
+        project: &origin,
+        gate,
+        banned_sample: banned,
+        correct_action: instead,
+        turn: 0,
+    });
+    if outcome.persisted {
+        println!("[MISTAKE_RECORDED] key={} gate={gate}", outcome.key);
+        0
+    } else {
+        eprintln!(
+            "[MISTAKE_RECORD_FAILED] key={} err={}",
+            outcome.key,
+            outcome.error.as_deref().unwrap_or("unknown")
+        );
+        1
     }
 }
 
