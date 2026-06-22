@@ -64,12 +64,15 @@ pub(crate) fn check_env_grep(lc: &str) -> Option<String> {
 pub(crate) fn check_set_dump(lc: &str) -> Option<String> {
     // `set -a`/`set +a`/`set -e`/`set -o pipefail` are shell-OPTION toggles — the
     // standard idiom for exporting a sourced .env to a child — and dump NOTHING.
-    // Only BARE `set` (or `set VAR=x`) dumps the environment. Mirrors the downstream
+    // Only BARE `set` (or `set VAR=x`) dumps the environment. Checked per command
+    // segment so a chained bare `set` is still caught. Mirrors the downstream
     // classifier (env_guard_dotenv/downstream.rs::prints_env_value).
-    let set_is_dump = lc == "set"
-        || lc
-            .strip_prefix("set ")
-            .is_some_and(|rest| !matches!(rest.trim_start().chars().next(), Some('-' | '+')));
+    let set_is_dump = lc.split([';', '|', '&', '\n']).map(str::trim).any(|seg| {
+        seg == "set"
+            || seg
+                .strip_prefix("set ")
+                .is_some_and(|rest| !matches!(rest.trim_start().chars().next(), Some('-' | '+')))
+    });
     let hit = set_is_dump || lc == "declare" || lc == "declare -p" || lc.starts_with("declare ");
     hit.then(|| {
         "BLOCKED: `set`/`declare` dumps all shell variables including secret values. \
