@@ -149,7 +149,7 @@ mod tests {
     fn window_is_citation_canon() {
         assert_eq!(
             kavach_surreal::citation::FRESHNESS_WINDOW_SECS,
-            7 * 24 * 60 * 60
+            24 * 60 * 60
         );
     }
 
