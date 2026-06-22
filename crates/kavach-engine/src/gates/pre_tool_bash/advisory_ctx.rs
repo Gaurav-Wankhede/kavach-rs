@@ -3,6 +3,7 @@
 //! falls through.
 use super::advisories::{
     check_commit_message, check_multi_crate, check_nextest_advisory, check_secret_cli_read,
+    check_toolbelt_cli,
 };
 use super::decision::Decision;
 use super::test_tracker::{check_duplicate_test_run, register_test_run};
