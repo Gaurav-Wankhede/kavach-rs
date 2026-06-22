@@ -147,21 +147,6 @@ impl SessionState {
             s.push('\n');
         }
 
-        if !self.last_api_error.is_empty() {
-            s.push_str("[API_ERROR_TRACKING]\n");
-            write_kv(s, "last_api_error", &self.last_api_error);
-            write_kv(s, "api_error_count", &self.api_error_count.to_string());
-            write_kv(s, "last_api_error_time", &self.last_api_error_time);
-            s.push('\n');
-        }
-
-        if self.lifestyle_advice_count > 0 {
-            write_kv(
-                s,
-                "lifestyle_advice_count",
-                &self.lifestyle_advice_count.to_string(),
-            );
-        }
 
         if self.new_crate_confirmed {
             s.push_str("[NEW_CRATE]\n");
