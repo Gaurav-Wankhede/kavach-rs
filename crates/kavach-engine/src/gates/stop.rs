@@ -217,13 +217,14 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
 fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Option<String> {
     let wrote_this_turn = session.last_write_turn == session.turn_count;
     let advisory = super::loophole_guard::check_stop_interrogation(msg, wrote_this_turn)?;
-    drop(kavach_session::record_mistake(&kavach_session::Mistake {
-        project: &session.project,
-        gate: "loophole_surface_unrecorded",
-        banned_sample: "shipped risk-bearing work; the lens scan surfaced the risk surface",
-        correct_action: "the lens scan records suspect sites + the native triage agent fixes them — awareness, not a narration demand",
-        turn: session.turn_count,
-    }));
+    let turn = session.turn_count;
+    drop(kavach_session::record_mistake_surfaced(
+        session,
+        "loophole_surface_unrecorded",
+        "shipped risk-bearing work; the lens scan surfaced the risk surface",
+        "the lens scan records suspect sites + the native triage agent fixes them — awareness, not a narration demand",
+        turn,
+    ));
     // Queue for next turn's intent-injector drain via queue_pending_advisory
     // DIRECTLY (turn_relay is Cursor-gated, would no-op on CC). Tag + marker + lens
     // names are frozen. See decision.engine.stop-loophole-carry-forward.
