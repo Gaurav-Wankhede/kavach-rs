@@ -20,7 +20,10 @@
 //! WIRED (12) — invoked every Stop: `detect_continuation_menu` (in `stop.rs`),
 //! and in `TABLE` below: `detect_permission_seek`, `detect_incomplete_work`,
 //! `detect_remaining_phases`, `detect_unverified_code_claim`,
-//! `detect_inference_as_evidence`, `detect_lazy_verification_claim`, the four
+//! `detect_inference_as_evidence`, `detect_lazy_verification_claim`, the
+//! anti-argue pair `detect_user_report_dismissal` + `detect_value_gating` (the
+//! `ARGUE_GATES` — refuted the user / value-gated the user's own request; these set
+//! `argued_with_user` for census-INDEPENDENT refuse-stop teeth), the four
 //! action-driven imperatives `detect_completion_without_witnesses`,
 //! `detect_decision_not_persisted`, `detect_verdict_without_citation`,
 //! `detect_claim_without_research` (Phase E — claim-without-action), and
