@@ -145,43 +145,6 @@ pub async fn list_all_by_table(db: &Surreal<Db>, table: &str) -> Result<Vec<Memo
     Ok(stamp_category(table, entries))
 }
 
-/// List `table` rows for `project_id` PLUS global (`project = NONE`) rows,
-/// ordered by priority then `created_at`.
-///
-/// Global rows (project null) are a shared key space — the mistake/learning
-/// ledger is written globally (decision: kavach-global namespace), so a strict
-/// `project = $p` read returns empty and the ledger reads as absent when it is
-/// only invisible. This OR-global read surfaces both a project's own rows and the
-/// shared global ones, without leaking ANOTHER project's scoped rows.
-/// SOURCE: roadmap.mistake-ledger-resurrect.
-///
-/// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn list_by_project_or_global(
-    db: &Surreal<Db>,
-    table: &str,
-    project_id: &RecordId,
-) -> Result<Vec<MemoryEntry>> {
-    const QUERY: &str = concat!(
-        "SELECT id, project, entry_key, title, content, status, entry_status, ",
-        "access_count, created_at, updated_at, priority, lane, ",
-        "occupied_by, occupied_until, ",
-        "priority ?? 999999 AS _sort_priority ",
-        "FROM type::table($table) WHERE project = $project OR project = NONE ",
-        "ORDER BY _sort_priority ASC, created_at ASC"
-    );
-    let entries: Vec<MemoryEntry> = crate::retry::with_retry(|| async {
-        let mut response = db
-            .query(QUERY)
-            .bind(("table", table.to_owned()))
-            .bind(("project", project_id.clone()))
-            .await?;
-        response.take(0).map_err(crate::error::Error::Surreal)
-    })
-    .await?;
-    Ok(stamp_category(table, entries))
-}
-
 /// List `table` rows for (project, `entry_status`) ordered by priority then
 /// `created_at`.
 ///
