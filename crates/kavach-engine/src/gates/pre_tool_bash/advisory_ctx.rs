@@ -46,6 +46,7 @@ pub(super) fn run(command: &str) -> Decision {
         check_ctx.as_deref(),
         commit_ctx.as_deref(),
         nextest_ctx.as_deref(),
+        secret_ctx.as_deref(),
         env_ctx.as_deref(),
         prod_ctx.as_deref(),
     ]
