@@ -270,8 +270,9 @@ mod tests {
             vec![("skill", "data"), ("priority", "P1")],
         ];
         insta::assert_snapshot!(encode_table(&rows), @r###"
-        skill=rust priority=P0
-        skill=data priority=P1
+        [2]{skill,priority}:
+          rust,P0
+          data,P1
         "###);
     }
 
