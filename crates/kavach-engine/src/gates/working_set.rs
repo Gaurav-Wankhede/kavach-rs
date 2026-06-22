@@ -1,15 +1,15 @@
 //! Structurally-lossless working-set reconstruction for the compaction seam.
 //!
-//! The PreCompact guard snapshots + warns; this is its counterpart on the OTHER side
-//! of the seam: PostCompact rebuilds the EXACT durable spine from the DB — active card
-//! + its TOUCHES paths + the most recent decisions — as structured text injected BEFORE
-//! the lossy `[COMPACT_SUMMARY]`. The summary becomes a supplement, not the source of
-//! truth: anything in the working set is re-derived losslessly from the store, never
-//! from a summary-of-a-summary. This is the DAG-trim direction (re-inject structured
-//! state, drop only the redundant prose). See
-//! `decision.engine.lossless-working-set-reconstruction`.
+//! The `PreCompact` guard snapshots + warns; this is its counterpart on the other side
+//! of the seam. `PostCompact` rebuilds the EXACT durable spine from the DB (active card,
+//! its `TOUCHES` paths, recent decisions) as structured text injected BEFORE the lossy
+//! `COMPACT_SUMMARY`. The summary becomes a supplement, not the source of truth: every
+//! working-set fact is re-derived losslessly from the store, never from a
+//! summary-of-a-summary. This is the DAG-trim direction — re-inject structured state,
+//! drop only redundant prose. See `decision.engine.lossless-working-set-reconstruction`.
 //!
-//! SOURCE: arxiv.org/pdf/2602.22402 (structurally-lossless trimming), redis.io/blog/context-rot.
+//! SOURCE: `arxiv.org/pdf/2602.22402` (structurally-lossless trimming),
+//! `redis.io/blog/context-rot`.
 
 use std::fmt::Write as _;
 
