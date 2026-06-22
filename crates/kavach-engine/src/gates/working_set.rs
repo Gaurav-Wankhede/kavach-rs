@@ -11,6 +11,8 @@
 //!
 //! SOURCE: arxiv.org/pdf/2602.22402 (structurally-lossless trimming), redis.io/blog/context-rot.
 
+use std::fmt::Write as _;
+
 /// How many recent decision rows to re-inject. Bounded so the reconstruction stays a
 /// tight spine, never a full dump that re-triggers compaction (the amnesia loop).
 const RECENT_DECISIONS: usize = 8;
