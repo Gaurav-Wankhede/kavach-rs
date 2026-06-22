@@ -2831,24 +2831,17 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "dirs",
- "futures",
- "http",
  "jsonrpsee",
  "kavach-ope",
  "kavach-patterns",
  "kavach-surreal",
  "kavach-types",
- "rustix",
  "serde",
  "serde_json",
- "subtle",
  "surrealdb",
  "surrealdb-types",
  "thiserror 2.0.18",
  "tokio",
- "tokio-util",
- "tower 0.4.13",
- "tower-http",
  "tracing",
 ]
 
@@ -5775,7 +5768,6 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-sink",
- "futures-util",
  "pin-project-lite",
  "tokio",
 ]
