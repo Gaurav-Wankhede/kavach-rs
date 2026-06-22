@@ -180,6 +180,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         continuation_advisory,
         research_unsourced: stall.research_unsourced,
         disobedience_handback: stall.handback_or_menu,
+        argued_with_user: stall.argued_with_user,
     };
 
     // Ordered guard pipeline; first ControlFlow::Break emits the hook decision.
