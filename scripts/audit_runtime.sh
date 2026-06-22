@@ -20,26 +20,25 @@ probe() { # label  cmd...
 
 echo "## A. READ-ONLY CLI COMMANDS (real invocation, stdout+exit captured)"
 echo "──────────────────────────────────────────────────────────"
+# each entry calls a real read-only LEAF verb with valid args (group commands
+# need a subcommand; calling them bare is a clap usage error, not a break)
 probe "status"            "$BIN" status
 probe "context"           "$BIN" context --project "$P"
 probe "db kanban"         "$BIN" db kanban --project "$P"
-probe "db query"          "$BIN" db query --project "$P"
+probe "db query"          "$BIN" db query --project "$P" --category decision
 probe "db list-projects"  "$BIN" db list-projects
 probe "db query-raw"      "$BIN" db query-raw --query "INFO FOR DB"
 probe "phase status"      "$BIN" phase status
-probe "tasks"             "$BIN" tasks --project "$P"
-probe "todos"             "$BIN" todos --project "$P"
-probe "mistake top"       "$BIN" mistake top
+probe "tasks audit"       "$BIN" tasks audit --project "$P"
+probe "mistake list"      "$BIN" mistake list
+probe "mistake stats"     "$BIN" mistake stats
 probe "think"             "$BIN" think --project "$P" "wiring audit"
 probe "bg status"         "$BIN" bg status --project "$P"
 probe "goal status"       "$BIN" goal status --project "$P"
-probe "toolbelt"          "$BIN" toolbelt
-probe "doctor"            "$BIN" doctor
-probe "servers"           "$BIN" servers
-probe "spec"              "$BIN" spec --project "$P"
-probe "security"          "$BIN" security --project "$P"
-probe "loophole status"   "$BIN" loophole status --project "$P"
+probe "toolbelt list"     "$BIN" toolbelt list
+probe "servers status"    "$BIN" servers status
 probe "loop status"       "$BIN" loop status --project "$P"
+probe "doctor"            "$BIN" doctor
 
 echo
 echo "## B. HOOK GATES (synthetic hook JSON on stdin — non-blocking probe)"
