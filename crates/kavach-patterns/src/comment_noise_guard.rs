@@ -166,6 +166,15 @@ mod tests {
     }
 
     #[test]
+    fn split_to_evade_short_lines_now_fires() {
+        // The bypass: one rationale paragraph fragmented into 8 short (<60ch)
+        // lines — no single line trips PROSE_LINE_MIN, but summed volume narrates.
+        let frag = "// rationale fragment about forty chars\n".repeat(8);
+        let c = format!("fn f() {{}}\n{frag}fn g() {{}}\n");
+        assert!(advise("src/x.rs", &c).is_some());
+    }
+
+    #[test]
     fn one_line_comment_is_clean() {
         let c = "// just one\nfn f() {}\n";
         assert!(advise("src/x.rs", c).is_none());
