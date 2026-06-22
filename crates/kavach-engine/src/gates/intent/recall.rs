@@ -39,6 +39,32 @@ pub(super) fn recall_block(prompt: &str) -> String {
         block.push_str(&hit.id);
         block.push('\n');
     }
+    if let Some(sources) = cited_sources(&hits) {
+        block.push_str("Cited sources for the above (verify before trusting):\n");
+        block.push_str(&sources);
+    }
     block.push_str("Consult these before re-deriving; cite the row id you used.\n");
     block
+}
+
+/// Gather citation source ids for the recalled hits via `citation.for_nodes`.
+/// Fail-soft: any miss (no citations, daemon blip) yields `None` so recall is
+/// unperturbed. Closes the C7/C9 citation-recall path (was built, never wired).
+fn cited_sources(hits: &[kavach_surreal::BrainHit]) -> Option<String> {
+    let nodes: Vec<&str> = hits.iter().map(|h| h.id.as_str()).collect();
+    let params = serde_json::json!({ "nodes": nodes });
+    let res: serde_json::Value = kavach_rpc::client::call("citation.for_nodes", Some(params)).ok()?;
+    let citers = res.get("citers")?.as_array()?;
+    if citers.is_empty() {
+        return None;
+    }
+    let mut out = String::new();
+    for c in citers {
+        if let Some(s) = c.as_str() {
+            out.push_str("  · ");
+            out.push_str(s);
+            out.push('\n');
+        }
+    }
+    (!out.is_empty()).then_some(out)
 }
