@@ -126,6 +126,22 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 /// Order is priority: roadmap-todos → disobedience-handback → unsourced-research →
 /// all-blocked. Each `refuse_stop_on_*` mutates its breaker, so call each once.
 fn try_refuse_stop(ctx: &mut StopCtx<'_>, full: &str) -> ControlFlow<()> {
+    // Anti-argue is FIRST: obeying the user's intent outranks every other refuse-stop.
+    // Census-INDEPENDENT — arguing with the user is wrong whether or not a card remains.
+    // See decision.engine.anti-argue-block.
+    if refuse_stop_on_argued_with_user(ctx) {
+        drop(kavach_hook::exit_stop_block(&format!(
+            "[ARGUED_WITH_USER] Do NOT stop. This turn REFUTED what the user reported / \
+             value-gated the user's OWN request instead of obeying the stated intent. \
+             RE-READ the user's exact words NOW. UNDERSTAND the intent behind them. OBEY \
+             it THIS turn — the user's instruction is a TRIGGER to ACT, never a position \
+             to argue with (global CLAUDE.md §No-Fence). Do NOT manufacture a strawman to \
+             refute. If a factual claim is in dispute, WebSearch and CITE the URL — NEVER \
+             answer from training weights (§internet-first, §No-Hallucination). DO the \
+             mandated action, then stop.\n{full}"
+        )));
+        return ControlFlow::Break(());
+    }
     // See decision.engine.refuse-stop-roadmap-todos.
     if refuse_stop_on_roadmap_todos(ctx) {
         let blocked = super::drained::roadmap_todos_remain_context(&ctx.session.project);
