@@ -40,7 +40,7 @@ pub(crate) fn run(input: &HookInput) {
     drop(kavach_hook::exit_notification_context(&context));
 }
 
-/// Build the `[MEMORY_GUARD]` block from live DB state: the in_progress card, its
+/// Build the `[MEMORY_GUARD]` block from live DB state: the `in_progress` card, its
 /// TOUCHES paths, and the resume directive. Returns `None` when there is no active
 /// card (nothing to protect — fail-soft to today's silent behavior). When a card IS
 /// active, the snapshot is also persisted to a decision row so the working set
