@@ -61,4 +61,13 @@ pub(crate) struct StopCtx<'a> {
     /// behavioral breaker — so detected disobedience + runnable work = REFUSE, not a
     /// politely-appended advisory the model already coasted past.
     pub(crate) disobedience_handback: bool,
+    /// Argued-with-user signal: set when `detect_user_report_dismissal` or
+    /// `detect_value_gating` fired this turn — the final message REFUTED what the
+    /// user reported, or value-gated the user's OWN request, instead of obeying the
+    /// stated intent. The clean-exit terminal REFUSES the stop while this is true,
+    /// CENSUS-INDEPENDENT (arguing with the user is wrong whether or not the board
+    /// has todos), bounded by the `argued_with_user` behavioral breaker. This is the
+    /// anti-sycophancy teeth: research (arxiv.org/pdf/2604.00478, 2604.02423) proves
+    /// a prose "do not argue" nudge backfires; only dynamic behavioral GATING works.
+    pub(crate) argued_with_user: bool,
 }
