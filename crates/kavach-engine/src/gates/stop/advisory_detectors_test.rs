@@ -84,6 +84,42 @@ fn doing_the_work_turn_reports_no_handback() {
 }
 
 #[test]
+fn argued_with_user_fires_and_sets_signal() {
+    // The reported failure: the turn refuted what the user reported instead of
+    // obeying. Must queue the advisory AND set the census-INDEPENDENT teeth signal.
+    let msg = "This is expected behavior as designed — the CORS config is correct.";
+    let adv = advisories_for(msg, false);
+    assert!(
+        adv.iter().any(|a| a.contains("[ARGUED_WITH_USER]")),
+        "refuting the user must queue its advisory: {adv:?}"
+    );
+    let mut session = SessionState::default();
+    let stall = run(&mut session, msg, false);
+    assert!(stall.argued_with_user, "refuting the user must flag the argued_with_user signal");
+}
+
+#[test]
+fn value_gating_user_request_fires_and_sets_signal() {
+    let msg = "Adding that adds zero value until later; good enough for now, skip it.";
+    let mut session = SessionState::default();
+    let stall = run(&mut session, msg, false);
+    assert!(
+        stall.argued_with_user,
+        "value-gating the user's own request must flag argued_with_user: {msg}"
+    );
+}
+
+#[test]
+fn obeying_the_user_does_not_flag_argued() {
+    // The FP bound: a turn that re-read the user's intent and is acting on it must
+    // NOT flag argued_with_user — otherwise the refuse-stop would loop an obeying turn.
+    let mut session = SessionState::default();
+    let msg = "Re-read your instruction. Setting ALLOWED_ORIGINS to your workers.dev URLs now.";
+    let stall = run(&mut session, msg, false);
+    assert!(!stall.argued_with_user, "an obeying turn must not flag argued_with_user: {msg}");
+}
+
+#[test]
 fn empty_message_queues_nothing() {
     assert!(advisories_for("", false).is_empty(), "empty message must be inert");
     assert!(advisories_for("", true).is_empty(), "empty message must be inert even with a write");
