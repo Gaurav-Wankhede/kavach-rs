@@ -275,7 +275,7 @@ fn continuation_menu_check(
         "ended the turn on a 'continue or pause?' permission question while [AUTO_CONTINUE] already commanded autonomous continuation",
         "do NOT ask to continue — the gate already dispatched the next move; START it this turn (or, on a genuinely drained board, STATE the clean stop without a question)",
         turn,
-    }));
+    ));
     // Re-surface the omission at the TOP of the next turn (harness-neutral
     // pending queue, not the Cursor-gated turn_relay), so the model sees it
     // BEFORE its next message — the only place that breaks the ask-again habit.
