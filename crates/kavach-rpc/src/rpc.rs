@@ -206,15 +206,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register event.append: {e}")))?;
 
     module
-        .register_async_method("rag.tree_get", |params, ctx, _ext| async move {
-            let p: rag::GetParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            rag::tree_get(&ctx, p).await
-        })
-        .map_err(|e| internal(format!("register rag.tree_get: {e}")))?;
-
-    module
         .register_async_method("rag.tree_list_labels", |_params, ctx, _ext| async move {
             rag::tree_list_labels(&ctx).await
         })
