@@ -94,10 +94,14 @@ fn allows_unrelated_commands() {
 }
 
 #[test]
-fn blocks_bare_source_dotenv() {
-    // bare source with no downstream is always blocked
-    assert!(check_env_value_read("source .env").is_some());
-    assert!(check_env_value_read("source /project/.env.local").is_some());
+fn allows_bare_source_dotenv() {
+    // POLICY (decision.engine.env-guard-source-load-allowed): sourcing loads values
+    // into the child env, NOT into context — only a subsequent PRINT leaks. Bare
+    // source is allowed; the leak-readers (cat/echo/printenv) stay blocked elsewhere.
+    assert!(check_env_value_read("source .env").is_none());
+    assert!(check_env_value_read("source /project/.env.local").is_none());
+    // The set -a; . ./.env; set +a idiom (export sourced .env to a child) is allowed.
+    assert!(check_env_value_read("set -a; . ./.env; set +a").is_none());
 }
 
 #[test]
