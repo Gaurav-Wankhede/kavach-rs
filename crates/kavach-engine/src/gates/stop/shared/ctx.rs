@@ -71,3 +71,24 @@ pub(crate) struct StopCtx<'a> {
     /// a prose "do not argue" nudge backfires; only dynamic behavioral GATING works.
     pub(crate) argued_with_user: bool,
 }
+
+impl<'a> StopCtx<'a> {
+    /// Construct a `StopCtx` with all advisory slots empty and all refuse-stop
+    /// signals cleared — the pre-detector baseline. Guards/`run` overwrite the
+    /// fields they populate. Keeps the two `run` initializers from duplicating the
+    /// nine default fields (and `run` under the 100-line clippy ceiling).
+    pub(crate) fn new(input: &'a HookInput, session: &'a mut kavach_session::SessionState) -> Self {
+        Self {
+            input,
+            session,
+            semver_advisory: None,
+            capture_advisory: None,
+            loophole_advisory: None,
+            shallow_advisory: None,
+            continuation_advisory: None,
+            research_unsourced: false,
+            disobedience_handback: false,
+            argued_with_user: false,
+        }
+    }
+}
