@@ -57,7 +57,7 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
     Some(out)
 }
 
-/// The single `in_progress` card as `(key, touches-string)`, or `None` on miss.
+/// The single in-progress card as `(key, touches-string)`, or `None` on miss.
 fn active_card(project: &str) -> Option<(String, String)> {
     let params = serde_json::json!({ "project": project });
     let v = kavach_rpc::client::call::<_, serde_json::Value>(
