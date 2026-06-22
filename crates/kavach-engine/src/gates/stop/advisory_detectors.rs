@@ -8,11 +8,14 @@
 //! `pattern.detector-verified-but-never-wired`.
 //!
 //! Each table entry maps a chain detector → a fix-first ADVISORY (queued for the
-//! next turn's intent injector + recorded to the mistake ledger). ADVISORY tier
-//! ONLY: the no-block policy forbids the Stop gate from ever halting the loop — it
-//! NUDGES, it never stops. A regex-compile `Err` FAILS SAFE to "did not fire" (a
-//! dead detector must never false-fire; the patterns are proven to compile by the
-//! chain crate's own tests).
+//! next turn's intent injector + recorded to the mistake ledger). The advisory is
+//! always queued; ADDITIONALLY, the gate keys in `ARGUE_GATES` / `HANDBACK_GATES` /
+//! the research key set the `StallSignals` that give `clean_exit` refuse-stop TEETH
+//! (a prose nudge against sycophancy/disobedience is proven NOT to work — only
+//! dynamic behavioral GATING does: arxiv.org/pdf/2604.00478, 2604.02423). All teeth
+//! are breaker-bounded so a turn that genuinely cannot proceed force-allows after N.
+//! A regex-compile `Err` FAILS SAFE to "did not fire" (a dead detector must never
+//! false-fire; the patterns are proven to compile by the chain crate's own tests).
 //!
 //! WIRED (12) — invoked every Stop: `detect_continuation_menu` (in `stop.rs`),
 //! and in `TABLE` below: `detect_permission_seek`, `detect_incomplete_work`,
