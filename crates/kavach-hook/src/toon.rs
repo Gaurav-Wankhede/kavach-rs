@@ -34,12 +34,12 @@ pub fn encode_table_named(name: &str, rows: &[Vec<(&str, &str)>]) -> String {
     if !rows.iter().all(|r| row_matches_fields(r, &fields)) {
         return fallback_table(rows); // ragged — plain per-row form per spec
     }
+    use itertools::Itertools as _;
     let header = format!(
         "{name}[{n}]{{{fields}}}:",
         n = rows.len(),
         fields = fields.join(",")
     );
-    use itertools::Itertools as _;
     let body = rows
         .iter()
         .map(|r| r.iter().map(|(_, v)| toon_cell(v)).join(","))
