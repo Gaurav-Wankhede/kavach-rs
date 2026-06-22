@@ -154,34 +154,22 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     if exists {
         args.push(intent_val);
     }
-    // SOURCE: post_tool_algo_recorder.rs:301 — existing shellout pattern.
-    // FIX [C1 reviewer cold-cluster] silent persistence failure broke K-PRI
-    // contract: `let _ = output()` swallowed server-down / not-in-PATH errors
-    // → hit_count never bumped → reinjection lost the recurrence signal.
-    // SOURCE: github.com/rust-lang/rust/issues/73126 — output() error-handling
-    // hazards; nonzero exit + nonempty stderr should never be silent.
-    // Best-effort kept (no Result return; gate runs on every Stop), but
-    // failures surface via tracing::warn so structured logging captures them.
-    match Command::new("kavach").args(&args).output() {
+    // Best-effort (gate runs on every Stop) but NOT silent: the outcome carries
+    // persisted/error so the caller surfaces a failure to the LLM, not only to
+    // tracing. SOURCE: decision.mistake-ledger-no-silent-write.
+    let error = match Command::new("kavach").args(&args).output() {
         Ok(o) if !o.status.success() => {
             let stderr = String::from_utf8_lossy(&o.stderr);
-            tracing::warn!(
-                key = %key,
-                status = %o.status,
-                stderr = %stderr,
-                "record_mistake: db write failed"
-            );
+            tracing::warn!(key = %key, status = %o.status, stderr = %stderr, "record_mistake: db write failed");
+            Some(format!("db write exit={} stderr={}", o.status, stderr.trim()))
         }
         Err(e) => {
-            tracing::warn!(
-                key = %key,
-                error = %e,
-                "record_mistake: spawn failed"
-            );
+            tracing::warn!(key = %key, error = %e, "record_mistake: spawn failed");
+            Some(format!("spawn failed: {e}"))
         }
-        Ok(_) => {} // success — silent
-    }
-    key
+        Ok(_) => None,
+    };
+    RecordOutcome { persisted: error.is_none(), key, error }
 }
 
 /// Read the prior `hit_count` from an existing row's content. Returns (count, exists).
