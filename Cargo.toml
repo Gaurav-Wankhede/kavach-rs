@@ -137,11 +137,8 @@ style = { level = "deny", priority = -1 }
 complexity = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
 nursery = { level = "warn", priority = -1 }
-# doc_markdown is cosmetic (backtick-policing in doc comments), not bug-bearing — it
-# rode along in the denied pedantic group and made every doc line a build-gate failure
-# until back-ticked, churning tokens with no correctness gain. Demote to allow: priority
-# 0 overrides the -1 group, keeping every other pedantic lint denied.
-# SOURCE: coreyja.com/notes/clippy-pedantic-workspace · decision.engine.doc-markdown-allow.
+# Cosmetic backtick-policing, not bug-bearing; overrides the denied pedantic group
+# (priority 0 > -1). See decision.engine.doc-markdown-allow.
 doc_markdown = "allow"
 
 blanket_clippy_restriction_lints = "deny"
