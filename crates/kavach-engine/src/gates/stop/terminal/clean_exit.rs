@@ -200,6 +200,18 @@ fn refuse_stop_on_roadmap_todos(ctx: &mut StopCtx<'_>) -> bool {
         && super::super::shared::should_block_behavioral(ctx.session, "roadmap_todos_remain")
 }
 
+/// Decide whether the clean-stop must be REFUSED because this turn ARGUED WITH the
+/// user — refuted what the user reported, or value-gated the user's own request —
+/// instead of obeying the stated intent. CENSUS-INDEPENDENT (arguing with the user
+/// is wrong whether or not a roadmap todo remains), breaker-bounded
+/// (`argued_with_user`) so a turn that genuinely cannot proceed force-allows after N.
+/// Mutates the breaker — call once per stop. Checked FIRST (highest priority): obeying
+/// the user outranks every other refuse-stop. SOURCE: decision.engine.anti-argue-block.
+fn refuse_stop_on_argued_with_user(ctx: &mut StopCtx<'_>) -> bool {
+    ctx.argued_with_user
+        && super::super::shared::should_block_behavioral(ctx.session, "argued_with_user")
+}
+
 /// Decide whether the clean-stop must be REFUSED because this turn argued instead
 /// of obeying (handback / permission-menu / name-then-stop / paraphrased-handoff)
 /// WHILE census proves a dispatchable roadmap todo remains. Census-gated so a
