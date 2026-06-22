@@ -199,7 +199,7 @@ mod tests {
     fn should_handle_single_row_table() {
         let rows = vec![vec![("only", "row")]];
         let result = encode_table(&rows);
-        assert!(result.contains("only=row"), "single row should be encoded");
+        assert_eq!(result, "[1]{only}:\n  row", "single row encodes as TOON tabular");
     }
 
     #[test]
