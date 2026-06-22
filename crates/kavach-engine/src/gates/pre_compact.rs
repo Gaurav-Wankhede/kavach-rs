@@ -1,9 +1,11 @@
-//! `PreCompact` gate — the anti-amnesia seam. Compaction is about to summarize and
-//! DISCARD the verbatim history (lossy: bytebell.ai/blog/context-auto-compact-warning/;
-//! re-inject-to-survive: arxiv.org/pdf/2602.22402, redis.io/blog/context-rot). This is
-//! the LAST hook before discard, so it UNCONDITIONALLY snapshots the durable working set
-//! to the DB and re-injects the spine into the post-compact context. See
-//! decision.engine.precompact-anti-amnesia-guard.
+//! `PreCompact` gate — the anti-amnesia seam.
+//!
+//! Compaction is about to summarize and DISCARD the verbatim history (lossy:
+//! bytebell.ai/blog/context-auto-compact-warning/; re-inject-to-survive:
+//! arxiv.org/pdf/2602.22402, redis.io/blog/context-rot). This is the LAST hook before
+//! discard, so it UNCONDITIONALLY snapshots the durable working set to the DB and
+//! re-injects the spine into the post-compact context. See
+//! `decision.engine.precompact-anti-amnesia-guard`.
 
 use kavach_types::HookInput;
 
