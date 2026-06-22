@@ -63,11 +63,38 @@ pub(super) fn version_pin_block(prompt: &str) -> String {
     if hits.is_empty() {
         return String::new();
     }
+    // installed is a FACT (Cargo.lock); LATEST is NOT — the LLM must FETCH it from
+    // the registry, never recall it from weights. Name the exact sparse-index URL
+    // so "latest" is confirmed out-of-scope, not assumed. SOURCE: crates.io index
+    // protocol https://doc.rust-lang.org/cargo/reference/registry-index.html
+    let confirm: Vec<String> = seen
+        .iter()
+        .map(|name| format!("  {name}: WebFetch {} (newline-delimited JSON, newest LAST)", crates_index_url(name)))
+        .collect();
     format!(
-        "\n[VERSION_PIN] installed dependency versions from Cargo.lock — research these \
-         EXACT versions, never a version from memory:\n{}\n",
-        hits.join("\n")
+        "\n[VERSION_PIN] installed versions from Cargo.lock (FACTS). The LATEST upstream \
+         version is NOT a fact you may recall from training weights — you MUST fetch it \
+         from the registry BEFORE claiming any version is newest/latest:\nINSTALLED:\n{}\n\
+         CONFIRM-UPSTREAM (fetch, do not assume):\n{}\n",
+        hits.join("\n"),
+        confirm.join("\n")
     )
+}
+
+/// crates.io sparse-index path for `name` (lowercased). 1-char names go under `1/`,
+/// 2-char under `2/`, 3-char under `3/<c>/`, else `<c0c1>/<c2c3>/`. SOURCE:
+/// https://doc.rust-lang.org/cargo/reference/registry-index.html#index-files
+fn crates_index_url(name: &str) -> String {
+    let n = name.to_lowercase();
+    let base = "https://index.crates.io";
+    let bytes = n.as_bytes();
+    match bytes.len() {
+        0 => base.to_owned(),
+        1 => format!("{base}/1/{n}"),
+        2 => format!("{base}/2/{n}"),
+        3 => format!("{base}/3/{}/{n}", bytes[0] as char),
+        _ => format!("{base}/{}{}/{}{}/{n}", bytes[0] as char, bytes[1] as char, bytes[2] as char, bytes[3] as char),
+    }
 }
 
 #[cfg(test)]
