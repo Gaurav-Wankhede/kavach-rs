@@ -12,6 +12,7 @@ pub fn encode_kvs(kvs: &[(&str, &str)]) -> String {
 }
 
 /// Encode an array of uniform objects as TOON tabular format.
+///
 /// Format: `[N]{field1,field2}:` header (keys declared once) + one
 /// comma-separated value row per object — the header-dedup is the token win.
 /// SOURCE: <https://github.com/toon-format/toon> — uniform-array tabular grammar.
