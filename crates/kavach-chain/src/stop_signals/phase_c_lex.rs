@@ -25,8 +25,14 @@ const USER_REPORT_DISMISSAL_POS: &str = concat!(
     r"|\b(?:this|it)\s+is\s+(?:expected|correct|fine|working|normal)\s+(?:behavior|as\s+designed)\b",
 );
 
-const USER_REPORT_DISMISSAL_NEG: &str =
-    r"(?i)\bdetector\b|\b(?:root\s+)?cause\s+is\b|\bblocker\s+is\b";
+// NEG arm: suppress when the phrase is QUOTED/illustrative or appears in meta-
+// discussion ABOUT the gate, not committed as a live dismissal. Without this the
+// detector false-fires on its own test fixtures, transcript quotes, and any turn
+// that names the banned phrase to describe it (the string-literal-prose FP class:
+// kavach_rs_pattern_fix_arch_gate_fp_on_string_literal_prose). The phrase wrapped
+// in straight/smart quotes or backticks, or co-occurring with test/gate/transcript/
+// regex/detector vocabulary, is meta — never a refutation of the user.
+const USER_REPORT_DISMISSAL_NEG: &str = r#"(?i)\bdetector\b|\b(?:root\s+)?cause\s+is\b|\bblocker\s+is\b|["'`“”][^"'`“”]*\b(?:correct|expected|fine|working|normal)\s+(?:behavior|as\s+designed)\b|\b(?:test|fixture|transcript|regex|detector|gate|verbatim|quote[ds]?|example|illustrat)\w*\b"#;
 
 const SUMMARY_EXIT_POS: &str = concat!(
     r"(?i)\b(?:to\s+summarize|in\s+summary|recap|conclusion)\b[\w\W]{0,120}?\b(?:what|next)\b",
