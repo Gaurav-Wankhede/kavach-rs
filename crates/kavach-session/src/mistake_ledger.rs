@@ -269,6 +269,23 @@ mod tests {
     }
 
     #[test]
+    fn record_outcome_displays_as_key() {
+        let o = RecordOutcome { key: "mistake.g.abcd1234".to_owned(), persisted: true, error: None };
+        assert_eq!(o.to_string(), "mistake.g.abcd1234");
+    }
+
+    #[test]
+    fn record_outcome_failure_carries_error() {
+        let o = RecordOutcome {
+            key: "mistake.g.abcd1234".to_owned(),
+            persisted: false,
+            error: Some("db write exit=1".to_owned()),
+        };
+        assert!(!o.persisted);
+        assert!(o.error.is_some());
+    }
+
+    #[test]
     fn truncate_keeps_short_strings() {
         assert_eq!(truncate("hi", 10), "hi");
     }
