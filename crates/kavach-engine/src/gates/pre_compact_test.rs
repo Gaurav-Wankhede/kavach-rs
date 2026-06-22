@@ -1,4 +1,4 @@
-//! Tests for the PreCompact anti-amnesia guard. The RPC-backed paths fail-soft to
+//! Tests for the `PreCompact` anti-amnesia guard. The RPC-backed paths fail-soft to
 //! `None`/silent off-daemon, so these exercise the pure assembly + the no-state path.
 
 use super::*;
