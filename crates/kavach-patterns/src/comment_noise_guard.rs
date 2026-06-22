@@ -13,9 +13,13 @@ use std::fmt::Write as _;
 /// candidate for bloat. Short groups (a 3-4 line precise note) are GOOD and never
 /// fire — only a genuine paragraph is suspect. Raised from the old count-trigger.
 const BLOAT_RUN: usize = 6;
-/// A candidate run is bloat only if it ALSO carries a prose-heavy line (this many
+/// A candidate run is bloat if it ALSO carries a prose-heavy line (this many
 /// chars+) — proving it's rationale narration, not a column of terse markers.
 const PROSE_LINE_MIN: usize = 60;
+/// OR the run's CUMULATIVE comment-text volume reaches this — closes the
+/// split-to-evade bypass (one paragraph fragmented into many short <PROSE_LINE_MIN
+/// lines never trips the per-line trigger, but its summed prose still narrates).
+const RUN_PROSE_VOLUME: usize = 200;
 /// Any single comment line longer than this is a wall-of-text — flagged alone.
 const MAX_LEN: usize = 100;
 
