@@ -212,7 +212,3 @@ pub async fn list_with_filter(
 // REMOVED 2026-05: count_by_status + StatusCounts — counts emitted no
 // useful project state. Callers now use `list_by_project` to fetch actual
 // roadmap titles + entry_status (real progress, not a tally).
-
-#[cfg(test)]
-#[path = "read_global_test.rs"]
-mod read_global_test;
