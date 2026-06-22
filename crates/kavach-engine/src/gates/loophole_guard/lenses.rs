@@ -74,6 +74,47 @@ fn risk_dimension(marker: &str) -> &'static str {
     }
 }
 
+/// Short human dimension label for a fired marker — the taxonomy the heading
+/// names. Same routing table as `risk_dimension`, collapsed to one word so the
+/// `[LOOPHOLE_SURFACE]` header can list the ACTUAL dimensions that fired.
+fn dimension_label(marker: &str) -> &'static str {
+    match marker {
+        "auth" | "token" | "session" | "password" | "permission" | "authorize" => "authz",
+        "secret" | "encrypt" | "decrypt" | "nonce" | "cipher" | "hash" | "hmac" | "signature" => {
+            "crypto"
+        }
+        "payment" | "balance" | "transfer" => "money",
+        "lease" | "lock" | "mutex" | "rwlock" | "concurren" | "atomic" | "race" => "concurrency",
+        "persist" | "commit" | "transaction" => "persistence",
+        "status" | "state_transition" | "claim" | "acquire" => "state-machine",
+        "reqwest" | "http_client" | "fetch_url" | "redirect" | "webhook" | "callback_url" => "ssrf",
+        "deserialize" | "from_str" | "from_slice" | "parse_json" | "untrusted" => "deserialization",
+        "sql" | "query!" | "execute(" | "command::new" | "shell" | "render_template" => "injection",
+        "path::new" | "read_to_string" | "open(" | "join(" | "canonicalize" => "path-traversal",
+        "unbounded" | "with_capacity" | "loop {" | "recursion" | "read_to_end" => "resource-exhaustion",
+        " as u" | " as i" | "wrapping_" | "overflow" => "integer-overflow",
+        "debug!(" | "error!(" | "{:?}" | "to_string()" => "information-leak",
+        _ => "general",
+    }
+}
+
+/// Distinct dimension labels for the fired markers, comma-joined, for the heading.
+/// Dedup-preserving-order so a change touching several auth markers reads `authz`
+/// once. Empty marker set ⇒ `general`. SOURCE: decision.loophole-surface-heading-dynamic.
+pub(super) fn fired_dimension_labels(markers: &[&str]) -> String {
+    let mut seen: Vec<&str> = Vec::new();
+    for &m in markers {
+        let label = dimension_label(m);
+        if !seen.contains(&label) {
+            seen.push(label);
+        }
+    }
+    if seen.is_empty() {
+        return "general".to_owned();
+    }
+    seen.join(", ")
+}
+
 /// Max lens rows to surface from Brain-OS per risk surface — token-cheap; this
 /// rides on every risk-bearing completion claim.
 const LENS_LIMIT: usize = 5;
