@@ -164,3 +164,31 @@ pub async fn refresh(
         .map_err(surreal_to_rpc)?;
     Ok(RewardResult { rewarded })
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[expect(clippy::exhaustive_structs, reason = "RPC DTO at handler boundary")]
+pub struct ForNodesParams {
+    pub nodes: Vec<String>,
+}
+
+/// Gather the citation sources for a set of recalled node ids (`->cite->` walk).
+/// Powers the recall gate's `[RECALL]` citation augmentation.
+///
+/// # Errors
+/// Returns `ErrorObjectOwned` on a malformed record id or DB failure.
+pub async fn for_nodes(
+    state: &AppState,
+    p: ForNodesParams,
+) -> Result<CitersResult, ErrorObjectOwned> {
+    let nodes: Vec<RecordId> = p
+        .nodes
+        .iter()
+        .map(|s| parse_record(s))
+        .collect::<Result<_, _>>()?;
+    let cites = citation_citations_for_nodes(&state.db, &nodes)
+        .await
+        .map_err(surreal_to_rpc)?;
+    Ok(CitersResult {
+        citers: cites.iter().map(|id| format!("{id:?}")).collect(),
+    })
+}
