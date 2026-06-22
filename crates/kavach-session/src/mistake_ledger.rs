@@ -172,6 +172,23 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     RecordOutcome { persisted: error.is_none(), key, error }
 }
 
+/// Record a mistake AND surface a write failure into the session's pending-advisory
+/// spool, so a dark ledger write is visible to the LLM next turn instead of dying in
+/// a discarded `tracing::warn!`. Best-effort: a successful write is silent.
+/// SOURCE: decision.mistake-ledger-no-silent-write · CLAUDE.md §NEVER-SOFT-FAIL.
+pub fn record_and_surface(state: &mut crate::SessionState, m: &Mistake<'_>) -> RecordOutcome {
+    let outcome = record(m);
+    if !outcome.persisted {
+        let err = outcome.error.as_deref().unwrap_or("unknown");
+        state.queue_pending_advisory(&format!(
+            "[MISTAKE_RECORD_FAILED] gate={} key={} err={err} — the ledger write did NOT land; \
+             re-file with: kavach mistake record --gate {} --banned <sample> --instead <fix>",
+            m.gate, outcome.key, m.gate,
+        ));
+    }
+    outcome
+}
+
 /// Read the prior `hit_count` from an existing row's content. Returns (count, exists).
 /// Best-effort: any failure ⇒ (0, false) — the next write becomes a `--new`.
 fn read_hit_count(project: &str, key: &str) -> (u32, bool) {
