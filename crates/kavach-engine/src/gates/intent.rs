@@ -106,6 +106,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let forbidden = kavach_chain::ResearchGate::new().check_forbidden_phrases(prompt);
 
     let mut context = build_base_context(&intent, &routing, &session);
+    // Pin research to installed versions: hand the LLM exact Cargo.lock versions of
+    // any dependency named in the prompt, so a query can never drift to stale weights.
+    context.push_str(&version_pin::version_pin_block(prompt));
     if let Some(topic) = research_pending {
         let pending = format!(
             "\n[RESEARCH:PENDING] topic={topic} — internet-first lookup dispatched. \
