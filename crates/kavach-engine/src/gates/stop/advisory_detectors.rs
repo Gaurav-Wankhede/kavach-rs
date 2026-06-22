@@ -259,13 +259,14 @@ pub(super) fn run(
             continue;
         }
         if (entry.detect)(msg).unwrap_or(false) {
-            drop(kavach_session::record_mistake(&kavach_session::Mistake {
-                project: &session.project,
-                gate: entry.gate,
-                banned_sample: entry.banned,
-                correct_action: entry.correct,
-                turn: session.turn_count,
-            }));
+            let turn = session.turn_count;
+            drop(kavach_session::record_mistake_surfaced(
+                session,
+                entry.gate,
+                entry.banned,
+                entry.correct,
+                turn,
+            ));
             session.queue_pending_advisory(entry.advisory);
             if entry.gate == "claim_without_research_at_stop" {
                 signals.research_unsourced = true;
