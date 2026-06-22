@@ -4,8 +4,8 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::{
-    Citation, CitationMeta, UpsertCitation, citation_get, citation_list, citation_merge_node,
-    citation_reward, citation_traverse, citation_upsert,
+    Citation, CitationMeta, UpsertCitation, citation_citations_for_nodes, citation_get,
+    citation_list, citation_merge_node, citation_reward, citation_traverse, citation_upsert,
 };
 use serde::{Deserialize, Serialize};
 use surrealdb_types::RecordId;
