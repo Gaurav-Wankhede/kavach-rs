@@ -58,7 +58,7 @@ fn toon_cell(v: &str) -> String {
     if v.contains([',', '\n', '"']) {
         format!("\"{}\"", v.replace('"', "\"\""))
     } else {
-        v.to_string()
+        v.to_owned()
     }
 }
 
