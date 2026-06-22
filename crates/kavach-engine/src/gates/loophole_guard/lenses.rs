@@ -166,6 +166,17 @@ mod tests {
     }
 
     #[test]
+    fn heading_names_fired_dimensions_dynamically() {
+        // The heading reflects the ACTUAL fired surface, not a frozen label.
+        assert_eq!(fired_dimension_labels(&["payment"]), "money");
+        assert_eq!(fired_dimension_labels(&["reqwest", "sql"]), "ssrf, injection");
+        // dedup-preserving-order: two auth markers collapse to one label.
+        assert_eq!(fired_dimension_labels(&["auth", "token"]), "authz");
+        // empty ⇒ general, never a panic.
+        assert_eq!(fired_dimension_labels(&[]), "general");
+    }
+
+    #[test]
     fn no_daemon_falls_back_to_canonical() {
         // No RPC server in unit-test ⇒ brain_lenses empty ⇒ canonical six only.
         let out = lens_block(&["payment"]);
