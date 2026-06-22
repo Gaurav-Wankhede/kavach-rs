@@ -1,4 +1,4 @@
-use super::{parse_versions, prompt_mentions};
+use super::{crates_index_url, parse_versions, prompt_mentions};
 
 const SAMPLE: &str = "\
 [[package]]
