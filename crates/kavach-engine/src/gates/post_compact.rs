@@ -31,6 +31,15 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         }
     }
 
+    // LOSSLESS working-set reconstruction: rebuild the exact durable spine (active
+    // card + TOUCHES + recent decisions) live from the DB and inject it BEFORE the
+    // lossy summary, so the summary is a supplement and the spine is re-derived from
+    // the store — not a summary-of-a-summary. Fail-soft: None off-daemon / empty
+    // project → omitted. See decision.engine.lossless-working-set-reconstruction.
+    if let Some(ws) = super::working_set::reconstruct(&session.project) {
+        full_context.push_str(&ws);
+    }
+
     if !summary.is_empty() {
         full_context.push_str("\n[COMPACT_SUMMARY]\n");
         let preview: String = summary.chars().take(500).collect();
