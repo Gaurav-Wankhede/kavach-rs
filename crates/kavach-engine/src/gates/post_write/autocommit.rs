@@ -58,9 +58,21 @@ fn current_project() -> String {
 /// `git add -A && git commit` LOCALLY. No push. `None` outside a repo, on a clean
 /// tree (nothing to commit), or any git error. Returns a `[AUTOCOMMIT]` receipt.
 fn commit_local() -> Option<String> {
-    // Stage everything; a failure here (not a repo, etc.) aborts fail-open.
-    let staged = Command::new("git").args(["add", "-A"]).output().ok()?;
+    // Stage everything. Fail-open (skip the autocommit) but NEVER fail-silent:
+    // a git error is logged to stderr so the LLM sees the autocommit was skipped.
+    let staged = match Command::new("git").args(["add", "-A"]).output() {
+        Ok(o) => o,
+        Err(e) => {
+            use std::io::Write as _;
+            drop(writeln!(std::io::stderr(), "[AUTOCOMMIT_FAIL] git add -A: {e}"));
+            return None;
+        }
+    };
     if !staged.status.success() {
+        use std::io::Write as _;
+        let err = String::from_utf8_lossy(&staged.stderr);
+        drop(writeln!(std::io::stderr(), "[AUTOCOMMIT_FAIL] git add -A exited {}: {}",
+            staged.status, err.trim()));
         return None;
     }
     // Nothing staged → clean tree → nothing to commit (avoid an empty-commit error).
