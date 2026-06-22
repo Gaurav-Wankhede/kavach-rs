@@ -77,7 +77,10 @@ impl<'a> StopCtx<'a> {
     /// signals cleared — the pre-detector baseline. Guards/`run` overwrite the
     /// fields they populate. Keeps the two `run` initializers from duplicating the
     /// nine default fields (and `run` under the 100-line clippy ceiling).
-    pub(crate) fn new(input: &'a HookInput, session: &'a mut kavach_session::SessionState) -> Self {
+    pub(crate) const fn new(
+        input: &'a HookInput,
+        session: &'a mut kavach_session::SessionState,
+    ) -> Self {
         Self {
             input,
             session,
