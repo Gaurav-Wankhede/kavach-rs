@@ -19,16 +19,18 @@ pub(crate) fn should_block_behavioral(
         // Force-allow to preserve loop-safety — but NEVER silently. Record
         // the unresolved anti-pattern so the forced terminal names it; a
         // lazy model can no longer wait the gate out invisibly.
-        drop(kavach_session::record_mistake(&kavach_session::Mistake {
-            project: &session.project,
-            gate: "behavioral_breaker_tripped",
-            banned_sample: &format!(
-                "category '{category}' tripped after {} blocks",
-                session.gate_block_count(category)
-            ),
-            correct_action: "Unresolved anti-pattern; work not complete",
-            turn: session.turn_count,
-        }));
+        let banned = format!(
+            "category '{category}' tripped after {} blocks",
+            session.gate_block_count(category)
+        );
+        let turn = session.turn_count;
+        drop(kavach_session::record_mistake_surfaced(
+            session,
+            "behavioral_breaker_tripped",
+            &banned,
+            "Unresolved anti-pattern; work not complete",
+            turn,
+        ));
         false
     } else {
         let tripped = session.record_gate_block(category);
