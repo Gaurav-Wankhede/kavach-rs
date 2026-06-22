@@ -50,24 +50,50 @@ pub struct Mistake<'a> {
     pub turn: i32,
 }
 
+/// Observable result of a `record()` call.
+///
+/// `record()` stays best-effort (it NEVER blocks the parent gate), but the
+/// failure must not be SILENT: `persisted=false` + a populated `error` lets the
+/// caller surface `[MISTAKE_RECORD_FAILED]` into LLM-visible output instead of a
+/// discarded `tracing::warn!`. SOURCE: rca.mistake-ledger-dark-via-silent-write
+/// · CLAUDE.md §NEVER-SOFT-FAIL.
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct RecordOutcome {
+    /// The row key (`mistake.<gate>.<sig8>`) — always computed, even on failure.
+    pub key: String,
+    /// True iff the write was confirmed (graph RPC ok, or shell exit success).
+    pub persisted: bool,
+    /// Failure detail when `persisted=false`; `None` on success.
+    pub error: Option<String>,
+}
+
+impl std::fmt::Display for RecordOutcome {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Display yields the key, so existing `format!("{outcome}")`-style key
+        // logging and `String`-shaped expectations keep working.
+        f.write_str(&self.key)
+    }
+}
+
 /// Record a mistake into kavach-db under the `pattern` category.
 ///
-/// Best-effort fire-and-forget: an unreachable server must NEVER block the
-/// parent gate (the parent is itself a security gate). Returns the key written
-/// so the caller can log it.
+/// Best-effort: an unreachable server must NEVER block the parent gate (itself a
+/// security gate). NOT silent: returns a [`RecordOutcome`] whose `persisted` /
+/// `error` fields let the caller surface a failure to the LLM.
 ///
 /// Key format: `mistake.<gate>.<sig8>` where sig8 = first 8 hex chars of
 /// BLAKE3 over the banned sample, lowercased. Stable across runs so repeat
 /// hits update the existing row (count++) instead of creating duplicates.
-#[must_use = "if you ignore the returned key the gate cannot log the persisted row"]
-pub fn record(m: &Mistake<'_>) -> String {
+#[must_use = "inspect outcome.persisted/.error so a failed write is surfaced, not dropped silently"]
+pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     if crate::mistake_ledger_graph::graph_path_enabled() {
         let session_id = crate::resolved_session_id();
         // Synchronous: the graph path is now an RPC round-trip to the server
         // (the single RocksDB writer), not a direct embedded-DB open — so no
         // tokio runtime is built here. SOURCE: rca.mistake-ledger-dark-via-direct-open.
         match crate::mistake_ledger_graph::try_record_via_graph(m, &session_id) {
-            Ok(ids) => return ids,
+            Ok(ids) => return RecordOutcome { key: ids, persisted: true, error: None },
             Err(e) => tracing::warn!(error = %e, "graph path failed, falling back to ledger"),
         }
     }
