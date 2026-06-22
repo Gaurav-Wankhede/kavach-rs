@@ -416,6 +416,15 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register citation.refresh: {e}")))?;
 
+    module
+        .register_async_method("citation.for_nodes", |params, ctx, _ext| async move {
+            let p: citation::ForNodesParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            citation::for_nodes(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register citation.for_nodes: {e}")))?;
+
     // SPEC: docs/architecture/session-occupancy-lease.md — lease.{acquire,heartbeat,unlock,status}
     module
         .register_async_method("lease.acquire", |params, ctx, _ext| async move {
