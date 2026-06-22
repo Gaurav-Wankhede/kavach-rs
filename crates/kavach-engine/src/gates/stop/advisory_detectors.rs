@@ -176,6 +176,22 @@ const TABLE: &[Entry] = &[
         correct: "do NOT hand off — query the kavach DB, claim the next runnable card, and START it THIS turn",
         advisory: "[SEMANTIC_DEFERRAL] last turn read as a paraphrased handoff the lexical deferral regex did not catch (\"natural stopping point\", \"handing the remainder off\", \"as far as it makes sense\"). A paraphrase is still a deferral (global CLAUDE.md §autonomous_loop §4a_describe_is_not_done). Do NOT hand work off in prose: check the kavach DB, claim the next runnable card, and START it THIS turn. If the board is genuinely empty, state that as a fact.",
     },
+    Entry {
+        detect: detect_user_report_dismissal,
+        needs_write: false,
+        gate: "argued_with_user_at_stop",
+        banned: "dismissed what the user reported/asked (\"you reported X\", \"this is expected behavior\", \"working as designed\") instead of obeying the user's stated intent",
+        correct: "RE-READ the user's exact words, UNDERSTAND the intent behind them, and OBEY it THIS turn — never refute the user with a strawman; if a fact is in dispute, WebSearch and cite a URL, never assert from memory",
+        advisory: "[ARGUED_WITH_USER] last turn dismissed/refuted what the user reported or asked instead of obeying the stated intent. RE-READ the user's exact words. UNDERSTAND the intent. OBEY it THIS turn (global CLAUDE.md §No-Fence). The user's instruction is a TRIGGER to ACT, not a position to argue with. If a factual claim is in dispute, WebSearch and cite the URL — NEVER answer from training weights (§internet-first, §No-Hallucination). Do the mandated action, then stop.",
+    },
+    Entry {
+        detect: detect_value_gating,
+        needs_write: false,
+        gate: "value_gated_user_request_at_stop",
+        banned: "argued the user's request adds no value / is not worth it / should wait, instead of building what the user asked for",
+        correct: "BUILD what the user asked THIS turn — value-gating the user's own request is the forbidden argue-not-obey; if scope is unclear, ask ONE tight clarifying question, never refuse",
+        advisory: "[VALUE_GATED_REQUEST] last turn argued the user's request adds no value / is not worth it / can wait — value-gating the user's OWN explicit request is argue-not-obey (global CLAUDE.md §No-Fence, §No-Fluff). BUILD what the user asked THIS turn. If genuinely uncertain about scope, ask ONE tight clarifying question — never refuse or defer.",
+    },
 ];
 
 /// Which refuse-stop-eligible stall classes fired this turn. ADVISORY firing is a
