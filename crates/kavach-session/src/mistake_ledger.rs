@@ -172,9 +172,11 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     RecordOutcome { persisted: error.is_none(), key, error }
 }
 
-/// Record a mistake AND surface a write failure into the session's pending-advisory
-/// spool, so a dark ledger write is visible to the LLM next turn instead of dying in
-/// a discarded `tracing::warn!`. Best-effort: a successful write is silent.
+/// Record a mistake AND surface a write failure to the LLM next turn.
+///
+/// Queues `[MISTAKE_RECORD_FAILED]` into the session's pending-advisory spool when the
+/// write does not land, instead of dying in a discarded `tracing::warn!`. Best-effort:
+/// a successful write is silent.
 ///
 /// Takes `gate`/`banned`/`instead` borrowed and `turn` by value (NOT a borrowed
 /// `Mistake` referencing `state`) so callers avoid an immutable+mutable self-borrow
