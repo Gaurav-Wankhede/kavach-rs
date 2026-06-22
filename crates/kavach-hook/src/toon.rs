@@ -4,6 +4,8 @@
 // NOTE: toon-format dependency HELD due to 58 unvetted transitive deps.
 //       Using compact fallback format until TOON is actively needed.
 
+use itertools::Itertools as _;
+
 /// Encode a slice of key-value pairs as compact format.
 /// Format: "key: value" per line — compact and human-readable.
 #[must_use]
