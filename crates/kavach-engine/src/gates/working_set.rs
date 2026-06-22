@@ -79,7 +79,10 @@ fn recent_decisions(project: &str) -> Vec<(String, String)> {
     let Ok(v) = kavach_rpc::client::call::<_, serde_json::Value>("db.query", Some(params)) else {
         return Vec::new();
     };
-    let Some(arr) = v.as_array() else { return Vec::new() };
+    // db.query returns { entries: [ { key, title, ... } ] }.
+    let Some(arr) = v.get("entries").and_then(serde_json::Value::as_array) else {
+        return Vec::new();
+    };
     arr.iter()
         .filter_map(|row| {
             let key = row.get("key").and_then(serde_json::Value::as_str)?;
