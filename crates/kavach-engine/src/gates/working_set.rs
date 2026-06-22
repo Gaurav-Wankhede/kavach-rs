@@ -47,7 +47,7 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
     if !decisions.is_empty() {
         out.push_str("recent_decisions (settled — do NOT re-litigate; recall with kavach db get):\n");
         for (key, title) in decisions {
-            out.push_str(&format!("  - {key}: {title}\n"));
+            writeln!(out, "  - {key}: {title}").ok();
         }
     }
     out.push_str(
