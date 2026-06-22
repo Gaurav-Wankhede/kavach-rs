@@ -18,7 +18,7 @@ use std::fmt::Write as _;
 const RECENT_DECISIONS: usize = 8;
 
 /// Rebuild the lossless `[WORKING_SET]` block from live DB state, or `None` when the
-/// project is empty or the DB yields nothing (fail-soft — PostCompact then relies on
+/// project is empty or the DB yields nothing (fail-soft — `PostCompact` then relies on
 /// the summary alone, exactly as before). The block is exact + re-derivable: it names
 /// the active card, its TOUCHES paths, and the recent decision keys+titles so the
 /// post-compact turn reconstructs its state from the STORE, not the summary.
