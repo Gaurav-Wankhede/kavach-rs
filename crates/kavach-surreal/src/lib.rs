@@ -151,8 +151,7 @@ pub use rag_trees::{
     list_refreshable as rag_tree_list_refreshable, upsert_with_dir as rag_tree_upsert_with_dir,
 };
 pub use read::{
-    get_by_id, get_by_key, list_all_by_table, list_by_project, list_by_project_or_global,
-    list_by_status, list_with_filter,
+    get_by_id, get_by_key, list_all_by_table, list_by_project, list_by_status, list_with_filter,
 };
 pub use schema::apply_schema;
 pub use schema_engine::apply as apply_schema_engine;
