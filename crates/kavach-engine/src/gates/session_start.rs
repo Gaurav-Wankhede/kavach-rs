@@ -10,7 +10,7 @@ mod flows;
 mod gui;
 mod memory;
 mod patterns;
-mod reconcile;
+pub(in crate::gates) mod reconcile;
 mod stack_fit;
 mod state;
 
