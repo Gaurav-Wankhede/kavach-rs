@@ -6,6 +6,7 @@ mod commit;
 mod git_add;
 mod nextest;
 mod secret_cli;
+mod toolbelt_cli;
 
 #[cfg(test)]
 mod tests;
