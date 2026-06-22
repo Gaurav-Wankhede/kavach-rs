@@ -22,6 +22,29 @@ fn all_signal_patterns_compile() {
     assert!(detect_unverified_code_claim("the code is working now").unwrap());
 }
 
+#[test]
+fn user_report_dismissal_meta_neg_arm() {
+    // Live dismissal of the user still fires.
+    assert!(
+        detect_user_report_dismissal("This is correct behavior as designed; nothing to fix.")
+            .unwrap()
+    );
+    // FP class (the gate firing on its own meta/test discussion): quoted phrase,
+    // and discussion that NAMES test/transcript/gate vocabulary, must NOT fire.
+    assert!(
+        !detect_user_report_dismissal(
+            "The table row quotes \"this is correct behavior as designed\" from the transcript."
+        )
+        .unwrap()
+    );
+    assert!(
+        !detect_user_report_dismissal(
+            "The test asserts this is correct behavior as designed for the gate fixture."
+        )
+        .unwrap()
+    );
+}
+
 // Continuation-menu detector tests live in a sibling file to keep each test
 // file under the nano-file ceiling; included here as a nested submodule.
 #[path = "stop_signals_test_menu.rs"]
