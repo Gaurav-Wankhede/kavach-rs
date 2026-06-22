@@ -207,6 +207,13 @@ pub(super) struct StallSignals {
     /// (`roadmap_todos_remain`), breaker-bounded. This is the generalized
     /// disobedience signal the narrow lexical `disobedience_guard` was blind to.
     pub handback_or_menu: bool,
+    /// `detect_user_report_dismissal` or `detect_value_gating` fired — the turn
+    /// ARGUED WITH / refuted / value-gated the user's own stated request instead of
+    /// obeying the intent. Refused unconditionally (breaker-bounded), census-
+    /// INDEPENDENT: arguing with the user is wrong whether or not the board has todos.
+    /// This is the anti-sycophancy teeth (SOURCE: arxiv.org/pdf/2604.00478 dynamic
+    /// behavioral gating; a prose "don't argue" nudge is proven NOT to work).
+    pub argued_with_user: bool,
 }
 
 /// Gate keys whose firing means the turn ended on a HANDBACK or PERMISSION-MENU
