@@ -29,7 +29,7 @@ const REVEAL_SINKS: &[&str] = &["| cat", "| bat", "| less", "| head", "| tail", 
 /// `Some(advisory)` when the command reads a secret value via a provider CLI AND
 /// routes it to a reveal sink (or is a bare read that prints by default). `None`
 /// otherwise. Quote-aware: a secret verb inside a quoted string is data, not a call.
-pub(super) fn check_secret_cli_read(command: &str) -> Option<String> {
+pub(crate) fn check_secret_cli_read(command: &str) -> Option<String> {
     let scrubbed = strip_quoted_regions(command);
     let lc = scrubbed.to_lowercase();
     let verb = SECRET_READ_VERBS.iter().find(|v| lc.contains(**v))?;
