@@ -14,6 +14,7 @@ pub(super) fn run(command: &str) -> Decision {
     let check_ctx = check_multi_crate(command);
     let nextest_ctx = check_nextest_advisory(command);
     let secret_ctx = check_secret_cli_read(command);
+    let toolbelt_ctx = check_toolbelt_cli(command);
 
     if let Some(reason) = super::super::env_guard::check_env_value_read(command) {
         return Decision::Deny(reason);
