@@ -21,6 +21,7 @@ fn ctx_with<'a>(msg: &str, session: &'a mut kavach_session::SessionState) -> Sto
         continuation_advisory: None,
         research_unsourced: false,
         disobedience_handback: false,
+        argued_with_user: false,
     }
 }
 
