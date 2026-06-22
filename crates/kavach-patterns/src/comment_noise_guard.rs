@@ -83,16 +83,21 @@ pub fn advise(file_path: &str, content: &str) -> Option<String> {
     let mut run_start = 0usize;
     let mut run = 0usize;
     let mut run_has_prose = false;
+    let mut run_volume = 0usize;
     for (i, line) in content.lines().enumerate() {
         let t = line.trim_start();
         if is_line_comment(t) {
             if run == 0 {
                 run_start = i.saturating_add(1);
                 run_has_prose = false;
+                run_volume = 0;
             }
             run = run.saturating_add(1);
             let len = t.chars().count();
-            if len >= PROSE_LINE_MIN {
+            run_volume = run_volume.saturating_add(len);
+            // Prose either as ONE long line, or summed across many short lines
+            // (the split-to-evade bypass) — both narrate.
+            if len >= PROSE_LINE_MIN || run_volume >= RUN_PROSE_VOLUME {
                 run_has_prose = true;
             }
             if len > MAX_LEN {
