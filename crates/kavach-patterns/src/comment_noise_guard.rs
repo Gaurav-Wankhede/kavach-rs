@@ -4,8 +4,9 @@
 //! a one-line "why" never fires. What fires is BLOAT — a long rationale paragraph
 //! that belongs in the Kavach DB (injectable as decision context), or an
 //! over-length wall-of-text line. Signal = prose VOLUME, not line count: a run is
-//! noise only when it is both long (`BLOAT_RUN`+ lines) AND prose-heavy (carries a
-//! `PROSE_LINE_MIN`-char line), OR any single comment exceeds `MAX_LEN`. Exempt:
+//! noise only when it is both long (`BLOAT_RUN`+ lines) AND prose-heavy — either one
+//! `PROSE_LINE_MIN`-char line OR `RUN_PROSE_VOLUME` summed across the run (closes the
+//! split-into-short-lines bypass) — OR any single comment exceeds `MAX_LEN`. Exempt:
 //! doc/header + `SAFETY:`/shebang/directive markers. Non-source files skipped.
 use std::fmt::Write as _;
 
