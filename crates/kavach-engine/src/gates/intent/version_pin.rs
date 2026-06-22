@@ -87,13 +87,14 @@ pub(super) fn version_pin_block(prompt: &str) -> String {
 fn crates_index_url(name: &str) -> String {
     let n = name.to_lowercase();
     let base = "https://index.crates.io";
-    let bytes = n.as_bytes();
-    match bytes.len() {
-        0 => base.to_owned(),
-        1 => format!("{base}/1/{n}"),
-        2 => format!("{base}/2/{n}"),
-        3 => format!("{base}/3/{}/{n}", bytes[0] as char),
-        _ => format!("{base}/{}{}/{}{}/{n}", bytes[0] as char, bytes[1] as char, bytes[2] as char, bytes[3] as char),
+    // ASCII-only crate names: collect chars so slice indexing never panics.
+    let c: Vec<char> = n.chars().collect();
+    match c.as_slice() {
+        [] => base.to_owned(),
+        [_] => format!("{base}/1/{n}"),
+        [_, _] => format!("{base}/2/{n}"),
+        [a, _, _] => format!("{base}/3/{a}/{n}"),
+        [a, b, c2, d, ..] => format!("{base}/{a}{b}/{c2}{d}/{n}"),
     }
 }
 
