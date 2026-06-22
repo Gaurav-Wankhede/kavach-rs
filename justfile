@@ -144,3 +144,8 @@ loc:
 # Benchmark a single command (smoke for perf regressions).
 bench CMD:
     hyperfine --warmup 3 --runs 20 "{{CMD}}"
+
+# Wiring audit — list RPC verbs + gates that are defined but never called.
+# Orphans are CANDIDATES (verify the call path); see decision.audit.sh-vs-llm.
+audit-wiring:
+    bash scripts/audit_wiring.sh
