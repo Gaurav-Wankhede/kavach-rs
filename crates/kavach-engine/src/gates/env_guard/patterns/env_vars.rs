@@ -62,11 +62,15 @@ pub(crate) fn check_env_grep(lc: &str) -> Option<String> {
 
 /// `set` / `declare` — dumps all shell variables including secrets.
 pub(crate) fn check_set_dump(lc: &str) -> Option<String> {
-    let hit = lc == "set"
-        || lc == "declare"
-        || lc == "declare -p"
-        || lc.starts_with("set ")
-        || lc.starts_with("declare ");
+    // `set -a`/`set +a`/`set -e`/`set -o pipefail` are shell-OPTION toggles — the
+    // standard idiom for exporting a sourced .env to a child — and dump NOTHING.
+    // Only BARE `set` (or `set VAR=x`) dumps the environment. Mirrors the downstream
+    // classifier (env_guard_dotenv/downstream.rs::prints_env_value).
+    let set_is_dump = lc == "set"
+        || lc
+            .strip_prefix("set ")
+            .is_some_and(|rest| !matches!(rest.trim_start().chars().next(), Some('-' | '+')));
+    let hit = set_is_dump || lc == "declare" || lc == "declare -p" || lc.starts_with("declare ");
     hit.then(|| {
         "BLOCKED: `set`/`declare` dumps all shell variables including secret values. \
          Use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) to list names only."
