@@ -269,6 +269,9 @@ pub(super) fn run(
             if HANDBACK_GATES.contains(&entry.gate) {
                 signals.handback_or_menu = true;
             }
+            if ARGUE_GATES.contains(&entry.gate) {
+                signals.argued_with_user = true;
+            }
         }
     }
     signals
