@@ -52,7 +52,10 @@
 //!                                          copy is an orphan (not mod-declared) —
 //!                                          DELETE it, do not wire.
 
-use kavach_chain::stop_signals::{self, SemanticDeferral, classify_semantic_deferral};
+use kavach_chain::stop_signals::{
+    self, SemanticDeferral, classify_semantic_deferral, detect_user_report_dismissal,
+    detect_value_gating,
+};
 
 /// Backstop adapter: fire ONLY on a paraphrased handoff the lexical
 /// `detect_strategic_deferral` regex missed. `CoveredByRegex`/`Clear` → false, so
