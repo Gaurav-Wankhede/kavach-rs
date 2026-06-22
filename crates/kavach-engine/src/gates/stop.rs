@@ -268,12 +268,13 @@ fn continuation_menu_check(
     if !fired {
         return None;
     }
-    drop(kavach_session::record_mistake(&kavach_session::Mistake {
-        project: &session.project,
-        gate: "continuation_menu_question",
-        banned_sample: "ended the turn on a 'continue or pause?' permission question while [AUTO_CONTINUE] already commanded autonomous continuation",
-        correct_action: "do NOT ask to continue — the gate already dispatched the next move; START it this turn (or, on a genuinely drained board, STATE the clean stop without a question)",
-        turn: session.turn_count,
+    let turn = session.turn_count;
+    drop(kavach_session::record_mistake_surfaced(
+        session,
+        "continuation_menu_question",
+        "ended the turn on a 'continue or pause?' permission question while [AUTO_CONTINUE] already commanded autonomous continuation",
+        "do NOT ask to continue — the gate already dispatched the next move; START it this turn (or, on a genuinely drained board, STATE the clean stop without a question)",
+        turn,
     }));
     // Re-surface the omission at the TOP of the next turn (harness-neutral
     // pending queue, not the Cursor-gated turn_relay), so the model sees it
