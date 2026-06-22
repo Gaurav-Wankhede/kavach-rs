@@ -121,17 +121,71 @@ mod tests {
     }
 
     #[test]
-    fn should_encode_table_with_equals_format() {
+    fn should_encode_table_as_toon_tabular_with_deduped_header() {
         let rows = vec![
             vec![("skill", "rust"), ("priority", "P0")],
             vec![("skill", "data"), ("priority", "P1")],
         ];
         let result = encode_table(&rows);
         assert!(
-            result.contains("skill=rust"),
-            "table uses 'key=value' format"
+            result.starts_with("[2]{skill,priority}:"),
+            "header declares count + fields once: {result}"
         );
-        assert!(result.contains("priority=P0"));
+        assert!(result.contains("rust,P0"), "value row is comma-separated");
+        assert!(result.contains("data,P1"));
+        assert!(
+            !result.contains("skill=data"),
+            "keys are NOT repeated per row — that is the token win"
+        );
+    }
+
+    #[test]
+    fn should_quote_cells_containing_commas() {
+        let rows = vec![vec![("title", "a, b"), ("k", "plain")]];
+        let result = encode_table(&rows);
+        assert!(result.contains("\"a, b\",plain"), "comma value quoted: {result}");
+    }
+
+    #[test]
+    fn should_double_embedded_quotes() {
+        let rows = vec![vec![("k", "he said \"hi\"")]];
+        let result = encode_table(&rows);
+        assert!(result.contains("\"he said \"\"hi\"\"\""), "quotes doubled: {result}");
+    }
+
+    #[test]
+    fn should_fall_back_for_ragged_rows() {
+        let rows = vec![
+            vec![("a", "1"), ("b", "2")],
+            vec![("a", "1")], // different key set
+        ];
+        let result = encode_table(&rows);
+        assert!(!result.contains("[2]{"), "ragged rows must not claim uniform header");
+        assert!(result.contains("a=1"), "falls back to per-row form: {result}");
+    }
+
+    #[test]
+    fn toon_tabular_beats_per_row_on_tokens() {
+        // The whole point: header-dedup shrinks the byte/token count vs repeating keys.
+        let rows = vec![
+            vec![("status", "verified"), ("key", "k1"), ("title", "t1")],
+            vec![("status", "todo"), ("key", "k2"), ("title", "t2")],
+            vec![("status", "done"), ("key", "k3"), ("title", "t3")],
+        ];
+        let toon = encode_table(&rows);
+        let per_row = fallback_table(&rows);
+        assert!(
+            toon.len() < per_row.len(),
+            "TOON {} bytes must be < per-row {} bytes",
+            toon.len(),
+            per_row.len()
+        );
+    }
+
+    #[test]
+    fn should_name_table_when_provided() {
+        let rows = vec![vec![("k", "v")]];
+        assert!(encode_table_named("cards", &rows).starts_with("cards[1]{k}:"));
     }
 
     #[test]
