@@ -135,13 +135,14 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // computation site. See decision.engine.stop-shallow-verdict-advisory.
     let shallow_advisory = kavach_patterns::shallow_verdict_guard::detect_shallow_verdict(&msg);
     if shallow_advisory.is_some() {
-        drop(kavach_session::record_mistake(&kavach_session::Mistake {
-            project: &session.project,
-            gate: "shallow_verdict",
-            banned_sample: "asserted a clean/wired/no-defect verdict with no file:line citation and no [RCA] block",
-            correct_action: "open the entry->...->logic call path and cite the file:line you read, or drop the verdict",
-            turn: session.turn_count,
-        }));
+        let turn = session.turn_count;
+        drop(kavach_session::record_mistake_surfaced(
+            &mut session,
+            "shallow_verdict",
+            "asserted a clean/wired/no-defect verdict with no file:line citation and no [RCA] block",
+            "open the entry->...->logic call path and cite the file:line you read, or drop the verdict",
+            turn,
+        ));
     }
 
     // Continuation-menu guard: the final message ENDED THE TURN on a "continue
