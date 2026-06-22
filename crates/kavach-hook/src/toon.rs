@@ -74,13 +74,11 @@ pub fn encode_list(items: &[&str]) -> String {
 /// `itertools::join` writes Display values directly into the output buffer, skipping
 /// the intermediate Vec<String> that .`collect::`<Vec<_>>().`join()` would allocate.
 fn fallback_kvs(kvs: &[(&str, &str)]) -> String {
-    use itertools::Itertools as _;
     kvs.iter().map(|(k, v)| format!("{k}: {v}")).join("\n")
 }
 
 /// Fallback: simple table format if TOON encoding fails.
 fn fallback_table(rows: &[Vec<(&str, &str)>]) -> String {
-    use itertools::Itertools as _;
     rows.iter()
         .map(|row| row.iter().map(|(k, v)| format!("{k}={v}")).join(" "))
         .join("\n")
