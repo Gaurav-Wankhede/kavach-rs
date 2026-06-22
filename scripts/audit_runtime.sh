@@ -29,15 +29,15 @@ probe "db query"          "$BIN" db query --project "$P" --category decision
 probe "db list-projects"  "$BIN" db list-projects
 probe "db query-raw"      "$BIN" db query-raw --query "INFO FOR DB"
 probe "phase status"      "$BIN" phase status
-probe "tasks audit"       "$BIN" tasks audit --project "$P"
-probe "mistake list"      "$BIN" mistake list
-probe "mistake stats"     "$BIN" mistake stats
+probe "tasks audit"       "$BIN" tasks audit
+probe "mistake list"      "$BIN" mistake list --project "$P"
+probe "mistake stats"     "$BIN" mistake stats --project "$P"
 probe "think"             "$BIN" think --project "$P" "wiring audit"
 probe "bg status"         "$BIN" bg status --project "$P"
 probe "goal status"       "$BIN" goal status --project "$P"
 probe "toolbelt list"     "$BIN" toolbelt list
 probe "servers status"    "$BIN" servers status
-probe "loop status"       "$BIN" loop status --project "$P"
+probe "loop status"       "$BIN" loop status
 probe "doctor"            "$BIN" doctor
 
 echo
