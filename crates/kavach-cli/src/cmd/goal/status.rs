@@ -8,18 +8,28 @@ pub(crate) fn run(project: &str) -> i32 {
     let params = json!({
         "project": project,
         "category": "decision",
-        "key_prefix": "goal.",
     });
-    let v = match kavach_rpc::client::call::<Value, Value>("db.list", Some(params)) {
+    let v = match kavach_rpc::client::call::<Value, Value>("db.query", Some(params)) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("kavach goal status: rpc db.list: {e}");
+            eprintln!("kavach goal status: rpc db.query: {e}");
             return 1;
         }
     };
-    let rows = match v.get("rows").and_then(Value::as_array) {
-        Some(r) if !r.is_empty() => r,
-        Some(_) | None => {
+    // db.query returns `.entries`; filter the `goal.` key prefix client-side.
+    let all: Vec<Value> = v
+        .get("entries")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .filter(|e| field(e, "key").starts_with("goal."))
+                .cloned()
+                .collect()
+        })
+        .unwrap_or_default();
+    let rows = match all.as_slice() {
+        r if !r.is_empty() => r,
+        _ => {
             return emit_line(&format!(
                 "[GOAL_STATUS] no active goals for project={project}"
             ));
