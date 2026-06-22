@@ -46,6 +46,10 @@ The harness auto-<strong>feeds</strong> its memory and auto-<strong>recalls</str
 </table>
 </div>
 
+<div align="center">
+<sub>🌐 <strong>Internet-first, enforced.</strong> Every prompt is pinned to your <em>installed</em> dependency versions (from the lockfile) and handed the exact registry URL to fetch the <em>latest</em> — so the agent confirms upstream instead of guessing from stale training weights.</sub>
+</div>
+
 <hr>
 
 ## Why Kavach?
