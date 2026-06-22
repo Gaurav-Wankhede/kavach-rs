@@ -36,11 +36,13 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
         "\n[WORKING_SET — LOSSLESS, re-derived from the store; trust this over [COMPACT_SUMMARY]]\n",
     );
     if let Some((key, touches)) = active {
-        out.push_str(&format!(
+        write!(
+            out,
             "active_card: {key}\n  touches: {touches}\n  resume: re-read the card \
              (`kavach db get --project {project} --category roadmap --key {key} --full`), \
              then VERIFY on those paths — do NOT re-implement.\n"
-        ));
+        )
+        .ok();
     }
     if !decisions.is_empty() {
         out.push_str("recent_decisions (settled — do NOT re-litigate; recall with kavach db get):\n");
