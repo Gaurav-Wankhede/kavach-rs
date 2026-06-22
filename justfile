@@ -149,3 +149,8 @@ bench CMD:
 # Orphans are CANDIDATES (verify the call path); see decision.audit.sh-vs-llm.
 audit-wiring:
     bash scripts/audit_wiring.sh
+
+# Runtime audit — actually invoke each read-only CLI verb + each hook gate,
+# classify EMPTY / ERROR / OK. Proves responses, not just source wiring.
+audit-runtime:
+    bash scripts/audit_runtime.sh
