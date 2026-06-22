@@ -175,15 +175,31 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
 /// Record a mistake AND surface a write failure into the session's pending-advisory
 /// spool, so a dark ledger write is visible to the LLM next turn instead of dying in
 /// a discarded `tracing::warn!`. Best-effort: a successful write is silent.
+///
+/// Takes `gate`/`banned`/`instead` borrowed and `turn` by value (NOT a borrowed
+/// `Mistake` referencing `state`) so callers avoid an immutable+mutable self-borrow
+/// on `SessionState`. The mistake's `project` is read from `state.project` here.
 /// SOURCE: decision.mistake-ledger-no-silent-write · CLAUDE.md §NEVER-SOFT-FAIL.
-pub fn record_and_surface(state: &mut crate::SessionState, m: &Mistake<'_>) -> RecordOutcome {
-    let outcome = record(m);
+pub fn record_and_surface(
+    state: &mut crate::SessionState,
+    gate: &str,
+    banned: &str,
+    instead: &str,
+    turn: i32,
+) -> RecordOutcome {
+    let outcome = record(&Mistake {
+        project: &state.project,
+        gate,
+        banned_sample: banned,
+        correct_action: instead,
+        turn,
+    });
     if !outcome.persisted {
         let err = outcome.error.as_deref().unwrap_or("unknown");
         state.queue_pending_advisory(&format!(
-            "[MISTAKE_RECORD_FAILED] gate={} key={} err={err} — the ledger write did NOT land; \
-             re-file with: kavach mistake record --gate {} --banned <sample> --instead <fix>",
-            m.gate, outcome.key, m.gate,
+            "[MISTAKE_RECORD_FAILED] gate={gate} key={} err={err} — the ledger write did NOT land; \
+             re-file with: kavach mistake record --gate {gate} --banned <sample> --instead <fix>",
+            outcome.key,
         ));
     }
     outcome
