@@ -41,20 +41,30 @@ pub async fn delete_anti_patterns_by_gate(db: &Surreal<Db>, gate: &str) -> Resul
         return Ok(0);
     }
     // 2. Delete the clustered mistake_event observations + their instance_of edges,
-    //    then the anti_pattern nodes. A single DELETE per tier keeps it atomic per
-    //    statement; the edges go with their endpoints in SurrealDB graph deletes.
+    //    then the anti_pattern nodes. `RETURN BEFORE` returns the deleted rows so we
+    //    read back the VERIFIED removal count (count→delete→verify), not the stale
+    //    pre-SELECT count. SurrealDB 3.1.4 DELETE … RETURN BEFORE returns the array
+    //    of deleted records. SOURCE: https://surrealdb.com/docs/surrealql/statements/delete
     let purge = "DELETE entity WHERE entity_type = 'mistake_event' \
-                 AND ->instance_of->entity.properties.gate CONTAINS $gate; \
+                 AND ->instance_of->entity.properties.gate CONTAINS $gate RETURN BEFORE; \
                  DELETE entity WHERE entity_type = 'anti_pattern' \
-                 AND properties.gate = $gate;";
+                 AND properties.gate = $gate RETURN BEFORE;";
     let mut presp = db.query(purge).bind(("gate", gate.to_owned())).await?;
-    // Surface a real delete failure; a missing-table on the second pass is empty.
-    if let Err(e) = presp.take::<Vec<surrealdb_types::Value>>(0)
-        && !crate::error::is_missing_table_error(&e)
-    {
-        return Err(e.into());
-    }
-    Ok(rows.len())
+    // statement 0 = deleted mistake_events; statement 1 = deleted anti_patterns.
+    let take_count = |slot: usize, presp: &mut surrealdb::Response| -> Result<usize> {
+        match presp.take::<Vec<surrealdb_types::Value>>(slot) {
+            Ok(deleted) => Ok(deleted.len()),
+            Err(e) if crate::error::is_missing_table_error(&e) => Ok(0),
+            Err(e) => Err(e.into()),
+        }
+    };
+    drop(take_count(0, &mut presp)?);
+    let removed = take_count(1, &mut presp)?;
+    // Read-back assertion: the verified anti_pattern removal count must match the
+    // pre-SELECT target count. A mismatch means a concurrent writer or partial
+    // delete — surface it rather than report a stale success.
+    debug_assert_eq!(removed, rows.len(), "purge read-back mismatch: removed != selected");
+    Ok(removed)
 }
 
 #[cfg(test)]
