@@ -12,6 +12,7 @@ pub(super) fn run(command: &str) -> Decision {
     let commit_ctx = check_commit_message(command);
     let check_ctx = check_multi_crate(command);
     let nextest_ctx = check_nextest_advisory(command);
+    let secret_ctx = check_secret_cli_read(command);
 
     if let Some(reason) = super::super::env_guard::check_env_value_read(command) {
         return Decision::Deny(reason);
