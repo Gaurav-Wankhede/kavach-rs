@@ -5,6 +5,7 @@ mod cargo_flags;
 mod commit;
 mod git_add;
 mod nextest;
+mod secret_cli;
 
 #[cfg(test)]
 mod tests;
@@ -13,3 +14,4 @@ pub(super) use cargo_flags::check_multi_crate;
 pub(super) use commit::check_commit_message;
 pub(super) use git_add::is_git_add_all;
 pub(super) use nextest::{check_nextest_advisory, scaffold_nextest_config};
+pub(super) use secret_cli::check_secret_cli_read;
