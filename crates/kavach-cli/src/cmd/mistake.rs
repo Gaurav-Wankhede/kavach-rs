@@ -84,6 +84,21 @@ pub(crate) enum MistakeAction {
         #[arg(long)]
         project: String,
     },
+    /// Self-file a mistake the stop-gate detectors did NOT catch. The LLM-facing
+    /// door into the ledger: when you realize you erred, categorize + persist it
+    /// HERE so SessionStart reinjects it next session. Writes to the shared global
+    /// namespace (visible to every project). SOURCE: decision.mistake-llm-self-report.
+    Record {
+        /// Short gate/category name (e.g. `assumed_without_verifying`). Sanitized.
+        #[arg(long)]
+        gate: String,
+        /// The banned sample — the phrase/behavior that was the mistake.
+        #[arg(long)]
+        banned: String,
+        /// The correct action to take instead next time.
+        #[arg(long)]
+        instead: String,
+    },
 }
 
 pub(crate) fn run(args: MistakeArgs) -> i32 {
