@@ -51,18 +51,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // run before any session mutation since they short-circuit to a silent exit.
     let mut session = kavach_session::get_or_create_session();
     {
-        let mut ctx = StopCtx {
-            input,
-            session: &mut session,
-            semver_advisory: None,
-            capture_advisory: None,
-            loophole_advisory: None,
-            shallow_advisory: None,
-            continuation_advisory: None,
-            research_unsourced: false,
-            disobedience_handback: false,
-            argued_with_user: false,
-        };
+        let mut ctx = StopCtx::new(input, &mut session);
         if inflight::background(&mut ctx).is_break() {
             return Ok(());
         }
