@@ -88,13 +88,13 @@ fn crates_index_url(name: &str) -> String {
     let n = name.to_lowercase();
     let base = "https://index.crates.io";
     // ASCII-only crate names: collect chars so slice indexing never panics.
-    let c: Vec<char> = n.chars().collect();
-    match c.as_slice() {
+    let chars: Vec<char> = n.chars().collect();
+    match chars.as_slice() {
         [] => base.to_owned(),
         [_] => format!("{base}/1/{n}"),
         [_, _] => format!("{base}/2/{n}"),
-        [a, _, _] => format!("{base}/3/{a}/{n}"),
-        [a, b, c2, d, ..] => format!("{base}/{a}{b}/{c2}{d}/{n}"),
+        [c0, _, _] => format!("{base}/3/{c0}/{n}"),
+        [c0, c1, c2, c3, ..] => format!("{base}/{c0}{c1}/{c2}{c3}/{n}"),
     }
 }
 
