@@ -19,6 +19,7 @@ fn ctx_with<'a>(
         continuation_advisory: None,
         research_unsourced: false,
         disobedience_handback: false,
+        argued_with_user: false,
     }
 }
 
