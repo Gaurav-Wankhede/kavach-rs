@@ -2735,7 +2735,6 @@ dependencies = [
  "surrealdb-types",
  "thiserror 2.0.18",
  "tokio",
- "tracing-subscriber",
 ]
 
 [[package]]
