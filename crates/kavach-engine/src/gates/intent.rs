@@ -9,6 +9,7 @@ mod practice_delta;
 mod kvs;
 mod phase;
 mod recall;
+mod version_pin;
 
 #[cfg(test)]
 mod rag_tests;
