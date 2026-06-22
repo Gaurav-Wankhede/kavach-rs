@@ -106,8 +106,9 @@ pub async fn reward_citation_edges(
 }
 
 /// Seconds in the freshness window: a citation whose `updated_at` is older than
-/// this is STALE and must be re-researched against the official docs (C5).
-pub const FRESHNESS_WINDOW_SECS: i64 = 7 * 24 * 60 * 60;
+/// this is STALE and must be re-researched against the official docs (C5). 24h —
+/// versions/APIs move fast and weights are never trusted, so re-confirm daily.
+pub const FRESHNESS_WINDOW_SECS: i64 = 24 * 60 * 60;
 
 /// The `[STALE]` marker prepended to a stale citation's injected text so the
 /// model treats served-stale content with suspicion until C5 refreshes it.
