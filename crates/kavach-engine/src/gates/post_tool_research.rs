@@ -87,7 +87,11 @@ fn store_nlm_doc(query: &str, result_text: &str) {
     } else {
         format!("websearch:{query}")
     };
-    let captured_at = chrono::Utc::now().to_rfc3339();
+    // Epoch-ms provenance stamp (engine idiom: SystemTime, not chrono — see post_write.rs).
+    let captured_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis().to_string())
+        .unwrap_or_default();
     let params = serde_json::json!({
         "source_url": source_url,
         "heading": query,
