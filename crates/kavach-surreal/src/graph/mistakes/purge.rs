@@ -50,16 +50,18 @@ pub async fn delete_anti_patterns_by_gate(db: &Surreal<Db>, gate: &str) -> Resul
                  DELETE entity WHERE entity_type = 'anti_pattern' \
                  AND properties.gate = $gate RETURN BEFORE;";
     let mut presp = db.query(purge).bind(("gate", gate.to_owned())).await?;
-    // statement 0 = deleted mistake_events; statement 1 = deleted anti_patterns.
-    let take_count = |slot: usize, presp: &mut surrealdb::Response| -> Result<usize> {
-        match presp.take::<Vec<surrealdb_types::Value>>(slot) {
-            Ok(deleted) => Ok(deleted.len()),
-            Err(e) if crate::error::is_missing_table_error(&e) => Ok(0),
-            Err(e) => Err(e.into()),
-        }
+    // statement 0 = deleted mistake_events (drained, count unused); statement 1 =
+    // deleted anti_patterns. A missing-table error on either slot is the empty case.
+    match presp.take::<Vec<surrealdb_types::Value>>(0) {
+        Ok(_) => {}
+        Err(e) if crate::error::is_missing_table_error(&e) => {}
+        Err(e) => return Err(e.into()),
+    }
+    let removed = match presp.take::<Vec<surrealdb_types::Value>>(1) {
+        Ok(deleted) => deleted.len(),
+        Err(e) if crate::error::is_missing_table_error(&e) => 0,
+        Err(e) => return Err(e.into()),
     };
-    drop(take_count(0, &mut presp)?);
-    let removed = take_count(1, &mut presp)?;
     // Read-back assertion: the verified anti_pattern removal count must match the
     // pre-SELECT target count. A mismatch means a concurrent writer or partial
     // delete — surface it rather than report a stale success.
