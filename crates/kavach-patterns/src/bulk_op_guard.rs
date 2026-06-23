@@ -1,5 +1,6 @@
-//! Detects a BULK multi-file mutation typed inline as an ad-hoc shell command, and
-//! steers it into ONE committed `scripts/<verb>.sh` driven by the Rust toolbelt
+//! Detects a BULK multi-file mutation typed inline as an ad-hoc shell command.
+//!
+//! Steers it into ONE committed `scripts/<verb>.sh` driven by the Rust toolbelt
 //! (rnr/sd/fd/rg). A rename / reference-rewrite / edge-case sweep across many files
 //! must be one re-runnable, reviewable script — not N inline edits nor a one-shot
 //! pipeline that vanishes from history. SOURCE: decision.bulk.one-script-not-n-edits;
