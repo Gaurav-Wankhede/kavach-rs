@@ -6,7 +6,7 @@ use super::{
     expire, find,
     flow, gate_config, get,
     graph_query, infer_deps, kanban, lane, list, mistake_hits, mistake_purge, ope, pg,
-    populate_graph,
+    populate_graph, run_rec,
     priority, query, query_raw,
     register,
     register_part, rotate, search, status_update, sync, tree, wipe_project, write,
