@@ -15,7 +15,7 @@ use std::process::Command;
 
 /// TRINITY role a dispatched agent plays this turn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(clippy::exhaustive_enums, reason = "stable role triad; new role = breaking")]
+#[non_exhaustive]
 pub enum AgentRole {
     /// Decomposes / plans (route to a high-capability backend).
     Thinker,
