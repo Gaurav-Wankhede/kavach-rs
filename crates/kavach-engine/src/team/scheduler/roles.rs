@@ -1,5 +1,7 @@
 //! TRINITY role classification + role→backend routing over the vendor pool.
 //!
+//! The role split is the Fugu/TRINITY lesson applied to a harness pool.
+//!
 //! A roadmap unit's title is the cheap, available signal for which role it plays:
 //! planning/spec/design → Thinker, verification → Verifier, everything else →
 //! Worker. The [`RolePool`] then maps each role to a [`VendorBackend`] so the
