@@ -24,10 +24,8 @@ pub struct RewardRouter {
 impl RewardRouter {
     /// Fold one dispatch outcome into the running score for `(vendor, role)`.
     pub fn record(&mut self, vendor: &str, role: AgentRole, reward: Reward) {
-        *self
-            .scores
-            .entry((role, vendor.to_owned()))
-            .or_insert(0) += i32::from(reward.value());
+        let slot = self.scores.entry((role, vendor.to_owned())).or_insert(0);
+        *slot = slot.saturating_add(i32::from(reward.value()));
     }
 
     /// Current accumulated score for `(vendor, role)` (0 if never recorded).
