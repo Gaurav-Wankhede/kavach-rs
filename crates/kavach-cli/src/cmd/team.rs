@@ -11,8 +11,8 @@ use std::cell::RefCell;
 use clap::{Args, Subcommand};
 
 use kavach_engine::{
-    role_for_title, DagScheduler, EngineError, RewardRouter, RolePool, Spawner, SpawnerKind,
-    TeamDispatchError, VendorRequest,
+    role_for_title, AgentRole, DagScheduler, EngineError, RewardRouter, RolePool, Spawner,
+    SpawnerKind, TeamDispatchError, VendorRequest,
 };
 use kavach_patterns::bandit_log::Reward;
 use kavach_surreal::graph::roadmap_dag::RoadmapDag;
