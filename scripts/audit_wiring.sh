@@ -32,4 +32,15 @@ done
 echo "(empty == every gate wired)"
 
 echo
+echo "## 3. CLI FRONT DOOR — registered RPC verbs with NO kavach-cli caller"
+hr
+# A verb the CLI never calls has no user-facing front door (invisible feature).
+rg -o 'register_async_method\("([a-z0-9_.]+)"' -r '$1' crates/kavach-rpc/src/rpc.rs | sort -u |
+while read -r verb; do
+  n=$(rg "${NOTEST[@]}" --no-filename -c "\"$verb\"" crates/kavach-cli/src 2>/dev/null | sum)
+  [ "$n" -eq 0 ] && printf 'NO-CLI  %s\n' "$verb"
+done
+echo "(NO-CLI == no kavach <cmd> reaches this verb; daemon/hook-only verbs are expected here)"
+
+echo
 echo "SCAN COMPLETE. Orphans are CANDIDATES — confirm the call path before acting."
