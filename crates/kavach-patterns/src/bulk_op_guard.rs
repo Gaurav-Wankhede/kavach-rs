@@ -81,17 +81,28 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
     if vocab.inherent.iter().any(|m| m == head) {
         return Some(steer(&format!("a batch / structural rewrite ({head})")));
     }
-    // A per-file rewriter (sd/sed/perl) is bulk only when fanned out across targets.
-    let is_rewriter = vocab
-        .mutators
+    // A per-file rewriter (sd/sed/perl) counts when it is the head, is piped to, or
+    // is the target of a fan-out driver (`fd -x sd`, `xargs sd`, `find -exec sed`).
+    let rewriters: Vec<&String> = vocab.mutators.iter().filter(|m| !vocab.inherent.contains(*m)).collect();
+    let has_rewriter = rewriters
         .iter()
-        .any(|m| !vocab.inherent.contains(m) && (head == m.as_str() || piped_to(&lower, m)));
-    if !is_rewriter {
+        .any(|m| head == m.as_str() || piped_to(&lower, m) || word_present(&lower, m));
+    if !has_rewriter {
         return None;
     }
+    // Bulk = the rewriter is fanned out (fd -x / xargs / -exec / glob / {}), or it
+    // names ≥2 explicit file paths by hand.
     let fanned = vocab.fanout_markers.iter().any(|f| lower.contains(f.as_str()))
         || explicit_path_args(command) >= 2;
+    // A lone `sd 'a' 'b' one.rs` (head rewriter, no fan-out) is NOT bulk — that is
+    // the write-bypass guard's single-file domain; only steer when truly fanned out.
     fanned.then(|| steer("a multi-file rewrite (sd/sed across many files)"))
+}
+
+/// True when `tool` appears as a standalone word (driver target like `xargs sd` /
+/// `fd … -x sd`), not as a substring of another token (`sediment`, `password`).
+fn word_present(lower: &str, tool: &str) -> bool {
+    lower.split_whitespace().any(|w| w == tool)
 }
 
 /// The advisory text: name the op and point at the one-script canonical form, run
