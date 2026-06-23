@@ -36,7 +36,7 @@ fn silent_on_risk_path_without_done_claim() {
 
 #[test]
 fn silent_on_empty() {
-    assert!(check_loophole_interrogation("").is_none());
+    assert!(check_loophole_with(&floor(), "").is_none());
 }
 
 #[test]
