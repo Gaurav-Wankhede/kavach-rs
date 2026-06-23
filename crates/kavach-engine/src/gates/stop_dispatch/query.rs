@@ -158,6 +158,32 @@ pub(crate) fn bulk_op_vocab_for(project_slug: &str) -> kavach_patterns::bulk_op_
     serde_json::from_str(json.trim()).unwrap_or_default()
 }
 
+/// DB key for the loophole-lens vocabulary overlay (a JSON `LoopholeVocab`: a
+/// `dimensions` array of `{label, lens_query, markers}`). The graph ADDS dimensions
+/// + agnostic markers to the compiled floor — research-refreshable per project, NOT a
+/// replacement. Mirrors `gate.disobedience_vocab`. SOURCE: decision.loophole-mistake-umbrella.
+const LOOPHOLE_VOCAB_KEY: &str = "gate.loophole_vocab";
+
+/// Resolve the project's loophole-lens vocabulary from its `gate.loophole_vocab` DB
+/// row. Connects the (tech-agnostic) loophole detector to the graph instead of frozen
+/// `const` tables. Empty slug / absent row / malformed JSON all fall back to
+/// [`LoopholeVocab::default`] (the compiled cross-language floor), so the detector is
+/// never weaker than baseline when the DB is unreachable (w5 fail-closed). Mirrors
+/// [`disobedience_vocab_for`].
+#[must_use]
+pub(crate) fn loophole_vocab_for(
+    project_slug: &str,
+) -> kavach_patterns::loophole_vocab::LoopholeVocab {
+    use kavach_patterns::loophole_vocab::LoopholeVocab;
+    if project_slug.is_empty() {
+        return LoopholeVocab::default();
+    }
+    let Some(json) = rpc_get_directive(project_slug, LOOPHOLE_VOCAB_KEY) else {
+        return LoopholeVocab::default();
+    };
+    serde_json::from_str(json.trim()).unwrap_or_default()
+}
+
 fn source_down_sentinel() -> (String, String) {
     (
         SOURCE_DOWN_KEY.to_owned(),
