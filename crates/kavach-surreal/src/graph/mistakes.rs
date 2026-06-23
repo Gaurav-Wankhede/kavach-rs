@@ -23,5 +23,6 @@ pub use pattern::{
 pub use policy::{DeployedPolicyProps, upsert_deployed_policy};
 pub use policy_read::{DeployedPolicyRow, top_deployed_policies};
 pub use top::{
-    AntiPatternRanked, mistake_row_mermaid, practice_delta_mermaid, top_anti_patterns,
+    AntiPatternRanked, mistake_row_mermaid, practice_delta_focus_filter, practice_delta_mermaid,
+    top_anti_patterns,
 };
