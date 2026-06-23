@@ -5,10 +5,12 @@
 //! submodules.
 mod dag_scheduler;
 mod predicates;
+mod roles;
 mod types;
 
 #[cfg(test)]
 mod tests;
 
 pub use dag_scheduler::DagScheduler;
+pub use roles::{role_assignments, role_for_node, role_for_title, RolePool};
 pub use types::{DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};
