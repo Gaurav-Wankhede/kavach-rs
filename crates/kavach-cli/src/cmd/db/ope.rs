@@ -25,7 +25,7 @@ pub(super) const fn build_evaluate_params(
 }
 
 /// Pure builder for the reward-hacking audit request.
-pub(super) fn build_audit_params(limit: u32, drift_tolerance: f64) -> OpeAuditParams {
+pub(super) const fn build_audit_params(limit: u32, drift_tolerance: f64) -> OpeAuditParams {
     OpeAuditParams {
         limit,
         drift_tolerance,
