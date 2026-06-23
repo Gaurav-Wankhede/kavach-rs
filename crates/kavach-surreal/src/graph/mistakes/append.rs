@@ -35,15 +35,60 @@ pub async fn append_mistake_event(
         "banned_sample": banned_sample,
         "session_id": session_id,
         "project_slug": project_slug,
+        "family": super::pattern::FAMILY_MISTAKE,
     });
+    create_event(db, "mistake_event", props).await
+}
+
+/// Append-only loophole event — the umbrella's loophole half. Same `entity` tier
+/// as a mistake_event, tagged `family='loophole'`, so one ledger / recall path
+/// serves both. `dimension` is the agnostic lens (injection/xss/memory-safety/…);
+/// `site` is the `file:line — hint` the lens scan flagged. SOURCE:
+/// decision.loophole-mistake-umbrella.
+///
+/// # Errors
+/// Returns an error if `dimension` is empty, the query fails, or no record returns.
+pub async fn append_loophole_event(
+    db: &Surreal<Db>,
+    dimension: &str,
+    site: &str,
+    session_id: &str,
+    project_slug: Option<&str>,
+) -> Result<RecordId> {
+    if dimension.is_empty() {
+        return Err(Error::Migration(
+            "loophole_event: dimension cannot be empty".into(),
+        ));
+    }
+    let props = serde_json::json!({
+        "gate": dimension,
+        "site": site,
+        "session_id": session_id,
+        "project_slug": project_slug,
+        "family": super::pattern::FAMILY_LOOPHOLE,
+    });
+    create_event(db, "loophole_event", props).await
+}
+
+/// Shared append-only event create over the `entity` table. Both families flow
+/// through here so the row shape (ulid name, props, created_at) stays identical.
+async fn create_event(
+    db: &Surreal<Db>,
+    entity_type: &str,
+    props: serde_json::Value,
+) -> Result<RecordId> {
     let q = "CREATE entity SET \
-             entity_type = 'mistake_event', \
+             entity_type = $etype, \
              name = rand::ulid(), \
              properties = $props, \
              created_at = time::now() \
              RETURN id";
-    let mut resp = db.query(q).bind(("props", props)).await?;
+    let mut resp = db
+        .query(q)
+        .bind(("etype", entity_type.to_owned()))
+        .bind(("props", props))
+        .await?;
     let row: Option<IdRow> = resp.take(0)?;
     row.map(|r| r.id)
-        .ok_or_else(|| Error::RecordNotFound("mistake_event create empty".into()))
+        .ok_or_else(|| Error::RecordNotFound(format!("{entity_type} create empty")))
 }
