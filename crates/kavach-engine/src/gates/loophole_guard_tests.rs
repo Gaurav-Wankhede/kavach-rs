@@ -1,9 +1,17 @@
-use super::check_loophole_interrogation;
+use super::check_loophole_with;
+use kavach_patterns::loophole_vocab::LoopholeVocab;
+
+/// Hermetic resolver for the unit tests: the compiled floor, no session/RPC. The
+/// session-resolving `check_loophole_interrogation` is exercised by the engine-entry
+/// integration test; here we pin the vocab so the assertions are deterministic.
+fn floor() -> LoopholeVocab {
+    LoopholeVocab::default()
+}
 
 #[test]
 fn fires_on_done_claim_touching_risk_path() {
     let c = "Done — the lease acquire is now atomic and the claim is race-free.";
-    let out = check_loophole_interrogation(c).expect("should fire");
+    let out = check_loophole_with(&floor(), c).expect("should fire");
     // RESOLVE-not-handback: surfaces the risk surface + lenses for awareness; no
     // CTA to manually walk lenses or narrate a `Loopholes closed:` line.
     assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag, not a CTA: {out}");
