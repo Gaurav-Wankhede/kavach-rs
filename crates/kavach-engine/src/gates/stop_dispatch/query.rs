@@ -160,8 +160,8 @@ pub(crate) fn bulk_op_vocab_for(project_slug: &str) -> kavach_patterns::bulk_op_
 
 /// DB key for the loophole-lens vocabulary overlay (a JSON `LoopholeVocab`: a
 /// `dimensions` array of `{label, lens_query, markers}`). The graph ADDS dimensions
-/// + agnostic markers to the compiled floor — research-refreshable per project, NOT a
-/// replacement. Mirrors `gate.disobedience_vocab`. SOURCE: decision.loophole-mistake-umbrella.
+/// and agnostic markers to the compiled floor (research-refreshable per project), never
+/// a replacement. Mirrors `gate.disobedience_vocab`. SOURCE: decision.loophole-mistake-umbrella.
 const LOOPHOLE_VOCAB_KEY: &str = "gate.loophole_vocab";
 
 /// Resolve the project's loophole-lens vocabulary from its `gate.loophole_vocab` DB
