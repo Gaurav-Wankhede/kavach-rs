@@ -84,6 +84,49 @@ pub(crate) fn run(args: TeamArgs) -> i32 {
                 Err(io) => into_exit_code(io),
             }
         }
+        TeamAction::ClaimBatch {
+            project,
+            session_id,
+        } => claim_batch(&project, &session_id),
+    }
+}
+
+/// Resolve the ready wavefront for `project` and atomically lease it to
+/// `session_id`. All-or-nothing: a single contended card refuses the whole
+/// batch (the concurrency lens is closed inside `lease.acquire_set`).
+fn claim_batch(project: &str, session_id: &str) -> i32 {
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(e) => return report_err(&format!("team claim-batch: tokio runtime: {e}")),
+    };
+    let dag: RoadmapDag = match runtime.block_on(async {
+        let db = kavach_surreal::open_default().await?;
+        kavach_surreal::roadmap_dag_fetch(&db, project).await
+    }) {
+        Ok(dag) => dag,
+        Err(e) => return report_err(&format!("team claim-batch: fetch DAG: {e}")),
+    };
+    let scheduler = DagScheduler::for_cli(None, SpawnerKind::CcTeams);
+    let batch = match scheduler.plan(&dag, 0) {
+        Ok(plan) => plan.batch,
+        Err(TeamDispatchError::Cycle(keys)) => {
+            return report_err(&format!("[DAG_CYCLE] cycle among: {keys:?}"));
+        }
+        Err(TeamDispatchError::Engine(e)) => {
+            return report_err(&format!("team claim-batch: {e}"));
+        }
+    };
+    let params = build_claim_params(&batch, session_id);
+    match kavach_rpc::client::call::<_, serde_json::Value>("lease.acquire_set", Some(params)) {
+        Ok(res) => {
+            println!("[CLAIM_BATCH] {res}");
+            if res.get("all_acquired").and_then(serde_json::Value::as_bool) == Some(true) {
+                0
+            } else {
+                1
+            }
+        }
+        Err(e) => report_err(&format!("team claim-batch: lease.acquire_set: {e}")),
     }
 }
 
