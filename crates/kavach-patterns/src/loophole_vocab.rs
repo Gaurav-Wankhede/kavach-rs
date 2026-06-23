@@ -79,10 +79,10 @@ pub fn dimension_for_marker(vocab: &LoopholeVocab, token: &str) -> Option<String
 pub fn fired_dimensions(vocab: &LoopholeVocab, markers: &[&str]) -> String {
     let mut seen: Vec<String> = Vec::new();
     for &m in markers {
-        if let Some(label) = dimension_for_marker(vocab, m) {
-            if !seen.contains(&label) {
-                seen.push(label);
-            }
+        if let Some(label) = dimension_for_marker(vocab, m)
+            && !seen.contains(&label)
+        {
+            seen.push(label);
         }
     }
     if seen.is_empty() {
