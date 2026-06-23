@@ -11,11 +11,13 @@ pub mod policy_read;
 pub mod purge;
 pub mod top;
 
-pub use append::append_mistake_event;
+pub use append::{append_loophole_event, append_mistake_event};
 pub use cluster::cluster_event_to_pattern;
 pub use count::query_anti_pattern_hit_count;
 pub use purge::delete_anti_patterns_by_gate;
-pub use pattern::upsert_anti_pattern;
+pub use pattern::{
+    FAMILY_LOOPHOLE, FAMILY_MISTAKE, upsert_anti_pattern, upsert_anti_pattern_with_family,
+};
 pub use policy::{DeployedPolicyProps, upsert_deployed_policy};
 pub use policy_read::{DeployedPolicyRow, top_deployed_policies};
 pub use top::{
