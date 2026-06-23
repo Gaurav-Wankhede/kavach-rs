@@ -50,7 +50,7 @@ pub(super) fn lens_block(markers: &[&str]) -> String {
     let Some(&primary) = markers.first() else {
         return CANONICAL_LENSES.to_owned();
     };
-    let project = kavach_session::get_or_create_session().project.clone();
+    let project = kavach_session::get_or_create_session().project;
     let vocab = crate::gates::stop_dispatch::loophole_vocab_for(&project);
     let extra = brain_lenses(&lens_query_for(&vocab, primary));
     if extra.is_empty() {
