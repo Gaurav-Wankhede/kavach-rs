@@ -214,9 +214,8 @@ pub(crate) fn detect_project() -> String {
         || "unknown".into(),
         |n| slugify_project(&n.to_string_lossy()),
     );
-    // F3: the RPC lookup missed, so this slug is a GUESS — if it doesn't match the
-    // slug the kanban tables key on (slug-drift, cf. fix-shortform-platform-slug),
-    // every board read is silently empty. Warn LOUD on stderr so the drift is seen.
+    // F3: RPC missed → slug is a guess; on slug-drift every board read is silently
+    // empty (cf. fix-shortform-platform-slug). Warn LOUD on stderr.
     eprintln!(
         "kavach: WARN project not found via RPC for `{cwd_str}` — falling back to \
          dir-name slug `{slug}`. If kanban reads come back empty, the registered \
