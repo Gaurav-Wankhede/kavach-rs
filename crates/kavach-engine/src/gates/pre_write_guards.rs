@@ -71,10 +71,17 @@ pub(crate) fn check(
         }
     }
 
-    // Internet-first RESOLVES, never blocks: drives the lookup + attaches a P1
-    // advisory. The `[RESEARCH_FIRST]` Stop teeth enforce citation before the turn ends.
-    if let Some(advisory) = research_consume::check(ctx, session) {
-        acc.p1_advisories.push(advisory);
+    // Internet-first is a P0 LAW: a research-required production write with no cited
+    // source is BLOCKED at write time (fail-closed). Runs FIRST — no source, no claim,
+    // no other guard even evaluated. The gate still drives the lookup so the agent can
+    // cite + retry immediately. Carve-outs (test/non-code/local-analysis/bypass) inside.
+    if let Some(block) = research_consume::check(ctx, session) {
+        return GuardResult {
+            block: Some(block),
+            algo_advisory: None,
+            runner_compact: runner.to_compact(),
+            p1_advisories: acc.p1_advisories,
+        };
     }
 
     // Ordered guard chain; the first `Some(reason)` blocks and short-circuits.
