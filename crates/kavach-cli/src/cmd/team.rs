@@ -49,6 +49,22 @@ pub(crate) enum TeamAction {
         #[arg(long, default_value = "cc-teams")]
         spawner: String,
     },
+    /// Atomically batch-claim the ready wavefront for one session (all-or-nothing
+    /// over `lease.acquire_set`): no two sessions double-claim the same cards.
+    ClaimBatch {
+        /// Project slug whose roadmap DAG to schedule.
+        #[arg(long)]
+        project: String,
+        /// Session id that will hold the leases.
+        #[arg(long)]
+        session_id: String,
+    },
+}
+
+/// Build the `lease.acquire_set` params: the roadmap table, the batch keys, and
+/// the holding session. Pure so it is unit-testable without a live daemon.
+fn build_claim_params(keys: &[String], session_id: &str) -> serde_json::Value {
+    serde_json::json!({ "table": "roadmap", "keys": keys, "session_id": session_id })
 }
 
 pub(crate) fn run(args: TeamArgs) -> i32 {
