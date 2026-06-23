@@ -157,10 +157,10 @@ pub(in crate::gates) fn append_mermaid_views(context: &mut String, project: &str
     if let Some(map) = super::decision_map::decision_map_block(project, prompt) {
         context.push_str(&map);
     }
-    if let Some(delta) = super::practice_delta::practice_delta_block() {
+    if let Some(delta) = super::practice_delta::practice_delta_block(prompt) {
         context.push_str(&delta);
     }
-    if let Some(pd) = super::pattern_dag::pattern_dag_block(project) {
+    if let Some(pd) = super::pattern_dag::pattern_dag_block(project, prompt) {
         context.push_str(&pd);
     }
 }
