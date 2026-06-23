@@ -10,5 +10,7 @@
 //! parallel scheduler over them.
 
 mod scheduler;
+mod vendor;
 
 pub use scheduler::{DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};
+pub use vendor::{AgentRole, CommandBackend, VendorBackend, VendorOutput, VendorRequest};
