@@ -140,7 +140,7 @@ fn floor_dimensions() -> Vec<DimensionRule> {
         dim("supply-chain", "supply-chain dependency integrity unpinned-version loophole lens",
             &["git dependency", "latest", "curl | sh", "npm install", "pip install"]),
         dim("information-leak", "information-leak secret-in-log error-detail pii loophole lens",
-            &["println!", "console.log", "printStackTrace", "logging.debug", "{:?}"]),
+            &["println!", "console.log", "printStackTrace", "logging.debug", "var_dump"]),
         dim("logging", "security-logging audit-event alerting missing-log loophole lens",
             &["audit_log", "security_event", "auth_failure", "login_attempt"]),
     ]
