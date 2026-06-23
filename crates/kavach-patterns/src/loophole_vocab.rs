@@ -9,8 +9,10 @@
 //! decision.w5 (a security detector's vocabulary stays in-binary). Dimension taxonomy
 //! from OWASP Top 10:2025 + CWE Top 25 2025.
 
-/// One risk dimension: its short `label` (the heading taxonomy), a Brain-OS
-/// `lens_query` (steers lens retrieval), and the agnostic `markers` that fire it.
+/// One risk dimension of the loophole taxonomy.
+///
+/// Carries its short `label` (the heading taxonomy), a Brain-OS `lens_query` (steers
+/// lens retrieval), and the agnostic `markers` that fire it.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DimensionRule {
     /// Short kebab label naming the dimension (authz / injection / xss / …).
