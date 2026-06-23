@@ -235,3 +235,7 @@ impl Spawner for LogSpawner {
         Ok(format!("teammate:{task_key}"))
     }
 }
+
+#[cfg(test)]
+#[path = "team_test.rs"]
+mod team_test;
