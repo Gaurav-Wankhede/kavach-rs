@@ -298,6 +298,30 @@ mod tests {
     }
 
     #[test]
+    fn degraded_board_read_emits_sentinel_not_silence() {
+        // F1: census None == read FAILED (daemon down), NOT an empty board. The
+        // block must say so explicitly so the agent never reads absence as a
+        // drained queue. Silent omission was the fail-open this closes.
+        let mut ctx = String::new();
+        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", None);
+        assert!(!observed, "a failed read is never 'observed'");
+        assert!(ctx.contains("[KANBAN: DEGRADED]"), "must mark degradation: {ctx}");
+        assert!(ctx.contains("UNKNOWN, not empty"), "must forbid empty-read: {ctx}");
+        assert!(!ctx.contains("[KANBAN] read live"), "must NOT claim a live read: {ctx}");
+    }
+
+    #[test]
+    fn drained_board_is_distinct_from_degraded() {
+        // A genuine empty queue is Some((0,0,0)) and must render the drained
+        // message, never the DEGRADED sentinel — the two are not conflated.
+        let mut ctx = String::new();
+        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", Some((0, 0, 0)));
+        assert!(observed, "a successful read is observed");
+        assert!(ctx.contains("drained"), "empty board says drained: {ctx}");
+        assert!(!ctx.contains("DEGRADED"), "empty != degraded: {ctx}");
+    }
+
+    #[test]
     fn live_kanban_falls_soft_to_nag_on_outage() {
         // With no daemon reachable in the unit-test process, the census read
         // returns None -> append_context_blocks must fall back to the legacy
