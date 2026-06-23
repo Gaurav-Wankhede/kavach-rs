@@ -78,19 +78,20 @@ fn default_vocab_matches_floor_detector() {
 #[test]
 fn graph_overlay_adds_mutator_floor_still_active() {
     use super::detect_bulk_op_with;
-    // ADDITIVE: a project registers a new bulk mutator; the floor (rnr/fd -x sd) still fires.
+    // ADDITIVE: a project registers a new inherent-bulk mutator; the floor still fires.
     let mut v = BulkOpVocab::default();
-    v.mutators.push("ast-grep".to_owned());
-    let added = "ast-grep -p 'old' -r 'new' src/";
-    assert!(detect_bulk_op_with(&v, added).is_some(), "added mutator fires");
+    v.inherent.push("gsub".to_owned());
+    let added = "gsub 'old' 'new' src/";
+    assert!(detect_bulk_op_with(&v, added).is_some(), "added inherent mutator fires");
     let floor = "rnr -r 'a' 'b' src/";
     assert!(detect_bulk_op_with(&v, floor).is_some(), "floor mutator still fires");
-    // script carve still clears it
+    // just-recipe + script carve still clear it
+    assert!(detect_bulk_op_with(&v, "just rename").is_none(), "just carve intact");
     assert!(detect_bulk_op_with(&v, "bash scripts/x.sh").is_none(), "script carve intact");
 }
 
 #[test]
 fn malformed_overlay_degrades_to_floor() {
     let v: BulkOpVocab = serde_json::from_str("{}").expect("empty obj is valid");
-    assert!(!v.mutators.is_empty() && !v.fanout_markers.is_empty());
+    assert!(!v.mutators.is_empty() && !v.inherent.is_empty() && !v.fanout_markers.is_empty());
 }
