@@ -179,17 +179,49 @@ pub(in crate::gates) fn append_mermaid_views(context: &mut String, project: &str
 /// block, ignoring the observed/outage flag. Session start is never blocked on
 /// an outage — the block is simply omitted.
 pub(in crate::gates) fn append_live_kanban_block(context: &mut String, project: &str) {
-    let _ = append_live_kanban(context, project);
+    // Session-start path: empty prompt ⇒ whole-board priority order (no relevance
+    // narrowing yet — the user's task hasn't been seen).
+    let _ = append_live_kanban(context, project, "");
 }
 
-fn append_live_kanban(context: &mut String, project: &str) -> bool {
+fn append_live_kanban(context: &mut String, project: &str, prompt: &str) -> bool {
     if project.is_empty() {
         return false;
     }
     // Use RPC-only census to avoid blocking on daemon warm-up in entry hooks.
     // See decision.engine.rpc_only_entry_kanban.
     let census = crate::gates::stop_dispatch::census_rpc_only(project);
-    render_live_kanban(context, project, census)
+    // Relevance-ranked runnable cards (db.kanban_ranked). Empty prompt ⇒ priority
+    // order; daemon down ⇒ empty (render falls back to the single next card).
+    let ranked = ranked_cards_rpc_only(project, prompt);
+    render_live_kanban(context, project, census, &ranked)
+}
+
+/// Bounded single RPC to `db.kanban_ranked`: relevance-ranked runnable cards as
+/// `(key, title, status)`. Empty on outage/empty slug — fail-soft, never blocks.
+/// See decision.harness.dynamic-relevance-injection.
+fn ranked_cards_rpc_only(project: &str, prompt: &str) -> Vec<(String, String, String)> {
+    if project.is_empty() {
+        return Vec::new();
+    }
+    let params = serde_json::json!({ "project": project, "prompt": prompt, "limit": 6 });
+    let Some(val) = kavach_rpc::client::call::<_, serde_json::Value>("db.kanban_ranked", Some(params))
+    else {
+        return Vec::new();
+    };
+    val.get("cards")
+        .and_then(|c| c.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|c| {
+                    let key = c.get("key")?.as_str()?.to_owned();
+                    let title = c.get("title")?.as_str()?.to_owned();
+                    let status = c.get("status")?.as_str()?.to_owned();
+                    Some((key, title, status))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// Render the `[KANBAN]` block from an already-fetched census. Split out from the
