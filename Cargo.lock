@@ -2781,6 +2781,7 @@ dependencies = [
  "memchr",
  "miette",
  "regex",
+ "serde",
  "serde_json",
  "temp-env",
  "tempfile",
