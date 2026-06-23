@@ -21,6 +21,7 @@ pub(super) fn check(command: &str) -> Option<Decision> {
     destructive_cli(command)
         .or_else(|| config_blocklists(command))
         .or_else(|| bypass_advisories(command))
+        .or_else(|| bulk_op_advisory(command))
         .or_else(|| db_blocks(command))
         .or_else(|| test_and_toolbelt(command))
 }
