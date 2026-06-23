@@ -39,6 +39,8 @@ const FANOUT_MARKERS: &[&str] = &["-x ", " -exec", "xargs", "*.", "{}"];
 pub struct BulkOpVocab {
     /// Content/name mutators (command-position CLIs that rewrite files).
     pub mutators: Vec<String>,
+    /// Mutators that are bulk on EVERY invocation (batch renamer / structural rewrite).
+    pub inherent: Vec<String>,
     /// Markers proving a mutator is fanned out across many targets.
     pub fanout_markers: Vec<String>,
 }
@@ -47,6 +49,7 @@ impl Default for BulkOpVocab {
     fn default() -> Self {
         Self {
             mutators: MUTATORS.iter().map(|s| (*s).to_owned()).collect(),
+            inherent: INHERENT_BULK.iter().map(|s| (*s).to_owned()).collect(),
             fanout_markers: FANOUT_MARKERS.iter().map(|s| (*s).to_owned()).collect(),
         }
     }
