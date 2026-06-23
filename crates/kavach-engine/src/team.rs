@@ -12,5 +12,8 @@
 mod scheduler;
 mod vendor;
 
-pub use scheduler::{DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};
+pub use scheduler::{
+    role_assignments, role_for_node, role_for_title, DagScheduler, DispatchPlan, RolePool, Spawner,
+    SpawnerKind, TeamDispatchError,
+};
 pub use vendor::{AgentRole, CommandBackend, VendorBackend, VendorOutput, VendorRequest};
