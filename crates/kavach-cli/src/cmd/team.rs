@@ -172,6 +172,7 @@ struct LogSpawner {
     io_err: RefCell<Option<IoExit>>,
     pool: RolePool,
     project: String,
+    router: RefCell<RewardRouter>,
 }
 
 impl Spawner for LogSpawner {
@@ -185,7 +186,15 @@ impl Spawner for LogSpawner {
             *self.io_err.borrow_mut() = Some(io);
         }
         let req = VendorRequest::new(role, title.to_owned(), self.project.clone(), 8);
-        let out = backend.dispatch(&req)?;
+        let result = backend.dispatch(&req);
+        // Conductor RL: feed the outcome back into the router so vendor/role
+        // routing evolves. exit-0 = VerifiedClean, any failure = FalseDecision.
+        let reward = match &result {
+            Ok(out) if out.exit_code == 0 => Reward::VerifiedClean,
+            _ => Reward::FalseDecision,
+        };
+        self.router.borrow_mut().record(&vendor, role, reward);
+        let out = result?;
         Ok(format!("{vendor}:{task_key}:exit{}", out.exit_code))
     }
 }
