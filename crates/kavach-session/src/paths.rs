@@ -183,6 +183,13 @@ pub(crate) fn ensure_parent_dir(path: &Path) -> io::Result<()> {
 /// Falls back to directory name if the server is not running or no match.
 pub(crate) fn detect_project() -> String {
     let Ok(cwd) = std::env::current_dir() else {
+        // F3: a cwd error makes EVERY kanban RPC key on the phantom "unknown" project,
+        // silently returning empty boards. Fail LOUD on stderr (never stdout — that is
+        // the hook verdict channel) so the degradation is visible, not silent.
+        eprintln!(
+            "kavach: WARN current_dir() failed — project resolves to \"unknown\"; \
+             all kanban/decision reads will be empty this session."
+        );
         return "unknown".into();
     };
     let cwd_str = cwd.to_string_lossy();
@@ -203,10 +210,19 @@ pub(crate) fn detect_project() -> String {
     // AUTO_CONTINUE branch dies (observed 2026-05).
     // SOURCE: same contract violation class fixed earlier in cmd/harness_loop.rs
     // RESEARCH: https://docs.rs/slug (canonical algorithm) — std-only impl below
-    cwd.file_name().map_or_else(
+    let slug = cwd.file_name().map_or_else(
         || "unknown".into(),
         |n| slugify_project(&n.to_string_lossy()),
-    )
+    );
+    // F3: the RPC lookup missed, so this slug is a GUESS — if it doesn't match the
+    // slug the kanban tables key on (slug-drift, cf. fix-shortform-platform-slug),
+    // every board read is silently empty. Warn LOUD on stderr so the drift is seen.
+    eprintln!(
+        "kavach: WARN project not found via RPC for `{cwd_str}` — falling back to \
+         dir-name slug `{slug}`. If kanban reads come back empty, the registered \
+         project slug differs; register the path or run from the canonical dir."
+    );
+    slug
 }
 
 /// Normalize a directory name to a kanban-compatible slug:
