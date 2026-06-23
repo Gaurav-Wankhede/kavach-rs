@@ -71,20 +71,21 @@ pub fn detect_bulk_op(command: &str) -> Option<String> {
 #[must_use]
 pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String> {
     let lower = command.to_lowercase();
-    // CARVE: the goal state — a single committed script — must never re-steer.
+    // CARVE: the goal state — running the committed script (preferably via a `just`
+    // recipe, else `bash scripts/*.sh`) — must never re-steer.
     if runs_committed_script(&lower) {
         return None;
     }
     let head = command_head(&lower);
-    // `rnr` is a batch renamer: any invocation is inherently a bulk op (floor mutator).
-    if head == "rnr" && vocab.mutators.iter().any(|m| m == "rnr") {
-        return Some(steer("a batch rename (rnr)"));
+    // Inherent-bulk mutators (rnr / sg / ast-grep): any invocation is a bulk op.
+    if vocab.inherent.iter().any(|m| m == head) {
+        return Some(steer(&format!("a batch / structural rewrite ({head})")));
     }
-    // A per-file rewriter is bulk only when fanned out across many targets.
+    // A per-file rewriter (sd/sed/perl) is bulk only when fanned out across targets.
     let is_rewriter = vocab
         .mutators
         .iter()
-        .any(|m| m != "rnr" && (head == m.as_str() || piped_to(&lower, m)));
+        .any(|m| !vocab.inherent.contains(m) && (head == m.as_str() || piped_to(&lower, m)));
     if !is_rewriter {
         return None;
     }
@@ -93,20 +94,23 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
     fanned.then(|| steer("a multi-file rewrite (sd/sed across many files)"))
 }
 
-/// The advisory text: name the op and point at the one-script canonical form.
+/// The advisory text: name the op and point at the one-script canonical form, run
+/// via a `just` recipe (preferred) — itself wrapping the committed `scripts/<verb>.sh`.
 fn steer(op: &str) -> String {
     format!(
         "{op} touches many files inline. Author it ONCE as a committed \
-         `scripts/<verb>.sh` driven by the Rust toolbelt (rnr/sd/fd/rg), then run \
-         `bash scripts/<verb>.sh` — one re-runnable, reviewable, git-tracked script \
-         handles the rename + reference rewrite + edge cases atomically, instead of N \
-         inline edits or a one-shot pipeline that leaves no artifact."
+         `scripts/<verb>.sh` driven by the Rust toolbelt (rnr/sg/sd/fd/rg), expose it \
+         as a `just <verb>` recipe, and run `just <verb>` — one re-runnable, \
+         reviewable, git-tracked script handles the rename + reference rewrite + edge \
+         cases atomically, instead of N inline edits or a one-shot pipeline that \
+         leaves no artifact."
     )
 }
 
-/// True when the command's job is to RUN a `scripts/*.sh` file (the sanctioned path).
+/// True when the command's job is to RUN the committed bulk script: a `just` recipe
+/// (the preferred entry point) OR a direct `scripts/*.sh` invocation.
 fn runs_committed_script(lower: &str) -> bool {
-    lower.contains("scripts/") && lower.contains(".sh")
+    command_head(lower) == "just" || (lower.contains("scripts/") && lower.contains(".sh"))
 }
 
 /// First word in command position (after stripping a leading `./`), lower-cased.
