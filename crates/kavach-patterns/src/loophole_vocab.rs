@@ -14,6 +14,7 @@
 /// Carries its short `label` (the heading taxonomy), a Brain-OS `lens_query` (steers
 /// lens retrieval), and the agnostic `markers` that fire it.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct DimensionRule {
     /// Short kebab label naming the dimension (authz / injection / xss / …).
     pub label: String,
