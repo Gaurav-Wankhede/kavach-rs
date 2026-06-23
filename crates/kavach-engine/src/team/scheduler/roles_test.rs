@@ -54,10 +54,10 @@ fn pool_routes_each_role_to_its_backend() {
 #[test]
 fn assignments_pair_each_key_with_its_role() {
     let dag = RoadmapDag {
-        nodes: vec![node("[PLAN] a"), node("implement b")],
+        nodes: vec![node_id("a", "[PLAN] a"), node_id("b", "implement b")],
         ..Default::default()
     };
-    let got = role_assignments(&["[PLAN] a".into(), "implement b".into()], &dag);
+    let got = role_assignments(&["a".into(), "b".into()], &dag);
     assert_eq!(got[0].1, AgentRole::Thinker);
     assert_eq!(got[1].1, AgentRole::Worker);
 }
