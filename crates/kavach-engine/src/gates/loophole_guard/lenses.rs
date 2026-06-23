@@ -98,7 +98,7 @@ mod tests {
         // from the resolved vocab (here the compiled floor), not a deleted match table.
         let v = LoopholeVocab::default();
         assert_eq!(fired_dimensions(&v, &["payment"]), "money");
-        assert_eq!(fired_dimensions(&v, &["reqwest", "sqlx::query"]), "ssrf, injection");
+        assert_eq!(fired_dimensions(&v, &["reqwest::get(url)", "sqlx::query(q)"]), "ssrf, injection");
         // dedup-preserving-order: two auth markers collapse to one label.
         assert_eq!(fired_dimensions(&v, &["auth", "token"]), "authz");
         // empty ⇒ general, never a panic.
