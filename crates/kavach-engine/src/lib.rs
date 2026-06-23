@@ -22,7 +22,11 @@ pub use gates::event_log::{
 };
 pub use gates::status_gate::{StatusGateVerdict, verify_status_promotion};
 pub use graph_infer::{InferRow, InferredRel, infer_relationships};
-pub use team::{DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};
+pub use team::{
+    role_assignments, role_for_node, role_for_title, AgentRole, CommandBackend, DagScheduler,
+    DispatchPlan, RewardRouter, RolePool, Spawner, SpawnerKind, TeamDispatchError, VendorBackend,
+    VendorOutput, VendorRequest,
+};
 
 /// Open-set census `(runnable, blocked, cyclic)` for a project; `None` on RPC outage.
 #[must_use]
