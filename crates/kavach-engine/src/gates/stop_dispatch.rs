@@ -18,9 +18,9 @@ pub(crate) use card::{
     SOURCE_DOWN_KEY, card_entry_status, card_is_still_open, claim_card, live_lease_holder,
 };
 pub(crate) use query::{
-    census_rpc_only, get_next_backlog_info, get_next_hunt_info, get_next_task_info,
-    done_gaming_vocab_for, next_task_directive, next_task_rpc_only, open_set_census,
-    oracle_config_for, reward_rubric_for,
+    census_rpc_only, disobedience_vocab_for, get_next_backlog_info, get_next_hunt_info,
+    get_next_task_info, done_gaming_vocab_for, next_task_directive, next_task_rpc_only,
+    open_set_census, oracle_config_for, reward_rubric_for,
 };
 pub(crate) use daemon::renew_my_leases;
 pub(crate) use verify::{AutoVerify, auto_verify_done_cards};
