@@ -54,6 +54,13 @@ fn does_not_fire_when_already_a_committed_script() {
 }
 
 #[test]
+fn does_not_fire_on_just_recipe() {
+    // PREFERRED entry point: a `just` recipe wraps the committed script — never re-steer.
+    assert!(detect_bulk_op("just rename-thread-id").is_none(), "just recipe is the goal");
+    assert!(detect_bulk_op("just rewrite-imports oldName newName").is_none());
+}
+
+#[test]
 fn does_not_fire_on_plain_read_fan_out() {
     // fd -x bat / rg over many files is a READ fan-out, not a mutation — never steer.
     let msg = "fd -e rs . src -x bat {}";
