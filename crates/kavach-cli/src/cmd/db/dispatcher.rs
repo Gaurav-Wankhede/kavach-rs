@@ -217,6 +217,18 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             limit,
             drift_tolerance,
         } => ope::run_audit(limit, drift_tolerance),
+        DbAction::RunRecord {
+            project,
+            entry_key,
+            branch,
+            status,
+            pid,
+        } => run_rec::run_record(&project, &entry_key, branch.as_deref(), &status, pid),
+        DbAction::RunUpdateStatus {
+            id,
+            status,
+            exit_code,
+        } => run_rec::run_update_status(&id, &status, exit_code),
         DbAction::MistakePurge { gate, confirm } => mistake_purge::run(&gate, confirm),
         DbAction::QueryRaw { query } => query_raw::run(&query),
         flow_action @ (DbAction::FlowAdd { .. } | DbAction::FlowShow { .. }) => {
