@@ -169,17 +169,21 @@ async fn dispatch(
 struct LogSpawner {
     io_err: RefCell<Option<IoExit>>,
     pool: RolePool,
+    project: String,
 }
 
 impl Spawner for LogSpawner {
     fn spawn(&self, task_key: &str, title: &str) -> Result<String, EngineError> {
         let role = role_for_title(title);
-        let vendor = self.pool.backend_for(role).id();
+        let backend = self.pool.backend_for(role);
+        let vendor = backend.id().to_owned();
         if let Err(io) = print_or_exit(&format!(
             "[SPAWN] task={task_key} role={role:?} vendor={vendor} title={title:?}"
         )) {
             *self.io_err.borrow_mut() = Some(io);
         }
-        Ok(format!("mate-{task_key}"))
+        let req = VendorRequest::new(role, title.to_owned(), self.project.clone(), 8);
+        let out = backend.dispatch(&req)?;
+        Ok(format!("{vendor}:{task_key}:exit{}", out.exit_code))
     }
 }
