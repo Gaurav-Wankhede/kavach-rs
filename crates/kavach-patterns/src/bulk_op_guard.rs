@@ -66,8 +66,8 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
         return None;
     }
     let head = command_head(&lower);
-    // `rnr` is a batch renamer: any invocation is inherently a bulk op.
-    if head == "rnr" || vocab.mutators.iter().any(|m| m == "rnr") && head == "rnr" {
+    // `rnr` is a batch renamer: any invocation is inherently a bulk op (floor mutator).
+    if head == "rnr" && vocab.mutators.iter().any(|m| m == "rnr") {
         return Some(steer("a batch rename (rnr)"));
     }
     // A per-file rewriter is bulk only when fanned out across many targets.
