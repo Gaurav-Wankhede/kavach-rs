@@ -52,13 +52,26 @@ fn build_memory_guard(project: &str) -> Option<String> {
     let (key, content) = in_progress_card(project)?;
     let paths = super::session_start::reconcile::touched_paths_from_card(&content);
     let touches = if paths.is_empty() { "(none declared)".to_owned() } else { paths.join(" ") };
-    snapshot_to_decision(project, &key, &touches);
+    // F2: the snapshot write can fail silently; if it did, the in-context guard is
+    // the ONLY surviving copy and compaction is about to discard it. Surface the
+    // outcome so the agent copies the key NOW rather than trusting a phantom row.
+    let persisted_line = if snapshot_to_decision(project, &key, &touches) {
+        format!(
+            "persisted: snapshot written to decision `precompact.snapshot.{key}` — recall with \
+             `kavach db get --project {project} --category decision --key precompact.snapshot.{key} --full`."
+        )
+    } else {
+        format!(
+            "⚠ persisted: FAILED — the snapshot row could NOT be written (kavach daemon \
+             unreachable). This [MEMORY_GUARD] is the ONLY surviving copy and compaction will \
+             discard it. COPY active_card `{key}` + touches NOW, before continuing."
+        )
+    };
     Some(format!(
         "[MEMORY_GUARD] (anti-amnesia: compaction is about to discard verbatim history)\n\
          active_card: {key}\n\
          touches: {touches}\n\
-         persisted: snapshot written to decision `precompact.snapshot.{key}` — recall with \
-         `kavach db get --project {project} --category decision --key precompact.snapshot.{key} --full`.\n\
+         {persisted_line}\n\
          action AFTER compaction: do NOT restart from scratch. Re-read the active card \
          (`kavach db get --project {project} --category roadmap --key {key} --full`), resume at \
          the VERIFY step on the listed TOUCHES paths, and re-load the decision/pattern spine \
