@@ -129,7 +129,7 @@ mod tests {
         let v = LoopholeVocab::default();
         let generic = lens_query_for(&v, "xyz");
         for m in [
-            "reqwest",        // ssrf
+            "reqwest::get",   // ssrf
             "deserialize",    // deserialization
             "sqlx::query",    // injection
             "canonicalize",   // path-traversal
