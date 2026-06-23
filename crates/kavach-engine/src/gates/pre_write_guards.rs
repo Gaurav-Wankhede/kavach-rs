@@ -80,7 +80,7 @@ pub(crate) fn check(
             block: Some(block),
             algo_advisory: None,
             runner_compact: runner.to_compact(),
-            p1_advisories: acc.p1_advisories,
+            p1_advisories: Vec::new(),
         };
     }
 
