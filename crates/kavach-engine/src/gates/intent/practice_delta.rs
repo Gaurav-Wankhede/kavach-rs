@@ -6,11 +6,18 @@
 //! fail-soft `None` (daemon down or empty ledger ⇒ inject nothing).
 //! SOURCE: roadmap.unit.mermaid-decision-architecture.
 
-/// Build the `[PRACTICE_DELTA]` block: the top recurring anti-patterns vs their
-/// known correct actions. `None` when the ledger is empty or the daemon is down.
+/// Build the `[PRACTICE_DELTA]` block: the recurring anti-patterns RELEVANT to
+/// `prompt` (token-overlap on gate/slug/fix) vs their known correct actions.
+/// An empty `prompt` (session-start) renders the whole top-N ledger. `None` when
+/// the ledger is empty, the daemon is down, or nothing matches the focus.
 #[must_use]
-pub(in crate::gates) fn practice_delta_block() -> Option<String> {
-    let params = serde_json::json!({ "limit": 6 });
+pub(in crate::gates) fn practice_delta_block(prompt: &str) -> Option<String> {
+    let focus: Vec<String> = if prompt.trim().is_empty() {
+        Vec::new()
+    } else {
+        vec![prompt.to_owned()]
+    };
+    let params = serde_json::json!({ "focus": focus, "limit": 6 });
     let res: kavach_rpc::methods::db::PracticeRenderResult =
         kavach_rpc::client::call("db.practice_render", Some(params)).ok()?;
     let mermaid = res.mermaid?;
