@@ -129,5 +129,5 @@ impl VendorBackend for CommandBackend {
 }
 
 #[cfg(test)]
-#[path = "argv_test.rs"]
+#[path = "vendor/argv_test.rs"]
 mod argv_test;
