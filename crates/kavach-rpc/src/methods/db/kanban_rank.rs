@@ -70,7 +70,7 @@ fn is_runnable(status: &str) -> bool {
 /// A hit id matches a card when it equals the key, or ends in `/<key>` or
 /// `.<key>` (brain emits bare keys, `roadmap.<key>`, and `<proj>/roadmap/<key>`).
 #[must_use]
-pub fn rank_cards_by_relevance(
+pub(crate) fn rank_cards_by_relevance(
     cards: Vec<RankableCard>,
     hit_ids: &[String],
     limit: usize,
