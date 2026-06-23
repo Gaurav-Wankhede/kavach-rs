@@ -4,9 +4,13 @@ use super::*;
 use crate::team::AgentRole;
 
 fn node(title: &str) -> DagNode {
+    node_id(title, title)
+}
+
+fn node_id(id: &str, title: &str) -> DagNode {
     DagNode {
-        id: "k".into(),
-        entry_key: "k".into(),
+        id: id.into(),
+        entry_key: id.into(),
         title: title.into(),
         entry_status: "todo".into(),
         category: "roadmap".into(),
