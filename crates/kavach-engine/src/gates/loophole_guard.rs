@@ -17,116 +17,47 @@ const DONE_PHRASES: &[&str] = &[
     "ready",
 ];
 
-/// Risk-bearing path markers — the scope half. Only content touching one of
-/// these warrants the adversarial prompt; a docs/rename/format change does not.
-const RISK_MARKERS: &[&str] = &[
-    // authz / session
-    "auth",
-    "token",
-    "session",
-    "password",
-    "permission",
-    "authorize",
-    // concurrency
-    "lease",
-    "lock",
-    "mutex",
-    "rwlock",
-    "concurren",
-    "atomic",
-    "race",
-    // money
-    "payment",
-    "balance",
-    "transfer",
-    // persistence
-    "transaction",
-    "persist",
-    "commit",
-    // secrets / crypto
-    "secret",
-    "encrypt",
-    "decrypt",
-    "nonce",
-    "cipher",
-    "hash",
-    "hmac",
-    "signature",
-    // state machine
-    "status",
-    "state_transition",
-    "claim",
-    "acquire",
-    // ssrf / outbound request
-    "reqwest",
-    "http_client",
-    "fetch_url",
-    "redirect",
-    "webhook",
-    "callback_url",
-    // deserialization / parsing of untrusted input
-    "deserialize",
-    "from_str",
-    "from_slice",
-    "parse_json",
-    "untrusted",
-    // injection (sql / command / template)
-    "sql",
-    "query!",
-    "execute(",
-    "command::new",
-    "shell",
-    "render_template",
-    // path traversal / file
-    "path::new",
-    "read_to_string",
-    "open(",
-    "join(",
-    "canonicalize",
-    // resource exhaustion / DoS
-    "unbounded",
-    "with_capacity",
-    "loop {",
-    "recursion",
-    "read_to_end",
-    // numeric truncation / overflow
-    " as u",
-    " as i",
-    "wrapping_",
-    "overflow",
-    // information leakage
-    "debug!(",
-    "error!(",
-    "{:?}",
-    "to_string()",
-];
-
 /// Return the loophole self-interrogation advisory when `content` BOTH claims
 /// completion AND touches a risk-bearing path. `None` otherwise — the common
 /// case, so trivial work is never nagged.
+///
+/// Risk markers + dimension taxonomy are now TECH-AGNOSTIC and graph-sourced: the
+/// `gate.loophole_vocab` overlay ADDS to the compiled cross-language floor (fail-
+/// closed). SOURCE: decision.loophole-mistake-umbrella. Resolved against the active
+/// session's project so each stack tunes its own markers without a rebuild.
 pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
     if content.is_empty() {
         return None;
     }
+    let project = kavach_session::get_or_create_session().project.clone();
+    let vocab = crate::gates::stop_dispatch::loophole_vocab_for(&project);
+    check_loophole_with(&vocab, content)
+}
+
+/// As [`check_loophole_interrogation`] but against a resolved vocab (testable,
+/// no session/RPC). The trigger markers + dimension labels come from the vocab,
+/// not a frozen const table.
+pub(crate) fn check_loophole_with(
+    vocab: &kavach_patterns::loophole_vocab::LoopholeVocab,
+    content: &str,
+) -> Option<String> {
     let lower = content.to_lowercase();
     let claims_done = DONE_PHRASES.iter().any(|p| lower.contains(p));
     if !claims_done {
         return None;
     }
-    // Collect WHICH risk markers fired — that is the change's risk surface, which
-    // steers the Brain-OS lens retrieval (multi-dimensional, not one frozen list).
-    let fired: Vec<&str> = RISK_MARKERS
-        .iter()
-        .filter(|m| lower.contains(*m))
-        .copied()
+    // Collect WHICH trigger markers fired — the change's risk surface. Markers are
+    // matched lower-cased so the agnostic floor (mixed-case across languages) fires.
+    let fired: Vec<&str> = vocab
+        .trigger_markers()
+        .into_iter()
+        .filter(|m| lower.contains(&m.to_lowercase()))
         .collect();
     if fired.is_empty() {
         return None;
     }
     let lens_list = lenses::lens_block(&fired);
-    // Heading names the ACTUAL fired dimensions, data-driven from `fired` — not a
-    // frozen label. SOURCE: decision.loophole-surface-heading-dynamic.
-    let dims = lenses::fired_dimension_labels(&fired);
+    let dims = kavach_patterns::loophole_vocab::fired_dimensions(vocab, &fired);
     Some(format!(
         "[LOOPHOLE_SURFACE] risk-bearing path touched — fired dimensions: {dims}. \
          Lenses for these dimensions (the lens scan checks them automatically):\n{lens_list}"
