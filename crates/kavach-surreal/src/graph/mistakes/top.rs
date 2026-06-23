@@ -103,11 +103,12 @@ pub fn practice_delta_mermaid(ranked: &[AntiPatternRanked]) -> Option<String> {
     Some(out)
 }
 
-/// Keep only the anti-patterns whose searchable text (`name` slug, `gate`, or
-/// `correct_action`) shares a token with `focus`. Token = an ASCII-lowercased
-/// alphanumeric run of ≥3 chars (drops noise like "a"/"to"). Empty `focus`
-/// (or focus with no usable tokens) passes everything through — the
-/// whole-spine fallback for session-start, mirroring `decision_mermaid`.
+/// Keep anti-patterns whose text shares a token with `focus`.
+///
+/// Searchable text = `name` slug + `gate` + `correct_action`; token = an
+/// ASCII-lowercased alphanumeric run of ≥3 chars (drops noise like "a"/"to").
+/// Empty `focus` (or focus with no usable tokens) passes everything through —
+/// the whole-spine fallback for session-start, mirroring `decision_mermaid`.
 #[must_use]
 pub fn practice_delta_focus_filter(
     ranked: Vec<AntiPatternRanked>,
