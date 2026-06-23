@@ -111,6 +111,12 @@ impl CommandBackend {
     pub fn gemini() -> Self {
         Self { vendor: "gemini", argv: gemini_argv }
     }
+    /// Backend with an explicit id + argv builder (the cross-crate constructor;
+    /// the struct is `#[non_exhaustive]`). Used to register a custom vendor.
+    #[must_use]
+    pub fn raw(vendor: &'static str, argv: fn(&VendorRequest) -> Vec<String>) -> Self {
+        Self { vendor, argv }
+    }
 }
 
 impl VendorBackend for CommandBackend {
