@@ -190,6 +190,13 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         context.push_str(&truncate_section(&stack_ctx, budget));
     }
 
+    // [KAVACH_LLD] kavach self-architecture Mermaid map — cures the harness's own
+    // amnesia about its crates/CLI/hook-lifecycle. kavach-project-only (None
+    // elsewhere), compiled-constant so it never stalls the hot path.
+    if let Some(lld_ctx) = lld_context(&session.project) {
+        context.push_str(&truncate_section(&lld_ctx, budget));
+    }
+
     // DECISION_MAP/PRACTICE_DELTA/PATTERN_DAG triad via the SINGLE canonical
     // emitter both hooks share (no hand-listed copy → can't drift). "" prompt →
     // whole-spine. The triad is budget-capped as a unit here (it self-truncates
