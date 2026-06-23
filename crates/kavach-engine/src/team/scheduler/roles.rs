@@ -87,3 +87,7 @@ impl RolePool {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "roles_test.rs"]
+mod roles_test;
