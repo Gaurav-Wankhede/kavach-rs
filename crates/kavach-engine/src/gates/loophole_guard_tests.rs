@@ -31,7 +31,7 @@ fn silent_on_done_claim_without_risk_path() {
 fn silent_on_risk_path_without_done_claim() {
     // Touches auth but makes no completion claim -> not the trigger moment.
     let c = "Adding an auth check to the session token handler.";
-    assert!(check_loophole_interrogation(c).is_none());
+    assert!(check_loophole_with(&floor(), c).is_none());
 }
 
 #[test]
