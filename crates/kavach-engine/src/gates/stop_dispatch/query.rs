@@ -110,6 +110,31 @@ pub(crate) fn done_gaming_vocab_for(
     serde_json::from_str(json.trim()).unwrap_or_default()
 }
 
+/// DB key for the disobedience-detector vocabulary overlay (a JSON object with
+/// optional `dismissal` / `imperative_marker` / `obeyed` string arrays). The graph
+/// ADDS phrases to the compiled floor — research-refreshable per project, NOT a
+/// replacement. Mirrors `gate.done_gaming_vocab`.
+const DISOBEDIENCE_VOCAB_KEY: &str = "gate.disobedience_vocab";
+
+/// Resolve the project's disobedience vocabulary from its `gate.disobedience_vocab`
+/// DB row. Connects the argue-not-obey detector to the kavach DB instead of frozen
+/// `const` arrays. Empty slug / absent row / malformed JSON all fall back to
+/// [`DisobedienceVocab::default`] (the compiled floor), so the detector is never
+/// weaker than baseline when the DB is unreachable. Mirrors [`done_gaming_vocab_for`].
+#[must_use]
+pub(crate) fn disobedience_vocab_for(
+    project_slug: &str,
+) -> kavach_patterns::disobedience_guard::DisobedienceVocab {
+    use kavach_patterns::disobedience_guard::DisobedienceVocab;
+    if project_slug.is_empty() {
+        return DisobedienceVocab::default();
+    }
+    let Some(json) = rpc_get_directive(project_slug, DISOBEDIENCE_VOCAB_KEY) else {
+        return DisobedienceVocab::default();
+    };
+    serde_json::from_str(json.trim()).unwrap_or_default()
+}
+
 fn source_down_sentinel() -> (String, String) {
     (
         SOURCE_DOWN_KEY.to_owned(),
