@@ -1,4 +1,4 @@
-//! FP-bound + resolve-not-block proofs for the research-consume advisory gate.
+//! FP-bound + fail-closed-block proofs for the internet-first research gate.
 
 use super::{content_has_evidence, LOCAL_ANALYSIS_INTENTS};
 use crate::gates::pre_write_context::WriteContext;
