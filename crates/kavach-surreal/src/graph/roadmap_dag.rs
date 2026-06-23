@@ -244,14 +244,24 @@ impl RoadmapDag {
     /// `todo` = fresh-but-unsoaked), and `supersedes` edges showing which pattern
     /// RETIRED which (`-.retires.->`). This is the research-refreshed pattern
     /// layer's read-side VIEW — the model sees which detector the codebase has
-    /// already replaced, so it adopts the current one. `None` when the project has
-    /// no pattern nodes. SOURCE: roadmap.unit.mermaid-decision-architecture.
+    /// already replaced, so it adopts the current one. `focus` (qnames or bare
+    /// keys, same match rule as [`Self::decision_mermaid`]) restricts to the
+    /// relevant pattern neighbourhood for token discipline; an empty `focus`
+    /// renders the whole pattern layer. `None` when no pattern node survives the
+    /// filter. SOURCE: roadmap.unit.mermaid-decision-architecture.
     #[must_use]
-    pub fn pattern_dag_mermaid(&self, max_nodes: usize) -> Option<String> {
+    pub fn pattern_dag_mermaid(&self, focus: &[String], max_nodes: usize) -> Option<String> {
+        let in_focus = |id: &str| {
+            focus.is_empty()
+                || focus
+                    .iter()
+                    .any(|f| id == f || id.rsplit('/').next() == Some(f.as_str()))
+        };
         let mut kept: Vec<&DagNode> = self
             .nodes
             .iter()
             .filter(|n| n.category == "pattern")
+            .filter(|n| in_focus(&n.id))
             .collect();
         if kept.is_empty() {
             return None;
