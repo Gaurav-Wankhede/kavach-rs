@@ -5,6 +5,7 @@ use super::memory::auto_query_memory;
 use super::patterns::{hot_pattern_context, learned_policy_context, mistake_ledger_context};
 use super::concepts::concept_context;
 use super::flows::flow_context;
+use super::lld::lld_context;
 use super::stack_fit::stack_fit_context;
 
 /// Soft per-section byte budget for OPTIONAL session-start blocks (hot patterns,
