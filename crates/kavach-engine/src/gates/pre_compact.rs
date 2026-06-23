@@ -69,6 +69,24 @@ fn build_memory_guard(project: &str) -> Option<String> {
     ))
 }
 
+/// Render the `persisted:` line for the guard from the snapshot-write outcome (F2).
+/// `true` → the recall command; `false` → an explicit FAILED warning so the agent
+/// copies the working set NOW instead of trusting a row that was never written.
+fn persisted_line(ok: bool, project: &str, key: &str) -> String {
+    if ok {
+        format!(
+            "persisted: snapshot written to decision `precompact.snapshot.{key}` — recall with \
+             `kavach db get --project {project} --category decision --key precompact.snapshot.{key} --full`."
+        )
+    } else {
+        format!(
+            "⚠ persisted: FAILED — the snapshot row could NOT be written (kavach daemon \
+             unreachable). This [MEMORY_GUARD] is the ONLY surviving copy and compaction will \
+             discard it. COPY active_card `{key}` + touches NOW, before continuing."
+        )
+    }
+}
+
 /// Persist the working-set snapshot to a decision row so it outlives the summarized
 /// context. Returns `true` iff the row was written; the caller surfaces a `false`
 /// into the guard block so the failure is LLM-visible, not swallowed (F2).
