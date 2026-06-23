@@ -144,20 +144,11 @@ async fn dispatch(
 
     let sp = LogSpawner {
         io_err: RefCell::new(None),
-        pool: RolePool::default(),
-        project: project.to_owned(),
-        router: RefCell::new(RewardRouter::default()),
     };
     match scheduler.dispatch(&dag, 0, &sp) {
         Ok(names) => {
             if let Some(io) = sp.io_err.into_inner() {
                 return Err(io);
-            }
-            let router = sp.router.into_inner();
-            for role in [AgentRole::Thinker, AgentRole::Worker, AgentRole::Verifier] {
-                if let Some(v) = router.preferred_vendor(role) {
-                    print_or_exit(&format!("[ROUTER] {role:?} -> preferred vendor: {v}"))?;
-                }
             }
             print_or_exit(&format!(
                 "[DISPATCHED] {} teammate(s): {names:?}",
@@ -175,31 +166,13 @@ async fn dispatch(
 /// failure is captured (not swallowed) and re-surfaced by the caller.
 struct LogSpawner {
     io_err: RefCell<Option<IoExit>>,
-    pool: RolePool,
-    project: String,
-    router: RefCell<RewardRouter>,
 }
 
 impl Spawner for LogSpawner {
     fn spawn(&self, task_key: &str, title: &str) -> Result<String, EngineError> {
-        let role = role_for_title(title);
-        let backend = self.pool.backend_for(role);
-        let vendor = backend.id().to_owned();
-        if let Err(io) = print_or_exit(&format!(
-            "[SPAWN] task={task_key} role={role:?} vendor={vendor} title={title:?}"
-        )) {
+        if let Err(io) = print_or_exit(&format!("[SPAWN] task={task_key} title={title:?}")) {
             *self.io_err.borrow_mut() = Some(io);
         }
-        let req = VendorRequest::new(role, title.to_owned(), self.project.clone(), 8);
-        let result = backend.dispatch(&req);
-        // Conductor RL: feed the outcome back into the router so vendor/role
-        // routing evolves. exit-0 = VerifiedClean, any failure = FalseDecision.
-        let reward = match &result {
-            Ok(out) if out.exit_code == 0 => Reward::VerifiedClean,
-            _ => Reward::FalseDecision,
-        };
-        self.router.borrow_mut().record(&vendor, role, reward);
-        let out = result?;
-        Ok(format!("{vendor}:{task_key}:exit{}", out.exit_code))
+        Ok(format!("teammate:{task_key}"))
     }
 }
