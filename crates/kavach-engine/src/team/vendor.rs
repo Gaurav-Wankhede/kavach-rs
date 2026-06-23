@@ -68,6 +68,7 @@ pub trait VendorBackend {
 /// A [`VendorBackend`] that shells out via `std::process::Command`. The argv
 /// builder is a fn-pointer so a vendor's contract is one line to swap.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct CommandBackend {
     /// Stable vendor id.
     pub vendor: &'static str,
