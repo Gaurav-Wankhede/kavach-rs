@@ -195,8 +195,12 @@ flowchart LR
   INJ -->|awareness| AGENT
   DEC -.overlay.-> GATES["live gates<br/>(loophole_vocab, disobedience…)"]
   GATES -.fail-closed floor.-> ENG2["compiled defaults"]
-  classDef a fill:#1f6feb,color:#fff; classDef s fill:#1a7f37,color:#fff; classDef i fill:#8957e5,color:#fff;
-  class AGENT a; class RPC,DB,KB,DEC,AP,CON s; class INJ,GATES,ENG2 i;
+  classDef a fill:#1f6feb,color:#fff
+  classDef s fill:#1a7f37,color:#fff
+  classDef i fill:#8957e5,color:#fff
+  class AGENT a
+  class RPC,DB,KB,DEC,AP,CON s
+  class INJ,GATES,ENG2 i
   </div>
 </section>
 
