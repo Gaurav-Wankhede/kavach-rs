@@ -53,6 +53,10 @@ pub fn router() -> Router {
         .route("/entries/save", post(pages::editor::save))
         .route("/entries/status", post(pages::editor::status))
         .route("/events", get(sse::events))
+        .route(
+            "/v1/chat/completions",
+            post(orchestrate::chat_completions),
+        )
         .nest_service("/static", ServeDir::new(static_dir))
 }
 
