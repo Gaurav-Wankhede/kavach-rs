@@ -24,7 +24,7 @@ fn fires_on_done_claim_touching_risk_path() {
 fn silent_on_done_claim_without_risk_path() {
     // Completion language but a trivial, non-risk change -> no nag.
     let c = "Done — renamed the variable and updated the doc comment.";
-    assert!(check_loophole_interrogation(c).is_none());
+    assert!(check_loophole_with(&floor(), c).is_none());
 }
 
 #[test]
