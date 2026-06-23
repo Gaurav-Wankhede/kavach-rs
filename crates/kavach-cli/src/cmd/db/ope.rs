@@ -6,7 +6,7 @@ use crate::cmd::db::rpc_client;
 use crate::cmd::io_safe::{err_exit, into_exit_code, print_or_exit};
 
 /// Pure builder for the candidate-policy evaluation request.
-pub(super) fn build_evaluate_params(
+pub(super) const fn build_evaluate_params(
     allow: f64,
     ask: f64,
     block: f64,
