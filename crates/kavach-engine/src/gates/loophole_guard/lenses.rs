@@ -85,6 +85,7 @@ fn brain_lenses(query: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kavach_patterns::loophole_vocab::{LoopholeVocab, fired_dimensions};
 
     #[test]
     fn empty_markers_yield_canonical_six() {
@@ -93,13 +94,15 @@ mod tests {
 
     #[test]
     fn heading_names_fired_dimensions_dynamically() {
-        // The heading reflects the ACTUAL fired surface, not a frozen label.
-        assert_eq!(fired_dimension_labels(&["payment"]), "money");
-        assert_eq!(fired_dimension_labels(&["reqwest", "sql"]), "ssrf, injection");
+        // The heading reflects the ACTUAL fired surface, not a frozen label — sourced
+        // from the resolved vocab (here the compiled floor), not a deleted match table.
+        let v = LoopholeVocab::default();
+        assert_eq!(fired_dimensions(&v, &["payment"]), "money");
+        assert_eq!(fired_dimensions(&v, &["reqwest", "sqlx::query"]), "ssrf, injection");
         // dedup-preserving-order: two auth markers collapse to one label.
-        assert_eq!(fired_dimension_labels(&["auth", "token"]), "authz");
+        assert_eq!(fired_dimensions(&v, &["auth", "token"]), "authz");
         // empty ⇒ general, never a panic.
-        assert_eq!(fired_dimension_labels(&[]), "general");
+        assert_eq!(fired_dimensions(&v, &[]), "general");
     }
 
     #[test]
@@ -111,9 +114,11 @@ mod tests {
 
     #[test]
     fn each_risk_marker_maps_to_a_dimension() {
-        // Every marker resolves to a non-empty query (no panic, total mapping).
-        for m in ["auth", "secret", "payment", "lock", "persist", "status", "xyz"] {
-            assert!(!risk_dimension(m).is_empty());
+        // Every marker resolves to a non-empty lens query (no panic, total mapping)
+        // — unknown tokens hit the generic fallback, never an empty string.
+        let v = LoopholeVocab::default();
+        for m in ["auth", "encrypt", "payment", "lock", "persist", "audit_log", "xyz"] {
+            assert!(!lens_query_for(&v, m).is_empty());
         }
     }
 
@@ -121,19 +126,20 @@ mod tests {
     fn expanded_surfaces_map_to_distinct_dimensions() {
         // The newly-routed risk surfaces each resolve to a SURFACE-SPECIFIC query,
         // not the generic fallback — proving the router is no longer stuck on six.
-        let generic = risk_dimension("xyz");
+        let v = LoopholeVocab::default();
+        let generic = lens_query_for(&v, "xyz");
         for m in [
-            "reqwest",      // ssrf
-            "deserialize",  // deserialization
-            "sql",          // injection
-            "path::new",    // path-traversal
-            "unbounded",    // dos
-            " as u",        // integer-overflow
-            "debug!(",      // info-leak
-            "encrypt",      // crypto
+            "reqwest",        // ssrf
+            "deserialize",    // deserialization
+            "sqlx::query",    // injection
+            "canonicalize",   // path-traversal
+            "unbounded",      // resource-exhaustion
+            " as u",          // integer-overflow
+            "println!",       // information-leak
+            "encrypt",        // crypto
         ] {
-            let dim = risk_dimension(m);
-            assert_ne!(dim, generic, "marker {m} must map to a specific dimension, not the fallback");
+            let q = lens_query_for(&v, m);
+            assert_ne!(q, generic, "marker {m} must map to a specific dimension, not the fallback");
         }
     }
 }
