@@ -81,8 +81,9 @@ fn build_memory_guard(project: &str) -> Option<String> {
 }
 
 /// Persist the working-set snapshot to a decision row so it outlives the summarized
-/// context. Best-effort: an RPC miss is swallowed (the in-context guard still rode out).
-fn snapshot_to_decision(project: &str, card_key: &str, touches: &str) {
+/// context. Returns `true` iff the row was written; the caller surfaces a `false`
+/// into the guard block so the failure is LLM-visible, not swallowed (F2).
+fn snapshot_to_decision(project: &str, card_key: &str, touches: &str) -> bool {
     let body = format!(
         "PRE-COMPACT SNAPSHOT (auto). Active in_progress card at the compaction seam.\n\
          card: {card_key}\ntouches: {touches}\n\
@@ -96,7 +97,7 @@ fn snapshot_to_decision(project: &str, card_key: &str, touches: &str) {
         "content": body,
         "update_key": format!("precompact.snapshot.{card_key}"),
     });
-    drop(kavach_rpc::client::call::<_, serde_json::Value>("db.write", Some(params)));
+    kavach_rpc::client::call::<_, serde_json::Value>("db.write", Some(params)).is_ok()
 }
 
 /// The single `in_progress` roadmap card `(key, content)`, or `None` on RPC miss.
