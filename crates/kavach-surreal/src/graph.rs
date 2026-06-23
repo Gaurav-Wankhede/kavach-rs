@@ -31,10 +31,11 @@ pub use flow_dag::{
 };
 pub use list_with_links::{LinkedRow, list_with_links as list_rows_with_links};
 pub use mistakes::{
-    AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow, append_mistake_event,
-    cluster_event_to_pattern, delete_anti_patterns_by_gate, mistake_row_mermaid,
-    practice_delta_mermaid, query_anti_pattern_hit_count, top_anti_patterns,
-    top_deployed_policies, upsert_anti_pattern, upsert_deployed_policy,
+    AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow, FAMILY_LOOPHOLE, FAMILY_MISTAKE,
+    append_loophole_event, append_mistake_event, cluster_event_to_pattern,
+    delete_anti_patterns_by_gate, mistake_row_mermaid, practice_delta_mermaid,
+    query_anti_pattern_hit_count, top_anti_patterns, top_deployed_policies, upsert_anti_pattern,
+    upsert_anti_pattern_with_family, upsert_deployed_policy,
 };
 pub use raw_select::raw_select;
 pub use relationships::upsert_relationships;
