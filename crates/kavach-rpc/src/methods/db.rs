@@ -69,6 +69,7 @@ pub use graph_fetch::{GraphEdge, GraphFetchParams, GraphFetchResult, GraphNode, 
 pub use graph_query::{GraphQueryParams, GraphQueryResult, graph_query};
 pub use kanban::{KanbanCounts, KanbanItem, KanbanParams, KanbanResult, kanban};
 pub use kanban_close::{KanbanCloseParams, KanbanCloseResult, kanban_close};
+pub use kanban_rank::{KanbanRankedParams, KanbanRankedResult, RankableCard, kanban_ranked};
 pub use list_parts::{ListPartsParams, ListPartsResult, PartRow, list_parts};
 pub use list_projects::{ListProjectsParams, ListProjectsResult, ProjectRow, list_projects};
 pub use ope::{OpeEvaluateParams, OpeEvaluateResult, ope_evaluate};
