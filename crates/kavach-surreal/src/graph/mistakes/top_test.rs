@@ -30,6 +30,51 @@ fn mistake_row_escapes_quotes_in_labels() {
     assert!(m.contains("&quot;"), "{m}");
 }
 
+fn sample_pair() -> Vec<AntiPatternRanked> {
+    vec![
+        AntiPatternRanked {
+            name: "anti.continuation_menu.395f9852".to_owned(),
+            gate: "stop".to_owned(),
+            correct_action: "auto-continue; never ask permission".to_owned(),
+            hit_count: 7,
+        },
+        AntiPatternRanked {
+            name: "anti.stale_version_claim.abcd".to_owned(),
+            gate: "research".to_owned(),
+            correct_action: "fetch the registry before claiming latest".to_owned(),
+            hit_count: 3,
+        },
+    ]
+}
+
+#[test]
+fn focus_filter_keeps_only_token_matching_anti_patterns() {
+    // "permission" overlaps the continuation_menu correct_action, not the
+    // research one ⇒ only the first survives.
+    let kept = practice_delta_focus_filter(sample_pair(), &["asking permission".to_owned()]);
+    assert_eq!(kept.len(), 1, "{kept:?}");
+    assert!(kept[0].name.contains("continuation_menu"), "{kept:?}");
+}
+
+#[test]
+fn focus_filter_matches_on_gate_token() {
+    let kept = practice_delta_focus_filter(sample_pair(), &["research the version".to_owned()]);
+    assert_eq!(kept.len(), 1, "{kept:?}");
+    assert_eq!(kept[0].gate, "research", "{kept:?}");
+}
+
+#[test]
+fn empty_focus_passes_everything_through() {
+    let kept = practice_delta_focus_filter(sample_pair(), &[]);
+    assert_eq!(kept.len(), 2, "empty focus = whole-spine: {kept:?}");
+}
+
+#[test]
+fn focus_with_no_overlap_yields_empty() {
+    let kept = practice_delta_focus_filter(sample_pair(), &["zzz unrelated xyz".to_owned()]);
+    assert!(kept.is_empty(), "{kept:?}");
+}
+
 #[test]
 fn practice_delta_renders_worst_vs_best_with_fix_edges() {
     let ranked = vec![
