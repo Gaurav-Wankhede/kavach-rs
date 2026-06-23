@@ -13,6 +13,12 @@ pub(in crate::gates) fn decision_map_block(project_slug: &str, prompt: &str) -> 
         return None;
     }
     let focus = relevant_keys(prompt);
+    // Context-rot guard: a real (non-empty) prompt that yields NO relevant keys
+    // must NOT degrade to the whole spine — that is the token-waste this injector
+    // exists to prevent. Empty prompt (session-start) keeps the whole-spine view.
+    if !prompt.trim().is_empty() && focus.is_empty() {
+        return None;
+    }
     let params = serde_json::json!({
         "project_slug": project_slug,
         "focus": focus,
