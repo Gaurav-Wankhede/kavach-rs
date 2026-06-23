@@ -8,6 +8,41 @@ fn floor() -> LoopholeVocab {
     LoopholeVocab::default()
 }
 
+// ---- U5: tech-stack-agnostic fire proofs through the engine entry ----
+
+#[test]
+fn fires_on_python_os_system_completion() {
+    // Non-Rust (Python) injection sink + a completion claim → the agnostic floor
+    // fires the injection dimension. Proves the detector is not Rust-only.
+    let c = "Done — shipped the export job: os.system(f\"tar czf {path}\").";
+    let out = check_loophole_with(&floor(), c).expect("python os.system must fire");
+    assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag: {out}");
+    assert!(out.contains("injection"), "names the injection dimension: {out}");
+}
+
+#[test]
+fn fires_on_js_innerhtml_completion() {
+    // Non-Rust (JS) XSS sink + a completion claim → the agnostic floor fires the
+    // xss dimension. Same floor, different stack — one lens, any language.
+    let c = "Implemented the renderer — el.innerHTML = userInput; works now.";
+    let out = check_loophole_with(&floor(), c).expect("js innerHTML must fire");
+    assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag: {out}");
+    assert!(out.contains("xss"), "names the xss dimension: {out}");
+}
+
+#[test]
+fn floor_fires_when_overlay_is_absent_db_down() {
+    // FAIL-CLOSED (decision.w5): with NO graph overlay (DB unreachable ⇒ the resolver
+    // returns LoopholeVocab::default()), the compiled floor STILL detects the risk
+    // surface. The detector is never weaker than baseline on a DB outage.
+    let down = LoopholeVocab::default(); // what loophole_vocab_for() returns on DB-down
+    let c = "Fixed — the payment transfer is committed atomically now.";
+    assert!(
+        check_loophole_with(&down, c).is_some(),
+        "floor must still fire with no overlay (DB-down fail-closed)"
+    );
+}
+
 #[test]
 fn fires_on_done_claim_touching_risk_path() {
     let c = "Done — the lease acquire is now atomic and the claim is race-free.";
