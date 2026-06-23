@@ -130,12 +130,6 @@ fn command_head(lower: &str) -> &str {
     first.strip_prefix("./").unwrap_or(first)
 }
 
-/// True when `tool` appears immediately after a pipe (`| sd`, `|sd`) — the
-/// `rg -l | xargs sd` / `… | sd` fan-out shape where the mutator is not the head.
-fn piped_to(lower: &str, tool: &str) -> bool {
-    lower.contains(&format!("| {tool} ")) || lower.contains(&format!("|{tool} "))
-}
-
 /// Count explicit file-path arguments (tokens with a `/` or a source extension that
 /// are not flags). ≥2 means the rewrite targets multiple files by hand.
 fn explicit_path_args(command: &str) -> usize {
