@@ -47,6 +47,12 @@ def check_block(block: str, src: str, idx: int) -> list[str]:
     if not header.startswith(VALID_HEADERS):
         errs.append(f"{src} block#{idx}: unknown diagram header {header!r}")
     for n, ln in enumerate(lines, 1):
+        # 0) multiple classDef/class statements on one line (v11 needs one per line)
+        s = ln.strip()
+        if s.count("classDef ") > 1 or s.count("class ") > 1 or (
+            "classDef " in s and "; class" in s
+        ):
+            errs.append(f"{src} block#{idx} L{n}: multiple classDef/class on one line (one per line): {s}")
         # 1) chained bidirectional edges: A <--> B <--> C (invalid in v11)
         if ln.count("<-->") >= 2:
             errs.append(f"{src} block#{idx} L{n}: chained '<-->' (split into one edge per statement): {ln.strip()}")
