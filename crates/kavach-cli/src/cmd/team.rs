@@ -12,6 +12,7 @@ use clap::{Args, Subcommand};
 
 use kavach_engine::{
     role_for_title, DagScheduler, EngineError, RolePool, Spawner, SpawnerKind, TeamDispatchError,
+    VendorRequest,
 };
 use kavach_surreal::graph::roadmap_dag::RoadmapDag;
 
