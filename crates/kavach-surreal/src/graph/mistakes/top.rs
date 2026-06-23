@@ -103,6 +103,39 @@ pub fn practice_delta_mermaid(ranked: &[AntiPatternRanked]) -> Option<String> {
     Some(out)
 }
 
+/// Keep only the anti-patterns whose searchable text (`name` slug, `gate`, or
+/// `correct_action`) shares a token with `focus`. Token = an ASCII-lowercased
+/// alphanumeric run of ≥3 chars (drops noise like "a"/"to"). Empty `focus`
+/// (or focus with no usable tokens) passes everything through — the
+/// whole-spine fallback for session-start, mirroring `decision_mermaid`.
+#[must_use]
+pub fn practice_delta_focus_filter(
+    ranked: Vec<AntiPatternRanked>,
+    focus: &[String],
+) -> Vec<AntiPatternRanked> {
+    let needles: Vec<String> = focus.iter().flat_map(|f| tokens(f)).collect();
+    if needles.is_empty() {
+        return ranked;
+    }
+    ranked
+        .into_iter()
+        .filter(|ap| {
+            let hay: Vec<String> = tokens(short_name(&ap.name))
+                .chain(tokens(&ap.gate))
+                .chain(tokens(&ap.correct_action))
+                .collect();
+            needles.iter().any(|n| hay.iter().any(|h| h == n))
+        })
+        .collect()
+}
+
+/// ASCII-lowercased alphanumeric tokens of ≥3 chars from `s`.
+fn tokens(s: &str) -> impl Iterator<Item = String> + '_ {
+    s.split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|t| t.len() >= 3)
+        .map(str::to_ascii_lowercase)
+}
+
 /// Trim the canonical `anti.<slug>.<hash>` name to its readable slug.
 fn short_name(name: &str) -> &str {
     name.strip_prefix("anti.")
