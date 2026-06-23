@@ -13,7 +13,12 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         return ControlFlow::Continue(());
     }
     let msg = ctx.input.last_assistant_message.trim();
-    let Some(reason) = kavach_patterns::disobedience_guard::detect_disobedience(msg) else {
+    // Floor + graph overlay: the compiled DISMISSAL/MARKER/OBEYED lists are the
+    // fail-soft floor; the project's gate.disobedience_vocab DB row ADDS phrases on
+    // top (research-refreshable, no rebuild). DB down → floor. SOURCE: decision.w5.
+    let vocab = crate::gates::stop_dispatch::disobedience_vocab_for(&ctx.session.project);
+    let Some(reason) = kavach_patterns::disobedience_guard::detect_disobedience_with(&vocab, msg)
+    else {
         return ControlFlow::Continue(());
     };
     drop(kavach_hook::exit_stop_block(&format!(
