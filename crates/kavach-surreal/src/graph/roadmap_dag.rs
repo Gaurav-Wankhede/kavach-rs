@@ -548,7 +548,7 @@ mod decision_mermaid_tests {
 
     #[test]
     fn pattern_dag_renders_supersession_with_trust_tag() {
-        let m = pattern_sample().pattern_dag_mermaid(8).expect("non-empty");
+        let m = pattern_sample().pattern_dag_mermaid(&[], 8).expect("non-empty");
         assert!(m.starts_with("graph TD\n"), "{m}");
         // fresh (todo) pattern carries the (fresh) trust tag
         assert!(m.contains("(fresh)"), "unsoaked pattern tagged: {m}");
