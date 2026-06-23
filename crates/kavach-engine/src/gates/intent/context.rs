@@ -188,10 +188,30 @@ fn append_live_kanban(context: &mut String, project: &str) -> bool {
     }
     // Use RPC-only census to avoid blocking on daemon warm-up in entry hooks.
     // See decision.engine.rpc_only_entry_kanban.
-    let Some((runnable, blocked, cyclic)) =
-        crate::gates::stop_dispatch::census_rpc_only(project)
-    else {
-        return false; // daemon unreachable -> fail soft to the nag, never block
+    let census = crate::gates::stop_dispatch::census_rpc_only(project);
+    render_live_kanban(context, project, census)
+}
+
+/// Render the `[KANBAN]` block from an already-fetched census. Split out from the
+/// RPC call so the DEGRADED path is unit-testable without a daemon.
+///
+/// `census == None` means the read FAILED (daemon down/warming) — NOT an empty
+/// board. A successful drained board is `Some((0,_,_))`. Emitting nothing on a
+/// failed read is the silent-fail-open this fixes: absence then reads as "queue
+/// empty", which the agent treats as license to stop (feeds remaining_phases_at_stop).
+/// So a failed read now emits an explicit `[KANBAN: DEGRADED]` sentinel.
+fn render_live_kanban(context: &mut String, project: &str, census: Option<(u64, u64, u64)>) -> bool {
+    let Some((runnable, blocked, cyclic)) = census else {
+        write!(
+            context,
+            "\n[KANBAN: DEGRADED] board read FAILED this turn (kavach daemon unreachable) for \
+             project {project}. The work queue is UNKNOWN, not empty — do NOT treat the missing \
+             board as a drained queue and do NOT stop on that basis. Recover: \
+             `kavach context --project {project}` (retries the daemon); if it errors, the store \
+             is down — say so as a fact and proceed on the user's explicit task only."
+        )
+        .ok();
+        return false; // still "not observed": never blocks the session
     };
     context.push_str("\n[KANBAN] read live from the kavach DB this turn — do NOT re-query to confirm.");
     write!(
