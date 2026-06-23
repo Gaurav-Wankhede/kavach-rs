@@ -144,16 +144,3 @@ pub async fn kanban_ranked(
 #[cfg(test)]
 #[path = "kanban_rank_test.rs"]
 mod kanban_rank_test;
-
-impl KanbanRankedResult {
-    /// Internal probe so `internal` import stays used when the module compiles
-    /// without the brain path exercised. (No-op marker; removed if it lints.)
-    #[cfg(test)]
-    #[must_use]
-    pub(crate) fn len(&self) -> usize {
-        self.cards.len()
-    }
-}
-
-// Keep `internal` referenced for the error-mapping path above.
-const _: fn(String) -> ErrorObjectOwned = internal;
