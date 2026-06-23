@@ -205,6 +205,18 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         DbAction::BridgeConceptsFor { project } => bridge::concepts_for(&project),
         DbAction::BridgeProjectsFor { concept } => bridge::projects_for(&concept),
         DbAction::MistakeHitCount { name } => mistake_hits::run(&name),
+        DbAction::OpeEvaluate {
+            allow,
+            ask,
+            block,
+            limit,
+            z,
+            min_coverage_ratio,
+        } => ope::run_evaluate(allow, ask, block, limit, z, min_coverage_ratio),
+        DbAction::OpeAudit {
+            limit,
+            drift_tolerance,
+        } => ope::run_audit(limit, drift_tolerance),
         DbAction::MistakePurge { gate, confirm } => mistake_purge::run(&gate, confirm),
         DbAction::QueryRaw { query } => query_raw::run(&query),
         flow_action @ (DbAction::FlowAdd { .. } | DbAction::FlowShow { .. }) => {
