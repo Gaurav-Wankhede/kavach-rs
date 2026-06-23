@@ -245,6 +245,10 @@ pub struct PracticeRenderResult {
 /// Default anti-pattern cap for the practice delta (token discipline).
 const PRACTICE_DELTA_DEFAULT_CAP: usize = 6;
 
+/// Widen the ranked pool by this factor before focus-filtering, so a relevant
+/// anti-pattern ranked below the top-N still survives the focus narrow.
+const PRACTICE_DELTA_FOCUS_POOL_FACTOR: usize = 4;
+
 /// Render the recurrence-ranked worst-vs-best practice contrast as Mermaid.
 ///
 /// # Errors
