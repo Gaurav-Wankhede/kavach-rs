@@ -109,10 +109,17 @@ mod tests {
     }
 
     #[test]
-    fn no_daemon_falls_back_to_canonical() {
-        // No RPC server in unit-test ⇒ brain_lenses empty ⇒ canonical six only.
+    fn canonical_six_are_always_a_prefix() {
+        // Floor invariant independent of daemon/overlay state: the canonical six are
+        // ALWAYS served and ALWAYS lead the block. Brain-OS may append surface-specific
+        // lenses after them (when the daemon is up + a corpus exists), but it can never
+        // drop or reorder the floor. Asserting a prefix (not equality) keeps the test
+        // hermetic whether or not an RPC daemon / overlay row is present.
         let out = lens_block(&["payment"]);
-        assert_eq!(out, CANONICAL_LENSES);
+        assert!(
+            out.starts_with(CANONICAL_LENSES),
+            "canonical six must lead the lens block, never be dropped: {out}"
+        );
     }
 
     #[test]
