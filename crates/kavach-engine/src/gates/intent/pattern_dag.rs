@@ -22,14 +22,22 @@ const STABILITY_FALLBACK: &str = "version-scheme stability: for a 0.x dependency
     superseding pattern names a newer version, adopt it only after confirming the \
     bump's stability on that axis";
 
-/// Build the `[PATTERN_DAG]` block for `project_slug`. `None` when the project
-/// has no pattern rows or the daemon is down.
+/// Build the `[PATTERN_DAG]` block for `project_slug`, focused on the pattern
+/// keys most relevant to `prompt` (via Brain-OS) so only the touched
+/// neighbourhood is shown. `None` when the project has no pattern rows, the
+/// daemon is down, or a real prompt yields no relevant pattern keys (the
+/// context-rot guard: don't whole-spine on a thin hit).
 #[must_use]
-pub(in crate::gates) fn pattern_dag_block(project_slug: &str) -> Option<String> {
+pub(in crate::gates) fn pattern_dag_block(project_slug: &str, prompt: &str) -> Option<String> {
     if project_slug.is_empty() {
         return None;
     }
-    let params = serde_json::json!({ "project_slug": project_slug, "max_nodes": 8 });
+    let focus = relevant_pattern_keys(prompt);
+    if !prompt.trim().is_empty() && focus.is_empty() {
+        return None;
+    }
+    let params =
+        serde_json::json!({ "project_slug": project_slug, "focus": focus, "max_nodes": 8 });
     let res: kavach_rpc::methods::db::PatternRenderResult =
         kavach_rpc::client::call("db.pattern_render", Some(params)).ok()?;
     let mermaid = res.mermaid?;
