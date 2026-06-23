@@ -45,6 +45,30 @@ fn bash_write_to_a_generated_artifact_is_allowed_with_advisory() {
     }
 }
 
+#[test]
+fn bulk_rename_via_rnr_is_allowed_with_bulk_script_advisory() {
+    // An inline batch rename is not denied — it is steered to one committed script.
+    match check("rnr -r 'OldName' 'NewName' src/") {
+        Some(Decision::Allow(Some(ctx))) => {
+            assert!(ctx.contains("[BULK_VIA_SCRIPT]"), "bulk advisory ctx: {ctx}");
+            assert!(ctx.contains("just"), "must steer to a just recipe: {ctx}");
+        }
+        other => panic!("rnr bulk rename must advise, got {}", verdict_name(other.as_ref())),
+    }
+}
+
+#[test]
+fn running_a_just_recipe_is_not_steered() {
+    // The sanctioned path — `just <verb>` wrapping the committed script — never fires.
+    match check("just rename-thread-id") {
+        Some(Decision::Allow(Some(ctx))) => {
+            assert!(!ctx.contains("[BULK_VIA_SCRIPT]"), "just recipe must not be steered: {ctx}");
+        }
+        Some(Decision::Allow(None)) | None => {}
+        other => panic!("just recipe must not be blocked, got {}", verdict_name(other.as_ref())),
+    }
+}
+
 fn verdict_name(d: Option<&Decision>) -> &'static str {
     match d {
         Some(Decision::Deny(_)) => "Deny",
