@@ -168,11 +168,16 @@ async fn dispatch(
 /// failure is captured (not swallowed) and re-surfaced by the caller.
 struct LogSpawner {
     io_err: RefCell<Option<IoExit>>,
+    pool: RolePool,
 }
 
 impl Spawner for LogSpawner {
     fn spawn(&self, task_key: &str, title: &str) -> Result<String, EngineError> {
-        if let Err(io) = print_or_exit(&format!("[SPAWN] task={task_key} title={title:?}")) {
+        let role = role_for_title(title);
+        let vendor = self.pool.backend_for(role).id();
+        if let Err(io) = print_or_exit(&format!(
+            "[SPAWN] task={task_key} role={role:?} vendor={vendor} title={title:?}"
+        )) {
             *self.io_err.borrow_mut() = Some(io);
         }
         Ok(format!("mate-{task_key}"))
