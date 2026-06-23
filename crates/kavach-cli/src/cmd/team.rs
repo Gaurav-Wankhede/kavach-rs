@@ -146,6 +146,7 @@ async fn dispatch(
     let sp = LogSpawner {
         io_err: RefCell::new(None),
         pool: RolePool::default(),
+        project: project.to_owned(),
     };
     match scheduler.dispatch(&dag, 0, &sp) {
         Ok(names) => {
