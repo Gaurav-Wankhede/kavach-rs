@@ -33,8 +33,13 @@ flowchart TD\n\
   DB -.decision overlay.-> ENG\n\
 ```\n\
 LAYERS: cli/hook/web -> engine+patterns+advisor -> rpc+surreal+session+config -> types. \
-CLI groups: store(db get|write|kanban-close|context) · loop(loop|heal|loophole|goal|team) · \
-awareness(think|ask|doctor|spec) · lifecycle(phase|verify|deploy|mistake). \
+21 hook events: lifecycle(session-start|session-end|pre-compact|stop|notification) · \
+prompt(intent|six-file-intent) · write/tool(pre-write|post-write|pre-tool|post-tool|post-tool-failure) · \
+impl(pre-implementation|post-implementation) · subagent(start|stop) · permission(permission|permission-request) · \
+vendor(message-display|task-completed|teammate-idle). \
+CLI groups (~35 verbs): store(db get|write|kanban-close|context) · loop(loop|heal|loophole|goal|bg|team|pipeline|bulk) · \
+awareness(think|ask|doctor|oversized|spec|schema|security) · \
+lifecycle(phase|session|verify|verify-frontend|deploy|mistake) · ops(status|web|servers|gates|install|rules|toolbelt|tailwind-plus|todos|tasks). \
 Source of truth for any flag: `kavach <cmd> --help`.\n";
 
 /// `Some(block)` with the kavach LLD awareness for a kavach project, else `None`.
