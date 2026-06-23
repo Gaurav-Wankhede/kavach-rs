@@ -10,6 +10,13 @@ fn fires_on_rnr_batch_rename() {
 }
 
 #[test]
+fn fires_on_sg_structural_rewrite() {
+    // sg / ast-grep are Rust structural multi-file rewriters — inherently bulk.
+    assert!(detect_bulk_op("sg -p 'old($A)' -r 'new($A)' -U").is_some(), "sg must steer");
+    assert!(detect_bulk_op("ast-grep -p 'foo' -r 'bar' src/").is_some(), "ast-grep must steer");
+}
+
+#[test]
 fn fires_on_fd_exec_sd() {
     // The canonical inline bulk rewrite: fd finds N files, -x runs sd on each.
     let msg = "fd -e rs . src -x sd 'OldType' 'NewType' {}";
