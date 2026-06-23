@@ -186,10 +186,9 @@ pub(crate) fn detect_project() -> String {
         // F3: a cwd error makes EVERY kanban RPC key on the phantom "unknown" project,
         // silently returning empty boards. Fail LOUD on stderr (never stdout — that is
         // the hook verdict channel) so the degradation is visible, not silent.
-        #[expect(clippy::print_stderr, reason = "anti-amnesia degradation warning to audit trail")]
-        eprintln!(
-            "kavach: WARN current_dir() failed — project resolves to \"unknown\"; \
-             all kanban/decision reads will be empty this session."
+        warn_degraded(
+            "current_dir() failed — project resolves to \"unknown\"; \
+             all kanban/decision reads will be empty this session.",
         );
         return "unknown".into();
     };
