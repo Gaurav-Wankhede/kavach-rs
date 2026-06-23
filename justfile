@@ -102,6 +102,18 @@ audit:
 unused:
     cargo machete
 
+# Mutation testing — the highest-signal coverage check: inserts bugs, reports
+# which survive your tests (= untested logic). Slow; run per-release not per-push.
+# SOURCE: https://mutants.rs/ — install: cargo binstall cargo-mutants.
+mutants *ARGS:
+    cargo mutants --test-tool=nextest {{ARGS}}
+
+# Language-agnostic quality gate: detect the stack from on-disk manifests and run
+# its native lint+test. Polyglot repos run each present stack. SOURCE:
+# decision.quality-language-agnostic-just-recipe.
+quality:
+    bash scripts/quality.sh
+
 # ─────────────────────────────────────────────────────────────
 # aggregate CI / deploy targets
 # ─────────────────────────────────────────────────────────────
