@@ -639,6 +639,36 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         #[arg(long, default_value_t = 0.05)]
         drift_tolerance: f64,
     },
+    /// Record a harness execution run row (status lifecycle start).
+    RunRecord {
+        /// Project slug.
+        #[arg(long)]
+        project: String,
+        /// Roadmap entry key this run executes.
+        #[arg(long)]
+        entry_key: String,
+        /// Git branch the run targets.
+        #[arg(long)]
+        branch: Option<String>,
+        /// Initial status (e.g. `running`).
+        #[arg(long)]
+        status: String,
+        /// OS process id, when known.
+        #[arg(long)]
+        pid: Option<i64>,
+    },
+    /// Update a run row's terminal status + exit code.
+    RunUpdateStatus {
+        /// Run row id.
+        #[arg(long)]
+        id: String,
+        /// New status (e.g. `done`, `failed`).
+        #[arg(long)]
+        status: String,
+        /// Process exit code, when terminal.
+        #[arg(long)]
+        exit_code: Option<i64>,
+    },
     /// Purge an `anti_pattern` cluster + its `mistake_event`s by the gate that
     /// recorded them — removes a stale `correct_action` from `PRACTICE_DELTA` (requires `--confirm`).
     MistakePurge {
