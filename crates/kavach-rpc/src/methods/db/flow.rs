@@ -306,6 +306,10 @@ pub async fn stack_render(
 pub struct PatternRenderParams {
     /// Project slug whose pattern layer to render.
     pub project_slug: String,
+    /// Optional focus keys (qnames or bare keys) to restrict the neighbourhood;
+    /// empty renders the whole pattern layer.
+    #[serde(default)]
+    pub focus: Vec<String>,
     /// Max pattern nodes to keep (token discipline); defaults to 8.
     #[serde(default)]
     pub max_nodes: Option<usize>,
