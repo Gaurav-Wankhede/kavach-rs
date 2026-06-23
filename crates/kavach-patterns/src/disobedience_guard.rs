@@ -52,18 +52,56 @@ const OBEYED: &[&str] = &[
     "[rca]",
 ];
 
+/// Disobedience-detector vocabulary AS DATA: floor + additive graph overlay.
+///
+/// Mirrors [`crate::stop_vocab::DoneGamingVocab`]: the compiled `const` lists are the
+/// `Default` floor; a project's `gate.disobedience_vocab` DB row ADDS phrases on top
+/// (research-refreshable, no rebuild). `#[serde(default)]` fills each list the row
+/// omits from the floor, so a partial/malformed override degrades to the full floor —
+/// the detector is never weaker than baseline (fail-closed). The graph ADDS, never
+/// replaces: the floor markers + obey-proofs always apply. SOURCE: decision.w5 +
+/// decision.userdirective.obey-not-argue.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
+pub struct DisobedienceVocab {
+    /// Argue-an-imperative-away phrases (lower-cased substrings).
+    pub dismissal: Vec<String>,
+    /// Markers proving an imperative fired in the same message.
+    pub imperative_marker: Vec<String>,
+    /// Obey-proof tokens whose presence clears the guard.
+    pub obeyed: Vec<String>,
+}
+
+impl Default for DisobedienceVocab {
+    fn default() -> Self {
+        Self {
+            dismissal: DISMISSAL.iter().map(|s| (*s).to_owned()).collect(),
+            imperative_marker: IMPERATIVE_MARKER.iter().map(|s| (*s).to_owned()).collect(),
+            obeyed: OBEYED.iter().map(|s| (*s).to_owned()).collect(),
+        }
+    }
+}
+
 /// `Some(reason)` when the message dismisses a fired imperative WITHOUT obey-proof.
 ///
+/// Floor-default wrapper over [`detect_disobedience_with`] — the compiled vocabulary.
 /// Fires on a dismissal phrase + an imperative marker + no obey-proof token.
-/// Returns `None` otherwise (no marker, no dismissal, or proof present).
 #[must_use]
 pub fn detect_disobedience(message: &str) -> Option<String> {
+    detect_disobedience_with(&DisobedienceVocab::default(), message)
+}
+
+/// As [`detect_disobedience`], but against a resolved [`DisobedienceVocab`] (floor +
+/// graph overlay). The match logic is identical; only the phrase source differs.
+#[must_use]
+pub fn detect_disobedience_with(vocab: &DisobedienceVocab, message: &str) -> Option<String> {
     let m = message.to_lowercase();
-    let dismissed = DISMISSAL.iter().find(|p| m.contains(**p))?;
-    if !IMPERATIVE_MARKER.iter().any(|k| m.contains(k)) {
+    let dismissed = vocab.dismissal.iter().find(|p| m.contains(p.as_str()))?;
+    if !vocab.imperative_marker.iter().any(|k| m.contains(k.as_str())) {
         return None;
     }
-    if OBEYED.iter().any(|p| m.contains(p)) {
+    if vocab.obeyed.iter().any(|p| m.contains(p.as_str())) {
         return None;
     }
     Some(format!(
