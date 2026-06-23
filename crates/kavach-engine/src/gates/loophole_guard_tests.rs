@@ -42,7 +42,7 @@ fn silent_on_empty() {
 #[test]
 fn fires_on_payment_completion() {
     let c = "Fixed the balance transfer — transaction is committed atomically.";
-    assert!(check_loophole_interrogation(c).is_some());
+    assert!(check_loophole_with(&floor(), c).is_some());
 }
 
 #[test]
