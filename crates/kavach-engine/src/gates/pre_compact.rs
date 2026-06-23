@@ -56,17 +56,22 @@ fn build_memory_guard(project: &str) -> Option<String> {
     // the ONLY surviving copy and compaction is about to discard it. Surface the
     // outcome so the agent copies the key NOW rather than trusting a phantom row.
     let persisted_line = persisted_line(snapshot_to_decision(project, &key, &touches), project, &key);
-    Some(format!(
+    let mut block = format!(
         "[MEMORY_GUARD] (anti-amnesia: compaction is about to discard verbatim history)\n\
          active_card: {key}\n\
          touches: {touches}\n\
          {persisted_line}\n\
          action AFTER compaction: do NOT restart from scratch. Re-read the active card \
          (`kavach db get --project {project} --category roadmap --key {key} --full`), resume at \
-         the VERIFY step on the listed TOUCHES paths, and re-load the decision/pattern spine \
-         (`kavach db query --project {project} --category decision`). Your operating contract \
-         and the DECISION_MAP are re-injected every turn — obey them, do not re-derive them.\n"
-    ))
+         the VERIFY step on the listed TOUCHES paths. Your operating contract is re-injected \
+         every turn — obey it, do not re-derive it.\n"
+    );
+    // F4: SessionStart re-injects the DECISION_MAP spine but PreCompact previously did
+    // NOT — the seam relied on the NEXT UserPromptSubmit to carry it, leaving the
+    // post-compact turn decision-blind if that assumption broke. Carry the spine across
+    // the seam directly, via the SAME emitter SessionStart uses (no drift).
+    super::intent::append_mermaid_views(&mut block, project, "");
+    Some(block)
 }
 
 /// Render the `persisted:` line for the guard from the snapshot-write outcome (F2).
