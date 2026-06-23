@@ -54,9 +54,10 @@ pub fn role_assignments(keys: &[String], dag: &RoadmapDag) -> Vec<(String, Agent
         .collect()
 }
 
-/// Maps each TRINITY role to the vendor backend that runs it. Defaults follow
-/// the cost/capability split: Thinker→cc (high-capability), Worker→codex
-/// (cost-efficient), Verifier→cc (verification stays on the in-house-gated path).
+/// Maps each TRINITY role to the vendor backend that runs it.
+///
+/// Defaults follow the cost/capability split: Thinker→cc (high-capability),
+/// Worker→codex (cost-efficient), Verifier→cc (in-house-gated path).
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct RolePool {
