@@ -7,6 +7,7 @@
 //! kavach's existing three-witness gates, not a vendor call.
 //!
 //! SOURCE: decision.fugu-orchestration-layer · https://sakana.ai/trinity/
+#[path = "vendor/argv.rs"]
 mod argv;
 
 use argv::{cc_argv, codex_argv, gemini_argv, opencode_argv};
