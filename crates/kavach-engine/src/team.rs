@@ -9,16 +9,8 @@
 //! ([`RoadmapDag::toposort_or_cycle`]) already exist; this layer is the
 //! parallel scheduler over them.
 
-mod orchestrate;
 mod scheduler;
-mod vendor;
 
-pub use orchestrate::{
-    request_to_vendor, vendor_to_response, ChatChoice, ChatCompletionRequest,
-    ChatCompletionResponse, ChatMessage,
-};
 pub use scheduler::{
-    role_assignments, role_for_node, role_for_title, DagScheduler, DispatchPlan, RewardRouter,
-    RolePool, Spawner, SpawnerKind, TeamDispatchError,
+    DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError,
 };
-pub use vendor::{AgentRole, CommandBackend, VendorBackend, VendorOutput, VendorRequest};
