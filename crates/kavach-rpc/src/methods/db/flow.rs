@@ -344,7 +344,7 @@ pub async fn pattern_render(
         .map_err(surreal_to_rpc)?;
     let cap = p.max_nodes.unwrap_or(PATTERN_DAG_DEFAULT_CAP);
     Ok(PatternRenderResult {
-        mermaid: dag.pattern_dag_mermaid(cap),
+        mermaid: dag.pattern_dag_mermaid(&p.focus, cap),
     })
 }
 
