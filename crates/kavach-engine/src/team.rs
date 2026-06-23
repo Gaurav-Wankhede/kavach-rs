@@ -13,6 +13,10 @@ mod orchestrate;
 mod scheduler;
 mod vendor;
 
+pub use orchestrate::{
+    request_to_vendor, vendor_to_response, ChatChoice, ChatCompletionRequest,
+    ChatCompletionResponse, ChatMessage,
+};
 pub use scheduler::{
     role_assignments, role_for_node, role_for_title, DagScheduler, DispatchPlan, RewardRouter,
     RolePool, Spawner, SpawnerKind, TeamDispatchError,
