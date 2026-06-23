@@ -44,7 +44,7 @@ impl VendorRequest {
     /// Build a request (the struct is `#[non_exhaustive]`, so this is the
     /// cross-crate constructor).
     #[must_use]
-    pub fn new(role: AgentRole, prompt: String, project: String, max_turns: u32) -> Self {
+    pub const fn new(role: AgentRole, prompt: String, project: String, max_turns: u32) -> Self {
         Self {
             role,
             prompt,
