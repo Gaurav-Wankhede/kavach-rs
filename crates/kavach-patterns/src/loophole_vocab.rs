@@ -54,14 +54,17 @@ impl Default for LoopholeVocab {
     }
 }
 
-/// `Some(label)` for the dimension whose markers contain `marker`, else `None`.
-/// First-match-wins over dimension order (floor dims precede overlay-appended ones).
+/// `Some(label)` for the dimension owning `token`, else `None`. Matches the real
+/// scanner's semantics: a floor marker fires when it is a SUBSTRING of the scanned
+/// token (`axios` fires on `axios.get`), so a thin floor marker covers a family of
+/// call sites across languages. First-match-wins over dimension order (floor dims
+/// precede overlay-appended ones).
 #[must_use]
-pub fn dimension_for_marker(vocab: &LoopholeVocab, marker: &str) -> Option<String> {
+pub fn dimension_for_marker(vocab: &LoopholeVocab, token: &str) -> Option<String> {
     vocab
         .dimensions
         .iter()
-        .find(|d| d.markers.iter().any(|m| m == marker))
+        .find(|d| d.markers.iter().any(|m| token.contains(m.as_str())))
         .map(|d| d.label.clone())
 }
 
