@@ -48,22 +48,22 @@
   <div class="mermaid">
 flowchart TD
   CC["AI tool (Claude Code / Cursor / Codex)"] -->|hook event| HOOK["kavach gates (event)"]
-  HOOK --> ENG["kavach-engine — gate dispatch"]
+  HOOK --> ENG["kavach-engine — gate dispatch (21 events)"]
 
-  ENG --> SS["SessionStart: inject [SESSION_START]<br/>autonomy-contract, board, ledger, DECISION_MAP, KAVACH_LLD"]
-  ENG --> UPS["UserPromptSubmit: [INTENT] + research kickoff + carry-forward"]
-  ENG --> PW["PreToolUse Write/Edit: RCA, TDD, research-consume, security guards -> allow/block"]
-  ENG --> PB["PreToolUse Bash: toolbelt, destructive-cli, bulk-op, write-bypass -> allow/ask/deny"]
-  ENG --> POW["PostToolUse Write: loophole-surface, git-sync, orphan scan"]
-  ENG --> STOP["Stop: 3-witness, done-gaming, disobedience, dispatch next card"]
-  ENG --> SUB["SubagentStop / PreCompact / Notification"]
+  ENG --> LIFE["lifecycle: session-start, session-end, pre-compact, stop, notification"]
+  ENG --> PROMPT["prompt: intent, six-file-intent (classify + research kickoff + carry-forward)"]
+  ENG --> WRITE["write/tool: pre-write, post-write, pre-tool, post-tool, post-tool-failure -> allow/block/ask"]
+  ENG --> IMPL["implementation: pre-implementation, post-implementation"]
+  ENG --> SUB["subagent: subagent-start, subagent-stop"]
+  ENG --> PERM["permission: permission, permission-request"]
+  ENG --> VENDOR["vendor edges: message-display, task-completed, teammate-idle"]
 
   ENG <-->|JSON-RPC| RPC["kavach-rpc (daemon client)"]
   RPC <-->|read/write| DB[("SurrealDB memory store")]
   classDef ev fill:#1f6feb,color:#fff,stroke:#388bfd;
   classDef core fill:#8957e5,color:#fff,stroke:#a371f7;
   classDef store fill:#1a7f37,color:#fff,stroke:#2ea043;
-  class SS,UPS,PW,PB,POW,STOP,SUB ev;
+  class LIFE,PROMPT,WRITE,IMPL,SUB,PERM,VENDOR ev;
   class ENG,HOOK,RPC core;
   class DB store;
   </div>
