@@ -607,6 +607,38 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         #[arg(long)]
         name: String,
     },
+    /// Off-policy-evaluate a candidate policy against logged bandit rows (LCB +
+    /// coverage). Read-only inspection of the Layer-B RL gate.
+    OpeEvaluate {
+        /// Candidate P(Allow).
+        #[arg(long)]
+        allow: f64,
+        /// Candidate P(Ask).
+        #[arg(long)]
+        ask: f64,
+        /// Candidate P(Block).
+        #[arg(long)]
+        block: f64,
+        /// Max bandit rows to load (newest first).
+        #[arg(long, default_value_t = 500)]
+        limit: u32,
+        /// z-score for the lower confidence bound (1.96 ≈ 95%).
+        #[arg(long, default_value_t = 1.96)]
+        z: f64,
+        /// Coverage floor in [0,1]; below it the estimate is flagged untrustworthy.
+        #[arg(long, default_value_t = 0.2)]
+        min_coverage_ratio: f64,
+    },
+    /// Reward-hacking audit: SOFT held-out value vs HARD witness value drift +
+    /// C2 floor. Read-only inspection of the Layer-P5 promotion gate.
+    OpeAudit {
+        /// Max bandit rows to load (newest first).
+        #[arg(long, default_value_t = 500)]
+        limit: u32,
+        /// Drift slack before SOFT-vs-HARD divergence counts as hacking.
+        #[arg(long, default_value_t = 0.05)]
+        drift_tolerance: f64,
+    },
     /// Purge an `anti_pattern` cluster + its `mistake_event`s by the gate that
     /// recorded them — removes a stale `correct_action` from `PRACTICE_DELTA` (requires `--confirm`).
     MistakePurge {
