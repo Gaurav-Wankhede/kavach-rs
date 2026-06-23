@@ -26,19 +26,19 @@ fn session_needing_research() -> SessionState {
 }
 
 #[test]
-fn resolves_with_advisory_when_research_required_and_no_evidence() {
-    // The write is NOT suppressed: the gate RESOLVES on the spot — it attaches a
-    // research advisory (kicked / inflight / resolved) and the write proceeds.
+fn blocks_when_research_required_and_no_evidence() {
+    // Fail-closed: a research-required production write with no cited source is
+    // DENIED at write time — no source, no claim. The block still drives the lookup
+    // so the agent can cite + retry immediately.
+    if std::env::var_os("KAVACH_RESEARCH_BYPASS").is_some() {
+        return; // bypass set in this env ⇒ enforcement disabled (covered elsewhere)
+    }
     let s = session_needing_research();
     let c = ctx("crates/foo/src/lib.rs", "fn handler() {}");
-    let advisory = super::check(&c, &s).expect("must attach a resolve advisory");
-    assert!(
-        advisory.contains("[RESEARCH_KICKED]")
-            || advisory.contains("[RESEARCH_INFLIGHT]")
-            || advisory.contains("[RESEARCH_RESOLVED]"),
-        "advisory must drive the Internet, never block: {advisory}"
-    );
-    assert!(!advisory.contains("BLOCKED"), "the gate must never suppress the write");
+    let block = super::check(&c, &s).expect("must BLOCK the unsourced write");
+    assert!(block.contains("[RESEARCH_FIRST:P0]"), "P0 block tag: {block}");
+    assert!(block.contains("BLOCKED"), "must suppress the write: {block}");
+    assert!(block.contains("No source -> no claim"), "states the law: {block}");
 }
 
 #[test]
