@@ -9,6 +9,7 @@
 //! ([`RoadmapDag::toposort_or_cycle`]) already exist; this layer is the
 //! parallel scheduler over them.
 
+mod orchestrate;
 mod scheduler;
 mod vendor;
 
