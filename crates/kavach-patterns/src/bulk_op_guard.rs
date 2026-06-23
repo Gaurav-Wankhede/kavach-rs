@@ -10,9 +10,16 @@
 //! bulk op that should be authored ONCE as a script. Advisory tier; never blocks.
 
 /// Bulk-content mutators: their presence in command position is a rewrite, not a read.
-/// `rnr` is itself a batch renamer (any invocation is a bulk op). `sd`/`sed`/`perl -i`
-/// are per-file rewriters that become bulk when fanned out (see `fanout_markers`).
-const MUTATORS: &[&str] = &["rnr", "sd", "sed", "perl"];
+/// Rust-toolbelt-first: `rnr` (batch renamer — any invocation is a bulk op), `sg` /
+/// `ast-grep` (structural multi-file rewrite — bulk by nature), and `sd` (the modern
+/// `sed`) / `sed` / `perl -i`, which are per-file rewriters that become bulk when
+/// fanned out (see `fanout_markers`). `rnr` / `sg` / `ast-grep` are inherent-bulk
+/// (in `INHERENT_BULK`); the rest need a fan-out marker.
+const MUTATORS: &[&str] = &["rnr", "sg", "ast-grep", "sd", "sed", "perl"];
+
+/// Mutators whose every invocation is inherently a bulk op (a batch renamer / a
+/// structural rewriter operate across a tree by design, not per single file).
+const INHERENT_BULK: &[&str] = &["rnr", "sg", "ast-grep"];
 
 /// Fan-out markers proving a mutator is applied across MANY targets in one command:
 /// `fd … -x`, `xargs`, a `find … -exec`, or a glob/brace expansion of paths.
