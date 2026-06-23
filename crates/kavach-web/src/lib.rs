@@ -6,6 +6,7 @@
 
 pub mod error;
 pub mod layout;
+pub mod orchestrate;
 pub mod pages;
 pub mod rpc;
 pub mod sse;
