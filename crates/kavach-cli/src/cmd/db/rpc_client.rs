@@ -694,6 +694,14 @@ pub(super) fn ope_audit(
         .map_err(format_err)
 }
 
+pub(super) fn run_record(params: serde_json::Value) -> Result<serde_json::Value, String> {
+    call::<_, serde_json::Value>("run.record", Some(params)).map_err(format_err)
+}
+
+pub(super) fn run_update_status(params: serde_json::Value) -> Result<serde_json::Value, String> {
+    call::<_, serde_json::Value>("run.update_status", Some(params)).map_err(format_err)
+}
+
 pub(super) fn raw_query(
     query: &str,
 ) -> Result<kavach_rpc::methods::db::RawQueryResult, String> {
