@@ -205,7 +205,8 @@ fn ranked_cards_rpc_only(project: &str, prompt: &str) -> Vec<(String, String, St
         return Vec::new();
     }
     let params = serde_json::json!({ "project": project, "prompt": prompt, "limit": 6 });
-    let Some(val) = kavach_rpc::client::call::<_, serde_json::Value>("db.kanban_ranked", Some(params))
+    let Ok(val) =
+        kavach_rpc::client::call::<_, serde_json::Value>("db.kanban_ranked", Some(params))
     else {
         return Vec::new();
     };
