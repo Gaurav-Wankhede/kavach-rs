@@ -35,6 +35,7 @@ mod register;
 mod register_part;
 mod rotate;
 mod rpc_client;
+mod run_rec;
 mod search;
 mod status_update;
 mod sync;
