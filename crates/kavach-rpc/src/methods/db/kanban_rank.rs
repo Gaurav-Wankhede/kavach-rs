@@ -6,7 +6,6 @@
 //! by priority. Empty prompt (session-start) ⇒ priority order kept. Fail-soft:
 //! brain error ⇒ priority order; project missing ⇒ empty. See
 //! decision.harness.dynamic-relevance-injection.
-use crate::error::internal;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use serde::{Deserialize, Serialize};
