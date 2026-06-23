@@ -1,5 +1,8 @@
 // Read-side proofs: ranking query + practice_delta_mermaid renderer.
-use super::{AntiPatternRanked, mistake_row_mermaid, practice_delta_mermaid, top_anti_patterns};
+use super::{
+    AntiPatternRanked, mistake_row_mermaid, practice_delta_focus_filter, practice_delta_mermaid,
+    top_anti_patterns,
+};
 use crate::error::Result;
 
 #[test]
