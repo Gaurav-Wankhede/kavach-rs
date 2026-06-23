@@ -27,11 +27,15 @@ def unescape_rust(s: str) -> str:
     s = s.replace('\\n\\', "\n").replace('\\n"', "\n").replace('\\"', '"')
     return s
 
-MERMAID_RE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
+FENCE_RE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
+DIV_RE = re.compile(r'<div class="mermaid">\s*(.*?)</div>', re.DOTALL)
 VALID_HEADERS = ("flowchart", "graph", "mindmap", "sequenceDiagram", "classDiagram")
 
 def extract_blocks(text: str) -> list[str]:
-    return [m.group(1) for m in MERMAID_RE.finditer(text)]
+    # Markdown fences (```mermaid) AND HTML embeds (<div class="mermaid">).
+    return [m.group(1) for m in FENCE_RE.finditer(text)] + [
+        m.group(1) for m in DIV_RE.finditer(text)
+    ]
 
 def check_block(block: str, src: str, idx: int) -> list[str]:
     errs: list[str] = []
