@@ -564,7 +564,25 @@ mod decision_mermaid_tests {
             nodes: vec![node("p/decision/x", "noise", "verified", "decision")],
             edges: vec![],
         };
-        assert!(only_decision.pattern_dag_mermaid(8).is_none());
+        assert!(only_decision.pattern_dag_mermaid(&[], 8).is_none());
+    }
+
+    #[test]
+    fn pattern_dag_focus_filter_restricts_nodes() {
+        let m = pattern_sample()
+            .pattern_dag_mermaid(&["dioxus-0.8".to_owned()], 8)
+            .expect("non-empty");
+        assert!(m.contains("dioxus-0.8"), "{m}");
+        assert!(!m.contains("dioxus-0.7"), "out-of-focus excluded: {m}");
+    }
+
+    #[test]
+    fn pattern_dag_focus_with_no_match_yields_none() {
+        assert!(
+            pattern_sample()
+                .pattern_dag_mermaid(&["unrelated-key".to_owned()], 8)
+                .is_none()
+        );
     }
 
     #[test]
