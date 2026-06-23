@@ -4,6 +4,8 @@
 // See decision/kg-iter2-pivot-mistakes-first.
 pub mod append;
 pub mod cluster;
+#[cfg(test)]
+mod family_test;
 pub mod count;
 pub mod pattern;
 pub mod policy;
