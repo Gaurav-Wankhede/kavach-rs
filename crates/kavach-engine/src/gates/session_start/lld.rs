@@ -22,13 +22,15 @@ fn is_kavach_project(project: &str) -> bool {
 const KAVACH_LLD: &str = "[KAVACH_LLD] kavach self-architecture (full HTML: docs/architecture/kavach-lld.html)\n\
 ```mermaid\n\
 flowchart TD\n\
-  TOOL[\"AI tool hook event\"] --> GATES[\"kavach gates &lt;event&gt;\"] --> ENG[\"kavach-engine: gate dispatch\"]\n\
-  ENG --> SS[\"SessionStart: inject board+ledger+DECISION_MAP+KAVACH_LLD\"]\n\
-  ENG --> PW[\"PreWrite/Bash: RCA+TDD+security guards -> allow/block/ask\"]\n\
+  TOOL[\"AI tool hook event\"] --> GATES[\"kavach gates (event)\"]\n\
+  GATES --> ENG[\"kavach-engine: gate dispatch\"]\n\
+  ENG --> SS[\"SessionStart: inject board, ledger, DECISION_MAP, KAVACH_LLD\"]\n\
+  ENG --> PW[\"PreWrite/Bash: RCA, TDD, security guards -> allow/block/ask\"]\n\
   ENG --> STOP[\"Stop: 3-witness + dispatch next card\"]\n\
-  ENG <-->|JSON-RPC single writer| RPC[\"kavach-rpc\"] <--> DB[(\"SurrealDB: kanban|decision|anti_pattern|concepts\")]\n\
+  ENG <-->|JSON-RPC single writer| RPC[\"kavach-rpc\"]\n\
+  RPC <-->|read/write| DB[(\"SurrealDB: kanban, decision, anti_pattern, concepts\")]\n\
   ENG --> PAT[\"kavach-patterns: ~100 detectors\"]\n\
-  DB -.decision gate.* overlay.-> ENG\n\
+  DB -.decision overlay.-> ENG\n\
 ```\n\
 LAYERS: cli/hook/web -> engine+patterns+advisor -> rpc+surreal+session+config -> types. \
 CLI groups: store(db get|write|kanban-close|context) · loop(loop|heal|loophole|goal|team) · \
