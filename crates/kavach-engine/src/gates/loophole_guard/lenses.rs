@@ -78,7 +78,10 @@ fn brain_lenses(query: &str) -> Vec<String> {
         };
     hits.into_iter()
         .map(|h| h.id)
-        .filter(|id| !id.starts_with("research.gap."))
+        // Exclude non-lens rows: research-gap stubs AND `gate.*` config directives
+        // (the loophole_vocab overlay row is FTS-adjacent to "loophole" but is config,
+        // not a lens — surfacing it as a lens-to-run is noise, not signal).
+        .filter(|id| !id.starts_with("research.gap.") && !id.starts_with("gate."))
         .collect()
 }
 
