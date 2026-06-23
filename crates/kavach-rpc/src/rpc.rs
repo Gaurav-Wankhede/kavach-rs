@@ -703,6 +703,14 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(e.to_string()))?;
 
     module
+        .register_async_method("db.kanban_ranked", |params, ctx, _ext| async move {
+            let p: db::KanbanRankedParams =
+                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            db::kanban_ranked(&ctx, p).await
+        })
+        .map_err(|e| internal(e.to_string()))?;
+
+    module
         .register_async_method("db.query", |params, ctx, _ext| async move {
             let p: db::QueryParams = params.parse().map_err(|e| invalid_params(e.to_string()))?;
             db::query(&ctx, p).await
