@@ -86,7 +86,7 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
     let rewriters: Vec<&String> = vocab.mutators.iter().filter(|m| !vocab.inherent.contains(*m)).collect();
     let has_rewriter = rewriters
         .iter()
-        .any(|m| head == m.as_str() || piped_to(&lower, m) || word_present(&lower, m));
+        .any(|m| head == m.as_str() || word_present(&lower, m));
     if !has_rewriter {
         return None;
     }
