@@ -47,3 +47,37 @@ fn fires_on_self_verify_dodge_of_agent_spawn() {
     let msg = "The agent-spawn advisory fired but I'll just verify myself instead.";
     assert!(detect_disobedience(msg).is_some());
 }
+
+#[test]
+fn default_vocab_matches_floor_detector() {
+    use super::{DisobedienceVocab, detect_disobedience_with};
+    // The floor-default vocab must reproduce the compiled detector exactly.
+    let v = DisobedienceVocab::default();
+    let msg = "Loophole lens: N/A — comment-only edit.";
+    assert_eq!(
+        detect_disobedience_with(&v, msg).is_some(),
+        detect_disobedience(msg).is_some()
+    );
+}
+
+#[test]
+fn graph_overlay_adds_dismissal_phrase_floor_still_active() {
+    use super::{DisobedienceVocab, detect_disobedience_with};
+    // ADDITIVE override: a project adds a new dismissal phrase; the floor markers
+    // (loophole) + obey-proof still apply. Graph ADDS, never replaces the floor.
+    let mut v = DisobedienceVocab::default();
+    v.dismissal.push("punting on this".to_owned());
+    let msg = "The loophole advisory? punting on this for now.";
+    assert!(detect_disobedience_with(&v, msg).is_some(), "added phrase fires");
+    // floor obey-proof still clears it
+    let cleared = "loophole punting on this — but Loopholes closed: x at a.rs:1.";
+    assert!(detect_disobedience_with(&v, cleared).is_none(), "floor obey-proof intact");
+}
+
+#[test]
+fn malformed_overlay_degrades_to_floor() {
+    use super::DisobedienceVocab;
+    // serde(default): an empty JSON object yields the full compiled floor.
+    let v: DisobedienceVocab = serde_json::from_str("{}").expect("empty obj is valid");
+    assert!(!v.dismissal.is_empty() && !v.imperative_marker.is_empty() && !v.obeyed.is_empty());
+}
