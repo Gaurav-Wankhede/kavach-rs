@@ -148,11 +148,18 @@ async fn dispatch(
         io_err: RefCell::new(None),
         pool: RolePool::default(),
         project: project.to_owned(),
+        router: RefCell::new(RewardRouter::default()),
     };
     match scheduler.dispatch(&dag, 0, &sp) {
         Ok(names) => {
             if let Some(io) = sp.io_err.into_inner() {
                 return Err(io);
+            }
+            let router = sp.router.into_inner();
+            for role in [AgentRole::Thinker, AgentRole::Worker, AgentRole::Verifier] {
+                if let Some(v) = router.preferred_vendor(role) {
+                    print_or_exit(&format!("[ROUTER] {role:?} -> preferred vendor: {v}"))?;
+                }
             }
             print_or_exit(&format!(
                 "[DISPATCHED] {} teammate(s): {names:?}",
