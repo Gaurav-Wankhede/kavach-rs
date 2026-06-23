@@ -29,7 +29,7 @@ pub(crate) fn check_loophole_interrogation(content: &str) -> Option<String> {
     if content.is_empty() {
         return None;
     }
-    let project = kavach_session::get_or_create_session().project.clone();
+    let project = kavach_session::get_or_create_session().project;
     let vocab = crate::gates::stop_dispatch::loophole_vocab_for(&project);
     check_loophole_with(&vocab, content)
 }
