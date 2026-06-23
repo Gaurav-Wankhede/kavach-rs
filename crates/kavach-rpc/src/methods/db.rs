@@ -18,6 +18,7 @@ mod graph_fetch;
 mod graph_query;
 mod kanban;
 mod kanban_close;
+mod kanban_rank;
 mod list_parts;
 mod list_projects;
 mod ope;
