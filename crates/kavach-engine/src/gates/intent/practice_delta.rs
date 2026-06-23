@@ -41,7 +41,7 @@ mod tests {
     fn block_is_none_or_well_formed() {
         // Fail-soft contract: with no daemon ⇒ None; with a live daemon holding
         // anti-patterns ⇒ a wrapped `graph LR` block. Never panics, never empty.
-        match practice_delta_block() {
+        match practice_delta_block("") {
             None => {}
             Some(b) => {
                 assert!(b.contains("[PRACTICE_DELTA]"), "{b}");
