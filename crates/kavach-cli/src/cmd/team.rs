@@ -119,12 +119,11 @@ fn claim_batch(project: &str, session_id: &str) -> i32 {
     let params = build_claim_params(&batch, session_id);
     match kavach_rpc::client::call::<_, serde_json::Value>("lease.acquire_set", Some(params)) {
         Ok(res) => {
-            println!("[CLAIM_BATCH] {res}");
-            if res.get("all_acquired").and_then(serde_json::Value::as_bool) == Some(true) {
-                0
-            } else {
-                1
+            let all = res.get("all_acquired").and_then(serde_json::Value::as_bool) == Some(true);
+            if let Err(io) = print_or_exit(&format!("[CLAIM_BATCH] {res}")) {
+                return into_exit_code(io);
             }
+            i32::from(!all)
         }
         Err(e) => report_err(&format!("team claim-batch: lease.acquire_set: {e}")),
     }
