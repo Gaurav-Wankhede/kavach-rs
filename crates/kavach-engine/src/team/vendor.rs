@@ -15,7 +15,7 @@ use crate::error::EngineError;
 use std::process::Command;
 
 /// TRINITY role a dispatched agent plays this turn.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum AgentRole {
     /// Decomposes / plans (route to a high-capability backend).
