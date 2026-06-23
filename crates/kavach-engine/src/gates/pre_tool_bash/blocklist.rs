@@ -79,6 +79,22 @@ fn bypass_advisories(command: &str) -> Option<Decision> {
     None
 }
 
+/// Bulk-op → single-script steer (advisory).
+///
+/// A rename / reference-rewrite / edge-case sweep typed inline as `rnr` / `sg` /
+/// `fd -x sd` / `rg -l | xargs sd` across many files should be ONE committed
+/// `scripts/<verb>.sh` exposed as a `just <verb>` recipe — re-runnable, reviewable,
+/// git-tracked — not N inline edits nor a one-shot pipeline. Advisory tier: never
+/// blocks (the `write_bypass` DENY already guards source-file laundering; this only
+/// nudges the bulk SHAPE the launder-guard lets through). Resolves the vocab via the
+/// floor + `gate.bulk_op_vocab` graph overlay so the mutator/marker set is DB-tunable.
+fn bulk_op_advisory(command: &str) -> Option<Decision> {
+    let session = kavach_session::get_or_create_session();
+    let vocab = crate::gates::stop_dispatch::bulk_op_vocab_for(&session.project);
+    let reason = kavach_patterns::bulk_op_guard::detect_bulk_op_with(&vocab, command)?;
+    Some(Decision::Allow(Some(format!("[BULK_VIA_SCRIPT] {reason}"))))
+}
+
 /// psql hard-block + sqlx-migrate RCA advisory.
 fn db_blocks(command: &str) -> Option<Decision> {
     if let Some(reason) = check_psql_blocked(command) {
