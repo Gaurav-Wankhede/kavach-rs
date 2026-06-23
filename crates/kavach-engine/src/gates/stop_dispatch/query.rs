@@ -135,6 +135,29 @@ pub(crate) fn disobedience_vocab_for(
     serde_json::from_str(json.trim()).unwrap_or_default()
 }
 
+/// DB key for the bulk-op steer vocabulary overlay (a JSON object with optional
+/// `mutators` / `inherent` / `fanout_markers` string arrays). The graph ADDS bulk
+/// mutators / fan-out markers to the compiled floor — research-refreshable per
+/// project, NOT a replacement. Mirrors `gate.disobedience_vocab`.
+const BULK_OP_VOCAB_KEY: &str = "gate.bulk_op_vocab";
+
+/// Resolve the project's bulk-op vocabulary from its `gate.bulk_op_vocab` DB row.
+/// Connects the bulk-op→single-script steer to the kavach DB instead of frozen
+/// `const` arrays. Empty slug / absent row / malformed JSON all fall back to
+/// [`BulkOpVocab::default`] (the compiled floor), so the steer is never weaker than
+/// baseline when the DB is unreachable. Mirrors [`disobedience_vocab_for`].
+#[must_use]
+pub(crate) fn bulk_op_vocab_for(project_slug: &str) -> kavach_patterns::bulk_op_guard::BulkOpVocab {
+    use kavach_patterns::bulk_op_guard::BulkOpVocab;
+    if project_slug.is_empty() {
+        return BulkOpVocab::default();
+    }
+    let Some(json) = rpc_get_directive(project_slug, BULK_OP_VOCAB_KEY) else {
+        return BulkOpVocab::default();
+    };
+    serde_json::from_str(json.trim()).unwrap_or_default()
+}
+
 fn source_down_sentinel() -> (String, String) {
     (
         SOURCE_DOWN_KEY.to_owned(),
