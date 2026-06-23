@@ -1,16 +1,14 @@
-//! Self-resolving internet-first advisory: when THIS turn's prompt was classified
-//! `requires_research`, a Write/Edit to production code without research evidence
-//! does NOT block — it RESOLVES the conflict on the spot. The gate ensures the
-//! background web search is running (`kavach_advisor::kickoff`), injects the live
-//! findings (or a pending directive while they land) as advisory context, and
-//! ALLOWS the write. The internet-first LAW is enforced by DRIVING the Internet,
-//! never by suppressing the task. The loop-level backstop lives at the Stop gate
-//! (`[RESEARCH_FIRST]` refuse-stop → continuation, not handback).
+//! Fail-closed internet-first ENFORCEMENT: when THIS turn's prompt was classified
+//! `requires_research`, a Write/Edit to production code without research evidence is
+//! BLOCKED at write time, not merely advised. "No source → no claim" is a P0 LAW, not
+//! a nudge — an unsourced production write never lands. The gate still DRIVES the
+//! Internet (kicks `kavach_advisor::kickoff` so findings arrive fast), but the write
+//! is refused until the agent cites a source URL / [RESEARCH] / SOURCE: marker, or the
+//! live research cache reports `done`. SOURCE: ~/.claude/CLAUDE.md §Internet-first.
 //!
-//! Returns `Some(advisory)` only to ATTACH context (never a block); `None` when
-//! research is satisfied or not applicable. Carve-outs mirror the `pre_tool`
-//! research gate (local-analysis intents, test files).
-//! Escape hatch: `KAVACH_RESEARCH_BYPASS=1` silences the advisory entirely.
+//! `check` returns `Some(block_reason)` to DENY; `None` when research is satisfied or
+//! not applicable. Carve-outs (never block): test files, non-code, local-analysis
+//! intents (audit/analyze/explain/read/review/explore), and `KAVACH_RESEARCH_BYPASS=1`.
 
 use crate::gates::pre_write_context::WriteContext;
 
