@@ -80,6 +80,22 @@ impl Default for RolePool {
 }
 
 impl RolePool {
+    /// Build a pool whose three roles all use one custom vendor id + argv.
+    /// Cross-crate constructor for a homogeneous pool (e.g. a single front-door
+    /// vendor, or a scripted test backend).
+    #[must_use]
+    pub fn with_argv(
+        vendor: &'static str,
+        argv: fn(&crate::team::VendorRequest) -> Vec<String>,
+    ) -> Self {
+        let mk = || CommandBackend::raw(vendor, argv);
+        Self {
+            thinker: mk(),
+            worker: mk(),
+            verifier: mk(),
+        }
+    }
+
     /// The backend assigned to `role`.
     #[must_use]
     pub fn backend_for(&self, role: AgentRole) -> &dyn VendorBackend {
