@@ -217,6 +217,7 @@ pub(crate) fn detect_project() -> String {
     );
     // F3: RPC missed → slug is a guess; on slug-drift every board read is silently
     // empty (cf. fix-shortform-platform-slug). Warn LOUD on stderr.
+    #[expect(clippy::print_stderr, reason = "anti-amnesia degradation warning to audit trail")]
     eprintln!(
         "kavach: WARN project not found via RPC for `{cwd_str}` — falling back to \
          dir-name slug `{slug}`. If kanban reads come back empty, the registered \
