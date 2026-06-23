@@ -220,6 +220,11 @@ pub async fn decision_render(
     reason = "RPC DTO constructed at handler boundary"
 )]
 pub struct PracticeRenderParams {
+    /// Optional focus terms (the task prompt) to restrict the contrast to
+    /// anti-patterns whose gate/slug/fix shares a token; empty renders the
+    /// whole top-N ledger.
+    #[serde(default)]
+    pub focus: Vec<String>,
     /// Max anti-patterns to contrast (token discipline); defaults to 6.
     #[serde(default)]
     pub limit: Option<usize>,
