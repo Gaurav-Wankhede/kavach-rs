@@ -254,11 +254,20 @@ pub async fn practice_render(
     p: PracticeRenderParams,
 ) -> Result<PracticeRenderResult, ErrorObjectOwned> {
     let cap = p.limit.unwrap_or(PRACTICE_DELTA_DEFAULT_CAP);
-    let ranked = kavach_surreal::graph_top_anti_patterns(&state.db, cap)
+    // When focused, rank a wider pool first so a relevant anti-pattern below the
+    // top-N still survives the focus filter; then re-cap to `cap` post-filter.
+    let pool = if p.focus.is_empty() {
+        cap
+    } else {
+        cap.saturating_mul(PRACTICE_DELTA_FOCUS_POOL_FACTOR)
+    };
+    let ranked = kavach_surreal::graph_top_anti_patterns(&state.db, pool)
         .await
         .map_err(surreal_to_rpc)?;
+    let mut focused = kavach_surreal::graph_practice_delta_focus_filter(ranked, &p.focus);
+    focused.truncate(cap);
     Ok(PracticeRenderResult {
-        mermaid: kavach_surreal::practice_delta_mermaid(&ranked),
+        mermaid: kavach_surreal::practice_delta_mermaid(&focused),
     })
 }
 
