@@ -53,18 +53,45 @@ pub(in crate::gates) fn pattern_dag_block(project_slug: &str, prompt: &str) -> O
     ))
 }
 
+/// Brain-OS-ranked pattern keys relevant to the prompt, so the DAG is scoped to
+/// the touched neighbourhood. Empty (⇒ caller decides whole-spine vs none) on any
+/// RPC error or empty prompt.
+fn relevant_pattern_keys(prompt: &str) -> Vec<String> {
+    if prompt.trim().is_empty() {
+        return Vec::new();
+    }
+    let params = serde_json::json!({ "query": prompt, "limit": 8 });
+    let hits: Vec<kavach_surreal::BrainHit> =
+        match kavach_rpc::client::call("brain.think", Some(params)) {
+            Ok(h) => h,
+            Err(_) => return Vec::new(),
+        };
+    hits.into_iter()
+        .map(|h| h.id)
+        .filter(|id| id.starts_with("pattern."))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn empty_project_yields_none() {
-        assert!(pattern_dag_block("").is_none());
+        assert!(pattern_dag_block("", "anything").is_none());
+    }
+
+    #[test]
+    fn real_prompt_with_no_daemon_yields_none() {
+        // Non-empty prompt + no RPC server ⇒ empty focus ⇒ context-rot guard
+        // returns None (never degrades to whole-spine).
+        assert!(pattern_dag_block("kavach-rs", "add auth").is_none());
     }
 
     #[test]
     fn block_is_none_or_well_formed() {
-        match pattern_dag_block("kavach-rs") {
+        // Empty prompt = session-start whole-spine path (focus guard inactive).
+        match pattern_dag_block("kavach-rs", "") {
             None => {}
             Some(b) => {
                 assert!(b.contains("[PATTERN_DAG]"), "{b}");
