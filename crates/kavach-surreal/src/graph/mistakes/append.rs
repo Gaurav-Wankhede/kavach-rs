@@ -40,11 +40,12 @@ pub async fn append_mistake_event(
     create_event(db, "mistake_event", props).await
 }
 
-/// Append-only loophole event — the umbrella's loophole half. Same `entity` tier
-/// as a mistake_event, tagged `family='loophole'`, so one ledger / recall path
-/// serves both. `dimension` is the agnostic lens (injection/xss/memory-safety/…);
-/// `site` is the `file:line — hint` the lens scan flagged. SOURCE:
-/// decision.loophole-mistake-umbrella.
+/// Append-only loophole event — the umbrella's loophole half.
+///
+/// Same `entity` tier as a mistake_event, tagged `family='loophole'`, so one
+/// ledger / recall path serves both. `dimension` is the agnostic lens
+/// (injection/xss/memory-safety/…); `site` is the `file:line — hint` the lens scan
+/// flagged. SOURCE: decision.loophole-mistake-umbrella.
 ///
 /// # Errors
 /// Returns an error if `dimension` is empty, the query fails, or no record returns.
