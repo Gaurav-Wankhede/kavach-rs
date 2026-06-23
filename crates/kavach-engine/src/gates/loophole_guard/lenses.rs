@@ -27,106 +27,32 @@ pub(super) const CANONICAL_LENSES: &str =
      - boundary: empty / max / negative / off-by-one. \
      CLOSE by handling the bound, then cite it.";
 
-/// Map a fired risk marker to the Brain-OS query dimension it represents, so the
-/// lens retrieval is steered by the ACTUAL risk surface, not the whole prompt.
-fn risk_dimension(marker: &str) -> &'static str {
-    match marker {
-        "auth" | "token" | "session" | "password" | "permission" | "authorize" => {
-            "authentication authorization session token loophole lens"
-        }
-        "secret" | "encrypt" | "decrypt" | "nonce" | "cipher" | "hash" | "hmac" | "signature" => {
-            "crypto key-management nonce-reuse side-channel weak-algorithm loophole lens"
-        }
-        "payment" | "balance" | "transfer" => {
-            "money precision rounding idempotency double-spend loophole lens"
-        }
-        "lease" | "lock" | "mutex" | "rwlock" | "concurren" | "atomic" | "race" => {
-            "concurrency race deadlock lost-update loophole lens"
-        }
-        "persist" | "commit" | "transaction" => {
-            "persistence durability partial-write transaction loophole lens"
-        }
-        "status" | "state_transition" | "claim" | "acquire" => {
-            "state machine transition invalid-state loophole lens"
-        }
-        "reqwest" | "http_client" | "fetch_url" | "redirect" | "webhook" | "callback_url" => {
-            "ssrf outbound-request url-validation redirect-follow dns-rebinding loophole lens"
-        }
-        "deserialize" | "from_str" | "from_slice" | "parse_json" | "untrusted" => {
-            "deserialization untrusted-input type-confusion gadget loophole lens"
-        }
-        "sql" | "query!" | "execute(" | "command::new" | "shell" | "render_template" => {
-            "injection sql command template parameterization escaping loophole lens"
-        }
-        "path::new" | "read_to_string" | "open(" | "join(" | "canonicalize" => {
-            "path-traversal symlink directory-escape canonicalization loophole lens"
-        }
-        "unbounded" | "with_capacity" | "loop {" | "recursion" | "read_to_end" => {
-            "resource-exhaustion dos unbounded-allocation infinite-loop backpressure loophole lens"
-        }
-        " as u" | " as i" | "wrapping_" | "overflow" => {
-            "integer-overflow truncation wrapping-cast sign-confusion loophole lens"
-        }
-        "debug!(" | "error!(" | "{:?}" | "to_string()" => {
-            "information-leak secret-in-log error-detail-exposure pii loophole lens"
-        }
-        _ => "loophole defect risk lens",
-    }
-}
-
-/// Short human dimension label for a fired marker — the taxonomy the heading
-/// names. Same routing table as `risk_dimension`, collapsed to one word so the
-/// `[LOOPHOLE_SURFACE]` header can list the ACTUAL dimensions that fired.
-fn dimension_label(marker: &str) -> &'static str {
-    match marker {
-        "auth" | "token" | "session" | "password" | "permission" | "authorize" => "authz",
-        "secret" | "encrypt" | "decrypt" | "nonce" | "cipher" | "hash" | "hmac" | "signature" => {
-            "crypto"
-        }
-        "payment" | "balance" | "transfer" => "money",
-        "lease" | "lock" | "mutex" | "rwlock" | "concurren" | "atomic" | "race" => "concurrency",
-        "persist" | "commit" | "transaction" => "persistence",
-        "status" | "state_transition" | "claim" | "acquire" => "state-machine",
-        "reqwest" | "http_client" | "fetch_url" | "redirect" | "webhook" | "callback_url" => "ssrf",
-        "deserialize" | "from_str" | "from_slice" | "parse_json" | "untrusted" => "deserialization",
-        "sql" | "query!" | "execute(" | "command::new" | "shell" | "render_template" => "injection",
-        "path::new" | "read_to_string" | "open(" | "join(" | "canonicalize" => "path-traversal",
-        "unbounded" | "with_capacity" | "loop {" | "recursion" | "read_to_end" => "resource-exhaustion",
-        " as u" | " as i" | "wrapping_" | "overflow" => "integer-overflow",
-        "debug!(" | "error!(" | "{:?}" | "to_string()" => "information-leak",
-        _ => "general",
-    }
-}
-
-/// Distinct dimension labels for the fired markers, comma-joined, for the heading.
-/// Dedup-preserving-order so a change touching several auth markers reads `authz`
-/// once. Empty marker set ⇒ `general`. SOURCE: decision.loophole-surface-heading-dynamic.
-pub(super) fn fired_dimension_labels(markers: &[&str]) -> String {
-    let mut seen: Vec<&str> = Vec::new();
-    for &m in markers {
-        let label = dimension_label(m);
-        if !seen.contains(&label) {
-            seen.push(label);
-        }
-    }
-    if seen.is_empty() {
-        return "general".to_owned();
-    }
-    seen.join(", ")
-}
-
 /// Max lens rows to surface from Brain-OS per risk surface — token-cheap; this
 /// rides on every risk-bearing completion claim.
 const LENS_LIMIT: usize = 5;
 
+/// The Brain-OS retrieval query for the primary fired marker, sourced from the
+/// resolved (tech-agnostic, graph-overlaid) vocab — no frozen `match` table.
+/// Falls back to a generic query when the marker maps to no dimension.
+fn lens_query_for(vocab: &kavach_patterns::loophole_vocab::LoopholeVocab, marker: &str) -> String {
+    vocab
+        .dimensions
+        .iter()
+        .find(|d| d.markers.iter().any(|m| marker.contains(m.as_str())))
+        .map_or_else(|| "loophole defect risk lens".to_owned(), |d| d.lens_query.clone())
+}
+
 /// Build the lens list for the fired `markers`, querying Brain-OS for the lenses
 /// that match this change's risk surface and APPENDING them to the canonical six.
-/// Fail-soft to the canonical six alone when the corpus surfaces nothing.
+/// Fail-soft to the canonical six alone when the corpus surfaces nothing. The lens
+/// query is resolved from the vocab (graph overlay), not a compiled table.
 pub(super) fn lens_block(markers: &[&str]) -> String {
     let Some(&primary) = markers.first() else {
         return CANONICAL_LENSES.to_owned();
     };
-    let extra = brain_lenses(risk_dimension(primary));
+    let project = kavach_session::get_or_create_session().project.clone();
+    let vocab = crate::gates::stop_dispatch::loophole_vocab_for(&project);
+    let extra = brain_lenses(&lens_query_for(&vocab, primary));
     if extra.is_empty() {
         return CANONICAL_LENSES.to_owned();
     }
