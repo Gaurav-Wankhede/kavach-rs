@@ -680,6 +680,20 @@ pub(super) fn mistake_purge(
         .map_err(format_err)
 }
 
+pub(super) fn ope_evaluate(
+    params: kavach_rpc::methods::db::OpeEvaluateParams,
+) -> Result<kavach_rpc::methods::db::OpeEvaluateResult, String> {
+    call::<_, kavach_rpc::methods::db::OpeEvaluateResult>("db.ope_evaluate", Some(params))
+        .map_err(format_err)
+}
+
+pub(super) fn ope_audit(
+    params: kavach_rpc::methods::db::OpeAuditParams,
+) -> Result<kavach_rpc::methods::db::OpeAuditResult, String> {
+    call::<_, kavach_rpc::methods::db::OpeAuditResult>("db.ope_audit", Some(params))
+        .map_err(format_err)
+}
+
 pub(super) fn raw_query(
     query: &str,
 ) -> Result<kavach_rpc::methods::db::RawQueryResult, String> {
