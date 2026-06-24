@@ -89,11 +89,6 @@ impl SessionState {
         self.user_directive_turn == self.turn_count && self.turn_count > 0
     }
 
-    pub fn record_failure(&mut self, tool: &str) {
-        self.last_failure_tool = tool.into();
-        self.last_failure_turn = self.turn_count;
-        self.save_or_log();
-    }
 
     pub fn record_failure_typed(&mut self, tool: &str, failure_type: &str) {
         self.last_failure_tool = tool.into();
