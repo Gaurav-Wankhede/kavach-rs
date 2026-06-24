@@ -167,6 +167,11 @@ audit-wiring:
 audit-runtime:
     bash scripts/audit_runtime.sh
 
+# Retire 7 confirmed-orphan RPC verbs (audit #1717). Re-runnable.
+retire-orphans:
+    bash scripts/retire-orphans.sh
+    cargo fmt -p kavach-rpc
+
 # Author the full SDLC nano-agent roster into GLOBAL ~/.claude/agents (idempotent).
 author-sdlc-agents:
     bash scripts/author-sdlc-agents.sh
