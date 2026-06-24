@@ -2,6 +2,7 @@ pub mod agents;
 pub mod blocklist;
 pub mod bounty_secrets;
 mod cache;
+pub mod factual_trigger;
 pub mod gates_config;
 mod gates_defaults;
 pub mod gates_loader;
