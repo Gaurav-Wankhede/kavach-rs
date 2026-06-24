@@ -54,6 +54,7 @@ pub mod lint_profile_guard;
 pub mod loophole_vocab;
 pub mod loophole_lens;
 pub mod owasp_guard;
+pub mod reuse_ladder_guard;
 pub mod secrecy_guard;
 pub mod silent_io_guard;
 pub mod stop_vocab;
