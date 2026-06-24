@@ -5,15 +5,10 @@
 //! SOURCE: decision.goal-harness-6-patterns · roadmap.unit.harness-loop-L4-classifier.
 use serde_json::json;
 
-/// Cheap fast doer tier — Claude Code's implementation model (Haiku). Mirrors
-/// `goal::compile::model_tier::CHEAP_MODEL` (that one is `pub(super)`, not
-/// reachable here); confirmed latest Haiku id via platform.claude.com models doc.
+/// Cheap doer tier (Haiku) — mirrors `goal::compile::model_tier::CHEAP_MODEL`.
 pub(crate) const CHEAP_MODEL: &str = "claude-haiku-4-5";
 
-/// Map a classified pattern to an ACTIONABLE dispatch directive the model reads.
-/// Parallel-shaped patterns (fan-out / generate-filter / pairwise) explicitly
-/// name the Haiku cheap tier + the `Agent` spawn so the model actually fans out
-/// cheap subagents; sequential patterns keep a single-thread directive.
+/// Actionable per-pattern dispatch directive the model reads — parallel-shaped patterns name the Haiku tier + `Agent` spawn.
 pub(crate) fn pattern_directive(pattern: &str) -> String {
     match pattern {
         "fan-out-synthesize" => format!(
