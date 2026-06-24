@@ -79,26 +79,6 @@ impl SkillFirstRouter {
         }
     }
 
-    #[must_use]
-    pub fn get_skill_for_agent(&self, agent_name: &str) -> String {
-        // Clone first element out before any further map access — avoid ref retention.
-        let first_skill = self
-            .agent_skills
-            .get(agent_name)
-            .and_then(|r| r.value().first().cloned());
-        if let Some(s) = first_skill {
-            return s;
-        }
-        let defaults = kavach_config::get_skill_agent_defaults();
-        defaults.get(agent_name).cloned().unwrap_or_default()
-    }
-
-    #[must_use]
-    pub fn should_prefer_skill(&self, task_type: &str) -> bool {
-        let prefs = kavach_config::get_skill_preferred_keywords();
-        let lower = task_type.to_lowercase();
-        prefs.iter().any(|p| lower.contains(p))
-    }
 }
 
 impl Default for SkillFirstRouter {

@@ -75,16 +75,6 @@ fn load_gates_config_from_file() -> GatesConfig {
     cfg
 }
 
-/// Reload gates config (force cache invalidation).
-pub fn reload_gates_config() -> GatesConfig {
-    let mut cache = GATES_CACHE
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    *cache = None;
-    drop(cache);
-    load_gates_config()
-}
-
 #[cfg(test)]
 mod tests {
     use crate::gates_config::GatesConfig;
