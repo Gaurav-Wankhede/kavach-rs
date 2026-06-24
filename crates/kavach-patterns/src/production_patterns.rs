@@ -26,11 +26,6 @@ pub fn scan(file_path: &str, content: &str) -> Vec<PatternMatch> {
     scanner_all::scan(content)
 }
 
-/// Scan a specific pattern category.
-#[must_use]
-pub fn scan_category(category: PatternCategory, content: &str) -> Vec<PatternMatch> {
-    scanner_category::scan(category, content)
-}
 
 /// Count critical severity matches.
 #[must_use]
