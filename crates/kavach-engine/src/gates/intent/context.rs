@@ -342,7 +342,7 @@ mod tests {
     fn empty_project_yields_no_live_kanban_and_no_panic() {
         // Empty slug must short-circuit BEFORE any RPC — fail soft, no block.
         let mut ctx = String::new();
-        let observed = super::append_live_kanban(&mut ctx, "");
+        let observed = super::append_live_kanban(&mut ctx, "", "");
         assert!(!observed, "empty slug is never 'observed'");
         assert!(ctx.is_empty(), "no [KANBAN] block for an empty slug: {ctx}");
     }
