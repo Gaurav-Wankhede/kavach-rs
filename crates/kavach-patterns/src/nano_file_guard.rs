@@ -1,5 +1,7 @@
-// Nano-file invariants: no mod.rs · depth <=7 below src/ · new files <=100 LOC ·
-// tests live in a sibling `<name>_test.rs`, never inline.
+// Nano-file invariants: no mod.rs · depth <=7 below src/ · graduated LOC band
+// (warn >=120, hard-block >250) · tests live in a sibling `<name>_test.rs`, never inline.
+// SOURCE: decision.harness.nano-file-ladder-not-loc ·
+// https://github.com/DietrichGebert/ponytail/blob/main/AGENTS.md (reuse-ladder, not LOC)
 // SOURCE: https://doc.rust-lang.org/edition-guide/rust-2024/
 // SOURCE: https://doc.rust-lang.org/reference/items/modules.html#the-path-attribute
 
