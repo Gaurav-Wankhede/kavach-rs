@@ -1,4 +1,4 @@
-// `kavach lint audit` — whole-repo over-engineering scan. Ranked findings, biggest-cut first; report-only.
+// `kavach lint audit` — over-engineering scan, ranked biggest-cut first; report-only.
 use std::path::Path;
 
 use crate::cmd::io_safe;
