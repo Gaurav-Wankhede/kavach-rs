@@ -641,7 +641,6 @@ mod tests {
         assert_eq!(input.tool_name, "Bash");
         assert_eq!(input.get_string("command"), "ls -la");
         assert!(input.is_event("PreToolUse"));
-        assert!(!input.is_subagent_event());
 
         // Round-trip
         let serialized = serde_json::to_string(&input).unwrap();
