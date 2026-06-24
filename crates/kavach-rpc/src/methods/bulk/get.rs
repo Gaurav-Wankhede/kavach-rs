@@ -1,10 +1,7 @@
 // bulk.sweep_get — fetch one manifest by sweep_id. Used by pre-write gate
 // to verify a sweep is still usable + matches scope before allowing an Edit.
-use crate::error::surreal_to_rpc;
-use crate::state::AppState;
 use chrono::{DateTime, Utc};
-use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::bulk_manifest::{BulkManifest, get as bm_get};
+use kavach_surreal::bulk_manifest::BulkManifest;
 use serde::{Deserialize, Serialize};
 
 
