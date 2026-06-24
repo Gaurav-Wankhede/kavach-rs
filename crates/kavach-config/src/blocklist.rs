@@ -245,6 +245,10 @@ pub fn requires_research(prompt: &str) -> bool {
             }
         }
     }
+    // Check factual triggers: version, latest, current, etc.
+    if crate::factual_trigger::contains_factual_trigger(prompt) {
+        return true;
+    }
     false
 }
 
