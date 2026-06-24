@@ -21,11 +21,11 @@ pub(crate) fn walk_rs(root: &Path, dir: &Path, f: &mut dyn FnMut(&str, &str)) {
         }
         if ft.is_dir() {
             walk_rs(root, &path, f);
-        } else if path.extension().is_some_and(|e| e == "rs") {
-            if let Ok(content) = fs::read_to_string(&path) {
-                let rel = path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string();
-                f(&rel, &content);
-            }
+        } else if path.extension().is_some_and(|e| e == "rs")
+            && let Ok(content) = fs::read_to_string(&path)
+        {
+            let rel = path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string();
+            f(&rel, &content);
         }
     }
 }
