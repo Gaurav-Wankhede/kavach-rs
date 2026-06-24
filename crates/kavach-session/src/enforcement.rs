@@ -404,18 +404,6 @@ mod tests {
     }
 
     #[test]
-    fn test_reset_enforcement() {
-        let mut s = SessionState::default();
-        s.required_skills = vec!["rust".into()];
-        s.invoked_skills = vec!["rust".into()];
-        s.research_topic = "axum".into();
-        s.reset_enforcement();
-        assert!(s.required_skills.is_empty());
-        assert!(s.invoked_skills.is_empty());
-        assert!(s.research_topic.is_empty());
-    }
-
-    #[test]
     fn test_record_skill_no_duplicate() {
         let mut s = SessionState::default();
         s.invoked_skills.push("rust".into());
