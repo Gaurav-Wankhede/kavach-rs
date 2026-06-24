@@ -6,7 +6,6 @@ use super::types::RoutingDecision;
 #[derive(Debug)]
 pub struct SkillFirstRouter {
     skill_triggers: DashMap<String, String>,
-    agent_skills: DashMap<String, Vec<String>>,
 }
 
 impl SkillFirstRouter {
