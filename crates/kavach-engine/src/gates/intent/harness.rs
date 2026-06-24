@@ -8,7 +8,7 @@ use serde_json::json;
 /// Cheap doer tier (Haiku) — mirrors `goal::compile::model_tier::CHEAP_MODEL`.
 pub(crate) const CHEAP_MODEL: &str = "claude-haiku-4-5";
 
-/// Actionable per-pattern dispatch directive the model reads — parallel-shaped patterns name the Haiku tier + `Agent` spawn.
+/// Actionable per-pattern dispatch directive; parallel patterns name the Haiku tier + `Agent` spawn.
 pub(crate) fn pattern_directive(pattern: &str) -> String {
     match pattern {
         "fan-out-synthesize" => format!(
