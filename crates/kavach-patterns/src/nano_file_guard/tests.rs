@@ -79,28 +79,28 @@ fn loc_exempt_marker_in_header_allows_oversize_file() {
 }
 
 #[test]
-fn ponytail_marker_in_header_allows_oversize_file() {
-    // Ponytail's own convention: a `ponytail:` comment names a deliberate ceiling
-    // (the upgrade path), so the file is intentional, not bloat. kavach honors it
-    // as an exempt marker — minimalism is the ladder decision, not a raw LOC count.
-    let mut content = String::from("// ponytail: one exhaustive match, splitting hides the arms\n");
+fn intentional_marker_in_header_allows_oversize_file() {
+    // A `kavach:intentional` comment names a deliberate ceiling + the upgrade path,
+    // so the file is intent, not bloat. kavach honors it as an exempt marker —
+    // minimalism is the reuse/stdlib/one-line decision, not a raw LOC count.
+    let mut content = String::from("// kavach:intentional one exhaustive match, splitting hides the arms\n");
     content.push_str(&"fn x() {}\n".repeat(120));
     let v = detect("crates/foo/src/router.rs", &content, "Write");
     assert!(
         !v.iter().any(|x| x.pattern == "new file exceeds 100 LOC"),
-        "a ponytail: ceiling marker must exempt the LOC count"
+        "a kavach:intentional ceiling marker must exempt the LOC count"
     );
 }
 
 #[test]
 fn over_loc_without_marker_advises_the_ladder() {
-    // Over budget with NO named reason: the fix message must teach the Ponytail
-    // ladder (need-to-exist / reuse / stdlib / one-line) and the `ponytail:`
+    // Over budget with NO named reason: the fix message must teach the decision
+    // ladder (need-to-exist / reuse / stdlib / one-line) and the kavach:intentional
     // escape, not just "split at 100".
     let content = "fn x() {}\n".repeat(120);
     let v = detect("crates/foo/src/big.rs", &content, "Write");
     let hit = v.iter().find(|x| x.pattern == "new file exceeds 100 LOC").expect("over-budget fires");
-    assert!(hit.fix.contains("ponytail:"), "fix must name the ponytail: escape: {}", hit.fix);
+    assert!(hit.fix.contains("kavach:intentional"), "fix must name the kavach:intentional escape: {}", hit.fix);
     assert!(hit.fix.contains("reuse") || hit.fix.contains("exist"), "fix must teach the ladder: {}", hit.fix);
 }
 
