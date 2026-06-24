@@ -100,14 +100,6 @@ pub const W_KANBAN: Weights = Weights {
     time_decay: 1.0,
     effort_inv: 1.0,
 };
-pub const W_KANBAN_PHASE: Weights = Weights {
-    focus: 2.0,
-    blocker_weight: 3.0,
-    cost_of_delay: 1.0,
-    recurrence: 0.0,
-    time_decay: 0.0,
-    effort_inv: 0.0,
-};
 
 /// 14-day exponential half-life — chosen so two-week-old items keep
 /// ~50% decay weight, four-week-old items ~25%, eight-week-old ~6%.
