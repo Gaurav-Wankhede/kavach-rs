@@ -16,36 +16,33 @@ for verb in \
     --rewrite "" "$RPC/rpc.rs" 2>/dev/null || true
 done
 
-# 2. replay module is wholly dead (both verbs retired) — delete file + mod decl.
+# 2. replay — whole module dead.
 rm -f "$M/replay.rs"
 sd '(?m)^pub mod replay;\n' '' "$M/methods.rs" 2>/dev/null || sd '(?m)^pub mod replay;\n' '' "$RPC/methods.rs"
 
-# 3. bulk/get.rs — strip dead `get()` fn + GetParams struct; KEEP GetResult (reused by list.rs).
+# 3. bulk/get.rs — drop get()+GetParams, keep GetResult (reused by list.rs).
 ast-grep run --update-all \
   --pattern 'pub async fn get(state: &AppState, p: GetParams) -> Result<Option<GetResult>, ErrorObjectOwned> { $$$ }' \
   --rewrite '' "$M/bulk/get.rs"
 ast-grep run --update-all \
   --pattern 'pub struct GetParams { $$$ }' \
   --rewrite '' "$M/bulk/get.rs"
-# its derive attr + doc lines orphan above the removed struct — drop the now-danging GetParams derive/comment block
 sd '(?s)#\[derive\(Debug, Serialize, Deserialize\)\]\n#\[non_exhaustive\]\n\n' '' "$M/bulk/get.rs" 2>/dev/null || true
-# narrow bulk.rs re-export: GetParams + get are gone, GetResult stays
 sd 'pub use get::\{GetParams, GetResult, get\};' 'pub use get::GetResult;' "$M/bulk.rs"
 
-# 4. system.rs — strip schema_apply fn + its now-unused apply_schema import (health does not use it).
+# 4. system.rs — drop schema_apply + its import.
 ast-grep run --update-all \
   --pattern 'pub async fn schema_apply(state: &AppState) -> Result<&'\''static str, ErrorObjectOwned> { $$$ }' \
   --rewrite '' "$M/system.rs"
 sd '(?m)^use kavach_surreal::apply_schema;\n' '' "$M/system.rs"
-# the schema_apply doc-comment block orphans above the removed fn
 sd '(?s)/// Apply the system schema to the database\.\n///\n/// # Errors\n/// Returns an error if the schema application fails\.\n' '' "$M/system.rs" 2>/dev/null || true
 
-# 5. projects.rs — strip list_all fn + its doc.
+# 5. projects.rs — drop list_all.
 ast-grep run --update-all \
   --pattern 'pub async fn list_all(state: &AppState) -> Result<Vec<Project>, ErrorObjectOwned> { $$$ }' \
   --rewrite '' "$M/projects.rs"
 
-# 6. concept.rs — strip find fn + FindParams + the now-unused graph_find_concept import token.
+# 6. concept.rs — drop find + FindParams + import token.
 ast-grep run --update-all \
   --pattern 'pub async fn find(state: &AppState, p: FindParams) -> Result<Option<Entity>, ErrorObjectOwned> { $$$ }' \
   --rewrite '' "$M/concept.rs"
@@ -54,7 +51,7 @@ ast-grep run --update-all \
   --rewrite '' "$M/concept.rs"
 sd 'graph_find_concept, ' '' "$M/concept.rs"
 
-# 7. trust.rs — strip should_surface fn + ShouldSurfaceParams + ShouldSurfaceResult (classify kept; shares imports).
+# 7. trust.rs — drop should_surface + its 2 DTOs (classify kept).
 ast-grep run --update-all \
   --pattern 'pub async fn should_surface($$$) -> Result<ShouldSurfaceResult, ErrorObjectOwned> { $$$ }' \
   --rewrite '' "$M/trust.rs"
