@@ -72,10 +72,11 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
                 "file exceeds 100 LOC"
             },
             fix: format!(
-                "lines={loc} exceeds {MAX_LOC_NEW_FILE}. Split into a deep hub+leaf \
-                 hierarchy (foo.rs + foo/bar.rs + foo/baz.rs): smallest reusable files, \
-                 NO duplication, NO mod.rs. Reuse existing modules — check first with \
-                 `rg`/`fd`/`ast-grep` before adding code. Recurse: a leaf >100 splits again."
+                "lines={loc} over {MAX_LOC_NEW_FILE}. Climb the ladder FIRST: does this \
+                 need to exist? reuse an existing module (check `rg`/`fd`/`ast-grep`)? \
+                 stdlib/dep already do it? one line? Then split into a hub+leaf hierarchy \
+                 (foo.rs + foo/bar.rs), smallest reusable files, NO dup, NO mod.rs. If the \
+                 length is deliberate, mark a `// kavach:intentional <reason>` ceiling."
             ),
         });
     }
