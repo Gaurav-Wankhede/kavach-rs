@@ -8,4 +8,3 @@ pub mod trigger;
 pub use priority::SkillPriority;
 pub use section::{ErrorHandling, PendingTasks, ResearchGate};
 pub use skill_def::{SkillDefinition, SkillMetadata};
-pub use trigger::{Trigger, TriggerCategory};
