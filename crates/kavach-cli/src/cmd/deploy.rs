@@ -225,6 +225,17 @@ fn deploy_cli(skip_tests: bool) -> i32 {
         return 1;
     }
 
+    // Self-audit: kavach runs its OWN oversized gate on its OWN source (dogfood).
+    // Ratchet — advise on the backlog, FAIL only on an urgent (>500) regression.
+    if let Err(io_err) =
+        print_or_exit("[DEPLOY] step 6b/8: self-audit (kavach oversized scan on kavach)")
+    {
+        return into_exit_code(io_err);
+    }
+    if let Some(code) = self_audit_ratchet() {
+        return code;
+    }
+
     if let Err(io_err) = print_or_exit("[DEPLOY] step 7/8: install to ~/.local/bin/kavach") {
         return into_exit_code(io_err);
     }
