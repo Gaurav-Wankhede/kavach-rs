@@ -138,6 +138,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             limit,
         } => think::run(&project, &query, limit),
         Commands::Toolbelt { action } => toolbelt::run(action),
+        Commands::Lint { action } => lint::run(action),
     }
 }
 
