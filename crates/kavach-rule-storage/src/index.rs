@@ -50,17 +50,6 @@ impl RuleIndex {
             .unwrap_or_default()
     }
 
-    /// Total number of indexed triggers.
-    #[must_use]
-    pub fn trigger_count(&self) -> usize {
-        self.by_trigger.len()
-    }
-
-    /// Total number of indexed categories.
-    #[must_use]
-    pub fn category_count(&self) -> usize {
-        self.by_category.len()
-    }
 }
 
 fn extract_category(protocol: &str) -> String {
