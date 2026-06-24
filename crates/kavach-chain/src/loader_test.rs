@@ -33,12 +33,12 @@ fn scan_skips_underscore_prefixed_files() {
     let (loader, dir) = scan_dir_with("realone", "_scope-guard");
     let loaded_names = loader.loaded_agents();
     assert!(
-        loaded.iter().any(|n| n == "realone"),
-        "real agent must load: {loaded:?}"
+        loaded_names.iter().any(|n| n == "realone"),
+        "real agent must load: {loaded_names:?}"
     );
     assert!(
-        !loaded.iter().any(|n| n.starts_with('_')),
-        "underscore fragment must NOT be cached as an agent: {loaded:?}"
+        !loaded_names.iter().any(|n| n.starts_with('_')),
+        "underscore fragment must NOT be cached as an agent: {loaded_names:?}"
     );
     drop(fs::remove_dir_all(dir));
 }
