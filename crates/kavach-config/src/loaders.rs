@@ -1,11 +1,6 @@
 use std::collections::HashMap;
 
 #[must_use]
-pub fn get_nlu_patterns() -> HashMap<String, Vec<String>> {
-    crate::cache::load_patterns("nlu-patterns.toon")
-}
-
-#[must_use]
 pub fn get_skill_patterns() -> HashMap<String, Vec<String>> {
     crate::cache::load_patterns("skill-patterns.toon")
 }
