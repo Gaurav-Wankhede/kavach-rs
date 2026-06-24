@@ -1,7 +1,6 @@
 //! Version tracking and content-hash based change detection.
 
 use std::fs;
-use std::path::Path;
 
 use crate::error::{Result, StorageError};
 use crate::store::StoredRule;
