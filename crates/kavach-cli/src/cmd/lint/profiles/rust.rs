@@ -46,7 +46,8 @@ arithmetic_side_effects = "deny"
 allow_attributes = "deny"
 allow_attributes_without_reason = "deny"
 let_underscore_must_use = "deny"
-"#;
 
-/// The per-crate opt-in line a strict Rust crate adds to its own `Cargo.toml`.
-pub(crate) const RUST_CRATE_OPT_IN: &str = "\n[lints]\nworkspace = true\n";
+# Each crate then opts in with its own `[lints]` table:
+#   [lints]
+#   workspace = true
+"#;
