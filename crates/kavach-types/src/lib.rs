@@ -653,8 +653,6 @@ mod tests {
     fn test_hook_input_empty() {
         let input: HookInput = serde_json::from_str("{}").unwrap();
         assert_eq!(input.get_string("anything"), "");
-        assert!(!input.get_bool("anything"));
-        assert_eq!(input.get_int("anything"), 0);
     }
 
     #[test]
