@@ -193,20 +193,6 @@ fn emit_or_fail_closed(json: &str) {
 /// outcome when the verdict cannot be delivered on stdout.
 const EXIT_HOOK_ERROR: i32 = 2;
 
-/// Read a hook input payload, emitting an error response on failure.
-///
-/// # Errors
-/// Returns `Err(HookAction::Error)` after writing an error response when the
-/// input cannot be read or parsed.
-pub fn must_read_hook_input() -> Result<HookInput, HookAction> {
-    match read_hook_input() {
-        Ok(input) => Ok(input),
-        Err(e) => {
-            output_error(&e);
-            Err(HookAction::Error)
-        }
-    }
-}
 
 // --- Output helpers ---
 
