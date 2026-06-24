@@ -1,7 +1,9 @@
-//! Advises (never blocks) when a source edit lands in a project that has a
-//! recognized stack manifest but NO strict-rules profile — nudges
-//! `kavach lint init`. Fail-soft: a path with no manifest, or one already
-//! strict, is silent. SOURCE: decision.lint.language-profile-template.
+//! Nudges `kavach lint init` when a source edit lands in a project missing its
+//! strict-rules profile.
+//!
+//! Detects the stack manifest (Cargo.toml / package.json / go.mod) by walking up
+//! from the file; advises only when the strict profile is absent. Fail-soft: no
+//! manifest, or one already strict, is silent. SOURCE: decision.lint.language-profile-template.
 use std::path::Path;
 
 const SOURCE_EXTS: &[&str] = &[
