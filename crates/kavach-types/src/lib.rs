@@ -387,18 +387,6 @@ impl HookResponse {
         }
     }
 
-    #[must_use]
-    pub fn new_modify_input(
-        reason: &str,
-        modified_input: HashMap<String, serde_json::Value>,
-    ) -> Self {
-        Self {
-            decision: "approve".into(),
-            reason: reason.into(),
-            tool_input: Some(modified_input),
-            ..Default::default()
-        }
-    }
 
     // --- Claude Code 2026 format ---
 
