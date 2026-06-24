@@ -290,10 +290,6 @@ impl HookInput {
         std::env::var("CLAUDE_EFFORT").unwrap_or_default()
     }
 
-    #[must_use]
-    pub fn is_subagent_event(&self) -> bool {
-        self.hook_event_name == "SubagentStart" || self.hook_event_name == "SubagentStop"
-    }
 }
 
 /// `HookSpecificOutput` provides structured output per hook event type.
