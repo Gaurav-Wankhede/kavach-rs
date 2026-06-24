@@ -60,3 +60,38 @@ fn persist_with_empty_project_is_noop_returning_block() {
     assert!(block.contains("[HARNESS]"));
     assert!(block.contains("fan-out-synthesize"));
 }
+
+#[test]
+fn parallel_patterns_directive_names_haiku_and_parallel_subagents() {
+    // The fan-out (larger-implementation) pattern must tell the model to actually
+    // spawn parallel subagents on the cheap Haiku tier — not just print jargon.
+    let d = pattern_directive("fan-out-synthesize");
+    assert!(d.contains("parallel"), "must direct parallel dispatch: {d}");
+    assert!(d.contains(CHEAP_MODEL), "must name the Haiku tier: {d}");
+    assert!(d.contains("Agent"), "must name the spawn mechanism: {d}");
+}
+
+#[test]
+fn sequential_patterns_do_not_demand_parallel_fan_out() {
+    // loop-until-done is single-threaded; its directive must not push parallel
+    // subagents (would be wrong shape for the work).
+    let d = pattern_directive("loop-until-done");
+    assert!(!d.contains("parallel"), "sequential pattern is not fan-out: {d}");
+}
+
+#[test]
+fn every_pattern_has_a_nonempty_directive() {
+    for p in PATTERNS {
+        assert!(
+            !pattern_directive(p).is_empty(),
+            "pattern {p} must carry an actionable directive"
+        );
+    }
+}
+
+#[test]
+fn persist_block_embeds_the_actionable_directive() {
+    let block = persist_for_next_card("", "audit every handler across the workspace");
+    assert!(block.contains("fan-out-synthesize"));
+    assert!(block.contains(CHEAP_MODEL), "block must carry the directive: {block}");
+}
