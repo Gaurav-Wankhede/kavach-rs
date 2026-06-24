@@ -227,20 +227,6 @@ impl SessionState {
             .map_or(0, |count| *count)
     }
 
-    /// Reset circuit breaker for a category (e.g., after successful operation).
-    pub fn reset_gate_circuit(&mut self, category: &str) {
-        self.gate_block_counts.remove(category);
-        self.tripped_gate_categories.retain(|c| c != category);
-        self.save_or_log();
-    }
-
-    /// Reset all circuit breakers (session end or explicit reset).
-    pub fn reset_all_circuits(&mut self) {
-        self.gate_block_counts.clear();
-        self.tripped_gate_categories.clear();
-        self.save_or_log();
-    }
-
     // ARCH: ScopeNarrowingHints — acceptance-gated retry with scope narrowing
     // PATTERN: retry_narrowing | SCOPE: session | CAP: AP | SEARCHED: 2026-04
     // Per harness research: on failure, narrow scope instead of retrying same params.
