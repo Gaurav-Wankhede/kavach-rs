@@ -28,6 +28,9 @@ pub(super) fn collect(ctx: &WriteContext<'_>, acc: &mut Acc) {
     {
         advisories.push_str(&a);
     }
+    if let Some(a) = kavach_patterns::lint_profile_guard::advise(ctx.file_path) {
+        advisories.push_str(&a);
+    }
     if !advisories.is_empty() {
         acc.algo_advisory = Some(advisories);
     }
