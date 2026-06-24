@@ -7,8 +7,8 @@ use kavach_session::SessionState;
 use kavach_types::HookInput;
 
 use super::super::intent_context::{
-    append_agent_dispatch, append_db_query_required, append_forbidden, append_memory_db,
-    append_root_cause_protocol, append_verify_existing,
+    append_agent_dispatch, append_db_query_required, append_diagram_first, append_forbidden,
+    append_memory_db, append_root_cause_protocol, append_verify_existing,
 };
 use super::phase::append_phase_and_rir;
 
