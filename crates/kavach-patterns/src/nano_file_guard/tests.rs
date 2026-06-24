@@ -89,8 +89,8 @@ fn loc_exempt_marker_in_header_allows_oversize_file() {
     content.push_str(&"const X: &str = \"...\";\n".repeat(120));
     let v = detect("crates/foo/src/schema.rs", &content, "Edit");
     assert!(
-        !v.iter().any(|x| x.pattern == "file exceeds 100 LOC"),
-        "header marker must exempt the LOC ceiling"
+        !v.iter().any(|x| x.pattern.contains("LOC") || x.pattern.contains("ceiling") || x.pattern.contains("warn band")),
+        "header marker must exempt the LOC band entirely"
     );
 }
 
