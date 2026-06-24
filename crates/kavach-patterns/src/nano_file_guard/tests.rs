@@ -100,11 +100,11 @@ fn intentional_marker_in_header_allows_oversize_file() {
     // so the file is intent, not bloat. kavach honors it as an exempt marker —
     // minimalism is the reuse/stdlib/one-line decision, not a raw LOC count.
     let mut content = String::from("// kavach:intentional one exhaustive match, splitting hides the arms\n");
-    content.push_str(&"fn x() {}\n".repeat(120));
+    content.push_str(&"fn x() {}\n".repeat(HARD_LOC_NEW_FILE + 20));
     let v = detect("crates/foo/src/router.rs", &content, "Write");
     assert!(
-        !v.iter().any(|x| x.pattern == "new file exceeds 100 LOC"),
-        "a kavach:intentional ceiling marker must exempt the LOC count"
+        !v.iter().any(|x| x.pattern.contains("LOC") || x.pattern.contains("ceiling") || x.pattern.contains("warn band")),
+        "a kavach:intentional ceiling marker must exempt the LOC band"
     );
 }
 
