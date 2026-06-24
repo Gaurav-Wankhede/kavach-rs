@@ -15,8 +15,7 @@ struct Debt {
 }
 
 fn marker_note(line: &str) -> Option<(String, bool)> {
-    let m = *MARKERS.iter().find(|m| line.contains(**m))?;
-    let after = line.split(m).nth(1).unwrap_or("").trim();
+    let after = line.split(MARKER).nth(1)?.trim();
     // A trigger is named when the note mentions upgrade/when/if/until/once.
     let lower = after.to_lowercase();
     let has_trigger = ["upgrade", "when ", "if ", "until", "once "].iter().any(|t| lower.contains(t));
