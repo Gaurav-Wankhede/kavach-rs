@@ -19,8 +19,6 @@ pub struct Project {
     pub parent: Option<RecordId>,
 }
 
-const PROJECT_FIELDS: &str = "id, slug, display, workdir, stack, aliases, parent";
-
 const ANCESTRY_MAX_DEPTH: usize = 7;
 
 /// Walk the parent chain from a project id; returns [child, parent, grandparent, ...]

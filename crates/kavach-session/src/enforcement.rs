@@ -81,21 +81,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    /// Kept for display in gate messages only — hard-blocking is disabled.
-    /// `cargo check` and `clippy` are the real quality gates. Test enforcement
-    /// is advisory-only to prevent the circular deadlock where the gate blocks
-    /// the edit that fixes the compile error preventing `cargo test` from running.
-    pub const TEST_BLOCK_THRESHOLD: i32 = i32::MAX;
-
-    /// Mark a source file as needing test coverage.
-    pub fn add_test_pending(&mut self, file_path: &str) {
-        if !self.test_files_pending.iter().any(|f| f == file_path) {
-            self.test_files_pending.push(file_path.into());
-            self.test_nudge_count = self.test_nudge_count.saturating_add(1);
-            self.save_or_log();
-        }
-    }
-
     /// Check if any files are pending test coverage.
     #[must_use]
     pub const fn has_pending_tests(&self) -> bool {
