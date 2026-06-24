@@ -13,6 +13,7 @@ mod gates;
 pub(crate) mod harness_loop;
 mod heal;
 mod install;
+mod lint;
 mod loophole;
 pub(crate) mod io_safe;
 pub(crate) mod mistake;
