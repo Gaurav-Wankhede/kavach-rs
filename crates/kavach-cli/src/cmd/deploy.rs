@@ -63,6 +63,13 @@ const RELEASE_PROFILE: &str = "release";
 const CLI_PKG: &str = "kavach-cli";
 const ENGINE_PKG: &str = "kavach-engine";
 
+/// Self-audit ratchet: the urgent (>500 code-LOC) file count kavach ships TODAY.
+/// Deploy FAILS only if a write pushes the count ABOVE this — stops regression
+/// without blockading on the existing backlog (kavach follows its own gates).
+/// SOURCE: decision.harness.deploy-self-audit-ratchet.
+const URGENT_OVERSIZED_BASELINE: usize = 4;
+const URGENT_LOC_THRESHOLD: &str = "500";
+
 pub(crate) fn run(skip_tests: bool) -> i32 {
     // Serialize the whole deploy under a workspace-root advisory flock: two
     // concurrent `kavach deploy` runs (CI parallelism or a manual double-run)
