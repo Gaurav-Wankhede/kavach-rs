@@ -1,26 +1,11 @@
-//! Guard (P0, user-authority): the PLAN-MODE OVERRIDE.
-//!
-//! ROOT CAUSE THIS FIXES (operator directive 2026-06-25): the stop gate's
-//! auto-continue dispatch was authored for UNATTENDED draining (Auto mode /
-//! bypassPermissions). In Plan Mode the USER drives the turn by asking questions
-//! and reviewing the plan — the gate must NOT refuse the stop and dispatch a
-//! queued card. Claude Code's Stop hook carries `permission_mode`; the value
-//! `"plan"` IS Plan Mode (others: default, acceptEdits, dontAsk,
-//! bypassPermissions). SOURCE: code.claude.com/docs/en/agent-sdk/permissions.
-//!
-//! THE OVERRIDE: when `permission_mode == "plan"`, ALLOW the stop
-//! (`exit_silent`) BEFORE any dispatch/auto-continue guard runs. The Stop gate
-//! resumes its autonomous-loop role on `default` (Auto) and `bypassPermissions`
-//! turns, where the loop directive belongs. Wired before `disobedience` so a
-//! Plan-Mode turn is never dragged onto a card.
+//! Guard (P0, user-authority): PLAN-MODE OVERRIDE — allow the stop when
+//! `permission_mode == "plan"`. See decision.engine.stop-plan-mode-override.
 
 use core::ops::ControlFlow;
 
 use super::super::shared::StopCtx;
 
-/// True iff the harness reports Plan Mode for this turn. Pure on the
-/// `permission_mode` string so it is unit-testable (the guard itself
-/// process-exits and cannot be tested in-process — see `user_focus`).
+/// True iff the harness reports Plan Mode for this turn (pure → unit-testable).
 #[must_use]
 pub(crate) fn is_plan_mode(permission_mode: &str) -> bool {
     permission_mode == "plan"
