@@ -547,17 +547,6 @@ impl HookResponse {
         }
     }
 
-    #[must_use]
-    pub fn new_setup_context(context: &str) -> Self {
-        Self {
-            hook_specific_output: Some(HookSpecificOutput {
-                hook_event_name: "Setup".into(),
-                additional_context: context.into(),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }
-    }
 }
 
 // TIME: O(0) runtime — expands to () | SPACE: O(0)
