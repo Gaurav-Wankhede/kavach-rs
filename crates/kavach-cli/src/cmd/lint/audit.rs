@@ -40,7 +40,7 @@ fn tag_line(line: &str) -> Option<(&'static str, &'static str, u32)> {
 pub(crate) fn run(root: &Path) -> i32 {
     let mut found: Vec<Finding> = Vec::new();
     walk_rs(root, root, &mut |rel, content| {
-        if crate::cmd::lint::audit::is_test_path(rel) {
+        if is_test_path(rel) {
             return;
         }
         for (i, line) in content.lines().enumerate() {
