@@ -13,19 +13,19 @@ pub(crate) enum Stack {
 impl Stack {
     /// The manifest a strict profile targets (`Cargo.toml` / `tsconfig.json` /
     /// `.golangci.yml`) — the file `init` writes or audits.
-    pub(crate) fn manifest(self) -> &'static str {
+    pub(crate) const fn manifest(self) -> &'static str {
         match self {
-            Stack::Rust => "Cargo.toml",
-            Stack::Ts => "tsconfig.json",
-            Stack::Go => ".golangci.yml",
+            Self::Rust => "Cargo.toml",
+            Self::Ts => "tsconfig.json",
+            Self::Go => ".golangci.yml",
         }
     }
 
-    pub(crate) fn label(self) -> &'static str {
+    pub(crate) const fn label(self) -> &'static str {
         match self {
-            Stack::Rust => "Rust",
-            Stack::Ts => "TypeScript/JS",
-            Stack::Go => "Go",
+            Self::Rust => "Rust",
+            Self::Ts => "TypeScript/JS",
+            Self::Go => "Go",
         }
     }
 }
