@@ -1041,12 +1041,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(e.to_string()))?;
     module
-        .register_async_method("bulk.sweep_get", |params, ctx, _ext| async move {
-            let p: bulk::GetParams = params.parse().map_err(|e| invalid_params(e.to_string()))?;
-            bulk::get(&ctx, p).await
-        })
-        .map_err(|e| internal(e.to_string()))?;
-    module
         .register_async_method("bulk.sweep_apply_event", |params, ctx, _ext| async move {
             let p: bulk::BumpParams = params.parse().map_err(|e| invalid_params(e.to_string()))?;
             bulk::bump(&ctx, p).await
