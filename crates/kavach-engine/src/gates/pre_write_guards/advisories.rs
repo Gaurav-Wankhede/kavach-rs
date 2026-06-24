@@ -31,6 +31,12 @@ pub(super) fn collect(ctx: &WriteContext<'_>, acc: &mut Acc) {
     if let Some(a) = kavach_patterns::lint_profile_guard::advise(ctx.file_path) {
         advisories.push_str(&a);
     }
+    let old = std::fs::read_to_string(ctx.file_path).unwrap_or_default();
+    if let Some(a) =
+        kavach_patterns::reuse_ladder_guard::advise(ctx.file_path, &old, &ctx.effective_content)
+    {
+        advisories.push_str(&a);
+    }
     if !advisories.is_empty() {
         acc.algo_advisory = Some(advisories);
     }
