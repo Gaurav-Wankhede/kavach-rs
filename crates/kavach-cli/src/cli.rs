@@ -471,6 +471,18 @@ pub(crate) enum LintAction {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Whole-repo over-engineering scan: ranked delete/stdlib/native/yagni/shrink.
+    Audit {
+        /// Project root to scan (default: walk up from cwd to a manifest).
+        #[arg(long)]
+        path: Option<String>,
+    },
+    /// Harvest simplification-ceiling markers into a debt ledger.
+    Debt {
+        /// Project root to scan (default: walk up from cwd to a manifest).
+        #[arg(long)]
+        path: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
