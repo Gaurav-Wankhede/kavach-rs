@@ -307,6 +307,13 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         #[command(subcommand)]
         action: ToolbeltAction,
     },
+    /// Install the per-language strict-rules profile (Rust/TS/Go) so the build
+    /// FAILS on bad patterns — language-agnostic, no suppression.
+    /// SOURCE: decision.lint.language-profile-template.
+    Lint {
+        #[command(subcommand)]
+        action: LintAction,
+    },
 }
 
 #[derive(Subcommand)]
