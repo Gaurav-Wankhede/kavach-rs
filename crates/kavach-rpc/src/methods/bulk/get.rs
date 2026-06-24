@@ -45,9 +45,3 @@ impl From<BulkManifest> for GetResult {
     }
 }
 
-/// Fetch one manifest by `sweep_id`.
-///
-/// # Errors
-///
-/// Returns an RPC error if the database query fails.
-
