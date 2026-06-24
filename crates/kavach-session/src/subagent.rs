@@ -2,19 +2,6 @@ use std::collections::HashMap;
 
 use crate::state::SessionState;
 
-/// Blast radius data from a single subagent run.
-/// Accumulated into `SessionState` for cumulative tracking.
-#[derive(Debug, Clone, Default)]
-#[expect(
-    clippy::exhaustive_structs,
-    reason = "constructed at RPC handler boundary for subagent blast tracking"
-)]
-pub struct SubagentBlast {
-    pub files_written: Vec<String>,
-    pub external_apis: Vec<String>,
-    pub db_mutations: bool,
-}
-
 /// Sentinel stored in `subagent_outputs` while an agent is still running.
 /// A non-negative value means the agent finished (the value is its output size).
 /// `active_subagents` is ALWAYS the count of entries equal to this sentinel —
