@@ -130,25 +130,6 @@ pub fn state_path() -> PathBuf {
     state_path_for_workdir_slug(&workdir_slug())
 }
 
-/// Memory bank directory.
-#[must_use]
-pub fn memory_dir() -> PathBuf {
-    if cfg!(target_os = "macos") {
-        home_dir()
-            .join("Library")
-            .join("Application Support")
-            .join("SharedAI")
-            .join("memory")
-    } else if cfg!(target_os = "windows") {
-        let base = std::env::var("LOCALAPPDATA").map_or_else(|_| home_dir(), PathBuf::from);
-        base.join("SharedAI").join("memory")
-    } else {
-        let xdg = std::env::var("XDG_DATA_HOME")
-            .map_or_else(|_| home_dir().join(".local").join("share"), PathBuf::from);
-        xdg.join("shared-ai").join("memory")
-    }
-}
-
 /// Canonicalize a user-supplied path for filesystem comparison.
 ///
 /// Compares filesystem identity, not byte equality. Falls back to
