@@ -2,7 +2,7 @@
 // JSON-RPC method handlers exposing kavach_patterns::trust_score over the existing socket.
 // SOURCE: https://docs.rs/jsonrpsee/latest/jsonrpsee/struct.RpcModule.html
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_patterns::trust_score::{self, AdvisoryTier, TrustInputs, TrustLevel};
+use kavach_patterns::trust_score::{self, TrustInputs, TrustLevel};
 use serde::{Deserialize, Serialize};
 
 use crate::state::AppState;
