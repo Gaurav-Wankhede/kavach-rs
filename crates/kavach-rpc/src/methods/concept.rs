@@ -101,20 +101,6 @@ pub async fn link(state: &AppState, p: LinkParams) -> Result<&'static str, Error
     clippy::exhaustive_structs,
     reason = "RPC DTO constructed at handler boundary"
 )]
-
-
-/// Find a concept by name.
-///
-/// # Errors
-///
-/// Returns `ErrorObjectOwned` if the database operation fails.
-
-
-#[derive(Debug, Serialize, Deserialize)]
-#[expect(
-    clippy::exhaustive_structs,
-    reason = "RPC DTO constructed at handler boundary"
-)]
 pub struct SearchParams {
     pub query: String,
     pub limit: Option<usize>,
