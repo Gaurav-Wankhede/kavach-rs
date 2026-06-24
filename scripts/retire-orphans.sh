@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Retire 7 adversarially-confirmed orphan RPC verbs (audit #1717, decision.harness.orphan-rpc-retire-2026-06-24).
-# Mirrors #1546 (reeval_blocked retirement). Re-runnable: idempotent ast-grep/sd edits.
-# GetResult is REUSED by bulk.sweep_list_active (list.rs) — kept; only the dead get() entry + GetParams go.
+# Retire 7 orphan RPC verbs. SEE decision.harness.orphan-rpc-retire-2026-06-24.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 RPC=crates/kavach-rpc/src
