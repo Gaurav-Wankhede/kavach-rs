@@ -23,11 +23,7 @@ impl SkillFirstRouter {
 
     #[must_use]
     pub fn route(&self, intent: &str, keywords: &[&str]) -> RoutingDecision {
-        // ARCH: clone-on-get to release DashMap shard lock immediately
-        // PATTERN: DashMap Ref retention deadlock prevention (per docs.rs/dashmap)
-        // SCOPE: per-call (no cross-call state)
-        // FAILURE: holding a Ref across .insert/.get on same map = deadlock
-        // SOURCE: https://docs.rs/dashmap/latest/dashmap/struct.DashMap.html#deadlock
+        // clone-on-get releases the DashMap shard lock immediately (holding a Ref across get/insert deadlocks)
         for kw in keywords {
             let skill = self
                 .skill_triggers
