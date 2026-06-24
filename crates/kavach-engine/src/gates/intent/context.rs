@@ -262,8 +262,20 @@ fn render_live_kanban(
             "\nstatus: no runnable roadmap card. The work queue (roadmap+todo/in_progress) is \
              drained. Do NOT invent work; if the user gave no task, await direction.",
         );
-    } else if let Some((key, title)) = crate::gates::stop_dispatch::next_task_rpc_only(project) {
-        write!(context, "\nnext runnable card: [{key}] {title} — claim and START it.").ok();
+    } else if ranked.is_empty() {
+        // Ranked read empty (daemon warming, or empty-prompt with no board): fall
+        // back to the single next card by priority — never lose the "start here".
+        if let Some((key, title)) = crate::gates::stop_dispatch::next_task_rpc_only(project) {
+            write!(context, "\nnext runnable card: [{key}] {title} — claim and START it.").ok();
+        }
+    } else {
+        context.push_str(
+            "\nrelevance-ranked runnable cards (top, by match to this turn's task — claim the \
+             most relevant and START it):",
+        );
+        for (key, title, status) in ranked {
+            write!(context, "\n  · [{key}] {title} [{status}]").ok();
+        }
     }
     true
 }
