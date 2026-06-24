@@ -1,17 +1,8 @@
 //! Pure path/content predicates for the nano-file guard, split out of the hub
 //! to keep `nano_file_guard.rs` itself under the 100-LOC ceiling it enforces.
 
-/// Header-region markers that exempt a file from the LOC ceiling. All must be
-/// declared in the first 15 lines so they stay visible in review.
-///
-/// - `kavach:nano-file-exempt` — file that genuinely cannot decompose (SQL-DDL
-///   `const`, generated template, big static lookup table).
-/// - `// split:` / `// hub:` — the SAME intentional-split markers the sibling
-///   microservice guard already honors, keeping the two guards consistent.
-/// - `kavach:intentional` — a `// kavach:intentional <reason>` names a deliberate
-///   ceiling + upgrade path. Minimalism is the reuse/stdlib/one-line decision, not
-///   a raw LOC count, so a NAMED ceiling is intent, not bloat. SOURCE:
-///   decision.harness.nano-file-ladder-not-loc.
+/// Header-region markers (first 15 lines) that exempt a file from the LOC count:
+/// a NAMED ceiling is intent, not bloat. SOURCE: decision.harness.nano-file-ladder-not-loc.
 const LOC_EXEMPT_MARKERS: [&str; 4] =
     ["kavach:nano-file-exempt", "// split:", "// hub:", "kavach:intentional"];
 
