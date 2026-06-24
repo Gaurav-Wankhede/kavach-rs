@@ -63,25 +63,27 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
     }
 
     let loc = content.lines().count();
-    if loc > MAX_LOC_NEW_FILE && !is_loc_exempt(content) {
-        // Write (new) and Edit (existing) both HARD-BLOCK over budget: an edit that
-        // pushes a file past 100 lines must split into the same deep hub+leaf
-        // hierarchy (foo.rs + foo/bar.rs), smallest reusable files, no duplication,
-        // mod.rs forbidden — identical discipline to a new file.
-        let is_new = tool_name == "Write";
+    let _ = tool_name;
+    // Graduated band: WARN advises the ladder (cohesion may be fine); HARD blocks a monolith.
+    if loc > HARD_LOC_NEW_FILE && !is_loc_exempt(content) {
         v.push(NanoFileViolation {
             severity: NanoSeverity::P0Block,
-            pattern: if is_new {
-                "new file exceeds 100 LOC"
-            } else {
-                "file exceeds 100 LOC"
-            },
+            pattern: "file exceeds hard ceiling",
             fix: format!(
-                "lines={loc} over {MAX_LOC_NEW_FILE}. Climb the ladder FIRST: does this \
-                 need to exist? reuse an existing module (check `rg`/`fd`/`ast-grep`)? \
-                 stdlib/dep already do it? one line? Then split into a hub+leaf hierarchy \
-                 (foo.rs + foo/bar.rs), smallest reusable files, NO dup, NO mod.rs. If the \
-                 length is deliberate, mark a `// kavach:intentional <reason>` ceiling."
+                "lines={loc} over hard ceiling {HARD_LOC_NEW_FILE}. This is a monolith, not a \
+                 smell. Climb the ladder FIRST: need to exist? reuse a module (`rg`/`fd`/`ast-grep`)? \
+                 stdlib/dep? one line? Then split into a hub+leaf hierarchy (foo.rs + foo/bar.rs), \
+                 smallest reusable files, NO dup, NO mod.rs. Deliberate? mark `// kavach:intentional <reason>`."
+            ),
+        });
+    } else if loc >= WARN_LOC_NEW_FILE && !is_loc_exempt(content) {
+        v.push(NanoFileViolation {
+            severity: NanoSeverity::P1Advisory,
+            pattern: "file in warn band",
+            fix: format!(
+                "lines={loc} at/over warn {WARN_LOC_NEW_FILE} (hard block at {HARD_LOC_NEW_FILE}). \
+                 Smell, not a block: does this hold >1 concept? Climb the ladder — reuse before \
+                 you redefine. If cohesive, split or mark `// kavach:intentional <reason>`."
             ),
         });
     }
