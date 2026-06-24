@@ -227,43 +227,6 @@ impl SessionState {
             .map_or(0, |count| *count)
     }
 
-    // ARCH: ScopeNarrowingHints — acceptance-gated retry with scope narrowing
-    // PATTERN: retry_narrowing | SCOPE: session | CAP: AP | SEARCHED: 2026-04
-    // Per harness research: on failure, narrow scope instead of retrying same params.
-    // Block 1: full error. Block 2: suggest narrowing. Block 3: circuit trips.
-
-    /// Get scope-narrowing hint based on block count for a category.
-    /// Returns None if no narrowing needed, Some(hint) if narrowing suggested.
-    #[must_use]
-    pub fn scope_narrowing_hint(&self, category: &str) -> Option<String> {
-        let count = self.gate_block_count(category);
-        if count == 0 || count == 1 {
-            // First block: just show error, no narrowing hint yet
-            None
-        } else if count == 2 {
-            // Second block: suggest narrowing scope
-            Some(format!(
-                "[SCOPE_NARROW] Block {count}/3 for {category}. \
-                 NARROW YOUR SCOPE: Focus on ONE file at a time. \
-                 Complete that file fully before moving to the next. \
-                 Broad multi-file changes compound errors."
-            ))
-        } else {
-            // Third+ block: circuit tripped or will trip
-            Some(format!(
-                "[CIRCUIT_TRIPPED] {category} blocked {count} times. \
-                 Force-allowing with advisory. Review tripped categories \
-                 at session end."
-            ))
-        }
-    }
-
-    /// Check if we should suggest scope narrowing (block count == 2).
-    #[must_use]
-    pub fn should_suggest_narrowing(&self, category: &str) -> bool {
-        self.gate_block_count(category) == 2
-    }
-
     // ARCH: AutonomousLoopControl — harness engineering loop-until-complete
     // PATTERN: pev_loop | SCOPE: session | CAP: AP | SEARCHED: 2026-05
     // SOURCE: martinfowler.com/articles/harness-engineering.html
