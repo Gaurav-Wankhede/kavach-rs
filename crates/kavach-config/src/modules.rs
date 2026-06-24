@@ -84,7 +84,7 @@ mod tests {
         // Just validates the concatenation logic works with empties
         let result = load_modules(&["test-mod"]);
         // Cleanup
-        let _ = fs::remove_dir_all(&dir);
+        drop(fs::remove_dir_all(&dir));
         // Result depends on whether ~/.claude/modules/test-mod.md exists
         let _ = result;
     }

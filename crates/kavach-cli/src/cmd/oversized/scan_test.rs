@@ -5,7 +5,7 @@ use std::fs;
 
 fn write_tmp(name: &str, body: &str) -> String {
     let dir = std::env::temp_dir().join(format!("kavach-oversized-{name}"));
-    let _ = fs::remove_dir_all(&dir);
+    drop(fs::remove_dir_all(&dir));
     fs::create_dir_all(&dir).expect("mk tmp dir");
     let path = dir.join("f.rs");
     fs::write(&path, body).expect("write tmp file");

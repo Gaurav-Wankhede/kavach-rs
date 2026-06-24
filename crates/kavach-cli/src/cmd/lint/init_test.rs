@@ -3,7 +3,7 @@ use crate::cmd::lint::detect::{detect, Stack};
 
 fn tmp(name: &str) -> std::path::PathBuf {
     let base = std::env::temp_dir().join(format!("kavach-lint-test-{name}"));
-    let _ = std::fs::remove_dir_all(&base);
+    drop(std::fs::remove_dir_all(&base));
     std::fs::create_dir_all(&base).expect("mkdir tmp");
     base
 }
