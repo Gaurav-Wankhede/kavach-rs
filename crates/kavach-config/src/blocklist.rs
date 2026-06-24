@@ -200,22 +200,6 @@ pub fn is_blocked_write_path(path: &str) -> bool {
 }
 
 #[must_use]
-pub fn get_skills_for_intent(prompt: &str) -> Vec<String> {
-    let cfg = load_gates_config();
-    if !cfg.intent.enabled {
-        return Vec::new();
-    }
-    let lower = prompt.to_lowercase();
-    let mut skills = Vec::new();
-    for (trigger, trigger_skills) in &cfg.intent.skill_triggers {
-        if lower.contains(trigger) {
-            skills.extend(trigger_skills.iter().cloned());
-        }
-    }
-    skills
-}
-
-#[must_use]
 pub fn requires_research(prompt: &str) -> bool {
     let cfg = load_gates_config();
     if !cfg.research.enabled || !cfg.research.require_before_code {
