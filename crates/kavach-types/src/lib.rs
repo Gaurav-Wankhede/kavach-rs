@@ -270,15 +270,6 @@ impl HookInput {
     }
 
 
-    /// Extract an integer value from `tool_input` by key.
-    #[must_use]
-    pub fn get_int(&self, key: &str) -> i64 {
-        self.tool_input
-            .as_ref()
-            .and_then(|m| m.get(key))
-            .and_then(serde_json::Value::as_i64)
-            .unwrap_or(0)
-    }
 
     #[must_use]
     pub fn is_event(&self, event: &str) -> bool {
