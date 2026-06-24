@@ -1,8 +1,6 @@
 //! Process + git inspection wrappers (procs, git diff).
 use std::process::Command;
 
-use super::tool::Tool;
-
 /// Run `git diff --stat` and return parsed output.
 ///
 /// Returns Ok((true, stdout)) when git succeeds and there are changes,
