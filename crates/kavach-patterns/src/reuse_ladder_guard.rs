@@ -3,7 +3,6 @@
 //! → native? → installed dep? → one line?) and grep for an existing one BEFORE
 //! adding. Advisory only, fail-soft. SOURCE: github.com/DietrichGebert/ponytail.
 use std::collections::BTreeSet;
-use std::fmt::Write as _;
 
 const KINDS: &[&str] = &["pub fn ", "pub struct ", "pub enum ", "pub trait ", "pub const ", "pub type "];
 
