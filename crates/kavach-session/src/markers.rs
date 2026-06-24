@@ -36,23 +36,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    /// True iff a code-reviewer completed AFTER the current `files_modified`
-    /// state was reached. Used by `completion_guard` to skip the `REVIEW_GATE`
-    /// warning when an existing review already covers the current diff.
-    /// `staleness_secs` is the max age accepted; pass e.g. 3600 for 1 hour.
-    #[must_use]
-    pub fn review_covers_current_diff(&self, staleness_secs: i64) -> bool {
-        if self.last_review_at == 0 {
-            return false;
-        }
-        let age = unix_seconds_i64().saturating_sub(self.last_review_at);
-        if age > staleness_secs {
-            return false;
-        }
-        // Files at-or-below the count reviewed → covered.
-        // If new files were added since review, mark as not covered.
-        self.files_modified.len() <= self.last_review_files_count
-    }
 
     pub fn mark_post_compact(&mut self) {
         self.post_compact = true;
