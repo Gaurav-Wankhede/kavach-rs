@@ -461,6 +461,19 @@ pub(crate) enum ToolbeltAction {
 }
 
 #[derive(Subcommand)]
+pub(crate) enum LintAction {
+    /// Detect the stack(s) here and install the strict-rules manifest for each.
+    Init {
+        /// Project root to operate on (default: walk up from cwd to a manifest).
+        #[arg(long)]
+        path: Option<String>,
+        /// Report what would be written without touching any file.
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
+#[derive(Subcommand)]
 pub(crate) enum PipelineAction {
     /// Read an `app_spec` entry and emit roadmap items (status=todo) from its tasks.
     Plan {
