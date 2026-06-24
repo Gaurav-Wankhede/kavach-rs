@@ -11,7 +11,12 @@
 ///   `// split: intentional` passes the microservice guard yet is still blocked
 ///   by this LOC guard — a contradiction between two guards on one file. Honoring
 ///   them keeps the two guards consistent and closes that false positive.
-const LOC_EXEMPT_MARKERS: [&str; 3] = ["kavach:nano-file-exempt", "// split:", "// hub:"];
+/// - `ponytail:` — Ponytail's own deliberate-ceiling convention (SOURCE:
+///   github.com/DietrichGebert/ponytail): a `// ponytail: <reason>` names why the
+///   length is intentional + the upgrade path. Minimalism is the ladder decision,
+///   not a raw LOC count, so a NAMED ceiling is intent, not bloat.
+const LOC_EXEMPT_MARKERS: [&str; 4] =
+    ["kavach:nano-file-exempt", "// split:", "// hub:", "ponytail:"];
 
 /// True when the file declares any exempt marker in its header region (first 15
 /// lines), so it stays visible in review and cannot be buried.
