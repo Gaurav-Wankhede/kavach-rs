@@ -27,11 +27,6 @@ pub fn is_valid_agent(agent: &str) -> bool {
     get_valid_agents().iter().any(|a| a == agent)
 }
 
-#[must_use]
-pub fn is_engineer(agent: &str) -> bool {
-    get_engineers().iter().any(|e| e == agent)
-}
-
 pub fn default_valid_agents() -> Vec<String> {
     [
         "nlu-intent-analyzer",

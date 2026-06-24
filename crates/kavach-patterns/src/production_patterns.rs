@@ -41,13 +41,6 @@ pub fn count_critical(matches: &[PatternMatch]) -> usize {
         .count()
 }
 
-/// Check if any blocking violations exist (P0 or P1).
-#[must_use]
-pub fn has_blocking_violations(matches: &[PatternMatch]) -> bool {
-    matches
-        .iter()
-        .any(|m| m.severity == Severity::P0Critical || m.severity == Severity::P1High)
-}
 
 #[cfg(test)]
 #[path = "production_patterns_test.rs"]
