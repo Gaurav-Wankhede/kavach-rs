@@ -3,25 +3,6 @@ use std::process::Command;
 
 use super::tool::Tool;
 
-/// List processes optionally filtered, using procs.
-///
-/// # Errors
-/// Returns `io::Error` when procs is not installed or the command fails.
-pub fn process_list(filter: Option<&str>) -> std::io::Result<std::process::Output> {
-    let tool = Tool::Procs;
-    if !tool.is_available() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("{} not installed. Run: cargo install procs", tool.program()),
-        ));
-    }
-    let mut cmd = Command::new(tool.program());
-    if let Some(f) = filter {
-        cmd.arg(f);
-    }
-    cmd.output()
-}
-
 /// Run `git diff --stat` and return parsed output.
 ///
 /// Returns Ok((true, stdout)) when git succeeds and there are changes,
