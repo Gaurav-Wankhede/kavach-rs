@@ -10,6 +10,7 @@
 //!
 //! SOURCE: `arxiv.org/pdf/2602.22402` (structurally-lossless trimming),
 //! `redis.io/blog/context-rot`.
+// kavach:intentional cohesive compaction-seam reconstructor (one concern, RPC-backed)
 
 use std::fmt::Write as _;
 
