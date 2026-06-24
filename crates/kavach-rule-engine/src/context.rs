@@ -110,12 +110,6 @@ impl EvalContext {
         matches!(self.intent_risk.as_str(), "medium" | "high" | "critical")
     }
 
-    /// True when we're in an autonomous harness loop.
-    #[must_use]
-    pub const fn in_loop(&self) -> bool {
-        self.loop_active
-    }
-
     #[must_use]
     pub fn is_write_tool(&self) -> bool {
         matches!(self.tool_name.as_str(), "Write" | "Edit" | "NotebookEdit")
