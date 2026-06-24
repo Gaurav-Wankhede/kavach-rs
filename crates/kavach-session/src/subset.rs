@@ -23,19 +23,6 @@ impl SessionState {
     }
 
     #[must_use]
-    pub fn flags(&self) -> SessionFlags {
-        SessionFlags {
-            id: self.id.clone(),
-            today: self.today.clone(),
-            project: self.project.clone(),
-            work_dir: self.work_dir.clone(),
-            session_id: self.session_id.clone(),
-            research_done: self.research_done,
-            memory_queried: self.memory_queried,
-        }
-    }
-
-    #[must_use]
     pub fn tracking(&self) -> SessionTracking {
         SessionTracking {
             id: self.id.clone(),
