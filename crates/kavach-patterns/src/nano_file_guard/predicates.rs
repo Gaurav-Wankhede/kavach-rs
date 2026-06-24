@@ -7,16 +7,13 @@
 /// - `kavach:nano-file-exempt` — file that genuinely cannot decompose (SQL-DDL
 ///   `const`, generated template, big static lookup table).
 /// - `// split:` / `// hub:` — the SAME intentional-split markers the sibling
-///   microservice guard already honors. Without these here, a file marked
-///   `// split: intentional` passes the microservice guard yet is still blocked
-///   by this LOC guard — a contradiction between two guards on one file. Honoring
-///   them keeps the two guards consistent and closes that false positive.
-/// - `ponytail:` — Ponytail's own deliberate-ceiling convention (SOURCE:
-///   github.com/DietrichGebert/ponytail): a `// ponytail: <reason>` names why the
-///   length is intentional + the upgrade path. Minimalism is the ladder decision,
-///   not a raw LOC count, so a NAMED ceiling is intent, not bloat.
+///   microservice guard already honors, keeping the two guards consistent.
+/// - `kavach:intentional` — a `// kavach:intentional <reason>` names a deliberate
+///   ceiling + upgrade path. Minimalism is the reuse/stdlib/one-line decision, not
+///   a raw LOC count, so a NAMED ceiling is intent, not bloat. SOURCE:
+///   decision.harness.nano-file-ladder-not-loc.
 const LOC_EXEMPT_MARKERS: [&str; 4] =
-    ["kavach:nano-file-exempt", "// split:", "// hub:", "ponytail:"];
+    ["kavach:nano-file-exempt", "// split:", "// hub:", "kavach:intentional"];
 
 /// True when the file declares any exempt marker in its header region (first 15
 /// lines), so it stays visible in review and cannot be buried.
