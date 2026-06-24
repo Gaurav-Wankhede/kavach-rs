@@ -1,5 +1,4 @@
-// Nano-file invariants: no mod.rs · depth<=7 · graduated LOC band (warn>=120, hard>250) · sibling test file.
-// SOURCE: decision.harness.nano-file-ladder-not-loc
+// Nano-file invariants. SOURCE: decision.harness.nano-file-ladder-not-loc
 
 mod predicates;
 mod types;
