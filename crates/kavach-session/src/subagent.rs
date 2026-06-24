@@ -42,23 +42,6 @@ impl SessionState {
         self.active_subagents > 0 && self.turn_count.saturating_sub(self.last_subagent_turn) >= 2
     }
 
-    /// Reset stale subagent counter so stop gate can proceed.
-    /// Also clears related tracking fields to prevent ghost state.
-    pub fn reset_stale_subagents(&mut self) {
-        // Drop the RUNNING sentinels — leaving them would let recount re-inflate
-        // active_subagents on the next mutation, defeating the stale reset.
-        // Finished entries (>= 0) are kept so the idempotency/blast history and
-        // has_unacted_subagent_result accounting survive the cleanup.
-        self.subagent_outputs
-            .retain(|_, &mut v| v != SUBAGENT_RUNNING);
-        self.active_subagents = 0;
-        self.last_subagent_turn = 0;
-        self.subagent_action_pending = false;
-        self.subagent_action_turn = 0;
-        self.subagent_files_read = 0;
-        self.save_or_log();
-    }
-
     pub fn track_subagent_stop(&mut self, agent_id: &str, output_size: i32) {
         // Record the finished output size (>= 0 means done). Clamp any negative
         // size up to 0 so it can never collide with the SUBAGENT_RUNNING (-1)

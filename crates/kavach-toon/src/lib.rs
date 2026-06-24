@@ -49,11 +49,6 @@ impl Document {
         Self::default()
     }
 
-    #[must_use]
-    pub fn get(&self, name: &str) -> Option<&Block> {
-        self.blocks.get(name)
-    }
-
     pub fn add_block(&mut self, block: Block) {
         self.blocks.insert(block.name.clone(), block);
     }
