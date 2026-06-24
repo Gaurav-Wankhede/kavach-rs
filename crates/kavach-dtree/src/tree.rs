@@ -39,19 +39,4 @@ impl DecisionTree {
         self.root.evaluate(features)
     }
 
-    /// Serializes this decision tree to JSON.
-    ///
-    /// # Errors
-    /// Returns `DTreeError` if serialization fails.
-    pub fn to_json(&self) -> Result<String, DTreeError> {
-        serde_json::to_string_pretty(self).map_err(DTreeError::from)
-    }
-
-    /// Deserializes a decision tree from JSON.
-    ///
-    /// # Errors
-    /// Returns `DTreeError` if deserialization fails.
-    pub fn from_json(json: &str) -> Result<Self, DTreeError> {
-        serde_json::from_str(json).map_err(DTreeError::from)
-    }
 }

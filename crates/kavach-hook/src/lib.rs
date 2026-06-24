@@ -297,14 +297,3 @@ pub fn exit_approve(reason: &str) -> HookAction {
     HookAction::Done
 }
 
-#[must_use]
-pub fn exit_block(reason: &str) -> HookAction {
-    block(reason);
-    HookAction::Done
-}
-
-#[must_use]
-pub fn exit_modify(reason: &str, ctx: &str) -> HookAction {
-    modify(reason, ctx);
-    HookAction::Done
-}
