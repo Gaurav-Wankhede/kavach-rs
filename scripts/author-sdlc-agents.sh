@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Author the SDLC nano-agent roster as .claude/agents/*.md in the TRINITY canon
-# style (terse frontmatter + tight body, law-aligned). Extends thinker/worker/
-# verifier — does NOT rewrite them (they are the template). Re-runnable: overwrites
-# only the 8 nano-agent files it owns. SOURCE: decision.harness.sdlc-nano-agents.
+# Author the FULL SDLC nano-agent roster (TRINITY trio + 8 phase agents) into the
+# GLOBAL ~/.claude/agents/ so they fire for EVERY real project, not just kavach-rs
+# (project-local .claude/agents only loads inside this repo — useless for the
+# products being built). Terse TRINITY canon style, law-aligned. Re-runnable:
+# overwrites only the 11 files it owns. SOURCE: decision.harness.sdlc-nano-agents-global.
 set -euo pipefail
-cd "$(dirname "$0")/.."
-DIR=.claude/agents
+DIR="${HOME}/.claude/agents"
 mkdir -p "$DIR"
 
 emit() { # $1=name $2=model $3=tools $4=desc $5=body
