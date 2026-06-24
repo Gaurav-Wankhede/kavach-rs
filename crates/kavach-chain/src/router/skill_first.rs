@@ -13,7 +13,6 @@ impl SkillFirstRouter {
     pub fn new() -> Self {
         Self {
             skill_triggers: DashMap::new(),
-            agent_skills: DashMap::new(),
         }
     }
 
