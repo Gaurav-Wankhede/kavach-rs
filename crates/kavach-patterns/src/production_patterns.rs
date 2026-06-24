@@ -9,7 +9,6 @@ mod proxy;
 mod rls;
 mod scalability;
 mod scanner_all;
-mod scanner_category;
 mod scanners;
 mod security;
 mod system_design;
