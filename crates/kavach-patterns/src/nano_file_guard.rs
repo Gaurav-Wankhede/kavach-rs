@@ -12,7 +12,10 @@ use predicates::{depth_below_src, has_inline_tests, is_loc_exempt};
 pub use types::{NanoFileViolation, NanoSeverity};
 
 pub const MAX_DEPTH_BELOW_SRC: usize = 7;
-pub const MAX_LOC_NEW_FILE: usize = 100;
+/// Smell trigger: at/above this, advise the reuse-ladder (P1), never block.
+pub const WARN_LOC_NEW_FILE: usize = 120;
+/// Genuine-monolith ceiling: above this, hard-block (P0) — split or mark intentional.
+pub const HARD_LOC_NEW_FILE: usize = 250;
 
 #[must_use]
 pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileViolation> {
