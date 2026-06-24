@@ -23,10 +23,6 @@ impl SkillFirstRouter {
             .insert(keyword.to_lowercase(), skill_name.into());
     }
 
-    pub fn register_agent_skills(&self, agent_name: &str, skills: Vec<String>) {
-        self.agent_skills.insert(agent_name.into(), skills);
-    }
-
     #[must_use]
     pub fn route(&self, intent: &str, keywords: &[&str]) -> RoutingDecision {
         // ARCH: clone-on-get to release DashMap shard lock immediately
