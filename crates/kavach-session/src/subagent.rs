@@ -77,26 +77,6 @@ impl SessionState {
         self.subagent_action_pending && self.turn_count > self.subagent_action_turn
     }
 
-    /// Accumulate blast radius from a subagent into session-level tracking.
-    /// Auto-escalates gate severity when cumulative blast exceeds threshold.
-    /// SOURCE: github.com/nousresearch/hermes-agent — persistent memory pattern
-    pub fn accumulate_subagent_blast(&mut self, blast: SubagentBlast) {
-        self.subagent_files_written.extend(blast.files_written);
-        self.subagent_external_apis.extend(blast.external_apis);
-        if blast.db_mutations {
-            self.subagent_db_mutations = true;
-        }
-
-        // Auto-escalate when blast threshold exceeded
-        let threshold =
-            usize::try_from(self.blast_escalation_threshold.max(0)).unwrap_or(usize::MAX);
-        if self.subagent_files_written.len() >= threshold && !self.blast_escalated {
-            self.blast_escalated = true;
-        }
-
-        self.save_or_log();
-    }
-
     /// Get cumulative blast radius stats for gate decisions.
     #[must_use]
     pub const fn get_blast_stats(&self) -> (usize, usize, bool) {
@@ -105,15 +85,6 @@ impl SessionState {
             self.subagent_external_apis.len(),
             self.subagent_db_mutations,
         )
-    }
-
-    /// Add a tool to the denied list (propagated to subagents).
-    pub fn deny_tool_for_subagents(&mut self, tool: &str) {
-        let tool_owned = tool.to_owned();
-        if !self.subagent_denied_tools.iter().any(|t| t == &tool_owned) {
-            self.subagent_denied_tools.push(tool_owned);
-            self.save_or_log();
-        }
     }
 
     /// Check if blast has escalated (threshold exceeded).
