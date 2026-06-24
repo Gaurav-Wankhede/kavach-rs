@@ -36,7 +36,8 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
     let mut out = String::from(
         "\n[WORKING_SET — LOSSLESS, re-derived from the store; trust this over [COMPACT_SUMMARY]]\n",
     );
-    if let Some((key, touches)) = active {
+    if let Some((key, title, touches)) = active {
+        out.push_str(&render_intent_line(&title));
         write!(
             out,
             "active_card: {key}\n  touches: {touches}\n  resume: re-read the card \
