@@ -194,6 +194,36 @@ mod tests {
     }
 
     #[test]
+    fn long_doc_comment_wall_flagged() {
+        let prose = "z".repeat(70);
+        let c = format!(
+            "/// {prose}\n/// b\n/// c\n/// d\n/// e\n/// f\npub fn g() {{}}\n"
+        );
+        assert!(advise("src/x.rs", &c).is_some());
+    }
+
+    #[test]
+    fn long_module_doc_wall_flagged() {
+        let prose = "q".repeat(70);
+        let c = format!(
+            "//! {prose}\n//! b\n//! c\n//! d\n//! e\n//! f\nfn f() {{}}\n"
+        );
+        assert!(advise("src/x.rs", &c).is_some());
+    }
+
+    #[test]
+    fn short_doc_comment_is_clean() {
+        let c = "/// adds two\npub fn add(a: i64, b: i64) -> i64 { a + b }\n";
+        assert!(advise("src/x.rs", c).is_none());
+    }
+
+    #[test]
+    fn safety_run_stays_exempt() {
+        let c = "// SAFETY: a\n// SAFETY: b\n// SAFETY: c\n// SAFETY: d\n// SAFETY: e\n// SAFETY: f\nfn f() {}\n";
+        assert!(advise("src/x.rs", c).is_none());
+    }
+
+    #[test]
     fn non_code_file_clean() {
         let c = "// a\n// b\n// c\n";
         assert!(advise("notes.md", c).is_none());

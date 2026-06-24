@@ -37,7 +37,7 @@ pub(super) fn append_context_blocks(
     append_verify_existing(context, intent_type);
     append_root_cause_protocol(context, intent_type);
     append_agent_dispatch(context, intent_type, prompt, &session.research_topic);
-    append_diagram_first(context, intent_type);
+    append_diagram_first(context, intent_type, prompt);
     append_db_query_required(context, prompt);
 
     append_mermaid_views(context, &session.project, prompt);
