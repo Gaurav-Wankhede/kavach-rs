@@ -5,6 +5,41 @@
 //! SOURCE: decision.goal-harness-6-patterns · roadmap.unit.harness-loop-L4-classifier.
 use serde_json::json;
 
+/// Cheap fast doer tier — Claude Code's implementation model (Haiku). Mirrors
+/// `goal::compile::model_tier::CHEAP_MODEL` (that one is `pub(super)`, not
+/// reachable here); confirmed latest Haiku id via platform.claude.com models doc.
+pub(crate) const CHEAP_MODEL: &str = "claude-haiku-4-5";
+
+/// Map a classified pattern to an ACTIONABLE dispatch directive the model reads.
+/// Parallel-shaped patterns (fan-out / generate-filter / pairwise) explicitly
+/// name the Haiku cheap tier + the `Agent` spawn so the model actually fans out
+/// cheap subagents; sequential patterns keep a single-thread directive.
+pub(crate) fn pattern_directive(pattern: &str) -> String {
+    match pattern {
+        "fan-out-synthesize" => format!(
+            "Shard this across parallel `Agent` subagents on the cheap `{CHEAP_MODEL}` (Haiku) tier \
+             — one shard each, then synthesize the shards on your frontier model."
+        ),
+        "generate-filter" => format!(
+            "Generate candidates with parallel `Agent` subagents on `{CHEAP_MODEL}` (Haiku), \
+             then filter to oracle-passing survivors on your frontier model."
+        ),
+        "pairwise-tournament" => format!(
+            "Produce competitors with parallel `Agent` subagents on `{CHEAP_MODEL}` (Haiku), \
+             then judge head-to-head on your frontier model until one champion remains."
+        ),
+        "worker-critic" => format!(
+            "Produce the artifact, then spawn independent critic `Agent` subagents on \
+             `{CHEAP_MODEL}` (Haiku) to adversarially grade it before you accept it."
+        ),
+        "classify-act" => {
+            "Route each item to its handler by type — act inline, no fan-out needed.".to_owned()
+        }
+        _ => "Oracle-gated single loop: implement → verify the check → repeat until it passes."
+            .to_owned(),
+    }
+}
+
 /// The six harness patterns, in kebab-case (matches the `Harness` serde rename).
 /// The single source of truth for the valid set; the test suite asserts every
 /// classification is a member.
