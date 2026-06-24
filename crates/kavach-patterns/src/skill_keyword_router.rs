@@ -274,14 +274,6 @@ pub fn should_fork(skill_name: &str) -> bool {
     get_skill_metadata(skill_name).is_some_and(|m| m.context == SkillContext::Fork)
 }
 
-/// Get the agent type for a forked skill.
-/// Returns None if skill is inline or has no agent specified.
-#[must_use]
-pub fn get_fork_agent(skill_name: &str) -> Option<String> {
-    get_skill_metadata(skill_name)
-        .filter(|m| m.context == SkillContext::Fork)
-        .and_then(|m| m.agent)
-}
 
 /// Get the model tier for a skill.
 /// Returns Sonnet (default) if skill not found or tier unset.
