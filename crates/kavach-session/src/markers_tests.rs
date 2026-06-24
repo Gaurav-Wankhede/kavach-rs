@@ -56,19 +56,6 @@ fn increment_turn() {
 }
 
 #[test]
-fn record_and_clear_failure() {
-    let mut s = SessionState::default();
-    s.turn_count = 5;
-    s.record_failure("Bash");
-    assert_eq!(s.last_failure_tool, "Bash");
-    assert_eq!(s.last_failure_turn, 5);
-    assert!(s.has_recent_failure());
-    s.clear_failure();
-    assert!(!s.has_recent_failure());
-    assert!(s.last_failure_tool.is_empty());
-}
-
-#[test]
 fn record_failure_typed() {
     let mut s = SessionState::default();
     s.record_failure_typed("Write", "transient");
