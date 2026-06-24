@@ -141,7 +141,8 @@ pub(crate) fn persist_for_next_card(project: &str, prompt: &str) -> String {
     }
     format!(
         "\n[HARNESS] classified -> {pattern} (persisted on next-open card; \
-         the stop-gate will dispatch this workflow)."
+         the stop-gate will dispatch this workflow).\n{}",
+        pattern_directive(pattern)
     )
 }
 
