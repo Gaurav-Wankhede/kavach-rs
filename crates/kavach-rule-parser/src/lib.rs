@@ -6,4 +6,3 @@ pub mod validation;
 
 pub use frontmatter::{parse_frontmatter, FrontmatterMetadata};
 pub use sections::extract_sections;
-pub use validation::validate_skill;

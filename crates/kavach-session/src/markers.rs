@@ -61,10 +61,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    pub fn clear_post_compact(&mut self) {
-        self.post_compact = false;
-        self.save_or_log();
-    }
 
     #[must_use]
     pub const fn is_post_compact(&self) -> bool {
