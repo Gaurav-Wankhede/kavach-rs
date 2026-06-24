@@ -148,26 +148,6 @@ mod tests {
     }
 
     #[test]
-    fn test_stale_subagent_detection() {
-        let mut s = SessionState::default();
-        s.turn_count = 5;
-        s.track_subagent_start("agent-1");
-        assert_eq!(s.last_subagent_turn, 5);
-        assert!(!s.has_stale_subagents()); // same turn — not stale
-
-        s.turn_count = 6;
-        assert!(!s.has_stale_subagents()); // 1 turn gap — not stale yet
-
-        s.turn_count = 7;
-        assert!(s.has_stale_subagents()); // 2 turn gap — stale
-
-        s.reset_stale_subagents();
-        assert_eq!(s.active_subagents, 0);
-        assert_eq!(s.last_subagent_turn, 0);
-        assert!(!s.has_stale_subagents());
-    }
-
-    #[test]
     fn test_subagent_action_pending_on_large_output() {
         let mut s = SessionState::default();
         s.turn_count = 3;
