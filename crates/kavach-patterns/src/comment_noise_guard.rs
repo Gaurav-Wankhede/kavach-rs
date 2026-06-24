@@ -27,14 +27,13 @@ const MAX_LEN: usize = 100;
 const PREFIXES: &[&str] = &["///", "//!", "//", "#", "--", ";"];
 
 fn is_exempt(t: &str) -> bool {
-    t.starts_with("//!")
-        || t.starts_with("///")
-        || t.starts_with("#!")
+    t.starts_with("#!")
         || t.starts_with("#[")
         || t.starts_with("#include")
         || t.starts_with("#define")
         || t.starts_with("#pragma")
         || t.contains("SAFETY:")
+        || t.contains("kavach:intentional")
         || t.contains("```")
         || t.starts_with("#region")
         || t.starts_with("#endregion")
