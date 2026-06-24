@@ -77,14 +77,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    /// Re-mark shadow pending on each new prompt (shadow body unchanged until rebuilt).
-    pub fn mark_turn_shadow_pending(&mut self) {
-        if !self.turn_shadow.is_empty() {
-            self.turn_shadow_pending = true;
-            self.save_or_log();
-        }
-    }
-
     #[must_use]
     pub const fn turn_shadow_pending(&self) -> bool {
         self.turn_shadow_pending
