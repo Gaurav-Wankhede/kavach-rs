@@ -1,6 +1,4 @@
-// `kavach lint audit` — whole-repo over-engineering scan. Ranked delete:/stdlib:/
-// native:/yagni:/shrink: findings, biggest-cut first. Report-only, applies nothing.
-// SOURCE: ponytail-audit/SKILL.md + ponytail-review/SKILL.md.
+// `kavach lint audit` — whole-repo over-engineering scan. Ranked findings, biggest-cut first; report-only.
 use std::path::Path;
 
 use crate::cmd::io_safe;
