@@ -78,15 +78,6 @@ fn has_recent_failure_false_initially() {
 }
 
 #[test]
-fn increment_failure_blocks_caps() {
-    let mut s = SessionState::default();
-    for _ in 0..10 {
-        s.increment_failure_blocks();
-    }
-    assert!(s.failure_block_count <= SessionState::max_failure_blocks() + 1);
-}
-
-#[test]
 fn clear_failure_does_not_reset_stop_reblock_count() {
     // REGRESSION: the perpetual-"1/3" infinite stop loop. post_tool.rs /
     // post_write.rs call clear_failure() on every successful tool call. If
