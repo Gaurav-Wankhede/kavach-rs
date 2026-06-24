@@ -32,24 +32,4 @@ impl RuleVersion {
         Ok(current_hash != rule.content_hash)
     }
 
-    /// Compute the next version number based on whether content changed.
-    #[must_use]
-    pub fn next_version(current: u32, old_hash: &str, new_hash: &str) -> u32 {
-        if old_hash == new_hash {
-            current
-        } else {
-            current.saturating_add(1)
-        }
-    }
-
-    /// Read file modification time as ISO 8601 string.
-    ///
-    /// # Errors
-    /// Returns [`StorageError`] if the file cannot be accessed or time cannot be determined.
-    pub fn file_modified_time(path: &Path) -> Result<String> {
-        let meta = fs::metadata(path)?;
-        let modified = meta.modified()?;
-        let dt: chrono::DateTime<chrono::Local> = modified.into();
-        Ok(dt.format("%Y-%m-%dT%H:%M:%S").to_string())
-    }
 }
