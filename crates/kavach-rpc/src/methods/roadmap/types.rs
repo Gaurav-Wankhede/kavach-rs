@@ -49,6 +49,7 @@ pub struct NextTaskResult {
 #[non_exhaustive]
 pub struct InProgressCardRow {
     pub key: String,
+    pub title: String,
     pub content: String,
 }
 
