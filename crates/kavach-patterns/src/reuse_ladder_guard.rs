@@ -45,7 +45,7 @@ pub fn advise(file_path: &str, old: &str, new: &str) -> Option<String> {
          stdlib/dep already do it? one line? Write the minimum — no abstraction for one caller.\n",
         added.join(", "),
     );
-    write!(msg, "  proof: search the tree for each name before adding it.\n").ok();
+    msg.push_str("  proof: search the tree for each name before adding it.\n");
     Some(msg)
 }
 
