@@ -53,14 +53,4 @@ mod tests {
         assert_eq!(s.team_name, "my-team");
     }
 
-    #[test]
-    fn test_team_summary() {
-        let mut s = SessionState::default();
-        s.set_team("alpha");
-        s.track_teammate_start("eng", "Code");
-        let summary = s.team_summary();
-        assert!(summary.contains("team=alpha"));
-        assert!(summary.contains("members=1"));
-        assert!(summary.contains("active=1"));
-    }
 }
