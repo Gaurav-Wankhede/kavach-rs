@@ -535,18 +535,6 @@ impl HookResponse {
         }
     }
 
-    #[must_use]
-    pub fn new_permission_allow_with_input(
-        reason: &str,
-        updated_input: HashMap<String, serde_json::Value>,
-    ) -> Self {
-        Self {
-            decision: "approve".into(),
-            reason: reason.into(),
-            tool_input: Some(updated_input),
-            ..Default::default()
-        }
-    }
 
     /// `SessionEnd`: use systemMessage (no hookSpecificOutput).
     #[must_use]
