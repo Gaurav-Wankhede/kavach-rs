@@ -110,12 +110,11 @@ fn intentional_marker_in_header_allows_oversize_file() {
 
 #[test]
 fn over_loc_without_marker_advises_the_ladder() {
-    // Over budget with NO named reason: the fix message must teach the decision
-    // ladder (need-to-exist / reuse / stdlib / one-line) and the kavach:intentional
-    // escape, not just "split at 100".
-    let content = "fn x() {}\n".repeat(120);
+    // Over budget with NO named reason: whichever band fires, the fix must teach
+    // the ladder (reuse / exist) + name the kavach:intentional escape, not just "split".
+    let content = "fn x() {}\n".repeat(HARD_LOC_NEW_FILE + 20);
     let v = detect("crates/foo/src/big.rs", &content, "Write");
-    let hit = v.iter().find(|x| x.pattern == "new file exceeds 100 LOC").expect("over-budget fires");
+    let hit = v.iter().find(|x| x.fix.contains("ladder") || x.fix.contains("ceiling")).expect("over-budget fires");
     assert!(hit.fix.contains("kavach:intentional"), "fix must name the kavach:intentional escape: {}", hit.fix);
     assert!(hit.fix.contains("reuse") || hit.fix.contains("exist"), "fix must teach the ladder: {}", hit.fix);
 }
