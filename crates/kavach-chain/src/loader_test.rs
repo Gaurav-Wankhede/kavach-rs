@@ -24,7 +24,7 @@ fn scan_dir_with(real: &str, frag: &str) -> (DynamicLoader, PathBuf) {
     .expect("write fragment");
     let skill_dir = base.join("skills");
     let loader = DynamicLoader::new(base.clone(), skill_dir);
-    drop(loader.scan_all_agents());
+    let _count = loader.scan_all_agents();
     (loader, base)
 }
 
