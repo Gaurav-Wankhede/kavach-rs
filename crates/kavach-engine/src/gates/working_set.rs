@@ -59,8 +59,19 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
     Some(out)
 }
 
-/// The single in-progress card as `(key, touches-string)`, or `None` on miss.
-fn active_card(project: &str) -> Option<(String, String)> {
+/// The active card's title rendered as the restored intent, or empty when blank.
+/// The card TITLE *is* the work intent; re-emitting it kills the post-compact
+/// amnesia loop — the model resumes the SAME goal, not a summary-of-a-summary.
+#[must_use]
+fn render_intent_line(title: &str) -> String {
+    if title.is_empty() {
+        return String::new();
+    }
+    format!("[INTENT_RESTORED] {title} — this is the active intent; resume it, do NOT re-derive.\n")
+}
+
+/// The single in-progress card as `(key, title, touches-string)`, or `None` on miss.
+fn active_card(project: &str) -> Option<(String, String, String)> {
     let params = serde_json::json!({ "project": project });
     let v = kavach_rpc::client::call::<_, serde_json::Value>(
         "roadmap.list_in_progress_cards",
@@ -69,13 +80,14 @@ fn active_card(project: &str) -> Option<(String, String)> {
     .ok()?;
     let first = v.as_array()?.iter().next()?;
     let key = first.get("key").and_then(serde_json::Value::as_str)?;
+    let title = first.get("title").and_then(serde_json::Value::as_str).unwrap_or_default();
     let content = first
         .get("content")
         .and_then(serde_json::Value::as_str)
         .unwrap_or_default();
     let paths = super::session_start::reconcile::touched_paths_from_card(content);
     let touches = if paths.is_empty() { "(none declared)".to_owned() } else { paths.join(" ") };
-    Some((key.to_owned(), touches))
+    Some((key.to_owned(), title.to_owned(), touches))
 }
 
 /// The most recent `RECENT_DECISIONS` decision rows as `(key, title)`, newest first;
