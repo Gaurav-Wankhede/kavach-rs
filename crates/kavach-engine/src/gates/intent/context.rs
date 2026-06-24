@@ -116,7 +116,7 @@ pub(super) fn append_context_blocks(
     // perpetually told to fetch what the hook could have handed it. Fail-soft to the
     // legacy nag on RPC outage so prompt submission is never blocked.
     if !session.memory_queried && session.turn_count <= 2 {
-        if append_live_kanban(context, &session.project) {
+        if append_live_kanban(context, &session.project, prompt) {
             session.memory_queried = true;
         } else {
             context
