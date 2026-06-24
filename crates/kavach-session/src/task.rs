@@ -16,7 +16,6 @@ impl SessionState {
         true
     }
 
-
     #[must_use]
     pub const fn has_task(&self) -> bool {
         !self.current_task.is_empty()
