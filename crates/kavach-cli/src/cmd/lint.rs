@@ -2,9 +2,12 @@
 //! build itself FAILS on bad patterns (no suppression). Language-agnostic:
 //! detects Rust/TS/Go by manifest and seeds the canonical strict ruleset.
 //! SOURCE: decision.lint.language-profile-template.
+pub(crate) mod audit;
+pub(crate) mod debt;
 pub(crate) mod detect;
 pub(crate) mod init;
 pub(crate) mod profiles;
+pub(crate) mod walk;
 
 /// Dispatch entry for `kavach lint <action>`.
 pub(crate) fn run(action: crate::cli::LintAction) -> i32 {
@@ -14,6 +17,8 @@ pub(crate) fn run(action: crate::cli::LintAction) -> i32 {
             let root = resolve_root(path.as_deref());
             init::run(&root, dry_run)
         }
+        LintAction::Audit { path } => audit::run(&resolve_root(path.as_deref())),
+        LintAction::Debt { path } => debt::run(&resolve_root(path.as_deref())),
     }
 }
 
