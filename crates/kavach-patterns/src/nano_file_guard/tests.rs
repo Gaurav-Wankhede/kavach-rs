@@ -31,30 +31,46 @@ fn depth_over_limit_blocked() {
 }
 
 #[test]
-fn new_file_over_100_loc_blocked() {
-    let content = "fn x() {}\n".repeat(120);
-    let v = detect("crates/foo/src/big.rs", &content, "Write");
-    assert!(
-        v.iter().any(
-            |x| x.severity == NanoSeverity::P0Block && x.pattern == "new file exceeds 100 LOC"
-        )
-    );
-}
-
-#[test]
-fn edit_over_100_loc_blocked() {
-    // An Edit that pushes an existing file past 100 lines HARD-BLOCKS too:
-    // it must split into the same deep hub+leaf hierarchy as a new file.
-    let content = "fn x() {}\n".repeat(120);
-    let v = detect("crates/foo/src/big.rs", &content, "Edit");
+fn loc_in_warn_band_advises_not_blocks() {
+    // 120 LOC is past the WARN trigger but under the HARD ceiling: per
+    // YAGNI/ponytail (README "never fewest tokens"), this is a SMELL — a P1
+    // advisory to climb the ladder, NOT a P0 block on a possibly-cohesive unit.
+    let content = "fn x() {}\n".repeat(WARN_LOC_NEW_FILE + 20);
+    let v = detect("crates/foo/src/mid.rs", &content, "Write");
     assert!(
         v.iter()
-            .any(|x| x.severity == NanoSeverity::P0Block && x.pattern == "file exceeds 100 LOC")
+            .any(|x| x.severity == NanoSeverity::P1Advisory && x.pattern == "file in warn band"),
+        "warn-band size must advise"
+    );
+    assert!(
+        !v.iter().any(|x| x.severity == NanoSeverity::P0Block),
+        "warn-band size must NOT hard-block"
     );
 }
 
 #[test]
-fn under_100_loc_passes() {
+fn loc_over_hard_ceiling_blocks() {
+    // Past the HARD ceiling a file is a genuine monolith, not a smell: P0 block.
+    let content = "fn x() {}\n".repeat(HARD_LOC_NEW_FILE + 20);
+    let v = detect("crates/foo/src/monolith.rs", &content, "Write");
+    assert!(
+        v.iter()
+            .any(|x| x.severity == NanoSeverity::P0Block && x.pattern == "file exceeds hard ceiling")
+    );
+}
+
+#[test]
+fn edit_over_hard_ceiling_blocks() {
+    let content = "fn x() {}\n".repeat(HARD_LOC_NEW_FILE + 20);
+    let v = detect("crates/foo/src/monolith.rs", &content, "Edit");
+    assert!(
+        v.iter()
+            .any(|x| x.severity == NanoSeverity::P0Block && x.pattern == "file exceeds hard ceiling")
+    );
+}
+
+#[test]
+fn under_warn_loc_passes() {
     let v = detect("crates/foo/src/small.rs", "fn x() {}\n", "Write");
     assert!(v.is_empty());
 }
