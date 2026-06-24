@@ -1,5 +1,4 @@
-// Shared recursive .rs walker for lint audit + debt (DRY — one walker, two callers).
-// Mirrors the proven walk in cmd/todos.rs. SOURCE: decision.lint.ponytail-injection.
+// Shared recursive .rs walker for lint audit + debt (one walker, two callers).
 use std::fs;
 use std::path::Path;
 
