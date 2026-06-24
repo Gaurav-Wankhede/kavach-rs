@@ -298,16 +298,6 @@ impl SessionState {
         self.token_budget_total > 0 && self.token_budget_used >= self.token_budget_total
     }
 
-    /// Check if loop should continue (active, within iteration cap, within
-    /// token budget, target not reached). Budget is a hard halt: a runaway
-    /// loop must stop on cost even if the target is unmet.
-    #[must_use]
-    pub fn should_continue_loop(&self) -> bool {
-        self.loop_active
-            && !self.loop_exceeded_max()
-            && !self.budget_exceeded()
-            && !self.loop_target_reached()
-    }
 }
 
 #[cfg(test)]
