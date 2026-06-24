@@ -168,6 +168,12 @@ impl DynamicLoader {
                 Some(n) => n.to_owned(),
                 None => continue,
             };
+            // Underscore-prefixed files are shared prompt fragments (e.g.
+            // `_scope-guard.md`), NOT routable agents — Claude Code's own
+            // convention. Skip so they never enter the dispatch registry.
+            if name.starts_with('_') {
+                continue;
+            }
             if self.load_agent(&name).is_some() {
                 count = count.saturating_add(1);
             } else {
