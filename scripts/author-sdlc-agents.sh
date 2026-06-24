@@ -111,4 +111,4 @@ Refuse 'done' unless ALL hold, each cited: artifact exists (rg), diff landed (gi
 
 Your final message is the release verdict + the cited witnesses."
 
-echo "SDLC nano-agent roster authored (8 files) alongside thinker/worker/verifier."
+echo "Global SDLC nano-agent roster authored: 11 files in $DIR (TRINITY trio + 8 phase agents)."
