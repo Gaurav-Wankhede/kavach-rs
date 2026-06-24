@@ -1,7 +1,9 @@
-//! YAGNI reuse-ladder advisory: a production write that introduces a NEW public
-//! symbol gets nudged to climb the ladder (need-to-exist? → reuse here? → stdlib?
-//! → native? → installed dep? → one line?) and grep for an existing one BEFORE
-//! adding. Advisory only, fail-soft. SOURCE: github.com/DietrichGebert/ponytail.
+//! YAGNI reuse-ladder advisory for new public symbols.
+//!
+//! A production write that introduces a NEW public symbol gets nudged to climb the
+//! ladder (need-to-exist? → reuse here? → stdlib? → native? → installed dep? → one
+//! line?) and grep for an existing one BEFORE adding. Advisory only, fail-soft.
+//! SOURCE: github.com/DietrichGebert/ponytail.
 use std::collections::BTreeSet;
 
 const KINDS: &[&str] = &["pub fn ", "pub struct ", "pub enum ", "pub trait ", "pub const ", "pub type "];
