@@ -78,10 +78,4 @@ impl FeatureSet {
         self.insert(name, Feature::Numeric(value));
         self
     }
-
-    #[must_use]
-    pub fn with_categorical(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
-        self.insert(name, Feature::Categorical(value.into()));
-        self
-    }
 }
