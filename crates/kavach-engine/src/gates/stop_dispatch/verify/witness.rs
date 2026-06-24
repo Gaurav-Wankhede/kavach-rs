@@ -99,14 +99,24 @@ pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
     })
 }
 
+/// Agent-facing failure report: the failing witness command + the tail of its
+/// captured compiler output. Pure/testable. SOURCE: rca.opaque-witness — a bare
+/// "witnesses FAILED" drove an agent to call a real clippy error a "phantom".
+#[must_use]
+pub(crate) fn failing_witness_report(cmd: &str, output_tail: &str) -> String {
+    format!("[WITNESS_FAILED] `{cmd}` failed. Real output:\n{}", output_tail.trim_end())
+}
+
 /// Run cargo check + clippy + nextest + git-diff IN `ws` (the discovered Rust
-/// workspace dir) — `current_dir(ws)` so a monorepo's `Backend/` is verified.
+/// workspace dir) — `current_dir(ws)` so a monorepo's `Backend/` is verified. On
+/// failure, ECHO the failing command + its output to stderr so the agent sees the
+/// REAL error (not an opaque "FAILED") and fixes it instead of theorizing a phantom.
 fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
     let run = |args: &[&str]| {
         std::process::Command::new("cargo")
             .args(args)
             .current_dir(ws)
-            .status()
+            .output()
     };
     for args in [
         ["check", "--workspace", "--quiet"].as_slice(),
@@ -114,8 +124,12 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
         ["nextest", "run", "--workspace"].as_slice(),
     ] {
         match run(args) {
-            Ok(status) if status.success() => (),
-            Ok(_) => return WitnessRun::Failed,
+            Ok(out) if out.status.success() => (),
+            Ok(out) => {
+                let tail = String::from_utf8_lossy(&out.stderr);
+                eprintln!("{}", failing_witness_report(&format!("cargo {}", args.join(" ")), &tail));
+                return WitnessRun::Failed;
+            }
             Err(_) => return WitnessRun::SpawnError,
         }
     }
