@@ -8,7 +8,7 @@ use crate::gates::intent_context::directives::{append_agent_dispatch, append_dia
 #[test]
 fn diagram_first_fires_for_refactor_intent() {
     let mut ctx = String::new();
-    append_diagram_first(&mut ctx, "refactor");
+    append_diagram_first(&mut ctx, "refactor", "");
     assert!(ctx.contains("[DIAGRAM_FIRST]"));
     assert!(ctx.contains("Mermaid"));
     assert!(ctx.contains("HTML"));
@@ -18,15 +18,36 @@ fn diagram_first_fires_for_refactor_intent() {
 fn diagram_first_fires_for_implement_intent() {
     // An implement turn that proposes architecture/LLD must show the diagram too.
     let mut ctx = String::new();
-    append_diagram_first(&mut ctx, "implement");
+    append_diagram_first(&mut ctx, "implement", "");
+    assert!(ctx.contains("[DIAGRAM_FIRST]"));
+}
+
+#[test]
+fn diagram_first_fires_for_design_intent() {
+    let mut ctx = String::new();
+    append_diagram_first(&mut ctx, "design", "");
     assert!(ctx.contains("[DIAGRAM_FIRST]"));
 }
 
 #[test]
 fn diagram_first_skipped_for_memory_intent() {
     let mut ctx = String::new();
-    append_diagram_first(&mut ctx, "memory");
+    append_diagram_first(&mut ctx, "memory", "");
     assert!(ctx.is_empty());
+}
+
+#[test]
+fn diagram_first_skipped_for_debug_without_keywords() {
+    let mut ctx = String::new();
+    append_diagram_first(&mut ctx, "debug", "fix the typo");
+    assert!(ctx.is_empty());
+}
+
+#[test]
+fn diagram_first_fires_for_debug_with_architecture_keyword() {
+    let mut ctx = String::new();
+    append_diagram_first(&mut ctx, "debug", "fix architecture issue");
+    assert!(ctx.contains("[DIAGRAM_FIRST]"));
 }
 
 #[test]
