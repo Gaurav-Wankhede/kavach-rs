@@ -1,15 +1,6 @@
 use crate::state::SessionState;
 
 impl SessionState {
-    pub fn set_current_task(&mut self, task: &str) {
-        if self.current_task != task && !task.is_empty() {
-            self.current_task = task.into();
-            self.research_done = false;
-            self.task_status = "in_progress".into();
-            self.save_or_log();
-        }
-    }
-
     pub fn set_task(&mut self, task: &str, status: &str) {
         self.current_task = task.into();
         self.task_status = status.into();
