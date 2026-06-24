@@ -22,23 +22,6 @@ impl SessionState {
         }
     }
 
-    #[must_use]
-    pub fn tracking(&self) -> SessionTracking {
-        SessionTracking {
-            id: self.id.clone(),
-            today: self.today.clone(),
-            project: self.project.clone(),
-            work_dir: self.work_dir.clone(),
-            session_id: self.session_id.clone(),
-            research_done: self.research_done,
-            memory_queried: self.memory_queried,
-            turn_count: self.turn_count,
-            post_compact: self.post_compact,
-            current_task: self.current_task.clone(),
-            tasks_created: self.tasks_created,
-            tasks_completed: self.tasks_completed,
-        }
-    }
 }
 
 #[cfg(test)]
