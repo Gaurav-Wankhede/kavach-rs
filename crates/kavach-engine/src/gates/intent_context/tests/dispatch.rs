@@ -6,9 +6,9 @@
 use crate::gates::intent_context::directives::{append_agent_dispatch, append_diagram_first};
 
 #[test]
-fn diagram_first_fires_for_plan_intent() {
+fn diagram_first_fires_for_refactor_intent() {
     let mut ctx = String::new();
-    append_diagram_first(&mut ctx, "plan");
+    append_diagram_first(&mut ctx, "refactor");
     assert!(ctx.contains("[DIAGRAM_FIRST]"));
     assert!(ctx.contains("Mermaid"));
     assert!(ctx.contains("HTML"));
