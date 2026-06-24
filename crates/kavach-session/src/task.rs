@@ -25,12 +25,6 @@ impl SessionState {
         true
     }
 
-    pub fn clear_task(&mut self) {
-        self.current_task.clear();
-        self.task_status.clear();
-        self.files_modified.clear();
-        self.save_or_log();
-    }
 
     #[must_use]
     pub const fn has_task(&self) -> bool {

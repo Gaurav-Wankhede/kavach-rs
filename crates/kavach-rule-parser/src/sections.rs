@@ -20,15 +20,6 @@ impl Sections {
     pub fn new() -> Self {
         Self::default()
     }
-
-    #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.research_gate.is_none()
-            && self.error_handling.is_none()
-            && self.pending_tasks.is_none()
-            && self.async_rules.is_none()
-            && self.do_dont.is_none()
-    }
 }
 
 #[must_use]
