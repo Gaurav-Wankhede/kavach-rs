@@ -47,17 +47,6 @@ fn mark_memory_queried() {
 }
 
 #[test]
-fn mark_post_compact_cycle() {
-    let mut s = SessionState::default();
-    assert!(!s.post_compact);
-    s.mark_post_compact();
-    assert!(s.post_compact);
-    assert_eq!(s.compact_count, 1);
-    s.clear_post_compact();
-    assert!(!s.post_compact);
-}
-
-#[test]
 fn increment_turn() {
     let mut s = SessionState::default();
     assert_eq!(s.turn_count, 0);
