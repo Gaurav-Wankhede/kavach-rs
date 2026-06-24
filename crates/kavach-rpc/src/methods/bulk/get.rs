@@ -7,11 +7,6 @@ use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::bulk_manifest::{BulkManifest, get as bm_get};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-#[non_exhaustive]
-pub struct GetParams {
-    pub sweep_id: String,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[expect(
@@ -55,9 +50,4 @@ impl From<BulkManifest> for GetResult {
 /// # Errors
 ///
 /// Returns an RPC error if the database query fails.
-pub async fn get(state: &AppState, p: GetParams) -> Result<Option<GetResult>, ErrorObjectOwned> {
-    Ok(bm_get(&state.db, &p.sweep_id)
-        .await
-        .map_err(surreal_to_rpc)?
-        .map(Into::into))
-}
+

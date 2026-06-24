@@ -4,8 +4,8 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::{
-    Entity, graph_delete_concept, graph_delete_concepts_by_prefix, graph_find_concept,
-    graph_list_concepts, graph_relate_concepts, graph_search_concepts_fts, graph_upsert_concept,
+    Entity, graph_delete_concept, graph_delete_concepts_by_prefix, graph_list_concepts,
+    graph_relate_concepts, graph_search_concepts_fts, graph_upsert_concept,
 };
 use serde::{Deserialize, Serialize};
 
@@ -101,20 +101,14 @@ pub async fn link(state: &AppState, p: LinkParams) -> Result<&'static str, Error
     clippy::exhaustive_structs,
     reason = "RPC DTO constructed at handler boundary"
 )]
-pub struct FindParams {
-    pub name: String,
-}
+
 
 /// Find a concept by name.
 ///
 /// # Errors
 ///
 /// Returns `ErrorObjectOwned` if the database operation fails.
-pub async fn find(state: &AppState, p: FindParams) -> Result<Option<Entity>, ErrorObjectOwned> {
-    graph_find_concept(&state.db, &p.name)
-        .await
-        .map_err(surreal_to_rpc)
-}
+
 
 #[derive(Debug, Serialize, Deserialize)]
 #[expect(

@@ -2,7 +2,6 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::apply_schema;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -40,11 +39,4 @@ pub async fn health(state: &AppState) -> Result<HealthResponse, ErrorObjectOwned
     })
 }
 
-/// Apply the system schema to the database.
-///
-/// # Errors
-/// Returns an error if the schema application fails.
-pub async fn schema_apply(state: &AppState) -> Result<&'static str, ErrorObjectOwned> {
-    apply_schema(&state.db).await.map_err(surreal_to_rpc)?;
-    Ok("schema applied")
-}
+

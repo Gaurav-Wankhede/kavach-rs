@@ -80,8 +80,4 @@ pub async fn get_by_slug(
 /// # Errors
 ///
 /// Returns an error if the database query fails.
-pub async fn list_all(state: &AppState) -> Result<Vec<Project>, ErrorObjectOwned> {
-    kavach_surreal::projects_list_all(&state.db)
-        .await
-        .map_err(surreal_to_rpc)
-}
+

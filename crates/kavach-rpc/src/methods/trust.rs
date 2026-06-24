@@ -72,19 +72,14 @@ pub async fn classify(
     clippy::exhaustive_structs,
     reason = "JSON-RPC wire DTO, constructed at handler boundary"
 )]
-pub struct ShouldSurfaceParams {
-    pub tier: String,
-    pub level: String,
-}
+
 
 #[derive(Debug, Clone, Serialize)]
 #[expect(
     clippy::exhaustive_structs,
     reason = "JSON-RPC wire DTO, constructed at handler boundary"
 )]
-pub struct ShouldSurfaceResult {
-    pub surface: bool,
-}
+
 
 /// Determines whether an advisory should be surfaced based on tier and trust level.
 ///
@@ -95,36 +90,4 @@ pub struct ShouldSurfaceResult {
     clippy::unused_async,
     reason = "JSON-RPC handler signature requires async"
 )]
-pub async fn should_surface(
-    _state: &AppState,
-    params: ShouldSurfaceParams,
-) -> Result<ShouldSurfaceResult, ErrorObjectOwned> {
-    let tier = match params.tier.as_str() {
-        "p0" | "P0" | "P0Block" => AdvisoryTier::P0Block,
-        "p1" | "P1" | "P1Advisory" => AdvisoryTier::P1Advisory,
-        "p2" | "P2" | "P2Warning" => AdvisoryTier::P2Warning,
-        other => {
-            return Err(ErrorObjectOwned::owned(
-                -32602,
-                format!("invalid tier: {other}"),
-                None::<()>,
-            ));
-        }
-    };
-    let level = match params.level.as_str() {
-        "probationary" | "Probationary" => TrustLevel::Probationary,
-        "developing" | "Developing" => TrustLevel::Developing,
-        "established" | "Established" => TrustLevel::Established,
-        "mature" | "Mature" => TrustLevel::Mature,
-        other => {
-            return Err(ErrorObjectOwned::owned(
-                -32602,
-                format!("invalid level: {other}"),
-                None::<()>,
-            ));
-        }
-    };
-    Ok(ShouldSurfaceResult {
-        surface: trust_score::should_surface(tier, level),
-    })
-}
+

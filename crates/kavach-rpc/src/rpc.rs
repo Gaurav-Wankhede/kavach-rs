@@ -35,11 +35,7 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register system.health: {e}")))?;
 
-    module
-        .register_async_method("system.schema_apply", |_params, ctx, _ext| async move {
-            system::schema_apply(&ctx).await
-        })
-        .map_err(|e| internal(format!("register system.schema_apply: {e}")))?;
+    
 
     // change.wait — GUI live-update long-poll: parks until the change feed
     // advances past `since`, then returns the new version. SOURCE: state::ChangeFeed.
@@ -106,11 +102,7 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register projects.get_by_slug: {e}")))?;
 
-    module
-        .register_async_method("projects.list_all", |_params, ctx, _ext| async move {
-            projects::list_all(&ctx).await
-        })
-        .map_err(|e| internal(format!("register projects.list_all: {e}")))?;
+    
 
     module
         .register_async_method("projects.ancestry", |params, ctx, _ext| async move {
@@ -281,14 +273,7 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register concept.link: {e}")))?;
 
-    module
-        .register_async_method("concept.find", |params, ctx, _ext| async move {
-            let p: concept::FindParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            concept::find(&ctx, p).await
-        })
-        .map_err(|e| internal(format!("register concept.find: {e}")))?;
+    
 
     module
         .register_async_method("concept.search", |params, ctx, _ext| async move {
@@ -658,23 +643,9 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register gates.scan_write: {e}")))?;
 
-    module
-        .register_async_method("replay.event", |params, ctx, _ext| async move {
-            let p: replay::ReplayEventParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            replay::replay_event(&ctx, p)
-        })
-        .map_err(|e| internal(format!("register replay.event: {e}")))?;
+    
 
-    module
-        .register_async_method("replay.trajectory", |params, ctx, _ext| async move {
-            let p: replay::ReplayTrajectoryParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            replay::replay_trajectory(&ctx, p)
-        })
-        .map_err(|e| internal(format!("register replay.trajectory: {e}")))?;
+    
 
     module
         .register_async_method("trust.classify", |params, ctx, _ext| async move {
@@ -685,14 +656,7 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register trust.classify: {e}")))?;
 
-    module
-        .register_async_method("trust.should_surface", |params, ctx, _ext| async move {
-            let p: trust::ShouldSurfaceParams = params
-                .parse()
-                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
-            trust::should_surface(&ctx, p).await
-        })
-        .map_err(|e| internal(format!("register trust.should_surface: {e}")))?;
+    
 
     // db.* namespace — CLI command equivalents (parameterized queries in kavach_surreal)
     module

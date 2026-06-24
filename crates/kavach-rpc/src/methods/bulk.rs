@@ -9,5 +9,5 @@ mod list;
 pub use bump::{BumpParams, BumpResult, bump};
 pub use close::{CloseParams, CloseResult, close};
 pub use create::{CreateResult, CreateRpcParams, create};
-pub use get::{GetParams, GetResult, get};
+pub use get::GetResult;
 pub use list::{ListActiveParams, ListActiveResult, list_active_rpc};
