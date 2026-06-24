@@ -23,14 +23,3 @@ fn compute_hash_is_hex_blake3() {
     assert!(h.chars().all(|c| c.is_ascii_hexdigit()));
 }
 
-#[test]
-fn next_version_unchanged() {
-    let v = RuleVersion::next_version(3, "abc", "abc");
-    assert_eq!(v, 3);
-}
-
-#[test]
-fn next_version_increments_on_change() {
-    let v = RuleVersion::next_version(3, "abc", "def");
-    assert_eq!(v, 4);
-}

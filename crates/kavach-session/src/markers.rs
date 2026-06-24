@@ -105,11 +105,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    /// True if failure is transient (timeout, rate limit) and worth retrying.
-    #[must_use]
-    pub fn is_transient_failure(&self) -> bool {
-        self.failure_type == "transient"
-    }
 
     /// True if failure is a valid "not found" result, not a real error.
     #[must_use]
