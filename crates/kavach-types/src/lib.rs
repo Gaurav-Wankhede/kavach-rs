@@ -269,15 +269,6 @@ impl HookInput {
             .unwrap_or("")
     }
 
-    /// Extract a bool value from `tool_input` by key.
-    #[must_use]
-    pub fn get_bool(&self, key: &str) -> bool {
-        self.tool_input
-            .as_ref()
-            .and_then(|m| m.get(key))
-            .and_then(serde_json::Value::as_bool)
-            .unwrap_or(false)
-    }
 
     /// Extract an integer value from `tool_input` by key.
     #[must_use]

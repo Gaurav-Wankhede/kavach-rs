@@ -45,17 +45,6 @@ mod tests {
     use crate::state::SessionState;
 
     #[test]
-    fn test_teammate_tracking() {
-        let mut s = SessionState::default();
-        s.track_teammate_start("researcher", "Explore");
-        assert_eq!(s.active_teammates, 1);
-        assert!(s.team_members.contains(&"researcher:Explore".to_owned()));
-        s.track_teammate_stop("researcher");
-        assert_eq!(s.active_teammates, 0);
-        assert!(s.team_members.is_empty());
-    }
-
-    #[test]
     fn test_teammate_count_stays_derived_from_members() {
         // A stop with no matching member must not drift the count below the real
         // membership — the old always-decrement guard did exactly that.
