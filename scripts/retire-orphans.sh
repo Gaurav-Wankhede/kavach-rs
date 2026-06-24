@@ -5,14 +5,10 @@ cd "$(git rev-parse --show-toplevel)"
 RPC=crates/kavach-rpc/src
 M="$RPC/methods"
 
-# 1. rpc.rs — drop the 7 register_async_method blocks (each: `module\n .register..("verb"..)..register verb: {e}"))?;`).
-#    Anchor on the unique trailing map_err line and the leading `module` via a multiline ast-grep on the chain stmt.
+# 1. rpc.rs — drop the 7 register blocks.
 for verb in \
   "system.schema_apply" "projects.list_all" "concept.find" \
-  "nlm-NONE" \
   "replay.event" "replay.trajectory" "trust.should_surface" "bulk.sweep_get"; do
-  [ "$verb" = "nlm-NONE" ] && continue
-  # Structural delete: the whole `module .register_async_method("<verb>", ...) ... .map_err(...register <verb>: {e}"))?;`
   ast-grep run --update-all \
     --pattern "module
         .register_async_method(\"$verb\", \$\$\$)
