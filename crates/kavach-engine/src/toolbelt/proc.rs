@@ -1,13 +1,7 @@
 //! Process + git inspection wrappers (procs, git diff).
 use std::process::Command;
 
-/// Run `git diff --stat` and return parsed output.
-///
-/// Returns Ok((true, stdout)) when git succeeds and there are changes,
-/// Ok((false, "")) when there are no changes,
-/// Err(_) when git is unavailable or the command fails.
-/// Used by gates to detect filesystem mutation between turns.
-/// SOURCE: shelling out preserves bit-exact behavior with user's git config (vs git2).
+/// `git diff --stat` → `(has_changes, stdout)`; gates use it to detect turn-to-turn file mutation.
 ///
 /// # Errors
 /// Returns `Err` when git is unavailable or the command fails.
