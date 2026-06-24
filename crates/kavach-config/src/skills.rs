@@ -79,29 +79,6 @@ pub fn get_skills_by_priority() -> Vec<SkillConfig> {
     skills
 }
 
-#[must_use]
-pub fn get_skill_names() -> Vec<String> {
-    get_skills_by_priority()
-        .into_iter()
-        .map(|s| s.name)
-        .collect()
-}
-
-#[must_use]
-pub fn get_skill_keywords(skill_name: &str) -> Vec<String> {
-    let patterns = get_skill_patterns();
-    let section = format!("SKILL:{skill_name}");
-    patterns
-        .get(&section)
-        .map(|vals| {
-            vals.iter()
-                .filter(|v| !v.starts_with("priority:"))
-                .cloned()
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
