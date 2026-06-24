@@ -19,10 +19,11 @@ const FACTUAL_TRIGGERS: &[&str] = &[
     "api docs",
 ];
 
-/// True when the prompt carries a factual signal that demands a live source
-/// (a version, date, URL, registry, or price word) — internet-first fires even
-/// without an implement verb. Bypass patterns are filtered upstream in
-/// `requires_research`, so a non-factual refactor prompt never reaches here.
+/// True when the prompt carries a factual signal that demands a live source.
+///
+/// Fires on a version, date, URL, registry, or price word so internet-first
+/// triggers even without an implement verb. Bypass patterns are filtered upstream
+/// in `requires_research`, so a non-factual refactor prompt never reaches here.
 #[must_use]
 pub fn contains_factual_trigger(prompt: &str) -> bool {
     let lower = prompt.to_lowercase();
