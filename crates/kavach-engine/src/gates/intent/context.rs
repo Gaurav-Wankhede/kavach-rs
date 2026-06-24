@@ -365,10 +365,26 @@ mod tests {
         // A genuine empty queue is Some((0,0,0)) and must render the drained
         // message, never the DEGRADED sentinel — the two are not conflated.
         let mut ctx = String::new();
-        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", Some((0, 0, 0)));
+        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", Some((0, 0, 0)), &[]);
         assert!(observed, "a successful read is observed");
         assert!(ctx.contains("drained"), "empty board says drained: {ctx}");
         assert!(!ctx.contains("DEGRADED"), "empty != degraded: {ctx}");
+    }
+
+    #[test]
+    fn ranked_cards_render_as_relevance_list() {
+        // A non-empty ranked set renders each card under the relevance header —
+        // the dynamic-injection path (top-K by prompt match), not single-next.
+        let mut ctx = String::new();
+        let ranked = vec![
+            ("unit.a".to_owned(), "Card A".to_owned(), "todo".to_owned()),
+            ("unit.b".to_owned(), "Card B".to_owned(), "in_progress".to_owned()),
+        ];
+        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", Some((2, 0, 0)), &ranked);
+        assert!(observed, "a successful read is observed");
+        assert!(ctx.contains("relevance-ranked"), "relevance header present: {ctx}");
+        assert!(ctx.contains("[unit.a] Card A [todo]"), "card A rendered: {ctx}");
+        assert!(ctx.contains("[unit.b] Card B [in_progress]"), "card B rendered: {ctx}");
     }
 
     #[test]
