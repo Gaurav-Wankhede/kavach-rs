@@ -185,9 +185,10 @@ fn collect_dir(dir: &std::path::Path, out: &mut Vec<TaskListEntry>) {
     for file in files.flatten() {
         let path = file.path();
         if path.extension().is_some_and(|x| x == "json")
-            && let Some(entry) = parse_entry(&path) {
-                out.push(entry);
-            }
+            && let Some(entry) = parse_entry(&path)
+        {
+            out.push(entry);
+        }
     }
 }
 

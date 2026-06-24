@@ -27,7 +27,8 @@ fn card(key: &str, status: &str, lane: Option<&str>) -> MemoryEntry {
 fn leased_card(key: &str, holder: &str, secs_from_now: i64) -> MemoryEntry {
     let mut c = card(key, "todo", None);
     c.occupied_by = Some(holder.into());
-    c.occupied_until = chrono::Utc::now().checked_add_signed(chrono::Duration::seconds(secs_from_now));
+    c.occupied_until =
+        chrono::Utc::now().checked_add_signed(chrono::Duration::seconds(secs_from_now));
     c
 }
 
@@ -49,7 +50,9 @@ fn agent_blocked_marker_does_not_suppress_dispatch() {
     let cards = vec![marked_card("p", "AGENT_BLOCKED:")];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
     assert_eq!(
-        picked.expect("a runnable card dispatches despite the inert marker").key,
+        picked
+            .expect("a runnable card dispatches despite the inert marker")
+            .key,
         "p"
     );
 }
@@ -59,7 +62,9 @@ fn operator_gated_marker_does_not_suppress_dispatch() {
     let cards = vec![marked_card("p", "OPERATOR-GATED:")];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
     assert_eq!(
-        picked.expect("a runnable card dispatches despite the inert marker").key,
+        picked
+            .expect("a runnable card dispatches despite the inert marker")
+            .key,
         "p"
     );
 }
@@ -68,7 +73,10 @@ fn operator_gated_marker_does_not_suppress_dispatch() {
 fn priority_order_decides_between_two_runnable_cards() {
     // `entries` is pre-sorted by priority; the first match wins. A marker on the
     // first card no longer demotes it — both are runnable, the first is picked.
-    let cards = vec![marked_card("first", "OPERATOR-GATED:"), card("second", "todo", None)];
+    let cards = vec![
+        marked_card("first", "OPERATOR-GATED:"),
+        card("second", "todo", None),
+    ];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
     assert_eq!(picked.expect("the first runnable card").key, "first");
 }
@@ -83,7 +91,10 @@ fn umbrella_card(key: &str) -> MemoryEntry {
 fn umbrella_parent_card_is_not_selected() {
     let cards = vec![umbrella_card("parent")];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
-    assert!(picked.is_none(), "an UMBRELLA/EPIC parent must not dispatch");
+    assert!(
+        picked.is_none(),
+        "an UMBRELLA/EPIC parent must not dispatch"
+    );
 }
 
 #[test]
@@ -148,7 +159,10 @@ fn live_lease_by_other_session_is_skipped() {
     // Terminal B (sess-B) selecting: a card sess-A holds live must NOT be picked.
     let cards = vec![leased_card("a-card", "sess-A", 300)];
     let picked = pick_in_lane(&cards, &cards, "sess-B", |e| lane_matches(e, None));
-    assert!(picked.is_none(), "a card live-leased by another session must not dispatch");
+    assert!(
+        picked.is_none(),
+        "a card live-leased by another session must not dispatch"
+    );
 }
 
 #[test]
@@ -170,7 +184,10 @@ fn expired_lease_is_selectable_by_anyone() {
 #[test]
 fn other_session_card_skipped_unlaned_card_picked() {
     // The exact two-terminal bug: B skips A's live card, takes the free one.
-    let cards = vec![leased_card("a-active", "sess-A", 300), card("free", "todo", None)];
+    let cards = vec![
+        leased_card("a-active", "sess-A", 300),
+        card("free", "todo", None),
+    ];
     let picked = pick_in_lane(&cards, &cards, "sess-B", |e| lane_matches(e, None));
     assert_eq!(picked.expect("B takes the un-leased card").key, "free");
 }
@@ -180,7 +197,10 @@ fn empty_me_treats_any_live_lease_as_foreign_fail_closed() {
     // An un-identified session (no KAVACH_SESSION_ID) must NOT steal a live card.
     let cards = vec![leased_card("held", "sess-A", 300)];
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None));
-    assert!(picked.is_none(), "empty session id fails closed — never steals a live card");
+    assert!(
+        picked.is_none(),
+        "empty session id fails closed — never steals a live card"
+    );
 }
 
 // ── Stale-claim sweep predicate (E4, operator directive 2026-06-18) ─────────────
@@ -192,7 +212,8 @@ fn empty_me_treats_any_live_lease_as_foreign_fail_closed() {
 fn claimed_card(key: &str, holder: &str, secs_from_now: i64) -> MemoryEntry {
     let mut c = card(key, "in_progress", None);
     c.occupied_by = Some(holder.into());
-    c.occupied_until = chrono::Utc::now().checked_add_signed(chrono::Duration::seconds(secs_from_now));
+    c.occupied_until =
+        chrono::Utc::now().checked_add_signed(chrono::Duration::seconds(secs_from_now));
     c
 }
 
@@ -203,7 +224,10 @@ fn expired_lease_on_in_progress_is_a_stale_claim() {
 
 #[test]
 fn live_lease_on_in_progress_is_not_stale() {
-    assert!(!claimed_card("active", "live-sess", 300).is_stale_claim(), "holder still working");
+    assert!(
+        !claimed_card("active", "live-sess", 300).is_stale_claim(),
+        "holder still working"
+    );
 }
 
 #[test]
@@ -215,5 +239,8 @@ fn unleased_in_progress_is_not_swept() {
 
 #[test]
 fn a_todo_card_is_never_a_stale_claim() {
-    assert!(!leased_card("t", "s", -10).is_stale_claim(), "todo is not in_progress");
+    assert!(
+        !leased_card("t", "s", -10).is_stale_claim(),
+        "todo is not in_progress"
+    );
 }

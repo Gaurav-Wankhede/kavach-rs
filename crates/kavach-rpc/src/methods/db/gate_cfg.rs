@@ -98,10 +98,7 @@ pub struct GetParams {
 ///
 /// # Errors
 /// Returns `ErrorObjectOwned` when the database query fails.
-pub async fn get(
-    state: &AppState,
-    p: GetParams,
-) -> Result<Option<GateValueDto>, ErrorObjectOwned> {
+pub async fn get(state: &AppState, p: GetParams) -> Result<Option<GateValueDto>, ErrorObjectOwned> {
     let resolved = gate_config_resolve(&state.db, &p.project, &p.gate_key)
         .await
         .map_err(surreal_to_rpc)?;

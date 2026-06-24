@@ -189,8 +189,8 @@ fn dispatcher_picks_first_runnable_dependency_satisfied_leaf() {
             updated_at: None,
             priority,
             lane: None,
-        occupied_by: None,
-        occupied_until: None,
+            occupied_by: None,
+            occupied_until: None,
         }
     }
     fn pick_first(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {

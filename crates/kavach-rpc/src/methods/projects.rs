@@ -74,4 +74,3 @@ pub async fn get_by_slug(
         .await
         .map_err(surreal_to_rpc)
 }
-

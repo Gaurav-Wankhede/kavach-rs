@@ -38,7 +38,11 @@ pub async fn kanban_close(
     // EVIDENCE GATE: kanban-close always promotes roadmap→verified, so a fresh
     // witness receipt is always required (see witness_gate + the decision row).
     if let Some(msg) = enforce_receipt(ROADMAP_TABLE, STATUS_VERIFIED, params.receipt.as_ref()) {
-        return Ok(KanbanCloseResult { success: false, title: None, error: Some(msg) });
+        return Ok(KanbanCloseResult {
+            success: false,
+            title: None,
+            error: Some(msg),
+        });
     }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =

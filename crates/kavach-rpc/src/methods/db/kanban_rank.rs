@@ -92,11 +92,7 @@ fn rank_cards_by_relevance(
         })
         .collect();
     indexed.sort_by_key(|(rank, _)| *rank);
-    indexed
-        .into_iter()
-        .map(|(_, c)| c)
-        .take(limit)
-        .collect()
+    indexed.into_iter().map(|(_, c)| c).take(limit).collect()
 }
 
 /// Rank the runnable roadmap cards of a project by relevance to the prompt.

@@ -34,8 +34,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register system.health: {e}")))?;
 
-    
-
     // change.wait — GUI live-update long-poll: parks until the change feed
     // advances past `since`, then returns the new version. SOURCE: state::ChangeFeed.
     module
@@ -100,8 +98,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             projects::get_by_slug(&ctx, p).await
         })
         .map_err(|e| internal(format!("register projects.get_by_slug: {e}")))?;
-
-    
 
     module
         .register_async_method("projects.ancestry", |params, ctx, _ext| async move {
@@ -271,8 +267,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             concept::link(&ctx, p).await
         })
         .map_err(|e| internal(format!("register concept.link: {e}")))?;
-
-    
 
     module
         .register_async_method("concept.search", |params, ctx, _ext| async move {
@@ -527,7 +521,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register roadmap.next_open_task: {e}")))?;
 
-
     module
         .register_async_method("roadmap.open_set_census", |params, ctx, _ext| async move {
             let p: roadmap::NextOpenTaskParams = params
@@ -642,10 +635,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register gates.scan_write: {e}")))?;
 
-    
-
-    
-
     module
         .register_async_method("trust.classify", |params, ctx, _ext| async move {
             let p: trust::ClassifyParams = params
@@ -654,8 +643,6 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
             trust::classify(&ctx, p).await
         })
         .map_err(|e| internal(format!("register trust.classify: {e}")))?;
-
-    
 
     // db.* namespace — CLI command equivalents (parameterized queries in kavach_surreal)
     module
@@ -802,8 +789,7 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
 
     module
         .register_async_method("db.set_lane", |params, ctx, _ext| async move {
-            let p: db::SetLaneParams =
-                params.parse().map_err(|e| invalid_params(e.to_string()))?;
+            let p: db::SetLaneParams = params.parse().map_err(|e| invalid_params(e.to_string()))?;
             db::set_lane(&ctx, p).await
         })
         .map_err(|e| internal(e.to_string()))?;

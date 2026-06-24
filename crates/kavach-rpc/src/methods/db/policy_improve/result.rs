@@ -55,7 +55,11 @@ pub(super) const fn blocked_reason(
 }
 
 /// Build the success-path result (`promoted` true only when every gate cleared).
-pub(super) fn finish(promoted: bool, blocked_by: Option<&'static str>, m: Metrics) -> PolicyImproveResult {
+pub(super) fn finish(
+    promoted: bool,
+    blocked_by: Option<&'static str>,
+    m: Metrics,
+) -> PolicyImproveResult {
     PolicyImproveResult {
         success: true,
         promoted,

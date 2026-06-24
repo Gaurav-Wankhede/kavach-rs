@@ -13,7 +13,11 @@ fn card(key: &str, status: &str) -> RankableCard {
 fn empty_focus_preserves_priority_order() {
     // No brain hits (session-start / empty prompt) ⇒ input order is kept,
     // truncated to limit. Mirrors the whole-board fallback.
-    let cards = vec![card("a", "todo"), card("b", "in_progress"), card("c", "todo")];
+    let cards = vec![
+        card("a", "todo"),
+        card("b", "in_progress"),
+        card("c", "todo"),
+    ];
     let out = rank_cards_by_relevance(cards, &[], 6);
     let keys: Vec<&str> = out.iter().map(|c| c.key.as_str()).collect();
     assert_eq!(keys, ["a", "b", "c"]);
@@ -27,7 +31,11 @@ fn ranked_cards_lead_in_hit_order() {
     let hits = vec!["c".to_owned(), "a".to_owned()];
     let out = rank_cards_by_relevance(cards, &hits, 6);
     let keys: Vec<&str> = out.iter().map(|c| c.key.as_str()).collect();
-    assert_eq!(keys, ["c", "a", "b"], "hit cards lead in hit order, rest follow");
+    assert_eq!(
+        keys,
+        ["c", "a", "b"],
+        "hit cards lead in hit order, rest follow"
+    );
 }
 
 #[test]

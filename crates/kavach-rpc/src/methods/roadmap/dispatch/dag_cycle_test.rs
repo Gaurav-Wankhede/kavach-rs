@@ -36,10 +36,19 @@ fn card(key: &str, deps: &[&str]) -> MemoryEntry {
 fn two_node_cycle_is_detected_and_names_both_keys() {
     let cards = vec![card("a", &["b"]), card("b", &["a"])];
     let cycle = detect_cycle(&cards).expect("A->B->A is a cycle");
-    assert!(cycle.contains(&"a".to_owned()) && cycle.contains(&"b".to_owned()), "both keys named: {cycle:?}");
+    assert!(
+        cycle.contains(&"a".to_owned()) && cycle.contains(&"b".to_owned()),
+        "both keys named: {cycle:?}"
+    );
     let msg = cycle_message(&cycle);
-    assert!(msg.starts_with("[DAG_CYCLE]"), "allow-stop marker present: {msg}");
-    assert!(msg.contains('a') && msg.contains('b'), "message names both keys: {msg}");
+    assert!(
+        msg.starts_with("[DAG_CYCLE]"),
+        "allow-stop marker present: {msg}"
+    );
+    assert!(
+        msg.contains('a') && msg.contains('b'),
+        "message names both keys: {msg}"
+    );
 }
 
 #[test]
@@ -47,22 +56,36 @@ fn three_node_cycle_is_detected() {
     let cards = vec![card("x", &["y"]), card("y", &["z"]), card("z", &["x"])];
     let cycle = detect_cycle(&cards).expect("X->Y->Z->X is a cycle");
     for k in ["x", "y", "z"] {
-        assert!(cycle.contains(&k.to_owned()), "key {k} on the 3-cycle: {cycle:?}");
+        assert!(
+            cycle.contains(&k.to_owned()),
+            "key {k} on the 3-cycle: {cycle:?}"
+        );
     }
 }
 
 #[test]
 fn acyclic_dag_returns_none() {
     // a -> b -> c, plus an independent d. No back edge anywhere.
-    let cards = vec![card("a", &["b"]), card("b", &["c"]), card("c", &[]), card("d", &[])];
-    assert!(detect_cycle(&cards).is_none(), "a linear chain is not a cycle");
+    let cards = vec![
+        card("a", &["b"]),
+        card("b", &["c"]),
+        card("c", &[]),
+        card("d", &[]),
+    ];
+    assert!(
+        detect_cycle(&cards).is_none(),
+        "a linear chain is not a cycle"
+    );
 }
 
 #[test]
 fn dangling_dep_is_not_a_cycle() {
     // a depends on a key that doesn't exist as a node — a missing dep, not a loop.
     let cards = vec![card("a", &["ghost-key"])];
-    assert!(detect_cycle(&cards).is_none(), "a dep on an absent node is not a cycle");
+    assert!(
+        detect_cycle(&cards).is_none(),
+        "a dep on an absent node is not a cycle"
+    );
 }
 
 #[test]

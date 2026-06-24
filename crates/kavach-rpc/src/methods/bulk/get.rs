@@ -1,9 +1,7 @@
-// bulk.sweep_get — fetch one manifest by sweep_id. Used by pre-write gate
-// to verify a sweep is still usable + matches scope before allowing an Edit.
+// GetResult — manifest DTO shared by bulk.sweep_list_active (list.rs).
 use chrono::{DateTime, Utc};
 use kavach_surreal::bulk_manifest::BulkManifest;
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[expect(
@@ -41,4 +39,3 @@ impl From<BulkManifest> for GetResult {
         }
     }
 }
-

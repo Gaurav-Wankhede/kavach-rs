@@ -2,7 +2,7 @@
 //! a valid, fresh witness receipt. Cheap (one `git rev-parse HEAD`, no cargo) so
 //! it cannot block the async daemon. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
 
-use kavach_patterns::witness_receipt::{validate, Receipt};
+use kavach_patterns::witness_receipt::{Receipt, validate};
 
 /// `Some(msg)` REFUSES the promotion (msg is agent-facing); `None` allows it.
 /// Reads the live `HEAD` + wall clock, then delegates to the pure [`decide`].

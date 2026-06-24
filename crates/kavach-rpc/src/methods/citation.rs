@@ -20,7 +20,10 @@ pub struct AddParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[expect(clippy::exhaustive_structs, reason = "RPC result DTO at handler boundary")]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO at handler boundary"
+)]
 pub struct IdResult {
     pub id: String,
 }
@@ -42,7 +45,9 @@ pub async fn add(state: &AppState, p: AddParams) -> Result<IdResult, ErrorObject
     )
     .await
     .map_err(surreal_to_rpc)?;
-    Ok(IdResult { id: format!("{id:?}") })
+    Ok(IdResult {
+        id: format!("{id:?}"),
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -115,7 +120,10 @@ pub struct TraverseParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[expect(clippy::exhaustive_structs, reason = "RPC result DTO at handler boundary")]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO at handler boundary"
+)]
 pub struct CitersResult {
     pub citers: Vec<String>,
 }
@@ -145,7 +153,10 @@ pub struct RefreshParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[expect(clippy::exhaustive_structs, reason = "RPC result DTO at handler boundary")]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RPC result DTO at handler boundary"
+)]
 pub struct RewardResult {
     pub rewarded: usize,
 }
@@ -154,10 +165,7 @@ pub struct RewardResult {
 ///
 /// # Errors
 /// Returns `ErrorObjectOwned` on a malformed record id or DB failure.
-pub async fn refresh(
-    state: &AppState,
-    p: RefreshParams,
-) -> Result<RewardResult, ErrorObjectOwned> {
+pub async fn refresh(state: &AppState, p: RefreshParams) -> Result<RewardResult, ErrorObjectOwned> {
     let citation = parse_record(&p.citation)?;
     let rewarded = citation_reward(&state.db, &citation, p.delta)
         .await

@@ -116,7 +116,11 @@ pub async fn policy_improve(
         Ok(rows) => rows.first().map_or(0.0, |p| p.lcb),
         Err(e) => return Ok(load_failed(e.to_string())),
     };
-    let beats = promote(&cand.estimate, &Estimate::new(incumbent_lcb, 0.0, 1), params.z);
+    let beats = promote(
+        &cand.estimate,
+        &Estimate::new(incumbent_lcb, 0.0, 1),
+        params.z,
+    );
 
     let m = Metrics {
         candidate_lcb: cand_lcb,

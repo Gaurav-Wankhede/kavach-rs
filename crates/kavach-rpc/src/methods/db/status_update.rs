@@ -50,7 +50,10 @@ pub async fn status_update(
     // fresh witness receipt (mirrors the CLI's pre-dispatch witness). Cheap +
     // non-blocking. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
     if let Some(msg) = enforce_receipt(&params.category, &params.status, params.receipt.as_ref()) {
-        return Ok(StatusUpdateResult { success: false, error: Some(msg) });
+        return Ok(StatusUpdateResult {
+            success: false,
+            error: Some(msg),
+        });
     }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =

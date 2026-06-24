@@ -27,7 +27,9 @@ fn plain_title_is_not_umbrella() {
 fn lowercase_umbrella_prose_is_detected() {
     // The loop trap: "P4 JLM platform umbrella" (lowercase) slipped past the
     // case-sensitive check and re-dispatched forever. Must match now.
-    assert!(is_umbrella("P4 JLM platform umbrella (fundamentals verified)"));
+    assert!(is_umbrella(
+        "P4 JLM platform umbrella (fundamentals verified)"
+    ));
     assert!(is_umbrella("P3 Soundbak platform umbrella"));
 }
 

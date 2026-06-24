@@ -1,5 +1,5 @@
 use super::super::readiness::{
-    deps_satisfied, dep_index, is_in_cycle, is_runnable_status, is_umbrella,
+    dep_index, deps_satisfied, is_in_cycle, is_runnable_status, is_umbrella,
 };
 use super::super::types::{NextOpenTaskParams, OpenSetCensus};
 use crate::error::surreal_to_rpc;

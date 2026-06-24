@@ -124,8 +124,8 @@ fn done_card_satisfies_a_dependent_and_is_promotable() {
             updated_at: None,
             priority: None,
             lane: None,
-        occupied_by: None,
-        occupied_until: None,
+            occupied_by: None,
+            occupied_until: None,
         }
     }
     let all = vec![

@@ -1,6 +1,6 @@
 //! Red-Green proofs for the RPC witness-receipt gate decision logic.
 
-use super::{decide, Receipt};
+use super::{Receipt, decide};
 
 fn good(head: &str, ts: i64, sess: &str) -> Receipt {
     Receipt::new(true, head.to_owned(), ts, sess.to_owned())

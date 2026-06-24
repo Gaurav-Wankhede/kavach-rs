@@ -41,7 +41,10 @@ fn open_tasks_count_as_runnable() {
     write_task(&scope, "3", "completed", &[]); // terminal → not runnable
 
     let (runnable, blocked) = tasklist_census(&root);
-    assert_eq!(runnable, 2, "pending + in_progress are runnable, completed is not");
+    assert_eq!(
+        runnable, 2,
+        "pending + in_progress are runnable, completed is not"
+    );
     assert_eq!(blocked, 0, "no deps → nothing blocked");
 }
 
@@ -76,7 +79,10 @@ fn dangling_blockedby_does_not_strand_task() {
 
     let (runnable, blocked) = tasklist_census(&root);
     assert_eq!(runnable, 1, "#2 is open");
-    assert_eq!(blocked, 0, "unknown prereq is treated as satisfied, not blocking");
+    assert_eq!(
+        blocked, 0,
+        "unknown prereq is treated as satisfied, not blocking"
+    );
 }
 
 #[test]
@@ -84,7 +90,11 @@ fn missing_store_contributes_zero() {
     let root = std::env::temp_dir().join("kavach-tasklist-test-absent-xyz");
     drop(std::fs::remove_dir_all(&root)); // ensure it does not exist (NotFound is fine)
     let (runnable, blocked) = tasklist_census(&root);
-    assert_eq!((runnable, blocked), (0, 0), "absent store fails closed to zero");
+    assert_eq!(
+        (runnable, blocked),
+        (0, 0),
+        "absent store fails closed to zero"
+    );
 }
 
 #[test]
@@ -94,7 +104,10 @@ fn malformed_json_file_is_skipped_not_fatal() {
     std::fs::write(scope.join("2.json"), b"{not valid json").expect("write garbage");
 
     let (runnable, blocked) = tasklist_census(&root);
-    assert_eq!(runnable, 1, "the one valid open task counts; garbage is skipped");
+    assert_eq!(
+        runnable, 1,
+        "the one valid open task counts; garbage is skipped"
+    );
     assert_eq!(blocked, 0, "no deps");
 }
 
@@ -108,12 +121,18 @@ fn archived_completed_subdir_is_not_descended() {
     write_task(&archive, "900", "pending", &[]);
 
     let (runnable, _blocked) = tasklist_census(&root);
-    assert_eq!(runnable, 1, "archive subdir is skipped; only the live task counts");
+    assert_eq!(
+        runnable, 1,
+        "archive subdir is skipped; only the live task counts"
+    );
 }
 
 #[test]
 fn unknown_status_string_fails_closed() {
-    assert!(!is_runnable_cc_status("garbage"), "non-canonical status is never runnable");
+    assert!(
+        !is_runnable_cc_status("garbage"),
+        "non-canonical status is never runnable"
+    );
     assert!(is_runnable_cc_status("pending"));
     assert!(is_runnable_cc_status("in_progress"));
     assert!(!is_runnable_cc_status("completed"));
@@ -133,12 +152,15 @@ fn override_dir_wins_over_home() {
 
 #[test]
 fn home_derives_root_when_no_override() {
-    let resolved = resolve_root(None, Some(PathBuf::from("/home/someone")))
-        .expect("home yields a root");
+    let resolved =
+        resolve_root(None, Some(PathBuf::from("/home/someone"))).expect("home yields a root");
     assert_eq!(resolved, PathBuf::from("/home/someone/.claude/tasks"));
 }
 
 #[test]
 fn no_inputs_resolves_none() {
-    assert!(resolve_root(None, None).is_none(), "both absent → fail-closed None");
+    assert!(
+        resolve_root(None, None).is_none(),
+        "both absent → fail-closed None"
+    );
 }

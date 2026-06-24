@@ -66,5 +66,3 @@ pub async fn classify(
         suppresses_p2: level.suppresses_p2(),
     })
 }
-
-

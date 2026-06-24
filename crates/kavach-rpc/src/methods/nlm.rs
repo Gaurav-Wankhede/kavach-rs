@@ -31,9 +31,15 @@ pub async fn store(state: &AppState, p: StoreParams) -> Result<&'static str, Err
             None::<()>,
         ));
     }
-    nlm_upsert_doc(&state.db, &p.source_url, &p.heading, &p.body, &p.captured_at)
-        .await
-        .map_err(surreal_to_rpc)?;
+    nlm_upsert_doc(
+        &state.db,
+        &p.source_url,
+        &p.heading,
+        &p.body,
+        &p.captured_at,
+    )
+    .await
+    .map_err(surreal_to_rpc)?;
     Ok("ok")
 }
 

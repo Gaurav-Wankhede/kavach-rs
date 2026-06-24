@@ -1,9 +1,9 @@
 use crate::error::{internal, invalid_params, surreal_to_rpc};
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{run_get, run_insert, run_list_by_project, run_update_status, RunRecord};
+use kavach_surreal::{RunRecord, run_get, run_insert, run_list_by_project, run_update_status};
 use serde::{Deserialize, Serialize};
-use std::process::{Stdio, Command};
+use std::process::{Command, Stdio};
 use surrealdb_types::RecordId;
 
 #[non_exhaustive]
@@ -171,9 +171,7 @@ pub async fn record(state: &AppState, params: RecordParams) -> Result<IdResult, 
         exit_code: None,
         cost_usd: None,
     };
-    let id = run_insert(&state.db, &run)
-        .await
-        .map_err(surreal_to_rpc)?;
+    let id = run_insert(&state.db, &run).await.map_err(surreal_to_rpc)?;
     Ok(IdResult {
         id: record_id_to_string(&id),
     })
@@ -189,9 +187,15 @@ pub async fn update_status(
     params: UpdateStatusParams,
 ) -> Result<SuccessResult, ErrorObjectOwned> {
     let id = parse_record_id(&params.id)?;
-    run_update_status(&state.db, &id, &params.status, params.finished_at, params.exit_code)
-        .await
-        .map_err(surreal_to_rpc)?;
+    run_update_status(
+        &state.db,
+        &id,
+        &params.status,
+        params.finished_at,
+        params.exit_code,
+    )
+    .await
+    .map_err(surreal_to_rpc)?;
     Ok(SuccessResult {
         success: true,
         error: None,
@@ -203,11 +207,12 @@ pub async fn update_status(
 /// # Errors
 ///
 /// Returns an error if the run cannot be found, has no pid, or the operation fails.
-pub async fn cancel(state: &AppState, params: CancelParams) -> Result<SuccessResult, ErrorObjectOwned> {
+pub async fn cancel(
+    state: &AppState,
+    params: CancelParams,
+) -> Result<SuccessResult, ErrorObjectOwned> {
     let id = parse_record_id(&params.id)?;
-    let run = run_get(&state.db, &id)
-        .await
-        .map_err(surreal_to_rpc)?;
+    let run = run_get(&state.db, &id).await.map_err(surreal_to_rpc)?;
 
     let Some(run) = run else {
         return Ok(SuccessResult {
@@ -266,9 +271,9 @@ pub async fn spawn(state: &AppState, params: SpawnParams) -> Result<SpawnResult,
         cmd.current_dir(cwd);
     }
 
-    let mut child = cmd.spawn().map_err(|e| {
-        internal(format!("failed to spawn process '{}': {e}", params.command))
-    })?;
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| internal(format!("failed to spawn process '{}': {e}", params.command)))?;
 
     let pid_u32 = child.id();
 
@@ -286,20 +291,20 @@ pub async fn spawn(state: &AppState, params: SpawnParams) -> Result<SpawnResult,
         cost_usd: None,
     };
 
-    let record_id = run_insert(&state.db, &run)
-        .await
-        .map_err(surreal_to_rpc)?;
+    let record_id = run_insert(&state.db, &run).await.map_err(surreal_to_rpc)?;
 
     let db = std::sync::Arc::clone(&state.db);
     let record_id_clone = record_id.clone();
     tokio::spawn(async move {
-        let (status, exit_code) = tokio::task::block_in_place(|| child.wait()).map_or(
-            ("failed", None),
-            |exit_status| {
-                let st = if exit_status.success() { "done" } else { "failed" };
+        let (status, exit_code) =
+            tokio::task::block_in_place(|| child.wait()).map_or(("failed", None), |exit_status| {
+                let st = if exit_status.success() {
+                    "done"
+                } else {
+                    "failed"
+                };
                 (st, exit_status.code().map(i64::from))
-            },
-        );
+            });
         let finished_now = chrono::Utc::now().to_rfc3339();
         run_update_status(&db, &record_id_clone, status, Some(finished_now), exit_code)
             .await

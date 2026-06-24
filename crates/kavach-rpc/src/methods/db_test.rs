@@ -44,14 +44,20 @@ fn single_key_confirm_cannot_authorize_a_prefix_purge() {
     // to equal a prefix must NOT match the wildcard-purge phrase for that prefix.
     let single = delete_confirm_phrase("kavach-rs", "roadmap", Some("heal.incident.loophole-"));
     let wildcard = delete_confirm_phrase_prefix("kavach-rs", "roadmap", "heal.incident.loophole-");
-    assert_ne!(single, wildcard, "single-key confirm must not authorize a bulk purge");
+    assert_ne!(
+        single, wildcard,
+        "single-key confirm must not authorize a bulk purge"
+    );
 }
 
 #[test]
 fn prefix_phrase_is_target_bound_per_field() {
     let base = delete_confirm_phrase_prefix("proj-a", "roadmap", "p");
     assert_ne!(base, delete_confirm_phrase_prefix("proj-b", "roadmap", "p"));
-    assert_ne!(base, delete_confirm_phrase_prefix("proj-a", "decision", "p"));
+    assert_ne!(
+        base,
+        delete_confirm_phrase_prefix("proj-a", "decision", "p")
+    );
     assert_ne!(base, delete_confirm_phrase_prefix("proj-a", "roadmap", "q"));
 }
 

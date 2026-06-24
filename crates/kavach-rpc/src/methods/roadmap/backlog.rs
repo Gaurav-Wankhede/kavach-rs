@@ -1,6 +1,4 @@
-use super::readiness::{
-    deps_satisfied, is_needs_decomposition, is_runnable_status, is_umbrella,
-};
+use super::readiness::{deps_satisfied, is_needs_decomposition, is_runnable_status, is_umbrella};
 use super::types::{NextOpenTaskParams, NextTaskResult};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;

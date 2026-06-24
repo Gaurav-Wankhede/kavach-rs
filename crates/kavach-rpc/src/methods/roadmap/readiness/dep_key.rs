@@ -150,25 +150,36 @@ mod tests {
             "qualified dep must match bare entry_key when prereq is verified"
         );
         // Bare form still resolves identically.
-        assert!(dep_key_satisfied("roadmap.phasemerge.w1-db-phase-config", &all));
+        assert!(dep_key_satisfied(
+            "roadmap.phasemerge.w1-db-phase-config",
+            &all
+        ));
     }
 
     #[test]
     fn unsatisfied_prereq_stays_blocked_via_both_forms() {
         // Fail-closed: an incomplete prereq blocks the dependent in EITHER key form.
-        let all = [entry("roadmap.phasemerge.w1-db-phase-config", "in_progress")];
+        let all = [entry(
+            "roadmap.phasemerge.w1-db-phase-config",
+            "in_progress",
+        )];
         assert!(!dep_key_satisfied(
             "kavach-rs/roadmap/roadmap.phasemerge.w1-db-phase-config",
             &all
         ));
-        assert!(!dep_key_satisfied("roadmap.phasemerge.w1-db-phase-config", &all));
+        assert!(!dep_key_satisfied(
+            "roadmap.phasemerge.w1-db-phase-config",
+            &all
+        ));
     }
 
     #[test]
     fn real_and_bare_keys_are_shaped() {
         // Category-prefixed keys AND bare/cross-project keys (no prefix) are kept:
         // an absent-but-real key must stay as a phantom prereq (global-pool resolve).
-        assert!(is_dep_key_shaped("decision.surreal-read-path-retry-increment-2"));
+        assert!(is_dep_key_shaped(
+            "decision.surreal-read-path-retry-increment-2"
+        ));
         assert!(is_dep_key_shaped("roadmap.unit.iwi-feedback-inbound-e5"));
         assert!(is_dep_key_shaped("u1"));
         assert!(is_dep_key_shaped("ghost"));

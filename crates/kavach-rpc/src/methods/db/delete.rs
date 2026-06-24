@@ -6,9 +6,7 @@ use jsonrpsee::types::ErrorObjectOwned;
 
 mod types;
 
-pub use types::{
-    DeleteParams, DeleteResult, delete_confirm_phrase, delete_confirm_phrase_prefix,
-};
+pub use types::{DeleteParams, DeleteResult, delete_confirm_phrase, delete_confirm_phrase_prefix};
 
 const ERR_MULTI: &str = "'all', 'key', and 'key_prefix' are mutually exclusive";
 const ERR_NEITHER: &str = "must specify 'key', 'key_prefix', or 'all: true'";
@@ -107,10 +105,14 @@ async fn delete_prefix(
     dry_run: bool,
 ) -> Result<DeleteResult, ErrorObjectOwned> {
     if dry_run {
-        let report =
-            kavach_surreal::preview_delete_by_key_prefix(&ctx.db, &params.project, &params.category, prefix)
-                .await
-                .map_err(|e| internal(e.to_string()))?;
+        let report = kavach_surreal::preview_delete_by_key_prefix(
+            &ctx.db,
+            &params.project,
+            &params.category,
+            prefix,
+        )
+        .await
+        .map_err(|e| internal(e.to_string()))?;
         return Ok(DeleteResult {
             success: true,
             deleted_count: report.count,

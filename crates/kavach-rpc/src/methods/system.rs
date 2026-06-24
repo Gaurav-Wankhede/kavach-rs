@@ -37,5 +37,3 @@ pub async fn health(state: &AppState) -> Result<HealthResponse, ErrorObjectOwned
         pid: std::process::id(),
     })
 }
-
-

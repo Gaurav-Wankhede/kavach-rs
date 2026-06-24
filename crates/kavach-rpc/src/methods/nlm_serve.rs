@@ -12,8 +12,8 @@ use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_surreal::nlm_query_docs;
 use serde::{Deserialize, Serialize};
-use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
+use surrealdb::engine::any::Any;
 
 /// The expert-policies the serving path fans out — external Kavach skills.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -161,10 +161,9 @@ pub async fn advise(state: &AppState, p: AdviseParams) -> Result<AdviseResult, E
 
     let mut scored = Vec::new();
     while let Some(joined) = set.join_next().await {
-        let advice = joined
-            .map_err(|e| {
-                ErrorObjectOwned::owned(-32011, format!("expert task panicked: {e}"), None::<()>)
-            })??;
+        let advice = joined.map_err(|e| {
+            ErrorObjectOwned::owned(-32011, format!("expert task panicked: {e}"), None::<()>)
+        })??;
         scored.push(advice);
     }
 
@@ -213,7 +212,10 @@ mod tests {
             1.0,
         );
         let ranked = rank(vec![bad, good]);
-        assert_eq!(ranked.first().map(|s| s.policy), Some(ExpertPolicy::BestPracticeScorer));
+        assert_eq!(
+            ranked.first().map(|s| s.policy),
+            Some(ExpertPolicy::BestPracticeScorer)
+        );
         assert!(ranked.first().is_some_and(|s| s.tradeoff_score > 0.0));
         assert!(ranked.get(1).is_some_and(|s| s.tradeoff_score < 0.0));
     }
@@ -222,8 +224,12 @@ mod tests {
     fn risk_breaks_ties_against_riskier_policy() {
         // Equal grounding+confidence; cybersec (risk 0.4) must rank below fetch (0.2).
         let cyber = ScoredAdvice::scored(ExpertPolicy::CybersecAdvisor, "c".to_owned(), 1.0, 0.5);
-        let fetch = ScoredAdvice::scored(ExpertPolicy::FetchPreciseLatest, "f".to_owned(), 1.0, 0.5);
+        let fetch =
+            ScoredAdvice::scored(ExpertPolicy::FetchPreciseLatest, "f".to_owned(), 1.0, 0.5);
         let ranked = rank(vec![cyber, fetch]);
-        assert_eq!(ranked.first().map(|s| s.policy), Some(ExpertPolicy::FetchPreciseLatest));
+        assert_eq!(
+            ranked.first().map(|s| s.policy),
+            Some(ExpertPolicy::FetchPreciseLatest)
+        );
     }
 }

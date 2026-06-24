@@ -36,7 +36,11 @@ fn blocker_inherits_urgent_dependents_priority() {
     // urgent A (pri 1) DEPENDS_ON low-urgency B (pri 9). B must rise to 1.
     let cards = vec![card("a", Some(1), &["b"]), card("b", Some(9), &[])];
     let eff = effective_priorities(&cards);
-    assert_eq!(eff.get("b"), Some(&1), "blocker B inherits dependent A's urgency");
+    assert_eq!(
+        eff.get("b"),
+        Some(&1),
+        "blocker B inherits dependent A's urgency"
+    );
     assert_eq!(eff.get("a"), Some(&1), "A keeps its own priority");
 }
 
@@ -49,7 +53,11 @@ fn ceiling_takes_the_most_urgent_of_many_dependents() {
         card("b", Some(9), &[]),
     ];
     let eff = effective_priorities(&cards);
-    assert_eq!(eff.get("b"), Some(&2), "B inherits min(5,2)=2, the hungriest dependent");
+    assert_eq!(
+        eff.get("b"),
+        Some(&2),
+        "B inherits min(5,2)=2, the hungriest dependent"
+    );
 }
 
 #[test]
@@ -76,7 +84,10 @@ fn sort_dispatches_the_lifted_blocker_first() {
     // (pri 2). A ties B at pri-1 and may precede it (A is filtered out by
     // deps_satisfied at pick time since B isn't done), but B MUST beat D — that
     // is what unblocks A. Before the ceiling, B (raw 9) sorted behind D.
-    assert!(pos("b") < pos("d"), "lifted blocker B must outrank unrelated D: {order:?}");
+    assert!(
+        pos("b") < pos("d"),
+        "lifted blocker B must outrank unrelated D: {order:?}"
+    );
 }
 
 #[test]
