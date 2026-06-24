@@ -75,9 +75,3 @@ pub async fn get_by_slug(
         .map_err(surreal_to_rpc)
 }
 
-/// List all projects.
-///
-/// # Errors
-///
-/// Returns an error if the database query fails.
-
