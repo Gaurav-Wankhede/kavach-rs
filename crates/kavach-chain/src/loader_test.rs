@@ -31,7 +31,7 @@ fn scan_dir_with(real: &str, frag: &str) -> (DynamicLoader, PathBuf) {
 #[test]
 fn scan_skips_underscore_prefixed_files() {
     let (loader, dir) = scan_dir_with("realone", "_scope-guard");
-    let loaded = loader.loaded_agents();
+    let loaded_names = loader.loaded_agents();
     assert!(
         loaded.iter().any(|n| n == "realone"),
         "real agent must load: {loaded:?}"
