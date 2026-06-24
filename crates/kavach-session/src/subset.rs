@@ -12,18 +12,6 @@ pub struct SessionIdentity {
 
 #[derive(Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "constructed at handler")]
-pub struct SessionFlags {
-    pub id: String,
-    pub today: String,
-    pub project: String,
-    pub work_dir: String,
-    pub session_id: String,
-    pub research_done: bool,
-    pub memory_queried: bool,
-}
-
-#[derive(Debug, Clone)]
-#[expect(clippy::exhaustive_structs, reason = "constructed at handler")]
 pub struct SessionTracking {
     pub id: String,
     pub today: String,
