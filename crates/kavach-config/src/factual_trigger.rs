@@ -36,8 +36,9 @@ fn has_year(text: &str) -> bool {
 
 /// A `digit.digit` version-ish token (e.g. `1.2`, `0.9.5`) — a version claim.
 fn has_semver(text: &str) -> bool {
-    let bytes = text.as_bytes();
-    bytes.windows(3).any(|w| w[0].is_ascii_digit() && w[1] == b'.' && w[2].is_ascii_digit())
+    text.as_bytes()
+        .windows(3)
+        .any(|w| matches!(w, [a, b'.', c] if a.is_ascii_digit() && c.is_ascii_digit()))
 }
 
 #[cfg(test)]
