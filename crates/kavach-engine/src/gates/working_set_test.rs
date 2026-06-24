@@ -29,3 +29,15 @@ fn block_shape_is_lossless_and_self_trusting() {
     assert!(block.contains("trust this over [COMPACT_SUMMARY]"));
     assert!(block.contains("active_card: roadmap.unit.demo"));
 }
+
+#[test]
+fn intent_line_renders_card_title_as_the_restored_intent() {
+    let line = render_intent_line("Refactor oversized files into nano-modules");
+    assert!(line.contains("[INTENT_RESTORED]"));
+    assert!(line.contains("Refactor oversized files into nano-modules"));
+}
+
+#[test]
+fn intent_line_blank_title_is_empty() {
+    assert!(render_intent_line("").is_empty());
+}
