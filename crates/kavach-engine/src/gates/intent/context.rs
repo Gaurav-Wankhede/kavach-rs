@@ -233,7 +233,12 @@ fn ranked_cards_rpc_only(project: &str, prompt: &str) -> Vec<(String, String, St
 /// failed read is the silent-fail-open this fixes: absence then reads as "queue
 /// empty", which the agent treats as license to stop (feeds remaining_phases_at_stop).
 /// So a failed read now emits an explicit `[KANBAN: DEGRADED]` sentinel.
-fn render_live_kanban(context: &mut String, project: &str, census: Option<(u64, u64, u64)>) -> bool {
+fn render_live_kanban(
+    context: &mut String,
+    project: &str,
+    census: Option<(u64, u64, u64)>,
+    ranked: &[(String, String, String)],
+) -> bool {
     let Some((runnable, blocked, cyclic)) = census else {
         write!(
             context,
