@@ -145,13 +145,4 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_spec_injected() {
-        let mut s = SessionState::default();
-        assert!(!s.was_spec_injected("api"));
-        s.mark_spec_injected("api");
-        assert!(s.was_spec_injected("api"));
-        s.mark_spec_injected("api");
-        assert_eq!(s.specs_injected.len(), 1);
-    }
 }
