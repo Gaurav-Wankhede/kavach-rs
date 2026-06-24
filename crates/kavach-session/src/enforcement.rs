@@ -65,14 +65,6 @@ impl SessionState {
         }
     }
 
-    /// Check if all required skills have been invoked.
-    #[must_use]
-    pub fn all_skills_satisfied(&self) -> bool {
-        self.required_skills
-            .iter()
-            .all(|req| self.invoked_skills.iter().any(|inv| inv == req))
-    }
-
     /// Get list of missing (not yet invoked) skills.
     #[must_use]
     pub fn missing_skills(&self) -> Vec<&str> {
