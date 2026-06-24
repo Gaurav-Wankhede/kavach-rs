@@ -133,15 +133,6 @@ impl SessionState {
             && (self.last_failure_turn == self.turn_count || self.failure_block_count > 0)
     }
 
-    /// Increment the stop-block counter for the current failure.
-    /// Called by the stop gate each time it blocks due to an unresolved failure.
-    pub fn increment_failure_blocks(&mut self) {
-        self.failure_block_count = self
-            .failure_block_count
-            .saturating_add(1)
-            .min(Self::max_failure_blocks().saturating_add(1));
-        self.save_or_log();
-    }
 
     /// Max number of times the stop gate will block before allowing forced stop.
     /// Gives Claude 3 chances to fix the failure before giving up.
