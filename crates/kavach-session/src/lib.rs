@@ -49,5 +49,4 @@ pub use mistake_ledger::{
 };
 pub use paths::{canonicalize_iteration_path, state_dir, state_path, stm_path};
 pub use state::SessionState;
-pub use subagent::SubagentBlast;
-pub use subset::{SessionFlags, SessionIdentity, SessionTracking};
+pub use subset::{SessionIdentity};
