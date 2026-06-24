@@ -19,44 +19,25 @@ const FACTUAL_TRIGGERS: &[&str] = &[
     "api docs",
 ];
 
+/// True when the prompt carries a factual signal that demands a live source
+/// (a version, date, URL, registry, or price word) — internet-first fires even
+/// without an implement verb. Bypass patterns are filtered upstream in
+/// `requires_research`, so a non-factual refactor prompt never reaches here.
+#[must_use]
 pub fn contains_factual_trigger(prompt: &str) -> bool {
     let lower = prompt.to_lowercase();
-    for trigger in FACTUAL_TRIGGERS {
-        if lower.contains(trigger) {
-            return true;
-        }
-    }
-    // Check for year patterns: 2024/2025/2026/2027
-    if lower.contains("202") && (lower.contains("4") || lower.contains("5") || lower.contains("6") || lower.contains("7")) {
-        if rg_semver_pattern(&lower) {
-            return true;
-        }
-    }
-    // Check for semver-ish pattern: digit.digit
-    semver_pattern(&lower)
+    FACTUAL_TRIGGERS.iter().any(|t| lower.contains(t)) || has_year(&lower) || has_semver(&lower)
 }
 
-fn semver_pattern(text: &str) -> bool {
-    let mut chars = text.chars().peekable();
-    while let Some(ch) = chars.next() {
-        if ch.is_ascii_digit() {
-            if let Some(&next) = chars.peek() {
-                if next == '.' {
-                    chars.next();
-                    if let Some(&after_dot) = chars.peek() {
-                        if after_dot.is_ascii_digit() {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    false
+/// A recent-year token (2024-2029) — a date prompt the stale weights can't answer.
+fn has_year(text: &str) -> bool {
+    ["2024", "2025", "2026", "2027", "2028", "2029"].iter().any(|y| text.contains(y))
 }
 
-fn rg_semver_pattern(text: &str) -> bool {
-    text.contains("2024") || text.contains("2025") || text.contains("2026") || text.contains("2027")
+/// A `digit.digit` version-ish token (e.g. `1.2`, `0.9.5`) — a version claim.
+fn has_semver(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    bytes.windows(3).any(|w| w[0].is_ascii_digit() && w[1] == b'.' && w[2].is_ascii_digit())
 }
 
 #[cfg(test)]
