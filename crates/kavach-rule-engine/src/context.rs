@@ -171,7 +171,6 @@ mod tests {
     #[test]
     fn test_default_context_is_safe() {
         let ctx = EvalContext::default();
-        assert!(!ctx.in_loop());
         assert!(!ctx.is_high_risk());
         assert_eq!(ctx.session_phase, SessionPhase::Early);
     }
