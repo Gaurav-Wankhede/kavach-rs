@@ -67,27 +67,4 @@ pub async fn classify(
     })
 }
 
-#[derive(Debug, Deserialize)]
-#[expect(
-    clippy::exhaustive_structs,
-    reason = "JSON-RPC wire DTO, constructed at handler boundary"
-)]
-
-
-#[derive(Debug, Clone, Serialize)]
-#[expect(
-    clippy::exhaustive_structs,
-    reason = "JSON-RPC wire DTO, constructed at handler boundary"
-)]
-
-
-/// Determines whether an advisory should be surfaced based on tier and trust level.
-///
-/// # Errors
-///
-/// Returns an error if the `tier` or `level` parameters contain invalid values.
-#[expect(
-    clippy::unused_async,
-    reason = "JSON-RPC handler signature requires async"
-)]
 
