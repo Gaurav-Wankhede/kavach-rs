@@ -2,7 +2,7 @@ use super::advise;
 
 fn tmp(name: &str) -> std::path::PathBuf {
     let base = std::env::temp_dir().join(format!("kavach-lpg-{name}"));
-    let _ = std::fs::remove_dir_all(&base);
+    drop(std::fs::remove_dir_all(&base));
     std::fs::create_dir_all(base.join("src")).expect("mkdir");
     base
 }
