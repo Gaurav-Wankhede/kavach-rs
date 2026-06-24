@@ -126,10 +126,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    pub fn reset_files_read(&mut self) {
-        self.subagent_files_read = 0;
-        self.save_or_log();
-    }
 
     #[must_use]
     pub const fn has_recent_failure(&self) -> bool {
