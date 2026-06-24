@@ -47,7 +47,7 @@ pub use load::{load_session_state, load_session_state_for, parse_ini_str};
 pub use mistake_ledger::{
     Mistake, RecordOutcome, record as record_mistake, record_and_surface as record_mistake_surfaced,
 };
-pub use paths::{canonicalize_iteration_path, memory_dir, state_dir, state_path, stm_path};
+pub use paths::{canonicalize_iteration_path, state_dir, state_path, stm_path};
 pub use state::SessionState;
 pub use subagent::SubagentBlast;
 pub use subset::{SessionFlags, SessionIdentity, SessionTracking};
