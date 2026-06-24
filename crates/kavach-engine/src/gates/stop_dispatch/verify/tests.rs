@@ -1,9 +1,22 @@
 //! Witness-machinery tests (sibling of witness.rs per §`NANO_FILE`; `super` is the
 //! `witness` module). decision.kavach.verify-rs-nanofile-split-2026-06-17.
 use super::{
-    WitnessRun, discover_rust_workspace, is_rust_workspace, verify_command_env,
-    witness_root_from_card,
+    WitnessRun, discover_rust_workspace, failing_witness_report, is_rust_workspace,
+    verify_command_env, witness_root_from_card,
 };
+
+#[test]
+fn failing_witness_report_names_command_and_echoes_stderr() {
+    // rca.opaque-witness: a failed witness MUST surface which command failed and
+    // its compiler output, or the agent cannot tell `check` from `clippy`.
+    let report = failing_witness_report(
+        "cargo clippy --workspace --all-targets -- -D warnings",
+        "error: deref which would be done by auto-deref\n",
+    );
+    assert!(report.contains("clippy"), "names the failing command");
+    assert!(report.contains("auto-deref"), "echoes the real compiler error");
+    assert!(report.contains("[WITNESS_FAILED]"), "carries the agent-facing tag");
+}
 
 #[test]
 fn non_cargo_dir_is_not_rust() {
