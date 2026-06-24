@@ -37,6 +37,10 @@ pub fn global_loader() -> Option<&'static DynamicLoader> {
         .into()
 }
 
+#[cfg(test)]
+#[path = "loader_test.rs"]
+mod loader_test;
+
 #[derive(Debug)]
 pub struct DynamicLoader {
     agent_dir: PathBuf,
