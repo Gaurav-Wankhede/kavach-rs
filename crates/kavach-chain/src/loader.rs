@@ -118,20 +118,8 @@ impl DynamicLoader {
     }
 
     #[must_use]
-    pub fn find_skill_by_trigger(&self, trigger: &str) -> Option<String> {
-        // Clone immediately to release the shard lock — never hold DashMap Ref.
-
-        self.skill_index.get(trigger).map(|r| r.value().clone())
-    }
-
-    #[must_use]
     pub fn loaded_agents(&self) -> Vec<String> {
         self.agents.iter().map(|kv| kv.key().clone()).collect()
-    }
-
-    #[must_use]
-    pub fn loaded_skills(&self) -> Vec<String> {
-        self.skills.iter().map(|kv| kv.key().clone()).collect()
     }
 
     // ARCH: read-optimized startup-populated cache
