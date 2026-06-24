@@ -38,17 +38,17 @@ fn edit_on_oversized_file_trips_nano_file_split_detector() {
         &ctx.effective_content,
         ctx.tool_name,
     );
+    // 200 LOC is the WARN band (>120, <=250): the detector must still see the
+    // FULL post-edit body (the #1597 regression) and advise — not hard-block a
+    // possibly-cohesive unit. SOURCE: decision.harness.nano-file-ladder-not-loc.
     assert!(
-        hits.iter().any(|v| v.pattern.contains("100 LOC")),
-        "Edit on a 200-LOC file must trip the nano-file split detector"
+        hits.iter().any(|v| v.pattern == "file in warn band"
+            && v.severity == kavach_patterns::nano_file_guard::NanoSeverity::P1Advisory),
+        "Edit on a 200-LOC file must advise the ladder (warn band, full-file-body seen)"
     );
-    // An in-place Edit that keeps the file over 100 LOC HARD-BLOCKS too: it must
-    // split into the same deep hub+leaf hierarchy as a new file (Rust 2024:
-    // foo.rs + foo/ with pub use re-exports, no mod.rs).
     assert!(
-        hits.iter().any(|v| v.pattern == "file exceeds 100 LOC"
-            && v.severity == kavach_patterns::nano_file_guard::NanoSeverity::P0Block),
-        "an in-place Edit over 100 LOC must P0-block (forces the split)"
+        !hits.iter().any(|v| v.severity == kavach_patterns::nano_file_guard::NanoSeverity::P0Block),
+        "200 LOC is a smell, not a monolith — must NOT hard-block"
     );
 
     std::fs::remove_file(&path).ok();
