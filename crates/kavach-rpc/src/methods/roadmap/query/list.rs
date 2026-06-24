@@ -107,6 +107,7 @@ pub async fn list_in_progress_cards(
         .filter(|e| e.entry_status_str() == "in_progress")
         .map(|e| InProgressCardRow {
             key: e.entry_key.clone(),
+            title: e.title.clone(),
             content: e.content.clone(),
         })
         .collect();
