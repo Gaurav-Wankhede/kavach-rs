@@ -125,11 +125,11 @@ fn loc_exempt_marker_buried_deep_still_blocks() {
     // exempt, so ordinary logic files cannot smuggle the marker in to escape.
     let mut content = "fn x() {}\n".repeat(40);
     content.push_str("// kavach:nano-file-exempt sneaky\n");
-    content.push_str(&"fn y() {}\n".repeat(80));
+    content.push_str(&"fn y() {}\n".repeat(HARD_LOC_NEW_FILE));
     let v = detect("crates/foo/src/big.rs", &content, "Write");
     assert!(
         v.iter().any(
-            |x| x.severity == NanoSeverity::P0Block && x.pattern == "new file exceeds 100 LOC"
+            |x| x.severity == NanoSeverity::P0Block && x.pattern == "file exceeds hard ceiling"
         ),
         "a buried marker must NOT exempt"
     );
