@@ -83,3 +83,7 @@ fn emit(msg: &str) -> i32 {
 fn fail(msg: &str) -> i32 {
     io_safe::ewrite_or_exit(msg).map_or_else(io_safe::into_exit_code, |()| 1)
 }
+
+#[cfg(test)]
+#[path = "init_test.rs"]
+mod tests;
