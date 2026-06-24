@@ -271,11 +271,6 @@ pub fn skill_exists(name: &str) -> bool {
 }
 
 
-/// Load skill content only when actually invoked.
-#[must_use]
-pub fn load_skill_on_demand(name: &str) -> Option<String> {
-    manifest().load_content(name)
-}
 
 #[cfg(test)]
 mod tests {
