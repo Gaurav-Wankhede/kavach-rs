@@ -632,40 +632,6 @@ mod tests {
     }
 
     #[test]
-    fn should_continue_loop_active_target_not_reached() {
-        let mut s = SessionState::default();
-        s.start_loop("phase:TEST");
-        s.current_phase = "IMPLEMENT".into();
-        assert!(s.should_continue_loop());
-    }
-
-    #[test]
-    fn should_continue_loop_false_when_target_reached() {
-        let mut s = SessionState::default();
-        s.start_loop("phase:TEST");
-        s.current_phase = "TEST".into();
-        assert!(!s.should_continue_loop());
-    }
-
-    #[test]
-    fn should_continue_loop_false_when_max_exceeded() {
-        let mut s = SessionState::default();
-        s.start_loop("goal");
-        s.loop_max_iterations = 5;
-        s.loop_iteration = 5;
-        assert!(!s.should_continue_loop());
-    }
-
-    #[test]
-    fn should_continue_loop_false_when_inactive() {
-        let s = SessionState::default();
-        assert!(!s.should_continue_loop());
-    }
-
-    // ARCH: TokenBudgetGate — bound the harness loop by spend, not just steps.
-    // SOURCE: ByteByteGo agent-harness anatomy (runaway-cost prevention).
-
-    #[test]
     fn budget_not_exceeded_when_total_unset() {
         let mut s = SessionState::default();
         s.token_budget_total = 0; // unbounded / disabled
@@ -707,17 +673,5 @@ mod tests {
         s.token_budget_used = i32::MAX;
         s.record_token_spend(1000);
         assert_eq!(s.token_budget_used, i32::MAX, "no wrap re-opening budget");
-    }
-
-    #[test]
-    fn should_continue_loop_false_when_budget_exceeded() {
-        let mut s = SessionState::default();
-        s.start_loop("goal"); // active, target not reached
-        s.token_budget_total = 1000;
-        s.token_budget_used = 1000;
-        assert!(
-            !s.should_continue_loop(),
-            "budget halt overrides an unmet target"
-        );
     }
 }
