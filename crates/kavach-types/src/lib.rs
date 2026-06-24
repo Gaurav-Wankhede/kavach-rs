@@ -443,22 +443,6 @@ impl HookResponse {
         }
     }
 
-    #[must_use]
-    pub fn new_pre_tool_use_modify_input(
-        reason: &str,
-        updated_input: HashMap<String, serde_json::Value>,
-    ) -> Self {
-        Self {
-            hook_specific_output: Some(HookSpecificOutput {
-                hook_event_name: "PreToolUse".into(),
-                permission_decision: "allow".into(),
-                permission_decision_reason: reason.into(),
-                updated_input: Some(updated_input),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }
-    }
 
     #[must_use]
     pub fn new_post_tool_use_block(reason: &str, context: &str) -> Self {
