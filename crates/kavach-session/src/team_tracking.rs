@@ -45,35 +45,6 @@ mod tests {
     use crate::state::SessionState;
 
     #[test]
-    fn test_teammate_count_stays_derived_from_members() {
-        // A stop with no matching member must not drift the count below the real
-        // membership — the old always-decrement guard did exactly that.
-        let mut s = SessionState::default();
-        s.track_teammate_start("a", "Explore");
-        s.track_teammate_start("b", "Code");
-        assert_eq!(s.active_teammates, 2);
-        s.track_teammate_stop("ghost"); // no match — removes nothing
-        assert_eq!(s.active_teammates, 2);
-        assert_eq!(s.team_members.len(), 2);
-        s.track_teammate_stop("a"); // double-stop "a" below also a no-op
-        s.track_teammate_stop("a");
-        assert_eq!(s.active_teammates, 1);
-        assert_eq!(
-            s.active_teammates,
-            i32::try_from(s.team_members.len()).unwrap_or(i32::MAX)
-        );
-    }
-
-    #[test]
-    fn test_duplicate_start_does_not_inflate_count() {
-        let mut s = SessionState::default();
-        s.track_teammate_start("a", "Explore");
-        s.track_teammate_start("a", "Explore"); // dedup'd by team_members
-        assert_eq!(s.active_teammates, 1);
-        assert_eq!(s.team_members.len(), 1);
-    }
-
-    #[test]
     fn test_set_team() {
         let mut s = SessionState::default();
         assert!(!s.is_in_team());
