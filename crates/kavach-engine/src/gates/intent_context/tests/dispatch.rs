@@ -3,7 +3,31 @@
 //! These exercise the STATIC fallback table: an empty prompt yields no
 //! rankable words, so `try_dynamic_dispatch` returns false and the intent-keyed
 //! default is used. The dynamic path is covered in `dynamic.rs`.
-use crate::gates::intent_context::directives::append_agent_dispatch;
+use crate::gates::intent_context::directives::{append_agent_dispatch, append_diagram_first};
+
+#[test]
+fn diagram_first_fires_for_plan_intent() {
+    let mut ctx = String::new();
+    append_diagram_first(&mut ctx, "plan");
+    assert!(ctx.contains("[DIAGRAM_FIRST]"));
+    assert!(ctx.contains("Mermaid"));
+    assert!(ctx.contains("HTML"));
+}
+
+#[test]
+fn diagram_first_fires_for_implement_intent() {
+    // An implement turn that proposes architecture/LLD must show the diagram too.
+    let mut ctx = String::new();
+    append_diagram_first(&mut ctx, "implement");
+    assert!(ctx.contains("[DIAGRAM_FIRST]"));
+}
+
+#[test]
+fn diagram_first_skipped_for_memory_intent() {
+    let mut ctx = String::new();
+    append_diagram_first(&mut ctx, "memory");
+    assert!(ctx.is_empty());
+}
 
 #[test]
 fn test_agent_dispatch_debug_routes_to_ceo_and_bug_bounty() {
