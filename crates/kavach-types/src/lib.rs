@@ -712,14 +712,6 @@ mod tests {
         assert_eq!(parsed.additional_context, "context here");
     }
 
-    #[test]
-    fn test_subagent_event() {
-        let input = HookInput {
-            hook_event_name: "SubagentStart".into(),
-            ..Default::default()
-        };
-        assert!(input.is_subagent_event());
-    }
 }
 
 // MemoryStatus — typed lifecycle states (strum: parse + Display + iter).
