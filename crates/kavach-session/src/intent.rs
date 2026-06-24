@@ -26,18 +26,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    pub fn mark_spec_injected(&mut self, name: &str) {
-        if !self.specs_injected.iter().any(|n| n == name) {
-            self.specs_injected.push(name.into());
-            self.save_or_log();
-        }
-    }
-
-    #[must_use]
-    pub fn was_spec_injected(&self, name: &str) -> bool {
-        self.specs_injected.iter().any(|n| n == name)
-    }
-
     /// Detect if prompt is an explicit user confirmation to create a new crate.
     ///
     /// Matches explicit multi-word phrases ("yes create", "proceed with crate")
