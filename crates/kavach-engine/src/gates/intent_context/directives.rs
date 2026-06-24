@@ -57,6 +57,28 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
     context.push('\n');
 }
 
+/// Append the diagram-first standing law for plan/design/implement intents: a
+/// turn that proposes architecture or an LLD must emit a temp HTML+Mermaid view
+/// (Mermaid 11.15.0 CDN + SRI) and surface it to the user BEFORE deciding, so the
+/// structure is reviewable before any code. Advisory tier (steers, never blocks).
+/// SOURCE: decision.harness.sdlc-nano-agents-global · diagram-first law.
+pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str) {
+    if intent_type != "implement" && intent_type != "refactor" && intent_type != "general" {
+        return;
+    }
+    context.push_str("\n[DIAGRAM_FIRST] ");
+    context.push_str(&dyn_directive(
+        "intent.diagram-first",
+        "When this turn proposes architecture or a low-level design, FIRST write a \
+         temp HTML file with a Mermaid diagram (LLD: every component + typed edge + \
+         node→file:symbol map) and open it for the user, BEFORE ExitPlanMode / before \
+         deciding. Spawn the architect-lld agent to emit the Mermaid. Pin Mermaid \
+         11.15.0 CDN with SRI integrity. The diagram is the review surface — the user \
+         decides from it, not from prose.",
+    ));
+    context.push('\n');
+}
+
 /// Append agent dispatch directives, dynamically ranked when possible, else
 /// the intent-keyed default table (2026 hybrid routing best practice).
 /// SOURCE: <https://www.merge.dev/blog/llm-routing> · <https://arxiv.org/pdf/2511.02200>.
