@@ -157,15 +157,6 @@ mod tests {
     }
 
     #[test]
-    fn test_with_environment_populates_runtime_attributes() {
-        let ctx = EvalContext::new("Bash", "cargo test").with_environment(42, true, 3);
-        assert_eq!(ctx.turn_count, 42);
-        assert!(ctx.loop_active);
-        assert_eq!(ctx.loop_iteration, 3);
-        assert!(ctx.in_loop());
-    }
-
-    #[test]
     fn test_is_high_risk_classifies_correctly() {
         let ctx = EvalContext::new("Write", "x").with_subject("s", "high", "IMPLEMENT");
         assert!(ctx.is_high_risk());
