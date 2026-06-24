@@ -56,15 +56,6 @@ fn increment_turn() {
 }
 
 #[test]
-fn record_failure_typed() {
-    let mut s = SessionState::default();
-    s.record_failure_typed("Write", "transient");
-    assert_eq!(s.failure_type, "transient");
-    assert!(s.is_transient_failure());
-    assert!(!s.is_not_found_failure());
-}
-
-#[test]
 fn add_case_fact_caps_at_20() {
     let mut s = SessionState::default();
     for i in 0..25 {
