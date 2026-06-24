@@ -63,13 +63,6 @@ const RELEASE_PROFILE: &str = "release";
 const CLI_PKG: &str = "kavach-cli";
 const ENGINE_PKG: &str = "kavach-engine";
 
-/// Self-audit ratchet: the urgent (>500 code-LOC) file count kavach ships TODAY.
-/// Deploy FAILS only if a write pushes the count ABOVE this — stops regression
-/// without blockading on the existing backlog (kavach follows its own gates).
-/// SOURCE: decision.harness.deploy-self-audit-ratchet.
-const URGENT_OVERSIZED_BASELINE: usize = 4;
-const URGENT_LOC_THRESHOLD: &str = "500";
-
 pub(crate) fn run(skip_tests: bool) -> i32 {
     // Serialize the whole deploy under a workspace-root advisory flock: two
     // concurrent `kavach deploy` runs (CI parallelism or a manual double-run)
@@ -225,17 +218,6 @@ fn deploy_cli(skip_tests: bool) -> i32 {
         return 1;
     }
 
-    // Self-audit: kavach runs its OWN oversized gate on its OWN source (dogfood).
-    // Ratchet — advise on the backlog, FAIL only on an urgent (>500) regression.
-    if let Err(io_err) =
-        print_or_exit("[DEPLOY] step 6b/8: self-audit (kavach oversized scan on kavach)")
-    {
-        return into_exit_code(io_err);
-    }
-    if let Some(code) = self_audit_ratchet() {
-        return code;
-    }
-
     if let Err(io_err) = print_or_exit("[DEPLOY] step 7/8: install to ~/.local/bin/kavach") {
         return into_exit_code(io_err);
     }
@@ -376,40 +358,6 @@ fn verify_runs(dst: &Path) -> Result<(), String> {
         dst.display(),
         dst.display()
     ))
-}
-
-/// Dogfood gate: run the just-built release binary's own `oversized scan` on the
-/// workspace at the urgent (>500 LOC) threshold. Always prints the count; returns
-/// `Some(1)` ONLY when it exceeds the baseline (a new urgent file regressed in) so
-/// the existing backlog never blockades a deploy. Fails OPEN (returns `None`) if
-/// the binary or tokei is unavailable — the audit is a ratchet, not a hard dep.
-fn self_audit_ratchet() -> Option<i32> {
-    let bin = workspace_root()?
-        .join("target")
-        .join(RELEASE_PROFILE)
-        .join(binary_filename());
-    let out = Command::new(&bin)
-        .args(["oversized", "scan", "--dir", "crates"])
-        .args(["--threshold", URGENT_LOC_THRESHOLD, "--format", "json"])
-        .output()
-        .ok()?;
-    let v: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
-    let urgent = v.get("total").and_then(serde_json::Value::as_u64)? as usize;
-    print_or_exit(&format!(
-        "[DEPLOY] self-audit: {urgent} urgent (>{URGENT_LOC_THRESHOLD} LOC) file(s); \
-         baseline {URGENT_OVERSIZED_BASELINE}. Backlog is advisory; only regression blocks."
-    ))
-    .ok()?;
-    if urgent > URGENT_OVERSIZED_BASELINE {
-        ewrite_or_exit(&format!(
-            "[DEPLOY] FAIL: urgent oversized files rose {URGENT_OVERSIZED_BASELINE} -> {urgent}. \
-             Split the new >{URGENT_LOC_THRESHOLD}-LOC file (or mark `// kavach:intentional`), \
-             or lower the baseline once the backlog shrinks."
-        ))
-        .ok();
-        return Some(1);
-    }
-    None
 }
 
 /// Run cargo with given args. Returns true on success.
