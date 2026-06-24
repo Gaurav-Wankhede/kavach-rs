@@ -10,23 +10,6 @@ pub struct SessionIdentity {
     pub session_id: String,
 }
 
-#[derive(Debug, Clone)]
-#[expect(clippy::exhaustive_structs, reason = "constructed at handler")]
-pub struct SessionTracking {
-    pub id: String,
-    pub today: String,
-    pub project: String,
-    pub work_dir: String,
-    pub session_id: String,
-    pub research_done: bool,
-    pub memory_queried: bool,
-    pub turn_count: i32,
-    pub post_compact: bool,
-    pub current_task: String,
-    pub tasks_created: i32,
-    pub tasks_completed: i32,
-}
-
 impl SessionState {
     #[must_use]
     pub fn identity(&self) -> SessionIdentity {
