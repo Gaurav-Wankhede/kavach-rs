@@ -50,6 +50,7 @@ pub mod frontend_security_guard;
 pub mod gnap_guard;
 pub mod k_pri;
 pub mod legacy_tool_guard;
+pub mod lint_profile_guard;
 pub mod loophole_vocab;
 pub mod loophole_lens;
 pub mod owasp_guard;
