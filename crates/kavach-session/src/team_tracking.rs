@@ -9,15 +9,6 @@ impl SessionState {
         self.active_teammates = i32::try_from(self.team_members.len()).unwrap_or(i32::MAX);
     }
 
-    pub fn track_teammate_start(&mut self, name: &str, agent_type: &str) {
-        let entry = format!("{name}:{agent_type}");
-        if !self.team_members.contains(&entry) {
-            self.team_members.push(entry);
-        }
-        self.recount_active_teammates();
-        self.save_or_log();
-    }
-
     pub fn track_teammate_stop(&mut self, name: &str) {
         // retain may remove 0 entries (name absent, recycled, double-stop). The
         // old always-decrement-if-positive guard drifted the count below real
