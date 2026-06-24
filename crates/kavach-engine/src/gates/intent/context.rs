@@ -353,7 +353,7 @@ mod tests {
         // block must say so explicitly so the agent never reads absence as a
         // drained queue. Silent omission was the fail-open this closes.
         let mut ctx = String::new();
-        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", None);
+        let observed = super::render_live_kanban(&mut ctx, "kavach-rs", None, &[]);
         assert!(!observed, "a failed read is never 'observed'");
         assert!(ctx.contains("[KANBAN: DEGRADED]"), "must mark degradation: {ctx}");
         assert!(ctx.contains("UNKNOWN, not empty"), "must forbid empty-read: {ctx}");
