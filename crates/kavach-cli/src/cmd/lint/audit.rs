@@ -66,7 +66,7 @@ fn emit(found: &mut [Finding]) -> i32 {
         return io_safe::print_or_exit("Lean already. Ship.")
             .map_or_else(io_safe::into_exit_code, |()| 0);
     }
-    found.sort_by(|a, b| b.weight.cmp(&a.weight));
+    found.sort_by_key(|f| std::cmp::Reverse(f.weight));
     for f in found.iter() {
         let line = format!("  {} {}. [{}]", f.tag, f.what, f.loc);
         if let Err(e) = io_safe::print_or_exit(&line) {
