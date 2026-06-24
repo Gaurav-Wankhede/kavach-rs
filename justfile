@@ -166,3 +166,11 @@ audit-wiring:
 # classify EMPTY / ERROR / OK. Proves responses, not just source wiring.
 audit-runtime:
     bash scripts/audit_runtime.sh
+
+# Author the full SDLC nano-agent roster into GLOBAL ~/.claude/agents (idempotent).
+author-sdlc-agents:
+    bash scripts/author-sdlc-agents.sh
+
+# Convert passive "Level N" global-agent descriptions to action imperatives (idempotent).
+agentize-descriptions:
+    bash scripts/agentize-descriptions.sh
