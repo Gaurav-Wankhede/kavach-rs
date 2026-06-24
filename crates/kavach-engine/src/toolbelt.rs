@@ -27,7 +27,7 @@ mod tool;
 mod tests;
 
 pub use files::{count_lines, diff, disk_usage, read_file, tree};
-pub use net::{http_get, json_query, verify_url_reachable};
-pub use proc::{git_diff_stat, git_has_pending_changes, process_list};
-pub use search::{ast_search, find_files, search};
+pub use net::verify_url_reachable;
+pub use proc::{git_diff_stat, git_has_pending_changes};
+pub use search::search;
 pub use tool::Tool;

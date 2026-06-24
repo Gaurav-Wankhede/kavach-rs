@@ -270,11 +270,6 @@ pub fn skill_exists(name: &str) -> bool {
     manifest().get(name).is_some()
 }
 
-/// Get skills for keywords without loading content.
-#[must_use]
-pub fn skills_for_keywords(keywords: &[&str]) -> Vec<&'static str> {
-    manifest().match_keywords(keywords)
-}
 
 /// Load skill content only when actually invoked.
 #[must_use]
