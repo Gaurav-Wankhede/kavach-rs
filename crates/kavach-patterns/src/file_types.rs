@@ -72,6 +72,7 @@ pub fn is_test_file(p: &str) -> bool {
     let l = p.to_lowercase();
     // Compound suffixes (`.test.ts`) are NOT a single `Path::extension()` — suffix-match them directly.
     l.contains("_test.go")
+        || l.ends_with("_test.rs")
         || l.contains("test_")
         || l.ends_with(".test.ts")
         || l.ends_with(".test.tsx")
