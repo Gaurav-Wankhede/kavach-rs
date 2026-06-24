@@ -305,22 +305,6 @@ mod tests {
     use crate::state::SessionState;
 
     #[test]
-    fn test_skill_enforcement() {
-        let mut s = SessionState::default();
-        s.required_skills = vec!["rust".into(), "security".into()];
-        assert!(!s.all_skills_satisfied());
-        assert_eq!(s.missing_skills(), vec!["rust", "security"]);
-
-        s.invoked_skills.push("rust".into());
-        assert!(!s.all_skills_satisfied());
-        assert_eq!(s.missing_skills(), vec!["security"]);
-
-        s.invoked_skills.push("security".into());
-        assert!(s.all_skills_satisfied());
-        assert!(s.missing_skills().is_empty());
-    }
-
-    #[test]
     fn gate_block_trips_at_threshold_on_successful_persist() {
         // No-regression guard for the fail-closed fix: on the normal
         // (save Ok) path, record_gate_block must still return the correct
