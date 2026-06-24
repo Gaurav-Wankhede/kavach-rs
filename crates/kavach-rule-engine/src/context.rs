@@ -102,19 +102,6 @@ impl EvalContext {
         self
     }
 
-    /// Populate ABAC environment attributes from runtime context.
-    #[must_use]
-    pub const fn with_environment(
-        mut self,
-        turn_count: i32,
-        loop_active: bool,
-        loop_iteration: i32,
-    ) -> Self {
-        self.turn_count = turn_count;
-        self.loop_active = loop_active;
-        self.loop_iteration = loop_iteration;
-        self
-    }
 
     /// True when the current phase is high-risk (medium or high `intent_risk`).
     /// Used by policy rules to gate destructive actions.
