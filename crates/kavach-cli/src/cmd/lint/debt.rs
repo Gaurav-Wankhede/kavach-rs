@@ -1,11 +1,10 @@
 // `kavach lint debt` — harvest simplification-ceiling markers into a debt ledger.
-// Reuses kavach's own marker (no competing token). SOURCE: ponytail-debt/SKILL.md.
 use std::path::Path;
 
 use crate::cmd::io_safe;
 use crate::cmd::lint::walk::walk_rs;
 
-const MARKERS: &[&str] = &["kavach:intentional", "ponytail:"];
+const MARKER: &str = "kavach:intentional";
 
 /// One harvested debt row: where, what was simplified, and whether it names an
 /// upgrade trigger (a marker with no trigger is the highest rot risk).
