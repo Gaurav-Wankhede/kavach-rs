@@ -71,19 +71,25 @@ fn is_excluded(path: &str) -> bool {
         || path.contains("/tests/")
 }
 
-fn has_split_marker(path: &str) -> bool {
+/// Intentional-ceiling markers shared with the nano-file PreWrite guard: a file
+/// the guard lets pass for a NAMED reason must not be re-flagged here.
+const EXEMPT_MARKERS: [&str; 2] = ["// split:", "kavach:intentional"];
+
+pub(super) fn has_exempt_marker(path: &str) -> bool {
     use std::io::{BufRead, BufReader};
     let Ok(f) = std::fs::File::open(path) else {
         return false;
     };
-    let reader = BufReader::new(f);
-    for line in reader.lines().take(5).map_while(Result::ok) {
-        if line.contains("// split:") {
-            return true;
-        }
-    }
-    false
+    BufReader::new(f)
+        .lines()
+        .take(15)
+        .map_while(Result::ok)
+        .any(|line| EXEMPT_MARKERS.iter().any(|m| line.contains(m)))
 }
+
+#[cfg(test)]
+#[path = "scan_test.rs"]
+mod scan_test;
 
 fn emit_text(offenders: &[(u64, String)], threshold: u32) -> i32 {
     if offenders.is_empty() {
