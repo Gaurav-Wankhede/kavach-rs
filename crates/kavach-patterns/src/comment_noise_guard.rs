@@ -10,9 +10,7 @@
 //! doc/header + `SAFETY:`/shebang/directive markers. Non-source files skipped.
 use std::fmt::Write as _;
 
-/// A comment run must reach this many consecutive lines before it is even a
-/// candidate for bloat. Short groups (a 3-4 line precise note) are GOOD and never
-/// fire — only a genuine paragraph is suspect. Raised from the old count-trigger.
+/// One-line comments are enough; a run of this many consecutive comment lines is a wall (still gated by prose-volume below).
 const BLOAT_RUN: usize = 2;
 /// A candidate run is bloat if it ALSO carries a prose-heavy line (this many
 /// chars+) — proving it's rationale narration, not a column of terse markers.
