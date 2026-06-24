@@ -5,9 +5,8 @@
 use crate::error::{internal, invalid_params};
 use crate::methods::{
     brain, bridge, bulk, change, citation, concept, db, db_harness, decisions, events,
-    gate_patterns, gates, graph, lease, mistake, mistake_top, nlm, nlm_serve, projects, rag, replay,
-    roadmap,
-    run, session, system, trust,
+    gate_patterns, gates, graph, lease, mistake, mistake_top, nlm, nlm_serve, projects, rag,
+    roadmap, run, session, system, trust,
 };
 use crate::state::AppState;
 use jsonrpsee::RpcModule;
