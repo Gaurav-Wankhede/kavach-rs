@@ -9,8 +9,8 @@ fn intentional_marker_with_upgrade_trigger_is_clean() {
 }
 
 #[test]
-fn ponytail_marker_without_trigger_flags() {
-    let (_note, has_trigger) = marker_note("// ponytail: hardcoded list for now").unwrap();
+fn marker_without_trigger_flags() {
+    let (_note, has_trigger) = marker_note("// kavach:intentional hardcoded list for now").unwrap();
     assert!(!has_trigger);
 }
 
