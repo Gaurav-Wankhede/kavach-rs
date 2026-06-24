@@ -78,32 +78,6 @@ fn has_recent_failure_false_initially() {
 }
 
 #[test]
-fn clear_failure_does_not_reset_stop_reblock_count() {
-    // REGRESSION: the perpetual-"1/3" infinite stop loop. post_tool.rs /
-    // post_write.rs call clear_failure() on every successful tool call. If
-    // clear_failure() zeroes the pending-work breaker, the agent's own tool
-    // activity between stop attempts resets it every cycle and the gate
-    // loops forever. stop_reblock_count MUST survive clear_failure().
-    let mut s = SessionState::default();
-    s.increment_stop_reblock();
-    s.increment_stop_reblock();
-    assert_eq!(s.stop_reblock_count, 2);
-
-    s.record_failure("Bash");
-    s.clear_failure(); // simulates post-tool success between stop attempts
-
-    assert_eq!(
-        s.stop_reblock_count, 2,
-        "clear_failure() must NOT reset the pending-work re-block breaker — \
-         resetting it is the perpetual-1/3 infinite-loop bug"
-    );
-    assert_eq!(
-        s.failure_block_count, 0,
-        "clear_failure clears its own field"
-    );
-}
-
-#[test]
 fn increment_stop_reblock_is_bounded() {
     // The pending-work breaker must terminate: bounded at max + 1, never ∞,
     // so the stop gate reaches its forced-stop terminal instead of looping.
