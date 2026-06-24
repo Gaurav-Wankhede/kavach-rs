@@ -1,5 +1,4 @@
 // split: intentional - system-level RPC methods (health, schema_apply, shutdown)
-use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use serde::Serialize;
