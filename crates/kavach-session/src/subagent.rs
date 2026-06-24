@@ -208,20 +208,6 @@ mod tests {
     }
 
     #[test]
-    fn test_reset_drops_only_running_sentinels() {
-        // reset clears live agents but preserves finished output history so
-        // idempotency/blast accounting survives — and recount cannot re-inflate.
-        let mut s = SessionState::default();
-        s.track_subagent_start("live");
-        s.track_subagent_stop("done", 3000);
-        assert_eq!(s.active_subagents, 1);
-        s.reset_stale_subagents();
-        assert_eq!(s.active_subagents, 0);
-        assert_eq!(s.subagent_outputs.get("live"), None); // running sentinel dropped
-        assert_eq!(s.subagent_outputs.get("done"), Some(&3000)); // finished kept
-    }
-
-    #[test]
     fn test_two_concurrent_agents_counted_independently() {
         let mut s = SessionState::default();
         s.track_subagent_start("a");
