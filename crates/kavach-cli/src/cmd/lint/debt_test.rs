@@ -21,6 +21,6 @@ fn non_marker_line_is_none() {
 
 #[test]
 fn when_clause_counts_as_trigger() {
-    let (_n, has_trigger) = marker_note("// ponytail: single impl; split when a 2nd caller appears").unwrap();
+    let (_n, has_trigger) = marker_note("// kavach:intentional single impl; split when a 2nd caller appears").unwrap();
     assert!(has_trigger);
 }
