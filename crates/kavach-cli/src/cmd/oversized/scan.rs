@@ -54,7 +54,7 @@ fn collect_offenders(reports: &[serde_json::Value], threshold: u32) -> Vec<(u64,
         if code <= u64::from(threshold) {
             continue;
         }
-        if has_split_marker(name) {
+        if has_exempt_marker(name) {
             continue;
         }
         out.push((code, name.to_owned()));
