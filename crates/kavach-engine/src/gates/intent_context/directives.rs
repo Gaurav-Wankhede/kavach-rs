@@ -57,13 +57,34 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
     context.push('\n');
 }
 
+/// Check if prompt contains diagram-related keywords.
+fn has_diagram_keyword(prompt: &str) -> bool {
+    let lower = prompt.to_lowercase();
+    lower.contains("architecture")
+        || lower.contains("diagram")
+        || lower.contains("design")
+        || lower.contains("flow")
+        || lower.contains("structure")
+        || lower.contains("component")
+        || lower.contains("sequence")
+        || lower.contains("state machine")
+        || lower.contains("lld")
+        || lower.contains("hld")
+}
+
 /// Append the diagram-first standing law for plan/design/implement intents: a
 /// turn that proposes architecture or an LLD must emit a temp HTML+Mermaid view
 /// (Mermaid 11.15.0 CDN + SRI) and surface it to the user BEFORE deciding, so the
 /// structure is reviewable before any code. Advisory tier (steers, never blocks).
 /// SOURCE: decision.harness.sdlc-nano-agents-global · diagram-first law.
-pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str) {
-    if intent_type != "implement" && intent_type != "refactor" && intent_type != "general" {
+pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str, prompt: &str) {
+    let intent_matches = intent_type == "implement"
+        || intent_type == "refactor"
+        || intent_type == "general"
+        || intent_type == "plan"
+        || intent_type == "design"
+        || intent_type == "architecture";
+    if !intent_matches && !has_diagram_keyword(prompt) {
         return;
     }
     context.push_str("\n[DIAGRAM_FIRST] ");
