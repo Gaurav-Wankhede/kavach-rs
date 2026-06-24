@@ -232,12 +232,6 @@ pub fn relative_to_parent(parent_workdir: &str, child_workdir: &str) -> Option<S
         .map(|rel| rel.to_string_lossy().into_owned())
 }
 
-/// Helper to provide the SELECT field list for projects queries elsewhere.
-#[must_use]
-pub const fn project_fields() -> &'static str {
-    PROJECT_FIELDS
-}
-
 /// Register or update a project. Uses UPSERT to be idempotent on slug.
 ///
 /// # Errors

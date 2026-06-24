@@ -102,15 +102,6 @@ impl SessionState {
         self.save_or_log();
     }
 
-    /// Reset enforcement state for a new user prompt.
-    pub fn reset_enforcement(&mut self) {
-        self.required_skills.clear();
-        self.invoked_skills.clear();
-        self.research_topic.clear();
-        self.research_done = false;
-        self.save_or_log();
-    }
-
     /// Open a new evidence window for the current intent turn.
     /// Called by the intent gate whenever a new user prompt is classified.
     pub fn reset_evidence_window(&mut self) {
