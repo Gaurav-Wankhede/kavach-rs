@@ -1,5 +1,5 @@
 //! Idempotent inline migrations: feedback/priority/lane/harness fields, owner-scrub, category backfill, session_runtime, concept tier, FTS indexes, bulk_manifest, nlm_doc.
-pub(super) const DDL: &str = r"
+pub(super) const DDL: &str = r#"
 -- FEEDBACK FIELD (v3 migration inline): actionable truth for kanban management.
 DEFINE FIELD IF NOT EXISTS feedback ON decision TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS feedback ON research TYPE option<string>;
