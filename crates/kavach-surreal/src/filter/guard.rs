@@ -38,19 +38,19 @@ const ALLOWED_TABLES: &[&str] = &[
     "kanban", "part",
 ];
 
-pub fn is_allowed_field(name: &str) -> bool {
+pub(super) fnis_allowed_field(name: &str) -> bool {
     ALLOWED_FIELDS.contains(&name)
 }
 
-pub fn is_allowed_edge(name: &str) -> bool {
+pub(super) fnis_allowed_edge(name: &str) -> bool {
     ALLOWED_EDGES.contains(&name)
 }
 
-pub fn is_allowed_table(name: &str) -> bool {
+pub(super) fnis_allowed_table(name: &str) -> bool {
     ALLOWED_TABLES.contains(&name)
 }
 
-pub fn is_valid_duration(s: &str) -> bool {
+pub(super) fnis_valid_duration(s: &str) -> bool {
     if s.is_empty() || s.len() > 16 {
         return false;
     }
@@ -68,14 +68,14 @@ pub fn is_valid_duration(s: &str) -> bool {
     !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit())
 }
 
-pub fn is_safe_key(s: &str) -> bool {
+pub(super) fnis_safe_key(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= 128
         && s.chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
-pub fn safe_field(name: &str) -> Option<&str> {
+pub(super) fnsafe_field(name: &str) -> Option<&str> {
     is_allowed_field(name).then_some(name)
 }
 
