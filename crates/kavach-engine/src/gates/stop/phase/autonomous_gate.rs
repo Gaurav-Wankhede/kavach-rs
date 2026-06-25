@@ -16,7 +16,10 @@ pub(crate) fn stop_gate_fires(permission_mode: &str) -> bool {
 }
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if stop_gate_fires(&ctx.input.permission_mode) {
+    // A live user message THIS turn is the highest authority — honor it even in
+    // auto/bypass (the user just typed; never re-dispatch a card over their words).
+    let user_spoke = ctx.session.user_is_steering_this_turn();
+    if stop_gate_fires(&ctx.input.permission_mode) && !user_spoke {
         return ControlFlow::Continue(());
     }
     crate::gates::event_log::log_gate_decision(
