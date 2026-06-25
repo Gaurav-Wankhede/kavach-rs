@@ -153,9 +153,7 @@ async fn run_async(
     finalize_verified(&db, &project_id, key).await
 }
 
-/// Run one cargo stage, printing the RESOLVED command first and (on failure) the
-/// captured stderr head so an env-divergent phantom error is diagnosable. Returns
-/// `Some(exit_code)` on spawn-error or non-zero status; `None` on success.
+/// Run one cargo stage; print the resolved command, show stderr head on failure.
 fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
     let display = render::cargo_cmd(sub, crate_name);
     let cwd = std::env::current_dir()
