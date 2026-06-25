@@ -29,7 +29,7 @@ pub(super) fn eval_advisory(_project_slug: &str, card_key: &str) -> Option<Strin
     if !touched_gate_or_dispatch(card_key) {
         return None;
     }
-    let path = kavach_patterns::eval_replay::default_trajectory_path(&card_key).ok()?;
+    let path = kavach_patterns::eval_replay::default_trajectory_path(card_key).ok()?;
     let events = kavach_patterns::eval_replay::read_jsonl(&path).ok()?;
     let score = eval_trajectory_score(&events);
     if score >= 0 {
