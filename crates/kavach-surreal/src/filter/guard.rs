@@ -79,4 +79,4 @@ pub(super) fn safe_field(name: &str) -> Option<&str> {
     is_allowed_field(name).then_some(name)
 }
 
-pub const NEVER_MATCH: &str = "1 = 2";
+pub(super) const NEVER_MATCH: &str = "1 = 2";
