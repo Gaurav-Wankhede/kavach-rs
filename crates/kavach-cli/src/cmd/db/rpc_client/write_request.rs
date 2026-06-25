@@ -1,5 +1,17 @@
 use kavach_rpc::methods::db::WriteParams;
-use crate::cmd::db::rpc_client::WriteRequest;
+
+#[derive(Clone, Copy)]
+pub(crate) struct WriteRequest<'a> {
+    pub project: &'a str,
+    pub category: &'a str,
+    pub key: &'a str,
+    pub title: &'a str,
+    pub content: Option<&'a str>,
+    pub new: bool,
+    pub update_key: Option<&'a str>,
+    pub priority: Option<i64>,
+    pub depends_on: &'a [String],
+}
 
 pub(super) fn write(req: &WriteRequest<'_>) -> Result<kavach_rpc::methods::db::WriteResult, String> {
     let effective_key = req.update_key.unwrap_or(req.key);
