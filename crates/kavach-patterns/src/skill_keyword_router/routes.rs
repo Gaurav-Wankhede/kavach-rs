@@ -87,8 +87,7 @@ pub fn should_fork(skill_name: &str) -> bool {
 	get_skill_metadata(skill_name).is_some_and(|m| m.context == super::types::SkillContext::Fork)
 }
 
-/// Get the model tier for a skill.
-/// Returns Sonnet (default) if skill not found or tier unset.
+/// Get the model tier for a skill, defaults to Sonnet if not found.
 #[must_use]
 pub fn get_model_tier(skill_name: &str) -> ModelTier {
 	get_skill_metadata(skill_name)
