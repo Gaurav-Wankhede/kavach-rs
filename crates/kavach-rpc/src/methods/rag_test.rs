@@ -25,16 +25,17 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     .await
     .expect("upsert ok");
 
-    let probe = st.db
-        .query("UPSERT rag_tree:[$s] SET source = $s, built_at = 'b', tree_json = <bytes>'aGk=', source_hash = 'h', source_dir = '', updated_at = time::now()")
-        .bind(("s", "probe".to_owned()))
-        .await;
-    eprintln!("PROBE UPSERT err = {:?}", probe.as_ref().err());
-    let upd: Vec<serde_json::Value> = probe.expect("probe").take(0).unwrap_or_default();
-    eprintln!("PROBE UPSERT rows = {upd:?}");
-    let mut info = st.db.query("INFO FOR DB").await.expect("info");
-    let tbls: Option<serde_json::Value> = info.take(0).ok().flatten();
-    eprintln!("DB TABLES = {tbls:?}");
+    for stmt in [
+        "CREATE rag_tree:c1 SET source='a', built_at='b', tree_json=<bytes>'aGk=', source_hash='h', source_dir=''",
+        "UPSERT rag_tree:c2 SET source='a', built_at='b', tree_json=<bytes>'aGk=', source_hash='h', source_dir=''",
+        "INSERT INTO rag_tree {id: rag_tree:c3, source:'a', built_at:'b', tree_json:<bytes>'aGk=', source_hash:'h', source_dir:''}",
+    ] {
+        let r = st.db.query(stmt).await;
+        eprintln!("STMT [{stmt}] err={:?}", r.err());
+    }
+    let mut raw0 = st.db.query("SELECT id FROM rag_tree").await.expect("raw0");
+    let ids: Vec<serde_json::Value> = raw0.take(0).unwrap_or_default();
+    eprintln!("PROBE IDS = {ids:?}");
     let mut raw = st
         .db
         .query("SELECT source, source_hash FROM rag_tree")
