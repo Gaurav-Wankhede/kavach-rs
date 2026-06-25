@@ -1,4 +1,4 @@
-//! Distributed-systems anti-pattern detector: timeouts, jitter, fanout, idempotency, circuit-breaker, cache-TTL.
+//! Detects distributed-system anti-patterns: timeouts, jitter, fanout, idempotency, circuit-breaker.
 
 mod detect;
 mod types;
