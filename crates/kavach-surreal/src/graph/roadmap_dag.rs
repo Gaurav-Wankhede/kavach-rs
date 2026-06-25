@@ -1,5 +1,4 @@
 mod model;
-mod topo;
 mod format;
 mod render;
 mod fetch;
