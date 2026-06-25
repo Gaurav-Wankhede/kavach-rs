@@ -1,4 +1,4 @@
-use super::detect;
+use super::detect::detect;
 
 #[test]
 fn detects_std_mutex_in_async() {
