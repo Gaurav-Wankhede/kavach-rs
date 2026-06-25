@@ -59,11 +59,7 @@ fn eval_advisory_negative_score_returns_some() {
         outcome: None,
     }];
     let result = super::eval_trajectory_score(&events);
-    assert!(
-        result < 0,
-        "deferral handoff should be negative, got {}",
-        result
-    );
+    assert!(result < 0, "deferral handoff should be negative, got {result}");
 }
 
 #[test]
