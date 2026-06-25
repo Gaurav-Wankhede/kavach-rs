@@ -6,8 +6,7 @@ use crate::cli::Cli;
 #[must_use]
 pub(crate) fn render() -> String {
     let mut out = String::from("kavach\n");
-    let mut root = Cli::command();
-    root.build();
+    let root = Cli::command();
     walk(&root, 1, &mut out);
     out
 }
