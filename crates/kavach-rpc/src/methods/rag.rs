@@ -1,10 +1,18 @@
-// split: intentional - cohesive rag_tree RPC group (tree_list_labels, tree_list_refreshable)
+// split: intentional - cohesive rag_tree RPC group (list/refreshable + persist/fetch blob path)
 // JSON-RPC method handlers for rag_tree storage.
 // Used by kavach-engine rag_router gate (read) and session_start (refresh).
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{RagTreeLabel, RagTreeRefreshable, rag_tree_list, rag_tree_list_refreshable};
+use kavach_surreal::{
+    RagTreeLabel, RagTreeRefreshable, RagTreeRow, rag_tree_get, rag_tree_list,
+    rag_tree_list_refreshable, rag_tree_upsert_with_dir,
+};
+use serde::Deserialize;
+
+#[cfg(test)]
+#[path = "rag_test.rs"]
+mod tests;
 
 /// Lists all RAG tree labels.
 ///
