@@ -25,6 +25,14 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     .await
     .expect("upsert ok");
 
+    let mut raw = st
+        .db
+        .query("SELECT source, source_hash FROM rag_tree")
+        .await
+        .expect("raw select");
+    let dbg: Vec<serde_json::Value> = raw.take(0).expect("raw take");
+    eprintln!("RAW ROWS = {dbg:?}");
+
     let row = tree_get(&st, TreeGetParams { source: "skills".to_owned() })
         .await
         .expect("get ok")
