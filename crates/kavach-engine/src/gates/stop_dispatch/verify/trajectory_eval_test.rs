@@ -37,10 +37,10 @@ fn path_is_gate_or_dispatch_false_reward_preset() {
 fn eval_advisory_positive_score_returns_none() {
     let events = vec![TrajectoryEvent {
         timestamp_ms: 1000,
-        session_id: "test".to_string(),
+        session_id: "test".to_owned(),
         event_kind: EventKind::Write {
-            file_path: "src/lib.rs".to_string(),
-            content: "#[test]\nfn test_foo() {}".to_string(),
+            file_path: "src/lib.rs".to_owned(),
+            content: "#[test]\nfn test_foo() {}".to_owned(),
         },
         outcome: None,
     }];
@@ -52,9 +52,9 @@ fn eval_advisory_positive_score_returns_none() {
 fn eval_advisory_negative_score_returns_some() {
     let events = vec![TrajectoryEvent {
         timestamp_ms: 1000,
-        session_id: "test".to_string(),
+        session_id: "test".to_owned(),
         event_kind: EventKind::Stop {
-            final_message: "starting the next step is yours to run".to_string(),
+            final_message: "starting the next step is yours to run".to_owned(),
         },
         outcome: None,
     }];
@@ -71,18 +71,18 @@ fn eval_advisory_multiple_negatives_strong_penalty() {
     let events = vec![
         TrajectoryEvent {
             timestamp_ms: 1000,
-            session_id: "test".to_string(),
+            session_id: "test".to_owned(),
             event_kind: EventKind::Write {
-                file_path: "src/lib.rs".to_string(),
-                content: "todo!(\"stub\")".to_string(),
+                file_path: "src/lib.rs".to_owned(),
+                content: "todo!(\"stub\")".to_owned(),
             },
             outcome: None,
         },
         TrajectoryEvent {
             timestamp_ms: 2000,
-            session_id: "test".to_string(),
+            session_id: "test".to_owned(),
             event_kind: EventKind::Stop {
-                final_message: "the next step is yours to run".to_string(),
+                final_message: "the next step is yours to run".to_owned(),
             },
             outcome: None,
         },
