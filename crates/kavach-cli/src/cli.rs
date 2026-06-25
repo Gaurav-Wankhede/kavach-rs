@@ -3,6 +3,8 @@
 use clap::{Parser, Subcommand};
 
 mod db;
+pub(crate) mod help_md;
+pub(crate) mod help_tree;
 mod harness_loop;
 mod oversized;
 mod phase;
