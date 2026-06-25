@@ -228,6 +228,7 @@ pub async fn upsert_entry_full(
             .bind(("title", title.to_owned()))
             .bind(("content", content.to_owned()))
             .bind(("priority", priority_i64))
+            .bind(("exec_prompt", exec_prompt.map(str::to_owned)))
             .bind(("source", event_source.to_owned()))
             .bind(("qname", qualified_name.to_owned()))
             .bind(("project_name", project_name.clone()))
