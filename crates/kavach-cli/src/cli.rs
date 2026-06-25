@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 
 mod db;
 pub(crate) mod help_md;
+mod help_stack;
 pub(crate) mod help_tree;
 mod harness_loop;
 mod oversized;
