@@ -11,16 +11,16 @@ pub use six_file::{
     ProjectTier, RequiredPrefix, SpecCategory, SpikeMode, WitnessResult,
 };
 
-mod priority;
+pub mod priority;
 pub use priority::Priority;
 
-mod effort_input;
+pub mod effort_input;
 pub use effort_input::EffortInput;
 
-mod hook_io;
+pub mod hook_io;
 pub use hook_io::{HookInput, HookResponse, HookSpecificOutput};
 
-mod memory_status;
+pub mod memory_status;
 pub use memory_status::MemoryStatus;
 
 
