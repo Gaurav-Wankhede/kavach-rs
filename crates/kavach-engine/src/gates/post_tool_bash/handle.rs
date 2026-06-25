@@ -3,8 +3,8 @@
 use kavach_types::HookInput;
 
 use super::detect::{
-    detect_port_conflict, is_empty_test_suite, is_package_install, is_package_not_found,
-    is_test_command,
+    classify_kavach_misuse, detect_port_conflict, is_empty_test_suite, is_package_install,
+    is_package_not_found, is_test_command, KavachMisuse,
 };
 use super::progress::track_db_progress;
 use super::tests_track::{clear_test_run, resolve_tested_files};
