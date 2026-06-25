@@ -193,12 +193,18 @@ pub async fn upsert_entry_full(
             )));
         }
     };
+    // roadmap-only: persist the Opus-authored executor prompt when provided.
+    let exec_prompt_clause: &str = if table == "roadmap" {
+        ", exec_prompt = IF $exec_prompt != NONE THEN $exec_prompt ELSE exec_prompt END"
+    } else {
+        ""
+    };
     writeln!(
         q,
         "UPSERT $eid \
             SET project = $project, category = '{table}', \
             entry_key = $key, title = $title, content = $content, \
-            status = 'active'{priority_clause}, updated_at = time::now() RETURN id;"
+            status = 'active'{priority_clause}{exec_prompt_clause}, updated_at = time::now() RETURN id;"
     )
     .ok();
     writeln!(
