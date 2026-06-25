@@ -1,5 +1,4 @@
-/// Split a PEP 508 requirement (`requests==2.31.0`, `flask>=2.0`, `httpx`) into
-/// (name, version-spec). No version operator → version is empty.
+/// Split a PEP 508 requirement into (name, version-spec); no operator → empty version.
 fn split_requirement(spec: &str) -> Option<(String, String)> {
     let s = spec.trim();
     if s.is_empty() {
