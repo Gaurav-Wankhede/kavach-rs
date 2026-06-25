@@ -4,7 +4,15 @@ use std::process::Command;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
-pub(crate) fn run(project_slug: &str, key: &str, crate_name: Option<&str>) -> i32 {
+mod render;
+
+pub(crate) fn run(
+    project_slug: &str,
+    key: &str,
+    crate_name: Option<&str>,
+    external_verified: bool,
+    proof: Option<&str>,
+) -> i32 {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
         Err(e) => {
