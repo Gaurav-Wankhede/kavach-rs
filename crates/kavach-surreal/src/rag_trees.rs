@@ -29,8 +29,8 @@ pub struct RagTreeLabel {
 /// # Errors
 /// Propagates `Error::Surreal` from the SELECT.
 pub async fn get(db: &Surreal<Db>, source: &str) -> Result<Option<RagTreeRow>> {
-    let q = "SELECT source, built_at, tree_json, source_hash FROM rag_tree \
-             WHERE source = $source LIMIT 1";
+    let q = "SELECT source, built_at, tree_json, source_hash \
+             FROM type::record('rag_tree', $source)";
     let mut response = db.query(q).bind(("source", source.to_owned())).await?;
     let row: Option<RagTreeRow> = response.take(0)?;
     Ok(row)
