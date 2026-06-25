@@ -179,7 +179,7 @@ pub(super) fn detect_debug_violations(content: &str) -> Vec<AtomicViolation> {
     v
 }
 
-pub(super) fn dispatch(file_path: &str, content: &str, level: Level) -> Vec<AtomicViolation> {
+pub(super) fn dispatch(_file_path: &str, content: &str, level: Level) -> Vec<AtomicViolation> {
     let mut v = Vec::new();
     match level {
         Level::Atom => v.extend(detect_atom_violations(content)),
