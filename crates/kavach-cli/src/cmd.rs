@@ -89,7 +89,13 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Phase { action } => phase::run(action),
         Commands::Loop { action } => harness_loop::run(action),
-        Commands::Verify { .. } => dispatch_verify(command),
+        Commands::Verify {
+            project,
+            key,
+            crate_name,
+            external_verified,
+            proof,
+        } => dispatch_verify(&project, &key, crate_name, external_verified, proof),
         Commands::Deploy { skip_tests } => deploy::run(skip_tests),
         Commands::VerifyFrontend {
             path,
