@@ -20,6 +20,7 @@ pub(crate) enum DbAction {
         stack: Option<String>,
     },
     /// Register a sub-part within a project
+    #[command(after_help = "EXAMPLES:\n  kavach db register-part --project my-app --name backend --path /abs/backend --type backend\n\nWHEN: A monorepo has distinct parts (backend/frontend/infra) you want scoped separately.")]
     RegisterPart {
         /// Parent project slug
         #[arg(long)]
