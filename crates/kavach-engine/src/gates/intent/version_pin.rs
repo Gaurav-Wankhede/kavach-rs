@@ -1,1 +1,1 @@
-# This file is deprecated. Use the version_pin/ module instead.
+//! Deprecated: see version_pin/ module
