@@ -157,8 +157,7 @@ async fn run_async(
 fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
     let display = render::cargo_cmd(sub, crate_name);
     let cwd = std::env::current_dir()
-        .map(|p| p.display().to_string())
-        .unwrap_or_else(|_| "?".to_owned());
+        .map_or_else(|_| "?".to_owned(), |p| p.display().to_string());
     if let Err(io_err) = print_or_exit(&format!("[VERIFY] running: {display}  (cwd: {cwd})")) {
         return Some(into_exit_code(io_err));
     }
