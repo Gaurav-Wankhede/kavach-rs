@@ -53,6 +53,7 @@ pub(crate) fn run(action: DbAction) -> i32 {
             update_key,
             priority,
             depends_on,
+            exec_prompt,
         } => write::run(&super::rpc_client::WriteRequest {
             project: &project,
             category: &category,
@@ -62,6 +63,7 @@ pub(crate) fn run(action: DbAction) -> i32 {
             new,
             update_key: update_key.as_deref(),
             priority,
+            exec_prompt: exec_prompt.as_deref(),
             depends_on: &depends_on,
         }),
         DbAction::PrioritySet {
