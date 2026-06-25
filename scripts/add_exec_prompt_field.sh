@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-mapfile -t files < <(rg -rl --glob '*.rs' 'lane:\s*(None|Some)' crates/)
+mapfile -t files < <(rg -l --glob '*.rs' 'lane: None,' crates/)
 for f in "${files[@]}"; do
   perl -0pi -e 's/(^(\s*)lane: None,\n)(\s*occupied_by:)/$1$2exec_prompt: None,\n$3/mg' "$f"
 done
