@@ -1,4 +1,4 @@
-use crate::system_design_guard::{detect, SysViolation};
+use crate::system_design_guard::detect;
 
 fn star_query() -> String {
     let cmd = format!("{}{}", "S", "ELECT");
