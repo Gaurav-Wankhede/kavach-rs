@@ -139,14 +139,24 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 }
 
 /// Dispatch `verify` — extracted to keep `dispatch` under the nano-file ceiling.
-fn dispatch_verify(
-    project: &str,
-    key: &str,
-    crate_name: Option<&str>,
-    external_verified: bool,
-    proof: Option<&str>,
-) -> i32 {
-    verify::run(project, key, crate_name, external_verified, proof)
+fn dispatch_verify(command: Commands) -> i32 {
+    let Commands::Verify {
+        project,
+        key,
+        crate_name,
+        external_verified,
+        proof,
+    } = command
+    else {
+        return 1;
+    };
+    verify::run(
+        &project,
+        &key,
+        crate_name.as_deref(),
+        external_verified,
+        proof.as_deref(),
+    )
 }
 
 /// Dispatch the `loophole` subcommands (sweep / loop / cron) — extracted from
