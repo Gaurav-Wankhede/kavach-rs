@@ -324,8 +324,8 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         action: LintAction,
     },
     /// Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference.
-    #[command(after_help = "EXAMPLES:\n  kavach commands                 # indented tree of every path + summary\n  kavach commands --tree          # same (explicit)\n  kavach commands --markdown      # full reference: flags, defaults, examples\n  kavach commands --markdown > docs/CLI.md\n\nWHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the live clap tree — never drifts.")]
-    Commands {
+    #[command(name = "commands", after_help = "EXAMPLES:\n  kavach commands                 # indented tree of every path + summary\n  kavach commands --tree          # same (explicit)\n  kavach commands --markdown      # full reference: flags, defaults, examples\n  kavach commands --markdown > docs/CLI.md\n\nWHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the live clap tree — never drifts.")]
+    CommandTree {
         /// Render the indented command tree (default when neither flag is given).
         #[arg(long)]
         tree: bool,
