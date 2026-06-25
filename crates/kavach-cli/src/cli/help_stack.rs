@@ -1,12 +1,12 @@
 /// Run `f` on a 16 MiB worker thread so the deep clap tree never overflows a small caller stack.
-pub(super) fn on_big_stack<F>(f: F) -> String
+pub(crate) fn on_big_stack<T, F>(f: F) -> T
 where
-    F: FnOnce() -> String + Send + 'static,
+    T: Send + 'static,
+    F: FnOnce() -> T + Send + 'static,
 {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)
         .spawn(f)
-        .ok()
-        .and_then(|h| h.join().ok())
-        .unwrap_or_default()
+        .and_then(std::thread::JoinHandle::join)
+        .unwrap_or_else(|e| std::panic::resume_unwind(e.into()))
 }
