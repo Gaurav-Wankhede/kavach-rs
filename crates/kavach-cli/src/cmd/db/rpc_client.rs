@@ -19,7 +19,7 @@ use kavach_rpc::methods::db::{
     RotateParams, RotateResult, SearchParams, SearchResult, SetLaneParams, SetLaneResult,
     SetParentParams, SetParentResult, SetPriorityParams, SetPriorityResult, StatusUpdateParams,
     StatusUpdateResult, TreeParams,
-    TreeResult, WipeProjectParams, WipeProjectResult, WriteParams, WriteResult,
+    TreeResult, WipeProjectParams, WipeProjectResult,
 };
 
 #[expect(
