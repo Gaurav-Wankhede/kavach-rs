@@ -1,4 +1,5 @@
-use super::*;
+use super::error::{should_fallback_to_direct, DAEMON_UNAVAILABLE};
+use super::resilience::{fallback_backoff_schedule, is_rocksdb_lock_contention};
 
 #[test]
 fn fallback_only_when_daemon_unavailable() {
