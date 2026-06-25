@@ -1,6 +1,4 @@
-/// Advisory: a roadmap card written with no `exec_prompt` is unservable by
-/// `kavach db next-prompt`. Returns the nudge when `category == "roadmap"` and
-/// `exec_prompt` is None/blank, else None. Pure; the caller writes it to stderr.
+/// Nudge a roadmap write that omits a (non-blank) `exec_prompt`; None otherwise.
 #[must_use]
 pub(crate) fn advise(category: &str, exec_prompt: Option<&str>) -> Option<String> {
     if category != "roadmap" {
