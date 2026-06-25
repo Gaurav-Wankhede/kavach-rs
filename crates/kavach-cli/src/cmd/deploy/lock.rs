@@ -3,13 +3,8 @@ use fs2::FileExt;
 
 pub(super) const DEPLOY_LOCK_NAME: &str = ".deploy.lock";
 
-/// RAII holder for the exclusive advisory `flock` that serializes concurrent
-/// `kavach deploy` runs. The lock is an OS-level `fcntl`/`flock` (via `fs2`), so
-/// the kernel releases it automatically if the process dies mid-deploy — a
-/// crashed run can never leave a stale lock that wedges the next deploy (unlike
-/// a manually-managed sentinel file). The file itself is intentionally NOT
-/// removed on drop: keeping it lets the next run re-lock the same inode, and an
-/// empty leftover `.deploy.lock` is harmless. Dropping the handle unlocks.
+/// RAII holder for OS-level `flock` (via `fs2`) that serializes `kavach deploy` runs.
+/// Kernel auto-releases on process exit; file stays for next run to re-lock same inode.
 #[derive(Debug)]
 pub(super) struct DeployLock {
     file: std::fs::File,
