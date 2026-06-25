@@ -199,6 +199,12 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         /// Crate to test (default: workspace)
         #[arg(long)]
         crate_name: Option<String>,
+        /// Record done→verified WITHOUT running cargo, for a deploy proven live elsewhere. Requires --proof.
+        #[arg(long)]
+        external_verified: bool,
+        /// Audit proof (deploy URL / commit sha / test receipt) persisted on the card. Mandatory with --external-verified.
+        #[arg(long)]
+        proof: Option<String>,
     },
     /// One-shot deploy: build, test, install binary to ~/.local/bin/kavach.
     #[command(
