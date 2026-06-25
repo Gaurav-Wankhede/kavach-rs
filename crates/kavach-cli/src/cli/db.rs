@@ -7,6 +7,7 @@ use clap::Subcommand;
 #[derive(Subcommand)]
 pub(crate) enum DbAction {
     /// Register a project with absolute path
+    #[command(after_help = "EXAMPLES:\n  kavach db register --slug my-app --path /abs/path --stack 'rust|axum'\n\nWHEN: First-time onboarding of a repo so kavach can bind sessions to it.")]
     Register {
         /// Project slug (unique identifier)
         #[arg(long)]
