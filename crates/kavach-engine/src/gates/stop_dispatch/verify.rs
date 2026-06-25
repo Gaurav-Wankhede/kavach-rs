@@ -6,6 +6,7 @@
 //! lives in the `witness` child; this hub keeps the orchestration.
 
 pub(crate) mod witness;
+pub(crate) mod trajectory_eval;
 
 use witness::{WitnessRun, run_workspace_witnesses, witness_root_from_card};
 
