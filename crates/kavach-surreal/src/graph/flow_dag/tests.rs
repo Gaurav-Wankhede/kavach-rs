@@ -155,4 +155,3 @@ use super::upsert::upsert_flow;
             .expect_err("unregistered project");
         assert!(format!("{err}").contains("not registered"), "{err}");
     }
-}
