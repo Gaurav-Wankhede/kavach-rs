@@ -25,7 +25,7 @@ pub(super) fn eval_trajectory_score(events: &[TrajectoryEvent]) -> i64 {
     reward::score_trajectory_with(events, &rubric)
 }
 
-pub(super) fn eval_advisory(project_slug: &str, card_key: &str) -> Option<String> {
+pub(super) fn eval_advisory(_project_slug: &str, card_key: &str) -> Option<String> {
     if !touched_gate_or_dispatch(card_key) {
         return None;
     }
