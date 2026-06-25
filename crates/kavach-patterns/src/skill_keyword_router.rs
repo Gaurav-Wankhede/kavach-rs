@@ -1,5 +1,4 @@
-/// NLP keyword→skill routing via Aho-Corasick from ~/.claude/skills/*/SKILL.md frontmatter.
-
+// NLP keyword→skill routing via Aho-Corasick from ~/.claude/skills/*/SKILL.md frontmatter.
 mod parse;
 mod routes;
 mod types;
