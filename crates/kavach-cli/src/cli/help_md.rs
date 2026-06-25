@@ -18,9 +18,9 @@ fn render_inner() -> String {
 }
 
 fn section(cmd: &clap::Command, path: &str, out: &mut String) {
-    let _ = writeln!(out, "## `{path}`\n");
+    writeln!(out, "## `{path}`\n").ok();
     if let Some(about) = cmd.get_about() {
-        let _ = writeln!(out, "{about}\n");
+        writeln!(out, "{about}\n").ok();
     }
     let args: Vec<&clap::Arg> = cmd.get_arguments().filter(|a| a.get_id() != "help").collect();
     if !args.is_empty() {
