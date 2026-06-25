@@ -106,6 +106,39 @@ async fn run_async(
         return 1;
     }
 
+    if external_verified {
+        let Some(proof_text) = proof.filter(|p| !p.trim().is_empty()) else {
+            if let Err(io_err) = ewrite_or_exit(
+                "error: --external-verified requires a non-empty --proof (deploy URL / commit / test receipt)",
+            ) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        };
+        let stamped = format!("{}\n\n[EXTERNAL_VERIFIED] {proof_text}", entry.content);
+        let qname = format!("{project_slug}/roadmap/{key}");
+        let written = kavach_surreal::upsert_entry_full()
+            .db(&db)
+            .category("roadmap")
+            .project_id(&project_id)
+            .entry_key(key)
+            .title(&entry.title)
+            .content(&stamped)
+            .event_source("verify-external")
+            .qualified_name(&qname)
+            .references(&[])
+            .build_for_call()
+            .await;
+        if let Err(e) = written {
+            let msg = format!("error: proof write-back failed: {e}");
+            if let Err(io_err) = ewrite_or_exit(&msg) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
+        return finalize_verified(&db, &project_id, key).await;
+    }
+
     let head = format!("[VERIFY] roadmap entry: {key}");
     if let Err(io_err) = print_or_exit(&head) {
         return into_exit_code(io_err);
