@@ -7,8 +7,11 @@ pub(super) fn parse_requirements_txt(body: &str) -> Vec<(String, String)> {
         }
         let operators = ['=', '>', '<', '!', '~'];
         if let Some(pos) = trimmed.find(|c| operators.contains(&c)) {
-            let (name, version) = trimmed.split_at(pos);
-            result.push((name.to_owned(), version.to_owned()));
+            let name = trimmed[..pos].trim_end();
+            let version = &trimmed[pos..];
+            if !name.is_empty() {
+                result.push((name.to_owned(), version.to_owned()));
+            }
         }
     }
     result
