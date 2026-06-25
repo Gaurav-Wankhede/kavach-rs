@@ -1,4 +1,4 @@
-use super::{HookInput, HookResponse, HookSpecificOutput};
+use super::{HookInput, HookResponse};
 use crate::EffortInput;
 
 #[test]
