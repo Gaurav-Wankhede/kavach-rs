@@ -1,5 +1,4 @@
-//! Pure output/command classifiers: test command, empty suite, package install,
-//! package-not-found, port conflict.
+//! Pure output/command classifiers: test, empty-suite, package, port, kavach-misuse.
 
 /// Detect if a bash command is a test execution.
 pub(super) fn is_test_command(cmd: &str) -> bool {
