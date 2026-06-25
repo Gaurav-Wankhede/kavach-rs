@@ -49,7 +49,7 @@ fn blocked_match(cmd: &str, pattern: &str) -> bool {
 }
 
 /// Check if position falls inside a quoted string (single or double).
-fn is_inside_quotes(s: &str, pos: usize) -> bool {
+pub(crate) fn is_inside_quotes(s: &str, pos: usize) -> bool {
 	let (mut sq, mut dq, mut i) = (false, false, 0);
 	let b = s.as_bytes();
 	while i < pos.min(b.len()) {
