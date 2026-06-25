@@ -99,7 +99,7 @@ pub async fn list_by_project(
     // (roadmap::next_open_task) consumes this order directly.
     const QUERY: &str = concat!(
         "SELECT id, project, entry_key, title, content, status, entry_status, ",
-        "access_count, created_at, updated_at, priority, lane, ",
+        "access_count, created_at, updated_at, priority, lane, exec_prompt, ",
         "occupied_by, occupied_until, ",
         "priority ?? 999999 AS _sort_priority ",
         "FROM type::table($table) WHERE project = $project ",
@@ -161,7 +161,7 @@ pub async fn list_by_status(
     // see the same dispatch order.
     const QUERY: &str = concat!(
         "SELECT id, project, entry_key, title, content, status, entry_status, ",
-        "access_count, created_at, updated_at, priority, lane, ",
+        "access_count, created_at, updated_at, priority, lane, exec_prompt, ",
         "occupied_by, occupied_until, ",
         "priority ?? 999999 AS _sort_priority ",
         "FROM type::table($table) WHERE project = $project AND entry_status = $status ",
