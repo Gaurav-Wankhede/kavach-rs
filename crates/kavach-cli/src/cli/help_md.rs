@@ -31,7 +31,7 @@ fn section(cmd: &clap::Command, path: &str, out: &mut String) {
         out.push('\n');
     }
     if let Some(after) = cmd.get_after_help() {
-        let _ = writeln!(out, "```\n{after}\n```\n");
+        writeln!(out, "```\n{after}\n```\n").ok();
     }
     let mut subs: Vec<&clap::Command> = cmd.get_subcommands().collect();
     subs.sort_by_key(|c| c.get_name().to_owned());
