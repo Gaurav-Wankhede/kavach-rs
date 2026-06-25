@@ -24,4 +24,4 @@ DEFINE FIELD context_phase ON session TYPE string DEFAULT 'early';
 DEFINE FIELD token_budget_total ON session TYPE int DEFAULT 1000000;
 DEFINE FIELD token_budget_used ON session TYPE int DEFAULT 0;
 DEFINE INDEX idx_session_project ON session FIELDS project;
-"#;
+";
