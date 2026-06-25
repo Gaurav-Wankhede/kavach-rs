@@ -1,5 +1,5 @@
 //! Roundtrip proof for the rag_tree persist+fetch path: tree_upsert -> tree_get.
-use super::rag::{TreeGetParams, TreeUpsertParams, tree_get, tree_upsert};
+use super::{TreeGetParams, TreeUpsertParams, tree_get, tree_upsert};
 use crate::state::AppState;
 
 async fn state() -> AppState {
