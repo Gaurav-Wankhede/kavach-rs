@@ -25,14 +25,13 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     .await
     .expect("upsert ok");
 
-    let mut up = st
-        .db
-        .query("UPSERT rag_tree:[$s] SET source = $s")
+    let probe = st.db
+        .query("UPSERT rag_tree:[$s] SET source = $s, built_at = 'b', tree_json = <bytes>'aGk=', source_hash = 'h', source_dir = '', updated_at = time::now()")
         .bind(("s", "probe".to_owned()))
-        .await
-        .expect("raw upsert");
-    let upd: Vec<serde_json::Value> = up.take(0).unwrap_or_default();
-    eprintln!("PROBE UPSERT = {upd:?}");
+        .await;
+    eprintln!("PROBE UPSERT err = {:?}", probe.as_ref().err());
+    let upd: Vec<serde_json::Value> = probe.expect("probe").take(0).unwrap_or_default();
+    eprintln!("PROBE UPSERT rows = {upd:?}");
     let mut raw = st
         .db
         .query("SELECT source, source_hash FROM rag_tree")
