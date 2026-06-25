@@ -170,8 +170,8 @@ fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
     let output = match cmd.output() {
         Ok(o) => o,
         Err(e) => {
-            let _ = ewrite_or_exit(&format!("error: `{display}` failed to spawn: {e}"));
-            return Some(1);
+            let msg = format!("error: `{display}` failed to spawn: {e}");
+            return Some(ewrite_or_exit(&msg).map_or_else(into_exit_code, |()| 1));
         }
     };
     if output.status.success() {
@@ -180,10 +180,10 @@ fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
     let code = output.status.code().unwrap_or(1);
     let stderr = String::from_utf8_lossy(&output.stderr);
     let head = render::stderr_head(&stderr, 20);
-    let _ = ewrite_or_exit(&format!(
+    let msg = format!(
         "[VERIFY] FAIL: `{display}` exited {code} (cwd {cwd})\n--- first stderr lines ---\n{head}"
-    ));
-    Some(code)
+    );
+    Some(ewrite_or_exit(&msg).map_or_else(into_exit_code, |()| code))
 }
 
 /// Flip roadmap row done → verified and print PASS. Shared by the cargo and the
