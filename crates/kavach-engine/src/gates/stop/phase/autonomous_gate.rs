@@ -1,36 +1,43 @@
-//! Guard (P0, user-authority): PLAN-MODE OVERRIDE — allow the stop when
-//! `permission_mode == "plan"`. See decision.engine.stop-plan-mode-override.
+//! Guard (P0, user-authority): AUTONOMOUS-MODE GATE — the Stop dispatch fires
+//! ONLY in Auto (`permission_mode=="auto"`) or `bypassPermissions`; every other
+//! mode (plan/default/acceptEdits/dontAsk) allows a clean stop. See
+//! decision.engine.stop-autonomous-mode-only.
 
 use core::ops::ControlFlow;
 
 use super::super::shared::StopCtx;
 
-/// True iff the harness reports Plan Mode for this turn (pure → unit-testable).
+/// True iff the harness reports an autonomous mode where the Stop gate's
+/// auto-continue dispatch should run: dedicated Auto or `bypassPermissions`
+/// (pure → unit-testable). SOURCE: code.claude.com/docs/en/permissions.
 #[must_use]
-pub(crate) fn is_plan_mode(permission_mode: &str) -> bool {
-    permission_mode == "plan"
+pub(crate) fn stop_gate_fires(permission_mode: &str) -> bool {
+    matches!(permission_mode, "auto" | "bypassPermissions")
 }
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if !is_plan_mode(&ctx.input.permission_mode) {
+    if stop_gate_fires(&ctx.input.permission_mode) {
         return ControlFlow::Continue(());
     }
     crate::gates::event_log::log_gate_decision(
         &ctx.session.session_id,
-        "stop:plan_mode_override",
+        "stop:autonomous_gate_override",
         "allow_stop",
-        &format!("permission_mode=plan on turn {}; not dispatching a card", ctx.session.turn_count),
+        &format!(
+            "permission_mode={} (not auto/bypass) on turn {}; allowing stop",
+            ctx.input.permission_mode, ctx.session.turn_count
+        ),
         &ctx.session.project,
     );
     eprintln!(
-        "[PLAN_MODE] Plan Mode is active — the user drives this turn by asking \
-         questions. NOT dispatching a kanban card. The autonomous loop resumes in \
-         Auto (default) or bypassPermissions mode."
+        "[STOP_GATE] Auto-continue dispatch fires ONLY in Auto or bypassPermissions \
+         mode. This turn is attended — the user drives it. NOT dispatching a kanban \
+         card; allowing the stop."
     );
     drop(kavach_hook::exit_silent());
     ControlFlow::Break(())
 }
 
 #[cfg(test)]
-#[path = "plan_mode/tests.rs"]
+#[path = "autonomous_gate/tests.rs"]
 mod tests;
