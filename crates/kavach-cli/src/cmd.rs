@@ -95,7 +95,13 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             crate_name,
             external_verified,
             proof,
-        } => dispatch_verify(&project, &key, crate_name, external_verified, proof),
+        } => dispatch_verify(
+            &project,
+            &key,
+            crate_name.as_deref(),
+            external_verified,
+            proof.as_deref(),
+        ),
         Commands::Deploy { skip_tests } => deploy::run(skip_tests),
         Commands::VerifyFrontend {
             path,
