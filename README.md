@@ -302,7 +302,7 @@ Map each lifecycle event to a Kavach gate. Every gate runs the same way — `kav
 <tr><td><code>PreToolUse</code> (Write/Edit)</td><td><code>pre-write</code></td><td>Hard enforcement: skills, research, anti-pattern scan</td></tr>
 <tr><td><code>PreToolUse</code> (else)</td><td><code>pre-tool</code></td><td>Bash blocklist + read validation + subagent budget</td></tr>
 <tr><td><code>PostToolUse</code> (Write/Edit)</td><td><code>post-write</code></td><td>Anti-prod scan + quality + lint + memory sync</td></tr>
-<tr><td><code>PostToolUse</code> (else)</td><td><code>post-tool</code></td><td>Context injection + research + <strong>concept harvest</strong> + task sync</td></tr>
+<tr><td><code>PostToolUse</code> (else)</td><td><code>post-tool</code></td><td>Context injection + research + <strong>concept harvest</strong> + task sync + <strong>no-fabrication recovery</strong> (a failed <code>kavach</code> call is steered to <code>--help</code>/<code>commands --tree</code>, or <code>just install</code> on a stale binary)</td></tr>
 <tr><td><code>SessionStart</code></td><td><code>session-start</code></td><td>Restore state from the DB, not the chat</td></tr>
 <tr><td><code>Stop</code></td><td><code>stop</code></td><td>3-witness verify or block + pattern extraction</td></tr>
 </table>
