@@ -59,12 +59,54 @@ pub(crate) fn run(project: &str) -> i32 {
                 Ok(()) => 0,
                 Err(io_err) => into_exit_code(io_err),
             },
-            Pick::Missing(key) => render_err(&format!(
-                "error: top todo card '{key}' has no exec_prompt; have Opus author one first"
-            )),
+            Pick::Missing(card) => author_and_serve(&db, &project_id, project, card).await,
             Pick::Empty => render_err(&format!("error: no todo card on the {project} board")),
         }
     })
+}
+
+/// Author the missing exec_prompt via Haiku, write it back to the SAME card (no
+/// skip), then serve it. Fail-soft: any author/write error falls back to the
+/// strict missing-prompt error so the harness never crashes.
+async fn author_and_serve(
+    db: &kavach_surreal::Db,
+    project_id: &kavach_surreal::RecordId,
+    project: &str,
+    card: &MemoryEntry,
+) -> i32 {
+    let prompt = author::authoring_prompt(project, &card.entry_key, &card.title, &card.content);
+    let authored = match kavach_advisor::ask(&prompt, 4) {
+        Ok(text) if !text.trim().is_empty() => text,
+        _ => {
+            return render_err(&format!(
+                "error: top todo card '{}' has no exec_prompt and auto-authoring failed \
+                 (set ANTHROPIC_API_KEY); author one with --exec-prompt",
+                card.entry_key
+            ));
+        }
+    };
+    let qname = format!("{project}/roadmap/{}", card.entry_key);
+    if let Err(e) = kavach_surreal::upsert_entry_full(
+        db,
+        "roadmap",
+        project_id,
+        &card.entry_key,
+        &card.title,
+        &card.content,
+        "next-prompt-autoauthor",
+        &qname,
+        &[],
+        None,
+        Some(&authored),
+    )
+    .await
+    {
+        return render_err(&format!("error: authored prompt but write-back failed: {e}"));
+    }
+    match print_or_exit(&authored) {
+        Ok(()) => 0,
+        Err(io_err) => into_exit_code(io_err),
+    }
 }
 
 fn render_err(msg: &str) -> i32 {
