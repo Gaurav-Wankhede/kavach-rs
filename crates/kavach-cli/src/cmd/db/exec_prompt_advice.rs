@@ -1,0 +1,23 @@
+/// Advisory: a roadmap card written with no `exec_prompt` is unservable by
+/// `kavach db next-prompt`. Returns the nudge when `category == "roadmap"` and
+/// `exec_prompt` is None/blank, else None. Pure; the caller writes it to stderr.
+#[must_use]
+pub(crate) fn advise(category: &str, exec_prompt: Option<&str>) -> Option<String> {
+    if category != "roadmap" {
+        return None;
+    }
+    if exec_prompt.is_some_and(|p| !p.trim().is_empty()) {
+        return None;
+    }
+    Some(
+        "[EXEC_PROMPT_P1] roadmap card has no --exec-prompt. Author the seven-block \
+         executor work order (ROLE·TASK·FILES·CONSTRAINTS·VERIFY·DONE WHEN·ON FAILURE) \
+         so `kavach db next-prompt` can serve it to Haiku/Composer 2.5. See the \
+         exec-prompt skill; an empty prompt is rejected at serve time (exit 1)."
+            .to_owned(),
+    )
+}
+
+#[cfg(test)]
+#[path = "exec_prompt_advice_test.rs"]
+mod tests;
