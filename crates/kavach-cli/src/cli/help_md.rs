@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use clap::CommandFactory;
 
 use crate::cli::Cli;
@@ -16,9 +18,9 @@ fn render_inner() -> String {
 }
 
 fn section(cmd: &clap::Command, path: &str, out: &mut String) {
-    out.push_str(&format!("## `{path}`\n\n"));
+    let _ = writeln!(out, "## `{path}`\n");
     if let Some(about) = cmd.get_about() {
-        out.push_str(&format!("{about}\n\n"));
+        let _ = writeln!(out, "{about}\n");
     }
     let args: Vec<&clap::Arg> = cmd.get_arguments().filter(|a| a.get_id() != "help").collect();
     if !args.is_empty() {
@@ -29,7 +31,7 @@ fn section(cmd: &clap::Command, path: &str, out: &mut String) {
         out.push('\n');
     }
     if let Some(after) = cmd.get_after_help() {
-        out.push_str(&format!("```\n{after}\n```\n\n"));
+        let _ = writeln!(out, "```\n{after}\n```\n");
     }
     let mut subs: Vec<&clap::Command> = cmd.get_subcommands().collect();
     subs.sort_by_key(|c| c.get_name().to_owned());
