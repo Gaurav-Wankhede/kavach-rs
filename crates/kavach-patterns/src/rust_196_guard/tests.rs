@@ -1,4 +1,4 @@
-use crate::rust_196_guard::{detect, Rust196Violation};
+use crate::rust_196_guard::detect;
 
 #[test]
 fn detects_legacy_mod_rs() {
