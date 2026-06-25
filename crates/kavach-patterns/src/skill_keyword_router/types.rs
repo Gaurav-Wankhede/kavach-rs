@@ -11,26 +11,16 @@ pub enum SkillContext {
 	Fork,
 }
 
-/// Model tier required for a skill.
-///
-/// Used by gates to route the skill to an appropriately sized model when forked.
-/// SOURCE: 42-pattern catalog §5.5 Model Tier Assignment.
-/// SOURCE: benchlm.ai/blog/posts/claude-api-pricing — 2026 tier strategy
-///   (Haiku $1/$5, Sonnet $3/$15, Opus $5/$25 per 1M in/out tokens).
-///
-/// Cost guideline (2026):
-///   - Haiku: classification, routing, simple extraction (cheap, fast)
-///   - Sonnet: implementation, code review, refactoring (default tier)
-///   - Opus: architecture, security analysis, root-cause investigation
+/// Model tier for gates to route skills to appropriately sized models.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub enum ModelTier {
-	/// Cheap, fast — keyword detection, file routing, simple classification.
+	/// Keyword detection, file routing, simple classification.
 	Haiku,
 	/// Default — implementation, refactoring, code review.
 	#[default]
 	Sonnet,
-	/// Expensive, deep — architecture, security analysis, root-cause investigation.
+	/// Architecture, security analysis, root-cause investigation.
 	Opus,
 }
 
@@ -44,9 +34,7 @@ impl ModelTier {
 		}
 	}
 
-	/// Parse a tier string. Returns `None` for unknown values.
-	/// Renamed from `from_str` to avoid `clippy::should_implement_trait` shadow of
-	/// `std::str::FromStr::from_str` (which returns `Result`, not `Option`).
+	/// Parse a tier string, returns `None` for unknown values.
 	#[must_use]
 	pub fn parse(s: &str) -> Option<Self> {
 		match s.to_lowercase().as_str() {
@@ -65,8 +53,6 @@ pub struct SkillMetadata {
 	pub name: String,
 	pub context: SkillContext,
 	pub agent: Option<String>,
-	/// Required model tier (haiku|sonnet|opus). Defaults to Sonnet when absent.
-	/// Drives cost-aware sub-agent dispatch when context: fork is set.
 	pub model_tier: ModelTier,
 }
 
