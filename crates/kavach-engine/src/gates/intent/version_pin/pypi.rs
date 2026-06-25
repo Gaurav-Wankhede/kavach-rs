@@ -22,30 +22,30 @@ pub(super) fn parse_requirements_txt(body: &str) -> Vec<(String, String)> {
 
 pub(super) fn parse_pyproject_deps(body: &str) -> Vec<(String, String)> {
     let mut result = Vec::new();
-    let mut in_deps = false;
     for line in body.lines() {
         let trimmed = line.trim();
-        if trimmed.starts_with("dependencies") && trimmed.contains('[') {
-            in_deps = true;
-        }
-        if in_deps {
-            if trimmed.starts_with(']') {
-                break;
-            }
-            if let Some(quoted) = trimmed.strip_prefix('"').and_then(|s| s.split_once('"')) {
-                let dep_spec = quoted.0;
-                let operators = ['=', '>', '<', '!', '~'];
-                if let Some(pos) = dep_spec.find(|c| operators.contains(&c)) {
-                    let name = dep_spec[..pos].trim_end();
-                    let mut version = dep_spec[pos..].to_owned();
-                    if version.starts_with("==") {
-                        version = version[2..].to_owned();
+        if trimmed.starts_with("dependencies") && trimmed.contains('[') && trimmed.contains(']') {
+            if let Some(start) = trimmed.find('[') {
+                if let Some(end) = trimmed.find(']') {
+                    let array_content = &trimmed[start + 1..end];
+                    for item in array_content.split(',') {
+                        let item = item.trim().trim_matches(|c| c == '"' || c == '\'' || c == ' ');
+                        if !item.is_empty() {
+                            let operators = ['=', '>', '<', '!', '~'];
+                            if let Some(pos) = item.find(|c| operators.contains(&c)) {
+                                let name = item[..pos].trim_end();
+                                let mut version = item[pos..].to_owned();
+                                if version.starts_with("==") {
+                                    version = version[2..].to_owned();
+                                }
+                                if !name.is_empty() {
+                                    result.push((name.to_owned(), version));
+                                }
+                            } else if !item.is_empty() {
+                                result.push((item.to_owned(), String::new()));
+                            }
+                        }
                     }
-                    if !name.is_empty() {
-                        result.push((name.to_owned(), version));
-                    }
-                } else if !dep_spec.is_empty() {
-                    result.push((dep_spec.to_owned(), String::new()));
                 }
             }
         }
