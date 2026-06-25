@@ -62,9 +62,7 @@ pub(super) enum KavachMisuse {
     UnknownFlag,
 }
 
-/// Top-level `kavach` verbs the shipped CLI defines (source of truth:
-/// `kavach-cli/src/cli.rs::Commands`). A rejected token that IS one of these
-/// means the installed binary lags source → rebuild; otherwise it was fabricated.
+/// Shipped top-level verbs (source of truth: `kavach-cli/src/cli.rs::Commands`); a drift test guards this.
 const KAVACH_VERBS: &[&str] = &[
     "status", "web", "servers", "gates", "session", "rules", "db", "install", "heal",
     "loophole", "schema", "ask", "oversized", "tailwind-plus", "doctor", "phase", "spec",
