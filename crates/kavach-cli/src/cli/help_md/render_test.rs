@@ -12,7 +12,7 @@ fn long_flag_with_help_and_default() {
 #[test]
 fn positional_uses_angle_brackets() {
     let a = clap::Arg::new("gate_name").help("Gate name");
-    assert_eq!(arg_row(&a), "| `<gate_name>` | Gate name | |\n");
+    assert_eq!(arg_row(&a), "| `<gate_name>` | Gate name |  |\n");
 }
 
 #[test]
