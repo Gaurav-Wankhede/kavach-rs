@@ -5,8 +5,6 @@ mod install;
 use std::path::PathBuf;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 
-pub(crate) use build::deploy_cli;
-
 pub(crate) fn run(skip_tests: bool) -> i32 {
     let Some(root) = workspace_root() else {
         if let Err(io_err) =
