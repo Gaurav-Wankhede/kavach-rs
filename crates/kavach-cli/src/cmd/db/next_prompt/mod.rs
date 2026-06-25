@@ -1,6 +1,9 @@
 // `kavach db next-prompt` — serve the top-priority todo card's exec_prompt to stdout.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_surreal::MemoryEntry;
+use surrealdb::Surreal;
+use surrealdb::engine::any::Any as Db;
+use surrealdb_types::RecordId;
 
 mod author;
 
