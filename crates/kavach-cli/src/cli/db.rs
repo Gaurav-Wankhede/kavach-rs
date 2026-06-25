@@ -54,6 +54,7 @@ pub(crate) enum DbAction {
     },
     /// Search with metadata filters (`entry_status`, since, contains)
     /// SOURCE: <https://docs.rs/clap/latest/clap>/_derive/_tutorial/index.html
+    #[command(after_help = "EXAMPLES:\n  kavach db search --project P --category roadmap --status in_progress\n  kavach db search --project P --since 7d --contains scylla --limit 50\n\nWHEN: Narrow a category by status/recency/substring instead of listing everything.")]
     Search {
         /// Project slug
         #[arg(long)]
