@@ -1,4 +1,3 @@
-use crate::error::Result;
 use serde::{Deserialize, Serialize};
 
 use super::shape::{escape_label, sanitize_id, NodeShape};
