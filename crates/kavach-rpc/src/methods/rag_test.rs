@@ -27,7 +27,8 @@ async fn upsert_then_get_returns_the_persisted_blob() {
 
     let mut up = st
         .db
-        .query("UPSERT type::record('rag_tree', 'probe') SET source = 'probe', tree_json = <bytes>'aGk='")
+        .query("UPSERT rag_tree:[$s] SET source = $s")
+        .bind(("s", "probe".to_owned()))
         .await
         .expect("raw upsert");
     let upd: Vec<serde_json::Value> = up.take(0).unwrap_or_default();
