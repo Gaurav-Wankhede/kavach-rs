@@ -1,4 +1,5 @@
-use super::install_binary;
+use super::install::install_binary;
+use super::lock::DeployLock;
 use std::fs;
 
 #[test]
