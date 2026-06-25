@@ -67,17 +67,28 @@ fn eval_advisory_negative_score_returns_some() {
 }
 
 #[test]
-fn eval_advisory_gate_block_penalty() {
-    let events = vec![TrajectoryEvent {
-        timestamp_ms: 1000,
-        session_id: "test".to_string(),
-        event_kind: EventKind::Bash {
-            command: "rm -rf /important/data".to_string(),
+fn eval_advisory_multiple_negatives_strong_penalty() {
+    let events = vec![
+        TrajectoryEvent {
+            timestamp_ms: 1000,
+            session_id: "test".to_string(),
+            event_kind: EventKind::Write {
+                file_path: "src/lib.rs".to_string(),
+                content: "todo!(\"stub\")".to_string(),
+            },
+            outcome: None,
         },
-        outcome: None,
-    }];
+        TrajectoryEvent {
+            timestamp_ms: 2000,
+            session_id: "test".to_string(),
+            event_kind: EventKind::Stop {
+                final_message: "the next step is yours to run".to_string(),
+            },
+            outcome: None,
+        },
+    ];
     let result = super::eval_trajectory_score(&events);
-    assert!(result < 0, "gate block should result in negative score");
+    assert!(result < 0, "stub + deferral should result in negative score");
 }
 
 #[test]
