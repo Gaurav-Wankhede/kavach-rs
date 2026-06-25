@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use clap::CommandFactory;
 
 use crate::cli::Cli;
@@ -23,12 +25,9 @@ fn walk(cmd: &clap::Command, depth: usize, out: &mut String) {
             continue;
         }
         let pad = "  ".repeat(depth);
-        let about = sub
-            .get_about()
-            .map(|a| format!("  — {a}"))
-            .unwrap_or_default();
-        out.push_str(&format!("{pad}{}{about}\n", sub.get_name()));
-        walk(sub, depth + 1, out);
+        let about = sub.get_about().map_or_else(String::new, |a| format!("  — {a}"));
+        let _ = writeln!(out, "{pad}{}{about}", sub.get_name());
+        walk(sub, depth.saturating_add(1), out);
     }
 }
 
