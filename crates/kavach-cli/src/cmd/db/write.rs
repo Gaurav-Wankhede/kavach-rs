@@ -247,6 +247,12 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         return 1;
     }
 
+    if let Some(nudge) = super::exec_prompt_advice::advise(category, req.exec_prompt)
+        && let Err(io_err) = ewrite_or_exit(&nudge)
+    {
+        return into_exit_code(io_err);
+    }
+
     // RPC-FIRST (single_writer invariant): route the write through the daemon
     // — the sole RocksDB writer — so the CLI never opens a second handle and
     // races the lock. Only when the daemon is unreachable (DAEMON_UNAVAILABLE)
