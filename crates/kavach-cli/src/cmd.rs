@@ -1,6 +1,7 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod ask;
 pub(crate) mod bg;
+mod commands;
 pub(crate) mod bulk;
 mod context;
 pub(crate) mod goal;
