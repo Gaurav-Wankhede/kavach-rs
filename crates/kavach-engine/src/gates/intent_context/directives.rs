@@ -74,7 +74,7 @@ fn has_diagram_keyword(prompt: &str) -> bool {
 
 /// Append the diagram-first standing law for plan/design/implement intents: a
 /// turn that proposes architecture or an LLD must emit a temp HTML+Mermaid view
-/// (Mermaid 11.15.0 CDN + SRI) and surface it to the user BEFORE deciding, so the
+/// (Mermaid ESM import + mermaid.run, NO SRI) and surface it to the user BEFORE deciding, so the
 /// structure is reviewable before any code. Advisory tier (steers, never blocks).
 /// SOURCE: decision.harness.sdlc-nano-agents-global · diagram-first law.
 pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str, prompt: &str) {
