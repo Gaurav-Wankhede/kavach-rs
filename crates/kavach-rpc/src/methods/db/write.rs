@@ -7,6 +7,7 @@ use jsonrpsee::types::ErrorObjectOwned;
 use kavach_types::Priority;
 use serde::{Deserialize, Serialize};
 
+mod exec_prompt_gate;
 mod relationships;
 
 const ERR_BOTH: &str = "'new' and 'update_key' are mutually exclusive";
