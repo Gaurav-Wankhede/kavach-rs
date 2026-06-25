@@ -158,6 +158,14 @@ Archive events with no graph anchors to active roadmap (relevance-based, audit-p
 | `--floor-days` | Floor age in days — events younger than this are never archived | 30 |
 | `--dry-run` | Dry-run: report what would be archived without modifying state |  |
 
+```
+EXAMPLES:
+  kavach db archive --floor-days 30 --dry-run
+  kavach db archive --floor-days 30
+
+WHEN: Relevance-archive anchor-less events while preserving audit trail.
+```
+
 ## `kavach db backfill-relationships`
 
 Backfill typed inter-entry edges (`depends_on/blocks/supersedes/references/mentions`) by re-extracting frontmatter + wikilinks from every existing memory row. Safe to re-run; UPSERT-based
@@ -167,6 +175,14 @@ Backfill typed inter-entry edges (`depends_on/blocks/supersedes/references/menti
 | `--project` | Optional project slug filter (default: all projects) |  |
 | `--dry-run` | Print planned edges without writing |  |
 
+```
+EXAMPLES:
+  kavach db backfill-relationships --project P --dry-run
+  kavach db backfill-relationships
+
+WHEN: Rebuild typed inter-entry edges from frontmatter + wikilinks. Safe to re-run.
+```
+
 ## `kavach db bridge-concepts-for`
 
 List every concept that any L1 entity in this project bridges to
@@ -174,6 +190,13 @@ List every concept that any L1 entity in this project bridges to
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
+
+```
+EXAMPLES:
+  kavach db bridge-concepts-for --project P
+
+WHEN: List every concept this project's entities bridge to.
+```
 
 ## `kavach db bridge-create`
 
@@ -186,6 +209,13 @@ Bridge a project-scoped L1 entity to a global L0 concept
 | `--edge` | Bridge edge (implements \| discusses \| `references_concept` \| violates) |  |
 | `--concept` | Target concept name |  |
 
+```
+EXAMPLES:
+  kavach db bridge-create --src-table decision --src-key foo --edge references_concept --concept paseto_v4
+
+WHEN: Link a project-scoped L1 row to a global L0 concept.
+```
+
 ## `kavach db bridge-projects-for`
 
 List every project (via L1 entity) that bridges to this concept
@@ -193,6 +223,13 @@ List every project (via L1 entity) that bridges to this concept
 | Flag | Description | Default |
 |---|---|---|
 | `--concept` | Concept name |  |
+
+```
+EXAMPLES:
+  kavach db bridge-projects-for --concept paseto_v4
+
+WHEN: List every project that bridges to a given concept.
+```
 
 ## `kavach db citation-add`
 
@@ -206,6 +243,13 @@ Add or refresh a citation (official-docs context) keyed by (project, entry-key)
 | `--slug` | One metadata slug (e.g. "records") |  |
 | `--url` | Official-docs URL (non-empty) |  |
 
+```
+EXAMPLES:
+  kavach db citation-add --project P --entry-key surreal --name SurrealDB --slug records --url https://surrealdb.com/docs
+
+WHEN: Pin an official-docs citation to a (project, entry-key).
+```
+
 ## `kavach db citation-get`
 
 Fetch one citation (bumps `access_count`)
@@ -214,6 +258,13 @@ Fetch one citation (bumps `access_count`)
 |---|---|---|
 | `--project` | Project slug |  |
 | `--entry-key` | Entry key |  |
+
+```
+EXAMPLES:
+  kavach db citation-get --project P --entry-key surreal
+
+WHEN: Fetch one citation (bumps its access_count).
+```
 
 ## `kavach db citation-link`
 
@@ -224,6 +275,13 @@ Merge a node into a citation via a `->cite->` edge (`table:key` ids)
 | `--node` | Source node record id (`decision:foo`, `entity:bar`) |  |
 | `--citation` | Target citation record id (`citation:baz`) |  |
 
+```
+EXAMPLES:
+  kavach db citation-link --node decision:foo --citation citation:surreal
+
+WHEN: Attach a graph node to a citation via a ->cite-> edge.
+```
+
 ## `kavach db citation-list`
 
 List every citation for a project (newest-updated first)
@@ -231,6 +289,13 @@ List every citation for a project (newest-updated first)
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
+
+```
+EXAMPLES:
+  kavach db citation-list --project P
+
+WHEN: List a project's citations, newest-updated first.
+```
 
 ## `kavach db citation-refresh`
 
@@ -241,6 +306,13 @@ Flow RLAIF reward along a citation's `cite` edges (bumps edge weight)
 | `--citation` | Citation record id (`citation:baz`) |  |
 | `--delta` | Reward delta (negative = penalty) | 1 |
 
+```
+EXAMPLES:
+  kavach db citation-refresh --citation citation:surreal --delta 1.0
+
+WHEN: Flow RLAIF reward along a citation's cite edges.
+```
+
 ## `kavach db citation-traverse`
 
 List the nodes that cite a citation (single `<-cite` walk)
@@ -248,6 +320,13 @@ List the nodes that cite a citation (single `<-cite` walk)
 | Flag | Description | Default |
 |---|---|---|
 | `--citation` | Citation record id (`citation:baz`) |  |
+
+```
+EXAMPLES:
+  kavach db citation-traverse --citation citation:surreal
+
+WHEN: List every node that cites a given citation.
+```
 
 ## `kavach db concept-add`
 
@@ -261,6 +340,13 @@ Insert-or-update a global L0 concept (cross-project knowledge graph node)
 | `--tags` | Comma-separated tags (e.g. token,crypto,stateless) |  |
 | `--sources` | Comma-separated source URLs |  |
 
+```
+EXAMPLES:
+  kavach db concept-add --name paseto_v4 --display 'PASETO v4' --desc '...' --tags token,crypto --sources https://...
+
+WHEN: Add/update a global L0 concept node in the cross-project graph.
+```
+
 ## `kavach db concept-delete`
 
 Remove a single concept row by canonical name
@@ -268,6 +354,13 @@ Remove a single concept row by canonical name
 | Flag | Description | Default |
 |---|---|---|
 | `--name` | Concept name (`snake_case`) |  |
+
+```
+EXAMPLES:
+  kavach db concept-delete --name paseto_v4
+
+WHEN: Remove one concept row by canonical name.
+```
 
 ## `kavach db concept-delete-prefix`
 
@@ -277,6 +370,13 @@ Bulk-purge concept rows by name prefix (requires --confirm)
 |---|---|---|
 | `--prefix` | Name prefix (e.g. "keyword:" to purge harvest noise) |  |
 | `--confirm` | Required to actually run the bulk purge |  |
+
+```
+EXAMPLES:
+  kavach db concept-delete-prefix --prefix keyword: --confirm
+
+WHEN: Bulk-purge harvest-noise concept rows by name prefix.
+```
 
 ## `kavach db concept-link`
 
@@ -288,6 +388,13 @@ RELATE two concepts via an ontology edge
 | `--edge` | Ontology edge (`is_a`, `part_of`, `prerequisite_of`, `alternative_to`, composes, mitigates, `instance_of`, subsumes) |  |
 | `--to` | Target concept name |  |
 
+```
+EXAMPLES:
+  kavach db concept-link --from paseto_v4 --edge alternative_to --to jwt
+
+WHEN: Relate two concepts via an ontology edge.
+```
+
 ## `kavach db concept-list`
 
 List every concept
@@ -295,6 +402,13 @@ List every concept
 | Flag | Description | Default |
 |---|---|---|
 | `--limit` | Max results | 50 |
+
+```
+EXAMPLES:
+  kavach db concept-list --limit 50
+
+WHEN: Enumerate every concept node.
+```
 
 ## `kavach db concept-search`
 
@@ -304,6 +418,13 @@ Full-text search concepts by description (BM25)
 |---|---|---|
 | `--query` | Search terms |  |
 | `--limit` | Max results | 20 |
+
+```
+EXAMPLES:
+  kavach db concept-search --query 'stateless token' --limit 20
+
+WHEN: Full-text (BM25) lookup of concepts by description.
+```
 
 ## `kavach db delete`
 
@@ -318,6 +439,14 @@ Delete specific record(s) by key or category (granular, preferred over wipe-proj
 | `--confirm` | Confirm deletion |  |
 | `--dry-run` | Dry-run: show what would be deleted |  |
 
+```
+EXAMPLES:
+  kavach db delete --project P --category roadmap --key K --confirm
+  kavach db delete --project P --category research --all --dry-run
+
+WHEN: Granular removal of one row or a whole category. Prefer over wipe-project.
+```
+
 ## `kavach db delete-prefix`
 
 Bulk-purge records in a category whose key starts with a prefix (requires --confirm). E.g. clear every `heal.incident.loophole-*` roadmap card in one pass
@@ -330,6 +459,14 @@ Bulk-purge records in a category whose key starts with a prefix (requires --conf
 | `--confirm` | Confirm the bulk purge (skipped under --dry-run) |  |
 | `--dry-run` | Dry-run: count what would be deleted without deleting |  |
 
+```
+EXAMPLES:
+  kavach db delete-prefix --project P --category roadmap --prefix heal.incident.loophole- --dry-run
+  kavach db delete-prefix --project P --category roadmap --prefix heal.incident.loophole- --confirm
+
+WHEN: Bulk-purge a key-prefix family (e.g. stale heal-incident cards) in one pass.
+```
+
 ## `kavach db event`
 
 Append an event to the log
@@ -339,9 +476,23 @@ Append an event to the log
 | `--type` | Event type (e.g. "`file_write`", "`session_start`") |  |
 | `--payload` | JSON payload |  |
 
+```
+EXAMPLES:
+  kavach db event --type file_write --payload '{"path":"x.rs"}'
+
+WHEN: Append an audit event to the log (usually hook-driven).
+```
+
 ## `kavach db expire`
 
 Archive expired memory entries
+
+```
+EXAMPLES:
+  kavach db expire
+
+WHEN: Archive memory rows whose TTL has elapsed.
+```
 
 ## `kavach db find-part`
 
@@ -351,6 +502,13 @@ Find part matching an absolute path
 |---|---|---|
 | `--path` | Absolute file or directory path |  |
 
+```
+EXAMPLES:
+  kavach db find-part --path /abs/path/to/backend/x.rs
+
+WHEN: Resolve which registered sub-part owns an absolute path.
+```
+
 ## `kavach db find-project`
 
 Find project matching an absolute path
@@ -358,6 +516,13 @@ Find project matching an absolute path
 | Flag | Description | Default |
 |---|---|---|
 | `--path` | Absolute file or directory path |  |
+
+```
+EXAMPLES:
+  kavach db find-project --path /abs/path/to/file.rs
+
+WHEN: Resolve which registered project owns an absolute path.
+```
 
 ## `kavach db flow-add`
 
@@ -408,6 +573,13 @@ Delete a gate-config override, reverting to the compiled default
 | `--project` | Project slug (`*` for the global row) |  |
 | `--gate-key` | Gate-config key |  |
 
+```
+EXAMPLES:
+  kavach db gate-config-delete --project P --gate-key dup.block
+
+WHEN: Revert a gate override back to its compiled default.
+```
+
 ## `kavach db gate-config-get`
 
 Resolve a gate-config override (project-then-global), or report the miss
@@ -417,6 +589,14 @@ Resolve a gate-config override (project-then-global), or report the miss
 | `--project` | Project slug (`*` for the global row) |  |
 | `--gate-key` | Gate-config key (e.g. `dup.block`, `session.autonomy_contract`) |  |
 
+```
+EXAMPLES:
+  kavach db gate-config-get --project P --gate-key dup.block
+  kavach db gate-config-get --project '*' --gate-key dup.block   # global
+
+WHEN: Resolve a gate override (project then global), or confirm the miss.
+```
+
 ## `kavach db gate-config-list`
 
 List every gate-config override for a project (`*` for the globals)
@@ -424,6 +604,14 @@ List every gate-config override for a project (`*` for the globals)
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
+
+```
+EXAMPLES:
+  kavach db gate-config-list --project P
+  kavach db gate-config-list --project '*'    # globals
+
+WHEN: See every gate override for a project (or the global row).
+```
 
 ## `kavach db gate-config-set`
 
@@ -438,6 +626,14 @@ Set a gate-config override (exactly one value flag per `--kind`)
 | `--boolean` | Boolean value (for `--kind enabled`) |  |
 | `--list` | Comma-separated list (for `--kind pattern_list`) |  |
 | `--text` | Text value (for `--kind severity` \| `--kind text`) |  |
+
+```
+EXAMPLES:
+  kavach db gate-config-set --project P --gate-key dup.block --kind enabled --boolean true
+  kavach db gate-config-set --project '*' --gate-key dup.threshold --kind threshold --num 0.85
+
+WHEN: Override one gate's config; pass exactly one value flag matching --kind.
+```
 
 ## `kavach db get`
 
@@ -467,6 +663,14 @@ Query the knowledge graph — list entities and their edges
 | `--entity-type` | Filter by entity type (skill, rule, gate, project, file, memory, session, `event_type`) |  |
 | `--name` | Show edges for a specific entity name |  |
 | `--limit` | Max entities to show (default: 20) | 20 |
+
+```
+EXAMPLES:
+  kavach db graph-query --entity-type concept --limit 20
+  kavach db graph-query --name paseto_v4
+
+WHEN: Inspect graph entities and their edges by type or name.
+```
 
 ## `kavach db infer-deps`
 
@@ -518,6 +722,13 @@ Close a kanban roadmap item by key (marks status=verified)
 | `--project` | Project slug |  |
 | `--key` | Roadmap entry key to close (e.g. phase-1-auth) |  |
 
+```
+EXAMPLES:
+  kavach db kanban-close --project P --key roadmap.unit.foo
+
+WHEN: Mark a roadmap card verified once `kavach verify` has passed.
+```
+
 ## `kavach db lane-set`
 
 Pin a roadmap card to a dispatch LANE (or clear it back to unlaned). A session running `KAVACH_LANE=<name>` dispatches its own lane first, then the unlaned backlog, never a foreign lane. Refuses if the row is absent (no implicit insert). Roadmap only
@@ -529,6 +740,14 @@ Pin a roadmap card to a dispatch LANE (or clear it back to unlaned). A session r
 | `--lane` | Lane name to pin the card to. Mutually exclusive with --clear |  |
 | `--clear` | Clear the lane (back to the unlaned general backlog). Mutually exclusive with --lane |  |
 
+```
+EXAMPLES:
+  kavach db lane-set --project P --key K --lane backend
+  kavach db lane-set --project P --key K --clear
+
+WHEN: Shard a roadmap card to a named dispatch lane (or return it to the general backlog).
+```
+
 ## `kavach db list-parts`
 
 List parts for a project
@@ -537,9 +756,23 @@ List parts for a project
 |---|---|---|
 | `--project` | Project slug |  |
 
+```
+EXAMPLES:
+  kavach db list-parts --project my-app
+
+WHEN: Enumerate the registered sub-parts of one project.
+```
+
 ## `kavach db list-projects`
 
 List all registered projects
+
+```
+EXAMPLES:
+  kavach db list-projects
+
+WHEN: See every registered project slug + root path.
+```
 
 ## `kavach db mistake-hit-count`
 
@@ -548,6 +781,13 @@ Count inbound `instance_of` edges on an `anti_pattern` (mistake recurrence)
 | Flag | Description | Default |
 |---|---|---|
 | `--name` | Anti-pattern canonical name (e.g. `anti.self_imposed_limit.abc12345`) |  |
+
+```
+EXAMPLES:
+  kavach db mistake-hit-count --name anti.self_imposed_limit.abc12345
+
+WHEN: See how many times an anti-pattern has recurred (inbound instance_of edges).
+```
 
 ## `kavach db mistake-purge`
 
@@ -558,6 +798,13 @@ Purge an `anti_pattern` cluster + its `mistake_event`s by the gate that recorded
 | `--gate` | Gate whose `anti_pattern` cluster(s) to delete (e.g. `capture_finding_unpersisted`) |  |
 | `--confirm` | Confirm the destructive purge |  |
 
+```
+EXAMPLES:
+  kavach db mistake-purge --gate capture_finding_unpersisted --confirm
+
+WHEN: Remove a stale anti-pattern cluster recorded by a gate (clears it from PRACTICE_DELTA).
+```
+
 ## `kavach db next-prompt`
 
 Print the top-priority todo card's exec_prompt to stdout (pipe to an executor model)
@@ -565,6 +812,14 @@ Print the top-priority todo card's exec_prompt to stdout (pipe to an executor mo
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
+
+```
+EXAMPLES:
+  kavach db next-prompt --project P
+  kavach db next-prompt --project P | <executor-model>
+
+WHEN: Serve the top-priority todo card's exec_prompt to a cheaper executor model.
+```
 
 ## `kavach db ope-audit`
 
@@ -574,6 +829,13 @@ Reward-hacking audit: SOFT held-out value vs HARD witness value drift + C2 floor
 |---|---|---|
 | `--limit` | Max bandit rows to load (newest first) | 500 |
 | `--drift-tolerance` | Drift slack before SOFT-vs-HARD divergence counts as hacking | 0.05 |
+
+```
+EXAMPLES:
+  kavach db ope-audit --limit 500 --drift-tolerance 0.05
+
+WHEN: Reward-hacking audit — SOFT vs HARD value drift on the Layer-P5 promotion gate.
+```
 
 ## `kavach db ope-evaluate`
 
@@ -588,6 +850,13 @@ Off-policy-evaluate a candidate policy against logged bandit rows (LCB + coverag
 | `--z` | z-score for the lower confidence bound (1.96 ≈ 95%) | 1.96 |
 | `--min-coverage-ratio` | Coverage floor in [0,1]; below it the estimate is flagged untrustworthy | 0.2 |
 
+```
+EXAMPLES:
+  kavach db ope-evaluate --allow 0.7 --ask 0.2 --block 0.1 --limit 500
+
+WHEN: Off-policy-evaluate a candidate Allow/Ask/Block policy against logged bandit rows.
+```
+
 ## `kavach db pg-drift`
 
 Detect likely missing FKs — columns named `<table>_id` with no declared FK
@@ -595,6 +864,13 @@ Detect likely missing FKs — columns named `<table>_id` with no declared FK
 | Flag | Description | Default |
 |---|---|---|
 | `--dsn` | Postgres DSN |  |
+
+```
+EXAMPLES:
+  kavach db pg-drift --dsn postgres://localhost/mydb
+
+WHEN: Detect `<table>_id` columns missing a declared FK.
+```
 
 ## `kavach db pg-er`
 
@@ -604,6 +880,13 @@ Emit ER diagram in Mermaid format from the live schema
 |---|---|---|
 | `--dsn` | Postgres DSN |  |
 
+```
+EXAMPLES:
+  kavach db pg-er --dsn postgres://localhost/mydb
+
+WHEN: Emit a Mermaid ER diagram from the live schema.
+```
+
 ## `kavach db pg-introspect`
 
 Introspect a local `PostgreSQL` database — list tables, columns, FKs
@@ -611,6 +894,13 @@ Introspect a local `PostgreSQL` database — list tables, columns, FKs
 | Flag | Description | Default |
 |---|---|---|
 | `--dsn` | Postgres DSN (e.g. <postgres://localhost/mydb>) |  |
+
+```
+EXAMPLES:
+  kavach db pg-introspect --dsn postgres://localhost/mydb
+
+WHEN: List a live Postgres schema's tables, columns, and FKs.
+```
 
 ## `kavach db pg-isolation`
 
@@ -620,9 +910,23 @@ Find isolated tables (zero incoming + outgoing FK edges)
 |---|---|---|
 | `--dsn` | Postgres DSN |  |
 
+```
+EXAMPLES:
+  kavach db pg-isolation --dsn postgres://localhost/mydb
+
+WHEN: Find tables with no FK edges (often a modeling smell).
+```
+
 ## `kavach db populate-graph`
 
 Populate the knowledge graph from existing relational data
+
+```
+EXAMPLES:
+  kavach db populate-graph
+
+WHEN: One-time/after-import build of the knowledge graph from relational rows.
+```
 
 ## `kavach db priority-set`
 
@@ -636,6 +940,14 @@ Set or clear the priority of an existing entry without touching title/content. S
 | `--priority` | New priority (lower = higher rank). Mutually exclusive with --clear |  |
 | `--clear` | Clear the priority (back to NONE, FIFO tail). Mutually exclusive with --priority |  |
 
+```
+EXAMPLES:
+  kavach db priority-set --project P --category roadmap --key K --priority 1
+  kavach db priority-set --project P --category roadmap --key K --clear
+
+WHEN: Re-rank the backlog by hand without touching a card's title or content.
+```
+
 ## `kavach db query`
 
 Query memory entries for a project
@@ -647,6 +959,14 @@ Query memory entries for a project
 | `--all` | Include DONE items (filtered out by default for roadmap) |  |
 | `--depth` | Per-row content depth: a char count (e.g. `--depth 400`) or `all` for the whole body. Omitted prints titles only (breadth). `KAVACH_NO_TRUNCATE=1` forces `all` everywhere |  |
 
+```
+EXAMPLES:
+  kavach db query --project P --category roadmap
+  kavach db query --project P --category decision --depth 400 --all
+
+WHEN: Browse a category's rows; add --depth for body text, --all to include done items.
+```
+
 ## `kavach db query-raw`
 
 Run a read-only `SurrealQL` query against the store (`SELECT`/`INFO` only). Ad-hoc graph inspection; mutations go through typed verbs (write, mistake-purge, …)
@@ -654,6 +974,13 @@ Run a read-only `SurrealQL` query against the store (`SELECT`/`INFO` only). Ad-h
 | Flag | Description | Default |
 |---|---|---|
 | `--query` | The read-only `SurrealQL` to execute, e.g. `SELECT name FROM entity LIMIT 5` |  |
+
+```
+EXAMPLES:
+  kavach db query-raw --query 'SELECT name FROM entity LIMIT 5'
+
+WHEN: Ad-hoc read-only SurrealQL (SELECT/INFO only); mutations go through typed verbs.
+```
 
 ## `kavach db register`
 
@@ -664,6 +991,13 @@ Register a project with absolute path
 | `--slug` | Project slug (unique identifier) |  |
 | `--path` | Absolute path to project root |  |
 | `--stack` | Tech stack (e.g. "rust\|axum") |  |
+
+```
+EXAMPLES:
+  kavach db register --slug my-app --path /abs/path --stack 'rust|axum'
+
+WHEN: First-time onboarding of a repo so kavach can bind sessions to it.
+```
 
 ## `kavach db register-part`
 
@@ -676,6 +1010,13 @@ Register a sub-part within a project
 | `--path` | Absolute path to part root |  |
 | `--type` | Part type (backend, frontend, database, mobile, infra, docs, shared, other) |  |
 
+```
+EXAMPLES:
+  kavach db register-part --project my-app --name backend --path /abs/backend --type backend
+
+WHEN: A monorepo has distinct parts (backend/frontend/infra) you want scoped separately.
+```
+
 ## `kavach db rotate`
 
 Delete events older than N days (TIME-BASED — transitional, prefer `archive`)
@@ -683,6 +1024,13 @@ Delete events older than N days (TIME-BASED — transitional, prefer `archive`)
 | Flag | Description | Default |
 |---|---|---|
 | `--days` | Number of days to retain |  |
+
+```
+EXAMPLES:
+  kavach db rotate --days 30
+
+WHEN: Drop events older than N days. Prefer `archive` (relevance-based) over this.
+```
 
 ## `kavach db run-record`
 
@@ -696,6 +1044,13 @@ Record a harness execution run row (status lifecycle start)
 | `--status` | Initial status (e.g. `running`) |  |
 | `--pid` | OS process id, when known |  |
 
+```
+EXAMPLES:
+  kavach db run-record --project P --entry-key roadmap.unit.foo --status running --pid 12345
+
+WHEN: Open a harness-execution run row at start of a dispatched task.
+```
+
 ## `kavach db run-update-status`
 
 Update a run row's terminal status + exit code
@@ -705,6 +1060,13 @@ Update a run row's terminal status + exit code
 | `--id` | Run row id |  |
 | `--status` | New status (e.g. `done`, `failed`) |  |
 | `--exit-code` | Process exit code, when terminal |  |
+
+```
+EXAMPLES:
+  kavach db run-update-status --id run:abc --status done --exit-code 0
+
+WHEN: Close a run row with its terminal status + exit code.
+```
 
 ## `kavach db search`
 
@@ -719,6 +1081,14 @@ Search with metadata filters (`entry_status`, since, contains) SOURCE: <https://
 | `--contains` | Filter by title/content containing substring |  |
 | `--limit` | Max results (default: 20) | 20 |
 
+```
+EXAMPLES:
+  kavach db search --project P --category roadmap --status in_progress
+  kavach db search --project P --since 7d --contains scylla --limit 50
+
+WHEN: Narrow a category by status/recency/substring instead of listing everything.
+```
+
 ## `kavach db set-parent`
 
 Set (or clear) a project's parent, building the hierarchy
@@ -727,6 +1097,14 @@ Set (or clear) a project's parent, building the hierarchy
 |---|---|---|
 | `--child` | Child project slug |  |
 | `--parent` | Parent project slug; omit to detach to top-level |  |
+
+```
+EXAMPLES:
+  kavach db set-parent --child sub-app --parent mono
+  kavach db set-parent --child sub-app          # detach to top-level
+
+WHEN: Build or unbuild the project hierarchy.
+```
 
 ## `kavach db status-update`
 
@@ -751,9 +1129,23 @@ WHEN: Claim card (todo→in_progress), finish work (→done), then run `kavach v
 
 Sync session state to database
 
+```
+EXAMPLES:
+  kavach db sync
+
+WHEN: Flush in-memory session state to the store after a batch of changes.
+```
+
 ## `kavach db tree`
 
 Render the project hierarchy as an indented tree
+
+```
+EXAMPLES:
+  kavach db tree
+
+WHEN: View the whole project hierarchy as an indented tree.
+```
 
 ## `kavach db wipe-project`
 
@@ -764,6 +1156,14 @@ Wipe ALL data for a project (DANGEROUS — use `delete` for granular removal)
 | `--project` | Project slug to wipe |  |
 | `--confirm` | Confirm destructive operation (DANGEROUS: deletes ALL project data) |  |
 | `--dry-run` | Dry-run: show what would be deleted without deleting |  |
+
+```
+EXAMPLES:
+  kavach db wipe-project --project P --dry-run
+  kavach db wipe-project --project P --confirm
+
+WHEN: DANGEROUS — destroy ALL data for a project. Prefer `delete` for anything granular.
+```
 
 ## `kavach db write`
 
@@ -781,6 +1181,14 @@ Write a memory entry. Strict mode (`roadmap/decision/research/pattern/app_spec)`
 | `--priority` | Dispatch priority (roadmap/decision only). Lower number = higher rank — `--priority 1` is picked before `--priority 2`, like nice(1). Omit to leave existing value unchanged on update or NONE on insert (NONE rows sort after every prioritized row, then by `created_at` ASC) |  |
 | `--depends-on` | Declarative dependency edge(s): this card `depends_on` the given key(s). Repeatable (`--depends-on a --depends-on b`). A bare key resolves to the same project+category; a `slug/cat/key` qname is used verbatim. Feeds the DAG scheduler's topological ordering so dependents wait until each target reaches done/verified — the precise complement to the NLU prose scanner and frontmatter |  |
 | `--exec-prompt` | Opus-authored executor prompt (roadmap only), served verbatim by `db next-prompt` |  |
+
+```
+EXAMPLES:
+  kavach db write --project P --category roadmap --key K --title T --new
+  kavach db write --project P --category decision --key K --title T --update-key K < body.md
+
+WHEN: Persist a decision/roadmap/research row. Always pass --new (create) or --update-key (edit).
+```
 
 ## `kavach deploy`
 
