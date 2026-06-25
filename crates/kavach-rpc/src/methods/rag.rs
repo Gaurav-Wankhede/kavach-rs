@@ -35,3 +35,54 @@ pub async fn tree_list_refreshable(
         .await
         .map_err(surreal_to_rpc)
 }
+
+#[derive(Debug, Deserialize)]
+#[non_exhaustive]
+pub struct TreeGetParams {
+    pub source: String,
+}
+
+/// Fetches one persisted `rag_tree` row (blob + hash) by source label.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+pub async fn tree_get(
+    state: &AppState,
+    params: TreeGetParams,
+) -> Result<Option<RagTreeRow>, ErrorObjectOwned> {
+    rag_tree_get(&state.db, &params.source)
+        .await
+        .map_err(surreal_to_rpc)
+}
+
+#[derive(Debug, Deserialize)]
+#[non_exhaustive]
+pub struct TreeUpsertParams {
+    pub source: String,
+    pub built_at: String,
+    pub tree_json: Vec<u8>,
+    pub source_hash: String,
+    pub source_dir: String,
+}
+
+/// Persists (upserts) a built `rag_tree` blob keyed by source label.
+///
+/// # Errors
+///
+/// Returns an error if the database upsert fails.
+pub async fn tree_upsert(
+    state: &AppState,
+    params: TreeUpsertParams,
+) -> Result<(), ErrorObjectOwned> {
+    rag_tree_upsert_with_dir(
+        &state.db,
+        &params.source,
+        &params.built_at,
+        &params.tree_json,
+        &params.source_hash,
+        &params.source_dir,
+    )
+    .await
+    .map_err(surreal_to_rpc)
+}
