@@ -79,6 +79,7 @@ pub(crate) enum DbAction {
     /// `--update-key <existing>` (update a known row). Plain `--key` without
     /// either flag is rejected to prevent stale duplicate rows.
     /// SOURCE: <https://docs.rs/clap/latest/clap>/_derive/_tutorial/index.html
+    #[command(after_help = "EXAMPLES:\n  kavach db write --project P --category roadmap --key K --title T --new\n  kavach db write --project P --category decision --key K --title T --update-key K < body.md\n\nWHEN: Persist a decision/roadmap/research row. Always pass --new (create) or --update-key (edit).")]
     Write {
         /// Project slug
         #[arg(long)]
