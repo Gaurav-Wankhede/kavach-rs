@@ -87,6 +87,31 @@ pub(crate) fn handle(
         return Ok(());
     }
 
+    if let Some(misuse) = classify_kavach_misuse(command, output) {
+        let context = match misuse {
+            KavachMisuse::StaleBinary => {
+                session.add_case_fact("KAVACH_STALE_BINARY: source has the verb, binary lags");
+                "[KAVACH_STALE_BINARY] This verb/flag exists in source but the installed binary \
+                 rejects it — the binary lags source. Run `just install` to rebuild + reinstall, \
+                 then retry the exact command. Do NOT fabricate an alternative."
+            }
+            KavachMisuse::UnknownVerb => {
+                session.add_case_fact("KAVACH_MISUSE: fabricated subcommand");
+                "[KAVACH_MISUSE] Unrecognized kavach subcommand — you fabricated it from training \
+                 weights. Run `kavach commands --tree` to see every real verb, then retry. \
+                 Do NOT guess — discover it."
+            }
+            KavachMisuse::UnknownFlag => {
+                session.add_case_fact("KAVACH_MISUSE: fabricated flag");
+                "[KAVACH_MISUSE] Unexpected kavach argument — you fabricated the flag. Run \
+                 `kavach <subcommand> --help` to see its real flags, then retry. \
+                 Do NOT guess — discover it."
+            }
+        };
+        drop(kavach_hook::exit_post_tool_context(context));
+        return Ok(());
+    }
+
     drop(kavach_hook::exit_silent());
     Ok(())
 }
