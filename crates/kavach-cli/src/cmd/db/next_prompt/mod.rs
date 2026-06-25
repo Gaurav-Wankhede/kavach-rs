@@ -2,6 +2,8 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_surreal::MemoryEntry;
 
+mod author;
+
 #[cfg(test)]
 #[path = "next_prompt_test.rs"]
 mod tests;
@@ -10,8 +12,8 @@ mod tests;
 pub(crate) enum Pick<'a> {
     /// The top todo card carries a non-empty exec_prompt — serve it.
     Prompt(&'a str),
-    /// The top todo card exists but has no exec_prompt yet.
-    Missing(&'a str),
+    /// The top todo card exists but has no exec_prompt yet — kavach authors it.
+    Missing(&'a MemoryEntry),
     /// No todo card on the board.
     Empty,
 }
@@ -24,7 +26,7 @@ pub(crate) fn pick(rows: &[MemoryEntry]) -> Pick<'_> {
     };
     match top.exec_prompt.as_deref() {
         Some(p) if !p.trim().is_empty() => Pick::Prompt(p),
-        _ => Pick::Missing(&top.entry_key),
+        _ => Pick::Missing(top),
     }
 }
 
