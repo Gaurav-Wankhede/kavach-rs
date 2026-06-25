@@ -62,7 +62,7 @@ pub(super) enum KavachMisuse {
     UnknownFlag,
 }
 
-/// Shipped top-level verbs (source of truth: `kavach-cli/src/cli.rs::Commands`); a drift test guards this.
+/// Shipped top-level verbs (source: `cli.rs::Commands`); drift-guarded.
 const KAVACH_VERBS: &[&str] = &[
     "status", "web", "servers", "gates", "session", "rules", "db", "install", "heal",
     "loophole", "schema", "ask", "oversized", "tailwind-plus", "doctor", "phase", "spec",
