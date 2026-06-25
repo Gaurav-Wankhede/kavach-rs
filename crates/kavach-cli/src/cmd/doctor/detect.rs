@@ -47,9 +47,9 @@ const IO_FRAGMENTS: [&str; 7] =
 /// Scan one Rust source. `file` is the display path attached to each finding.
 pub(super) fn scan_source(file: &str, src: &str) -> Vec<Finding> {
     let mut out = Vec::new();
-    for (i, raw) in src.lines().enumerate() {
+    for (i, raw) in joined_logical_lines(src).into_iter().enumerate() {
         let line_no = i.saturating_add(1);
-        let line = strip_line_comment_for_code(raw);
+        let line = strip_line_comment_for_code(&raw);
         // An explicit reviewer escape silences any class on this line.
         if raw.contains(OK_MARKER) {
             continue;
