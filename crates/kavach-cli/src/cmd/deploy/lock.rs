@@ -3,8 +3,7 @@ use fs2::FileExt;
 
 pub(super) const DEPLOY_LOCK_NAME: &str = ".deploy.lock";
 
-/// RAII holder for OS-level `flock` (via `fs2`) that serializes `kavach deploy` runs.
-/// Kernel auto-releases on process exit; file stays for next run to re-lock same inode.
+/// RAII holder for OS-level `flock` (via `fs2`) serializing `kavach deploy` runs.
 #[derive(Debug)]
 pub(super) struct DeployLock {
     file: std::fs::File,
