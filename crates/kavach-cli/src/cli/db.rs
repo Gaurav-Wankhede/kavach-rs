@@ -117,6 +117,9 @@ pub(crate) enum DbAction {
         /// precise complement to the NLU prose scanner and frontmatter.
         #[arg(long = "depends-on")]
         depends_on: Vec<String>,
+        /// Opus-authored executor prompt (roadmap only), served verbatim by `db next-prompt`.
+        #[arg(long = "exec-prompt")]
+        exec_prompt: Option<String>,
     },
     /// Set or clear the priority of an existing entry without touching title/content.
     /// Surgical rerank verb for human-in-loop focus shifts. Refuses if the row
