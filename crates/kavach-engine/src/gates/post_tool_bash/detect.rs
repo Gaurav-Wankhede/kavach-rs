@@ -54,8 +54,7 @@ pub(super) fn is_package_not_found(output: Option<&str>) -> bool {
         || text.contains("no such package")
 }
 
-/// A failed `kavach` invocation, classified by clap's own stderr so recovery is
-/// deterministic — never a fabricated command.
+/// A failed `kavach` invocation classified from clap's stderr (decision.kavach-misuse-recovery).
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum KavachMisuse {
     StaleBinary,
