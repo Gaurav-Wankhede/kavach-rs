@@ -8,9 +8,12 @@ pub(super) fn parse_requirements_txt(body: &str) -> Vec<(String, String)> {
         let operators = ['=', '>', '<', '!', '~'];
         if let Some(pos) = trimmed.find(|c| operators.contains(&c)) {
             let name = trimmed[..pos].trim_end();
-            let version = &trimmed[pos..];
+            let mut version = trimmed[pos..].to_owned();
+            if version.starts_with("==") {
+                version = version[2..].to_owned();
+            }
             if !name.is_empty() {
-                result.push((name.to_owned(), version.to_owned()));
+                result.push((name.to_owned(), version));
             }
         }
     }
