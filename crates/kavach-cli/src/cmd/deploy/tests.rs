@@ -27,8 +27,6 @@ fn replaces_a_dangling_symlink() {
 
 #[test]
 fn deploy_concurrent_lock_prevents_race() {
-    use super::lock::DeployLock;
-
     let dir = std::env::temp_dir().join(format!("kavach-locktest-{}", std::process::id()));
     fs::create_dir_all(&dir).unwrap();
 
