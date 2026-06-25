@@ -22,20 +22,24 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     if stop_gate_fires(&ctx.input.permission_mode) && !user_spoke {
         return ControlFlow::Continue(());
     }
+    let reason = if user_spoke {
+        "user spoke this turn — live instruction outranks the loop"
+    } else {
+        "permission_mode not auto/bypass — attended turn"
+    };
     crate::gates::event_log::log_gate_decision(
         &ctx.session.session_id,
         "stop:autonomous_gate_override",
         "allow_stop",
         &format!(
-            "permission_mode={} (not auto/bypass) on turn {}; allowing stop",
+            "{reason} (mode={}, turn {})",
             ctx.input.permission_mode, ctx.session.turn_count
         ),
         &ctx.session.project,
     );
     eprintln!(
-        "[STOP_GATE] Auto-continue dispatch fires ONLY in Auto or bypassPermissions \
-         mode. This turn is attended — the user drives it. NOT dispatching a kanban \
-         card; allowing the stop."
+        "[STOP_GATE] Allowing the stop: {reason}. Auto-continue dispatch runs ONLY in \
+         Auto/bypassPermissions AND only when the user did not just speak."
     );
     drop(kavach_hook::exit_silent());
     ControlFlow::Break(())
