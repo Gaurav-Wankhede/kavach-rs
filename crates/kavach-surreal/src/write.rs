@@ -1,5 +1,4 @@
-// split: intentional - write/mutation operations on typed memory tables
-// sql-safe: queries use static literals + .bind() for params, no user input concatenation
+// kavach:intentional split — write/mutation ops; queries use static literals + .bind(), no user-input concat
 
 mod expire;
 mod events;

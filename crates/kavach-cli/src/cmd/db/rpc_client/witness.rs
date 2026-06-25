@@ -1,4 +1,4 @@
-pub(super) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt> {
+pub(crate) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt> {
     let head = git_head()?;
     let session_id = {
         let s = kavach_session::get_or_create_session().session_id;

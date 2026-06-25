@@ -13,7 +13,7 @@ pub(crate) struct WriteRequest<'a> {
     pub depends_on: &'a [String],
 }
 
-pub(super) fn write(req: &WriteRequest<'_>) -> Result<kavach_rpc::methods::db::WriteResult, String> {
+pub(crate) fn write(req: &WriteRequest<'_>) -> Result<kavach_rpc::methods::db::WriteResult, String> {
     let effective_key = req.update_key.unwrap_or(req.key);
     let relationships = resolve_relationships(req, effective_key);
     let params = WriteParams {
@@ -31,7 +31,7 @@ pub(super) fn write(req: &WriteRequest<'_>) -> Result<kavach_rpc::methods::db::W
         .map_err(super::error::format_err)
 }
 
-pub(super) fn resolve_relationships(
+pub(crate) fn resolve_relationships(
     req: &WriteRequest<'_>,
     _effective_key: &str,
 ) -> Vec<(String, String)> {

@@ -4,10 +4,10 @@ mod witness;
 mod write_request;
 
 pub(crate) use write_request::WriteRequest;
-pub(super) use error::{format_err, should_fallback_to_direct, DAEMON_UNAVAILABLE};
-pub(super) use resilience::{fallback_backoff_schedule, is_rocksdb_lock_contention, open_direct_resilient, or_str};
-pub(super) use witness::mint_receipt;
-pub(super) use write_request::{resolve_relationships, write};
+pub(crate) use error::{format_err, should_fallback_to_direct, DAEMON_UNAVAILABLE};
+pub(crate) use resilience::{fallback_backoff_schedule, is_rocksdb_lock_contention, open_direct_resilient, or_str};
+pub(crate) use witness::mint_receipt;
+pub(crate) use write_request::{resolve_relationships, write};
 
 use kavach_rpc::client::call;
 use kavach_rpc::methods::db::{
