@@ -56,8 +56,7 @@ fn routes() -> &'static Vec<SkillRoute> {
 	ROUTES.get_or_init(build_routes)
 }
 
-/// Scan prompt text and return all skills whose keywords matched.
-/// Returns deduplicated skill names in match-priority order (first match wins).
+/// Scan prompt text and return all matching skills (deduplicated, first match priority).
 #[must_use]
 pub fn skills_from_keywords(text: &str) -> Vec<String> {
 	if text.is_empty() {

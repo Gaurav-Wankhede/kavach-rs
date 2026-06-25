@@ -10,12 +10,7 @@ pub(super) struct DeployLock {
 }
 
 impl DeployLock {
-    /// Try to acquire the workspace deploy lock without blocking.
-    ///
-    /// Returns `Ok(Some(guard))` when this process won the lock, `Ok(None)` when
-    /// another `kavach deploy` already holds it (the caller must refuse to
-    /// proceed — two concurrent installs race the binary copy + daemon restart),
-    /// and `Err` only on an unexpected filesystem error opening the lock file.
+    /// Try to acquire the workspace deploy lock without blocking (Ok(Some(_)) win, Ok(None) held).
     pub(super) fn try_acquire(root: &Path) -> std::io::Result<Option<Self>> {
         let path = root.join(DEPLOY_LOCK_NAME);
         let file = std::fs::OpenOptions::new()
