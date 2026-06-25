@@ -159,6 +159,7 @@ pub async fn upsert_entry_full(
     qualified_name: &str,
     references: &[String],
     priority: Option<Priority>,
+    exec_prompt: Option<&str>,
 ) -> Result<RecordId> {
     use std::fmt::Write as _;
     let table = match category {

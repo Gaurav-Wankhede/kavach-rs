@@ -106,6 +106,7 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         updated_at: None,
         priority: None,
         lane: None,
+        exec_prompt: None,
         occupied_by: None,
         occupied_until: None,
     };

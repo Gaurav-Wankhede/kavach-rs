@@ -27,6 +27,7 @@ fn card(key: &str, deps: &[&str]) -> MemoryEntry {
         updated_at: None,
         priority: None,
         lane: None,
+        exec_prompt: None,
         occupied_by: None,
         occupied_until: None,
     }
