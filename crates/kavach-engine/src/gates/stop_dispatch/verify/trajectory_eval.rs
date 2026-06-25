@@ -2,7 +2,9 @@ use kavach_patterns::eval_replay::TrajectoryEvent;
 use kavach_patterns::reward;
 
 pub(super) fn path_is_gate_or_dispatch(path: &str) -> bool {
-    path.contains("/gates/") || path.contains("/stop_dispatch/") || path.contains("kavach-patterns/src/reward")
+    path.contains("/gates/")
+        || path.contains("/stop_dispatch/")
+        || path == "crates/kavach-patterns/src/reward.rs"
 }
 
 pub(super) fn touched_gate_or_dispatch(card_key: &str) -> bool {
