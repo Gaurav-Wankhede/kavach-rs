@@ -82,7 +82,7 @@ pub async fn upsert_with_dir(
     source_hash: &str,
     source_dir: &str,
 ) -> Result<()> {
-    let q = "UPSERT type::thing('rag_tree', $source) SET \
+    let q = "UPSERT type::record('rag_tree', $source) SET \
                 source = $source, \
                 built_at = $built_at, \
                 tree_json = $tree_json, \
