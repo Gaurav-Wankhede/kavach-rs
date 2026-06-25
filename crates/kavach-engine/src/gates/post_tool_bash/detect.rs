@@ -69,9 +69,7 @@ const KAVACH_VERBS: &[&str] = &[
     "context", "mistake", "bulk", "goal", "bg", "team", "think", "toolbelt", "lint", "commands",
 ];
 
-/// Classify a failed `kavach` command from its clap-error output. Returns `None`
-/// when the command is not a `kavach` call, did not fail with a clap usage error,
-/// or its error is a runtime/DB error (not the agent's fault to fix by guessing).
+/// Classify a failed `kavach` call from clap stderr; `None` for non-kavach / non-usage errors.
 pub(super) fn classify_kavach_misuse(cmd: &str, output: Option<&str>) -> Option<KavachMisuse> {
     let trimmed = cmd.trim_start();
     if !(trimmed == "kavach" || trimmed.starts_with("kavach ")) {
