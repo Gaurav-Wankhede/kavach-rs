@@ -102,5 +102,5 @@ pub(super) fn version_pin_block(prompt: &str) -> String {
 }
 
 #[cfg(test)]
-#[path = "mod_test.rs"]
+#[path = "version_pin_test.rs"]
 mod version_pin_test;
