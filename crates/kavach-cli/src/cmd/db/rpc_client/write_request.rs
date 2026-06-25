@@ -10,6 +10,7 @@ pub(crate) struct WriteRequest<'a> {
     pub new: bool,
     pub update_key: Option<&'a str>,
     pub priority: Option<i64>,
+    pub exec_prompt: Option<&'a str>,
     pub depends_on: &'a [String],
 }
 
