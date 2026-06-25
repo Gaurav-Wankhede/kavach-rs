@@ -117,16 +117,20 @@ pub(crate) fn auto_verify_done_cards(project_slug: &str) -> AutoVerify {
         WitnessRun::Passed => {
             let mut promoted = 0_usize;
             let mut rpc_error = false;
+            let mut advisories = Vec::new();
             for (key, _) in &done {
                 match verify_card(project_slug, key) {
                     FlipResult::Flipped => promoted = promoted.saturating_add(1),
                     FlipResult::NotFlipped => {}
                     FlipResult::RpcError => rpc_error = true,
                 }
+                if let Some(adv) = trajectory_eval::eval_advisory(project_slug, key) {
+                    advisories.push(adv);
+                }
             }
-            // Witnesses PASSED (work is proven) but a flip RPC errored AND nothing
-            // was promoted ⇒ the DB write failed, not the work. Surface it loudly so
-            // the loop does not silently re-dispatch a finished card on an outage.
+            for adv in advisories {
+                eprintln!("{adv}");
+            }
             if promoted == 0 && rpc_error {
                 AutoVerify::VerifyRpcDown
             } else {
