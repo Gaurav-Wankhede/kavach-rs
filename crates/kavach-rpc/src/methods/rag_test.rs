@@ -32,6 +32,9 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     eprintln!("PROBE UPSERT err = {:?}", probe.as_ref().err());
     let upd: Vec<serde_json::Value> = probe.expect("probe").take(0).unwrap_or_default();
     eprintln!("PROBE UPSERT rows = {upd:?}");
+    let mut info = st.db.query("INFO FOR DB").await.expect("info");
+    let tbls: Option<serde_json::Value> = info.take(0).ok().flatten();
+    eprintln!("DB TABLES = {tbls:?}");
     let mut raw = st
         .db
         .query("SELECT source, source_hash FROM rag_tree")
