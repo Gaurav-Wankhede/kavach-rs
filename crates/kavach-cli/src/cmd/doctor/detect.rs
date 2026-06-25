@@ -76,7 +76,7 @@ fn joined_logical_lines(src: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     let mut pending: Option<String> = None;
     for raw in src.lines() {
-        let mut cur = pending.take().map_or_else(String::new, |p| p);
+        let mut cur = pending.take().unwrap_or_default();
         cur.push_str(raw);
         if raw.trim_end().ends_with('\\') {
             pending = Some(cur);
