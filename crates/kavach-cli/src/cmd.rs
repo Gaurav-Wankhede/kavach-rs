@@ -154,17 +154,11 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 fn dispatch_verify(
     project: &str,
     key: &str,
-    crate_name: Option<String>,
+    crate_name: Option<&str>,
     external_verified: bool,
-    proof: Option<String>,
+    proof: Option<&str>,
 ) -> i32 {
-    verify::run(
-        project,
-        key,
-        crate_name.as_deref(),
-        external_verified,
-        proof.as_deref(),
-    )
+    verify::run(project, key, crate_name, external_verified, proof)
 }
 
 /// Dispatch the `loophole` subcommands (sweep / loop / cron) — extracted from
