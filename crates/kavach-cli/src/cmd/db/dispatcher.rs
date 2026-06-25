@@ -237,6 +237,7 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             dispatch_flow(flow_action)
         }
         DbAction::InferDeps { project, apply } => infer_deps::run(&project, apply),
+        DbAction::NextPrompt { project } => next_prompt::run(&project),
         DbAction::LaneSet {
             project,
             key,
