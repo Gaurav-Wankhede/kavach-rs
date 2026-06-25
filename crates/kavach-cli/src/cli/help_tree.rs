@@ -5,6 +5,10 @@ use crate::cli::Cli;
 /// Print every command path (command → subcommand → leaf) with its summary.
 #[must_use]
 pub(crate) fn render() -> String {
+    super::help_stack::on_big_stack(render_inner)
+}
+
+fn render_inner() -> String {
     let mut out = String::from("kavach\n");
     let root = Cli::command();
     walk(&root, 1, &mut out);
