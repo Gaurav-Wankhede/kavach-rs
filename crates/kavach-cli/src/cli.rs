@@ -199,10 +199,10 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         /// Crate to test (default: workspace)
         #[arg(long)]
         crate_name: Option<String>,
-        /// Record done→verified WITHOUT running cargo, for a deploy proven live elsewhere. Requires --proof.
+        /// Record done→verified without running cargo (deploy proven live). Requires --proof.
         #[arg(long)]
         external_verified: bool,
-        /// Audit proof (deploy URL / commit sha / test receipt) persisted on the card. Mandatory with --external-verified.
+        /// Audit proof (URL/sha/receipt) persisted on the card; required with --external-verified.
         #[arg(long)]
         proof: Option<String>,
     },
