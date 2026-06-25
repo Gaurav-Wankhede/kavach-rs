@@ -144,6 +144,23 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
     }
 }
 
+/// Dispatch `verify` — extracted to keep `dispatch` under the nano-file ceiling.
+fn dispatch_verify(
+    project: &str,
+    key: &str,
+    crate_name: Option<String>,
+    external_verified: bool,
+    proof: Option<String>,
+) -> i32 {
+    verify::run(
+        project,
+        key,
+        crate_name.as_deref(),
+        external_verified,
+        proof.as_deref(),
+    )
+}
+
 /// Dispatch the `loophole` subcommands (sweep / loop / cron) — extracted from
 /// `dispatch` to keep that router under the 100-line nano-file ceiling.
 fn dispatch_loophole(action: crate::cli::LoopholeAction) -> i32 {
