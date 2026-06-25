@@ -93,3 +93,29 @@ fn test_port_conflict_none() {
         None
     );
 }
+
+#[test]
+fn test_kavach_misuse_unknown_verb() {
+    let out = "error: unrecognized subcommand 'doctorr'\n\ntip: a similar subcommand exists: 'doctor'";
+    assert_eq!(classify_kavach_misuse("kavach doctorr", Some(out)), Some(KavachMisuse::UnknownVerb));
+}
+
+#[test]
+fn test_kavach_misuse_unknown_flag() {
+    let out = "error: unexpected argument '--qualified-name' found";
+    assert_eq!(classify_kavach_misuse("kavach db write --qualified-name x", Some(out)), Some(KavachMisuse::UnknownFlag));
+}
+
+#[test]
+fn test_kavach_misuse_stale_binary() {
+    let out = "error: unrecognized subcommand 'commands'";
+    assert_eq!(classify_kavach_misuse("kavach commands --tree", Some(out)), Some(KavachMisuse::StaleBinary));
+}
+
+#[test]
+fn test_kavach_misuse_negatives() {
+    assert_eq!(classify_kavach_misuse("git status", Some("error: unrecognized subcommand 'x'")), None);
+    assert_eq!(classify_kavach_misuse("kavach status", Some("ok: project ready")), None);
+    assert_eq!(classify_kavach_misuse("kavach db get", Some("error: DB connection refused")), None);
+    assert_eq!(classify_kavach_misuse("kavach doctor", None), None);
+}
