@@ -12,7 +12,7 @@ use surrealdb_types::SurrealValue;
 pub struct RagTreeRow {
     pub source: String,
     pub built_at: String,
-    pub tree_json: Vec<u8>,
+    pub tree_json: surrealdb_types::Bytes,
     pub source_hash: String,
 }
 
