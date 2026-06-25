@@ -179,3 +179,7 @@ author-sdlc-agents:
 # Convert passive "Level N" global-agent descriptions to action imperatives (idempotent).
 agentize-descriptions:
     bash scripts/agentize-descriptions.sh
+
+# Validate every mermaid block in an HTML/MD file with mmdc BEFORE it ships (exit 1 on syntax error).
+mermaid-check FILE:
+    bash scripts/mermaid-check.sh {{FILE}}
