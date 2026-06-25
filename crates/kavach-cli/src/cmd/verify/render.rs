@@ -1,7 +1,5 @@
 // TIME: O(n) in arg count | SPACE: O(n)
-//! Render the resolved cargo command + cwd so a verify FAIL shows exactly what
-//! ran — the env-divergence between a proven build and the gate's subprocess is
-//! the usual phantom-error cause, and it is invisible without this.
+//! Render the resolved cargo command + stderr head so a verify FAIL is diagnosable.
 
 /// `cargo check -p <crate>` (or workspace) as a single display string.
 #[must_use]
