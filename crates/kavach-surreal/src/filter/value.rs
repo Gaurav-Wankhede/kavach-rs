@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use surrealdb_types::SurrealValue;
 
-use super::guard::{is_valid_duration, NEVER_MATCH};
+use super::guard::is_valid_duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, SurrealValue)]
 #[non_exhaustive]
