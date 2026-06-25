@@ -1,12 +1,5 @@
 use aho_corasick::AhoCorasick;
-/// NLP keyword→skill routing using Aho-Corasick multi-pattern matching.
-///
-/// Dynamically loads keywords from ~/.claude/skills/*/SKILL.md frontmatter.
-/// Single-pass O(n) scan of prompt text detects keywords that map to skills.
-///
-/// Supports `context: fork` and `agent: <type>` frontmatter for subagent routing.
-/// Skills with `context: fork` should spawn as isolated subagents rather than
-/// injecting into main context.
+/// NLP keyword→skill routing via Aho-Corasick from ~/.claude/skills/*/SKILL.md frontmatter.
 use std::sync::OnceLock;
 
 mod parse;
