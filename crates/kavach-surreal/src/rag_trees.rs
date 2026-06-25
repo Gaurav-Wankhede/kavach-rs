@@ -31,7 +31,11 @@ pub struct RagTreeLabel {
 pub async fn get(db: &Surreal<Db>, source: &str) -> Result<Option<RagTreeRow>> {
     let q = "SELECT source, built_at, tree_json, source_hash FROM rag_tree \
              WHERE source = $source LIMIT 1";
-    let mut response = db.query(q).bind(("source", source.to_owned())).await?;
+    let mut response = match db.query(q).bind(("source", source.to_owned())).await {
+        Ok(r) => r,
+        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(None),
+        Err(e) => return Err(e.into()),
+    };
     let row: Option<RagTreeRow> = response.take(0)?;
     Ok(row)
 }
