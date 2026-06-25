@@ -98,7 +98,10 @@ pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str, prom
          `mermaid.initialize({startOnLoad:false, securityLevel:'loose'})` then \
          `await mermaid.run()`, and show a visible warning if every CDN is blocked — \
          NO SRI integrity= tag (a guessed/stale hash makes the browser refuse the \
-         script and the diagram silently renders as raw text). The diagram is the \
+         script and the diagram silently renders as raw text). VALIDATE the Mermaid \
+         syntax BEFORE surfacing it: run `just mermaid-check <file>` (mmdc parses every \
+         block; exit 1 on a syntax error) and only open the HTML once it passes — never \
+         hand the user a diagram that renders as raw text. The diagram is the \
          review surface — the user decides from it, not from prose.",
     ));
     context.push('\n');
