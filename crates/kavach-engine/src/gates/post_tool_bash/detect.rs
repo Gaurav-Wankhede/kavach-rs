@@ -54,6 +54,63 @@ pub(super) fn is_package_not_found(output: Option<&str>) -> bool {
         || text.contains("no such package")
 }
 
+/// A failed `kavach` invocation, classified by clap's own stderr so recovery is
+/// deterministic — never a fabricated command.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum KavachMisuse {
+    StaleBinary,
+    UnknownVerb,
+    UnknownFlag,
+}
+
+/// Top-level `kavach` verbs the shipped CLI defines (source of truth:
+/// `kavach-cli/src/cli.rs::Commands`). A rejected token that IS one of these
+/// means the installed binary lags source → rebuild; otherwise it was fabricated.
+const KAVACH_VERBS: &[&str] = &[
+    "status", "web", "servers", "gates", "session", "rules", "db", "install", "heal",
+    "loophole", "schema", "ask", "oversized", "tailwind-plus", "doctor", "phase", "spec",
+    "loop", "verify", "deploy", "verify-frontend", "pipeline", "security", "todos", "tasks",
+    "context", "mistake", "bulk", "goal", "bg", "team", "think", "toolbelt", "lint", "commands",
+];
+
+/// Classify a failed `kavach` command from its clap-error output. Returns `None`
+/// when the command is not a `kavach` call, did not fail with a clap usage error,
+/// or its error is a runtime/DB error (not the agent's fault to fix by guessing).
+pub(super) fn classify_kavach_misuse(cmd: &str, output: Option<&str>) -> Option<KavachMisuse> {
+    let trimmed = cmd.trim_start();
+    if !(trimmed == "kavach" || trimmed.starts_with("kavach ")) {
+        return None;
+    }
+    let text = match output {
+        Some(t) if !t.is_empty() => t,
+        _ => return None,
+    };
+    let unknown_verb = text.contains("unrecognized subcommand")
+        || text.contains("invalid subcommand");
+    let unknown_flag = text.contains("unexpected argument")
+        || text.contains("unexpected value")
+        || text.contains("argument was not expected");
+    if !unknown_verb && !unknown_flag {
+        return None;
+    }
+    if rejected_token_is_known_verb(text) {
+        return Some(KavachMisuse::StaleBinary);
+    }
+    if unknown_verb {
+        return Some(KavachMisuse::UnknownVerb);
+    }
+    Some(KavachMisuse::UnknownFlag)
+}
+
+/// True if a token clap quoted as rejected is a real shipped verb — the
+/// stale-binary fingerprint (source has it, the running binary does not).
+fn rejected_token_is_known_verb(text: &str) -> bool {
+    text.split('\'')
+        .filter(|tok| !tok.contains(char::is_whitespace) && !tok.is_empty())
+        .map(|tok| tok.trim_start_matches("--"))
+        .any(|tok| KAVACH_VERBS.contains(&tok))
+}
+
 /// Detect port conflict errors and extract the port number.
 /// Matches: EADDRINUSE, "address already in use", "port X in use".
 pub(super) fn detect_port_conflict(output: Option<&str>) -> Option<u16> {
