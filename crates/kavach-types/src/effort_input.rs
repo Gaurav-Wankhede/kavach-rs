@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-/// Active effort level CC attaches to every hook invocation (`CC` 2.1.133+).
+/// Active effort level CC attaches to every hook invocation.
+///
 /// CC sends `{ "level": "low" | "medium" | "high" }`; gates read it to modulate
 /// strictness (e.g. relax stop-gate verbosity on `low`, tighten research
 /// enforcement on `high`). CC also exports `$CLAUDE_EFFORT` as a fallback.
