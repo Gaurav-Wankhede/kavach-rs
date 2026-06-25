@@ -69,6 +69,15 @@ fn still_flags_unbounded_delete_without_param_or_readback() {
 }
 
 #[test]
+fn does_not_flag_multiline_delete_with_continuation_param() {
+    // A `\`-continued string literal carries the WHERE `$param` + `RETURN BEFORE`
+    // onto a later physical line; the scanner must join the logical statement.
+    let src = "    let q = \"DELETE entity WHERE entity_type = 'mistake_event' \\\n                 AND props.gate CONTAINS $gate RETURN BEFORE\";";
+    let f = scan_source("x.rs", src);
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
 fn does_not_flag_delete_in_test_file() {
     // A DELETE fixture in a *_test.rs is not a production mutation.
     let f = scan_source("foo_test.rs", r#"    db.query("DELETE event")"#);
