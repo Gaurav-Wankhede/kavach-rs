@@ -129,6 +129,7 @@ pub(crate) enum DbAction {
     /// Set or clear the priority of an existing entry without touching title/content.
     /// Surgical rerank verb for human-in-loop focus shifts. Refuses if the row
     /// does not exist (no implicit insert). Lower number = higher rank, like nice(1).
+    #[command(after_help = "EXAMPLES:\n  kavach db priority-set --project P --category roadmap --key K --priority 1\n  kavach db priority-set --project P --category roadmap --key K --clear\n\nWHEN: Re-rank the backlog by hand without touching a card's title or content.")]
     PrioritySet {
         /// Project slug
         #[arg(long)]
