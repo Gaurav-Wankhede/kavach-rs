@@ -96,8 +96,7 @@ pub(super) fn classify_kavach_misuse(cmd: &str, output: Option<&str>) -> Option<
     Some(KavachMisuse::UnknownFlag)
 }
 
-/// True if a token clap quoted as rejected is a real shipped verb — the
-/// stale-binary fingerprint (source has it, the running binary does not).
+/// True if a clap-rejected token is a real shipped verb (the stale-binary fingerprint).
 fn rejected_token_is_known_verb(text: &str) -> bool {
     text.split('\'')
         .filter(|tok| !tok.contains(char::is_whitespace) && !tok.is_empty())
