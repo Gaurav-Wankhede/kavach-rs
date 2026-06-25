@@ -37,6 +37,7 @@ mod rotate;
 mod rpc_client;
 mod run_rec;
 mod search;
+mod next_prompt;
 mod status_update;
 mod sync;
 mod tree;
