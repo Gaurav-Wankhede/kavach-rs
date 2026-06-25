@@ -91,5 +91,3 @@ pub(super) fn install_dest() -> Option<PathBuf> {
             .join(binary_filename()),
     )
 }
-
-pub(super) use self::install_binary;
