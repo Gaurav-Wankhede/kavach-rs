@@ -20,6 +20,7 @@ fn card(key: &str, status: &str, lane: Option<&str>) -> MemoryEntry {
         lane: lane.map(Into::into),
         occupied_by: None,
         occupied_until: None,
+        exec_prompt: None,
     }
 }
 
