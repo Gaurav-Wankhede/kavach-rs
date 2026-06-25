@@ -77,6 +77,6 @@ mod tests {
 
     #[test]
     fn phase_subcommands_are_valid() {
-        Cli::command().debug_assert();
+        crate::cli::help_stack::on_big_stack(|| Cli::command().debug_assert());
     }
 }
