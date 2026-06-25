@@ -67,6 +67,7 @@ AI coding agents are powerful but **stateless between sessions** and easily slip
 <tr><td>Destructive <code>rm -rf</code> slips through</td><td>Pre-tool guards block or ask</td></tr>
 <tr><td>Writes memory it never reads back</td><td><strong>Brain-OS auto-recall</strong> injects relevant memory into every prompt</td></tr>
 <tr><td>Claims "latest version" from stale weights</td><td><strong>Internet-first</strong> — installed pinned from the lockfile, latest fetched from the registry</td></tr>
+<tr><td>Fabricates a CLI subcommand/flag that doesn't exist</td><td><strong>No-fabrication recovery</strong> — a failed <code>kavach</code> call routes to <code>kavach commands --tree</code>/<code>--help</code>; a stale binary triggers <code>just install</code></td></tr>
 </table>
 </div>
 
