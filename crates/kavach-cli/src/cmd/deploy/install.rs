@@ -5,7 +5,7 @@ pub(super) const BINARY_NAME: &str = "kavach";
 pub(super) const RELEASE_PROFILE: &str = "release";
 
 /// Install a single binary file: fresh inode (remove-then-copy) + codesign on macOS.
-fn install_binary(src: &Path, dst: &Path) -> Result<(), String> {
+pub(super) fn install_binary(src: &Path, dst: &Path) -> Result<(), String> {
     let Some(parent) = dst.parent() else {
         return Err(format!("[DEPLOY] FAIL: {} has no parent", dst.display()));
     };
