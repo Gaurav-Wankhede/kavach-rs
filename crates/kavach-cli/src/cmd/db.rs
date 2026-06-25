@@ -67,6 +67,7 @@ pub(crate) fn upsert_roadmap_card(
         content: Some(content),
         new: true,
         update_key: None,
+        exec_prompt: None,
         priority: None,
         depends_on: &[],
     })
