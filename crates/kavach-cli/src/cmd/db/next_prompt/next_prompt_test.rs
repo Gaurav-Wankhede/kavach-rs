@@ -41,7 +41,7 @@ fn serves_first_todo_with_a_prompt() {
 fn top_todo_without_prompt_is_missing_not_skipped() {
     let rows = [card("top", "todo", None), card("later", "todo", Some("x"))];
     match pick(&rows) {
-        Pick::Missing(key) => assert_eq!(key, "top"),
+        Pick::Missing(card) => assert_eq!(card.entry_key, "top"),
         _ => panic!("a promptless top todo must surface as Missing, never skipped"),
     }
 }
