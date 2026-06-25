@@ -11,12 +11,10 @@ pub(super) fn touched_gate_or_dispatch(card_key: &str) -> bool {
     if card_key.is_empty() {
         return false;
     }
-    let output = match std::process::Command::new("git")
+    let Ok(output) = std::process::Command::new("git")
         .args(["diff", "--name-only", "HEAD~1", "HEAD"])
-        .output()
-    {
-        Ok(out) => out,
-        Err(_) => return false,
+        .output() else {
+        return false;
     };
     let stdout = String::from_utf8_lossy(&output.stdout);
     stdout.lines().any(path_is_gate_or_dispatch)
