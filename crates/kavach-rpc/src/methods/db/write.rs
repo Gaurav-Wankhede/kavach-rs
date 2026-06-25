@@ -102,6 +102,18 @@ pub async fn write(ctx: &AppState, params: WriteParams) -> Result<WriteResult, E
         });
     }
 
+    if std::env::var_os("KAVACH_EXEC_PROMPT_BYPASS").is_none() {
+        if let Some(reason) =
+            exec_prompt_gate::blocked(&params.category, is_new, params.exec_prompt.as_deref())
+        {
+            return Ok(WriteResult {
+                success: false,
+                id: None,
+                error: Some(reason.to_owned()),
+            });
+        }
+    }
+
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     // DISPATCH-GATING FIX (operator directive 2026-06-17 "honor graph deps in
     // dispatch"): the daemon is the SINGLE writer for `kavach db write` (the CLI
