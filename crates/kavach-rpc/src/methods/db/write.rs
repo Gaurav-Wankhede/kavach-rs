@@ -132,6 +132,7 @@ pub async fn write(ctx: &AppState, params: WriteParams) -> Result<WriteResult, E
         .qualified_name(&qname)
         .references(&refs)
         .maybe_priority(priority)
+        .maybe_exec_prompt(params.exec_prompt.as_deref())
         .build_for_call()
         .await;
 
