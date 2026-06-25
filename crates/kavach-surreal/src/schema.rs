@@ -12,7 +12,7 @@ use crate::error::Result;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 
-/// DDL concern-blocks applied in order: base tables, typed memory, graph/ops, then idempotent migrations (FTS indexes + backfills reference the tables defined earlier).
+// Order matters: migrations' FTS indexes + backfills reference tables defined in earlier blocks.
 const SCHEMA_PARTS: [&str; 4] = [core::DDL, memory::DDL, graph::DDL, migrations::DDL];
 
 /// Applies the schema DDL to the `SurrealDB` instance.
