@@ -1,5 +1,5 @@
 //! Core tables: project + session. SOURCE: surrealdb.com/docs/surrealql/statements/define/field
-pub(super) const DDL: &str = r#"
+pub(super) const DDL: &str = r"
 -- Projects (key-value style with record IDs)
 DEFINE TABLE project SCHEMAFULL;
 DEFINE FIELD slug ON project TYPE string ASSERT $value != NONE;
