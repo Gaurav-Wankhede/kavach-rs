@@ -3,8 +3,7 @@
 pub(super) fn arg_row(a: &clap::Arg) -> String {
     let flag = a
         .get_long()
-        .map(|l| format!("--{l}"))
-        .unwrap_or_else(|| format!("<{}>", a.get_id()));
+        .map_or_else(|| format!("<{}>", a.get_id()), |l| format!("--{l}"));
     let help = a
         .get_help()
         .map(|h| h.to_string().replace('\n', " ").replace('|', "\\|"))
