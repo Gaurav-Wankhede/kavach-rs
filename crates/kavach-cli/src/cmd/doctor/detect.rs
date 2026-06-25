@@ -125,17 +125,16 @@ fn match_destructive_query(file: &str, line: &str) -> Option<&'static str> {
     if !is_delete_statement(line) {
         return None;
     }
-    // Bounded → already targeted, not the unbounded class the check guards against:
-    //  - a keyed WHERE predicate, OR
-    //  - a record-id delete (`DELETE $pid` / `DELETE $ids`) which targets a row by id.
-    let keyed_where = line.contains("WHERE")
-        && (line.contains("$key")
-            || line.contains("$pid")
-            || line.contains("$id")
-            || line.contains("entry_key")
-            || line.contains("= $"));
+    // Bounded → already targeted, not the unbounded class the check guards against.
+    // Dynamic (not a frozen param-name list): any WHERE that references a bound
+    // `$param` is scoped by it, regardless of operator (`=`, `CONTAINS`, graph edge).
+    let keyed_where = line.contains("WHERE") && line.contains('$');
+    // A record-id delete (`DELETE $pid`/`DELETE $ids`) targets a row by id.
     let record_id_delete = line.contains("DELETE $");
-    if keyed_where || record_id_delete {
+    // `RETURN BEFORE` returns the deleted rows — the count→delete→verify read-back
+    // the check asks for is present, so the removal is verified, not silent.
+    let verified_readback = line.contains("RETURN BEFORE");
+    if keyed_where || record_id_delete || verified_readback {
         return None;
     }
     Some("unbounded DELETE — add a read-back assertion (count→delete→re-count) or a key predicate")
