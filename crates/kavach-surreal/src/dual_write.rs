@@ -58,7 +58,7 @@ pub struct MemoryEntry {
     // Defined on roadmap only; the cross-category SELECT yields NONE elsewhere.
     #[serde(default)]
     pub lane: Option<String>,
-    // Opus-authored executor prompt; served verbatim by `kavach db next-prompt` to a cheaper model. roadmap only; NONE elsewhere.
+    // Opus-authored executor prompt; served by `kavach db next-prompt`. roadmap only.
     #[serde(default)]
     pub exec_prompt: Option<String>,
     // Session-occupancy lease (lease/types.rs `LeaseRow`). `occupied_by` is the
