@@ -82,14 +82,13 @@ pub async fn upsert_with_dir(
     source_hash: &str,
     source_dir: &str,
 ) -> Result<()> {
-    let q = "UPSERT rag_tree SET \
+    let q = "UPSERT type::thing('rag_tree', $source) SET \
                 source = $source, \
                 built_at = $built_at, \
                 tree_json = $tree_json, \
                 source_hash = $source_hash, \
                 source_dir = $source_dir, \
-                updated_at = time::now() \
-             WHERE source = $source";
+                updated_at = time::now()";
     db.query(q)
         .bind(("source", source.to_owned()))
         .bind(("built_at", built_at.to_owned()))
