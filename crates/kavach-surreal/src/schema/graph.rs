@@ -74,4 +74,4 @@ DEFINE FIELD cost_usd ON run TYPE option<float>;
 DEFINE FIELD created_at ON run TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_run_project ON run FIELDS project;
 DEFINE INDEX idx_run_project_started ON run FIELDS project, started_at;
-"#;
+";
