@@ -72,8 +72,7 @@ pub fn skills_from_keywords(text: &str) -> Vec<String> {
 	matched
 }
 
-/// Get metadata for a skill by name.
-/// Returns None if skill not found or has no keywords.
+/// Get metadata for a skill by name, returns None if not found.
 #[must_use]
 pub fn get_skill_metadata(skill_name: &str) -> Option<SkillMetadata> {
 	routes()
