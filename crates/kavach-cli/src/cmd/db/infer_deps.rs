@@ -228,6 +228,7 @@ pub(crate) fn run(project: &str, apply: bool) -> i32 {
             new: false,
             update_key: Some(&e.card),
             priority: None,
+            exec_prompt: None,
             depends_on: &deps,
         };
         if let Err(err) = rpc_client::write(&req) {
