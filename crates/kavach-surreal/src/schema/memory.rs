@@ -1,5 +1,5 @@
 //! Typed memory tables: decision/research/pattern/roadmap/app_spec/citation (replaces memory_entries categories).
-pub(super) const DDL: &str = r#"
+pub(super) const DDL: &str = r"
 -- Decision (typed table, replaces memory_entries category='decision')
 DEFINE TABLE decision SCHEMAFULL;
 DEFINE FIELD project ON decision TYPE record<project>;
