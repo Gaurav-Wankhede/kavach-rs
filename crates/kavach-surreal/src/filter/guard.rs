@@ -75,7 +75,7 @@ pub(super) fn is_safe_key(s: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
-pub(super) fnsafe_field(name: &str) -> Option<&str> {
+pub(super) fn safe_field(name: &str) -> Option<&str> {
     is_allowed_field(name).then_some(name)
 }
 
