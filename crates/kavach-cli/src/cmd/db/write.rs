@@ -430,6 +430,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
             .qualified_name(&qualified_name)
             .references(&refs)
             .maybe_priority(priority)
+            .maybe_exec_prompt(req.exec_prompt)
             .build_for_call()
             .await;
         match upsert_result {
