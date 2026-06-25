@@ -1,14 +1,4 @@
 // ARCH: see kavach db get --category decision --key arch.decision.fourteen_prefix_const_table
-use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
-
-/// Deserialize a JSON string that may be explicitly `null` into the default.
-/// `#[serde(default)]` only covers a MISSING key; CC v2.1.154 `PreCompact` sends
-/// `custom_instructions: null` / `trigger: null` (explicit null), which serde
-/// otherwise rejects as "invalid type: null, expected a string".
-fn null_string<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
-    Ok(Option::<String>::deserialize(d)?.unwrap_or_default())
-}
 
 pub mod gate_config;
 pub use gate_config::{
