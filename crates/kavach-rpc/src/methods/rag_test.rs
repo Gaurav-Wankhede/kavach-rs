@@ -25,6 +25,13 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     .await
     .expect("upsert ok");
 
+    let mut up = st
+        .db
+        .query("UPSERT type::record('rag_tree', 'probe') SET source = 'probe', tree_json = <bytes>'aGk='")
+        .await
+        .expect("raw upsert");
+    let upd: Vec<serde_json::Value> = up.take(0).unwrap_or_default();
+    eprintln!("PROBE UPSERT = {upd:?}");
     let mut raw = st
         .db
         .query("SELECT source, source_hash FROM rag_tree")
