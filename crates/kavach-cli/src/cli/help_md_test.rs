@@ -11,9 +11,9 @@ fn reference_has_root_and_per_command_sections() {
 #[test]
 fn committed_cli_md_is_in_sync() {
     let committed = include_str!("../../../../docs/CLI.md");
+    let generated = format!("{}\n", render().trim_end());
     assert_eq!(
-        render(),
-        committed,
-        "docs/CLI.md is stale — regenerate: cargo run -p kavach-cli -- commands --markdown > docs/CLI.md"
+        generated, committed,
+        "docs/CLI.md is stale — regenerate: kavach commands --markdown > docs/CLI.md"
     );
 }
