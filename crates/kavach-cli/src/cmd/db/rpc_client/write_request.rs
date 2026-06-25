@@ -26,6 +26,7 @@ pub(crate) fn write(req: &WriteRequest<'_>) -> Result<kavach_rpc::methods::db::W
         new: Some(req.new),
         update_key: req.update_key.map(String::from),
         priority: req.priority,
+        exec_prompt: req.exec_prompt.map(String::from),
         relationships,
     };
     kavach_rpc::client::call::<_, kavach_rpc::methods::db::WriteResult>("db.write", Some(params))
