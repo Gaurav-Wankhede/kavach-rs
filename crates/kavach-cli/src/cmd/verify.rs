@@ -194,8 +194,8 @@ async fn finalize_verified(
     key: &str,
 ) -> i32 {
     if let Err(e) = kavach_surreal::update_status(db, "roadmap", project_id, key, "verified").await {
-        let _ = ewrite_or_exit(&format!("error: status transition failed: {e}"));
-        return 1;
+        let msg = format!("error: status transition failed: {e}");
+        return ewrite_or_exit(&msg).map_or_else(into_exit_code, |()| 1);
     }
     match print_or_exit(&format!("[VERIFY] PASS: {key} → verified")) {
         Ok(()) => 0,
