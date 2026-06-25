@@ -14,6 +14,9 @@ DEFINE FIELD IF NOT EXISTS priority ON roadmap TYPE option<int>;
 DEFINE FIELD IF NOT EXISTS priority ON decision TYPE option<int>;
 DEFINE INDEX IF NOT EXISTS idx_roadmap_priority ON roadmap FIELDS project, priority;
 
+-- exec_prompt: Opus-authored precise executor prompt; served verbatim to a cheaper model (Haiku/Composer) by `kavach db next-prompt`. NULL = not yet authored.
+DEFINE FIELD IF NOT EXISTS exec_prompt ON roadmap TYPE option<string>;
+
 -- lane-affinity sharding: a card pinned to a dispatch LANE; NULL = unlaned general backlog.
 DEFINE FIELD IF NOT EXISTS lane ON roadmap TYPE option<string>;
 DEFINE INDEX IF NOT EXISTS idx_roadmap_lane ON roadmap FIELDS project, lane;
