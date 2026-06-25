@@ -12,6 +12,3 @@ pub use types::{ModelTier, SkillContext, SkillMetadata};
 pub use routes::{
 	get_model_tier, get_skill_metadata, should_fork, skills_from_keywords,
 };
-
-pub(crate) use types::SkillRoute;
-pub(crate) use routes::build_routes_from;
