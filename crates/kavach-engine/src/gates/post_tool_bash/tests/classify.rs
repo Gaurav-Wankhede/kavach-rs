@@ -1,7 +1,7 @@
 //! Output/command classifier tests: test command, empty suite, package, port.
 use crate::gates::post_tool_bash::detect::{
-    detect_port_conflict, is_empty_test_suite, is_package_install, is_package_not_found,
-    is_test_command,
+    classify_kavach_misuse, detect_port_conflict, is_empty_test_suite, is_package_install,
+    is_package_not_found, is_test_command, KavachMisuse,
 };
 
 #[test]
