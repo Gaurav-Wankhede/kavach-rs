@@ -23,7 +23,9 @@ pub(crate) fn run(
             return 1;
         }
     };
-    runtime.block_on(async { run_async(project_slug, key, crate_name).await })
+    runtime.block_on(async {
+        run_async(project_slug, key, crate_name, external_verified, proof).await
+    })
 }
 
 #[expect(
