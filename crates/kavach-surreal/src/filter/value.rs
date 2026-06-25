@@ -18,7 +18,7 @@ impl FilterValue {
     #[must_use]
     pub fn to_surql(&self) -> String {
         match self {
-            Self::String(s) => format!("'{}'", s.replace('\'', "\\'")),
+            Self::String(s) => format!("'{}'", s.replace('\\', "\\\\").replace('\'', "\\'")),
             Self::Int(n) => n.to_string(),
             Self::Float(f) => f.to_string(),
             Self::Bool(b) => b.to_string(),
