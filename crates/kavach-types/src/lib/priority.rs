@@ -48,3 +48,91 @@ impl std::fmt::Display for Priority {
         write!(f, "{}", self.0)
     }
 }
+
+#[cfg(test)]
+mod priority_tests {
+    use super::*;
+
+    #[test]
+    fn new_clamps_below_min() {
+        let p = Priority::new(-5);
+        assert_eq!(p.get(), 0);
+    }
+
+    #[test]
+    fn new_clamps_above_max() {
+        let p = Priority::new(2000);
+        assert_eq!(p.get(), 1000);
+    }
+
+    #[test]
+    fn new_accepts_in_range() {
+        let p = Priority::new(500);
+        assert_eq!(p.get(), 500);
+    }
+
+    #[test]
+    fn try_new_rejects_below_min() {
+        assert!(Priority::try_new(-1).is_none());
+    }
+
+    #[test]
+    fn try_new_rejects_above_max() {
+        assert!(Priority::try_new(1001).is_none());
+    }
+
+    #[test]
+    fn try_new_accepts_in_range() {
+        assert!(Priority::try_new(0).is_some());
+        assert!(Priority::try_new(500).is_some());
+        assert!(Priority::try_new(1000).is_some());
+    }
+
+    #[test]
+    fn get_round_trips() {
+        let p = Priority::new(42);
+        assert_eq!(Priority::new(p.get()), p);
+    }
+
+    #[test]
+    fn serde_transparent_roundtrip() {
+        let p = Priority::new(5);
+        let json = serde_json::to_string(&p).unwrap();
+        assert_eq!(json, "5");
+        let deserialized: Priority = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, p);
+    }
+
+    #[test]
+    fn serde_in_option() {
+        let opt: Option<Priority> = Some(Priority::new(100));
+        let json = serde_json::to_string(&opt).unwrap();
+        assert_eq!(json, "100");
+        let deserialized: Option<Priority> = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, opt);
+    }
+
+    #[test]
+    fn serde_none() {
+        let opt: Option<Priority> = None;
+        let json = serde_json::to_string(&opt).unwrap();
+        assert_eq!(json, "null");
+        let deserialized: Option<Priority> = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, None);
+    }
+
+    #[test]
+    fn ordering() {
+        let low = Priority::new(1);
+        let high = Priority::new(100);
+        assert!(low < high);
+        assert!(high > low);
+        assert_eq!(low, Priority::new(1));
+    }
+
+    #[test]
+    fn display() {
+        let p = Priority::new(42);
+        assert_eq!(p.to_string(), "42");
+    }
+}
