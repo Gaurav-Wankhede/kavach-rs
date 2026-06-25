@@ -57,7 +57,7 @@ pub(super) fn version_pin_block(prompt: &str) -> String {
             hits.push(format!("  {name} = {version} (installed; pin research to THIS)"));
         }
     }
-    if let Some(work_dir) = std::env::current_dir().ok() {
+    if let Ok(work_dir) = std::env::current_dir() {
         for (name, version) in npm_deps(&work_dir) {
             if prompt_mentions(&prompt_lc, &name) && seen.insert(name.clone()) {
                 hits.push(format!("  {name} = {version} (npm; pin research to THIS)"));
