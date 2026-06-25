@@ -70,6 +70,26 @@ pub(super) fn scan_source(file: &str, src: &str) -> Vec<Finding> {
     out
 }
 
+/// Fold `\`-continued string-literal lines into one logical line so a multi-line
+/// query's WHERE `$param` / `RETURN BEFORE` isn't split across physical lines.
+fn joined_logical_lines(src: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut pending: Option<String> = None;
+    for raw in src.lines() {
+        let mut cur = pending.take().map_or_else(String::new, |p| p);
+        cur.push_str(raw);
+        if raw.trim_end().ends_with('\\') {
+            pending = Some(cur);
+        } else {
+            out.push(cur);
+        }
+    }
+    if let Some(rest) = pending {
+        out.push(rest);
+    }
+    out
+}
+
 fn mk(class: Class, file: &str, line: usize, hint: &str) -> Finding {
     Finding { class, file: file.to_owned(), line, hint: hint.to_owned() }
 }
