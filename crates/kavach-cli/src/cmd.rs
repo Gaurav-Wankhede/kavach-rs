@@ -136,6 +136,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         } => think::run(&project, &query, limit),
         Commands::Toolbelt { action } => toolbelt::run(action),
         Commands::Lint { action } => lint::run(action),
+        Commands::Commands { tree, markdown } => commands::run(tree, markdown),
     }
 }
 
