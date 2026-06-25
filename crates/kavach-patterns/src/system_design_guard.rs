@@ -1,4 +1,4 @@
-//! Detects distributed-systems anti-patterns: missing timeouts, unjittered retries, sync fanout, unbounded queues, missing idempotency, missing circuit-breaker, cache-as-bandaid.
+//! Distributed-systems anti-pattern detector: timeouts, jitter, fanout, idempotency, circuit-breaker, cache-TTL.
 
 mod detect;
 mod types;
