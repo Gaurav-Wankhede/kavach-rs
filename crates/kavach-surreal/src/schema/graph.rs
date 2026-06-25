@@ -1,5 +1,5 @@
 //! Graph nodes (entity), events, and operational tables: gate_config, part, run, bandit_log.
-pub(super) const DDL: &str = r#"
+pub(super) const DDL: &str = r"
 -- Entity (graph nodes)
 DEFINE TABLE entity SCHEMAFULL;
 DEFINE FIELD entity_type ON entity TYPE string;
