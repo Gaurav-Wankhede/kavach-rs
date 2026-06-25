@@ -42,6 +42,33 @@ fn flags_unbounded_delete() {
 }
 
 #[test]
+fn does_not_flag_delete_bound_by_contains_param() {
+    // A DELETE scoped by `CONTAINS $param` is bounded by that param — not the
+    // unbounded class. The frozen `= $`/`$key`-only check was the FP source.
+    let f = scan_source(
+        "x.rs",
+        r#"    let q = "DELETE entity WHERE entity_type = 'x' AND props.gate CONTAINS $gate RETURN BEFORE";"#,
+    );
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn does_not_flag_delete_with_return_before_readback() {
+    // `RETURN BEFORE` is the count→delete→verify read-back the check asks for;
+    // a DELETE that returns its deleted rows is verified, not silent.
+    let f = scan_source("x.rs", r#"    db.query("DELETE event RETURN BEFORE")"#);
+    assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
+fn still_flags_unbounded_delete_without_param_or_readback() {
+    // Guard the fix doesn't over-widen: a bare DELETE with a literal-only WHERE
+    // and no bound param and no RETURN BEFORE is still unbounded.
+    let f = scan_source("x.rs", r#"    db.query("DELETE event WHERE status = 'stale'")"#);
+    assert!(f.iter().any(|x| x.class == Class::DestructiveQuery));
+}
+
+#[test]
 fn does_not_flag_delete_in_test_file() {
     // A DELETE fixture in a *_test.rs is not a production mutation.
     let f = scan_source("foo_test.rs", r#"    db.query("DELETE event")"#);
