@@ -1,9 +1,7 @@
-#[cfg(test)]
-mod tests {
-    use super::super::fetch::fetch_flow;
-    use super::super::model::{FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput};
-    use super::super::shape::NodeShape;
-    use super::super::upsert::upsert_flow;
+use super::fetch::fetch_flow;
+use super::model::{FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput};
+use super::shape::NodeShape;
+use super::upsert::upsert_flow;
 
     fn sample() -> FlowDag {
         FlowDag {
