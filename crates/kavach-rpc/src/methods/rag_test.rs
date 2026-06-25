@@ -4,7 +4,6 @@ use crate::state::AppState;
 
 async fn state() -> AppState {
     let db = kavach_surreal::open_memory().await.expect("mem db");
-    kavach_surreal::apply_schema_engine(&db).await.expect("engine schema");
     AppState::new(db)
 }
 
