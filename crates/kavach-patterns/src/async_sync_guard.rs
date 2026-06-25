@@ -8,9 +8,12 @@
 
 mod detect;
 mod rules;
-mod tests;
 mod types;
 mod walk;
 
 pub use detect::detect;
 pub use types::{AsyncSeverity, AsyncViolation};
+
+#[cfg(test)]
+#[path = "async_sync_guard/tests.rs"]
+mod tests;
