@@ -764,7 +764,7 @@ WHEN: The DAG tier view collapses every card into TIER 0 because no card declare
         #[arg(long)]
         apply: bool,
     },
-    /// Print the highest-priority todo roadmap card's exec_prompt to stdout, ready to pipe to an executor model.
+    /// Print the top-priority todo card's exec_prompt to stdout (pipe to an executor model).
     NextPrompt {
         /// Project slug
         #[arg(long)]
