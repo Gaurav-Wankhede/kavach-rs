@@ -1,6 +1,4 @@
-use aho_corasick::AhoCorasick;
 /// NLP keyword→skill routing via Aho-Corasick from ~/.claude/skills/*/SKILL.md frontmatter.
-use std::sync::OnceLock;
 
 mod parse;
 mod routes;
