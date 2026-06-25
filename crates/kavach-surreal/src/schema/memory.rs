@@ -109,4 +109,4 @@ DEFINE FIELD access_count ON citation TYPE int DEFAULT 0;
 DEFINE FIELD created_at ON citation TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON citation TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_citation_project_key ON citation FIELDS project, entry_key UNIQUE;
-"#;
+";
