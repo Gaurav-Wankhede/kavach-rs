@@ -10,7 +10,6 @@ mod tests;
 
 pub use types::{AtomicSeverity, AtomicViolation};
 
-use types::Level;
 use util::{classify_path, is_ui_file};
 
 #[must_use]
