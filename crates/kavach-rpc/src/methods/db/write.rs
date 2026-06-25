@@ -25,6 +25,9 @@ pub struct WriteParams {
     pub update_key: Option<String>,
     #[serde(default)]
     pub priority: Option<i64>,
+    /// Opus-authored executor prompt (roadmap only); persisted for `db next-prompt`.
+    #[serde(default)]
+    pub exec_prompt: Option<String>,
     /// Fully-resolved inter-entry edges `(rel, target_qname)` the CLI extracted
     /// from body (frontmatter/wikilink/NLU) merged with `--depends-on`. The CLI
     /// owns extraction (it depends on `kavach-engine`; the daemon cannot — that
