@@ -32,7 +32,13 @@ pub(crate) fn run(
     clippy::too_many_lines,
     reason = "SurrealDB multi-stage verification pipeline with error handling for each stage"
 )]
-async fn run_async(project_slug: &str, key: &str, crate_name: Option<&str>) -> i32 {
+async fn run_async(
+    project_slug: &str,
+    key: &str,
+    crate_name: Option<&str>,
+    external_verified: bool,
+    proof: Option<&str>,
+) -> i32 {
     let db = match kavach_surreal::open_default().await {
         Ok(d) => d,
         Err(e) => {
