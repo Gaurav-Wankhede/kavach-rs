@@ -430,7 +430,10 @@ cargo check --workspace                      # build all crates
 cargo nextest run --workspace                # tests (parallel, per-test process isolation)
 cargo clippy --workspace -- -D warnings      # lint (correctness lints deny-by-default)
 cargo fmt --all                              # format
+just mermaid-check <file.html>               # validate every Mermaid block with mmdc before it ships
 ```
+
+The **diagram-first** law (injected by the `intent` gate on any design/architecture turn) requires a Mermaid LLD rendered to a temp HTML file *before* deciding. `just mermaid-check` runs that file's diagrams through `mmdc` and exits non-zero on a syntax error — so a broken diagram fails loudly at author time instead of silently rendering as raw text.
 
 The **"done" bar is a 3-witness verify**: an `rg` artifact (the change exists at `file:line`), `git diff --stat` (the diff landed), and `cargo check --workspace` exit 0 (it compiles). The Stop gate blocks until those hold.
 
