@@ -33,8 +33,11 @@ pub(super) fn parse_pyproject_deps(body: &str) -> Vec<(String, String)> {
                 let dep_spec = quoted.0;
                 let operators = ['=', '>', '<', '!', '~'];
                 if let Some(pos) = dep_spec.find(|c| operators.contains(&c)) {
-                    let (name, version) = dep_spec.split_at(pos);
-                    result.push((name.to_owned(), version.to_owned()));
+                    let name = dep_spec[..pos].trim_end();
+                    let version = &dep_spec[pos..];
+                    if !name.is_empty() {
+                        result.push((name.to_owned(), version.to_owned()));
+                    }
                 } else if !dep_spec.is_empty() {
                     result.push((dep_spec.to_owned(), String::new()));
                 }
