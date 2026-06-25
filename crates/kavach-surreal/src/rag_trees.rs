@@ -92,7 +92,7 @@ pub async fn upsert_with_dir(
     db.query(q)
         .bind(("source", source.to_owned()))
         .bind(("built_at", built_at.to_owned()))
-        .bind(("tree_json", tree_json.to_vec()))
+        .bind(("tree_json", surrealdb_types::Bytes::from(tree_json.to_vec())))
         .bind(("source_hash", source_hash.to_owned()))
         .bind(("source_dir", source_dir.to_owned()))
         .await?;
