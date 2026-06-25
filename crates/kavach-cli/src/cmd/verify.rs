@@ -143,69 +143,64 @@ async fn run_async(
     if let Err(io_err) = print_or_exit(&head) {
         return into_exit_code(io_err);
     }
-    if let Err(io_err) = print_or_exit("[VERIFY] running: cargo check") {
-        return into_exit_code(io_err);
-    }
 
-    let mut check_cmd = Command::new("cargo");
-    check_cmd.arg("check");
-    if let Some(name) = crate_name {
-        check_cmd.args(["-p", name]);
+    if let Some(code) = run_cargo_stage(&["check"], crate_name) {
+        return code;
     }
-    let check_status = match check_cmd.status() {
-        Ok(s) => s,
+    if let Some(code) = run_cargo_stage(&["nextest", "run"], crate_name) {
+        return code;
+    }
+    finalize_verified(&db, &project_id, key).await
+}
+
+/// Run one cargo stage, printing the RESOLVED command first and (on failure) the
+/// captured stderr head so an env-divergent phantom error is diagnosable. Returns
+/// `Some(exit_code)` on spawn-error or non-zero status; `None` on success.
+fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
+    let display = render::cargo_cmd(sub, crate_name);
+    let cwd = std::env::current_dir()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| "?".to_owned());
+    if let Err(io_err) = print_or_exit(&format!("[VERIFY] running: {display}  (cwd: {cwd})")) {
+        return Some(into_exit_code(io_err));
+    }
+    let mut cmd = Command::new("cargo");
+    cmd.args(sub);
+    if let Some(name) = crate_name {
+        cmd.args(["-p", name]);
+    }
+    let output = match cmd.output() {
+        Ok(o) => o,
         Err(e) => {
-            let msg = format!("error: cargo check failed to spawn: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
+            let _ = ewrite_or_exit(&format!("error: `{display}` failed to spawn: {e}"));
+            return Some(1);
         }
     };
-    if !check_status.success() {
-        if let Err(io_err) = ewrite_or_exit("[VERIFY] FAIL: cargo check failed") {
-            return into_exit_code(io_err);
-        }
-        return 1;
+    if output.status.success() {
+        return None;
     }
+    let code = output.status.code().unwrap_or(1);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let head = render::stderr_head(&stderr, 20);
+    let _ = ewrite_or_exit(&format!(
+        "[VERIFY] FAIL: `{display}` exited {code} (cwd {cwd})\n--- first stderr lines ---\n{head}"
+    ));
+    Some(code)
+}
 
-    if let Err(io_err) = print_or_exit("[VERIFY] running: cargo nextest run") {
-        return into_exit_code(io_err);
-    }
-    let mut test_cmd = Command::new("cargo");
-    test_cmd.args(["nextest", "run"]);
-    if let Some(name) = crate_name {
-        test_cmd.args(["-p", name]);
-    }
-    let test_status = match test_cmd.status() {
-        Ok(s) => s,
-        Err(e) => {
-            let msg = format!("error: cargo nextest failed to spawn: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-    };
-    if !test_status.success() {
-        if let Err(io_err) = ewrite_or_exit("[VERIFY] FAIL: cargo nextest failed") {
-            return into_exit_code(io_err);
-        }
+/// Flip roadmap row done → verified and print PASS. Shared by the cargo and the
+/// external-verified paths.
+async fn finalize_verified(
+    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
+    project_id: &surrealdb_types::RecordId,
+    key: &str,
+) -> i32 {
+    if let Err(e) = kavach_surreal::update_status(db, "roadmap", project_id, key, "verified").await {
+        let _ = ewrite_or_exit(&format!("error: status transition failed: {e}"));
         return 1;
     }
-
-    if let Err(e) =
-        kavach_surreal::update_status(&db, "roadmap", &project_id, key, "verified").await
-    {
-        let msg = format!("error: status transition failed: {e}");
-        if let Err(io_err) = ewrite_or_exit(&msg) {
-            return into_exit_code(io_err);
-        }
-        return 1;
+    match print_or_exit(&format!("[VERIFY] PASS: {key} → verified")) {
+        Ok(()) => 0,
+        Err(io_err) => into_exit_code(io_err),
     }
-    let pass_msg = format!("[VERIFY] PASS: {key} → verified");
-    if let Err(io_err) = print_or_exit(&pass_msg) {
-        return into_exit_code(io_err);
-    }
-    0
 }
