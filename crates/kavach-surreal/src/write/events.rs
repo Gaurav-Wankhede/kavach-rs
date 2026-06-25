@@ -4,7 +4,7 @@ use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 #[derive(SurrealValue)]
-pub(crate) struct EventRow {
+pub(super) struct EventRow {
     pub id: RecordId,
 }
 

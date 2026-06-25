@@ -11,7 +11,7 @@ const FEEDBACK_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern",
 /// (`Vec<serde_json::Value>` deserialization fails on records containing
 /// the enum-asserted `entry_status` field).
 #[derive(SurrealValue)]
-pub(crate) struct UpdatedIdRow {
+pub(super) struct UpdatedIdRow {
     pub(crate) id: RecordId,
 }
 
