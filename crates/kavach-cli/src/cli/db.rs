@@ -36,6 +36,7 @@ pub(crate) enum DbAction {
         part_type: String,
     },
     /// Query memory entries for a project
+    #[command(after_help = "EXAMPLES:\n  kavach db query --project P --category roadmap\n  kavach db query --project P --category decision --depth 400 --all\n\nWHEN: Browse a category's rows; add --depth for body text, --all to include done items.")]
     Query {
         /// Project slug
         #[arg(long)]
