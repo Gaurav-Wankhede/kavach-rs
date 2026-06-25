@@ -72,8 +72,8 @@ pub(crate) fn run(project: &str) -> i32 {
 /// skip), then serve it. Fail-soft: any author/write error falls back to the
 /// strict missing-prompt error so the harness never crashes.
 async fn author_and_serve(
-    db: &kavach_surreal::Db,
-    project_id: &kavach_surreal::RecordId,
+    db: &Surreal<Db>,
+    project_id: &RecordId,
     project: &str,
     card: &MemoryEntry,
 ) -> i32 {
@@ -89,21 +89,20 @@ async fn author_and_serve(
         }
     };
     let qname = format!("{project}/roadmap/{}", card.entry_key);
-    if let Err(e) = kavach_surreal::upsert_entry_full(
-        db,
-        "roadmap",
-        project_id,
-        &card.entry_key,
-        &card.title,
-        &card.content,
-        "next-prompt-autoauthor",
-        &qname,
-        &[],
-        None,
-        Some(&authored),
-    )
-    .await
-    {
+    let written = kavach_surreal::upsert_entry_full()
+        .db(db)
+        .category("roadmap")
+        .project_id(project_id)
+        .entry_key(&card.entry_key)
+        .title(&card.title)
+        .content(&card.content)
+        .event_source("next-prompt-autoauthor")
+        .qualified_name(&qname)
+        .references(&[])
+        .maybe_exec_prompt(Some(authored.as_str()))
+        .build_for_call()
+        .await;
+    if let Err(e) = written {
         return render_err(&format!("error: authored prompt but write-back failed: {e}"));
     }
     match print_or_exit(&authored) {
