@@ -1,52 +1,48 @@
-pub(super) fn parse_requirements_txt(body: &str) -> Vec<(String, String)> {
-    let mut result = Vec::new();
-    for line in body.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('-') {
-            continue;
-        }
-        let operators = ['=', '>', '<', '!', '~'];
-        if let Some(pos) = trimmed.find(|c| operators.contains(&c)) {
-            let name = trimmed[..pos].trim_end();
-            let mut version = trimmed[pos..].to_owned();
-            if version.starts_with("==") {
-                version = version[2..].to_owned();
-            }
-            if !name.is_empty() {
-                result.push((name.to_owned(), version));
-            }
-        }
+/// Split a PEP 508 requirement (`requests==2.31.0`, `flask>=2.0`, `httpx`) into
+/// (name, version-spec). No version operator → version is empty.
+fn split_requirement(spec: &str) -> Option<(String, String)> {
+    let s = spec.trim();
+    if s.is_empty() {
+        return None;
     }
-    result
+    let cut = s.find(['=', '>', '<', '!', '~']);
+    let Some(pos) = cut else {
+        return Some((s.to_owned(), String::new()));
+    };
+    let (name, rest) = s.split_at(pos);
+    let name = name.trim_end();
+    if name.is_empty() {
+        return None;
+    }
+    let version = rest.strip_prefix("==").unwrap_or(rest).trim();
+    Some((name.to_owned(), version.to_owned()))
+}
+
+pub(super) fn parse_requirements_txt(body: &str) -> Vec<(String, String)> {
+    body.lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#') && !l.starts_with('-'))
+        .filter_map(split_requirement)
+        .collect()
 }
 
 pub(super) fn parse_pyproject_deps(body: &str) -> Vec<(String, String)> {
     let mut result = Vec::new();
     for line in body.lines() {
         let trimmed = line.trim();
-        if trimmed.starts_with("dependencies") && trimmed.contains('[') && trimmed.contains(']') {
-            if let Some(start) = trimmed.find('[') {
-                if let Some(end) = trimmed.find(']') {
-                    let array_content = &trimmed[start + 1..end];
-                    for item in array_content.split(',') {
-                        let item = item.trim().trim_matches(|c| c == '"' || c == '\'' || c == ' ');
-                        if !item.is_empty() {
-                            let operators = ['=', '>', '<', '!', '~'];
-                            if let Some(pos) = item.find(|c| operators.contains(&c)) {
-                                let name = item[..pos].trim_end();
-                                let mut version = item[pos..].to_owned();
-                                if version.starts_with("==") {
-                                    version = version[2..].to_owned();
-                                }
-                                if !name.is_empty() {
-                                    result.push((name.to_owned(), version));
-                                }
-                            } else if !item.is_empty() {
-                                result.push((item.to_owned(), String::new()));
-                            }
-                        }
-                    }
-                }
+        if !trimmed.starts_with("dependencies") {
+            continue;
+        }
+        let Some((_, after)) = trimmed.split_once('[') else {
+            continue;
+        };
+        let Some((inside, _)) = after.split_once(']') else {
+            continue;
+        };
+        for item in inside.split(',') {
+            let item = item.trim().trim_matches(|c| c == '"' || c == '\'');
+            if let Some(pair) = split_requirement(item) {
+                result.push(pair);
             }
         }
     }
