@@ -8,7 +8,7 @@ use surrealdb_types::RecordId;
 mod author;
 
 #[cfg(test)]
-#[path = "next_prompt_test.rs"]
+#[path = "next_prompt/next_prompt_test.rs"]
 mod tests;
 
 /// Outcome of selecting a servable prompt from a priority-ordered roadmap list.
