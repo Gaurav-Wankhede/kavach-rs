@@ -206,6 +206,24 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         .map_err(|e| internal(format!("register rag.tree_list_refreshable: {e}")))?;
 
     module
+        .register_async_method("rag.tree_get", |params, ctx, _ext| async move {
+            let p: rag::TreeGetParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            rag::tree_get(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register rag.tree_get: {e}")))?;
+
+    module
+        .register_async_method("rag.tree_upsert", |params, ctx, _ext| async move {
+            let p: rag::TreeUpsertParams = params
+                .parse()
+                .map_err(|e| invalid_params(format!("parse params: {e}")))?;
+            rag::tree_upsert(&ctx, p).await
+        })
+        .map_err(|e| internal(format!("register rag.tree_upsert: {e}")))?;
+
+    module
         .register_async_method("graph.entity_upsert", |params, ctx, _ext| async move {
             let p: graph::EntityUpsertParams = params
                 .parse()
