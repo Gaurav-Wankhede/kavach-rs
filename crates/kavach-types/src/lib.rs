@@ -21,6 +21,18 @@ pub use six_file::{
     ProjectTier, RequiredPrefix, SpecCategory, SpikeMode, WitnessResult,
 };
 
+mod priority;
+pub use priority::Priority;
+
+mod effort_input;
+pub use effort_input::EffortInput;
+
+mod hook_io;
+pub use hook_io::{HookInput, HookResponse, HookSpecificOutput};
+
+mod memory_status;
+pub use memory_status::MemoryStatus;
+
 /// Roadmap/decision ordering weight. Higher number = more urgent (lower sort order).
 /// Bounded [0, 1000] so typos (negative, `i64::MAX`) cannot silently reorder the backlog.
 ///
