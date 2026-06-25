@@ -13,6 +13,7 @@ mod delete;
 mod delete_prefix;
 mod dispatcher;
 mod event;
+mod exec_prompt_advice;
 mod expire;
 mod find;
 mod flow;
