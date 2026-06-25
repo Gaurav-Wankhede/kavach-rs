@@ -11,7 +11,7 @@ use surrealdb_types::RecordId;
 // which trips serde even with #[serde(default)] (default applies to missing
 // keys, not null values). `tags` and `decay_score` aren't defined on every
 // per-category table either.
-const MEMORY_FIELDS: &str = "id, project, entry_key, title, content, status, entry_status, access_count, created_at, updated_at, priority, lane";
+const MEMORY_FIELDS: &str = "id, project, entry_key, title, content, status, entry_status, access_count, created_at, updated_at, priority, lane, exec_prompt";
 
 // BUG-FIX [silent-read-drop]: `category` is implicit in the table name and is
 // NOT a selected column, so every row deserializes with `category = None` and
