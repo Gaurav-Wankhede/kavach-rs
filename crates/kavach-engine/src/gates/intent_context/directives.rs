@@ -93,9 +93,13 @@ pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str, prom
         "When this turn proposes architecture or a low-level design, FIRST write a \
          temp HTML file with a Mermaid diagram (LLD: every component + typed edge + \
          node→file:symbol map) and open it for the user, BEFORE ExitPlanMode / before \
-         deciding. Spawn the architect-lld agent to emit the Mermaid. Pin Mermaid \
-         11.15.0 CDN with SRI integrity. The diagram is the review surface — the user \
-         decides from it, not from prose.",
+         deciding. Spawn the architect-lld agent to emit the Mermaid. Load Mermaid via \
+         ESM `import()` (jsdelivr .esm.min.mjs with an unpkg fallback), call \
+         `mermaid.initialize({startOnLoad:false, securityLevel:'loose'})` then \
+         `await mermaid.run()`, and show a visible warning if every CDN is blocked — \
+         NO SRI integrity= tag (a guessed/stale hash makes the browser refuse the \
+         script and the diagram silently renders as raw text). The diagram is the \
+         review surface — the user decides from it, not from prose.",
     ));
     context.push('\n');
 }
