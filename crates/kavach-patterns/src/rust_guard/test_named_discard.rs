@@ -20,17 +20,33 @@ fn flags_named_result_discard() {
     assert!(v.iter().any(|x| x.pattern == PAT));
 }
 
+const ANON: &str = "anonymous let _ = discards a call or live binding";
+
 #[test]
-fn allows_anonymous_discard() {
-    // `let _ = …` is the sanctioned explicit ignore — excluded by the regex itself.
+fn flags_anonymous_call_discard() {
+    // `let _ = fallible()` swallows the Result — the let_underscore_must_use class.
     let v = detect("src/lib.rs", "fn f() {\n    let _ = run_thing();\n}\n");
-    assert!(!v.iter().any(|x| x.pattern == PAT));
+    assert!(v.iter().any(|x| x.pattern == ANON), "anon call discard must fire");
+}
+
+#[test]
+fn flags_anonymous_tuple_param_discard() {
+    // The exact launder from the transcript: `let _ = (lat, lng);` suppresses live params.
+    let v = detect("src/lib.rs", "fn f(lat: f64, lng: f64) {\n    let _ = (lat, lng);\n}\n");
+    assert!(v.iter().any(|x| x.pattern == ANON), "tuple-of-bindings discard must fire");
 }
 
 #[test]
 fn allows_type_only_anonymous() {
     let v = detect("src/lib.rs", "fn f() {\n    let _: () = noop();\n}\n");
     assert!(!v.iter().any(|x| x.pattern == PAT));
+}
+
+#[test]
+fn allows_anonymous_unit_discard() {
+    // `let _ = ();` is a genuine no-op — not a call, not a binding-tuple: stays silent.
+    let v = detect("src/lib.rs", "fn f() {\n    let _ = ();\n}\n");
+    assert!(!v.iter().any(|x| x.pattern == ANON), "unit discard is benign");
 }
 
 #[test]
