@@ -3,9 +3,9 @@ use std::sync::LazyLock;
 
 const CONTINUATION_MENU_POS: &str = concat!(
     r"(?i)\bsay\s+[\x22\x27]?[\w\s./-]{1,40}?[\x22\x27]?\s+and\s+i'?ll\s+(?:proceed|continue|pick\s+up|resume)\b",
-    r"|\b(?:continue|proceed|carry\s+on|keep\s+going)\b[\w\W]{0,80}?\bor\b[\w\W]{0,40}?\b(?:switch|redirect|pivot|jump\s+to|move\s+to|change\s+threads?)\b",
-    r"|\b(?:switch|redirect|pivot)\b[\w\W]{0,80}?\bor\b[\w\W]{0,40}?\b(?:continue|proceed|carry\s+on)\b",
-    r"|\b(?:want|would\s+you\s+like|do\s+you\s+want)\s+me\s+to\s+(?:continue|proceed|keep\s+going)\b[\w\W]{0,40}?\bor\b",
+    r"|\b(?:continue|proceed|carry\s+on|keep\s+going)\b[\w\W]{0,120}?\bor\b[\w\W]{0,40}?\b(?:switch|redirect|pivot|jump\s+to|move\s+to|change\s+threads?|pause|stop|hold|wait|stay)\b",
+    r"|\b(?:switch|redirect|pivot|pause|stop|hold)\b[\w\W]{0,80}?\bor\b[\w\W]{0,40}?\b(?:continue|proceed|carry\s+on)\b",
+    r"|\b(?:want|would\s+you\s+like|do\s+you\s+want|should\s+i)\s+(?:me\s+to\s+)?(?:continue|proceed|keep\s+going)\b[\w\W]{0,120}?\bor\b",
     r"|\blet\s+me\s+know\s+(?:which|if\s+you'?d\s+like\s+me\s+to\s+(?:continue|switch|proceed))\b",
     r"|\b(?:which\s+(?:thread|one|do\s+you\s+want)|your\s+call)\b[\w\W]{0,30}?\b(?:proceed|continue|next)\b",
     r"|\b(?:proceed|continue|next)\b[\w\W]{0,30}?\b(?:your\s+call|let\s+me\s+know|which\s+(?:thread|one))\b",
