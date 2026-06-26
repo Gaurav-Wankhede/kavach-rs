@@ -73,4 +73,18 @@ mod tests {
         let cfg = ModelConfig::from_model_id("gpt-4");
         assert_eq!(cfg.context_window, 200_000);
     }
+
+    #[test]
+    fn frontier_tier_is_opus_and_sonnet() {
+        assert!(is_frontier_tier("claude-opus-4-8"));
+        assert!(is_frontier_tier("claude-sonnet-4-6"));
+    }
+
+    #[test]
+    fn cheap_executor_is_not_frontier() {
+        assert!(!is_frontier_tier(CHEAP_EXECUTOR_TIER));
+        assert!(!is_frontier_tier("claude-haiku-4-5"));
+        assert!(!is_frontier_tier("gpt-4"));
+        assert!(!is_frontier_tier(""));
+    }
 }
