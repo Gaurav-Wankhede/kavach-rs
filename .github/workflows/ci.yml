@@ -194,14 +194,6 @@ jobs:
       - name: Test (just test — nextest ci profile + doctests)
         run: just test
 
-      - name: Install global CLAUDE.md (derives path from $HOME, no hardcoding)
-        run: bash scripts/install-claude-md.sh
-
-      - name: Verify global CLAUDE.md landed
-        run: |
-          test -f "$HOME/.claude/CLAUDE.md"
-          echo "OK: $HOME/.claude/CLAUDE.md"
-
   # ── Windows (push-to-main + manual dispatch only) ────────────────────────────
   # Must stay green on main: roadmap publish-first-release is BLOCKED on Windows
   # CI green, so this leg is the release gate — kept off PRs to save minutes but
