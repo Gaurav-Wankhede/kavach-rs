@@ -20,6 +20,7 @@ path = "src/main.rs"
 
 [dependencies]
 kavach-rpc = { path = "../kavach-rpc" }
+kavach-types = { path = "../kavach-types" }
 axum.workspace = true
 maud.workspace = true
 tokio.workspace = true
