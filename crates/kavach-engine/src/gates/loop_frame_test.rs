@@ -55,6 +55,22 @@ fn loop_stop_frame_is_legible_goal_iteration_termination() {
 }
 
 #[test]
+fn loop_stop_frame_commands_fan_out_not_inline_labor() {
+    // The dispatched card's read/verify/edit labor must FAN OUT to the cheap tier
+    // (a worker Agent or /workflow), not be done inline by the frontier orchestrator.
+    let session = SessionState::default();
+    let frame = build_loop_stop(&session, Some("unit.demo-card"));
+    assert!(
+        frame.to_lowercase().contains("fan out") || frame.contains("FAN OUT"),
+        "the dispatch frame must command fan-out: {frame}"
+    );
+    assert!(
+        frame.contains("Agent") || frame.contains("/workflow") || frame.contains("workflow"),
+        "fan-out must name the mechanism (Agent subagent or /workflow): {frame}"
+    );
+}
+
+#[test]
 fn reward_session_stats_emits_when_data_present() {
     let mut session = SessionState::default();
     session.record_reward_outcome("unit.a", RewardOutcome::Passed);
