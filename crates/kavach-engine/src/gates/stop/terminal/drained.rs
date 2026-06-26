@@ -150,7 +150,10 @@ pub(in crate::gates::stop) fn blocker_walk_context() -> String {
         &[
             (
                 "action",
-                "Do NOT stop. Every runnable card is ORDERED behind a `DEPENDS_ON:` edge \
+                "Do NOT stop. This walk fires ONLY because auto/bypassPermissions is live \
+                 (attended modes already took the clean stop upstream) — so the loop is \
+                 yours to drive, not the user's to approve. Every runnable card is ORDERED \
+                 behind a `DEPENDS_ON:` edge \
                  or a cycle — that is work to RESOLVE, never a parked 'blocked' state and \
                  never a clean stop. There is NO blocked-and-waiting card: each one is \
                  either built now or its edge is resolved. WALK it: (1) read each card's \
