@@ -204,7 +204,8 @@ fn scan_named_discard(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
             "let _name discards a return value",
             "`let _name = …` names a value then throws it away — a discarded signal. \
              If the return carries a decision (bool/Result/count), ACT on it (match/if/?, \
-             propagate, or log on the failure arm). For true fire-and-forget use `let _ =` or `drop(…)`",
+             propagate, or log on the failure arm). For a true unit/guard no-op use `drop(x)` — \
+             never `let _ = <call/binding>` (that is itself a flagged suppression, index 79)",
         );
     }
 }
