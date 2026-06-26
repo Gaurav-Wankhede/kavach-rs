@@ -294,11 +294,7 @@ fn build_status_code_patterns() -> Vec<Regex> {
         // on the captured binding name. MUST stay the LAST entry: indices are positional,
         // so appending here keeps 0-77 stable (a mid-table insert shifts every later index).
         mk(r"(?m)^\s*let\s+(_[A-Za-z]\w*)\s*=\s*\S"), // 78 P1 named-underscore discard
-        // 79 P1: anonymous `let _ = <RHS>` where RHS is a CALL (`name(`) or a
-        // paren-tuple of bindings (`(a, b)`) — the let_underscore_must_use class
-        // (rustc PR 97739): swallows a Result / discards live values. Bare
-        // `let _ = ()` / literal / `rx.recv()` stay silent (no call+ident or tuple
-        // shape). Closes the launder where `let _ =` was the endorsed escape.
+        // 79 P1: anonymous `let _ = call(` / `= (a, b)` discard (let_underscore_must_use, rustc PR 97739); bare `()`/literal stay silent. decision.gate.anon-underscore-no-launder
         mk(r"(?m)^\s*let\s+_\s*=\s*(?:\w[\w:]*\s*\(|\([A-Za-z_]\w*\s*,)"), // 79 P1 anon discard
     ]
 }
