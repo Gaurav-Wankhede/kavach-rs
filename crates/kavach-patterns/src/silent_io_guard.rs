@@ -190,10 +190,22 @@ mod tests {
     }
 
     #[test]
-    fn allows_ok_explicit() {
+    fn ok_on_print_not_yet_detected_but_not_endorsed() {
+        // `.ok()` on a print isn't flagged today (high-FP to detect), but the gate
+        // language must NOT recommend it — that contract is pinned below.
         let code = "writeln!(stdout, \"x\").ok();";
         let hits = detect("src/main.rs", code);
-        assert!(hits.is_empty(), ".ok() is the documented alternative");
+        assert!(hits.is_empty(), "print .ok() is below the detection bar (FP risk)");
+    }
+
+    #[test]
+    fn block_guide_marks_ok_forbidden_not_recommended() {
+        let msg = check("src/main.rs", "let _ = do_io();").unwrap_or_default();
+        assert!(msg.contains("FORBIDDEN"), "guide names the suppression set forbidden: {msg}");
+        assert!(
+            !msg.contains("Result discard:   `.ok()`"),
+            "guide must not lead with .ok() as the remedy: {msg}"
+        );
     }
 
     #[test]
