@@ -129,11 +129,11 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
         .ok();
     }
     msg.push_str(
-        "\nReplacement guide:\n\
-         - Result discard:   `.ok()` (explicit) OR `if let Err(e) = ... { ... }`\n\
-         - Drop on purpose:  `drop(expr)` (intent-clear per Rust Reference)\n\
-         - Bubble error:     `?` operator\n\
-         - Lock guard:       bind to named var so guard lives the scope\n\
+        "\nReplacement guide (handle — never suppress):\n\
+         - Fallible Result:  `?` to propagate, `if let Err(e) = ... { ... }`, or `match` — ACT on the error\n\
+         - FORBIDDEN:        `.ok()` / `let _ = <fallible>` / `drop(<Result>)` — these swallow the error (let_underscore_must_use)\n\
+         - True unit/no-op:  `drop(x)` ONLY for a value with no error (a guard, a `()`), never a Result\n\
+         - Lock guard:       bind to a named var so the guard lives the scope\n\
          - Unused param:     REMOVE from signature OR USE in real logic (no `_name` cover-up)\n",
     );
     Some(msg)
