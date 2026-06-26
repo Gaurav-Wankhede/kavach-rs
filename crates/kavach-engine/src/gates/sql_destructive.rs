@@ -34,8 +34,13 @@ fn has_sql_keyword(haystack: &str, kw: &str) -> bool {
         if win != needle {
             return false;
         }
-        let prev_ok = start.checked_sub(1).and_then(|p| hay.get(p)).is_none_or(|b| !is_ident(b));
-        let next_ok = hay.get(start.saturating_add(needle.len())).is_none_or(|b| !is_ident(b));
+        let prev_ok = start
+            .checked_sub(1)
+            .and_then(|p| hay.get(p))
+            .is_none_or(|b| !is_ident(b));
+        let next_ok = hay
+            .get(start.saturating_add(needle.len()))
+            .is_none_or(|b| !is_ident(b));
         prev_ok && next_ok
     })
 }
@@ -69,7 +74,10 @@ mod tests {
             destructive_sql_keyword("psql $DSN -c 'DELETE FROM users WHERE id=1'"),
             Some("delete")
         );
-        assert_eq!(destructive_sql_keyword("psql $DSN -c 'DROP TABLE users'"), Some("drop"));
+        assert_eq!(
+            destructive_sql_keyword("psql $DSN -c 'DROP TABLE users'"),
+            Some("drop")
+        );
         assert_eq!(
             destructive_sql_keyword("psql $DSN -c 'TRUNCATE audit_log'"),
             Some("truncate")
@@ -84,6 +92,8 @@ mod tests {
     fn identifier_substrings_do_not_trigger() {
         assert!(destructive_sql_keyword("psql $DSN -c 'SELECT deleted_at FROM users'").is_none());
         assert!(destructive_sql_keyword("psql $DSN -c 'SELECT * FROM dropdown_options'").is_none());
-        assert!(destructive_sql_keyword("psql $DSN -c 'SELECT truncate_log FROM settings'").is_none());
+        assert!(
+            destructive_sql_keyword("psql $DSN -c 'SELECT truncate_log FROM settings'").is_none()
+        );
     }
 }

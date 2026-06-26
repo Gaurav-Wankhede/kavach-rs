@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use surrealdb_types::SurrealValue;
 
-use super::guard::{is_allowed_edge, is_allowed_table, is_safe_key, safe_field, NEVER_MATCH};
+use super::guard::{NEVER_MATCH, is_allowed_edge, is_allowed_table, is_safe_key, safe_field};
 use super::value::FilterValue;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, SurrealValue)]

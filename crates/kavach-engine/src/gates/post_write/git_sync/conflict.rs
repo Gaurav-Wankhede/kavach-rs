@@ -7,8 +7,6 @@
 /// Matches only at line start to avoid flagging the markers in prose/docstrings.
 pub(super) fn has_conflict_markers(content: &str) -> bool {
     content.lines().any(|line| {
-        line.starts_with("<<<<<<< ")
-            || line == "======="
-            || line.starts_with(">>>>>>> ")
+        line.starts_with("<<<<<<< ") || line == "=======" || line.starts_with(">>>>>>> ")
     })
 }

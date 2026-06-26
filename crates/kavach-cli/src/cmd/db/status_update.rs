@@ -10,12 +10,7 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
     clippy::too_many_lines,
     reason = "RPC-first with fallback to direct DB requires nested match arms and error handling"
 )]
-pub(super) fn run(
-    project_slug: &str,
-    category: &str,
-    key: &str,
-    status: &str,
-) -> i32 {
+pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -> i32 {
     if MemoryStatus::from_str(status).is_err() {
         let msg = format!(
             "error: invalid status '{status}'. Valid: {}",

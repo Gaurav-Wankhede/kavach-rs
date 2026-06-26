@@ -13,7 +13,10 @@ fn fresh(ctx: &mut String, prompt: &str) {
 #[test]
 fn test_db_query_required_progress() {
     let mut ctx = String::new();
-    fresh(&mut ctx, "Now provide me the Progress of the project since Phase 1");
+    fresh(
+        &mut ctx,
+        "Now provide me the Progress of the project since Phase 1",
+    );
     assert!(ctx.contains("DB_QUERY_REQUIRED"));
     assert!(ctx.contains("kavach db kanban"));
 }
@@ -60,7 +63,10 @@ fn test_already_queried_suppresses_block() {
     // must NOT re-nag even on a status-shaped prompt (decision:rca.gate_session_amnesia).
     let mut ctx = String::new();
     append_db_query_required_with(&mut ctx, "What is the current status?", true, "kavach-rs");
-    assert!(ctx.is_empty(), "queried session must suppress the block: {ctx}");
+    assert!(
+        ctx.is_empty(),
+        "queried session must suppress the block: {ctx}"
+    );
 }
 
 #[test]

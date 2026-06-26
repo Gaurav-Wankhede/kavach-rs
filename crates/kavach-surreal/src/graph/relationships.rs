@@ -151,7 +151,10 @@ mod cli_sequence_tests {
                      updated_at = time::now() RETURN id).id; \
              RELATE $src->{src}->$tgt SET weight = 1.0;"
         );
-        assert!(!q.contains("BEGIN TRANSACTION"), "no explicit txn frame: {q}");
+        assert!(
+            !q.contains("BEGIN TRANSACTION"),
+            "no explicit txn frame: {q}"
+        );
         assert!(!q.contains("COMMIT"), "no explicit commit: {q}");
     }
 }

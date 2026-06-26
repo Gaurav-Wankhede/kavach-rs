@@ -1,6 +1,6 @@
+use crate::EffortInput;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
-use crate::EffortInput;
 
 fn null_string<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
     Ok(Option::<String>::deserialize(d)?.unwrap_or_default())

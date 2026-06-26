@@ -52,7 +52,11 @@ pub async fn search(Query(q): Query<SearchQ>) -> Html<String> {
         return render(list_section().await);
     }
     let params = json!({ "query": q.q, "limit": 100 });
-    render(call::<_, Vec<Concept>>("concept.search", params).await.map(|c| rows(&c)))
+    render(
+        call::<_, Vec<Concept>>("concept.search", params)
+            .await
+            .map(|c| rows(&c)),
+    )
 }
 
 /// `POST /concepts/add` — create a concept, then return the refreshed list.

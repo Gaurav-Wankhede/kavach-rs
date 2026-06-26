@@ -38,7 +38,10 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         &ctx.session.session_id,
         "stop:user_focus_override",
         "allow_stop",
-        &format!("user steered turn {}; not dispatching a queued card", ctx.session.turn_count),
+        &format!(
+            "user steered turn {}; not dispatching a queued card",
+            ctx.session.turn_count
+        ),
         &ctx.session.project,
     );
     eprintln!(

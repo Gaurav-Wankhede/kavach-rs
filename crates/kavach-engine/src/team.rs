@@ -11,6 +11,4 @@
 
 mod scheduler;
 
-pub use scheduler::{
-    DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError,
-};
+pub use scheduler::{DagScheduler, DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};

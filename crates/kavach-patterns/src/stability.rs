@@ -27,7 +27,9 @@ impl Version {
     /// breaking-boundary decision. Returns `None` if no numeric major is found.
     #[must_use]
     pub fn parse(raw: &str) -> Option<Self> {
-        let trimmed = raw.trim().trim_start_matches(['v', 'V', '^', '~', '=', ' ']);
+        let trimmed = raw
+            .trim()
+            .trim_start_matches(['v', 'V', '^', '~', '=', ' ']);
         // Drop a pre-release / build-metadata suffix: keep up to the first
         // char that is neither a digit nor a dot.
         let core_end = trimmed

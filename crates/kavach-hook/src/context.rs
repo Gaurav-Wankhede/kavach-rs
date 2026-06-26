@@ -31,7 +31,9 @@ pub fn today_full() -> String {
 /// hardcoded, so the anchor is always correct whenever the gate fires.
 #[must_use]
 pub fn now_full() -> String {
-    chrono::Local::now().format("%A, %Y-%m-%d %H:%M:%S %z").to_string()
+    chrono::Local::now()
+        .format("%A, %Y-%m-%d %H:%M:%S %z")
+        .to_string()
 }
 
 /// Return the current year (e.g., 2026).

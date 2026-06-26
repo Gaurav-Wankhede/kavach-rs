@@ -1,8 +1,8 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod ask;
 pub(crate) mod bg;
-mod commands;
 pub(crate) mod bulk;
+mod commands;
 mod context;
 pub(crate) mod goal;
 // `pub(crate)` so `cli::db` reaches `db::write::CATEGORY_HELP` (SSoT for the
@@ -14,9 +14,9 @@ mod gates;
 pub(crate) mod harness_loop;
 mod heal;
 mod install;
+pub(crate) mod io_safe;
 mod lint;
 mod loophole;
-pub(crate) mod io_safe;
 pub(crate) mod mistake;
 mod oversized;
 mod phase;

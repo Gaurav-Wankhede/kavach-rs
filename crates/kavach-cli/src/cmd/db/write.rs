@@ -12,9 +12,7 @@
 // similarity). --update-key verifies the key exists. Other categories keep
 // legacy back-compat.
 // SOURCE: docs.rs/clap/latest/clap/_derive/_tutorial/index.html
-use crate::cmd::io_safe::{
-    ewrite_or_exit, into_exit_code, print_or_exit, read_stdin_body_or_exit,
-};
+use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, read_stdin_body_or_exit};
 use kavach_types::Priority;
 use std::fmt::Write as _;
 
@@ -491,8 +489,10 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                         }
                         Ok(_) => {
                             // n == 0 with a non-empty edge set is NOT silent success.
-                            let asked: Vec<String> =
-                                normalised.iter().map(|(r, t)| format!("{r}->{t}")).collect();
+                            let asked: Vec<String> = normalised
+                                .iter()
+                                .map(|(r, t)| format!("{r}->{t}"))
+                                .collect();
                             let warn = format!(
                                 "warning: 0 graph edges written despite {} requested: {}",
                                 asked.len(),

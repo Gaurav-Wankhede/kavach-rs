@@ -181,9 +181,18 @@ mod tests {
             .find(|v| v.pattern == "create-index-not-concurrent")
             .map(|v| v.fix)
             .expect("create-index-not-concurrent must fire");
-        assert!(fix.contains("transaction"), "fix must warn it cannot run in a transaction");
-        assert!(fix.contains("INVALID"), "fix must name the INVALID-index recovery");
-        assert!(fix.contains("DROP INDEX"), "fix must give the DROP INDEX recovery step");
+        assert!(
+            fix.contains("transaction"),
+            "fix must warn it cannot run in a transaction"
+        );
+        assert!(
+            fix.contains("INVALID"),
+            "fix must name the INVALID-index recovery"
+        );
+        assert!(
+            fix.contains("DROP INDEX"),
+            "fix must give the DROP INDEX recovery step"
+        );
     }
 
     #[test]

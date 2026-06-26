@@ -24,4 +24,3 @@ pub fn search<P: AsRef<Path>>(pattern: &str, dir: P) -> std::io::Result<std::pro
         .arg(dir.as_ref())
         .output()
 }
-

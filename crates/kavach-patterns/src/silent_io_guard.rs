@@ -194,13 +194,19 @@ mod tests {
         // language must NOT recommend it — that contract is pinned below.
         let code = "writeln!(stdout, \"x\").ok();";
         let hits = detect("src/main.rs", code);
-        assert!(hits.is_empty(), "print .ok() is below the detection bar (FP risk)");
+        assert!(
+            hits.is_empty(),
+            "print .ok() is below the detection bar (FP risk)"
+        );
     }
 
     #[test]
     fn block_guide_marks_ok_forbidden_not_recommended() {
         let msg = check("src/main.rs", "let _ = do_io();").unwrap_or_default();
-        assert!(msg.contains("FORBIDDEN"), "guide names the suppression set forbidden: {msg}");
+        assert!(
+            msg.contains("FORBIDDEN"),
+            "guide names the suppression set forbidden: {msg}"
+        );
         assert!(
             !msg.contains("Result discard:   `.ok()`"),
             "guide must not lead with .ok() as the remedy: {msg}"
@@ -267,7 +273,11 @@ mod tests {
         }
         // The two Result-bearing rules must name a real handling form.
         for cat in ["let-underscore-print", "let-underscore-fn-call"] {
-            let f = RULES.iter().find(|r| r.category == cat).map(|r| r.fix).unwrap_or("");
+            let f = RULES
+                .iter()
+                .find(|r| r.category == cat)
+                .map(|r| r.fix)
+                .unwrap_or("");
             assert!(
                 f.contains("if let Err") || f.contains('?') || f.contains("match"),
                 "{cat} fix must name handling: {f}"

@@ -24,16 +24,26 @@ pub(super) fn advisory(file_path: &str, content: &str) -> Option<String> {
             lines.push(format!("upstream: ahead {} · behind {}", g.ahead, g.behind));
         }
         if g.uncommitted > 0 {
-            lines.push(format!("uncommitted: {} file(s) — not yet committed", g.uncommitted));
-            lines.push(format!("RUN now: git add -A && git commit -m {:?}", commit_msg(file_path)));
+            lines.push(format!(
+                "uncommitted: {} file(s) — not yet committed",
+                g.uncommitted
+            ));
+            lines.push(format!(
+                "RUN now: git add -A && git commit -m {:?}",
+                commit_msg(file_path)
+            ));
         }
         if g.behind > 0 {
-            lines.push("behind upstream — `git pull --rebase` before pushing to avoid a merge".into());
+            lines.push(
+                "behind upstream — `git pull --rebase` before pushing to avoid a merge".into(),
+            );
         }
     }
 
     if conflict::has_conflict_markers(content) {
-        lines.push(format!("CONFLICT: unresolved merge markers in {file_path} — resolve before committing"));
+        lines.push(format!(
+            "CONFLICT: unresolved merge markers in {file_path} — resolve before committing"
+        ));
     }
 
     if let Some(p) = pr::probe() {
@@ -76,16 +86,23 @@ mod tests {
 
     #[test]
     fn conflict_markers_detected_only_at_line_start() {
-        assert!(conflict::has_conflict_markers("a\n<<<<<<< HEAD\nb\n======="));
+        assert!(conflict::has_conflict_markers(
+            "a\n<<<<<<< HEAD\nb\n======="
+        ));
         assert!(conflict::has_conflict_markers(">>>>>>> branch\n"));
         // A docstring mentioning the markers in prose must NOT trip the scan.
-        assert!(!conflict::has_conflict_markers("// uses <<<<<<< for diffs\nfn x() {}"));
+        assert!(!conflict::has_conflict_markers(
+            "// uses <<<<<<< for diffs\nfn x() {}"
+        ));
         assert!(!conflict::has_conflict_markers("clean source\n"));
     }
 
     #[test]
     fn pr_line_steers_to_review_when_changes_requested() {
-        let p = pr::PrState { number: 42, decision: "CHANGES_REQUESTED".into() };
+        let p = pr::PrState {
+            number: 42,
+            decision: "CHANGES_REQUESTED".into(),
+        };
         assert_eq!(pr_line(&p), "PR #42: changes requested");
     }
 }

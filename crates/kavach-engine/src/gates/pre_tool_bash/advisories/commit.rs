@@ -33,6 +33,7 @@ pub(in crate::gates::pre_tool_bash) fn check_commit_message(cmd: &str) -> Option
     Some(
         "[COMMIT_FORMAT] Prefix this commit message with a conventional-commits type.\n\
          Use one of: feat | fix | refactor | docs | test | chore | perf | ci | build | style\n\
-         Example: `git commit -m \"feat(auth): add PASETO token validation\"`".to_owned(),
+         Example: `git commit -m \"feat(auth): add PASETO token validation\"`"
+            .to_owned(),
     )
 }

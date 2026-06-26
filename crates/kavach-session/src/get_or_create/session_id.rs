@@ -49,7 +49,9 @@ pub fn resolved_session_id() -> String {
     if !resolved.is_empty() {
         return resolved;
     }
-    AUTO_ID.get_or_init(|| format!("auto-{}", std::process::id())).clone()
+    AUTO_ID
+        .get_or_init(|| format!("auto-{}", std::process::id()))
+        .clone()
 }
 
 #[cfg(test)]

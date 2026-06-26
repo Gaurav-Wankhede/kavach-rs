@@ -26,6 +26,7 @@ mod lane;
 mod list;
 mod mistake_hits;
 mod mistake_purge;
+mod next_prompt;
 mod ope;
 mod pg;
 mod populate_graph;
@@ -38,7 +39,6 @@ mod rotate;
 mod rpc_client;
 mod run_rec;
 mod search;
-mod next_prompt;
 mod status_update;
 mod sync;
 mod tree;
@@ -55,12 +55,7 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 /// `(project, roadmap, key)` — so re-capture of the same key UPDATES one card.
 /// Callers outside `db` (e.g. `heal`) use this instead of opening the DB
 /// directly, preserving the single-writer invariant. Returns the CLI exit code.
-pub(crate) fn upsert_roadmap_card(
-    project: &str,
-    key: &str,
-    title: &str,
-    content: &str,
-) -> i32 {
+pub(crate) fn upsert_roadmap_card(project: &str, key: &str, title: &str, content: &str) -> i32 {
     write::run(&rpc_client::WriteRequest {
         project,
         category: "roadmap",

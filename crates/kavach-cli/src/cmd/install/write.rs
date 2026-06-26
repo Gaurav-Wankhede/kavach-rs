@@ -82,7 +82,10 @@ mod tests {
 
     #[test]
     fn render_pins_absolute_binary() {
-        let out = render("kavach gates stop --hook", Path::new("/usr/local/bin/kavach"));
+        let out = render(
+            "kavach gates stop --hook",
+            Path::new("/usr/local/bin/kavach"),
+        );
         assert_eq!(out, "/usr/local/bin/kavach gates stop --hook");
     }
 
@@ -115,7 +118,10 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("kvinst-dry-{}", std::process::id()));
         let p = dir.join("cfg.json");
         fs::remove_dir_all(&dir).ok();
-        assert!(matches!(install(&p, "X", true).unwrap(), Outcome::DryRun(_)));
+        assert!(matches!(
+            install(&p, "X", true).unwrap(),
+            Outcome::DryRun(_)
+        ));
         assert!(!p.exists(), "dry-run must not create the file");
         fs::remove_dir_all(&dir).ok();
     }

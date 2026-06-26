@@ -29,7 +29,11 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
     // BUGFIX: was a literal `{search_year}` placeholder that never interpolated —
     // resolve the live year so the research query is always current.
     let year = crate::gates::directive_cache::current_year();
-    writeln!(msg, "RESEARCH: WebSearch \"api gateway middleware patterns {year}\"").ok();
+    writeln!(
+        msg,
+        "RESEARCH: WebSearch \"api gateway middleware patterns {year}\""
+    )
+    .ok();
     msg.push_str("SKILL: Invoke `arch` skill for gateway layer design.\n");
     msg.push_str("FIX: Add auth layer before routes. Use tower middleware for rate limiting.");
     Some(msg)

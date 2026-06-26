@@ -168,5 +168,8 @@ async fn verify_cas_yields_one_winner_from_done() {
             .await
             .expect("verify cas");
     }
-    assert_eq!(wins, 1, "only the first done->verified transition may match");
+    assert_eq!(
+        wins, 1,
+        "only the first done->verified transition may match"
+    );
 }

@@ -54,6 +54,9 @@ impl RewardRubric {
     /// Construct from already-compiled rules (the preset builders use this).
     #[must_use]
     pub const fn new(rules: Vec<SignalRule>, vacuous_guard: Option<Regex>) -> Self {
-        Self { rules, vacuous_guard }
+        Self {
+            rules,
+            vacuous_guard,
+        }
     }
 }

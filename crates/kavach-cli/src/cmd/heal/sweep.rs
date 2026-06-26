@@ -72,7 +72,8 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
             GateOutcome::Fail(output) => {
                 // diff_base HEAD~1: a sweep runs on the working tree, so the most
                 // useful "what changed" is the last commit's delta.
-                let code = capture_incident(project, gate.incident, gate.summary, &output, "HEAD~1");
+                let code =
+                    capture_incident(project, gate.incident, gate.summary, &output, "HEAD~1");
                 if code == 0 {
                     captured = captured.saturating_add(1);
                 } else {

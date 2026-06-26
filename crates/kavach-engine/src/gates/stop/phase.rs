@@ -1,9 +1,9 @@
 //! Phase-group guards: iteration-completion + kanban-card/status gates. Each is
 //! its own single-responsibility child; this hub re-exports their `check` fns.
 
+mod autonomous_gate;
 mod foreign_tree;
 mod iteration;
-mod autonomous_gate;
 mod kanban_card;
 mod kanban_status;
 mod user_focus;

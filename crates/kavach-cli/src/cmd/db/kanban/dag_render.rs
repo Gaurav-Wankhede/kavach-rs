@@ -84,7 +84,10 @@ fn tiers(order: &[String], edges: &[DagEdge]) -> HashMap<String, usize> {
     let mut prereqs: HashMap<&str, Vec<&str>> = HashMap::new();
     for e in edges {
         if DEP_RELS.contains(&e.rel.as_str()) {
-            prereqs.entry(e.target.as_str()).or_default().push(e.source.as_str());
+            prereqs
+                .entry(e.target.as_str())
+                .or_default()
+                .push(e.source.as_str());
         }
     }
     let mut depth: HashMap<String, usize> = HashMap::new();
@@ -142,7 +145,10 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
     let mut out = format!(
         "[KANBAN DAG] {} node(s), {} edge(s)\n",
         dag.nodes.len(),
-        dag.edges.iter().filter(|e| DEP_RELS.contains(&e.rel.as_str())).count()
+        dag.edges
+            .iter()
+            .filter(|e| DEP_RELS.contains(&e.rel.as_str()))
+            .count()
     );
     let order = match dag.toposort_or_cycle() {
         TopoOrder::Ordered(o) => o,
@@ -178,13 +184,20 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
         writeln!(out, "TIER {tier}{label}").ok();
         for id in ids {
             if let Some(n) = by_id.get(id.as_str()) {
-                let marker = if is_ready(n, &dag.edges, &by_id) { "✓READY" } else { "⏳WAITING" };
+                let marker = if is_ready(n, &dag.edges, &by_id) {
+                    "✓READY"
+                } else {
+                    "⏳WAITING"
+                };
                 writeln!(
                     out,
                     "  [{}] {} — {}  {marker}{}",
-                    n.entry_status, n.entry_key, n.title,
+                    n.entry_status,
+                    n.entry_key,
+                    n.title,
                     deps_suffix(n, &dag.edges, &by_id)
-                ).ok();
+                )
+                .ok();
             }
         }
     }
@@ -193,7 +206,9 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
 
 /// Sanitize a node id into a Mermaid-safe identifier (alphanumerics + `_`).
 fn mermaid_id(raw: &str) -> String {
-    raw.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect()
+    raw.chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect()
 }
 
 /// Render a `flowchart TD` of the cards + dependency edges (human/GUI export).
@@ -207,7 +222,8 @@ fn render_mermaid(dag: &RoadmapDag) -> String {
             mermaid_id(&n.id),
             n.entry_key.replace('"', "'"),
             n.entry_status
-        ).ok();
+        )
+        .ok();
     }
     for e in &dag.edges {
         if DEP_RELS.contains(&e.rel.as_str())
@@ -215,7 +231,13 @@ fn render_mermaid(dag: &RoadmapDag) -> String {
             && by_id.contains_key(e.target.as_str())
         {
             // prerequisite -> dependent: source must finish before target.
-            writeln!(out, "  {} --> {}", mermaid_id(&e.source), mermaid_id(&e.target)).ok();
+            writeln!(
+                out,
+                "  {} --> {}",
+                mermaid_id(&e.source),
+                mermaid_id(&e.target)
+            )
+            .ok();
         }
     }
     out

@@ -49,7 +49,10 @@ fn tiered_text_marks_ready_and_blocked() {
     // 'a' has no prereqs -> READY; 'b' depends on unfinished 'a' -> WAITING.
     assert!(out.contains("TIER 0 — ready now"));
     assert!(out.contains("a — title a  ✓READY"), "got:\n{out}");
-    assert!(out.contains("⏳WAITING"), "dependent must be waiting on its prereq:\n{out}");
+    assert!(
+        out.contains("⏳WAITING"),
+        "dependent must be waiting on its prereq:\n{out}"
+    );
     assert!(out.contains("⤷ depends-on: a"), "inline prereq:\n{out}");
 }
 
@@ -61,7 +64,10 @@ fn ready_when_prereq_verified() {
         edges: vec![dep("a", "b")],
     };
     let out = render_tiered_text(&d);
-    assert!(out.contains("b — title b  ✓READY"), "verified prereq unblocks:\n{out}");
+    assert!(
+        out.contains("b — title b  ✓READY"),
+        "verified prereq unblocks:\n{out}"
+    );
 }
 
 #[test]
@@ -73,7 +79,10 @@ fn cycle_is_surfaced_not_tiered() {
     };
     let out = render_tiered_text(&d);
     assert!(out.contains("⚠ CYCLE"), "cycle must be named:\n{out}");
-    assert!(!out.contains("TIER"), "no tiers rendered for a cyclic graph:\n{out}");
+    assert!(
+        !out.contains("TIER"),
+        "no tiers rendered for a cyclic graph:\n{out}"
+    );
 }
 
 #[test]
@@ -120,22 +129,50 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         row("u3", "BLOCKED_BY: u2 ghost"),
     ];
     let dag = dag_from_roadmap(&rows);
-    assert_eq!(dag.nodes.len(), 4, "3 rows + 1 phantom node for absent 'ghost'");
-    assert_eq!(dag.edges.len(), 3, "u1->u2, u2->u3, ghost->u3 (phantom kept)");
-    assert!(dag.edges.iter().any(|e| e.source == "u1" && e.target == "u2"));
-    assert!(dag.edges.iter().any(|e| e.source == "u2" && e.target == "u3"));
+    assert_eq!(
+        dag.nodes.len(),
+        4,
+        "3 rows + 1 phantom node for absent 'ghost'"
+    );
+    assert_eq!(
+        dag.edges.len(),
+        3,
+        "u1->u2, u2->u3, ghost->u3 (phantom kept)"
+    );
     assert!(
-        dag.edges.iter().any(|e| e.source == "ghost" && e.target == "u3"),
+        dag.edges
+            .iter()
+            .any(|e| e.source == "u1" && e.target == "u2")
+    );
+    assert!(
+        dag.edges
+            .iter()
+            .any(|e| e.source == "u2" && e.target == "u3")
+    );
+    assert!(
+        dag.edges
+            .iter()
+            .any(|e| e.source == "ghost" && e.target == "u3"),
         "absent dep surfaced as a phantom prereq, not silently dropped"
     );
-    let ghost = dag.nodes.iter().find(|n| n.entry_key == "ghost").expect("phantom present");
-    assert_eq!(ghost.entry_status, "missing", "phantom never verified/done -> dependent stays blocked");
+    let ghost = dag
+        .nodes
+        .iter()
+        .find(|n| n.entry_key == "ghost")
+        .expect("phantom present");
+    assert_eq!(
+        ghost.entry_status, "missing",
+        "phantom never verified/done -> dependent stays blocked"
+    );
 }
 
 #[test]
 fn empty_dag_is_safe() {
     let out = render_tiered_text(&RoadmapDag::default());
-    assert!(out.contains("0 node(s), 0 edge(s)"), "empty boundary:\n{out}");
+    assert!(
+        out.contains("0 node(s), 0 edge(s)"),
+        "empty boundary:\n{out}"
+    );
 }
 
 #[test]
@@ -153,9 +190,18 @@ fn closed_cards_not_in_ready_now() {
     };
     let out = render_tiered_text(&d);
     // 'a' is todo with no deps -> READY in TIER 0.
-    assert!(out.contains("a — title a  ✓READY"), "open todo is ready:\n{out}");
+    assert!(
+        out.contains("a — title a  ✓READY"),
+        "open todo is ready:\n{out}"
+    );
     // 'b' and 'c' are closed -> should NOT appear in the tier output at all.
     // They have no dependencies, so they would appear in TIER 0 if the bug existed.
-    assert!(!out.contains("b — title b"), "verified card must NOT appear in tiers:\n{out}");
-    assert!(!out.contains("c — title c"), "done card must NOT appear in tiers:\n{out}");
+    assert!(
+        !out.contains("b — title b"),
+        "verified card must NOT appear in tiers:\n{out}"
+    );
+    assert!(
+        !out.contains("c — title c"),
+        "done card must NOT appear in tiers:\n{out}"
+    );
 }

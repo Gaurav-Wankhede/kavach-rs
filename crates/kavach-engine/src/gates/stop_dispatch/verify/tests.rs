@@ -14,8 +14,14 @@ fn failing_witness_report_names_command_and_echoes_stderr() {
         "error: deref which would be done by auto-deref\n",
     );
     assert!(report.contains("clippy"), "names the failing command");
-    assert!(report.contains("auto-deref"), "echoes the real compiler error");
-    assert!(report.contains("[WITNESS_FAILED]"), "carries the agent-facing tag");
+    assert!(
+        report.contains("auto-deref"),
+        "echoes the real compiler error"
+    );
+    assert!(
+        report.contains("[WITNESS_FAILED]"),
+        "carries the agent-facing tag"
+    );
 }
 
 #[test]

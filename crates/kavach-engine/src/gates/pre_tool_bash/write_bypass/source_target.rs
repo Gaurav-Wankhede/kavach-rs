@@ -55,7 +55,9 @@ pub(in crate::gates::pre_tool_bash) fn targets_tracked_source(cmd: &str) -> bool
             || tok.contains("/src/")
             || tok.contains("tests/");
         let has_source_ext = SOURCE_EXTS.iter().any(|ext| tok.ends_with(ext));
-        in_source_tree && has_source_ext && in_workspace_jurisdiction(tok, workspace_root.as_deref())
+        in_source_tree
+            && has_source_ext
+            && in_workspace_jurisdiction(tok, workspace_root.as_deref())
     })
 }
 

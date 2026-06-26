@@ -270,8 +270,6 @@ pub fn skill_exists(name: &str) -> bool {
     manifest().get(name).is_some()
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

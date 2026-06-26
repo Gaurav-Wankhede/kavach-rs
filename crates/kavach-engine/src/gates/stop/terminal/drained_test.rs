@@ -65,13 +65,28 @@ fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
     // BLOCKER_WALK directive — WALK to the blocker and BUILD it, never a clean stop,
     // never a hand-off, never a separate "everything's blocked" terminal tag.
     let c = blocker_walk_context();
-    assert!(c.contains("BLOCKER_WALK"), "single blocker-walk tag present: {c}");
+    assert!(
+        c.contains("BLOCKER_WALK"),
+        "single blocker-walk tag present: {c}"
+    );
     assert!(!c.contains("ALL_BLOCKED"), "the abolished tag is gone: {c}");
     assert!(c.contains("Do NOT stop"), "refuses the clean stop: {c}");
-    assert!(c.contains("BUILD the prerequisite"), "directs dependency-first build: {c}");
-    assert!(c.contains("CYCLE"), "folds in the cycle-break directive: {c}");
-    assert!(c.contains("mermaid"), "points at the cycle view for a cycle: {c}");
-    assert!(c.contains("STALE/obsolete"), "names the stale-dep resolve path: {c}");
+    assert!(
+        c.contains("BUILD the prerequisite"),
+        "directs dependency-first build: {c}"
+    );
+    assert!(
+        c.contains("CYCLE"),
+        "folds in the cycle-break directive: {c}"
+    );
+    assert!(
+        c.contains("mermaid"),
+        "points at the cycle view for a cycle: {c}"
+    );
+    assert!(
+        c.contains("STALE/obsolete"),
+        "names the stale-dep resolve path: {c}"
+    );
     assert!(
         c.contains("UPDATE the card") && c.contains("REMOVE it from the todos"),
         "stale dep is resolved by updating or removing the card, never left blocked: {c}"
@@ -90,7 +105,10 @@ fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
     );
     assert!(c.contains("Esc"), "yields only to the user halt: {c}");
     // The directive says "never a clean stop" — it must REFUSE, never permit one.
-    assert!(c.contains("never a clean stop"), "explicitly refuses a clean stop: {c}");
+    assert!(
+        c.contains("never a clean stop"),
+        "explicitly refuses a clean stop: {c}"
+    );
     // Self-stating precondition: the directive fires ONLY because auto/bypassPermissions
     // is live (gated at autonomous_gate.rs); it must announce that, not assume it.
     assert!(
@@ -144,6 +162,12 @@ fn next_task_verdicts_mandate_research_mode_against_truth() {
     let c = board_drained_plan_context(Some((0, 0, 0)));
     assert!(c.contains("RESEARCH MODE"), "names Research Mode: {c}");
     assert!(c.contains("WebSearch"), "directs an internet search: {c}");
-    assert!(c.contains("TABULA RASA = TRUTH"), "asserts truth over weights: {c}");
-    assert!(c.contains("NEVER trust training weights"), "forbids answering from weights: {c}");
+    assert!(
+        c.contains("TABULA RASA = TRUTH"),
+        "asserts truth over weights: {c}"
+    );
+    assert!(
+        c.contains("NEVER trust training weights"),
+        "forbids answering from weights: {c}"
+    );
 }

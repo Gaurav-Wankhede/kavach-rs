@@ -117,7 +117,10 @@ fn singletons_produce_no_edges() {
 fn already_declares_matches_gui_parse() {
     // Mirrors kanban::deps::declared_deps: comma/space-separated keys.
     assert!(already_declares("DEPENDS_ON: unit.a.p6\n", "unit.a.p6"));
-    assert!(already_declares("body\nDEPENDS_ON: x, unit.a.p6, y", "unit.a.p6"));
+    assert!(already_declares(
+        "body\nDEPENDS_ON: x, unit.a.p6, y",
+        "unit.a.p6"
+    ));
     assert!(!already_declares("DEPENDS_ON: unit.a.p5", "unit.a.p6"));
     assert!(!already_declares("no deps here", "unit.a.p6"));
     // A substring must NOT false-match (p6 vs p60).

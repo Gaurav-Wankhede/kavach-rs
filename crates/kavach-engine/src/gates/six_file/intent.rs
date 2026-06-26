@@ -67,7 +67,9 @@ fn skill_installed(name: &str) -> bool {
 /// Is a named agent rankable (i.e. registered on disk)? Same fail-open rationale.
 fn agent_registered(name: &str) -> bool {
     kavach_chain::loader::global_loader().is_none_or(|l| {
-        l.rank_agents_for_prompt(name, 8).iter().any(|(a, _)| a.name == name)
+        l.rank_agents_for_prompt(name, 8)
+            .iter()
+            .any(|(a, _)| a.name == name)
     })
 }
 
@@ -117,7 +119,10 @@ mod tests {
     /// `run()` makes before emitting. (`run()` only returns `Ok(())` either way,
     /// so the fire-decision must be asserted on the predicates, not the result.)
     fn would_fire(prompt: &str) -> bool {
-        if NON_FEATURE_LEAD.as_ref().is_some_and(|re| re.is_match(prompt)) {
+        if NON_FEATURE_LEAD
+            .as_ref()
+            .is_some_and(|re| re.is_match(prompt))
+        {
             return false;
         }
         INTENT_REGEX.as_ref().is_some_and(|re| re.is_match(prompt))

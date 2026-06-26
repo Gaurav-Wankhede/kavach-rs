@@ -8,13 +8,13 @@ use core::ops::ControlFlow;
 
 mod outcome;
 
-use outcome::{continue_next_phase, keystone_repair};
 use super::probe::next_dispatch;
 use crate::gates::loop_frame;
 use crate::gates::stop::shared::StopCtx;
 use crate::gates::stop_dispatch::{
     AutoVerify, SOURCE_DOWN_KEY, auto_verify_done_cards, claim_card,
 };
+use outcome::{continue_next_phase, keystone_repair};
 
 /// Run the three-tier re-block while under the breaker ceiling. `Continue` only
 /// when the ceiling is spent or no terminal branch fired (falls through).
@@ -115,10 +115,12 @@ fn all_blocked_or_autoverify(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
                  Either:\n\
                  1. Set env var KAVACH_VERIFY_CMD to a shell command that verifies the work, then resume.\n\
                  2. Manually promote the cards (kavach db roadmap update <key> --status verified) if work is proven by external audit.\n\
-                 The loop yields only to the user's `Esc`."
+                 The loop yields only to the user's `Esc`.",
             ));
             ControlFlow::Break(())
         }
-        AutoVerify::Promoted(_) | AutoVerify::NothingDone => continue_next_phase(&ctx.session.project),
+        AutoVerify::Promoted(_) | AutoVerify::NothingDone => {
+            continue_next_phase(&ctx.session.project)
+        }
     }
 }

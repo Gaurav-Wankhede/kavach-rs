@@ -21,7 +21,11 @@ fn call_or_spool_enqueues_when_daemon_is_down() {
     // No daemon in tests → the live call Errs → the write must be spooled.
     call_or_spool("db.write", &serde_json::json!({"k": 1}));
     let spooled = drain_write_spool().expect("drain");
-    assert_eq!(spooled.len(), 1, "failed call spooled, not dropped: {spooled:?}");
+    assert_eq!(
+        spooled.len(),
+        1,
+        "failed call spooled, not dropped: {spooled:?}"
+    );
     assert_eq!(spooled[0].method, "db.write");
 }
 
@@ -30,7 +34,10 @@ fn drain_and_replay_is_a_noop_when_spool_empty() {
     isolate("empty");
     // Nothing spooled → replay drains an empty spool and returns cleanly.
     drain_and_replay();
-    assert!(drain_write_spool().expect("drain").is_empty(), "empty stays empty");
+    assert!(
+        drain_write_spool().expect("drain").is_empty(),
+        "empty stays empty"
+    );
 }
 
 #[test]
@@ -44,6 +51,10 @@ fn drain_and_replay_re_spools_writes_that_fail_again() {
     call_or_spool("gate_pattern.upsert", &serde_json::json!({"project": "p"}));
     drain_and_replay();
     let after = drain_write_spool().expect("after replay");
-    assert_eq!(after.len(), 1, "replay that fails again re-spools, never drops: {after:?}");
+    assert_eq!(
+        after.len(),
+        1,
+        "replay that fails again re-spools, never drops: {after:?}"
+    );
     assert_eq!(after[0].method, "gate_pattern.upsert");
 }

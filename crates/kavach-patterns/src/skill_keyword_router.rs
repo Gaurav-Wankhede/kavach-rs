@@ -7,7 +7,5 @@ mod types;
 #[path = "skill_keyword_router/tests.rs"]
 mod tests;
 
+pub use routes::{get_model_tier, get_skill_metadata, should_fork, skills_from_keywords};
 pub use types::{ModelTier, SkillContext, SkillMetadata};
-pub use routes::{
-	get_model_tier, get_skill_metadata, should_fork, skills_from_keywords,
-};

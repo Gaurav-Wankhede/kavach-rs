@@ -60,7 +60,10 @@ impl Default for OracleConfig {
             w_output: 2,
             margin: 1,
             penalty: -100,
-            failure_vocab: DEFAULT_FAILURE_VOCAB.iter().map(|s| (*s).to_owned()).collect(),
+            failure_vocab: DEFAULT_FAILURE_VOCAB
+                .iter()
+                .map(|s| (*s).to_owned())
+                .collect(),
         }
     }
 }
@@ -69,16 +72,35 @@ impl Default for OracleConfig {
 /// — the live system serves the DB-refreshed list; this is what ships when the DB
 /// is unreachable so the oracle is never worse than its compiled floor.
 const DEFAULT_FAILURE_VOCAB: &[&str] = &[
-    "error[e", "could not compile", "test result: failed", "panicked at",
-    "compilation failed", "build failed", "error: test failed", "failures:",
+    "error[e",
+    "could not compile",
+    "test result: failed",
+    "panicked at",
+    "compilation failed",
+    "build failed",
+    "error: test failed",
+    "failures:",
 ];
 
 /// Completion/success vocabulary for the claim side. Broad on purpose: a penalty
 /// only lands when the dimension vote ALSO contradicts, so over-matching is benign.
 const DONE_MARKERS: &[&str] = &[
-    "done", "complete", "completed", "finished", "fixed", "passing", "passes",
-    "green", "shipped", "landed", "works", "working", "resolved", "success",
-    "all set", "ready",
+    "done",
+    "complete",
+    "completed",
+    "finished",
+    "fixed",
+    "passing",
+    "passes",
+    "green",
+    "shipped",
+    "landed",
+    "works",
+    "working",
+    "resolved",
+    "success",
+    "all set",
+    "ready",
 ];
 
 /// `true` iff a Stop in the trajectory narrates completion — the claim under test.
@@ -107,7 +129,11 @@ fn dim_process_exit(events: &[TrajectoryEvent]) -> DimVerdict {
             None => {}
         }
     }
-    if saw_success { DimVerdict::Agree } else { DimVerdict::Abstain }
+    if saw_success {
+        DimVerdict::Agree
+    } else {
+        DimVerdict::Abstain
+    }
 }
 
 /// Output-failure-vocab dimension: a Bash command's own text contains a failure

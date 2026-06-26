@@ -30,7 +30,7 @@ pub(super) fn check(ctx: &WriteContext<'_>, project: &str) -> Option<String> {
     for rp in &retired {
         if distinctive_marker(&rp.retired).is_some_and(|m| body.contains(&m)) {
             return Some(format!(
-                    "[RETIRED_PATTERN] this change reintroduces \"{}\" — a pattern THIS \
+                "[RETIRED_PATTERN] this change reintroduces \"{}\" — a pattern THIS \
                      codebase already RETIRED (see the [PATTERN_DAG] `-.retires.->` edge). \
                      Adopt the replacement instead: \"{}\". If the retirement is genuinely \
                      wrong, FILE a superseding decision/pattern row first, then proceed.",

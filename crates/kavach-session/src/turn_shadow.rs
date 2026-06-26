@@ -135,8 +135,7 @@ impl SessionState {
     #[must_use]
     pub fn take_relay_payload(&mut self, flush: RelayFlush) -> Option<String> {
         let include_shadow = flush == RelayFlush::Full;
-        let has_shadow =
-            include_shadow && self.turn_shadow_pending && !self.turn_shadow.is_empty();
+        let has_shadow = include_shadow && self.turn_shadow_pending && !self.turn_shadow.is_empty();
         let has_adv = !self.pending_advisories.is_empty();
         if !has_shadow && !has_adv {
             return None;

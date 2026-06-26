@@ -9,8 +9,8 @@
 )]
 
 use super::{AcquireSetOutcome, acquire_set};
-use crate::lease::{Lease, acquire, status, unlock};
 use crate::lease::types::AcquireOutcome;
+use crate::lease::{Lease, acquire, status, unlock};
 use crate::open_memory;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
@@ -60,7 +60,9 @@ async fn one_conflict_rolls_back_the_whole_set() {
         seed_unheld(&db, id).await;
     }
     // B takes the middle key first.
-    let mid = acquire(&db, "roadmap", "b", "sess-B").await.expect("B acquire");
+    let mid = acquire(&db, "roadmap", "b", "sess-B")
+        .await
+        .expect("B acquire");
     assert!(matches!(mid, AcquireOutcome::Acquired(_)));
 
     let out = acquire_set(&db, "roadmap", &["a", "b", "c"], "sess-A")
@@ -99,7 +101,11 @@ async fn after_rollback_the_set_is_reacquirable() {
     for id in ["a", "b"] {
         seed_unheld(&db, id).await;
     }
-    drop(acquire(&db, "roadmap", "b", "sess-B").await.expect("B acquire"));
+    drop(
+        acquire(&db, "roadmap", "b", "sess-B")
+            .await
+            .expect("B acquire"),
+    );
     let first = acquire_set(&db, "roadmap", &["a", "b"], "sess-A")
         .await
         .expect("first batch");

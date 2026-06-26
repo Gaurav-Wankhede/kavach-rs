@@ -39,7 +39,10 @@ pub struct DeployedPolicyRow {
 /// # Errors
 /// Propagates `Error::Surreal` when the query fails (but a brand-new graph with
 /// no `entity` table yet is the empty case, not an error).
-pub async fn top_deployed_policies(db: &Surreal<Db>, limit: usize) -> Result<Vec<DeployedPolicyRow>> {
+pub async fn top_deployed_policies(
+    db: &Surreal<Db>,
+    limit: usize,
+) -> Result<Vec<DeployedPolicyRow>> {
     #[derive(SurrealValue)]
     struct Row {
         name: String,

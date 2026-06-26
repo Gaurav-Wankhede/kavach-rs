@@ -3,8 +3,12 @@
 
 /// Header-region markers (first 15 lines) that exempt a file from the LOC count:
 /// a NAMED ceiling is intent, not bloat. SOURCE: decision.harness.nano-file-ladder-not-loc.
-const LOC_EXEMPT_MARKERS: [&str; 4] =
-    ["kavach:nano-file-exempt", "// split:", "// hub:", "kavach:intentional"];
+const LOC_EXEMPT_MARKERS: [&str; 4] = [
+    "kavach:nano-file-exempt",
+    "// split:",
+    "// hub:",
+    "kavach:intentional",
+];
 
 /// True when the file declares any exempt marker in its header region (first 15
 /// lines), so it stays visible in review and cannot be buried.

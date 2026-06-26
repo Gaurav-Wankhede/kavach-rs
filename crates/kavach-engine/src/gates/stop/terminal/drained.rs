@@ -147,10 +147,9 @@ pub(in crate::gates::stop) fn board_is_all_blocked(project: &str) -> bool {
 pub(in crate::gates::stop) fn blocker_walk_context() -> String {
     kavach_hook::context_block(
         "BLOCKER_WALK",
-        &[
-            (
-                "action",
-                "Do NOT stop. This walk fires ONLY because auto/bypassPermissions is live \
+        &[(
+            "action",
+            "Do NOT stop. This walk fires ONLY because auto/bypassPermissions is live \
                  (attended modes already took the clean stop upstream) — so the loop is \
                  yours to drive, not the user's to approve. Every runnable card is ORDERED \
                  behind a `DEPENDS_ON:` edge \
@@ -170,8 +169,7 @@ pub(in crate::gates::stop) fn blocker_walk_context() -> String {
                  its own process and emits ONLY a pass/fail receipt. ONLY a genuinely \
                  ABSENT env var is FILED as a card; then KEEP BUILDING every reachable \
                  leaf. Yield only to `Esc`.",
-            ),
-        ],
+        )],
     )
 }
 

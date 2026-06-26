@@ -6,9 +6,7 @@
 //! manifest, or one already strict, is silent. SOURCE: decision.lint.language-profile-template.
 use std::path::Path;
 
-const SOURCE_EXTS: &[&str] = &[
-    ".rs", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go",
-];
+const SOURCE_EXTS: &[&str] = &[".rs", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go"];
 
 fn is_source(path: &str) -> bool {
     let p = path.to_lowercase();
@@ -44,10 +42,18 @@ fn find_project(start: &Path) -> Option<(std::path::PathBuf, &'static str, bool)
             return Some((dir.to_path_buf(), "Cargo.toml", rust_is_strict(dir)));
         }
         if dir.join("package.json").is_file() || dir.join("tsconfig.json").is_file() {
-            return Some((dir.to_path_buf(), "package.json", dir.join("tsconfig.json").is_file()));
+            return Some((
+                dir.to_path_buf(),
+                "package.json",
+                dir.join("tsconfig.json").is_file(),
+            ));
         }
         if dir.join("go.mod").is_file() {
-            return Some((dir.to_path_buf(), "go.mod", dir.join(".golangci.yml").is_file()));
+            return Some((
+                dir.to_path_buf(),
+                "go.mod",
+                dir.join(".golangci.yml").is_file(),
+            ));
         }
         probe = dir.parent();
     }

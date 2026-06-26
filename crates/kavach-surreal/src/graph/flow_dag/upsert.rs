@@ -21,10 +21,7 @@ pub(super) struct ProjectIdRow {
 /// Resolve a project slug to its record id, or `Err(RecordNotFound)`.
 async fn project_id(db: &Surreal<Db>, project_slug: &str) -> Result<RecordId> {
     let q = "SELECT id FROM project WHERE slug = $slug LIMIT 1";
-    let mut resp = db
-        .query(q)
-        .bind(("slug", project_slug.to_owned()))
-        .await?;
+    let mut resp = db.query(q).bind(("slug", project_slug.to_owned())).await?;
     let row: Option<ProjectIdRow> = resp.take(0)?;
     row.map(|r| r.id)
         .ok_or_else(|| Error::RecordNotFound(format!("project '{project_slug}' not registered")))
@@ -90,7 +87,11 @@ fn flow_name(project_slug: &str, flow_key: &str) -> String {
 /// - `Error::Migration` if the supplied edges form a cycle, or reference an
 ///   unknown `step_id`.
 /// - `Error::Surreal` on any underlying query failure.
-pub async fn upsert_flow(db: &Surreal<Db>, project_slug: &str, spec: &FlowSpec) -> Result<RecordId> {
+pub async fn upsert_flow(
+    db: &Surreal<Db>,
+    project_slug: &str,
+    spec: &FlowSpec,
+) -> Result<RecordId> {
     let known: std::collections::HashSet<&str> =
         spec.steps.iter().map(|s| s.step_id.as_str()).collect();
     for e in &spec.edges {

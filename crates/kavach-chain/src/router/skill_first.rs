@@ -72,7 +72,6 @@ impl SkillFirstRouter {
             reason: "No specific skill match, using default agent".into(),
         }
     }
-
 }
 
 impl Default for SkillFirstRouter {

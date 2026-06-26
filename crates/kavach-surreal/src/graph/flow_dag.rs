@@ -23,7 +23,7 @@ mod upsert;
 #[path = "flow_dag/tests.rs"]
 mod tests;
 
+pub use fetch::{fetch_flow, list_flows};
 pub use model::{FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput};
 pub use shape::NodeShape;
-pub use fetch::{fetch_flow, list_flows};
 pub use upsert::upsert_flow;

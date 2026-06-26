@@ -13,8 +13,14 @@ pub(in crate::gates::stop_dispatch) fn rpc_get_directive(
     key: &str,
 ) -> Option<String> {
     let mut map = serde_json::Map::new();
-    map.insert("project".to_owned(), serde_json::Value::String(project_slug.to_owned()));
-    map.insert("category".to_owned(), serde_json::Value::String("decision".to_owned()));
+    map.insert(
+        "project".to_owned(),
+        serde_json::Value::String(project_slug.to_owned()),
+    );
+    map.insert(
+        "category".to_owned(),
+        serde_json::Value::String("decision".to_owned()),
+    );
     map.insert("key".to_owned(), serde_json::Value::String(key.to_owned()));
     map.insert("full".to_owned(), serde_json::Value::Bool(true));
     let params = serde_json::Value::Object(map);

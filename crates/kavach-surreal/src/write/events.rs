@@ -13,7 +13,8 @@ pub(super) struct EventRow {
 /// # Errors
 /// Propagates `Error::Surreal` from the DELETE query.
 pub async fn rotate_events(db: &Surreal<Db>, days: i64) -> Result<usize> {
-    let query = "DELETE event WHERE created_at < time::now() - duration::from::days($days) RETURN BEFORE"; // doctor:ok
+    let query =
+        "DELETE event WHERE created_at < time::now() - duration::from::days($days) RETURN BEFORE"; // doctor:ok
     let mut response = db.query(query).bind(("days", days)).await?;
     let deleted: Vec<serde_json::Value> = response.take(0)?;
     Ok(deleted.len())

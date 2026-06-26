@@ -25,7 +25,10 @@ fn cursor_pretooluse_event_maps_to_canonical_pretooluse() {
         "tool_input":{"file_path":"src/lib.rs","content":"fn main(){}"}
     }"#;
     let input = cursor::lower(p).expect("cursor lowers");
-    assert_eq!(input.hook_event_name, "PreToolUse", "preToolUse -> PreToolUse");
+    assert_eq!(
+        input.hook_event_name, "PreToolUse",
+        "preToolUse -> PreToolUse"
+    );
     assert_eq!(input.tool_name, "Write");
     assert_eq!(input.get_string("file_path"), "src/lib.rs");
 }
@@ -55,14 +58,20 @@ fn cursor_input_tolerates_nulls_and_missing_fields() {
 
 #[test]
 fn cursor_loop_count_maps_to_stop_hook_active() {
-    let initial = cursor::lower(r#"{"hook_event_name":"stop","loop_count":0}"#)
-        .expect("cursor lowers");
-    assert!(!initial.stop_hook_active, "loop_count 0 is the initial stop");
-    let reentry = cursor::lower(r#"{"hook_event_name":"stop","loop_count":3}"#)
-        .expect("cursor lowers");
+    let initial =
+        cursor::lower(r#"{"hook_event_name":"stop","loop_count":0}"#).expect("cursor lowers");
+    assert!(
+        !initial.stop_hook_active,
+        "loop_count 0 is the initial stop"
+    );
+    let reentry =
+        cursor::lower(r#"{"hook_event_name":"stop","loop_count":3}"#).expect("cursor lowers");
     assert!(reentry.stop_hook_active, "loop_count>0 is a re-entry stop");
     let absent = cursor::lower(r#"{"hook_event_name":"stop"}"#).expect("cursor lowers");
-    assert!(!absent.stop_hook_active, "absent loop_count defaults to initial");
+    assert!(
+        !absent.stop_hook_active,
+        "absent loop_count defaults to initial"
+    );
 }
 
 #[test]

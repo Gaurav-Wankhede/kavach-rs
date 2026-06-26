@@ -60,7 +60,13 @@ impl NodeShape {
 /// non-`_` char becomes `_` so the id is always a valid Mermaid identifier.
 pub(super) fn sanitize_id(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 

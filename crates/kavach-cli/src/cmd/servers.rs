@@ -31,7 +31,9 @@ fn err(msg: &str) -> i32 {
 /// the web UI). Silent — the offline panel still covers a genuine failure.
 pub(crate) fn ensure_db_up() {
     if let Err(e) = ensure_surreal() {
-        drop(ewrite_or_exit(&format!("warning: surreal autostart failed: {e}")));
+        drop(ewrite_or_exit(&format!(
+            "warning: surreal autostart failed: {e}"
+        )));
     }
 }
 
@@ -139,9 +141,14 @@ fn down(port: u16) -> i32 {
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
         .filter(|s| !s.is_empty());
     let Some(pids) = killed else {
-        return ok(&format!("web not running on :{port} (surreal left up — launchd-owned)"));
+        return ok(&format!(
+            "web not running on :{port} (surreal left up — launchd-owned)"
+        ));
     };
-    for pid in pids.split_whitespace().filter(|p| p.bytes().all(|b| b.is_ascii_digit())) {
+    for pid in pids
+        .split_whitespace()
+        .filter(|p| p.bytes().all(|b| b.is_ascii_digit()))
+    {
         drop(Command::new("kill").arg(pid).status());
     }
     ok(&format!(
@@ -150,8 +157,16 @@ fn down(port: u16) -> i32 {
 }
 
 fn status(port: u16) -> i32 {
-    let surreal = if port_is_listening(SURREAL_PORT) { "UP" } else { "DOWN" };
-    let web = if port_is_listening(port) { "UP" } else { "DOWN" };
+    let surreal = if port_is_listening(SURREAL_PORT) {
+        "UP"
+    } else {
+        "DOWN"
+    };
+    let web = if port_is_listening(port) {
+        "UP"
+    } else {
+        "DOWN"
+    };
     ok(&format!(
         "surreal ws://127.0.0.1:{SURREAL_PORT} [{surreal}] · web http://127.0.0.1:{port} [{web}]"
     ))

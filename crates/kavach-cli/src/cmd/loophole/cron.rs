@@ -27,7 +27,9 @@ fn run_inner(project: &str, hour: u8, dry_run: bool) -> Result<(), IoExit> {
     // clamp to 0–23 and name the clamp rather than emit a dead schedule.
     let safe_hour = hour.min(23);
     if safe_hour != hour {
-        print_or_exit(&format!("[loophole cron] hour {hour} out of range; clamped to {safe_hour}"))?;
+        print_or_exit(&format!(
+            "[loophole cron] hour {hour} out of range; clamped to {safe_hour}"
+        ))?;
     }
     let Some(binary) = std::env::current_exe().ok().filter(|p| p.is_absolute()) else {
         return print_or_exit("kavach loophole cron: cannot resolve the kavach binary path");
@@ -43,7 +45,10 @@ fn run_inner(project: &str, hour: u8, dry_run: bool) -> Result<(), IoExit> {
     if let Some(parent) = target.parent()
         && let Err(e) = std::fs::create_dir_all(parent)
     {
-        return print_or_exit(&format!("kavach loophole cron: cannot create {}: {e}", parent.display()));
+        return print_or_exit(&format!(
+            "kavach loophole cron: cannot create {}: {e}",
+            parent.display()
+        ));
     }
     match std::fs::write(&target, &plist) {
         Ok(()) => print_or_exit(&format!(
@@ -52,7 +57,10 @@ fn run_inner(project: &str, hour: u8, dry_run: bool) -> Result<(), IoExit> {
             plist.len(),
             target.display()
         )),
-        Err(e) => print_or_exit(&format!("kavach loophole cron: write {} failed: {e}", target.display())),
+        Err(e) => print_or_exit(&format!(
+            "kavach loophole cron: write {} failed: {e}",
+            target.display()
+        )),
     }
 }
 
@@ -92,7 +100,9 @@ fn render_plist(binary: &str, project: &str, hour: u8) -> String {
 
 /// Minimal XML escaping for plist string values (paths/slugs can contain `&`, `<`).
 fn xml_escape(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 #[cfg(test)]

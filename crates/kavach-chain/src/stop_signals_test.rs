@@ -171,18 +171,20 @@ fn phase_e_decision_fires_without_persist() {
     assert!(detect_decision_not_persisted("I've decided to use the brain.think RPC").unwrap());
     // NEG: persisted same turn -> no fire.
     assert!(
-        !detect_decision_not_persisted("decided to use brain.think; wrote [decision] row via kavach db write")
-            .unwrap()
+        !detect_decision_not_persisted(
+            "decided to use brain.think; wrote [decision] row via kavach db write"
+        )
+        .unwrap()
     );
 }
 
 #[test]
 fn phase_e_verdict_fires_without_citation() {
-    assert!(detect_verdict_without_citation("the handler is wired and everything looks clean").unwrap());
-    // NEG: cites file:line -> no fire.
     assert!(
-        !detect_verdict_without_citation("looks clean — verified at advisory.rs:25").unwrap()
+        detect_verdict_without_citation("the handler is wired and everything looks clean").unwrap()
     );
+    // NEG: cites file:line -> no fire.
+    assert!(!detect_verdict_without_citation("looks clean — verified at advisory.rs:25").unwrap());
 }
 
 #[test]
@@ -201,17 +203,11 @@ fn phase_e_research_fires_without_source() {
 fn phase_e_research_fires_on_syntax_claim_from_memory() {
     // The SurrealQL/serde class of error: asserting a tool's syntax/contract from
     // memory with no source. This is the widened claim shape (research-gate teeth).
-    assert!(
-        detect_claim_without_research("the correct syntax is ORDER BY with ASC").unwrap()
-    );
-    assert!(
-        detect_claim_without_research("serde fills the attribute from Default").unwrap()
-    );
+    assert!(detect_claim_without_research("the correct syntax is ORDER BY with ASC").unwrap());
+    assert!(detect_claim_without_research("serde fills the attribute from Default").unwrap());
     // NEG: a docs/source marker present -> no fire (researched, not guessed).
     assert!(
-        !detect_claim_without_research(
-            "the correct syntax is X — see https://surrealdb.com/docs"
-        )
-        .unwrap()
+        !detect_claim_without_research("the correct syntax is X — see https://surrealdb.com/docs")
+            .unwrap()
     );
 }

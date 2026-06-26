@@ -15,7 +15,9 @@ fn does_not_flag_ordinary_cards() {
     // A normal buildable card must stay on the plain dispatch path — no
     // false-positive that would strip a real title.
     assert!(!is_gate_shaped("Implement the rate-limiter middleware"));
-    assert!(!is_gate_shaped("Refactor upsert_entry_full to params struct"));
+    assert!(!is_gate_shaped(
+        "Refactor upsert_entry_full to params struct"
+    ));
     assert!(!is_gate_shaped("Fix supersedes projection silent failure"));
 }
 

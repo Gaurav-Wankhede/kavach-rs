@@ -94,7 +94,11 @@ async fn set_is_last_writer_wins_not_duplicate() {
         .expect("second");
     // Exactly one row, carrying the latest value.
     let list = gate_config_list(&db, "p").await.expect("list");
-    assert_eq!(list.len(), 1, "re-set converges to one row, never duplicates");
+    assert_eq!(
+        list.len(),
+        1,
+        "re-set converges to one row, never duplicates"
+    );
     assert_eq!(
         gate_config_get(&db, "p", "k").await.unwrap(),
         Some(GateConfigValue::Threshold(9.0))

@@ -239,11 +239,19 @@ mod algo_upsert_tests {
             search_year: 2026,
             search_month: 6,
         };
-        algo_upsert(&db, &mk("quicksort")).await.expect("first upsert");
-        algo_upsert(&db, &mk("heapsort")).await.expect("second upsert");
+        algo_upsert(&db, &mk("quicksort"))
+            .await
+            .expect("first upsert");
+        algo_upsert(&db, &mk("heapsort"))
+            .await
+            .expect("second upsert");
 
         let rows = algo_list_recent(&db, &pid, 10).await.expect("list");
-        assert_eq!(rows.len(), 1, "re-upsert must converge to one row, not duplicate");
+        assert_eq!(
+            rows.len(),
+            1,
+            "re-upsert must converge to one row, not duplicate"
+        );
         assert_eq!(rows[0].chosen, "heapsort", "row carries the latest value");
     }
 

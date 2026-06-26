@@ -12,10 +12,16 @@ use super::self_heal_directive;
 fn directive_is_act_driven_not_handback() {
     let d = self_heal_directive(130);
     // It reports the measured free space …
-    assert!(d.contains("130 MiB free"), "directive must state measured headroom");
+    assert!(
+        d.contains("130 MiB free"),
+        "directive must state measured headroom"
+    );
     // … and orders the agent to free space ITSELF.
     assert!(d.contains("YOU free the space"), "must be agent-self-heal");
-    assert!(d.contains("cargo clean"), "must name a concrete reclaim action");
+    assert!(
+        d.contains("cargo clean"),
+        "must name a concrete reclaim action"
+    );
     assert!(d.contains("DISK_RECLAIM"), "must carry the ACT marker tag");
 }
 

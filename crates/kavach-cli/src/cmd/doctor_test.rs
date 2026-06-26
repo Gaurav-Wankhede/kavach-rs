@@ -24,14 +24,20 @@ fn flags_destructive_query_string() {
 #[test]
 fn does_not_flag_update_only_a_delete() {
     // UPDATE mutates fields, not the unbounded-delete class — must not flag.
-    let f = scan_source("x.rs", r#"    db.query("UPDATE decision SET priority = $p WHERE id = $i")"#);
+    let f = scan_source(
+        "x.rs",
+        r#"    db.query("UPDATE decision SET priority = $p WHERE id = $i")"#,
+    );
     assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
 }
 
 #[test]
 fn does_not_flag_bounded_delete() {
     // A DELETE bounded by a key predicate is already targeted.
-    let f = scan_source("x.rs", r#"    db.query("DELETE pattern WHERE project = $pid AND entry_key = $key")"#);
+    let f = scan_source(
+        "x.rs",
+        r#"    db.query("DELETE pattern WHERE project = $pid AND entry_key = $key")"#,
+    );
     assert!(!f.iter().any(|x| x.class == Class::DestructiveQuery));
 }
 
@@ -64,7 +70,10 @@ fn does_not_flag_delete_with_return_before_readback() {
 fn still_flags_unbounded_delete_without_param_or_readback() {
     // Guard the fix doesn't over-widen: a bare DELETE with a literal-only WHERE
     // and no bound param and no RETURN BEFORE is still unbounded.
-    let f = scan_source("x.rs", r#"    db.query("DELETE event WHERE status = 'stale'")"#);
+    let f = scan_source(
+        "x.rs",
+        r#"    db.query("DELETE event WHERE status = 'stale'")"#,
+    );
     assert!(f.iter().any(|x| x.class == Class::DestructiveQuery));
 }
 
@@ -102,7 +111,10 @@ fn flags_swallowed_err_arm() {
 
 #[test]
 fn does_not_flag_err_arm_that_logs() {
-    let f = scan_source("x.rs", "            Err(_) => { tracing::warn!(\"x\"); None }");
+    let f = scan_source(
+        "x.rs",
+        "            Err(_) => { tracing::warn!(\"x\"); None }",
+    );
     assert!(!f.iter().any(|x| x.class == Class::SwallowedArm));
 }
 
@@ -120,7 +132,10 @@ fn doctor_ok_marker_silences_a_line() {
 #[test]
 fn comment_prose_does_not_trip_code_matchers() {
     // A `let _ =` mentioned in a comment is prose, not code.
-    let f = scan_source("x.rs", "        // historically: let _ = cmd.output() was a bug");
+    let f = scan_source(
+        "x.rs",
+        "        // historically: let _ = cmd.output() was a bug",
+    );
     assert!(f.is_empty(), "comment mention must not be flagged");
 }
 

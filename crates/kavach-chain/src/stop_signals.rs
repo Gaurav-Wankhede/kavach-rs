@@ -36,8 +36,8 @@ mod signal;
 mod phase_a;
 mod phase_a_deferral;
 mod phase_a_limits;
-mod phase_a_semantic_deferral;
 mod phase_a_menu;
+mod phase_a_semantic_deferral;
 mod phase_a_value;
 
 // Phase B leaf modules

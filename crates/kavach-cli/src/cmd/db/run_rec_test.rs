@@ -4,7 +4,13 @@ use super::*;
 
 #[test]
 fn record_params_carry_required_and_optional() {
-    let v = build_record_params("kavach-rs", "roadmap.unit.x", Some("main"), "running", Some(42));
+    let v = build_record_params(
+        "kavach-rs",
+        "roadmap.unit.x",
+        Some("main"),
+        "running",
+        Some(42),
+    );
     assert_eq!(v["project"], "kavach-rs");
     assert_eq!(v["entry_key"], "roadmap.unit.x");
     assert_eq!(v["branch"], "main");

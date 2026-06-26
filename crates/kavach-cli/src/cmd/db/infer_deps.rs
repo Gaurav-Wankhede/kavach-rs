@@ -123,13 +123,11 @@ fn infer(cards: &[Card]) -> Vec<InferredEdge> {
 /// EXACT convention the tier layout reads — re-running never duplicates a dep.
 fn already_declares(content: &str, prereq: &str) -> bool {
     content.lines().any(|raw| {
-        raw.trim()
-            .strip_prefix("DEPENDS_ON:")
-            .is_some_and(|rest| {
-                rest.split([',', ' ', '\t'])
-                    .map(str::trim)
-                    .any(|k| k == prereq)
-            })
+        raw.trim().strip_prefix("DEPENDS_ON:").is_some_and(|rest| {
+            rest.split([',', ' ', '\t'])
+                .map(str::trim)
+                .any(|k| k == prereq)
+        })
     })
 }
 
@@ -239,7 +237,10 @@ pub(crate) fn run(project: &str, apply: bool) -> i32 {
         }
     }
     if skipped > 0 {
-        print_or_exit(&format!("infer-deps: {skipped} edge(s) already declared, skipped.")).ok();
+        print_or_exit(&format!(
+            "infer-deps: {skipped} edge(s) already declared, skipped."
+        ))
+        .ok();
     }
     if failures == 0 {
         if let Err(io_err) =

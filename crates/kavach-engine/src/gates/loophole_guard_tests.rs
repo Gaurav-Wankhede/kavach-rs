@@ -17,7 +17,10 @@ fn fires_on_python_os_system_completion() {
     let c = "Done — shipped the export job: os.system(f\"tar czf {path}\").";
     let out = check_loophole_with(&floor(), c).expect("python os.system must fire");
     assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag: {out}");
-    assert!(out.contains("injection"), "names the injection dimension: {out}");
+    assert!(
+        out.contains("injection"),
+        "names the injection dimension: {out}"
+    );
 }
 
 #[test]
@@ -49,10 +52,19 @@ fn fires_on_done_claim_touching_risk_path() {
     let out = check_loophole_with(&floor(), c).expect("should fire");
     // RESOLVE-not-handback: surfaces the risk surface + lenses for awareness; no
     // CTA to manually walk lenses or narrate a `Loopholes closed:` line.
-    assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag, not a CTA: {out}");
-    assert!(out.contains("concurrency"), "names the relevant lens: {out}");
+    assert!(
+        out.contains("[LOOPHOLE_SURFACE]"),
+        "awareness tag, not a CTA: {out}"
+    );
+    assert!(
+        out.contains("concurrency"),
+        "names the relevant lens: {out}"
+    );
     assert!(!out.contains("RUN each lens"), "no handback CTA: {out}");
-    assert!(!out.contains("Loopholes closed:"), "no narration demand: {out}");
+    assert!(
+        !out.contains("Loopholes closed:"),
+        "no narration demand: {out}"
+    );
 }
 
 #[test]
@@ -88,7 +100,10 @@ fn stop_surfaces_awareness_when_risk_completion() {
     let out = check_stop_interrogation(msg, true).expect("should surface awareness");
     // RESOLVE-not-block: terse surface advisory, NO refuse-stop / fix-now CTA.
     assert!(out.contains("[LOOPHOLE_SURFACE]"), "awareness tag: {out}");
-    assert!(!out.contains("Do NOT stop"), "never refuses the stop: {out}");
+    assert!(
+        !out.contains("Do NOT stop"),
+        "never refuses the stop: {out}"
+    );
     assert!(!out.contains("RUN each lens"), "no handback CTA: {out}");
 }
 
@@ -131,17 +146,26 @@ fn stop_silent_on_trivial_turn() {
 #[test]
 fn site_scan_names_concrete_lens_file_line() {
     use super::scan_changed_for_loopholes;
-    let files = [("crates/x/src/y.rs", "fn ok() {}\nlet v = parse(i).unwrap();")];
+    let files = [(
+        "crates/x/src/y.rs",
+        "fn ok() {}\nlet v = parse(i).unwrap();",
+    )];
     let out = scan_changed_for_loopholes(&files).expect("should flag the unwrap");
     assert!(out.contains("[LOOPHOLE_SITES]"));
-    assert!(out.contains("malformed crates/x/src/y.rs:2"), "concrete site: {out}");
+    assert!(
+        out.contains("malformed crates/x/src/y.rs:2"),
+        "concrete site: {out}"
+    );
 }
 
 #[test]
 fn site_scan_silent_on_clean_files() {
     use super::scan_changed_for_loopholes;
     let files = [("a.rs", "let s = a.checked_add(b)?;\nfn pure() {}")];
-    assert!(scan_changed_for_loopholes(&files).is_none(), "no hints -> no advisory");
+    assert!(
+        scan_changed_for_loopholes(&files).is_none(),
+        "no hints -> no advisory"
+    );
 }
 
 #[test]
@@ -158,7 +182,10 @@ fn site_scan_caps_files_and_names_the_drop() {
     let owned: Vec<(String, String)> = (0..30)
         .map(|i| (format!("f{i}.rs"), "let v = x.unwrap();".to_owned()))
         .collect();
-    let refs: Vec<(&str, &str)> = owned.iter().map(|(p, c)| (p.as_str(), c.as_str())).collect();
+    let refs: Vec<(&str, &str)> = owned
+        .iter()
+        .map(|(p, c)| (p.as_str(), c.as_str()))
+        .collect();
     let out = scan_changed_for_loopholes(&refs).expect("should flag");
     assert!(out.contains("scanned 24/30"), "names the file cap: {out}");
 }
@@ -169,7 +196,10 @@ fn site_scan_caps_listed_sites_and_names_the_remainder() {
     // remainder count is surfaced (no silent cap).
     let body: String = (0..20).map(|_| "let v = x.unwrap();\n").collect();
     let out = super::scan_changed_for_loopholes(&[("big.rs", &body)]).expect("flags");
-    assert!(out.contains("more suspected site(s)"), "names dropped sites: {out}");
+    assert!(
+        out.contains("more suspected site(s)"),
+        "names dropped sites: {out}"
+    );
 }
 
 #[test]
@@ -181,5 +211,8 @@ fn changed_filter_excludes_test_files() {
     assert!(!is_scannable_rust("crates/x/src/y_test_menu.rs"));
     assert!(!is_scannable_rust("crates/x/tests/it.rs"));
     assert!(!is_scannable_rust("crates/x/src/y.toml"));
-    assert!(is_scannable_rust("crates/x/src/latest.rs"), "non-test stem stays in scope");
+    assert!(
+        is_scannable_rust("crates/x/src/latest.rs"),
+        "non-test stem stays in scope"
+    );
 }

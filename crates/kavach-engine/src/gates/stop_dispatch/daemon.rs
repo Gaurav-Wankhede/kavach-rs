@@ -29,7 +29,10 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     // See decision.engine.session-lease-isolation.
     let session_id = Some(kavach_session::resolved_session_id()).filter(|s| !s.is_empty());
     let mut map = serde_json::Map::new();
-    map.insert("project".to_owned(), serde_json::Value::String(project_slug.to_owned()));
+    map.insert(
+        "project".to_owned(),
+        serde_json::Value::String(project_slug.to_owned()),
+    );
     if let Some(l) = lane {
         map.insert("lane".to_owned(), serde_json::Value::String(l));
     }

@@ -18,6 +18,12 @@ fn crates_index_url_buckets_by_name_length() {
     assert_eq!(crates_index_url("up"), "https://index.crates.io/2/up");
     assert_eq!(crates_index_url("sd"), "https://index.crates.io/2/sd");
     assert_eq!(crates_index_url("rga"), "https://index.crates.io/3/r/rga");
-    assert_eq!(crates_index_url("surrealdb"), "https://index.crates.io/su/rr/surrealdb");
-    assert_eq!(crates_index_url("tokio"), "https://index.crates.io/to/ki/tokio");
+    assert_eq!(
+        crates_index_url("surrealdb"),
+        "https://index.crates.io/su/rr/surrealdb"
+    );
+    assert_eq!(
+        crates_index_url("tokio"),
+        "https://index.crates.io/to/ki/tokio"
+    );
 }

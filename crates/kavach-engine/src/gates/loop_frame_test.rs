@@ -34,7 +34,10 @@ fn loop_stop_frame_is_legible_goal_iteration_termination() {
     let mut session = SessionState::default();
     session.turn_count = 4;
     let frame = build_loop_stop(&session, Some("unit.demo-card"));
-    assert!(frame.starts_with("[LOOP]"), "frame must lead with the [LOOP] tag");
+    assert!(
+        frame.starts_with("[LOOP]"),
+        "frame must lead with the [LOOP] tag"
+    );
     assert!(frame.contains("goal: unit.demo-card"), "goal must be named");
     assert!(frame.contains("iteration:"), "iteration must be present");
     assert!(

@@ -73,9 +73,9 @@ pub async fn acquire(
     // `occupied_by` is non-NULL. A NULL here is schema corruption or a torn write;
     // returning an empty session_id would forge a fake holder that no lease check
     // matches. Fail closed so the corruption surfaces instead of leaking a bogus lease.
-    let holder = row
-        .occupied_by
-        .ok_or_else(|| Error::SchemaViolation(format!("{table}:{key} exists but occupied_by is NULL")))?;
+    let holder = row.occupied_by.ok_or_else(|| {
+        Error::SchemaViolation(format!("{table}:{key} exists but occupied_by is NULL"))
+    })?;
     Ok(AcquireOutcome::HeldBy {
         session_id: holder,
         expires_at: row.occupied_until.unwrap_or(now),

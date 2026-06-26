@@ -235,7 +235,10 @@ const HANDBACK_GATES: &[&str] = &[
 /// stated intent. Distinct from HANDBACK (which defers): these turns actively push
 /// BACK. Refuse-stop is census-INDEPENDENT for this class (arguing with the user is
 /// wrong whether or not a roadmap todo remains). SOURCE: decision.engine.anti-argue-block.
-const ARGUE_GATES: &[&str] = &["argued_with_user_at_stop", "value_gated_user_request_at_stop"];
+const ARGUE_GATES: &[&str] = &[
+    "argued_with_user_at_stop",
+    "value_gated_user_request_at_stop",
+];
 
 /// Run the advisory-detector table over the final message. For each firing
 /// entry, record a mistake-ledger row (learning loop) and queue a harness-neutral

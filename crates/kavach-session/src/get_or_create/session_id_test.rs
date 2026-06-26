@@ -7,11 +7,21 @@ fn resolved_id_is_never_empty_without_env() {
     // binary fallback must return a non-empty per-process id so the lease claim
     // always has a holder to write.
     set_session_context("");
-    if std::env::var("KAVACH_SESSION_ID").unwrap_or_default().is_empty() {
+    if std::env::var("KAVACH_SESSION_ID")
+        .unwrap_or_default()
+        .is_empty()
+    {
         let id = resolved_session_id();
         assert!(!id.is_empty(), "resolved id must never be empty");
-        assert!(id.starts_with("auto-"), "fallback id must be process-derived: {id}");
-        assert_eq!(id, resolved_session_id(), "id must be stable across calls in one process");
+        assert!(
+            id.starts_with("auto-"),
+            "fallback id must be process-derived: {id}"
+        );
+        assert_eq!(
+            id,
+            resolved_session_id(),
+            "id must be stable across calls in one process"
+        );
     }
 }
 

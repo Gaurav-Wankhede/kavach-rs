@@ -41,8 +41,15 @@ const OK_MARKER: &str = "// doctor:ok";
 
 /// IO/DB call fragments that make a swallowed Result genuinely risky (vs. a pure
 /// in-memory parse, which is usually fine to ignore).
-const IO_FRAGMENTS: [&str; 7] =
-    ["output()", ".send(", ".query(", ".execute(", ".call(", ".persist(", "append_event"];
+const IO_FRAGMENTS: [&str; 7] = [
+    "output()",
+    ".send(",
+    ".query(",
+    ".execute(",
+    ".call(",
+    ".persist(",
+    "append_event",
+];
 
 /// Scan one Rust source. `file` is the display path attached to each finding.
 pub(super) fn scan_source(file: &str, src: &str) -> Vec<Finding> {
@@ -91,7 +98,12 @@ fn joined_logical_lines(src: &str) -> Vec<String> {
 }
 
 fn mk(class: Class, file: &str, line: usize, hint: &str) -> Finding {
-    Finding { class, file: file.to_owned(), line, hint: hint.to_owned() }
+    Finding {
+        class,
+        file: file.to_owned(),
+        line,
+        hint: hint.to_owned(),
+    }
 }
 
 /// Drop a trailing `//` line comment so comment prose can't trip a code matcher,

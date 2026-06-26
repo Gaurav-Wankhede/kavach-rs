@@ -32,7 +32,10 @@ pub(crate) fn run(input: &HookInput) {
     if !ci.is_empty() {
         context.push_str(&kavach_hook::context_block(
             "PRE_COMPACT",
-            &[("custom_instructions", ci), ("date", &kavach_hook::today_full())],
+            &[
+                ("custom_instructions", ci),
+                ("date", &kavach_hook::today_full()),
+            ],
         ));
     }
     session.queue_lifecycle_relay(&context);
@@ -51,11 +54,16 @@ fn build_memory_guard(project: &str) -> Option<String> {
     }
     let (key, content) = in_progress_card(project)?;
     let paths = super::session_start::reconcile::touched_paths_from_card(&content);
-    let touches = if paths.is_empty() { "(none declared)".to_owned() } else { paths.join(" ") };
+    let touches = if paths.is_empty() {
+        "(none declared)".to_owned()
+    } else {
+        paths.join(" ")
+    };
     // F2: the snapshot write can fail silently; if it did, the in-context guard is
     // the ONLY surviving copy and compaction is about to discard it. Surface the
     // outcome so the agent copies the key NOW rather than trusting a phantom row.
-    let persisted_line = persisted_line(snapshot_to_decision(project, &key, &touches), project, &key);
+    let persisted_line =
+        persisted_line(snapshot_to_decision(project, &key, &touches), project, &key);
     let mut block = format!(
         "[MEMORY_GUARD] (anti-amnesia: compaction is about to discard verbatim history)\n\
          active_card: {key}\n\

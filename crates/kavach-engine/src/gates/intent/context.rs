@@ -120,8 +120,7 @@ pub(super) fn append_context_blocks(
         if append_live_kanban(context, &session.project, prompt) {
             session.memory_queried = true;
         } else {
-            context
-                .push_str("\n[MEMORY] status:PENDING action:kavach db kanban --project <slug>");
+            context.push_str("\n[MEMORY] status:PENDING action:kavach db kanban --project <slug>");
         }
     }
     if session.turn_count > 1 && session.turn_count % 5 == 0 {
@@ -252,7 +251,9 @@ fn render_live_kanban(
         .ok();
         return false; // still "not observed": never blocks the session
     };
-    context.push_str("\n[KANBAN] read live from the kavach DB this turn — do NOT re-query to confirm.");
+    context.push_str(
+        "\n[KANBAN] read live from the kavach DB this turn — do NOT re-query to confirm.",
+    );
     write!(
         context,
         "\nproject: {project} · runnable: {runnable} · blocked: {blocked} · cyclic: {cyclic}"
@@ -267,7 +268,11 @@ fn render_live_kanban(
         // Ranked read empty (daemon warming, or empty-prompt with no board): fall
         // back to the single next card by priority — never lose the "start here".
         if let Some((key, title)) = crate::gates::stop_dispatch::next_task_rpc_only(project) {
-            write!(context, "\nnext runnable card: [{key}] {title} — claim and START it.").ok();
+            write!(
+                context,
+                "\nnext runnable card: [{key}] {title} — claim and START it."
+            )
+            .ok();
         }
     } else {
         context.push_str(
@@ -356,9 +361,18 @@ mod tests {
         let mut ctx = String::new();
         let observed = super::render_live_kanban(&mut ctx, "kavach-rs", None, &[]);
         assert!(!observed, "a failed read is never 'observed'");
-        assert!(ctx.contains("[KANBAN: DEGRADED]"), "must mark degradation: {ctx}");
-        assert!(ctx.contains("UNKNOWN, not empty"), "must forbid empty-read: {ctx}");
-        assert!(!ctx.contains("[KANBAN] read live"), "must NOT claim a live read: {ctx}");
+        assert!(
+            ctx.contains("[KANBAN: DEGRADED]"),
+            "must mark degradation: {ctx}"
+        );
+        assert!(
+            ctx.contains("UNKNOWN, not empty"),
+            "must forbid empty-read: {ctx}"
+        );
+        assert!(
+            !ctx.contains("[KANBAN] read live"),
+            "must NOT claim a live read: {ctx}"
+        );
     }
 
     #[test]
@@ -379,13 +393,26 @@ mod tests {
         let mut ctx = String::new();
         let ranked = vec![
             ("unit.a".to_owned(), "Card A".to_owned(), "todo".to_owned()),
-            ("unit.b".to_owned(), "Card B".to_owned(), "in_progress".to_owned()),
+            (
+                "unit.b".to_owned(),
+                "Card B".to_owned(),
+                "in_progress".to_owned(),
+            ),
         ];
         let observed = super::render_live_kanban(&mut ctx, "kavach-rs", Some((2, 0, 0)), &ranked);
         assert!(observed, "a successful read is observed");
-        assert!(ctx.contains("relevance-ranked"), "relevance header present: {ctx}");
-        assert!(ctx.contains("[unit.a] Card A [todo]"), "card A rendered: {ctx}");
-        assert!(ctx.contains("[unit.b] Card B [in_progress]"), "card B rendered: {ctx}");
+        assert!(
+            ctx.contains("relevance-ranked"),
+            "relevance header present: {ctx}"
+        );
+        assert!(
+            ctx.contains("[unit.a] Card A [todo]"),
+            "card A rendered: {ctx}"
+        );
+        assert!(
+            ctx.contains("[unit.b] Card B [in_progress]"),
+            "card B rendered: {ctx}"
+        );
     }
 
     #[test]
@@ -393,15 +420,24 @@ mod tests {
         // With no daemon reachable in the unit-test process, the census read
         // returns None -> append_context_blocks must fall back to the legacy
         // PENDING nag rather than emit a half-formed [KANBAN] block or panic.
-        let input = HookInput { transcript_path: "/tmp/s.jsonl".to_owned(), ..HookInput::default() };
+        let input = HookInput {
+            transcript_path: "/tmp/s.jsonl".to_owned(),
+            ..HookInput::default()
+        };
         let mut ctx = String::new();
-        let mut session = SessionState { project: "kavach-rs".to_owned(), ..SessionState::default() };
+        let mut session = SessionState {
+            project: "kavach-rs".to_owned(),
+            ..SessionState::default()
+        };
         append_context_blocks(&mut ctx, &input, &mut session, "debug", "fix the gate", &[]);
         // Either the live block (daemon up in this env) or the nag (daemon down):
         // exactly one path fires, never a panic, never both half-rendered.
         let has_live = ctx.contains("[KANBAN]");
         let has_nag = ctx.contains("[MEMORY] status:PENDING");
-        assert!(has_live ^ has_nag, "exactly one of live-board / nag must fire: {ctx}");
+        assert!(
+            has_live ^ has_nag,
+            "exactly one of live-board / nag must fire: {ctx}"
+        );
     }
 
     #[test]

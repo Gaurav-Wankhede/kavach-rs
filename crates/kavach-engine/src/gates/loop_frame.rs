@@ -63,7 +63,9 @@ pub(crate) fn build_turn_shadow(
 /// Full `[LOOP]` frame for stop followup (prepend to `[AUTO_CONTINUE]`).
 #[must_use]
 pub(crate) fn build_loop_stop(session: &SessionState, goal_title: Option<&str>) -> String {
-    let title = goal_title.or_else(|| resolve_goal_title(session)).unwrap_or("(none)");
+    let title = goal_title
+        .or_else(|| resolve_goal_title(session))
+        .unwrap_or("(none)");
     let harness = loop_harness_label(session);
     let iter = session.loop_iteration.max(session.turn_count);
     format!(
@@ -108,7 +110,11 @@ pub(crate) fn build_reward_session_stats(session: &SessionState) -> Option<Strin
         reason = "GRPO-style advantage is the delta vs the 30d baseline"
     )]
     let advantage = rate - BASELINE_30D;
-    let exploit = if advantage >= 0.0 { "exploit" } else { "explore" };
+    let exploit = if advantage >= 0.0 {
+        "exploit"
+    } else {
+        "explore"
+    };
     let mut out = format!(
         "[REWARD:stats]\n\
          session_pass_rate: {rate:.2} ({pass}/{total})\n\

@@ -45,10 +45,10 @@ fn is_line_comment(t: &str) -> bool {
 }
 
 const SOURCE_EXTS: &[&str] = &[
-    ".rs", ".py", ".sql", ".sh", ".bash", ".zsh", ".rb", ".lua", ".pl", ".r", ".jl", ".nim",
-    ".go", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".c", ".h", ".cpp", ".cc", ".hpp",
-    ".cs", ".java", ".kt", ".kts", ".scala", ".swift", ".php", ".dart", ".zig", ".toml",
-    ".yaml", ".yml", ".tf", ".hcl",
+    ".rs", ".py", ".sql", ".sh", ".bash", ".zsh", ".rb", ".lua", ".pl", ".r", ".jl", ".nim", ".go",
+    ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".c", ".h", ".cpp", ".cc", ".hpp", ".cs",
+    ".java", ".kt", ".kts", ".scala", ".swift", ".php", ".dart", ".zig", ".toml", ".yaml", ".yml",
+    ".tf", ".hcl",
 ];
 
 fn is_source(path: &str) -> bool {
@@ -58,8 +58,11 @@ fn is_source(path: &str) -> bool {
 
 /// Count of flagged bloat lines in `content` (the block trigger).
 fn bloat_count(file_path: &str, content: &str) -> usize {
-    advise(file_path, content)
-        .map_or(0, |m| m.lines().filter(|l| l.trim_start().starts_with('L')).count())
+    advise(file_path, content).map_or(0, |m| {
+        m.lines()
+            .filter(|l| l.trim_start().starts_with('L'))
+            .count()
+    })
 }
 
 /// True when the write INTRODUCES new bloat (new count > old). Pre-existing bloat
@@ -150,9 +153,7 @@ mod tests {
     fn long_rationale_paragraph_flagged() {
         // 6+ lines AND prose-heavy (a ≥60-char narration line) = bloat → DB.
         let prose = "x".repeat(70);
-        let c = format!(
-            "fn f() {{}}\n// {prose}\n// b\n// c\n// d\n// e\n// f\nfn g() {{}}\n"
-        );
+        let c = format!("fn f() {{}}\n// {prose}\n// b\n// c\n// d\n// e\n// f\nfn g() {{}}\n");
         assert!(advise("src/x.rs", &c).is_some());
     }
 
@@ -193,18 +194,14 @@ mod tests {
     #[test]
     fn long_doc_comment_wall_flagged() {
         let prose = "z".repeat(70);
-        let c = format!(
-            "/// {prose}\n/// b\n/// c\n/// d\n/// e\n/// f\npub fn g() {{}}\n"
-        );
+        let c = format!("/// {prose}\n/// b\n/// c\n/// d\n/// e\n/// f\npub fn g() {{}}\n");
         assert!(advise("src/x.rs", &c).is_some());
     }
 
     #[test]
     fn long_module_doc_wall_flagged() {
         let prose = "q".repeat(70);
-        let c = format!(
-            "//! {prose}\n//! b\n//! c\n//! d\n//! e\n//! f\nfn f() {{}}\n"
-        );
+        let c = format!("//! {prose}\n//! b\n//! c\n//! d\n//! e\n//! f\nfn f() {{}}\n");
         assert!(advise("src/x.rs", &c).is_some());
     }
 

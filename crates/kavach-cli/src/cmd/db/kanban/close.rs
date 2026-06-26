@@ -76,7 +76,8 @@ async fn close_direct(project_slug: &str, key: &str) -> i32 {
         Ok(None) => return write_err(&format!("error: no roadmap entry with key: {key}")),
         Err(e) => return write_err(&format!("error: {e}")),
     };
-    if let Err(e) = kavach_surreal::update_status(&db, "roadmap", &project_id, key, "verified").await
+    if let Err(e) =
+        kavach_surreal::update_status(&db, "roadmap", &project_id, key, "verified").await
     {
         return write_err(&format!("error: {e}"));
     }

@@ -79,7 +79,10 @@ fn report(findings: &[Finding], files_scanned: usize) {
         println!("  result: CLEAN — no silent-fail / unproven-DELETE patterns found");
         return;
     }
-    println!("  result: {} finding(s) — review (read-only; not auto-filed):", findings.len());
+    println!(
+        "  result: {} finding(s) — review (read-only; not auto-filed):",
+        findings.len()
+    );
     for f in findings {
         println!("  [{}] {}:{} — {}", f.class.label(), f.file, f.line, f.hint);
     }

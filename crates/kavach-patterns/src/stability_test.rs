@@ -8,8 +8,22 @@ fn v(s: &str) -> Version {
 #[test]
 fn parse_tolerates_operators_and_suffixes() {
     assert_eq!(v("^1.2.3"), v("1.2.3"));
-    assert_eq!(v("v0.7"), Version { major: 0, minor: 7, patch: 0 });
-    assert_eq!(v("1"), Version { major: 1, minor: 0, patch: 0 });
+    assert_eq!(
+        v("v0.7"),
+        Version {
+            major: 0,
+            minor: 7,
+            patch: 0
+        }
+    );
+    assert_eq!(
+        v("1"),
+        Version {
+            major: 1,
+            minor: 0,
+            patch: 0
+        }
+    );
     assert_eq!(v("0.7.9-rc.1"), v("0.7.9"));
     assert_eq!(v("2.0.0+build5"), v("2.0.0"));
 }
@@ -51,8 +65,14 @@ fn stabilization_to_one_zero_is_breaking() {
 
 #[test]
 fn downgrade_and_noop_are_no_forward_change() {
-    assert_eq!(classify_bump(v("1.5.0"), v("1.2.0")), BumpKind::NoForwardChange);
-    assert_eq!(classify_bump(v("0.7.9"), v("0.7.9")), BumpKind::NoForwardChange);
+    assert_eq!(
+        classify_bump(v("1.5.0"), v("1.2.0")),
+        BumpKind::NoForwardChange
+    );
+    assert_eq!(
+        classify_bump(v("0.7.9"), v("0.7.9")),
+        BumpKind::NoForwardChange
+    );
 }
 
 #[test]

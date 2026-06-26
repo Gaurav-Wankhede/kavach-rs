@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use crate::cmd::io_safe;
-use crate::cmd::lint::detect::{detect, Stack};
+use crate::cmd::lint::detect::{Stack, detect};
 use crate::cmd::lint::profiles::{go, rust, ts};
 
 /// Install (or report) the strict profile for every detected stack at `root`.
@@ -56,8 +56,14 @@ fn append_rust(target: &Path, body: &str) -> i32 {
     }
     let merged = format!("{existing}\n{body}");
     match std::fs::write(target, merged) {
-        Ok(()) => emit(&format!("kavach lint: appended strict workspace.lints → {}", target.display())),
-        Err(e) => fail(&format!("kavach lint: write failed {}: {e}", target.display())),
+        Ok(()) => emit(&format!(
+            "kavach lint: appended strict workspace.lints → {}",
+            target.display()
+        )),
+        Err(e) => fail(&format!(
+            "kavach lint: write failed {}: {e}",
+            target.display()
+        )),
     }
 }
 
@@ -71,8 +77,15 @@ fn write_if_absent(target: &Path, body: &str, stack: Stack) -> i32 {
         ));
     }
     match std::fs::write(target, body) {
-        Ok(()) => emit(&format!("kavach lint: wrote strict {} profile → {}", stack.label(), target.display())),
-        Err(e) => fail(&format!("kavach lint: write failed {}: {e}", target.display())),
+        Ok(()) => emit(&format!(
+            "kavach lint: wrote strict {} profile → {}",
+            stack.label(),
+            target.display()
+        )),
+        Err(e) => fail(&format!(
+            "kavach lint: write failed {}: {e}",
+            target.display()
+        )),
     }
 }
 

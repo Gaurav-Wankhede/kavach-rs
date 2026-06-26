@@ -2,8 +2,8 @@
 //! detectors in isolation) so the wiring — §DEDUP routed through the runner ahead of
 //! `webhook`, blocking on a P0 — is proven at the integration boundary the engine
 //! CLAUDE.md RULE requires for any new gate.
-use super::check;
 use super::super::result::Acc;
+use super::check;
 use crate::gates::pre_write_context::WriteContext;
 
 /// Build a non-test, governed `WriteContext` for a Write of `content` to `path`.
@@ -26,7 +26,10 @@ fn dedup_redefinition_blocks_through_runner() {
     let mut acc = Acc::default();
     let block = check(&ctx("/x/crates/core/billing/src/cfg.rs", src), &mut acc);
     let reason = block.expect("redefining an imported object must block via the runner");
-    assert!(reason.contains("DEDUP_P0"), "block reason tags the dedup gate: {reason}");
+    assert!(
+        reason.contains("DEDUP_P0"),
+        "block reason tags the dedup gate: {reason}"
+    );
 }
 
 #[test]
@@ -46,5 +49,8 @@ fn tombstone_comment_blocks_through_runner() {
     let mut acc = Acc::default();
     let block = check(&ctx("/x/crates/core/billing/src/r.rs", src), &mut acc);
     let reason = block.expect("tombstone comment must block via the runner");
-    assert!(reason.contains("BLOAT_P0"), "block reason tags the bloatware gate: {reason}");
+    assert!(
+        reason.contains("BLOAT_P0"),
+        "block reason tags the bloatware gate: {reason}"
+    );
 }

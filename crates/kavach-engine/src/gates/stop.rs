@@ -240,8 +240,10 @@ fn loophole_check(session: &mut kavach_session::SessionState, msg: &str) -> Opti
     // files and surface CONCRETE suspected sites (lens + file:line) — real targets,
     // not just a reminder. Bounded so the Stop path can't stall.
     let changed = super::loophole_guard::changed_rust_files();
-    let file_refs: Vec<(&str, &str)> =
-        changed.iter().map(|(p, c)| (p.as_str(), c.as_str())).collect();
+    let file_refs: Vec<(&str, &str)> = changed
+        .iter()
+        .map(|(p, c)| (p.as_str(), c.as_str()))
+        .collect();
     if let Some(sites) = super::loophole_guard::scan_changed_for_loopholes(&file_refs) {
         session.queue_pending_advisory(&sites);
     }

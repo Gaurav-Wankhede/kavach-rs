@@ -1,5 +1,5 @@
-use super::types::Config;
 use super::j;
+use super::types::Config;
 
 pub(super) fn sensitive_defaults() -> Vec<String> {
     vec![

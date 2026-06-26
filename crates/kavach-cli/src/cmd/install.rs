@@ -16,9 +16,9 @@ fn resolve(tag: &str) -> Result<Vec<Target>, String> {
     if tag.eq_ignore_ascii_case("all") {
         return Ok(Target::all().to_vec());
     }
-    Target::from_tag(tag)
-        .map(|t| vec![t])
-        .ok_or_else(|| format!("unknown --vendor '{tag}' (expected: cc|cursor|codex|gemini|pi|all)"))
+    Target::from_tag(tag).map(|t| vec![t]).ok_or_else(|| {
+        format!("unknown --vendor '{tag}' (expected: cc|cursor|codex|gemini|pi|all)")
+    })
 }
 
 /// Absolute path to the currently-running kavach binary, for pinning into hooks.
@@ -103,6 +103,9 @@ mod tests {
         let bin = std::path::Path::new("/x/kavach");
         let line = install_one(Target::Pi, bin, true).unwrap();
         assert!(line.contains("[pi]"), "{line}");
-        assert!(line.contains("index.ts"), "Pi installs to the extension path: {line}");
+        assert!(
+            line.contains("index.ts"),
+            "Pi installs to the extension path: {line}"
+        );
     }
 }

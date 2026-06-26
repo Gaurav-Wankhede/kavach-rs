@@ -208,7 +208,10 @@ pub(crate) fn detect_project() -> String {
 /// Emit an anti-amnesia degradation warning to stderr (never stdout — that is the
 /// hook verdict channel). Matches the crate's `eprintln!` diagnostic precedent.
 fn warn_degraded(msg: &str) {
-    #[expect(clippy::print_stderr, reason = "anti-amnesia degradation warning to audit trail")]
+    #[expect(
+        clippy::print_stderr,
+        reason = "anti-amnesia degradation warning to audit trail"
+    )]
     {
         eprintln!("kavach: WARN {msg}");
     }
@@ -322,6 +325,9 @@ mod tests {
         let name = a
             .file_name()
             .map_or_else(String::new, |n| n.to_string_lossy().to_string());
-        assert!(name.matches('-').count() >= 2, "workdir + session slugs: {name}");
+        assert!(
+            name.matches('-').count() >= 2,
+            "workdir + session slugs: {name}"
+        );
     }
 }

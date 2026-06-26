@@ -18,11 +18,7 @@ pub(crate) fn card_entry_status(project_slug: &str, key: &str) -> Option<String>
     let params = serde_json::json!({"project": project_slug, "key": key});
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.entry_status", Some(params))
         .ok()
-        .and_then(|v| {
-            v.get("status")
-                .and_then(|s| s.as_str())
-                .map(str::to_owned)
-        })
+        .and_then(|v| v.get("status").and_then(|s| s.as_str()).map(str::to_owned))
 }
 
 /// The session id holding a LIVE lease on `roadmap:key`, or `None` if the lease
@@ -109,4 +105,3 @@ pub(crate) fn claim_card(project_slug: &str, key: &str) -> bool {
 #[cfg(test)]
 #[path = "card_claim_test.rs"]
 mod card_claim_test;
-

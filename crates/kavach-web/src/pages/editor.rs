@@ -50,7 +50,11 @@ pub async fn save(Form(f): Form<SaveForm>) -> Html<String> {
         "project": f.project, "category": f.category, "key": f.key,
         "title": f.title, "content": f.content, "new": false, "update_key": f.key,
     });
-    Html(result_panel(call::<_, WriteResult>("db.write", params).await, &f.project, &f.category))
+    Html(result_panel(
+        call::<_, WriteResult>("db.write", params).await,
+        &f.project,
+        &f.category,
+    ))
 }
 
 /// `POST /entries/status` — change a card's status via `db.status_update`.
@@ -58,7 +62,11 @@ pub async fn status(Form(f): Form<StatusForm>) -> Html<String> {
     let params = json!({
         "project": f.project, "category": f.category, "key": f.key, "status": f.status,
     });
-    Html(result_panel(call::<_, WriteResult>("db.status_update", params).await, &f.project, &f.category))
+    Html(result_panel(
+        call::<_, WriteResult>("db.status_update", params).await,
+        &f.project,
+        &f.category,
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -75,14 +83,20 @@ fn result_panel(r: Result<WriteResult, RpcError>, project: &str, category: &str)
             div.panel.panel-ok { "Saved." a.btn-sm href=(back) { "back to list" } }
         }
         .into_string(),
-        Ok(w) => html! { div.panel.panel-error { (w.error.unwrap_or_else(|| "write failed".into())) } }
-            .into_string(),
+        Ok(w) => {
+            html! { div.panel.panel-error { (w.error.unwrap_or_else(|| "write failed".into())) } }
+                .into_string()
+        }
         Err(e) => error_panel(&e).into_string(),
     }
 }
 
 fn list_path(category: &str) -> &'static str {
-    if category == "decision" { "decisions" } else { "roadmap" }
+    if category == "decision" {
+        "decisions"
+    } else {
+        "roadmap"
+    }
 }
 
 async fn form(q: EditQ) -> Result<Markup, RpcError> {

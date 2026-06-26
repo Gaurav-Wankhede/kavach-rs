@@ -3,10 +3,10 @@ mod resilience;
 mod witness;
 mod write_request;
 
-pub(crate) use write_request::WriteRequest;
 pub(crate) use error::{format_err, should_fallback_to_direct};
 pub(crate) use resilience::{open_direct_resilient, or_str};
 pub(crate) use witness::mint_receipt;
+pub(crate) use write_request::WriteRequest;
 pub(crate) use write_request::write;
 
 use kavach_rpc::client::call;
@@ -18,8 +18,7 @@ use kavach_rpc::methods::db::{
     QueryResult, RegisterParams, RegisterPartParams, RegisterPartResult, RegisterResult,
     RotateParams, RotateResult, SearchParams, SearchResult, SetLaneParams, SetLaneResult,
     SetParentParams, SetParentResult, SetPriorityParams, SetPriorityResult, StatusUpdateParams,
-    StatusUpdateResult, TreeParams,
-    TreeResult, WipeProjectParams, WipeProjectResult,
+    StatusUpdateResult, TreeParams, TreeResult, WipeProjectParams, WipeProjectResult,
 };
 
 #[expect(
@@ -583,9 +582,7 @@ pub(super) fn run_update_status(params: serde_json::Value) -> Result<serde_json:
     call::<_, serde_json::Value>("run.update_status", Some(params)).map_err(format_err)
 }
 
-pub(super) fn raw_query(
-    query: &str,
-) -> Result<kavach_rpc::methods::db::RawQueryResult, String> {
+pub(super) fn raw_query(query: &str) -> Result<kavach_rpc::methods::db::RawQueryResult, String> {
     let params = kavach_rpc::methods::db::RawQueryParams {
         query: query.to_owned(),
     };

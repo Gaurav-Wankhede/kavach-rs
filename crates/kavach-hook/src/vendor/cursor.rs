@@ -170,9 +170,9 @@ fn is_blocked(resp: &HookResponse) -> bool {
     if resp.decision == "block" {
         return true;
     }
-    resp.hook_specific_output.as_ref().is_some_and(|h| {
-        h.permission_decision == "deny" || h.permission_decision == "ask"
-    })
+    resp.hook_specific_output
+        .as_ref()
+        .is_some_and(|h| h.permission_decision == "deny" || h.permission_decision == "ask")
 }
 
 /// The message Cursor should surface: prefer the verdict `reason`, else the
@@ -302,7 +302,9 @@ fn get_str(obj: &serde_json::Map<String, serde_json::Value>, key: &str) -> Strin
 /// Used for Cursor's `loop_count`; a malformed or missing value fails safe to 0
 /// (treated as "not yet in a follow-up loop").
 fn get_u64(obj: &serde_json::Map<String, serde_json::Value>, key: &str) -> u64 {
-    obj.get(key).and_then(serde_json::Value::as_u64).unwrap_or(0)
+    obj.get(key)
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0)
 }
 
 /// Cursor sends `workspace_roots` as an array (VS Code multi-root); the canonical
@@ -341,7 +343,9 @@ fn cursor_tool_input(
     // contents -> content. Canonicalize for the gates.
     for (native, canonical) in [("path", "file_path"), ("contents", "content")] {
         if !map.contains_key(canonical) {
-            let v = map.get(native).cloned()
+            let v = map
+                .get(native)
+                .cloned()
                 .or_else(|| obj.get(native).filter(|x| !x.is_null()).cloned());
             if let Some(v) = v {
                 map.insert(canonical.to_owned(), v);
@@ -354,11 +358,7 @@ fn cursor_tool_input(
             map.insert(key.to_owned(), v.clone());
         }
     }
-    if map.is_empty() {
-        None
-    } else {
-        Some(map)
-    }
+    if map.is_empty() { None } else { Some(map) }
 }
 
 /// Cursor nests the tool name under `metadata.tool_name` (falling back to a
@@ -368,10 +368,7 @@ fn cursor_tool_input(
 /// blocklist (it dispatches on `tool_name == "Bash"`). Cursor's shell payload
 /// identifies the tool by event name, not a `tool_name` field, so without this the
 /// blocklist never sees a shell command.
-fn cursor_tool_name(
-    obj: &serde_json::Map<String, serde_json::Value>,
-    raw_event: &str,
-) -> String {
+fn cursor_tool_name(obj: &serde_json::Map<String, serde_json::Value>, raw_event: &str) -> String {
     let explicit = obj
         .get("metadata")
         .and_then(|m| m.get("tool_name"))

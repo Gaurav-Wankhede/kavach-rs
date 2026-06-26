@@ -2,7 +2,7 @@
 use std::fmt::Write as _;
 
 use crate::gates::pre_write_context::WriteContext;
-use crate::gates::rag_router::{SkillMatch, top_skill_match, SKILL_MATCH_FLOOR};
+use crate::gates::rag_router::{SKILL_MATCH_FLOOR, SkillMatch, top_skill_match};
 
 /// Build a compact `[SKILL]` block when RAG similarity clears the floor.
 #[must_use]
@@ -35,8 +35,8 @@ fn format_skill_match(hit: &SkillMatch) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{format_skill_match, SKILL_MATCH_FLOOR};
     use super::SkillMatch;
+    use super::{SKILL_MATCH_FLOOR, format_skill_match};
 
     #[test]
     fn format_skill_block_includes_name_score_and_action() {

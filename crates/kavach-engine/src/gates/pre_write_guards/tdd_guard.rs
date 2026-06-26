@@ -5,7 +5,10 @@
 use crate::gates::pre_write_context::WriteContext;
 
 /// `Some(reason)` blocks the write when production code lacks a test-first signal.
-pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionState) -> Option<String> {
+pub(super) fn check(
+    ctx: &WriteContext<'_>,
+    session: &kavach_session::SessionState,
+) -> Option<String> {
     if std::env::var_os("KAVACH_TDD_BYPASS").is_some() {
         return None;
     }
@@ -62,9 +65,7 @@ pub(super) fn check(ctx: &WriteContext<'_>, session: &kavach_session::SessionSta
 /// shared `is_test_file` misses. A test write is never gated.
 fn is_test_path(path: &str) -> bool {
     let name = path.rsplit('/').next().unwrap_or(path);
-    kavach_patterns::is_test_file(path)
-        || name.ends_with("_test.rs")
-        || name.ends_with("_tests.rs")
+    kavach_patterns::is_test_file(path) || name.ends_with("_test.rs") || name.ends_with("_tests.rs")
 }
 
 /// True when every non-blank line of `changed` is a comment (`//`/`///`/`//!`) or
@@ -86,7 +87,10 @@ fn is_comment_only(changed: &str) -> bool {
 
 /// Basename without the `.rs` extension.
 pub(crate) fn unit_stem(path: &str) -> &str {
-    path.rsplit('/').next().unwrap_or(path).trim_end_matches(".rs")
+    path.rsplit('/')
+        .next()
+        .unwrap_or(path)
+        .trim_end_matches(".rs")
 }
 
 /// True when `test_path` is a recognised test for `stem`: sibling

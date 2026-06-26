@@ -21,8 +21,8 @@ async fn seed_card(
     until_offset_secs: i64,
     status: &str,
 ) {
-    let until =
-        occupied_by.and_then(|_| Utc::now().checked_add_signed(Duration::seconds(until_offset_secs)));
+    let until = occupied_by
+        .and_then(|_| Utc::now().checked_add_signed(Duration::seconds(until_offset_secs)));
     db.query(
         "CREATE type::record('roadmap', $id) SET \
          occupied_by=$ob, occupied_until=$u, occupied_epoch=1, \

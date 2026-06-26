@@ -81,7 +81,10 @@ fn dispatched_card_carries_its_body_for_a_precise_context_funnel() {
     let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None))
         .expect("the runnable card dispatches");
     assert_eq!(picked.content, "FILES: src/x.rs\nDONE WHEN: tests pass");
-    assert_eq!(picked.exec_prompt.as_deref(), Some("ROLE: backend. TASK: ship x."));
+    assert_eq!(
+        picked.exec_prompt.as_deref(),
+        Some("ROLE: backend. TASK: ship x.")
+    );
 }
 
 #[test]

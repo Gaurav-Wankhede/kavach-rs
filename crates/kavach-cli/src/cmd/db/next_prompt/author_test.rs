@@ -12,7 +12,15 @@ fn embeds_all_card_fields() {
 #[test]
 fn names_the_seven_blocks() {
     let p = authoring_prompt("p", "k", "t", "c");
-    for block in ["ROLE", "TASK", "FILES", "CONSTRAINTS", "VERIFY", "DONE WHEN", "ON FAILURE"] {
+    for block in [
+        "ROLE",
+        "TASK",
+        "FILES",
+        "CONSTRAINTS",
+        "VERIFY",
+        "DONE WHEN",
+        "ON FAILURE",
+    ] {
         assert!(p.contains(block), "missing block {block}");
     }
 }

@@ -63,7 +63,9 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Violation> {
         return out;
     }
     for (i, line) in content.lines().enumerate() {
-        let Some(body) = comment_body(line) else { continue };
+        let Some(body) = comment_body(line) else {
+            continue;
+        };
         let lower = body.to_lowercase();
         if let Some(marker) = TOMBSTONE_MARKERS.iter().find(|m| lower.contains(**m)) {
             out.push(Violation::new(

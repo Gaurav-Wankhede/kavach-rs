@@ -47,7 +47,9 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
         .ok();
     }
     if !decisions.is_empty() {
-        out.push_str("recent_decisions (settled — do NOT re-litigate; recall with kavach db get):\n");
+        out.push_str(
+            "recent_decisions (settled — do NOT re-litigate; recall with kavach db get):\n",
+        );
         for (key, title) in decisions {
             writeln!(out, "  - {key}: {title}").ok();
         }
@@ -80,13 +82,20 @@ fn active_card(project: &str) -> Option<(String, String, String)> {
     .ok()?;
     let first = v.as_array()?.iter().next()?;
     let key = first.get("key").and_then(serde_json::Value::as_str)?;
-    let title = first.get("title").and_then(serde_json::Value::as_str).unwrap_or_default();
+    let title = first
+        .get("title")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
     let content = first
         .get("content")
         .and_then(serde_json::Value::as_str)
         .unwrap_or_default();
     let paths = super::session_start::reconcile::touched_paths_from_card(content);
-    let touches = if paths.is_empty() { "(none declared)".to_owned() } else { paths.join(" ") };
+    let touches = if paths.is_empty() {
+        "(none declared)".to_owned()
+    } else {
+        paths.join(" ")
+    };
     Some((key.to_owned(), title.to_owned(), touches))
 }
 
@@ -104,7 +113,10 @@ fn recent_decisions(project: &str) -> Vec<(String, String)> {
     arr.iter()
         .filter_map(|row| {
             let key = row.get("key").and_then(serde_json::Value::as_str)?;
-            let title = row.get("title").and_then(serde_json::Value::as_str).unwrap_or("");
+            let title = row
+                .get("title")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
             Some((key.to_owned(), title.to_owned()))
         })
         .take(RECENT_DECISIONS)

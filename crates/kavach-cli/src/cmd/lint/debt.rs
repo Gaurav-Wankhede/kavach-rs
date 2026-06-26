@@ -18,7 +18,9 @@ fn marker_note(line: &str) -> Option<(String, bool)> {
     let after = line.split(MARKER).nth(1)?.trim();
     // A trigger is named when the note mentions upgrade/when/if/until/once.
     let lower = after.to_lowercase();
-    let has_trigger = ["upgrade", "when ", "if ", "until", "once "].iter().any(|t| lower.contains(t));
+    let has_trigger = ["upgrade", "when ", "if ", "until", "once "]
+        .iter()
+        .any(|t| lower.contains(t));
     Some((after.to_owned(), has_trigger))
 }
 
@@ -52,7 +54,10 @@ fn emit(rows: &[Debt]) -> i32 {
             return io_safe::into_exit_code(e);
         }
     }
-    let summary = format!("{} marker(s), {no_trigger} with no upgrade trigger.", rows.len());
+    let summary = format!(
+        "{} marker(s), {no_trigger} with no upgrade trigger.",
+        rows.len()
+    );
     io_safe::print_or_exit(&summary).map_or_else(io_safe::into_exit_code, |()| 0)
 }
 

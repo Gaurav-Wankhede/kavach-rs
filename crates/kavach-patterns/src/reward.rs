@@ -47,7 +47,10 @@ fn score_event(event: &TrajectoryEvent, rubric: &RewardRubric) -> i64 {
 
     let (class, text) = event_text(event);
     let is_vacuous = class == EventClass::Write
-        && rubric.vacuous_guard.as_ref().is_some_and(|g| g.is_match(text));
+        && rubric
+            .vacuous_guard
+            .as_ref()
+            .is_some_and(|g| g.is_match(text));
 
     let matched: Vec<_> = rubric
         .rules
@@ -69,8 +72,7 @@ fn score_event(event: &TrajectoryEvent, rubric: &RewardRubric) -> i64 {
     // a Stop, run the paraphrase-robust judge. A positive applies the SAME
     // `DEFERRAL_HANDOFF_PENALTY` once, so a reworded handoff cannot dodge the
     // debit. Gated on regex-miss → no double-penalty when the regex already hit.
-    let regex_caught_deferral =
-        matched.iter().any(|r| r.weight == DEFERRAL_HANDOFF_PENALTY);
+    let regex_caught_deferral = matched.iter().any(|r| r.weight == DEFERRAL_HANDOFF_PENALTY);
     let semantic_penalty = if class == EventClass::Stop
         && !regex_caught_deferral
         && semantic_deferral::is_semantic_deferral(text)

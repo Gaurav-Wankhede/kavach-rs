@@ -132,9 +132,7 @@ pub enum Freshness {
 #[must_use]
 pub const fn freshness(updated_unix: Option<i64>, now: i64) -> Freshness {
     match updated_unix {
-        Some(ts) if now.saturating_sub(ts) < FRESHNESS_WINDOW_SECS && ts <= now => {
-            Freshness::Fresh
-        }
+        Some(ts) if now.saturating_sub(ts) < FRESHNESS_WINDOW_SECS && ts <= now => Freshness::Fresh,
         _ => Freshness::Stale,
     }
 }
@@ -284,14 +282,12 @@ pub async fn upsert_citation(db: &Surreal<Db>, c: &UpsertCitation<'_>) -> Result
     let existing: Option<IdRow> = response.take(0)?;
 
     if let Some(IdRow { id }) = existing {
-        db.query(
-            "UPDATE $id SET name = $name, metadata = $meta, updated_at = time::now()",
-        )
-        .bind(("id", id.clone()))
-        .bind(("name", c.name.to_owned()))
-        .bind(("meta", c.metadata.clone()))
-        .await?
-        .check()?;
+        db.query("UPDATE $id SET name = $name, metadata = $meta, updated_at = time::now()")
+            .bind(("id", id.clone()))
+            .bind(("name", c.name.to_owned()))
+            .bind(("meta", c.metadata.clone()))
+            .await?
+            .check()?;
         Ok(id)
     } else {
         let mut resp = db

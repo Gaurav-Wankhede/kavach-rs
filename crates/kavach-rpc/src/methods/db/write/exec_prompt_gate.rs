@@ -10,7 +10,11 @@ See the exec-prompt skill. Bypass (migrations only): KAVACH_EXEC_PROMPT_BYPASS=1
 /// Reason string when a new roadmap write must carry a non-blank exec_prompt;
 /// `None` when the write is allowed. Pure — env read is the caller's job.
 #[must_use]
-pub(super) fn blocked(category: &str, is_new: bool, exec_prompt: Option<&str>) -> Option<&'static str> {
+pub(super) fn blocked(
+    category: &str,
+    is_new: bool,
+    exec_prompt: Option<&str>,
+) -> Option<&'static str> {
     if category != "roadmap" || !is_new {
         return None;
     }

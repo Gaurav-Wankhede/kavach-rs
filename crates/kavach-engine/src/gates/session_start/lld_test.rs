@@ -3,8 +3,14 @@ use super::lld_context;
 #[test]
 fn fires_for_kavach_project() {
     let out = lld_context("kavach-rs").expect("kavach project must get the LLD block");
-    assert!(out.contains("[KAVACH_LLD]"), "carries the awareness tag: {out}");
-    assert!(out.contains("```mermaid"), "carries a renderable Mermaid diagram: {out}");
+    assert!(
+        out.contains("[KAVACH_LLD]"),
+        "carries the awareness tag: {out}"
+    );
+    assert!(
+        out.contains("```mermaid"),
+        "carries a renderable Mermaid diagram: {out}"
+    );
     assert!(out.contains("kavach-engine"), "names the core crate: {out}");
 }
 

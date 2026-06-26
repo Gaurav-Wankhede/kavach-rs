@@ -13,11 +13,8 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Clean exit = GREEDY Allow, logged via epsilon-greedy (explore only when
     // KAVACH_RL_EXPLORE armed; never converts to Block). Reward back-filled at
     // verify. Fire-and-forget. See decision.engine.clean-exit-bandit-log.
-    let (action, propensity) = explore_emit::explore_action(
-        GateAction::Allow,
-        &ctx.session.session_id,
-        emit::now_ms(),
-    );
+    let (action, propensity) =
+        explore_emit::explore_action(GateAction::Allow, &ctx.session.session_id, emit::now_ms());
     let ctx_for_emit = BanditContext::new(
         "stop",
         "Stop",
@@ -36,7 +33,13 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Also sample into the SOFT held-out channel (KAVACH_RL_HELDOUT_RATE, default
     // 0=off) for the reward-hacking audit. See decision.engine.clean-exit-held-out.
     let roll = explore_emit::held_out_roll(&ctx.session.session_id, emit::now_ms());
-    emit::maybe_emit_held_out(&ctx.session.session_id, ctx_for_emit, action, propensity, roll);
+    emit::maybe_emit_held_out(
+        &ctx.session.session_id,
+        ctx_for_emit,
+        action,
+        propensity,
+        roll,
+    );
     // Work is genuinely done at the dispatch level — reset the pending-work
     // re-block breaker before composing the terminal verdict.
     ctx.session.clear_stop_reblock();
@@ -72,7 +75,9 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // auto-compact may have fired a Stop with an in_progress card done-but-
     // UNRECORDED — surface [RECONCILE] so the next turn resumes at VERIFY, not a
     // re-edit. Fail-soft (None on clean tree / no hint / RPC miss). Advisory only.
-    if let Some(reconcile) = super::super::super::session_start::reconcile_context(&ctx.session.project) {
+    if let Some(reconcile) =
+        super::super::super::session_start::reconcile_context(&ctx.session.project)
+    {
         full.push('\n');
         full.push_str(&reconcile);
     }

@@ -147,7 +147,6 @@ impl SessionState {
             s.push('\n');
         }
 
-
         if self.new_crate_confirmed {
             s.push_str("[NEW_CRATE]\n");
             write_kv(s, "new_crate_confirmed", "true");

@@ -32,7 +32,9 @@ pub fn contains_factual_trigger(prompt: &str) -> bool {
 
 /// A recent-year token (2024-2029) — a date prompt the stale weights can't answer.
 fn has_year(text: &str) -> bool {
-    ["2024", "2025", "2026", "2027", "2028", "2029"].iter().any(|y| text.contains(y))
+    ["2024", "2025", "2026", "2027", "2028", "2029"]
+        .iter()
+        .any(|y| text.contains(y))
 }
 
 /// A `digit.digit` version-ish token (e.g. `1.2`, `0.9.5`) — a version claim.

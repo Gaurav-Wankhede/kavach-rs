@@ -178,13 +178,20 @@ mod tests {
         assert!(!is_wipeable_table("user"));
         assert!(!is_wipeable_table(""));
         assert!(!is_wipeable_table("decision WHERE 1=1; DELETE user"));
-        assert!(!is_wipeable_table("DECISION"), "case-sensitive: no upper alias");
+        assert!(
+            !is_wipeable_table("DECISION"),
+            "case-sensitive: no upper alias"
+        );
     }
 
     #[test]
     fn count_narrowing_is_saturating_not_panicking() {
         assert_eq!(count_as_usize(0), 0);
         assert_eq!(count_as_usize(42), 42);
-        assert_eq!(count_as_usize(-1), 0, "negative count floors to 0, never panics");
+        assert_eq!(
+            count_as_usize(-1),
+            0,
+            "negative count floors to 0, never panics"
+        );
     }
 }

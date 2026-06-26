@@ -72,8 +72,14 @@ pub struct DoneGamingVocab {
 impl Default for DoneGamingVocab {
     fn default() -> Self {
         Self {
-            gaming_phrases: DEFAULT_GAMING_PHRASES.iter().map(|s| (*s).to_owned()).collect(),
-            handback_phrases: DEFAULT_HANDBACK_PHRASES.iter().map(|s| (*s).to_owned()).collect(),
+            gaming_phrases: DEFAULT_GAMING_PHRASES
+                .iter()
+                .map(|s| (*s).to_owned())
+                .collect(),
+            handback_phrases: DEFAULT_HANDBACK_PHRASES
+                .iter()
+                .map(|s| (*s).to_owned())
+                .collect(),
         }
     }
 }
@@ -88,7 +94,9 @@ impl DoneGamingVocab {
     /// `true` when `lc` (a lower-cased message) contains any handback phrase.
     #[must_use]
     pub fn has_handback_phrase(&self, lc: &str) -> bool {
-        self.handback_phrases.iter().any(|p| lc.contains(p.as_str()))
+        self.handback_phrases
+            .iter()
+            .any(|p| lc.contains(p.as_str()))
     }
 }
 

@@ -62,9 +62,7 @@ fn is_binary_entrypoint(fp: &str) -> bool {
     let l = fp.to_lowercase();
     l.contains("/tools/")
         || l.contains("/bin/")
-        || (l.ends_with("/main.rs")
-            && !l.contains("/services/")
-            && !l.contains("/api/"))
+        || (l.ends_with("/main.rs") && !l.contains("/services/") && !l.contains("/api/"))
 }
 
 /// Detect handler-specific patterns (only fires on a production `is_handler_file`,

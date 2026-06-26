@@ -49,8 +49,7 @@ fn dirty_overlaps_card(porcelain: &str, card_paths: &[String]) -> bool {
     if card_paths.is_empty() {
         return false;
     }
-    let wanted: std::collections::HashSet<&str> =
-        card_paths.iter().map(|p| basename(p)).collect();
+    let wanted: std::collections::HashSet<&str> = card_paths.iter().map(|p| basename(p)).collect();
     porcelain
         .lines()
         .filter_map(porcelain_path)
@@ -67,10 +66,7 @@ pub(crate) fn reconcile_action(
     porcelain: &str,
     card_paths: &[String],
 ) -> ReconcileAction {
-    if card_in_progress
-        && !status_cmd_since_claim
-        && dirty_overlaps_card(porcelain, card_paths)
-    {
+    if card_in_progress && !status_cmd_since_claim && dirty_overlaps_card(porcelain, card_paths) {
         ReconcileAction::ResumeVerify
     } else {
         ReconcileAction::ReDispatch

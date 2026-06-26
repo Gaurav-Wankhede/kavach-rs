@@ -82,7 +82,10 @@ fn new_row_defaults_to_the_hard_channel() {
     // P8: every on-policy / pre-P8 row is the HARD (witness) channel. The audit's
     // soft split (`channel_reward(.., true)`) must NOT pick these up.
     let row = BanditRow::new("s", 0, ctx(), GateAction::Allow, 1.0);
-    assert!(!row.held_out, "a fresh row belongs to the hard channel by default");
+    assert!(
+        !row.held_out,
+        "a fresh row belongs to the hard channel by default"
+    );
 }
 
 #[test]
@@ -105,5 +108,8 @@ fn legacy_row_without_held_out_field_deserializes_as_hard_channel() {
     // read it as false (hard channel) — never panic, never mis-route to soft.
     let legacy = r#"{"session_id":"s","timestamp_ms":0,"context":{"gate":"g","tool":"Write","file_ext":"rs","diff_bytes":0,"intent_risk":"low","prior_fire_count":0},"action":"allow","propensity":1.0,"reward":null}"#;
     let back: BanditRow = serde_json::from_str(legacy).unwrap();
-    assert!(!back.held_out, "a pre-P8 row must default to the hard channel");
+    assert!(
+        !back.held_out,
+        "a pre-P8 row must default to the hard channel"
+    );
 }

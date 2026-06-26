@@ -17,7 +17,13 @@ pub(super) fn status_class(status: &str) -> &'static str {
 
 pub(super) fn dm_sanitize(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 

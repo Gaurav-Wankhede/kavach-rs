@@ -31,7 +31,9 @@ fn task_to_json(task: &NextTaskResult) -> serde_json::Value {
 }
 
 async fn open_state() -> Result<AppState, ()> {
-    let db = kavach_surreal::open_default_resilient().await.map_err(|_| ())?;
+    let db = kavach_surreal::open_default_resilient()
+        .await
+        .map_err(|_| ())?;
     Ok(AppState::new(db))
 }
 
@@ -42,15 +44,11 @@ pub(super) fn next(method: &str, project_slug: &str) -> Result<Option<serde_json
         let state = open_state().await?;
         let params = dispatch_params(project_slug)?;
         let task = match method {
-            "roadmap.next_open_task" => next_open_task(&state, params)
-                .await
-                .map_err(|_| ())?,
-            "roadmap.next_open_hunt" => next_open_hunt(&state, params)
-                .await
-                .map_err(|_| ())?,
-            "roadmap.promote_next_backlog" => promote_next_backlog(&state, params)
-                .await
-                .map_err(|_| ())?,
+            "roadmap.next_open_task" => next_open_task(&state, params).await.map_err(|_| ())?,
+            "roadmap.next_open_hunt" => next_open_hunt(&state, params).await.map_err(|_| ())?,
+            "roadmap.promote_next_backlog" => {
+                promote_next_backlog(&state, params).await.map_err(|_| ())?
+            }
             _ => return Err(()),
         };
         Ok(task.as_ref().map(task_to_json))
@@ -73,7 +71,9 @@ pub(super) fn renew_my_leases() -> usize {
         let Ok(db) = kavach_surreal::open_default_resilient().await else {
             return 0;
         };
-        kavach_surreal::lease::renew_active_leases(&db).await.unwrap_or(0)
+        kavach_surreal::lease::renew_active_leases(&db)
+            .await
+            .unwrap_or(0)
     })
 }
 

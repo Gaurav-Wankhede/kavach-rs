@@ -51,9 +51,7 @@ fn take_relay_payload_merges_and_clears() {
     assert!(payload.contains("[POST_TOOL_RELAY]"));
     assert!(!s.turn_shadow_pending());
     assert!(s.pending_advisories.is_empty());
-    assert!(s
-        .take_relay_payload(super::RelayFlush::Full)
-        .is_none());
+    assert!(s.take_relay_payload(super::RelayFlush::Full).is_none());
 }
 
 #[test]

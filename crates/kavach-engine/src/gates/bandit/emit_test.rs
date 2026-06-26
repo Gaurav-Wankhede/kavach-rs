@@ -42,10 +42,7 @@ fn payload_is_the_wire_shape_the_rpc_stores() {
     let json = payload_of(&row).expect("serialize");
     assert!(json.contains("\"action\":\"ask\""), "got: {json}");
     assert!(json.contains("\"reward\":null"), "got: {json}");
-    assert!(
-        json.contains("\"gate\":\"nano_file_guard\""),
-        "got: {json}"
-    );
+    assert!(json.contains("\"gate\":\"nano_file_guard\""), "got: {json}");
     assert!(json.contains("\"session_id\":\"sess_wire\""), "got: {json}");
 }
 

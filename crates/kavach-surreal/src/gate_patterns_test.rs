@@ -36,9 +36,16 @@ async fn list_hot_orders_by_occurrence_desc_and_surfaces_updated_unix() {
     seed(&db, &proj, "mid", 10).await;
 
     let rows = list_hot(&db, &proj, 10).await.expect("list_hot");
-    assert_eq!(rows.len(), 3, "all 3 autonomous rows returned, got {rows:?}");
+    assert_eq!(
+        rows.len(),
+        3,
+        "all 3 autonomous rows returned, got {rows:?}"
+    );
     // ORDER BY occurrence_count DESC — was unordered before Frame 1.
-    assert_eq!(rows[0].occurrence_count, 50, "highest occurrence ranks first");
+    assert_eq!(
+        rows[0].occurrence_count, 50,
+        "highest occurrence ranks first"
+    );
     assert_eq!(rows[1].occurrence_count, 10);
     assert_eq!(rows[2].occurrence_count, 5);
     // updated_unix surfaced from time::unix(updated_at) for the recency axis.
@@ -77,5 +84,8 @@ async fn list_hot_excludes_non_autonomous_tier() {
     .expect("seed research-tier row");
 
     let rows = list_hot(&db, &proj, 10).await.expect("list_hot");
-    assert!(rows.is_empty(), "research-tier rows are not hot, got {rows:?}");
+    assert!(
+        rows.is_empty(),
+        "research-tier rows are not hot, got {rows:?}"
+    );
 }

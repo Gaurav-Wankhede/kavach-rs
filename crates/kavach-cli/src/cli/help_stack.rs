@@ -7,6 +7,10 @@ where
     let builder = std::thread::Builder::new().stack_size(16 * 1024 * 1024);
     builder.spawn(f).map_or_else(
         |_| std::process::abort(),
-        |handle| handle.join().unwrap_or_else(|e| std::panic::resume_unwind(e)),
+        |handle| {
+            handle
+                .join()
+                .unwrap_or_else(|e| std::panic::resume_unwind(e))
+        },
     )
 }

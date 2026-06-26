@@ -84,7 +84,11 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
     }
     // A per-file rewriter (sd/sed/perl) counts when it is the head, is piped to, or
     // is the target of a fan-out driver (`fd -x sd`, `xargs sd`, `find -exec sed`).
-    let rewriters: Vec<&String> = vocab.mutators.iter().filter(|m| !vocab.inherent.contains(*m)).collect();
+    let rewriters: Vec<&String> = vocab
+        .mutators
+        .iter()
+        .filter(|m| !vocab.inherent.contains(*m))
+        .collect();
     let has_rewriter = rewriters
         .iter()
         .any(|m| head == m.as_str() || word_present(&lower, m));
@@ -93,7 +97,10 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
     }
     // Bulk = the rewriter is fanned out (fd -x / xargs / -exec / glob / {}), or it
     // names ≥2 explicit file paths by hand.
-    let fanned = vocab.fanout_markers.iter().any(|f| lower.contains(f.as_str()))
+    let fanned = vocab
+        .fanout_markers
+        .iter()
+        .any(|f| lower.contains(f.as_str()))
         || explicit_path_args(command) >= 2;
     // A lone `sd 'a' 'b' one.rs` (head rewriter, no fan-out) is NOT bulk — that is
     // the write-bypass guard's single-file domain; only steer when truly fanned out.

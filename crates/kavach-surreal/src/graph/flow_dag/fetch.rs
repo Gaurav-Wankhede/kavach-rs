@@ -39,10 +39,7 @@ pub async fn fetch_flow(db: &Surreal<Db>, project_slug: &str, flow_key: &str) ->
     let anchor_name = format!("{project_slug}/{flow_key}");
     let aq = "SELECT properties FROM entity \
               WHERE entity_type = 'flow' AND name = $name LIMIT 1";
-    let mut aresp = db
-        .query(aq)
-        .bind(("name", anchor_name.clone()))
-        .await?;
+    let mut aresp = db.query(aq).bind(("name", anchor_name.clone())).await?;
     let anchor: Option<AnchorRow> = aresp.take(0)?;
     let Some(anchor) = anchor else {
         return Err(Error::RecordNotFound(format!(

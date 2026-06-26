@@ -1,4 +1,4 @@
-use super::{mirror_depends_on_into_content, CATEGORY_HELP, STRICT_CATEGORIES};
+use super::{CATEGORY_HELP, STRICT_CATEGORIES, mirror_depends_on_into_content};
 
 /// No flag deps → body is returned unchanged (no spurious `DEPENDS_ON` line).
 #[test]
@@ -10,10 +10,7 @@ fn no_flag_deps_leaves_body_unchanged() {
 /// A flag dep is mirrored into a `DEPENDS_ON` content line the readiness parser reads.
 #[test]
 fn flag_dep_is_mirrored_into_content() {
-    let out = mirror_depends_on_into_content(
-        "body".to_owned(),
-        &["roadmap.unit.x".to_owned()],
-    );
+    let out = mirror_depends_on_into_content("body".to_owned(), &["roadmap.unit.x".to_owned()]);
     assert!(out.starts_with("DEPENDS_ON: roadmap.unit.x"));
     assert!(out.contains("body"));
 }

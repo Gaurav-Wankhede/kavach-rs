@@ -3,10 +3,10 @@
 use clap::{Parser, Subcommand};
 
 mod db;
+mod harness_loop;
 pub(crate) mod help_md;
 mod help_stack;
 pub(crate) mod help_tree;
-mod harness_loop;
 mod oversized;
 mod phase;
 mod rules;
@@ -61,23 +61,31 @@ pub(crate) struct Cli {
 #[derive(Subcommand)]
 pub(crate) enum Commands {
     /// Show session status, build identity, and enforcement flags.
-    #[command(after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates."
+    )]
     Status,
     /// Launch the HTMX web UI (server-rendered) on <http://127.0.0.1>:<port>.
-    #[command(after_help = "EXAMPLES:\n  kavach web              # serve on :7777\n  kavach web --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the surreal server; run `kavach servers up` first if pages show the offline panel.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach web              # serve on :7777\n  kavach web --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the surreal server; run `kavach servers up` first if pages show the offline panel."
+    )]
     Web {
         /// TCP port to bind on loopback (default 7777, unprivileged).
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
     },
     /// Start/stop/inspect the background servers (`SurrealDB` store + web UI).
-    #[command(after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel."
+    )]
     Servers {
         #[command(subcommand)]
         action: ServersAction,
     },
     /// Run a gate hook (called by Claude Code / Cursor hooks).
-    #[command(after_help = "EXAMPLES:\n  kavach gates stop --help          # gate purpose (no stdin)\n  echo '{\"hook_event_name\":\"Stop\",\"cwd\":\".\"}' | kavach gates stop --hook --vendor cursor\n\nWHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach gates stop --help          # gate purpose (no stdin)\n  echo '{\"hook_event_name\":\"Stop\",\"cwd\":\".\"}' | kavach gates stop --hook --vendor cursor\n\nWHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`."
+    )]
     Gates {
         /// Gate name (pre-write, post-write, pre-tool, post-tool, intent, stop, session-start, six-file-intent, pre-implementation, post-implementation, …)
         gate_name: String,
@@ -104,13 +112,17 @@ pub(crate) enum Commands {
         action: RulesAction,
     },
     /// Manage the SurrealDB-backed memory store (projects, kanban, decisions, graph).
-    #[command(after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  kavach db get --project P --category roadmap --key K --full\n  kavach db write --project P --category roadmap --key K --title T --new\n\nWHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  kavach db get --project P --category roadmap --key K --full\n  kavach db write --project P --category roadmap --key K --title T --new\n\nWHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks."
+    )]
     Db {
         #[command(subcommand)]
         action: DbAction,
     },
     /// Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…).
-    #[command(after_help = "EXAMPLES:\n  kavach install --vendor all --dry-run\n  kavach install --vendor cursor\n\nWHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach install --vendor all --dry-run\n  kavach install --vendor cursor\n\nWHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent."
+    )]
     Install {
         /// Which tool(s): cc | cursor | codex | gemini | pi | all.
         #[arg(long)]
@@ -121,7 +133,9 @@ pub(crate) enum Commands {
     },
     /// Self-healing pipeline (Kavach replaces N8N). `capture` gathers CI/bug-hunt
     /// failure context and writes a self-heal roadmap card the loop will dispatch.
-    #[command(after_help = "EXAMPLES:\n  kavach heal capture --project P --incident run-42 --summary 'smoke test failed' --log ci.log\n\nWHEN: a CI run failed or a bug-hunt found a defect — enqueue it for the autonomous loop to fix. Kavach never calls an LLM; the subscription agent heals.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach heal capture --project P --incident run-42 --summary 'smoke test failed' --log ci.log\n\nWHEN: a CI run failed or a bug-hunt found a defect — enqueue it for the autonomous loop to fix. Kavach never calls an LLM; the subscription agent heals."
+    )]
     Heal {
         #[command(subcommand)]
         action: HealAction,
@@ -130,14 +144,18 @@ pub(crate) enum Commands {
     /// six attack lenses, record each to the Kavach DB, and capture a heal card so
     /// the loop fixes it — then re-hunt until dry. Emits a per-iteration YAML to a
     /// /tmp working dir to precisely target each round's unit of work.
-    #[command(after_help = "EXAMPLES:\n  kavach loophole sweep --project P\n\nWHEN: continuously self-interrogate the codebase for concurrency/failure/malformed/authz/replay/boundary loopholes. Kavach detects (non-AI) + records; the subscription agent fixes.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach loophole sweep --project P\n\nWHEN: continuously self-interrogate the codebase for concurrency/failure/malformed/authz/replay/boundary loopholes. Kavach detects (non-AI) + records; the subscription agent fixes."
+    )]
     Loophole {
         #[command(subcommand)]
         action: LoopholeAction,
     },
     /// Print a vendor's LIVE upstream hook-contract schema source so an operator
     /// or agent can fetch + diff the current contract (realtime drift awareness).
-    #[command(after_help = "EXAMPLES:\n  kavach schema --all\n  kavach schema --vendor cursor\n\nWHEN: a native tool may have changed its hook format — reference the live schema URL instead of a frozen assumption.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach schema --all\n  kavach schema --vendor cursor\n\nWHEN: a native tool may have changed its hook format — reference the live schema URL instead of a frozen assumption."
+    )]
     Schema {
         /// Which tool: cc | cursor | codex | antigravity (agy) | gemini (alias).
         /// Omit with `--all` to list every vendor.
@@ -166,7 +184,9 @@ pub(crate) enum Commands {
         action: TailwindPlusAction,
     },
     /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
-    #[command(after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line.")]
+    #[command(
+        after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
+    )]
     Doctor,
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
@@ -234,7 +254,9 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
     },
     /// Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow.
     /// SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent.
-    #[command(after_help = "EXAMPLES:\n  kavach pipeline plan --project P --spec-key app_spec.build\n  kavach pipeline status --project nicole-carpenter\n\nWHEN: Bootstrap roadmap from app_spec; track multi-stage workflow counts.")]
+    #[command(
+        after_help = "EXAMPLES:\n  kavach pipeline plan --project P --spec-key app_spec.build\n  kavach pipeline status --project nicole-carpenter\n\nWHEN: Bootstrap roadmap from app_spec; track multi-stage workflow counts."
+    )]
     Pipeline {
         #[command(subcommand)]
         action: PipelineAction,
@@ -324,7 +346,10 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         action: LintAction,
     },
     /// Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference.
-    #[command(name = "commands", after_help = "EXAMPLES:\n  kavach commands                 # indented tree of every path + summary\n  kavach commands --tree          # same (explicit)\n  kavach commands --markdown      # full reference: flags, defaults, examples\n  kavach commands --markdown > docs/CLI.md\n\nWHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the live clap tree — never drifts.")]
+    #[command(
+        name = "commands",
+        after_help = "EXAMPLES:\n  kavach commands                 # indented tree of every path + summary\n  kavach commands --tree          # same (explicit)\n  kavach commands --markdown      # full reference: flags, defaults, examples\n  kavach commands --markdown > docs/CLI.md\n\nWHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the live clap tree — never drifts."
+    )]
     CommandTree {
         /// Render the indented command tree (default when neither flag is given).
         #[arg(long)]

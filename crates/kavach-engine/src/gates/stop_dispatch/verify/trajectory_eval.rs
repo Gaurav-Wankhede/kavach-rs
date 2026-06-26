@@ -13,7 +13,8 @@ pub(super) fn touched_gate_or_dispatch(card_key: &str) -> bool {
     }
     let Ok(output) = std::process::Command::new("git")
         .args(["diff", "--name-only", "HEAD~1", "HEAD"])
-        .output() else {
+        .output()
+    else {
         return false;
     };
     let stdout = String::from_utf8_lossy(&output.stdout);

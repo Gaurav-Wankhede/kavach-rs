@@ -125,4 +125,3 @@ fn render_json(
         Err(io_err) => into_exit_code(io_err),
     }
 }
-

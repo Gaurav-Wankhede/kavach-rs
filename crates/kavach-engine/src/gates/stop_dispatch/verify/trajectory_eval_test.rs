@@ -2,7 +2,9 @@ use kavach_patterns::eval_replay::{EventKind, TrajectoryEvent};
 
 #[test]
 fn path_is_gate_or_dispatch_true_gates() {
-    assert!(super::path_is_gate_or_dispatch("crates/kavach-engine/src/gates/foo.rs"));
+    assert!(super::path_is_gate_or_dispatch(
+        "crates/kavach-engine/src/gates/foo.rs"
+    ));
 }
 
 #[test]
@@ -45,7 +47,10 @@ fn eval_advisory_positive_score_returns_none() {
         outcome: None,
     }];
     let result = super::eval_trajectory_score(&events);
-    assert!(result >= 0, "single write + substantive test should be positive");
+    assert!(
+        result >= 0,
+        "single write + substantive test should be positive"
+    );
 }
 
 #[test]
@@ -59,7 +64,10 @@ fn eval_advisory_negative_score_returns_some() {
         outcome: None,
     }];
     let result = super::eval_trajectory_score(&events);
-    assert!(result < 0, "deferral handoff should be negative, got {result}");
+    assert!(
+        result < 0,
+        "deferral handoff should be negative, got {result}"
+    );
 }
 
 #[test]
@@ -84,7 +92,10 @@ fn eval_advisory_multiple_negatives_strong_penalty() {
         },
     ];
     let result = super::eval_trajectory_score(&events);
-    assert!(result < 0, "stub + deferral should result in negative score");
+    assert!(
+        result < 0,
+        "stub + deferral should result in negative score"
+    );
 }
 
 #[test]

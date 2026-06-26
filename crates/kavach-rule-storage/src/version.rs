@@ -30,5 +30,4 @@ impl RuleVersion {
         let current_hash = Self::compute_hash(&content);
         Ok(current_hash != rule.content_hash)
     }
-
 }

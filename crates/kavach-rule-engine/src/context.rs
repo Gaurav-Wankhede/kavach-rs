@@ -102,7 +102,6 @@ impl EvalContext {
         self
     }
 
-
     /// True when the current phase is high-risk (medium or high `intent_risk`).
     /// Used by policy rules to gate destructive actions.
     #[must_use]

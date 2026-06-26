@@ -77,8 +77,10 @@ pub(super) fn run(
                 if let Err(io_err) = print_or_exit(&line) {
                     return into_exit_code(io_err);
                 }
-                if let Some(body) =
-                    entry.content.as_deref().and_then(|c| render_content(c, depth))
+                if let Some(body) = entry
+                    .content
+                    .as_deref()
+                    .and_then(|c| render_content(c, depth))
                     && let Err(io_err) = print_or_exit(&format!("    {body}"))
                 {
                     return into_exit_code(io_err);

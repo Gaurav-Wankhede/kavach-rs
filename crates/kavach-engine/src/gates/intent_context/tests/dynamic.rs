@@ -13,7 +13,10 @@ fn known_intent_always_produces_a_directive() {
     // the static fallback guarantees a directive. (Hybrid contract.)
     let mut ctx = String::new();
     append_agent_dispatch(&mut ctx, "debug", "fix the broken auth handler bug", "");
-    assert!(!ctx.is_empty(), "known intent must always dispatch something");
+    assert!(
+        !ctx.is_empty(),
+        "known intent must always dispatch something"
+    );
     assert!(ctx.contains("INVOKE_AGENT"), "must name an agent");
 }
 
@@ -35,7 +38,10 @@ fn empty_prompt_falls_back_to_static_table() {
     // No rankable words ⇒ dynamic path returns false ⇒ static default used.
     let mut ctx = String::new();
     append_agent_dispatch(&mut ctx, "general", "", "");
-    assert!(ctx.contains("research-director"), "empty prompt ⇒ static default");
+    assert!(
+        ctx.contains("research-director"),
+        "empty prompt ⇒ static default"
+    );
 }
 
 #[test]

@@ -81,8 +81,7 @@ fn test_precompact_null_fields_deserialize() {
         "trigger": null,
         "custom_instructions": null
     }"#;
-    let input: HookInput =
-        serde_json::from_str(json).expect("explicit-null PreCompact must parse");
+    let input: HookInput = serde_json::from_str(json).expect("explicit-null PreCompact must parse");
     assert_eq!(input.trigger, "");
     assert_eq!(input.custom_instructions, "");
 }

@@ -16,11 +16,21 @@ fn ev(kind: EventKind, outcome: Option<EventOutcome>) -> TrajectoryEvent {
 }
 
 fn bash(cmd: &str, outcome: Option<EventOutcome>) -> TrajectoryEvent {
-    ev(EventKind::Bash { command: cmd.into() }, outcome)
+    ev(
+        EventKind::Bash {
+            command: cmd.into(),
+        },
+        outcome,
+    )
 }
 
 fn stop(msg: &str) -> TrajectoryEvent {
-    ev(EventKind::Stop { final_message: msg.into() }, None)
+    ev(
+        EventKind::Stop {
+            final_message: msg.into(),
+        },
+        None,
+    )
 }
 
 #[test]
@@ -41,7 +51,10 @@ fn output_vocab_alone_can_reach_quorum() {
     // ("could not compile") contradicts and the exit dim abstains — the agree side
     // is only the weak verify-ran/agree, so quorum still tips to contradiction.
     let traj = vec![
-        bash("cargo build 2>&1 | tee log  # could not compile", Some(EventOutcome::Success)),
+        bash(
+            "cargo build 2>&1 | tee log  # could not compile",
+            Some(EventOutcome::Success),
+        ),
         stop("Done — green."),
     ];
     // exit=Agree(2) [Success], output=Contradict(2) → contradict 2 vs agree 2; with
@@ -115,9 +128,15 @@ fn output_dimension_reads_only_command_text_vocab() {
     );
     // Absence of a failure token is NOT proof of success — abstain, not agree
     // (orthogonality: only the process-exit dim, a different artifact, may agree).
-    assert_eq!(dim_output_failure(&[bash("cargo b", None)], &vocab), DimVerdict::Abstain);
+    assert_eq!(
+        dim_output_failure(&[bash("cargo b", None)], &vocab),
+        DimVerdict::Abstain
+    );
     // No command at all → abstain.
-    assert_eq!(dim_output_failure(&[stop("done")], &vocab), DimVerdict::Abstain);
+    assert_eq!(
+        dim_output_failure(&[stop("done")], &vocab),
+        DimVerdict::Abstain
+    );
 }
 
 #[test]
@@ -125,13 +144,19 @@ fn config_is_data_db_override_changes_the_verdict() {
     // The "hardcoded parameters" objection killed: the SAME trajectory flips from
     // no-penalty to penalty purely by swapping the config (as a DB row would).
     let traj = vec![
-        bash("cargo build 2>&1  # could not compile", Some(EventOutcome::Success)),
+        bash(
+            "cargo build 2>&1  # could not compile",
+            Some(EventOutcome::Success),
+        ),
         stop("Done — green."),
     ];
     // Default weights: exit=Agree(2), output=Contradict(2) → 2 vs 2, no quorum → 0.
     assert_eq!(oracle_penalty(&traj), 0);
     // A DB-tuned config that trusts the output vocab more flips the quorum.
-    let strict = OracleConfig { w_output: 5, ..OracleConfig::default() };
+    let strict = OracleConfig {
+        w_output: 5,
+        ..OracleConfig::default()
+    };
     assert_eq!(oracle_penalty_with(&traj, &strict), strict.penalty);
 }
 

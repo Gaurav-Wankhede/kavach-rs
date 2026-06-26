@@ -64,15 +64,22 @@ fn commit_local() -> Option<String> {
         Ok(o) => o,
         Err(e) => {
             use std::io::Write as _;
-            drop(writeln!(std::io::stderr(), "[AUTOCOMMIT_FAIL] git add -A: {e}"));
+            drop(writeln!(
+                std::io::stderr(),
+                "[AUTOCOMMIT_FAIL] git add -A: {e}"
+            ));
             return None;
         }
     };
     if !staged.status.success() {
         use std::io::Write as _;
         let err = String::from_utf8_lossy(&staged.stderr);
-        drop(writeln!(std::io::stderr(), "[AUTOCOMMIT_FAIL] git add -A exited {}: {}",
-            staged.status, err.trim()));
+        drop(writeln!(
+            std::io::stderr(),
+            "[AUTOCOMMIT_FAIL] git add -A exited {}: {}",
+            staged.status,
+            err.trim()
+        ));
         return None;
     }
     // Nothing staged → clean tree → nothing to commit (avoid an empty-commit error).

@@ -53,7 +53,8 @@ pub(super) fn recall_block(prompt: &str) -> String {
 fn cited_sources(hits: &[kavach_surreal::BrainHit]) -> Option<String> {
     let nodes: Vec<&str> = hits.iter().map(|h| h.id.as_str()).collect();
     let params = serde_json::json!({ "nodes": nodes });
-    let res: serde_json::Value = kavach_rpc::client::call("citation.for_nodes", Some(params)).ok()?;
+    let res: serde_json::Value =
+        kavach_rpc::client::call("citation.for_nodes", Some(params)).ok()?;
     let citers = res.get("citers")?.as_array()?;
     if citers.is_empty() {
         return None;

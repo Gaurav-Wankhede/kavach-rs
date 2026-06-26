@@ -7,9 +7,9 @@
 //! testable. Adding a module: implement detector → wire in `kavach-engine/src/gates/`
 //! → add a regression test exercising the engine entry point → update the wiring map.
 
+pub mod bloatware_guard;
 mod checks;
 mod config;
-pub mod bloatware_guard;
 pub mod dedup_guard;
 mod detect;
 mod file_types;
@@ -18,8 +18,8 @@ pub mod rust_guard;
 pub(crate) mod rust_patterns;
 pub mod severity;
 pub mod sql_guard;
-pub mod stability;
 pub(crate) mod sql_patterns;
+pub mod stability;
 pub mod ts_guard;
 pub(crate) mod ts_patterns;
 
@@ -51,8 +51,8 @@ pub mod gnap_guard;
 pub mod k_pri;
 pub mod legacy_tool_guard;
 pub mod lint_profile_guard;
-pub mod loophole_vocab;
 pub mod loophole_lens;
+pub mod loophole_vocab;
 pub mod owasp_guard;
 pub mod reuse_ladder_guard;
 pub mod secrecy_guard;
@@ -79,8 +79,8 @@ pub mod eval_replay;
 pub mod finops_guard;
 pub mod irreversible_guard;
 pub mod laziness_guard;
-pub mod nano_file_guard;
 pub mod migration_safety_guard;
+pub mod nano_file_guard;
 pub mod observability_guard;
 pub mod pii_data_guard;
 pub mod production_patterns;

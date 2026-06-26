@@ -24,10 +24,15 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     .await
     .expect("upsert ok");
 
-    let row = tree_get(&st, TreeGetParams { source: "skills".to_owned() })
-        .await
-        .expect("get ok")
-        .expect("row present after upsert");
+    let row = tree_get(
+        &st,
+        TreeGetParams {
+            source: "skills".to_owned(),
+        },
+    )
+    .await
+    .expect("get ok")
+    .expect("row present after upsert");
     assert_eq!(
         row.tree_json,
         surrealdb_types::Bytes::from(blob.clone()),
@@ -39,8 +44,13 @@ async fn upsert_then_get_returns_the_persisted_blob() {
 #[tokio::test]
 async fn get_missing_source_is_none_not_err() {
     let st = state().await;
-    let row = tree_get(&st, TreeGetParams { source: "absent".to_owned() })
-        .await
-        .expect("get ok");
+    let row = tree_get(
+        &st,
+        TreeGetParams {
+            source: "absent".to_owned(),
+        },
+    )
+    .await
+    .expect("get ok");
     assert!(row.is_none(), "a missing label fetches None, not an error");
 }

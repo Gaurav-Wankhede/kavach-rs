@@ -98,7 +98,11 @@ pub fn detect_disobedience(message: &str) -> Option<String> {
 pub fn detect_disobedience_with(vocab: &DisobedienceVocab, message: &str) -> Option<String> {
     let m = message.to_lowercase();
     let dismissed = vocab.dismissal.iter().find(|p| m.contains(p.as_str()))?;
-    if !vocab.imperative_marker.iter().any(|k| m.contains(k.as_str())) {
+    if !vocab
+        .imperative_marker
+        .iter()
+        .any(|k| m.contains(k.as_str()))
+    {
         return None;
     }
     if vocab.obeyed.iter().any(|p| m.contains(p.as_str())) {

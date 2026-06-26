@@ -1,5 +1,5 @@
-use std::process::Command;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use std::process::Command;
 
 pub(super) const CLI_PKG: &str = "kavach-cli";
 pub(super) const ENGINE_PKG: &str = "kavach-engine";

@@ -10,13 +10,22 @@ const PAT: &str = "let _name discards a return value";
 #[test]
 fn flags_named_discard_of_a_call() {
     // The exact dispatch work-steal bug shape: a lost-race bool thrown away.
-    let v = detect("src/lib.rs", "fn f() {\n    let _claimed = claim_card(p, k);\n}\n");
-    assert!(v.iter().any(|x| x.pattern == PAT), "named discard must fire");
+    let v = detect(
+        "src/lib.rs",
+        "fn f() {\n    let _claimed = claim_card(p, k);\n}\n",
+    );
+    assert!(
+        v.iter().any(|x| x.pattern == PAT),
+        "named discard must fire"
+    );
 }
 
 #[test]
 fn flags_named_result_discard() {
-    let v = detect("src/lib.rs", "fn f() {\n    let _result = run_thing();\n}\n");
+    let v = detect(
+        "src/lib.rs",
+        "fn f() {\n    let _result = run_thing();\n}\n",
+    );
     assert!(v.iter().any(|x| x.pattern == PAT));
 }
 
@@ -26,14 +35,23 @@ const ANON: &str = "anonymous let _ = discards a call or live binding";
 fn flags_anonymous_call_discard() {
     // `let _ = fallible()` swallows the Result — the let_underscore_must_use class.
     let v = detect("src/lib.rs", "fn f() {\n    let _ = run_thing();\n}\n");
-    assert!(v.iter().any(|x| x.pattern == ANON), "anon call discard must fire");
+    assert!(
+        v.iter().any(|x| x.pattern == ANON),
+        "anon call discard must fire"
+    );
 }
 
 #[test]
 fn flags_anonymous_tuple_param_discard() {
     // The exact launder from the transcript: `let _ = (lat, lng);` suppresses live params.
-    let v = detect("src/lib.rs", "fn f(lat: f64, lng: f64) {\n    let _ = (lat, lng);\n}\n");
-    assert!(v.iter().any(|x| x.pattern == ANON), "tuple-of-bindings discard must fire");
+    let v = detect(
+        "src/lib.rs",
+        "fn f(lat: f64, lng: f64) {\n    let _ = (lat, lng);\n}\n",
+    );
+    assert!(
+        v.iter().any(|x| x.pattern == ANON),
+        "tuple-of-bindings discard must fire"
+    );
 }
 
 #[test]
@@ -46,7 +64,10 @@ fn allows_type_only_anonymous() {
 fn allows_anonymous_unit_discard() {
     // `let _ = ();` is a genuine no-op — not a call, not a binding-tuple: stays silent.
     let v = detect("src/lib.rs", "fn f() {\n    let _ = ();\n}\n");
-    assert!(!v.iter().any(|x| x.pattern == ANON), "unit discard is benign");
+    assert!(
+        !v.iter().any(|x| x.pattern == ANON),
+        "unit discard is benign"
+    );
 }
 
 #[test]

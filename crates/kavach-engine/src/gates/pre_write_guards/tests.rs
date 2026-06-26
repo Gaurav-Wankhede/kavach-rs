@@ -47,7 +47,9 @@ fn edit_on_oversized_file_trips_nano_file_split_detector() {
         "Edit on a 200-LOC file must advise the ladder (warn band, full-file-body seen)"
     );
     assert!(
-        !hits.iter().any(|v| v.severity == kavach_patterns::nano_file_guard::NanoSeverity::P0Block),
+        !hits
+            .iter()
+            .any(|v| v.severity == kavach_patterns::nano_file_guard::NanoSeverity::P0Block),
         "200 LOC is a smell, not a monolith — must NOT hard-block"
     );
 

@@ -11,7 +11,12 @@ const DEF_KEYWORDS: [&str; 5] = ["struct", "enum", "fn", "const", "static"];
 /// (`as X`) bind the alias. Grouped (`{A, B}`) and glob (`*`) imports are skipped —
 /// no single bound name to shadow.
 pub(super) fn imported_name(use_line: &str) -> Option<&str> {
-    let body = use_line.trim().strip_prefix("use ")?.split(';').next()?.trim();
+    let body = use_line
+        .trim()
+        .strip_prefix("use ")?
+        .split(';')
+        .next()?
+        .trim();
     if body.contains('{') || body.contains('*') {
         return None;
     }
@@ -61,6 +66,8 @@ pub(super) fn defined_name(line: &str) -> Option<&str> {
 
 /// True for tokens that may legally precede an item keyword on a definition line.
 fn is_qualifier(tok: &str) -> bool {
-    matches!(tok, "pub" | "async" | "unsafe" | "const" | "extern" | "default")
-        || tok.starts_with("pub(")
+    matches!(
+        tok,
+        "pub" | "async" | "unsafe" | "const" | "extern" | "default"
+    ) || tok.starts_with("pub(")
 }

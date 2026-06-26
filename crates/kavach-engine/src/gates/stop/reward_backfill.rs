@@ -77,20 +77,17 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
 /// non-Rust stack scores its own verify commands. Any read error → abstain
 /// (a missing tape must never fabricate a reward). Operator directive 2026-06-17.
 fn rubric_outcome(session: &SessionState) -> RewardOutcome {
-    let Ok(path) =
-        kavach_patterns::eval_replay::default_trajectory_path(&session.session_id)
+    let Ok(path) = kavach_patterns::eval_replay::default_trajectory_path(&session.session_id)
     else {
         return RewardOutcome::Abstain;
     };
     let Ok(events) = kavach_patterns::eval_replay::read_jsonl(&path) else {
         return RewardOutcome::Abstain;
     };
-    let rubric =
-        crate::gates::stop_dispatch::reward_rubric_for(&session.project);
+    let rubric = crate::gates::stop_dispatch::reward_rubric_for(&session.project);
     // DB-sourced multidimensional-oracle config (weights/penalty/failure-vocab as
     // DATA, not source literals); absent/malformed row → compiled default.
-    let oracle_cfg =
-        crate::gates::stop_dispatch::oracle_config_for(&session.project);
+    let oracle_cfg = crate::gates::stop_dispatch::oracle_config_for(&session.project);
     match kavach_patterns::reward::score_trajectory_full(&events, &rubric, &oracle_cfg) {
         s if s > 0 => RewardOutcome::AiJudged(true),
         s if s < 0 => RewardOutcome::AiJudged(false),

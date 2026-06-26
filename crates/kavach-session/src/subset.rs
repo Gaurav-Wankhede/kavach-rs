@@ -21,7 +21,6 @@ impl SessionState {
             session_id: self.session_id.clone(),
         }
     }
-
 }
 
 #[cfg(test)]

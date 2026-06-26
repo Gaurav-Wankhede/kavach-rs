@@ -2,7 +2,10 @@ use super::{cargo_cmd, stderr_head};
 
 #[test]
 fn cmd_with_crate_shows_the_p_flag() {
-    assert_eq!(cargo_cmd(&["check"], Some("chat-service")), "cargo check -p chat-service");
+    assert_eq!(
+        cargo_cmd(&["check"], Some("chat-service")),
+        "cargo check -p chat-service"
+    );
 }
 
 #[test]

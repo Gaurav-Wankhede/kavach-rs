@@ -93,7 +93,13 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
         // (the single RocksDB writer), not a direct embedded-DB open — so no
         // tokio runtime is built here. SOURCE: rca.mistake-ledger-dark-via-direct-open.
         match crate::mistake_ledger_graph::try_record_via_graph(m, &session_id) {
-            Ok(ids) => return RecordOutcome { key: ids, persisted: true, error: None },
+            Ok(ids) => {
+                return RecordOutcome {
+                    key: ids,
+                    persisted: true,
+                    error: None,
+                };
+            }
             Err(e) => tracing::warn!(error = %e, "graph path failed, falling back to ledger"),
         }
     }
@@ -121,7 +127,8 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     // line is retained ABOVE the graph because read_hit_count + fetch_mistake_row
     // parse `hit_count=`/`origin_project=` tokens from it — dropping it would dark
     // the recurrence counter (the same silent-fail class fixed earlier).
-    let dag = kavach_surreal::mistake_row_mermaid(m.gate, m.banned_sample, m.correct_action, new_hits);
+    let dag =
+        kavach_surreal::mistake_row_mermaid(m.gate, m.banned_sample, m.correct_action, new_hits);
     let content = format!(
         "anti-pattern row | gate={gate} turn={turn} hit_count={hits} last_seen_unix={ts} origin_project={origin}\n\
          ```mermaid\n{dag}```\n",
@@ -161,7 +168,11 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
         Ok(o) if !o.status.success() => {
             let stderr = String::from_utf8_lossy(&o.stderr);
             tracing::warn!(key = %key, status = %o.status, stderr = %stderr, "record_mistake: db write failed");
-            Some(format!("db write exit={} stderr={}", o.status, stderr.trim()))
+            Some(format!(
+                "db write exit={} stderr={}",
+                o.status,
+                stderr.trim()
+            ))
         }
         Err(e) => {
             tracing::warn!(key = %key, error = %e, "record_mistake: spawn failed");
@@ -169,7 +180,11 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
         }
         Ok(_) => None,
     };
-    RecordOutcome { persisted: error.is_none(), key, error }
+    RecordOutcome {
+        persisted: error.is_none(),
+        key,
+        error,
+    }
 }
 
 /// Record a mistake AND surface a write failure to the LLM next turn.
@@ -305,7 +320,11 @@ mod tests {
 
     #[test]
     fn record_outcome_displays_as_key() {
-        let o = RecordOutcome { key: "mistake.g.abcd1234".to_owned(), persisted: true, error: None };
+        let o = RecordOutcome {
+            key: "mistake.g.abcd1234".to_owned(),
+            persisted: true,
+            error: None,
+        };
         assert_eq!(o.to_string(), "mistake.g.abcd1234");
     }
 

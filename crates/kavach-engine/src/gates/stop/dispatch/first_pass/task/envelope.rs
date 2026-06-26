@@ -51,7 +51,10 @@ pub(super) fn dispatch_envelope(c: &EnvelopeCtx<'_>) -> String {
     // For a gate card the act-imperative leads (never a hold); the project's
     // dispatch directive rides along after it.
     let directive_block = if gate_shaped {
-        format!("{}\n\n{directive}", super::gate_strip::act_imperative(&shown_title))
+        format!(
+            "{}\n\n{directive}",
+            super::gate_strip::act_imperative(&shown_title)
+        )
     } else {
         directive.to_owned()
     };
@@ -74,8 +77,7 @@ pub(super) fn dispatch_envelope(c: &EnvelopeCtx<'_>) -> String {
 
 /// Minimal fallback when the project has no `gate.dispatch_directive` row. Kept
 /// deliberately generic + short — real guidance is the project's DB directive.
-const FALLBACK_DIRECTIVE: &str =
-    "No project directive set (decision row `gate.dispatch_directive` absent). \
+const FALLBACK_DIRECTIVE: &str = "No project directive set (decision row `gate.dispatch_directive` absent). \
      Read the card + this project's `.claude/rules/*` + decision rows, decide the \
      honest next action autonomously (build / decompose / dep-gate / verify / delete), \
      execute it this turn, and verify before claiming done. Set a directive row to \

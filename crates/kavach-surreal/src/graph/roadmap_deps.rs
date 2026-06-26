@@ -34,7 +34,10 @@ fn validate_key(key: &str) -> Result<()> {
     if key.is_empty() {
         return Err(Error::Migration("roadmap card key cannot be empty".into()));
     }
-    if key.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.')) {
+    if key
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'))
+    {
         return Ok(());
     }
     Err(Error::Migration(format!(

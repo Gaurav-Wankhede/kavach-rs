@@ -46,35 +46,35 @@ pub mod session_store;
 pub mod wipe;
 pub mod write;
 
-pub use connection::{
-    default_db_path, open_db, open_default, open_default_held, open_default_resilient,
-    open_memory,
-};
-pub use dual_write::MemoryEntry;
-pub use gate_config::{
-    GLOBAL_PROJECT, GateConfigEntry, GateConfigKind, GateConfigValue,
-    gate_config_delete, gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
-    set_with_kind as gate_config_set_with_kind,
-};
 pub use brain::{BrainHit, GapReport, KavachBrain, hybrid_search};
 pub use brain_query::{gap_for, search_corpus};
+pub use connection::{
+    default_db_path, open_db, open_default, open_default_held, open_default_resilient, open_memory,
+};
+pub use dual_write::MemoryEntry;
 pub use error::{Error, Result};
-pub use nlm::{NlmHit, query_docs as nlm_query_docs, upsert_doc as nlm_upsert_doc};
-pub use rrf::{RRF_K, rrf_fuse};
+pub use gate_config::{
+    GLOBAL_PROJECT, GateConfigEntry, GateConfigKind, GateConfigValue, gate_config_delete,
+    gate_config_get, gate_config_list, gate_config_resolve, gate_config_set,
+    set_with_kind as gate_config_set_with_kind,
+};
 pub use graph::upsert_relationships;
 pub use graph::{DagEdge, DagNode, RoadmapDag, roadmap_dag_fetch};
 pub use graph::{Edge, Entity, RelateParams, RelationType};
-pub use graph::{LinkedRow, list_rows_with_links};
 pub use graph::{
     EdgeRow, RelatedRow, find_entity as graph_find_entity, get_related as graph_get_related,
     list_edges_among as graph_list_edges_among, list_entities as graph_list_entities,
     relate_dynamic as graph_relate_dynamic, upsert_entity as graph_upsert_entity,
 };
+pub use graph::{LinkedRow, list_rows_with_links};
 pub use graph::{backward, create_entity, delete_edge, forward, get_entity, relate};
+pub use nlm::{NlmHit, query_docs as nlm_query_docs, upsert_doc as nlm_upsert_doc};
+pub use rrf::{RRF_K, rrf_fuse};
 // Implementation-flow DAG (store-as-DAG, render-Mermaid-on-read)
 pub use graph::{
     FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput, NodeShape,
-    fetch_flow as graph_fetch_flow, list_flows as graph_list_flows, upsert_flow as graph_upsert_flow,
+    fetch_flow as graph_fetch_flow, list_flows as graph_list_flows,
+    upsert_flow as graph_upsert_flow,
 };
 // L0 concept tier RPCs
 pub use graph::{
@@ -121,12 +121,10 @@ pub use graph::{
     AntiPatternRanked, DeployedPolicyProps, DeployedPolicyRow,
     append_mistake_event as graph_append_mistake_event,
     cluster_event_to_pattern as graph_cluster_event_to_pattern,
-    delete_anti_patterns_by_gate as graph_delete_anti_patterns_by_gate,
-    mistake_row_mermaid, practice_delta_focus_filter as graph_practice_delta_focus_filter,
-    practice_delta_mermaid,
+    delete_anti_patterns_by_gate as graph_delete_anti_patterns_by_gate, mistake_row_mermaid,
+    practice_delta_focus_filter as graph_practice_delta_focus_filter, practice_delta_mermaid,
     query_anti_pattern_hit_count as graph_query_anti_pattern_hit_count,
-    raw_select as graph_raw_select,
-    stack_fit_mermaid, stack_invariants,
+    raw_select as graph_raw_select, stack_fit_mermaid, stack_invariants,
     top_anti_patterns as graph_top_anti_patterns,
     top_deployed_policies as graph_top_deployed_policies,
     upsert_anti_pattern as graph_upsert_anti_pattern,
@@ -144,9 +142,6 @@ pub use projects::{
     list_all as projects_list_all, register as project_register,
     relative_to_parent as project_relative_to_parent, set_parent as project_set_parent,
 };
-pub use runs::{
-    RunRecord, run_get, run_insert, run_list_by_project, run_reconcile_orphans, run_update_status,
-};
 pub use rag_trees::{
     RagTreeLabel, RagTreeRefreshable, RagTreeRow, get as rag_tree_get, list as rag_tree_list,
     list_refreshable as rag_tree_list_refreshable, upsert_with_dir as rag_tree_upsert_with_dir,
@@ -154,14 +149,16 @@ pub use rag_trees::{
 pub use read::{
     get_by_id, get_by_key, list_all_by_table, list_by_project, list_by_status, list_with_filter,
 };
+pub use runs::{
+    RunRecord, run_get, run_insert, run_list_by_project, run_reconcile_orphans, run_update_status,
+};
 pub use schema::apply_schema;
 pub use schema_engine::apply as apply_schema_engine;
 pub use schema_v2::apply_agent_memory_schema;
 pub use session_store::{SessionRuntimeRow, session_get_by_id, session_upsert};
 pub use wipe::{WipeReport, preview_wipe, wipe_project};
 pub use write::{
-    ExpireReport, append_event, expire_stale, rotate_events, set_lane,
-    set_priority, update_feedback, update_status, update_status_cas, upsert_entry,
-    upsert_entry_full,
+    ExpireReport, append_event, expire_stale, rotate_events, set_lane, set_priority,
+    update_feedback, update_status, update_status_cas, upsert_entry, upsert_entry_full,
     upsert_entry_with_event,
 };

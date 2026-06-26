@@ -1,7 +1,14 @@
 // YAGNI reuse-ladder advisory: nudge a write that adds a new pub symbol to climb the ladder first.
 use std::collections::BTreeSet;
 
-const KINDS: &[&str] = &["pub fn ", "pub struct ", "pub enum ", "pub trait ", "pub const ", "pub type "];
+const KINDS: &[&str] = &[
+    "pub fn ",
+    "pub struct ",
+    "pub enum ",
+    "pub trait ",
+    "pub const ",
+    "pub type ",
+];
 
 fn is_rust(path: &str) -> bool {
     path.to_lowercase().ends_with(".rs")
@@ -31,7 +38,10 @@ pub fn advise(file_path: &str, old: &str, new: &str) -> Option<String> {
         return None;
     }
     let before = pub_symbols(old);
-    let added: Vec<String> = pub_symbols(new).into_iter().filter(|s| !before.contains(s)).collect();
+    let added: Vec<String> = pub_symbols(new)
+        .into_iter()
+        .filter(|s| !before.contains(s))
+        .collect();
     if added.is_empty() {
         return None;
     }

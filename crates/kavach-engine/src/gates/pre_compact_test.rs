@@ -40,14 +40,26 @@ fn persisted_line_warns_loudly_on_write_failure() {
     // only surviving copy across the discard.
     let line = persisted_line(false, "kavach-rs", "roadmap.unit.demo");
     assert!(line.contains("FAILED"), "must say FAILED: {line}");
-    assert!(line.contains("ONLY surviving copy"), "must warn it's the last copy: {line}");
-    assert!(line.contains("COPY active_card"), "must direct the recovery: {line}");
+    assert!(
+        line.contains("ONLY surviving copy"),
+        "must warn it's the last copy: {line}"
+    );
+    assert!(
+        line.contains("COPY active_card"),
+        "must direct the recovery: {line}"
+    );
 }
 
 #[test]
 fn persisted_line_gives_recall_command_on_success() {
     let line = persisted_line(true, "kavach-rs", "roadmap.unit.demo");
-    assert!(line.contains("kavach db get"), "success path gives the recall cmd: {line}");
-    assert!(line.contains("precompact.snapshot.roadmap.unit.demo"), "names the key: {line}");
+    assert!(
+        line.contains("kavach db get"),
+        "success path gives the recall cmd: {line}"
+    );
+    assert!(
+        line.contains("precompact.snapshot.roadmap.unit.demo"),
+        "names the key: {line}"
+    );
     assert!(!line.contains("FAILED"), "success is not a failure: {line}");
 }

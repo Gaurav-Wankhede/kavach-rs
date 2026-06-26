@@ -3,13 +3,10 @@
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
     archive, backfill_relationships, bridge, citation, concept, delete, delete_prefix, event,
-    expire, find,
-    flow, gate_config, get,
-    graph_query, infer_deps, kanban, lane, list, mistake_hits, mistake_purge, next_prompt, ope, pg,
-    populate_graph, run_rec,
-    priority, query, query_raw,
-    register,
-    register_part, rotate, search, status_update, sync, tree, wipe_project, write,
+    expire, find, flow, gate_config, get, graph_query, infer_deps, kanban, lane, list,
+    mistake_hits, mistake_purge, next_prompt, ope, pg, populate_graph, priority, query, query_raw,
+    register, register_part, rotate, run_rec, search, status_update, sync, tree, wipe_project,
+    write,
 };
 use crate::cli::DbAction;
 

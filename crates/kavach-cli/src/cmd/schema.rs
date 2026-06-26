@@ -70,7 +70,10 @@ mod tests {
 
     #[test]
     fn known_tag_resolves_to_one() {
-        assert_eq!(resolve(Some("cursor"), false).unwrap(), vec![Vendor::Cursor]);
+        assert_eq!(
+            resolve(Some("cursor"), false).unwrap(),
+            vec![Vendor::Cursor]
+        );
         // `gemini` is an honored alias for Antigravity (the migration target).
         assert_eq!(
             resolve(Some("gemini"), false).unwrap(),

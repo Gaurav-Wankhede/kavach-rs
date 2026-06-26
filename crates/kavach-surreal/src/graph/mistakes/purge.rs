@@ -65,7 +65,11 @@ pub async fn delete_anti_patterns_by_gate(db: &Surreal<Db>, gate: &str) -> Resul
     // Read-back assertion: the verified anti_pattern removal count must match the
     // pre-SELECT target count. A mismatch means a concurrent writer or partial
     // delete — surface it rather than report a stale success.
-    debug_assert_eq!(removed, rows.len(), "purge read-back mismatch: removed != selected");
+    debug_assert_eq!(
+        removed,
+        rows.len(),
+        "purge read-back mismatch: removed != selected"
+    );
     Ok(removed)
 }
 

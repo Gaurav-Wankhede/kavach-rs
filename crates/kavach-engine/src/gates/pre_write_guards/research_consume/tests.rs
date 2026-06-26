@@ -1,6 +1,6 @@
 //! FP-bound + fail-closed-block proofs for the internet-first research gate.
 
-use super::{content_has_evidence, LOCAL_ANALYSIS_INTENTS};
+use super::{LOCAL_ANALYSIS_INTENTS, content_has_evidence};
 use crate::gates::pre_write_context::WriteContext;
 use kavach_session::SessionState;
 
@@ -36,9 +36,18 @@ fn blocks_when_research_required_and_no_evidence() {
     let s = session_needing_research();
     let c = ctx("crates/foo/src/lib.rs", "fn handler() {}");
     let block = super::check(&c, &s).expect("must BLOCK the unsourced write");
-    assert!(block.contains("[RESEARCH_FIRST:P0]"), "P0 block tag: {block}");
-    assert!(block.contains("BLOCKED"), "must suppress the write: {block}");
-    assert!(block.contains("No source -> no claim"), "states the law: {block}");
+    assert!(
+        block.contains("[RESEARCH_FIRST:P0]"),
+        "P0 block tag: {block}"
+    );
+    assert!(
+        block.contains("BLOCKED"),
+        "must suppress the write: {block}"
+    );
+    assert!(
+        block.contains("No source -> no claim"),
+        "states the law: {block}"
+    );
 }
 
 #[test]
@@ -48,7 +57,10 @@ fn allows_when_content_cites_source_url() {
         "crates/foo/src/lib.rs",
         "// SOURCE: https://docs.rs/axum\nfn handler() {}",
     );
-    assert!(super::check(&c, &s).is_none(), "URL evidence must clear the gate");
+    assert!(
+        super::check(&c, &s).is_none(),
+        "URL evidence must clear the gate"
+    );
 }
 
 #[test]
@@ -71,7 +83,10 @@ fn allows_when_no_research_required() {
     s.research_topic.clear();
     s.intent_type = "implement".to_owned();
     let c = ctx("crates/foo/src/lib.rs", "fn handler() {}");
-    assert!(super::check(&c, &s).is_none(), "no topic ⇒ nothing to enforce");
+    assert!(
+        super::check(&c, &s).is_none(),
+        "no topic ⇒ nothing to enforce"
+    );
 }
 
 #[test]

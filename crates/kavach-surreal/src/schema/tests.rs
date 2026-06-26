@@ -3,7 +3,9 @@ use crate::{apply_schema, open_memory};
 
 async fn db_with_project() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
     let db = open_memory().await.expect("mem db");
-    apply_schema(&db).await.expect("schema applies with citation table");
+    apply_schema(&db)
+        .await
+        .expect("schema applies with citation table");
     db.query("CREATE project:p SET slug = 'p', name = 'p'")
         .await
         .expect("seed project");
@@ -49,11 +51,13 @@ async fn roadmap_exec_prompt_persists_and_reads_back() {
 #[tokio::test]
 async fn roadmap_without_exec_prompt_is_accepted_as_none() {
     let db = db_with_project().await;
-    db.query("CREATE roadmap SET project = project:p, entry_key = 'r2', title = 't', content = 'c'")
-        .await
-        .expect("query ran")
-        .check()
-        .expect("exec_prompt is optional — a row without it is valid");
+    db.query(
+        "CREATE roadmap SET project = project:p, entry_key = 'r2', title = 't', content = 'c'",
+    )
+    .await
+    .expect("query ran")
+    .check()
+    .expect("exec_prompt is optional — a row without it is valid");
 }
 
 #[tokio::test]
@@ -66,5 +70,8 @@ async fn citation_with_empty_url_is_rejected() {
         )
         .await
         .map_or(true, |resp| resp.check().is_err());
-    assert!(rejected, "empty metadata url must fail the evidence-gate ASSERT");
+    assert!(
+        rejected,
+        "empty metadata url must fail the evidence-gate ASSERT"
+    );
 }

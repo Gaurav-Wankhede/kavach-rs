@@ -32,13 +32,17 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
     let mut ingested = 0_u32;
     for (number, body) in &issues {
         let Some(inc) = parse_incident(body) else {
-            print_or_exit(&format!("[heal ingest] skip #{number}: no [INCIDENT] block"))?;
+            print_or_exit(&format!(
+                "[heal ingest] skip #{number}: no [INCIDENT] block"
+            ))?;
             continue;
         };
         // Capture locally via the H1 RPC path (idempotent on inc.id).
         let code = capture_incident(project, &inc.id, &inc.summary, body, "HEAD~1");
         if code != 0 {
-            print_or_exit(&format!("[heal ingest] WARN #{number}: capture returned {code}"))?;
+            print_or_exit(&format!(
+                "[heal ingest] WARN #{number}: capture returned {code}"
+            ))?;
             continue;
         }
         // Relabel so this issue is never re-ingested (exactly-once). A relabel
@@ -51,7 +55,9 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
         }
         ingested = ingested.saturating_add(1);
     }
-    print_or_exit(&format!("[heal ingest] done: {ingested} incident(s) ingested"))
+    print_or_exit(&format!(
+        "[heal ingest] done: {ingested} incident(s) ingested"
+    ))
 }
 
 /// Open issues still labelled `self-heal` but NOT yet `self-heal-queued`.
@@ -60,7 +66,14 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
 fn open_issues() -> Vec<(u64, String)> {
     let Ok(out) = Command::new("gh")
         .args([
-            "issue", "list", "--state", "open", "--label", OPEN_LABEL, "--json", "number,body,labels",
+            "issue",
+            "list",
+            "--state",
+            "open",
+            "--label",
+            OPEN_LABEL,
+            "--json",
+            "number,body,labels",
         ])
         .output()
     else {
@@ -81,7 +94,13 @@ fn open_issues() -> Vec<(u64, String)> {
 /// Add the `self-heal-queued` label. True on success.
 fn relabel_queued(number: u64) -> bool {
     Command::new("gh")
-        .args(["issue", "edit", &number.to_string(), "--add-label", QUEUED_LABEL])
+        .args([
+            "issue",
+            "edit",
+            &number.to_string(),
+            "--add-label",
+            QUEUED_LABEL,
+        ])
         .output()
         .is_ok_and(|o| o.status.success())
 }

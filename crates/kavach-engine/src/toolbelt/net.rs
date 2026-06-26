@@ -3,7 +3,6 @@ use std::process::Command;
 
 use super::tool::Tool;
 
-
 /// Check URL reachability. Returns Ok(true) for 2xx/3xx, Ok(false) for 4xx/5xx.
 ///
 /// Uses xh (Rust). No fallback — toolbelt required.

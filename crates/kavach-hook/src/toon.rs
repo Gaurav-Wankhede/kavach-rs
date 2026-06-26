@@ -143,14 +143,20 @@ mod tests {
     fn should_quote_cells_containing_commas() {
         let rows = vec![vec![("title", "a, b"), ("k", "plain")]];
         let result = encode_table(&rows);
-        assert!(result.contains("\"a, b\",plain"), "comma value quoted: {result}");
+        assert!(
+            result.contains("\"a, b\",plain"),
+            "comma value quoted: {result}"
+        );
     }
 
     #[test]
     fn should_double_embedded_quotes() {
         let rows = vec![vec![("k", "he said \"hi\"")]];
         let result = encode_table(&rows);
-        assert!(result.contains("\"he said \"\"hi\"\"\""), "quotes doubled: {result}");
+        assert!(
+            result.contains("\"he said \"\"hi\"\"\""),
+            "quotes doubled: {result}"
+        );
     }
 
     #[test]
@@ -160,8 +166,14 @@ mod tests {
             vec![("a", "1")], // different key set
         ];
         let result = encode_table(&rows);
-        assert!(!result.contains("[2]{"), "ragged rows must not claim uniform header");
-        assert!(result.contains("a=1"), "falls back to per-row form: {result}");
+        assert!(
+            !result.contains("[2]{"),
+            "ragged rows must not claim uniform header"
+        );
+        assert!(
+            result.contains("a=1"),
+            "falls back to per-row form: {result}"
+        );
     }
 
     #[test]
@@ -199,7 +211,10 @@ mod tests {
     fn should_handle_single_row_table() {
         let rows = vec![vec![("only", "row")]];
         let result = encode_table(&rows);
-        assert_eq!(result, "[1]{only}:\n  row", "single row encodes as TOON tabular");
+        assert_eq!(
+            result, "[1]{only}:\n  row",
+            "single row encodes as TOON tabular"
+        );
     }
 
     #[test]

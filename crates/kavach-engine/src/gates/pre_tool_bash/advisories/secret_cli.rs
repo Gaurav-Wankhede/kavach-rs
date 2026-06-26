@@ -24,7 +24,9 @@ const SECRET_READ_VERBS: &[&str] = &[
 
 /// A reader that would dump the piped/printed value into the terminal — the tell that
 /// a value is about to enter context rather than be consumed by a process.
-const REVEAL_SINKS: &[&str] = &["| cat", "| bat", "| less", "| head", "| tail", "echo", "printf"];
+const REVEAL_SINKS: &[&str] = &[
+    "| cat", "| bat", "| less", "| head", "| tail", "echo", "printf",
+];
 
 /// `Some(advisory)` when the command reads a secret value via a provider CLI AND
 /// routes it to a reveal sink (or is a bare read that prints by default). `None`

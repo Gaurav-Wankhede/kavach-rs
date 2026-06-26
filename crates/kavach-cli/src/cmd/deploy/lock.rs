@@ -1,5 +1,5 @@
-use std::path::Path;
 use fs2::FileExt;
+use std::path::Path;
 
 pub(super) const DEPLOY_LOCK_NAME: &str = ".deploy.lock";
 

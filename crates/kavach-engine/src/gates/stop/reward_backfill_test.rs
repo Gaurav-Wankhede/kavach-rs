@@ -37,7 +37,10 @@ fn rlaif_verdict_grades_when_mechanical_oracle_abstains() {
     // correctly conditioned on work having happened).
     session.recent_commands = vec!["kavach db status-update --status done".to_owned()];
     backfill_session_rewards(&mut session);
-    assert_eq!(session.reward_session_total, 1, "AI verdict graded on a real transition");
+    assert_eq!(
+        session.reward_session_total, 1,
+        "AI verdict graded on a real transition"
+    );
     assert_eq!(session.reward_session_pass, 1, "AI-good is a pass");
 }
 
@@ -50,9 +53,15 @@ fn no_transition_abstains_even_with_an_ai_verdict() {
     session.session_id = "sess_skip".to_owned();
     session.ai_verdict = Some(true);
     assert!(!session.goal_receipt_pass);
-    assert!(session.recent_commands.is_empty(), "no status-update this turn");
+    assert!(
+        session.recent_commands.is_empty(),
+        "no status-update this turn"
+    );
     backfill_session_rewards(&mut session);
-    assert_eq!(session.reward_session_total, 0, "a skip with no transition banks nothing");
+    assert_eq!(
+        session.reward_session_total, 0,
+        "a skip with no transition banks nothing"
+    );
 }
 
 #[test]

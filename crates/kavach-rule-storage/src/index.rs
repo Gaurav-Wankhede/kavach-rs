@@ -49,7 +49,6 @@ impl RuleIndex {
             .map(|v| v.iter().map(String::as_str).collect())
             .unwrap_or_default()
     }
-
 }
 
 fn extract_category(protocol: &str) -> String {

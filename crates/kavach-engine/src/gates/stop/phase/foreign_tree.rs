@@ -70,7 +70,9 @@ fn git_status_porcelain() -> Option<String> {
         .args(["status", "--short", "-uno"])
         .output()
         .ok()?;
-    out.status.success().then(|| String::from_utf8_lossy(&out.stdout).into_owned())
+    out.status
+        .success()
+        .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
 }
 // NOTE: this guard calls `exit_stop_context` (process exit) + shells `git`, so it
 // is not unit-testable in-process. Its load-bearing logic is the PURE

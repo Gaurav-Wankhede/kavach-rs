@@ -13,8 +13,7 @@
 /// The canonical six lenses — the fail-soft floor served verbatim when Brain-OS
 /// surfaces nothing for the risk surface. These are the universal dimensions; the
 /// dynamic path ADDS surface-specific ones on top, never drops these.
-pub(super) const CANONICAL_LENSES: &str =
-    "- concurrency: two actors at once -> TOCTOU / lost-update / double-claim. \
+pub(super) const CANONICAL_LENSES: &str = "- concurrency: two actors at once -> TOCTOU / lost-update / double-claim. \
      CLOSE with an atomic/compare-and-swap/lock, then cite it.\n\
      - failure: process dies mid-op -> orphaned lock / half-write / leaked task. \
      CLOSE with a guard/transaction/lease-expiry, then cite it.\n\
@@ -39,7 +38,10 @@ fn lens_query_for(vocab: &kavach_patterns::loophole_vocab::LoopholeVocab, marker
         .dimensions
         .iter()
         .find(|d| d.markers.iter().any(|m| marker.contains(m.as_str())))
-        .map_or_else(|| "loophole defect risk lens".to_owned(), |d| d.lens_query.clone())
+        .map_or_else(
+            || "loophole defect risk lens".to_owned(),
+            |d| d.lens_query.clone(),
+        )
 }
 
 /// Build the lens list for the fired `markers`, querying Brain-OS for the lenses
@@ -57,8 +59,10 @@ pub(super) fn lens_block(markers: &[&str]) -> String {
         return CANONICAL_LENSES.to_owned();
     }
     let mut block = String::from(CANONICAL_LENSES);
-    block.push_str("\n  Brain-OS surfaced these surface-specific lenses for this change — \
-                    run them too (kavach db get <id>):\n");
+    block.push_str(
+        "\n  Brain-OS surfaced these surface-specific lenses for this change — \
+                    run them too (kavach db get <id>):\n",
+    );
     for id in extra {
         block.push_str("  - ");
         block.push_str(&id);
@@ -101,7 +105,10 @@ mod tests {
         // from the resolved vocab (here the compiled floor), not a deleted match table.
         let v = LoopholeVocab::default();
         assert_eq!(fired_dimensions(&v, &["payment"]), "money");
-        assert_eq!(fired_dimensions(&v, &["reqwest::get(url)", "sqlx::query(q)"]), "ssrf, injection");
+        assert_eq!(
+            fired_dimensions(&v, &["reqwest::get(url)", "sqlx::query(q)"]),
+            "ssrf, injection"
+        );
         // dedup-preserving-order: two auth markers collapse to one label.
         assert_eq!(fired_dimensions(&v, &["auth", "token"]), "authz");
         // empty ⇒ general, never a panic.
@@ -127,7 +134,15 @@ mod tests {
         // Every marker resolves to a non-empty lens query (no panic, total mapping)
         // — unknown tokens hit the generic fallback, never an empty string.
         let v = LoopholeVocab::default();
-        for m in ["auth", "encrypt", "payment", "lock", "persist", "audit_log", "xyz"] {
+        for m in [
+            "auth",
+            "encrypt",
+            "payment",
+            "lock",
+            "persist",
+            "audit_log",
+            "xyz",
+        ] {
             assert!(!lens_query_for(&v, m).is_empty());
         }
     }
@@ -139,17 +154,20 @@ mod tests {
         let v = LoopholeVocab::default();
         let generic = lens_query_for(&v, "xyz");
         for m in [
-            "reqwest::get",   // ssrf
-            "deserialize",    // deserialization
-            "sqlx::query",    // injection
-            "canonicalize",   // path-traversal
-            "unbounded",      // resource-exhaustion
-            " as u",          // integer-overflow
-            "println!",       // information-leak
-            "encrypt",        // crypto
+            "reqwest::get", // ssrf
+            "deserialize",  // deserialization
+            "sqlx::query",  // injection
+            "canonicalize", // path-traversal
+            "unbounded",    // resource-exhaustion
+            " as u",        // integer-overflow
+            "println!",     // information-leak
+            "encrypt",      // crypto
         ] {
             let q = lens_query_for(&v, m);
-            assert_ne!(q, generic, "marker {m} must map to a specific dimension, not the fallback");
+            assert_ne!(
+                q, generic,
+                "marker {m} must map to a specific dimension, not the fallback"
+            );
         }
     }
 }

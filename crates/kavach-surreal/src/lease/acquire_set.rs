@@ -47,8 +47,7 @@ pub async fn acquire_set(
         match acquire(db, table, key, session_id).await {
             Ok(AcquireOutcome::Acquired(lease)) => won.push((key.to_owned(), lease)),
             Ok(AcquireOutcome::HeldBy {
-                session_id: holder,
-                ..
+                session_id: holder, ..
             }) => {
                 rollback(db, table, &won).await;
                 return Ok(AcquireSetOutcome::Conflict {

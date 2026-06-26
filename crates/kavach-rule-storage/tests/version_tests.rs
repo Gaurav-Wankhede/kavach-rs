@@ -22,4 +22,3 @@ fn compute_hash_is_hex_blake3() {
     assert_eq!(h.len(), 64, "BLAKE3 hex digest must be 64 chars (32 bytes)");
     assert!(h.chars().all(|c| c.is_ascii_hexdigit()));
 }
-

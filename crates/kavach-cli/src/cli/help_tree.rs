@@ -25,7 +25,9 @@ fn walk(cmd: &clap::Command, depth: usize, out: &mut String) {
             continue;
         }
         let pad = "  ".repeat(depth);
-        let about = sub.get_about().map_or_else(String::new, |a| format!("  — {a}"));
+        let about = sub
+            .get_about()
+            .map_or_else(String::new, |a| format!("  — {a}"));
         writeln!(out, "{pad}{}{about}", sub.get_name()).ok();
         walk(sub, depth.saturating_add(1), out);
     }

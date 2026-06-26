@@ -260,7 +260,10 @@ pub async fn set_with_kind(
         (GateConfigKind::Threshold, GateConfigValue::Threshold(_))
             | (GateConfigKind::PatternList, GateConfigValue::PatternList(_))
             | (GateConfigKind::Enabled, GateConfigValue::Enabled(_))
-            | (GateConfigKind::Severity | GateConfigKind::Text, GateConfigValue::Text(_))
+            | (
+                GateConfigKind::Severity | GateConfigKind::Text,
+                GateConfigValue::Text(_)
+            )
     );
     if !shape_ok {
         return Err(Error::Migration(format!(

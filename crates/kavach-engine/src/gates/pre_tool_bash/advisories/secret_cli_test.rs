@@ -18,7 +18,10 @@ fn fires_on_piped_reveal_sink() {
 #[test]
 fn silent_when_redirected_to_file_no_reader() {
     // Redirected to a file with no reader sink — value not surfaced to context.
-    assert!(check_secret_cli_read("aws secretsmanager get-secret-value --secret-id x > /tmp/s").is_none());
+    assert!(
+        check_secret_cli_read("aws secretsmanager get-secret-value --secret-id x > /tmp/s")
+            .is_none()
+    );
 }
 
 #[test]

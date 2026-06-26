@@ -45,7 +45,10 @@ fn credit_for(event: &TrajectoryEvent) -> Option<LedgerLine> {
         }),
         EventKind::Write { .. } => {
             let w = score_trajectory(std::slice::from_ref(event)).max(0);
-            (w > 0).then_some(LedgerLine { kind: "file", weight: w })
+            (w > 0).then_some(LedgerLine {
+                kind: "file",
+                weight: w,
+            })
         }
         _ => None,
     }
@@ -76,7 +79,11 @@ fn debit_for(event: &TrajectoryEvent) -> Option<LedgerLine> {
 pub fn build_ledger(events: &[TrajectoryEvent]) -> TurnLedger {
     let credits: Vec<_> = events.iter().filter_map(credit_for).collect();
     let debits: Vec<_> = events.iter().filter_map(debit_for).collect();
-    TurnLedger { credits, debits, net: score_trajectory(events) }
+    TurnLedger {
+        credits,
+        debits,
+        net: score_trajectory(events),
+    }
 }
 
 #[cfg(test)]

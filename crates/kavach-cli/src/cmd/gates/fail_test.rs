@@ -21,7 +21,10 @@ fn unreadable_codex_fails_closed_with_exit_two() {
 
 #[test]
 fn unreadable_claude_code_fails_closed_with_exit_two() {
-    assert_eq!(fail_unreadable(Vendor::ClaudeCode, "pre-tool", "bad json"), 2);
+    assert_eq!(
+        fail_unreadable(Vendor::ClaudeCode, "pre-tool", "bad json"),
+        2
+    );
 }
 
 #[test]
@@ -37,7 +40,10 @@ fn gate_error_cursor_enforcement_fails_closed_exit_two() {
 fn gate_error_cursor_observational_fails_open_exit_zero() {
     // A non-enforcement gate's block is meaningless — fail OPEN even on error.
     assert_eq!(fail_gate_error(Vendor::Cursor, "post-tool", "rpc down"), 0);
-    assert_eq!(fail_gate_error(Vendor::Cursor, "session-start", "rpc down"), 0);
+    assert_eq!(
+        fail_gate_error(Vendor::Cursor, "session-start", "rpc down"),
+        0
+    );
 }
 
 #[test]

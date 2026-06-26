@@ -52,5 +52,4 @@ mod tests {
         assert!(s.is_in_team());
         assert_eq!(s.team_name, "my-team");
     }
-
 }

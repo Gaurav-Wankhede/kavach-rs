@@ -9,17 +9,17 @@
 /// surfaces where an autonomous merge is unacceptable. Matched as substrings of
 /// each changed file's repo-relative path (case-sensitive, `/`-normalised).
 pub(super) const PROTECTED_PATHS: &[&str] = &[
-    ".github/",          // CI / workflow definitions (incl. the heal gate itself)
-    "migrations/",       // irreversible schema changes
-    "/auth",             // authn/authz logic
-    "/gnap",             // GNAP auth
-    "/paseto",           // token logic
-    "/pdp",              // policy decision points
-    "/payment",          // money
-    "/billing",          // money
-    "Cargo.toml",        // dependency surface (supply chain)
-    "rust-toolchain",    // toolchain pin
-    "merge_gate",        // the auto-merge gate must never auto-merge a change to itself
+    ".github/",       // CI / workflow definitions (incl. the heal gate itself)
+    "migrations/",    // irreversible schema changes
+    "/auth",          // authn/authz logic
+    "/gnap",          // GNAP auth
+    "/paseto",        // token logic
+    "/pdp",           // policy decision points
+    "/payment",       // money
+    "/billing",       // money
+    "Cargo.toml",     // dependency surface (supply chain)
+    "rust-toolchain", // toolchain pin
+    "merge_gate",     // the auto-merge gate must never auto-merge a change to itself
 ];
 
 /// The auto-merge verdict: `allow` is true ONLY if `reasons` is empty.

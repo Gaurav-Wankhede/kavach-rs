@@ -10,9 +10,7 @@ use std::cell::RefCell;
 
 use clap::{Args, Subcommand};
 
-use kavach_engine::{
-    DagScheduler, EngineError, Spawner, SpawnerKind, TeamDispatchError,
-};
+use kavach_engine::{DagScheduler, EngineError, Spawner, SpawnerKind, TeamDispatchError};
 use kavach_surreal::graph::roadmap_dag::RoadmapDag;
 
 use crate::cmd::io_safe::{IoExit, ewrite_or_exit, into_exit_code, print_or_exit};

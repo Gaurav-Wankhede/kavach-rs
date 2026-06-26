@@ -25,7 +25,10 @@ pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
 
 async fn body(requested: Option<String>) -> Result<Markup, RpcError> {
     let project = resolve_project(requested).await?;
-    let frag = format!("/roadmap/fragment?project={}", project.as_deref().unwrap_or(""));
+    let frag = format!(
+        "/roadmap/fragment?project={}",
+        project.as_deref().unwrap_or("")
+    );
     let inner = html! {
         (heading("Roadmap"))
         (live(&frag, section(project.clone()).await?))

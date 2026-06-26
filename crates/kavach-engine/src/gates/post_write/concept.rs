@@ -55,7 +55,10 @@ fn upsert_concept(body: &str) -> bool {
     // blip must be observable, not silent — log to the hook stderr channel.
     if let Err(e) = kavach_rpc::client::call::<_, serde_json::Value>("concept.add", Some(params)) {
         use std::io::Write as _;
-        drop(writeln!(std::io::stderr(), "[CONCEPT_ADD_FAIL] {name}: {e}"));
+        drop(writeln!(
+            std::io::stderr(),
+            "[CONCEPT_ADD_FAIL] {name}: {e}"
+        ));
     }
     true
 }

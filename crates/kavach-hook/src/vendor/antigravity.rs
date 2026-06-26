@@ -41,9 +41,9 @@ fn is_denied(resp: &HookResponse) -> bool {
     if resp.decision == "block" {
         return true;
     }
-    resp.hook_specific_output.as_ref().is_some_and(|h| {
-        h.permission_decision == "deny" || h.permission_decision == "ask"
-    })
+    resp.hook_specific_output
+        .as_ref()
+        .is_some_and(|h| h.permission_decision == "deny" || h.permission_decision == "ask")
 }
 
 /// The agent-visible message: the verdict `reason`, else injected context

@@ -43,7 +43,10 @@ fn handback_fires_despite_proof_tokens_present() {
     // The exact failure mode: proof present AND handback present → still refused.
     let msg = "cargo check = exit 0, git diff --stat shows the split. \
                Owner — run rm -rf ~/.cache/cargo-target. Holding until disk is freed.";
-    assert!(has_handback(msg), "handback must fire even with proof tokens in the message");
+    assert!(
+        has_handback(msg),
+        "handback must fire even with proof tokens in the message"
+    );
 }
 
 #[test]
@@ -88,7 +91,11 @@ fn emoji_status_block_line_is_gaming() {
         "phase: schema  state: ✅ done",
         "Phase: Schema\nState: ✅ DONE — applied live"
     ));
-    assert!(has_gaming_language(&vocab, "⏸ gated", "Phase: 4\n⏸ State: gated"));
+    assert!(has_gaming_language(
+        &vocab,
+        "⏸ gated",
+        "Phase: 4\n⏸ State: gated"
+    ));
 }
 
 #[test]
@@ -126,8 +133,7 @@ fn config_is_data_db_override_changes_the_gaming_verdict() {
 fn malformed_db_row_degrades_to_the_default_floor() {
     // Mirrors `done_gaming_vocab_for`'s `unwrap_or_default()`: a malformed blob is
     // never a panic and never an empty vocab — it is the full compiled floor.
-    let vocab: DoneGamingVocab =
-        serde_json::from_str("{ not json").unwrap_or_default();
+    let vocab: DoneGamingVocab = serde_json::from_str("{ not json").unwrap_or_default();
     assert!(vocab.has_gaming_phrase("vacuously complete"));
     assert!(vocab.has_handback_phrase("i am holding"));
 }
@@ -142,7 +148,9 @@ fn doc_writes_are_not_real_source() {
 
 #[test]
 fn code_writes_are_real_source() {
-    assert!(is_real_source_write("crates/kavach-engine/src/gates/stop.rs"));
+    assert!(is_real_source_write(
+        "crates/kavach-engine/src/gates/stop.rs"
+    ));
     assert!(is_real_source_write("migrations/027_body.cql"));
     assert!(is_real_source_write("src/handlers/send_message.rs"));
     // A .md-named thing OUTSIDE a docs dir is still a doc by extension.

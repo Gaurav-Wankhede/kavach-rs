@@ -62,12 +62,8 @@ mod tests {
         kavach_hook::set_output_context(Vendor::Cursor, "PreToolUse");
         let mut session = SessionState::default();
         session.store_turn_shadow("[INTENT] type:fix");
-        let merged = merge_relay(
-            &mut session,
-            Some("tail".to_owned()),
-            RelayFlush::Full,
-        )
-        .expect("merged");
+        let merged =
+            merge_relay(&mut session, Some("tail".to_owned()), RelayFlush::Full).expect("merged");
         assert!(merged.starts_with("[INTENT]"));
         assert!(merged.contains("tail"));
         assert!(!session.turn_shadow_pending());
@@ -78,7 +74,11 @@ mod tests {
         kavach_hook::set_output_context(Vendor::Cursor, "PreToolUse");
         let mut session = SessionState::default();
         session.store_turn_shadow("[INTENT] type:fix");
-        let merged = merge_relay(&mut session, Some("tail".to_owned()), RelayFlush::AdvisoriesOnly);
+        let merged = merge_relay(
+            &mut session,
+            Some("tail".to_owned()),
+            RelayFlush::AdvisoriesOnly,
+        );
         assert_eq!(merged.as_deref(), Some("tail"));
         assert!(session.turn_shadow_pending());
     }
@@ -88,11 +88,7 @@ mod tests {
         kavach_hook::set_output_context(Vendor::ClaudeCode, "PreToolUse");
         let mut session = SessionState::default();
         session.store_turn_shadow("[INTENT] type:fix");
-        let merged = merge_relay(
-            &mut session,
-            Some("only".to_owned()),
-            RelayFlush::Full,
-        );
+        let merged = merge_relay(&mut session, Some("only".to_owned()), RelayFlush::Full);
         assert_eq!(merged.as_deref(), Some("only"));
         assert!(session.turn_shadow_pending());
     }

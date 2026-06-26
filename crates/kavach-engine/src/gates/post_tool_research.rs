@@ -68,7 +68,10 @@ fn harvest_concepts(query: &str, result_text: &str) {
             kavach_rpc::client::call::<_, serde_json::Value>("concept.add", Some(params))
         {
             use std::io::Write as _;
-            drop(writeln!(std::io::stderr(), "[CONCEPT_HARVEST_FAIL] {name}: {e}"));
+            drop(writeln!(
+                std::io::stderr(),
+                "[CONCEPT_HARVEST_FAIL] {name}: {e}"
+            ));
         }
     }
 }
@@ -100,7 +103,10 @@ fn store_nlm_doc(query: &str, result_text: &str) {
     });
     if let Err(e) = kavach_rpc::client::call::<_, serde_json::Value>("nlm.store", Some(params)) {
         use std::io::Write as _;
-        drop(writeln!(std::io::stderr(), "[NLM_STORE_FAIL] {source_url}: {e}"));
+        drop(writeln!(
+            std::io::stderr(),
+            "[NLM_STORE_FAIL] {source_url}: {e}"
+        ));
     }
 }
 

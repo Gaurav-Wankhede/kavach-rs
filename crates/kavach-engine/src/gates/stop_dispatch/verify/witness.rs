@@ -91,12 +91,13 @@ pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
         return run_cargo_witnesses(&ws);
     }
     // 4. Non-Rust escape hatch, else unprovable.
-    verify_command_env().map_or(WitnessRun::Unprovable, |cmd| {
-        match std::process::Command::new("sh").args(["-c", &cmd]).status() {
+    verify_command_env().map_or(
+        WitnessRun::Unprovable,
+        |cmd| match std::process::Command::new("sh").args(["-c", &cmd]).status() {
             Ok(status) if status.success() => WitnessRun::Passed,
             Ok(_) | Err(_) => WitnessRun::Failed,
-        }
-    })
+        },
+    )
 }
 
 /// Agent-facing failure report: the failing witness command + the tail of its
@@ -104,7 +105,10 @@ pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
 /// "witnesses FAILED" drove an agent to call a real clippy error a "phantom".
 #[must_use]
 pub(crate) fn failing_witness_report(cmd: &str, output_tail: &str) -> String {
-    format!("[WITNESS_FAILED] `{cmd}` failed. Real output:\n{}", output_tail.trim_end())
+    format!(
+        "[WITNESS_FAILED] `{cmd}` failed. Real output:\n{}",
+        output_tail.trim_end()
+    )
 }
 
 /// Run cargo check + clippy + nextest + git-diff IN `ws` (the discovered Rust
@@ -120,14 +124,26 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
     };
     for args in [
         ["check", "--workspace", "--quiet"].as_slice(),
-        ["clippy", "--workspace", "--all-targets", "--quiet", "--", "-D", "warnings"].as_slice(),
+        [
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--quiet",
+            "--",
+            "-D",
+            "warnings",
+        ]
+        .as_slice(),
         ["nextest", "run", "--workspace"].as_slice(),
     ] {
         match run(args) {
             Ok(out) if out.status.success() => (),
             Ok(out) => {
                 let tail = String::from_utf8_lossy(&out.stderr);
-                eprintln!("{}", failing_witness_report(&format!("cargo {}", args.join(" ")), &tail));
+                eprintln!(
+                    "{}",
+                    failing_witness_report(&format!("cargo {}", args.join(" ")), &tail)
+                );
                 return WitnessRun::Failed;
             }
             Err(_) => return WitnessRun::SpawnError,

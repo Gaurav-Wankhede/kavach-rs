@@ -46,7 +46,12 @@ pub(super) fn list(project: &str) -> i32 {
     match rpc_client::citation_list(project) {
         Ok(rows) => {
             for c in &rows {
-                let code = ok(&format!("{} [{}] urls={}", c.name, c.entry_key, c.metadata.len()));
+                let code = ok(&format!(
+                    "{} [{}] urls={}",
+                    c.name,
+                    c.entry_key,
+                    c.metadata.len()
+                ));
                 if code != 0 {
                     return code;
                 }

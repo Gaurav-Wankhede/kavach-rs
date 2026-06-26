@@ -109,7 +109,8 @@ impl MemoryEntry {
         }
         // Some(until <= now) → lease lapsed → abandoned; None → no lease to prove
         // abandonment, leave it alone.
-        self.occupied_until.is_some_and(|until| until <= chrono::Utc::now())
+        self.occupied_until
+            .is_some_and(|until| until <= chrono::Utc::now())
     }
 
     /// Category as `&str`, empty when the row's table omits the field.
@@ -185,12 +186,18 @@ mod lifecycle_tests {
 
     #[test]
     fn canonical_status_parses_to_typed_variant() {
-        assert_eq!(with_status(Some("todo")).lifecycle(), Some(MemoryStatus::Todo));
+        assert_eq!(
+            with_status(Some("todo")).lifecycle(),
+            Some(MemoryStatus::Todo)
+        );
         assert_eq!(
             with_status(Some("in_progress")).lifecycle(),
             Some(MemoryStatus::InProgress)
         );
-        assert_eq!(with_status(Some("verified")).lifecycle(), Some(MemoryStatus::Verified));
+        assert_eq!(
+            with_status(Some("verified")).lifecycle(),
+            Some(MemoryStatus::Verified)
+        );
     }
 
     #[test]

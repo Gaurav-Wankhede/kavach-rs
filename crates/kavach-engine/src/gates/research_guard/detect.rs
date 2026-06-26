@@ -120,7 +120,9 @@ mod tests {
         assert!(is_config_file("web/src/login.test.tsx"));
         assert!(is_config_file("web/src/auth.spec.ts"));
         // Production source is still gated — the exemption must not leak.
-        assert!(!is_config_file("crates/services/outbox-publisher/src/lib.rs"));
+        assert!(!is_config_file(
+            "crates/services/outbox-publisher/src/lib.rs"
+        ));
     }
 
     /// The gate `check` returns None for a deploy-classified, high-risk session
@@ -135,6 +137,9 @@ mod tests {
             &session,
             Some("crates/x/tests/survivor_check.rs"),
         );
-        assert!(out.is_none(), "test-path edit must be exempt even in a deploy session");
+        assert!(
+            out.is_none(),
+            "test-path edit must be exempt even in a deploy session"
+        );
     }
 }

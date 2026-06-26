@@ -22,4 +22,4 @@ mod skills;
 mod tests;
 
 pub(crate) use advisory::advisory_context_all;
-pub(crate) use skills::{top_skill_match, top_skill_names_all, SkillMatch, SKILL_MATCH_FLOOR};
+pub(crate) use skills::{SKILL_MATCH_FLOOR, SkillMatch, top_skill_match, top_skill_names_all};

@@ -22,7 +22,10 @@ fn split_marker_is_exempt() {
 fn intentional_marker_is_exempt() {
     // The marker the nano-file guard added (kavach:intentional) must also exempt
     // a file from the oversized scan — the two gates stay consistent.
-    let p = write_tmp("intentional", "// kavach:intentional one exhaustive match\nfn x() {}\n");
+    let p = write_tmp(
+        "intentional",
+        "// kavach:intentional one exhaustive match\nfn x() {}\n",
+    );
     assert!(has_exempt_marker(&p));
 }
 

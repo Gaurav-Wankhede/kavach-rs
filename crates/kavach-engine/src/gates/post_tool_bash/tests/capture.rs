@@ -66,7 +66,10 @@ fn handle_appends_a_bash_event_to_the_session_tape() {
 fn bash_input_with_output(command: &str, output: &str) -> HookInput {
     let mut input = bash_input(command);
     let mut resp = HashMap::new();
-    resp.insert("output".to_owned(), serde_json::Value::String(output.to_owned()));
+    resp.insert(
+        "output".to_owned(),
+        serde_json::Value::String(output.to_owned()),
+    );
     input.tool_response = Some(resp);
     input
 }
@@ -103,7 +106,8 @@ fn failed_build_then_done_claim_nets_negative_through_the_oracle() {
                 timestamp_ms: 1,
                 session_id: sid.to_owned(),
                 event_kind: kavach_patterns::eval_replay::EventKind::Stop {
-                    final_message: "All done — the fix is complete and the build is green.".to_owned(),
+                    final_message: "All done — the fix is complete and the build is green."
+                        .to_owned(),
                 },
                 outcome: None,
             },

@@ -29,8 +29,15 @@ fn loophole_advisory_is_carried_not_blocked() {
     // there is no refuse-stop path that could halt the loop on it.
     let input = HookInput::default();
     let mut session = kavach_session::SessionState::default();
-    let ctx = ctx_with(&input, &mut session, Some("[LOOPHOLE_SURFACE] x".to_owned()));
-    assert!(ctx.loophole_advisory.is_some(), "advisory is surfaced, never suppressed");
+    let ctx = ctx_with(
+        &input,
+        &mut session,
+        Some("[LOOPHOLE_SURFACE] x".to_owned()),
+    );
+    assert!(
+        ctx.loophole_advisory.is_some(),
+        "advisory is surfaced, never suppressed"
+    );
 }
 
 #[test]

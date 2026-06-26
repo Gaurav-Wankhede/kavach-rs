@@ -1,6 +1,6 @@
 //! Red-Green proofs for the TDD pre-write gate. Outcomes drive the code.
 
-use super::{check, has_inline_test, unit_stem, test_matches_unit};
+use super::{check, has_inline_test, test_matches_unit, unit_stem};
 use crate::gates::pre_write_context::WriteContext;
 use kavach_session::SessionState;
 
@@ -40,7 +40,10 @@ fn allows_comment_only_change_without_a_test() {
         "crates/foo/src/widget.rs",
         "// just a tightened comment\n// another line\n",
     );
-    assert!(check(&c, &s).is_none(), "comment-only edit is exempt from TDD");
+    assert!(
+        check(&c, &s).is_none(),
+        "comment-only edit is exempt from TDD"
+    );
 }
 
 #[test]
@@ -50,8 +53,14 @@ fn blocks_when_test_touched_but_not_observed_red() {
     let s = session_with_turn_files(&["crates/foo/src/widget_test.rs"]);
     let c = ctx("crates/foo/src/widget.rs", "pub fn build() {}");
     let out = check(&c, &s).expect("touch-without-red must block");
-    assert!(out.contains("observed-Red"), "names the missing red proof: {out}");
-    assert!(out.contains("NOT observed RED"), "directs RUN-it-red: {out}");
+    assert!(
+        out.contains("observed-Red"),
+        "names the missing red proof: {out}"
+    );
+    assert!(
+        out.contains("NOT observed RED"),
+        "directs RUN-it-red: {out}"
+    );
 }
 
 #[test]
@@ -74,7 +83,10 @@ fn blocks_inline_test_in_production_file() {
         "pub fn build() {}\n#[cfg(test)]\nmod tests { #[test] fn t() {} }",
     );
     let out = check(&c, &s).expect("inline test must block");
-    assert!(out.contains("inline test"), "names the inline-test violation: {out}");
+    assert!(
+        out.contains("inline test"),
+        "names the inline-test violation: {out}"
+    );
 }
 
 #[test]
@@ -83,7 +95,9 @@ fn has_inline_test_detects_cfg_test_module() {
     assert!(has_inline_test("#[test]\nfn t() {}"));
     assert!(!has_inline_test("pub fn build() {}\n// no tests here"));
     // A `#[path]` to an external test file is NOT an inline test.
-    assert!(!has_inline_test("#[path = \"widget/tests.rs\"]\nmod tests;"));
+    assert!(!has_inline_test(
+        "#[path = \"widget/tests.rs\"]\nmod tests;"
+    ));
 }
 
 #[test]
@@ -118,11 +132,20 @@ fn unit_stem_strips_dir_and_extension() {
 #[test]
 fn test_matches_unit_recognizes_sibling_conventions() {
     assert!(test_matches_unit("crates/foo/src/widget_test.rs", "widget"));
-    assert!(test_matches_unit("crates/foo/src/widget_tests.rs", "widget"));
+    assert!(test_matches_unit(
+        "crates/foo/src/widget_tests.rs",
+        "widget"
+    ));
     assert!(test_matches_unit("crates/foo/tests/widget.rs", "widget"));
     // The dominant in-engine convention: a `widget/tests.rs` subdir module paired
     // with `widget.rs` via #[path]. Must satisfy the gate.
-    assert!(test_matches_unit("crates/foo/src/widget/tests.rs", "widget"));
+    assert!(test_matches_unit(
+        "crates/foo/src/widget/tests.rs",
+        "widget"
+    ));
     assert!(!test_matches_unit("crates/foo/src/other_test.rs", "widget"));
-    assert!(!test_matches_unit("crates/foo/src/other/tests.rs", "widget"));
+    assert!(!test_matches_unit(
+        "crates/foo/src/other/tests.rs",
+        "widget"
+    ));
 }

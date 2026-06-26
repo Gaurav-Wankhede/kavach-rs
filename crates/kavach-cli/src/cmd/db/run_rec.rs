@@ -21,7 +21,11 @@ pub(super) fn build_record_params(
 }
 
 /// Pure builder for `run.update_status` params.
-pub(super) fn build_update_params(id: &str, status: &str, exit_code: Option<i64>) -> serde_json::Value {
+pub(super) fn build_update_params(
+    id: &str,
+    status: &str,
+    exit_code: Option<i64>,
+) -> serde_json::Value {
     serde_json::json!({ "id": id, "status": status, "exit_code": exit_code })
 }
 

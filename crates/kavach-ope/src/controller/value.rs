@@ -51,6 +51,9 @@ impl RiskConfig {
     /// A configuration with explicit pessimism `z` and acceptance `confidence_floor`.
     #[must_use]
     pub const fn new(z: f64, confidence_floor: f64) -> Self {
-        Self { z, confidence_floor }
+        Self {
+            z,
+            confidence_floor,
+        }
     }
 }

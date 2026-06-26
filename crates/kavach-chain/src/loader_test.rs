@@ -47,6 +47,10 @@ fn scan_skips_underscore_prefixed_files() {
 fn scan_count_excludes_underscore_fragment() {
     let (loader, dir) = scan_dir_with("solo", "_frag");
     // One real agent + one fragment present; only the real one counts.
-    assert_eq!(loader.loaded_agents().len(), 1, "only the real agent is cached");
+    assert_eq!(
+        loader.loaded_agents().len(),
+        1,
+        "only the real agent is cached"
+    );
     drop(fs::remove_dir_all(dir));
 }

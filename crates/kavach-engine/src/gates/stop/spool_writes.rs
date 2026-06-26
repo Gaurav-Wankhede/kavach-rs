@@ -21,8 +21,7 @@ use kavach_session::{SpooledWrite, drain_write_spool, enqueue_write_spool};
 /// spool-write failure that is logged and dropped (same floor as the old
 /// discard, but now only after the live call AND the durable append both fail).
 pub(crate) fn call_or_spool(method: &str, params: &serde_json::Value) {
-    let res: Result<serde_json::Value, _> =
-        kavach_rpc::client::call(method, Some(params.clone()));
+    let res: Result<serde_json::Value, _> = kavach_rpc::client::call(method, Some(params.clone()));
     if res.is_ok() {
         return;
     }
@@ -56,7 +55,10 @@ pub(super) fn drain_and_replay() {
         match serde_json::from_str::<serde_json::Value>(&write.params_json) {
             Ok(params) => call_or_spool(&write.method, &params),
             Err(e) => {
-                eprintln!("kavach spool: replay params corrupt for {} ({e}); dropped", write.method);
+                eprintln!(
+                    "kavach spool: replay params corrupt for {} ({e}); dropped",
+                    write.method
+                );
             }
         }
     }

@@ -9,9 +9,9 @@
 /// sharpens a search. NOT a topic allow-list (that would be the hardcoded tone
 /// we are removing); purely noise removal so the salient terms surface.
 const STOPWORDS: &[&str] = &[
-    "this", "that", "with", "from", "have", "been", "the", "and", "for", "into",
-    "your", "you", "are", "but", "not", "make", "sure", "also", "then", "when",
-    "what", "will", "can", "should", "would", "could", "please", "need", "want",
+    "this", "that", "with", "from", "have", "been", "the", "and", "for", "into", "your", "you",
+    "are", "but", "not", "make", "sure", "also", "then", "when", "what", "will", "can", "should",
+    "would", "could", "please", "need", "want",
 ];
 
 /// A short lens word per intent KIND — shapes HOW to search, not WHAT (the what
@@ -53,10 +53,19 @@ mod tests {
 
     #[test]
     fn derives_from_prompt_tokens_not_a_fixed_list() {
-        let out = derive("implement", "add scylla request coalescing to the chat handler");
-        assert!(out.contains("scylla"), "salient prompt token must drive the topic: {out}");
+        let out = derive(
+            "implement",
+            "add scylla request coalescing to the chat handler",
+        );
+        assert!(
+            out.contains("scylla"),
+            "salient prompt token must drive the topic: {out}"
+        );
         assert!(out.contains("coalescing"));
-        assert!(out.contains("implementation"), "intent lens appended: {out}");
+        assert!(
+            out.contains("implementation"),
+            "intent lens appended: {out}"
+        );
     }
 
     #[test]

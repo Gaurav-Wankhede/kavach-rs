@@ -5,8 +5,8 @@
 //! `§NANO_FILE` split: the witness machinery (workspace discovery + cargo runs)
 //! lives in the `witness` child; this hub keeps the orchestration.
 
-pub(crate) mod witness;
 pub(crate) mod trajectory_eval;
+pub(crate) mod witness;
 
 use witness::{WitnessRun, run_workspace_witnesses, witness_root_from_card};
 

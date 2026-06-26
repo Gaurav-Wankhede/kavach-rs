@@ -20,8 +20,14 @@ fn parses_name_version_pairs() {
 #[test]
 fn whole_token_match_only() {
     assert!(prompt_mentions("upgrade surrealdb please", "surrealdb"));
-    assert!(prompt_mentions("using surrealdb 3.1.4 not 2.x", "surrealdb"));
-    assert!(!prompt_mentions("surrealdberg is not the crate", "surrealdb"));
+    assert!(prompt_mentions(
+        "using surrealdb 3.1.4 not 2.x",
+        "surrealdb"
+    ));
+    assert!(!prompt_mentions(
+        "surrealdberg is not the crate",
+        "surrealdb"
+    ));
 }
 
 #[test]

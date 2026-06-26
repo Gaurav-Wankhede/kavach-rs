@@ -89,7 +89,10 @@ pub(crate) fn add(
     let raw_mermaid = mermaid.map(ToOwned::to_owned);
     match rpc_client::flow_upsert(project, key, title, steps, edges, raw_mermaid) {
         Ok(r) => {
-            let msg = format!("flow '{key}' stored: {} step(s) [{}]", r.step_count, r.flow_id);
+            let msg = format!(
+                "flow '{key}' stored: {} step(s) [{}]",
+                r.step_count, r.flow_id
+            );
             if let Err(io_err) = print_or_exit(&msg) {
                 return into_exit_code(io_err);
             }

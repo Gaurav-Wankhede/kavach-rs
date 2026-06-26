@@ -1,5 +1,5 @@
 use super::*;
-use crate::cmd::lint::detect::{detect, Stack};
+use crate::cmd::lint::detect::{Stack, detect};
 
 fn tmp(name: &str) -> std::path::PathBuf {
     let base = std::env::temp_dir().join(format!("kavach-lint-test-{name}"));

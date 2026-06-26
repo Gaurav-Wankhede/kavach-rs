@@ -17,7 +17,11 @@ struct Finding {
 fn tag_line(line: &str) -> Option<(&'static str, &'static str, u32)> {
     let t = line.trim_start();
     if t.starts_with("#[allow(dead_code)]") {
-        return Some(("delete", "dead-code allow — remove the code or the allow", 5));
+        return Some((
+            "delete",
+            "dead-code allow — remove the code or the allow",
+            5,
+        ));
     }
     if t.contains(".clone().clone()") {
         return Some(("shrink", "double clone — one suffices", 2));
@@ -26,7 +30,11 @@ fn tag_line(line: &str) -> Option<(&'static str, &'static str, u32)> {
         return Some(("shrink", "needless collect/clone roundtrip", 2));
     }
     if t.contains(".unwrap_or_else(|| Vec::new())") || t.contains(".unwrap_or(Vec::new())") {
-        return Some(("stdlib", "unwrap_or_else(Vec::new) — use unwrap_or_default()", 1));
+        return Some((
+            "stdlib",
+            "unwrap_or_else(Vec::new) — use unwrap_or_default()",
+            1,
+        ));
     }
     if t.contains(".map(|x| x)") || t.contains(".map(|x| x.clone())") {
         return Some(("shrink", "identity map — drop it", 2));
@@ -72,7 +80,10 @@ fn emit(found: &mut [Finding]) -> i32 {
         }
     }
     let net: u32 = found.iter().map(|f| f.weight).sum();
-    let summary = format!("net: ~-{net} lines possible across {} finding(s).", found.len());
+    let summary = format!(
+        "net: ~-{net} lines possible across {} finding(s).",
+        found.len()
+    );
     io_safe::print_or_exit(&summary).map_or_else(io_safe::into_exit_code, |()| 0)
 }
 

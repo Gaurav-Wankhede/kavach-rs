@@ -1,10 +1,10 @@
-mod model;
-mod format;
-mod render;
 mod fetch;
+mod format;
+mod model;
+mod render;
 
-pub use model::{DagNode, DagEdge, RoadmapDag, TopoOrder};
 pub use fetch::fetch;
+pub use model::{DagEdge, DagNode, RoadmapDag, TopoOrder};
 
 #[cfg(test)]
 mod decision_mermaid_tests {
@@ -23,14 +23,37 @@ mod decision_mermaid_tests {
     fn sample() -> RoadmapDag {
         RoadmapDag {
             nodes: vec![
-                node("p/decision/paseto", "paseto over jwt", "verified", "decision"),
-                node("p/decision/httpsig", "httpsig every call", "verified", "decision"),
-                node("p/decision/scylla", "scylla displaces redis", "todo", "decision"),
+                node(
+                    "p/decision/paseto",
+                    "paseto over jwt",
+                    "verified",
+                    "decision",
+                ),
+                node(
+                    "p/decision/httpsig",
+                    "httpsig every call",
+                    "verified",
+                    "decision",
+                ),
+                node(
+                    "p/decision/scylla",
+                    "scylla displaces redis",
+                    "todo",
+                    "decision",
+                ),
                 node("p/research/x", "noise", "active", "research"),
             ],
             edges: vec![
-                DagEdge { source: "p/decision/paseto".into(), target: "p/decision/httpsig".into(), rel: "depends_on".into() },
-                DagEdge { source: "p/decision/httpsig".into(), target: "p/decision/scylla".into(), rel: "supersedes".into() },
+                DagEdge {
+                    source: "p/decision/paseto".into(),
+                    target: "p/decision/httpsig".into(),
+                    rel: "depends_on".into(),
+                },
+                DagEdge {
+                    source: "p/decision/httpsig".into(),
+                    target: "p/decision/scylla".into(),
+                    rel: "supersedes".into(),
+                },
             ],
         }
     }
@@ -48,7 +71,9 @@ mod decision_mermaid_tests {
 
     #[test]
     fn focus_filter_restricts_nodes() {
-        let m = sample().decision_mermaid(&["paseto".to_owned()], 8).expect("non-empty");
+        let m = sample()
+            .decision_mermaid(&["paseto".to_owned()], 8)
+            .expect("non-empty");
         assert!(m.contains("paseto"), "{m}");
         assert!(!m.contains("scylla"), "out-of-focus excluded: {m}");
     }
@@ -72,8 +97,18 @@ mod decision_mermaid_tests {
     fn pattern_sample() -> RoadmapDag {
         RoadmapDag {
             nodes: vec![
-                node("p/pattern/dioxus-0.8", "dioxus-0.8 location via BFF", "todo", "pattern"),
-                node("p/pattern/dioxus-0.7", "dioxus-0.7 web-sys gap", "verified", "pattern"),
+                node(
+                    "p/pattern/dioxus-0.8",
+                    "dioxus-0.8 location via BFF",
+                    "todo",
+                    "pattern",
+                ),
+                node(
+                    "p/pattern/dioxus-0.7",
+                    "dioxus-0.7 web-sys gap",
+                    "verified",
+                    "pattern",
+                ),
                 node("p/decision/x", "noise", "verified", "decision"),
             ],
             edges: vec![DagEdge {
@@ -86,7 +121,9 @@ mod decision_mermaid_tests {
 
     #[test]
     fn pattern_dag_renders_supersession_with_trust_tag() {
-        let m = pattern_sample().pattern_dag_mermaid(&[], 8).expect("non-empty");
+        let m = pattern_sample()
+            .pattern_dag_mermaid(&[], 8)
+            .expect("non-empty");
         assert!(m.starts_with("graph TD\n"), "{m}");
         assert!(m.contains("(fresh)"), "unsoaked pattern tagged: {m}");
         assert!(m.contains("-.retires.-> "), "{m}");
@@ -139,7 +176,9 @@ mod decision_mermaid_tests {
 
     #[tokio::test]
     async fn fetch_surfaces_supersedes_edge_as_retired_pair() {
-        use crate::{apply_schema, open_memory, project_register, upsert_entry_full, upsert_relationships};
+        use crate::{
+            apply_schema, open_memory, project_register, upsert_entry_full, upsert_relationships,
+        };
 
         let db = open_memory().await.expect("open mem db");
         apply_schema(&db).await.expect("schema");
@@ -189,6 +228,9 @@ mod decision_mermaid_tests {
         let retired = dag.retired_patterns();
         assert_eq!(retired.len(), 1, "exactly one retired pair: {retired:?}");
         assert_eq!(retired[0].0, "old pattern: web-sys gap", "retired title");
-        assert_eq!(retired[0].1, "new pattern: router hook", "replacement title");
+        assert_eq!(
+            retired[0].1, "new pattern: router hook",
+            "replacement title"
+        );
     }
 }

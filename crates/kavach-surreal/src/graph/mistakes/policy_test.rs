@@ -50,7 +50,10 @@ async fn ranks_by_lcb_descending() {
 
     let top = top_deployed_policies(&db, 10).await.expect("read policies");
     assert_eq!(top.len(), 2, "two distinct scopes expected, got {top:?}");
-    assert_eq!(top[0].name, "policy.advisory.bash", "higher lcb must rank first");
+    assert_eq!(
+        top[0].name, "policy.advisory.bash",
+        "higher lcb must rank first"
+    );
     assert!((top[0].lcb - 0.9).abs() < f64::EPSILON);
 }
 

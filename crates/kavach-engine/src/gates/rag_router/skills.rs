@@ -5,7 +5,7 @@ mod feedback;
 mod match_top;
 mod neighbors;
 
-pub(crate) use match_top::{SkillMatch, SKILL_MATCH_FLOOR, top_skill_match};
+pub(crate) use match_top::{SKILL_MATCH_FLOOR, SkillMatch, top_skill_match};
 
 use super::cache::search_via_brain;
 use super::rpc::all_labels;

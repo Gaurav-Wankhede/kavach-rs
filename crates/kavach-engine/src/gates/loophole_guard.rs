@@ -143,7 +143,13 @@ pub(crate) fn scan_changed_for_loopholes(files: &[(&str, &str)]) -> Option<Strin
     let mut sites: Vec<String> = Vec::new();
     for (path, content) in files.iter().take(scanned) {
         for f in kavach_patterns::loophole_lens::scan_text(content) {
-            sites.push(format!("{} {}:{} — {}", f.lens.slug(), path, f.line, f.hint));
+            sites.push(format!(
+                "{} {}:{} — {}",
+                f.lens.slug(),
+                path,
+                f.line,
+                f.hint
+            ));
         }
     }
     if sites.is_empty() {
@@ -165,7 +171,10 @@ pub(crate) fn scan_changed_for_loopholes(files: &[(&str, &str)]) -> Option<Strin
     // local first, then `push_str` — `String::push_str` is infallible, sidestepping
     // both the `push_str(&format!())` and the `fmt::Result` discard lints.
     if found > shown {
-        let line = format!("  … +{} more suspected site(s)\n", found.saturating_sub(shown));
+        let line = format!(
+            "  … +{} more suspected site(s)\n",
+            found.saturating_sub(shown)
+        );
         out.push_str(&line);
     }
     if total_files > scanned {

@@ -32,21 +32,16 @@ fn apply_rule_context_and_nudge(
     session: &mut kavach_session::SessionState,
 ) -> Option<String> {
     let mut ctx = rule_eval::results_to_context(rule_results);
-    if ctx.is_empty() && let Some(nudge) = perturn_nudge(session) {
+    if ctx.is_empty()
+        && let Some(nudge) = perturn_nudge(session)
+    {
         ctx.push_str(&nudge);
     }
-    if ctx.is_empty() {
-        None
-    } else {
-        Some(ctx)
-    }
+    if ctx.is_empty() { None } else { Some(ctx) }
 }
 
 /// Handle default tool in default arm: check rule engine output and enforce blocks.
-fn handle_unmatched_tool(
-    input: &HookInput,
-    mut session: kavach_session::SessionState,
-) {
+fn handle_unmatched_tool(input: &HookInput, mut session: kavach_session::SessionState) {
     let rule_results = rule_eval::evaluate_rules(input);
 
     // Check if any rule produced a Block action. If so, fail-closed: deny.
@@ -75,10 +70,11 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // The `command` field is the security-critical signal, not the tool name.
     // SOURCE: loophole audit (cursor-edge), runtime-proven via beforeMCPExecution.
     let carries_shell_command = input.tool_name != "Bash"
-        && input
-            .tool_input
-            .as_ref()
-            .is_some_and(|ti| ti.get("command").and_then(|v| v.as_str()).is_some_and(|c| !c.is_empty()));
+        && input.tool_input.as_ref().is_some_and(|ti| {
+            ti.get("command")
+                .and_then(|v| v.as_str())
+                .is_some_and(|c| !c.is_empty())
+        });
     if carries_shell_command {
         return pre_tool_bash::handle_bash(input);
     }

@@ -4,7 +4,10 @@ use kavach_types::HookResponse;
 #[test]
 fn cursor_block_renders_the_native_deny_contract() {
     let json = cursor::render(&HookResponse::new_block("nope"), "PreToolUse");
-    assert!(!json.contains(r#""continue""#), "pre-tool has no continue: {json}");
+    assert!(
+        !json.contains(r#""continue""#),
+        "pre-tool has no continue: {json}"
+    );
     assert!(json.contains(r#""permission":"deny""#), "got {json}");
     assert!(
         json.contains("nope"),
@@ -19,7 +22,10 @@ fn cursor_block_renders_the_native_deny_contract() {
 #[test]
 fn cursor_approve_renders_allow() {
     let json = cursor::render(&HookResponse::new_approve("ok"), "PreToolUse");
-    assert!(!json.contains(r#""continue""#), "pre-tool has no continue: {json}");
+    assert!(
+        !json.contains(r#""continue""#),
+        "pre-tool has no continue: {json}"
+    );
     assert!(json.contains(r#""permission":"allow""#), "got {json}");
 }
 

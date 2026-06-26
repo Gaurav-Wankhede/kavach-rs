@@ -33,8 +33,14 @@ fn citation_rel_allowlist_is_exact() {
     assert!(is_citation_rel("cite"));
     assert!(is_citation_rel("parent"));
     assert!(is_citation_rel("depends_on"));
-    assert!(!is_citation_rel("contains"), "workflow edge is not a citation edge");
-    assert!(!is_citation_rel("is_a"), "ontology edge is not a citation edge");
+    assert!(
+        !is_citation_rel("contains"),
+        "workflow edge is not a citation edge"
+    );
+    assert!(
+        !is_citation_rel("is_a"),
+        "ontology edge is not a citation edge"
+    );
 }
 
 #[tokio::test]
@@ -49,8 +55,15 @@ async fn decision_cites_citation_and_single_query_traversal_finds_it() {
     let citing = traverse_with_citations(&db, &to)
         .await
         .expect("single-query traversal");
-    assert_eq!(citing.len(), 1, "exactly the one citing decision is returned");
-    assert_eq!(citing[0], from, "the citing node is the decision, in one round-trip");
+    assert_eq!(
+        citing.len(),
+        1,
+        "exactly the one citing decision is returned"
+    );
+    assert_eq!(
+        citing[0], from,
+        "the citing node is the decision, in one round-trip"
+    );
 }
 
 #[tokio::test]
@@ -59,7 +72,10 @@ async fn foreign_edge_is_rejected_on_citation_relate() {
     let from = RecordId::new("decision", "d");
     let to = RecordId::new("citation", "cit");
     let res = relate_citation(&db, &from, &to, "contains", 1.0).await;
-    assert!(res.is_err(), "a non-citation edge must be rejected by relate_citation");
+    assert!(
+        res.is_err(),
+        "a non-citation edge must be rejected by relate_citation"
+    );
 }
 
 #[tokio::test]

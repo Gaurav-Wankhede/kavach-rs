@@ -106,18 +106,30 @@ mod supersedes_extraction_tests {
     #[test]
     fn fenced_frontmatter_yields_supersedes() {
         let body = "---\nsupersedes: dioxus-0.7-websys-gap\n---\nbody\n";
-        assert!(has_supersedes(body, "dioxus-0.7-websys-gap"), "{:?}", extract(body));
+        assert!(
+            has_supersedes(body, "dioxus-0.7-websys-gap"),
+            "{:?}",
+            extract(body)
+        );
     }
 
     #[test]
     fn loose_leading_kv_yields_supersedes() {
         let body = "supersedes: dioxus-0.7-websys-gap\n";
-        assert!(has_supersedes(body, "dioxus-0.7-websys-gap"), "{:?}", extract(body));
+        assert!(
+            has_supersedes(body, "dioxus-0.7-websys-gap"),
+            "{:?}",
+            extract(body)
+        );
     }
 
     #[test]
     fn nlu_prose_yields_supersedes() {
         let body = "This supersedes dioxus-0.7-websys-gap; adopt use_route.\n";
-        assert!(has_supersedes(body, "dioxus-0.7-websys-gap"), "{:?}", extract(body));
+        assert!(
+            has_supersedes(body, "dioxus-0.7-websys-gap"),
+            "{:?}",
+            extract(body)
+        );
     }
 }

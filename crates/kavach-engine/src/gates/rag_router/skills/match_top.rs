@@ -15,11 +15,7 @@ pub(crate) struct SkillMatch {
 
 /// Return the best skill match across all labels when score ≥ floor.
 #[must_use]
-pub(crate) fn top_skill_match(
-    file_path: &str,
-    raw_text: &str,
-    intent: &str,
-) -> Option<SkillMatch> {
+pub(crate) fn top_skill_match(file_path: &str, raw_text: &str, intent: &str) -> Option<SkillMatch> {
     let labels = all_labels();
     let label_refs: Vec<&str> = if labels.is_empty() {
         vec!["skills"]
@@ -33,7 +29,9 @@ pub(crate) fn top_skill_match(
             if score < SKILL_MATCH_FLOOR {
                 continue;
             }
-            let replace = best.as_ref().is_none_or(|(prev_score, _)| score > *prev_score);
+            let replace = best
+                .as_ref()
+                .is_none_or(|(prev_score, _)| score > *prev_score);
             if replace {
                 best = Some((score, id));
             }

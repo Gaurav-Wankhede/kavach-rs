@@ -66,11 +66,17 @@ pub(super) fn hot_pattern_context(project_slug: &str) -> Option<String> {
                 age_days: now_unix.saturating_sub(updated).saturating_div(86_400) as f64,
                 ..Default::default()
             };
-            (format!("pattern: {tokens} | fix: {fix} | occurrences: {n}"), sig)
+            (
+                format!("pattern: {tokens} | fix: {fix} | occurrences: {n}"),
+                sig,
+            )
         })
         .collect();
-    let scored =
-        kavach_patterns::k_pri::rank(rows, kavach_patterns::k_pri::W_MISTAKE_LEDGER, |(_, sig)| *sig);
+    let scored = kavach_patterns::k_pri::rank(
+        rows,
+        kavach_patterns::k_pri::W_MISTAKE_LEDGER,
+        |(_, sig)| *sig,
+    );
     let mut ctx = String::from(
         "\n[SELF_EVOLVE_PATTERNS]\nstatus: autonomous (K-PRI ranked: recency × recurrence)\n",
     );

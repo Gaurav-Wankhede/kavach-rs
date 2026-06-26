@@ -98,8 +98,7 @@ pub(crate) fn directive(key: &str, fallback: &str, now: i64) -> String {
 
 /// Fetch one directive row by key. Fail-soft to `None` on any RPC error.
 fn fetch(key: &str) -> Option<Citation> {
-    let params =
-        serde_json::json!({ "project": DIRECTIVE_PROJECT, "entry_key": key });
+    let params = serde_json::json!({ "project": DIRECTIVE_PROJECT, "entry_key": key });
     match kavach_rpc::client::call("citation.get", Some(params)) {
         Ok(Some(c)) => Some(c),
         // advisory cache — miss AND RPC-error both serve the compiled fallback
@@ -156,7 +155,11 @@ mod tests {
     // No RPC server in unit-test context ⇒ fetch returns None ⇒ literal serves.
     #[test]
     fn falls_back_to_literal_when_cache_absent() {
-        let out = directive("rca.protocol", "OUTPUT [RCA] before Write/Edit.", 1_700_000_000);
+        let out = directive(
+            "rca.protocol",
+            "OUTPUT [RCA] before Write/Edit.",
+            1_700_000_000,
+        );
         assert_eq!(out, "OUTPUT [RCA] before Write/Edit.");
     }
 

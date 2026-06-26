@@ -39,6 +39,8 @@ pub(super) fn anti_pattern_context() -> Option<String> {
         )
         .ok();
     }
-    ctx.push_str("rule: do NOT repeat any BANNED behavior above; apply the INSTEAD: fix pre-action.\n");
+    ctx.push_str(
+        "rule: do NOT repeat any BANNED behavior above; apply the INSTEAD: fix pre-action.\n",
+    );
     Some(ctx)
 }

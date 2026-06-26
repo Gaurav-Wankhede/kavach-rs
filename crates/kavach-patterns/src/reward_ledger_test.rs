@@ -7,7 +7,9 @@ fn bash(cmd: &str) -> TrajectoryEvent {
     TrajectoryEvent {
         timestamp_ms: 0,
         session_id: "t".into(),
-        event_kind: EventKind::Bash { command: cmd.into() },
+        event_kind: EventKind::Bash {
+            command: cmd.into(),
+        },
         outcome: None,
     }
 }
@@ -16,7 +18,9 @@ fn stop(msg: &str) -> TrajectoryEvent {
     TrajectoryEvent {
         timestamp_ms: 0,
         session_id: "t".into(),
-        event_kind: EventKind::Stop { final_message: msg.into() },
+        event_kind: EventKind::Stop {
+            final_message: msg.into(),
+        },
         outcome: None,
     }
 }
@@ -32,14 +36,24 @@ fn net_equals_scalar_reward() {
 #[test]
 fn build_run_is_a_credit_line() {
     let ledger = build_ledger(&[bash("cargo check --workspace")]);
-    assert!(ledger.credits.iter().any(|l| l.kind == "build" && l.weight > 0));
+    assert!(
+        ledger
+            .credits
+            .iter()
+            .any(|l| l.kind == "build" && l.weight > 0)
+    );
     assert!(ledger.debits.is_empty());
 }
 
 #[test]
 fn deferral_stop_is_a_debit_line() {
     let ledger = build_ledger(&[stop("the next step is yours")]);
-    assert!(ledger.debits.iter().any(|l| l.kind == "deferral_handoff" && l.weight < 0));
+    assert!(
+        ledger
+            .debits
+            .iter()
+            .any(|l| l.kind == "deferral_handoff" && l.weight < 0)
+    );
     assert!(ledger.credits.is_empty());
 }
 

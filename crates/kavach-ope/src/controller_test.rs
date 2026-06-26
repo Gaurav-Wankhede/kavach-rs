@@ -32,7 +32,10 @@ fn picks_the_action_with_the_highest_lower_bound_not_highest_mean() {
         ActionValue::new(Action::Allow, est(0.9, 0.5)), // lcb @1.96 ≈ -0.08
         ActionValue::new(Action::Block, est(0.5, 0.05)), // lcb @1.96 ≈ 0.40
     ];
-    assert_eq!(choose(adv(&cands), RiskConfig::conservative()), Action::Block);
+    assert_eq!(
+        choose(adv(&cands), RiskConfig::conservative()),
+        Action::Block
+    );
 }
 
 #[test]
@@ -59,7 +62,10 @@ fn a_non_informative_estimate_is_ignored() {
         ActionValue::new(Action::Allow, est(5.0, f64::INFINITY)),
         ActionValue::new(Action::Block, est(0.5, 0.05)),
     ];
-    assert_eq!(choose(adv(&cands), RiskConfig::conservative()), Action::Block);
+    assert_eq!(
+        choose(adv(&cands), RiskConfig::conservative()),
+        Action::Block
+    );
 }
 
 #[test]
@@ -70,7 +76,10 @@ fn an_exact_tie_breaks_toward_the_more_conservative_action() {
         ActionValue::new(Action::Allow, est(0.5, 0.05)),
         ActionValue::new(Action::Block, est(0.5, 0.05)),
     ];
-    assert_eq!(choose(adv(&cands), RiskConfig::conservative()), Action::Block);
+    assert_eq!(
+        choose(adv(&cands), RiskConfig::conservative()),
+        Action::Block
+    );
 }
 
 #[test]

@@ -131,7 +131,10 @@ fn blocks_source_dotenv_with_unsafe_downstream() {
 fn source_dotenv_then_printer_message_points_to_runtime_consume() {
     // The leak is the PRINT; the block message must steer to in-process consume.
     let msg = check_env_value_read("source .env && echo $DATABASE_URL").expect("should block");
-    assert!(msg.contains("receipt"), "expected receipt-only guidance in: {msg}");
+    assert!(
+        msg.contains("receipt"),
+        "expected receipt-only guidance in: {msg}"
+    );
     assert!(
         msg.contains("Sourcing itself is fine"),
         "expected source-is-allowed framing in: {msg}"

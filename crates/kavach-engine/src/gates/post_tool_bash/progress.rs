@@ -13,10 +13,12 @@ pub(super) fn track_db_progress(session: &mut kavach_session::SessionState, comm
         // without the dispatcher; mirror it into current_kanban_card so the
         // close-before-advance guard tracks it. See
         // `decision.engine.self-claim-card-tracking`.
-        if is_status_update && command.contains("in_progress")
-            && let Some(key) = extract_flag_value(command, "--key") {
-                session.current_kanban_card = key;
-            }
+        if is_status_update
+            && command.contains("in_progress")
+            && let Some(key) = extract_flag_value(command, "--key")
+        {
+            session.current_kanban_card = key;
+        }
         session.save().ok();
     }
 
@@ -96,7 +98,10 @@ mod tests {
             &mut s,
             "kavach db write --project p --category research --key research.foo.bar --new --content 'x'",
         );
-        assert!(s.research_done, "a research-row write must satisfy tabula-rasa");
+        assert!(
+            s.research_done,
+            "a research-row write must satisfy tabula-rasa"
+        );
         assert!(
             s.research_topics.iter().any(|t| t == "research.foo.bar"),
             "the research key is recorded as the topic"
@@ -116,7 +121,10 @@ mod tests {
             &mut s,
             "kavach db write --project p --category decision --key d --content 'x'",
         );
-        assert!(!s.research_done, "a decision-row write is not a research artifact");
+        assert!(
+            !s.research_done,
+            "a decision-row write is not a research artifact"
+        );
     }
 
     /// A card STATE TRANSITION (status-update / kanban-close) IS roadmap progress

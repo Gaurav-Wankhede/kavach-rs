@@ -34,7 +34,11 @@ fn unprovable_abstains() {
 fn no_witness_outcome_maps_to_a_positive_reward_except_passed() {
     // The ONLY path to a +1 is a genuine `Passed`; every other outcome is <=0.
     // This is the anti-hallucination invariant: a reward requires a passing build.
-    for run in [WitnessRun::Failed, WitnessRun::SpawnError, WitnessRun::Unprovable] {
+    for run in [
+        WitnessRun::Failed,
+        WitnessRun::SpawnError,
+        WitnessRun::Unprovable,
+    ] {
         assert_ne!(
             verdict_from_witness(run),
             Some(true),

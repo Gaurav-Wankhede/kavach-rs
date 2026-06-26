@@ -3,11 +3,11 @@
 //! leaf is a child module so `crate::rust_guard::detect` + `RustSeverity` resolve.
 #[path = "rust_guard/test_async_db.rs"]
 mod async_db;
+#[path = "rust_guard/test_named_discard.rs"]
+mod named_discard;
 #[path = "rust_guard/test_p0_errors.rs"]
 mod p0_errors;
 #[path = "rust_guard/test_p0_structural.rs"]
 mod p0_structural;
 #[path = "rust_guard/test_p1_quality.rs"]
 mod p1_quality;
-#[path = "rust_guard/test_named_discard.rs"]
-mod named_discard;

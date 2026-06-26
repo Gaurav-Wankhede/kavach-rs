@@ -1,9 +1,9 @@
+use super::status::UpdatedIdRow;
 use crate::error::Result;
 use kavach_types::Priority;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::RecordId;
-use super::status::UpdatedIdRow;
 
 /// Upsert a memory entry into the typed table for its category.
 ///

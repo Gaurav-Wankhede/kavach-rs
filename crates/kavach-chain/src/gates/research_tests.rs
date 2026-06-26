@@ -105,7 +105,10 @@ fn test_session_satisfied_short_circuits_block() {
     );
     let t1 = state.results.last().expect("verdict recorded");
     assert_eq!(t1.gate, "RESEARCH");
-    assert_eq!(t1.status, "advisory", "research-required emits advisory, not block");
+    assert_eq!(
+        t1.status, "advisory",
+        "research-required emits advisory, not block"
+    );
     assert!(
         t1.reason.contains("RESEARCH_ADVISORY") && t1.reason.contains("training weights"),
         "advisory tone must carry the distrust-weights instruction: {}",

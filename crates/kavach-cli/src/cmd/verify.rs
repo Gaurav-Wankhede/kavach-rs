@@ -156,8 +156,7 @@ async fn run_async(
 /// Run one cargo stage; print the resolved command, show stderr head on failure.
 fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
     let display = render::cargo_cmd(sub, crate_name);
-    let cwd = std::env::current_dir()
-        .map_or_else(|_| "?".to_owned(), |p| p.display().to_string());
+    let cwd = std::env::current_dir().map_or_else(|_| "?".to_owned(), |p| p.display().to_string());
     if let Err(io_err) = print_or_exit(&format!("[VERIFY] running: {display}  (cwd: {cwd})")) {
         return Some(into_exit_code(io_err));
     }
@@ -192,7 +191,8 @@ async fn finalize_verified(
     project_id: &surrealdb_types::RecordId,
     key: &str,
 ) -> i32 {
-    if let Err(e) = kavach_surreal::update_status(db, "roadmap", project_id, key, "verified").await {
+    if let Err(e) = kavach_surreal::update_status(db, "roadmap", project_id, key, "verified").await
+    {
         let msg = format!("error: status transition failed: {e}");
         return ewrite_or_exit(&msg).map_or_else(into_exit_code, |()| 1);
     }

@@ -38,5 +38,4 @@ impl DecisionTree {
     pub fn classify(&self, features: &FeatureSet) -> Result<&Outcome, DTreeError> {
         self.root.evaluate(features)
     }
-
 }

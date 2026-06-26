@@ -3,12 +3,15 @@
 //! direction for an at-most-once claim — an unnameable target is never "won here".
 //! See decision.engine.claim-card-fail-closed.
 
-use super::claim_card;
 use super::SOURCE_DOWN_KEY;
+use super::claim_card;
 
 #[test]
 fn empty_project_never_claims() {
-    assert!(!claim_card("", "roadmap.real-key"), "empty project must fail closed");
+    assert!(
+        !claim_card("", "roadmap.real-key"),
+        "empty project must fail closed"
+    );
 }
 
 #[test]

@@ -121,7 +121,10 @@ fn extract_option_groups(tool_input: &serde_json::Value) -> Vec<Vec<Opt>> {
             let desc = o.get("description").and_then(|v| v.as_str()).unwrap_or("");
             let joined = format!("{label} {desc}").to_lowercase();
             let recommended = joined.contains(RECOMMENDED);
-            group.push(Opt { text: joined, recommended });
+            group.push(Opt {
+                text: joined,
+                recommended,
+            });
         }
         groups.push(group);
     }

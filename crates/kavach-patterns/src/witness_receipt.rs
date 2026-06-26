@@ -31,7 +31,12 @@ impl Receipt {
     /// Construct a receipt (non-exhaustive struct needs a cross-crate constructor).
     #[must_use]
     pub const fn new(passed: bool, git_head: String, ts_ms: i64, session_id: String) -> Self {
-        Self { passed, git_head, ts_ms, session_id }
+        Self {
+            passed,
+            git_head,
+            ts_ms,
+            session_id,
+        }
     }
 }
 

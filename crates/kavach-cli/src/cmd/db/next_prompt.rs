@@ -103,7 +103,9 @@ async fn author_and_serve(
         .build_for_call()
         .await;
     if let Err(e) = written {
-        return render_err(&format!("error: authored prompt but write-back failed: {e}"));
+        return render_err(&format!(
+            "error: authored prompt but write-back failed: {e}"
+        ));
     }
     match print_or_exit(&authored) {
         Ok(()) => 0,

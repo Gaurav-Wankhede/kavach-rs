@@ -26,7 +26,13 @@ fn err_line(text: &str) -> i32 {
 /// Bulk-purge records in `category` whose key starts with `prefix`. A real run
 /// requires the typed prefix-confirmation phrase (re-checked by the daemon, so it
 /// can't be skipped by editing the CLI); dry-run only counts the matches.
-pub(super) fn run(project: &str, category: &str, prefix: &str, confirm: bool, dry_run: bool) -> i32 {
+pub(super) fn run(
+    project: &str,
+    category: &str,
+    prefix: &str,
+    confirm: bool,
+    dry_run: bool,
+) -> i32 {
     if prefix.is_empty() {
         return err_line("error: --prefix must not be empty");
     }
@@ -39,10 +45,19 @@ pub(super) fn run(project: &str, category: &str, prefix: &str, confirm: bool, dr
         Err(code) => return code,
     };
 
-    match super::rpc_client::delete_by_key_prefix(project, category, prefix, dry_run, confirm_phrase)
-    {
+    match super::rpc_client::delete_by_key_prefix(
+        project,
+        category,
+        prefix,
+        dry_run,
+        confirm_phrase,
+    ) {
         Ok(result) if result.success => {
-            let tag = if result.dry_run { "(dry-run)" } else { "(applied)" };
+            let tag = if result.dry_run {
+                "(dry-run)"
+            } else {
+                "(applied)"
+            };
             ok_line(tag, result.deleted_count, category, prefix, project)
         }
         Ok(result) => err_line(&format!(
@@ -74,7 +89,9 @@ fn confirm_phrase(
     );
     let typed = prompt_line_or_exit(&prompt).map_err(into_exit_code)?;
     if typed != expected {
-        return Err(err_line("error: confirmation phrase did not match — aborted"));
+        return Err(err_line(
+            "error: confirmation phrase did not match — aborted",
+        ));
     }
     Ok(Some(typed))
 }

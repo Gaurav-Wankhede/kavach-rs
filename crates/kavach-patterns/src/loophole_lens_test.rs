@@ -80,13 +80,19 @@ fn replay_fires_on_sql_insert() {
 fn replay_silent_on_local_collection_insert() {
     // A Rust HashMap/HashSet/Vec .insert() is in-memory mutation, NOT a
     // non-idempotent persisted write — must not fire (the gates/loader FP class).
-    assert!(classify("seen.insert(key);").is_none(), "local .insert() is not replay");
+    assert!(
+        classify("seen.insert(key);").is_none(),
+        "local .insert() is not replay"
+    );
     assert!(classify("map.insert(k, v);").is_none());
 }
 
 #[test]
 fn replay_silent_on_idempotent_sql() {
-    assert!(classify("UPSERT INTO t ...").is_none(), "upsert is idempotent");
+    assert!(
+        classify("UPSERT INTO t ...").is_none(),
+        "upsert is idempotent"
+    );
     assert!(classify("INSERT INTO t ... ON CONFLICT DO NOTHING").is_none());
 }
 

@@ -45,7 +45,9 @@ const REWARD_RUBRIC_KEY: &str = "gate.reward_rubric";
 /// non-Rust project (TS, Python) scores its own stack's verify commands instead
 /// of zero. Operator directive 2026-06-17: "each project has different tech stacks".
 #[must_use]
-pub(crate) fn reward_rubric_for(project_slug: &str) -> kavach_patterns::reward::rubric::RewardRubric {
+pub(crate) fn reward_rubric_for(
+    project_slug: &str,
+) -> kavach_patterns::reward::rubric::RewardRubric {
     let name = if project_slug.is_empty() {
         String::new()
     } else {
@@ -65,7 +67,9 @@ const REWARD_ORACLE_KEY: &str = "gate.reward_oracle";
 /// JSON all fall back to [`OracleConfig::default`] (the compiled fail-safe), so the
 /// oracle is never worse than its hardcoded floor when the DB is unreachable.
 #[must_use]
-pub(crate) fn oracle_config_for(project_slug: &str) -> kavach_patterns::reward::oracle::OracleConfig {
+pub(crate) fn oracle_config_for(
+    project_slug: &str,
+) -> kavach_patterns::reward::oracle::OracleConfig {
     use kavach_patterns::reward::oracle::OracleConfig;
     if project_slug.is_empty() {
         return OracleConfig::default();

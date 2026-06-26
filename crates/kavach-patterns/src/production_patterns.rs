@@ -25,7 +25,6 @@ pub fn scan(file_path: &str, content: &str) -> Vec<PatternMatch> {
     scanner_all::scan(content)
 }
 
-
 /// Count critical severity matches.
 #[must_use]
 pub fn count_critical(matches: &[PatternMatch]) -> usize {
@@ -34,7 +33,6 @@ pub fn count_critical(matches: &[PatternMatch]) -> usize {
         .filter(|m| m.severity == Severity::P0Critical)
         .count()
 }
-
 
 #[cfg(test)]
 #[path = "production_patterns_test.rs"]

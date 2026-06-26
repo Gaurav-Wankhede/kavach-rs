@@ -5,7 +5,10 @@ use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
-#[expect(clippy::exhaustive_structs, reason = "RunRecord is an API type that must be constructed in downstream crates")]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "RunRecord is an API type that must be constructed in downstream crates"
+)]
 pub struct RunRecord {
     pub id: Option<RecordId>,
     pub project: Option<RecordId>,
@@ -67,7 +70,10 @@ pub async fn run_list_by_project(
                  finished_at, exit_code, cost_usd FROM run \
                  WHERE project = $project_id \
                  ORDER BY started_at DESC";
-    let mut response = db.query(query).bind(("project_id", project_id.clone())).await?;
+    let mut response = db
+        .query(query)
+        .bind(("project_id", project_id.clone()))
+        .await?;
     let runs: Vec<RunRecord> = response.take(0)?;
     Ok(runs)
 }
@@ -95,7 +101,8 @@ pub async fn run_update_status(
     finished_at: Option<String>,
     exit_code: Option<i64>,
 ) -> Result<()> {
-    let query = "UPDATE $id SET status = $status, finished_at = $finished_at, exit_code = $exit_code";
+    let query =
+        "UPDATE $id SET status = $status, finished_at = $finished_at, exit_code = $exit_code";
     db.query(query)
         .bind(("id", id.clone()))
         .bind(("status", status.to_owned()))
@@ -113,10 +120,7 @@ pub async fn run_update_status(
 pub async fn run_reconcile_orphans(db: &Surreal<Db>) -> Result<u64> {
     let now = chrono::Utc::now().to_rfc3339();
     let query = "UPDATE run SET status = 'orphaned', finished_at = $now WHERE status = 'running'";
-    let _response = db
-        .query(query)
-        .bind(("now", now))
-        .await?;
+    let _response = db.query(query).bind(("now", now)).await?;
     // For now, just return 0 to indicate reconciliation happened.
     // The actual count is available via db.query("SELECT COUNT(*) FROM run WHERE status = 'orphaned'")
     // but orphaned reconciliation is best-effort for startup recovery.

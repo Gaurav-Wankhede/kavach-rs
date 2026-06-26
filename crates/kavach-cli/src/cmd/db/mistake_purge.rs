@@ -13,7 +13,10 @@ pub(super) fn run(gate: &str, confirm: bool) -> i32 {
     }
     match rpc_client::mistake_purge(gate) {
         Ok(r) => {
-            let line = format!("purged gate '{gate}': {} anti_pattern cluster(s) removed", r.removed);
+            let line = format!(
+                "purged gate '{gate}': {} anti_pattern cluster(s) removed",
+                r.removed
+            );
             match print_or_exit(&line) {
                 Ok(()) => 0,
                 Err(io) => into_exit_code(io),

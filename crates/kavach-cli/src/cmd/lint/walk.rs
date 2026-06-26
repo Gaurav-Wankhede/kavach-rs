@@ -24,7 +24,11 @@ pub(crate) fn walk_rs(root: &Path, dir: &Path, f: &mut dyn FnMut(&str, &str)) {
         } else if path.extension().is_some_and(|e| e == "rs")
             && let Ok(content) = fs::read_to_string(&path)
         {
-            let rel = path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string();
+            let rel = path
+                .strip_prefix(root)
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .to_string();
             f(&rel, &content);
         }
     }

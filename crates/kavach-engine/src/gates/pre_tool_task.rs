@@ -23,7 +23,10 @@ pub(crate) fn handle_task(input: &HookInput) -> Result<(), EngineError> {
             "subagent limit reached: {}/{} active",
             session.active_subagents, limits.max_parallel
         );
-        drop(kavach_hook::exit_pre_tool_allow(Some(&merge(&context, injection.as_deref()))));
+        drop(kavach_hook::exit_pre_tool_allow(Some(&merge(
+            &context,
+            injection.as_deref(),
+        ))));
         return Ok(());
     }
 
@@ -39,7 +42,10 @@ pub(crate) fn handle_task(input: &HookInput) -> Result<(), EngineError> {
     // Validate agent type if provided
     if !agent_type.is_empty() && !kavach_config::is_valid_agent(agent_type) {
         let context = format!("unrecognized agent type: {agent_type}");
-        drop(kavach_hook::exit_pre_tool_allow(Some(&merge(&context, injection.as_deref()))));
+        drop(kavach_hook::exit_pre_tool_allow(Some(&merge(
+            &context,
+            injection.as_deref(),
+        ))));
         return Ok(());
     }
 

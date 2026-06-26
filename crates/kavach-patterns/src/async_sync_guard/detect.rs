@@ -1,6 +1,6 @@
+use super::rules::{HOT_PATH_RULES, LOOP_KEYWORD, RULES, is_hot_path_fn};
 use super::types::{AsyncSeverity, AsyncViolation};
-use super::rules::{RULES, HOT_PATH_RULES, is_hot_path_fn, LOOP_KEYWORD};
-use super::walk::{walk_fn_bodies, async_fn_line_set, walk_async_fn_bodies};
+use super::walk::{async_fn_line_set, walk_async_fn_bodies, walk_fn_bodies};
 
 pub fn detect(file_path: &str, content: &str) -> Vec<AsyncViolation> {
     if content.is_empty() || crate::file_types::is_test_file(file_path) {

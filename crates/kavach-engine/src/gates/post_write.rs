@@ -118,7 +118,11 @@ fn capture_write(session_id: &str, file_path: &str, content: &str) {
 
 /// Emit the `[POST_WRITE]` block only when an actionable advisory exists.
 /// On Cursor, queue one-line flags for the next `pre_tool`/`pre_write` relay instead.
-fn emit_context(sess: &mut kavach_session::SessionState, file_path: &str, context_parts: &[String]) {
+fn emit_context(
+    sess: &mut kavach_session::SessionState,
+    file_path: &str,
+    context_parts: &[String],
+) {
     if context_parts.is_empty() {
         return;
     }

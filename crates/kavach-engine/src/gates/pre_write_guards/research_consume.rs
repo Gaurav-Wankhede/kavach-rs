@@ -36,8 +36,7 @@ fn is_local_analysis_intent(intent: &str) -> bool {
 /// "investigate"). Bare entry keys mapped to their trailing segment; fail-soft to
 /// empty on any RPC error ⇒ canonical-only enforcement.
 fn brain_local_analysis_synonyms() -> Vec<String> {
-    let params =
-        serde_json::json!({ "query": "local code analysis intent synonyms no external research", "limit": 8 });
+    let params = serde_json::json!({ "query": "local code analysis intent synonyms no external research", "limit": 8 });
     let hits: Vec<kavach_surreal::BrainHit> =
         match kavach_rpc::client::call("brain.think", Some(params)) {
             Ok(h) => h,

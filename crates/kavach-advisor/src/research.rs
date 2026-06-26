@@ -106,7 +106,11 @@ pub fn kickoff(session_id: &str, topic: &str) {
     };
     // INTENTIONAL JoinHandle discard: fire-and-forget. Spawn failure leaves the
     // cache `pending` ⇒ gate reads "no evidence" ⇒ blocks (fail-safe).
-    drop(thread::Builder::new().name("kavach-research".to_owned()).spawn(worker));
+    drop(
+        thread::Builder::new()
+            .name("kavach-research".to_owned())
+            .spawn(worker),
+    );
 }
 
 /// Read current findings for a session, if the cache file exists and parses.

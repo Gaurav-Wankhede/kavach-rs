@@ -12,7 +12,10 @@ fn bloat_block() -> String {
 fn new_bloat_in_clean_file_is_blocked() {
     let old = "fn f() {}\n";
     let new = format!("fn f() {{}}\n{}", bloat_block());
-    assert!(introduces_bloat("src/x.rs", old, &new), "added a bloat block -> block");
+    assert!(
+        introduces_bloat("src/x.rs", old, &new),
+        "added a bloat block -> block"
+    );
 }
 
 #[test]
@@ -27,19 +30,29 @@ fn editing_a_file_that_already_had_bloat_is_allowed() {
     // Pre-existing bloat (same count before+after) must NOT wedge the edit.
     let old = format!("fn f() {{}}\n{}", bloat_block());
     let new = format!("fn f() {{}}\n{}fn g() {{}}\n", bloat_block());
-    assert!(!introduces_bloat("src/x.rs", &old, &new), "unchanged bloat count -> allow");
+    assert!(
+        !introduces_bloat("src/x.rs", &old, &new),
+        "unchanged bloat count -> allow"
+    );
 }
 
 #[test]
 fn removing_bloat_is_allowed() {
     let old = format!("fn f() {{}}\n{}", bloat_block());
     let new = "fn f() {}\n";
-    assert!(!introduces_bloat("src/x.rs", &old, new), "reducing bloat is never blocked");
+    assert!(
+        !introduces_bloat("src/x.rs", &old, new),
+        "reducing bloat is never blocked"
+    );
 }
 
 #[test]
 fn clean_edit_on_clean_file_is_allowed() {
-    assert!(!introduces_bloat("src/x.rs", "fn f() {}\n", "fn f() {}\nfn g() {}\n"));
+    assert!(!introduces_bloat(
+        "src/x.rs",
+        "fn f() {}\n",
+        "fn f() {}\nfn g() {}\n"
+    ));
 }
 
 #[test]

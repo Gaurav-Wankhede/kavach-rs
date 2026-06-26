@@ -25,7 +25,10 @@ pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
 
 async fn body(requested: Option<String>) -> Result<Markup, RpcError> {
     let project = resolve_project(requested).await?;
-    let frag = format!("/decisions/fragment?project={}", project.as_deref().unwrap_or(""));
+    let frag = format!(
+        "/decisions/fragment?project={}",
+        project.as_deref().unwrap_or("")
+    );
     let inner = html! {
         (heading("Decisions"))
         (live(&frag, section(project.clone()).await?))

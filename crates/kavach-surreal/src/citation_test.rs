@@ -68,11 +68,19 @@ async fn upsert_creates_then_updates_on_same_key() {
     .await
     .expect("update");
 
-    assert_eq!(first, second, "same key upserts the same row, never a second");
-    let rows = list_citations_by_project(&db, &project).await.expect("list");
+    assert_eq!(
+        first, second,
+        "same key upserts the same row, never a second"
+    );
+    let rows = list_citations_by_project(&db, &project)
+        .await
+        .expect("list");
     assert_eq!(rows.len(), 1, "the UNIQUE index kept exactly one row");
     assert_eq!(rows[0].name, "SurrealDB v3", "name refreshed on update");
-    assert_eq!(rows[0].metadata[0].slug, "graph", "metadata replaced on update");
+    assert_eq!(
+        rows[0].metadata[0].slug, "graph",
+        "metadata replaced on update"
+    );
 }
 
 #[tokio::test]
@@ -91,9 +99,15 @@ async fn get_bumps_access_count() {
     .await
     .expect("create");
 
-    let first = get_citation(&db, &project, "axum").await.expect("get").expect("present");
+    let first = get_citation(&db, &project, "axum")
+        .await
+        .expect("get")
+        .expect("present");
     assert_eq!(first.access_count, 1, "first read bumps to 1");
-    let second = get_citation(&db, &project, "axum").await.expect("get").expect("present");
+    let second = get_citation(&db, &project, "axum")
+        .await
+        .expect("get")
+        .expect("present");
     assert_eq!(second.access_count, 2, "second read bumps to 2");
 }
 
@@ -136,13 +150,21 @@ async fn traverse_reexport_finds_a_citer() {
         .await
         .expect("cite edge");
     let citers = super::traverse(&db, &to).await.expect("traverse");
-    assert_eq!(citers, vec![from], "the citing decision is reached in one query");
+    assert_eq!(
+        citers,
+        vec![from],
+        "the citing decision is reached in one query"
+    );
 }
 
 #[test]
 fn freshness_window_boundary_is_exact() {
     let now = 1_000_000_000;
-    assert_eq!(freshness(Some(now), now), Freshness::Fresh, "just-updated is fresh");
+    assert_eq!(
+        freshness(Some(now), now),
+        Freshness::Fresh,
+        "just-updated is fresh"
+    );
     assert_eq!(
         freshness(Some(now - FRESHNESS_WINDOW_SECS + 1), now),
         Freshness::Fresh,
@@ -163,7 +185,11 @@ fn freshness_window_boundary_is_exact() {
 #[test]
 fn freshness_unstamped_and_future_are_stale() {
     let now = 1_000_000_000;
-    assert_eq!(freshness(None, now), Freshness::Stale, "never-stamped is not trusted");
+    assert_eq!(
+        freshness(None, now),
+        Freshness::Stale,
+        "never-stamped is not trusted"
+    );
     assert_eq!(
         freshness(Some(now + 60), now),
         Freshness::Stale,
@@ -173,10 +199,20 @@ fn freshness_unstamped_and_future_are_stale() {
 
 #[test]
 fn mark_if_stale_flags_only_stale() {
-    assert_eq!(mark_if_stale(Freshness::Fresh, "docs"), "docs", "fresh text is untouched");
+    assert_eq!(
+        mark_if_stale(Freshness::Fresh, "docs"),
+        "docs",
+        "fresh text is untouched"
+    );
     let marked = mark_if_stale(Freshness::Stale, "docs");
-    assert!(marked.starts_with(STALE_MARKER), "stale text is prefixed with the marker");
-    assert!(marked.contains("docs"), "stale text still carries the content");
+    assert!(
+        marked.starts_with(STALE_MARKER),
+        "stale text is prefixed with the marker"
+    );
+    assert!(
+        marked.contains("docs"),
+        "stale text still carries the content"
+    );
 }
 
 fn cite(entry_key: &str, name: &str, url: &str, updated_unix: Option<i64>) -> Citation {
@@ -196,22 +232,48 @@ fn cite(entry_key: &str, name: &str, url: &str, updated_unix: Option<i64>) -> Ci
 fn plan_refresh_partitions_stale_and_serves_all() {
     let now = 2_000_000_000;
     let fresh = cite("axum", "Axum", "https://docs.rs/axum", Some(now));
-    let stale = cite("surreal", "SurrealDB", "https://surrealdb.com/docs", Some(now - FRESHNESS_WINDOW_SECS - 1));
+    let stale = cite(
+        "surreal",
+        "SurrealDB",
+        "https://surrealdb.com/docs",
+        Some(now - FRESHNESS_WINDOW_SECS - 1),
+    );
     let plan = plan_refresh(&[fresh, stale], now);
 
-    assert_eq!(plan.refresh.len(), 1, "only the stale citation is queued for re-research");
-    assert_eq!(plan.refresh[0].entry_key, "surreal", "the stale one is named");
-    assert_eq!(plan.refresh[0].urls, vec!["https://surrealdb.com/docs".to_owned()], "its docs URL is the fetch target");
+    assert_eq!(
+        plan.refresh.len(),
+        1,
+        "only the stale citation is queued for re-research"
+    );
+    assert_eq!(
+        plan.refresh[0].entry_key, "surreal",
+        "the stale one is named"
+    );
+    assert_eq!(
+        plan.refresh[0].urls,
+        vec!["https://surrealdb.com/docs".to_owned()],
+        "its docs URL is the fetch target"
+    );
 
-    assert_eq!(plan.served.len(), 2, "every recalled citation is still served this turn");
+    assert_eq!(
+        plan.served.len(),
+        2,
+        "every recalled citation is still served this turn"
+    );
     assert_eq!(plan.served[0], "Axum", "fresh content serves clean");
-    assert!(plan.served[1].starts_with(STALE_MARKER), "stale content serves marked, never blocks on the network");
+    assert!(
+        plan.served[1].starts_with(STALE_MARKER),
+        "stale content serves marked, never blocks on the network"
+    );
 }
 
 #[test]
 fn plan_refresh_empty_recall_is_empty_plan() {
     let plan = plan_refresh(&[], 2_000_000_000);
-    assert!(plan.refresh.is_empty() && plan.served.is_empty(), "no recall -> no work, no served text");
+    assert!(
+        plan.refresh.is_empty() && plan.served.is_empty(),
+        "no recall -> no work, no served text"
+    );
 }
 
 #[tokio::test]
@@ -243,10 +305,16 @@ async fn merge_node_wires_cite_edge_non_destructively() {
         .pop()
         .expect("one citation");
 
-    merge_node_into_citation(&db, &node, &citation).await.expect("merge edge");
+    merge_node_into_citation(&db, &node, &citation)
+        .await
+        .expect("merge edge");
 
     let cited = citations_cited_by(&db, &node).await.expect("forward walk");
-    assert_eq!(cited, vec![citation.clone()], "the node reaches its merged citation in one query");
+    assert_eq!(
+        cited,
+        vec![citation.clone()],
+        "the node reaches its merged citation in one query"
+    );
 
     let still_there: Vec<RecordId> = db
         .query("SELECT VALUE id FROM entity WHERE entity_type = 'anti_pattern'")
@@ -254,9 +322,15 @@ async fn merge_node_wires_cite_edge_non_destructively() {
         .expect("entity still queryable")
         .take::<Vec<RecordId>>(0)
         .expect("take");
-    assert_eq!(still_there, vec![node.clone()], "the anti_pattern row is untouched — merge is an edge, not a move");
+    assert_eq!(
+        still_there,
+        vec![node.clone()],
+        "the anti_pattern row is untouched — merge is an edge, not a move"
+    );
 
-    merge_node_into_citation(&db, &node, &citation).await.expect("replayed merge");
+    merge_node_into_citation(&db, &node, &citation)
+        .await
+        .expect("replayed merge");
     let edges: Vec<RecordId> = db
         .query("SELECT VALUE id FROM cite WHERE in = $node AND out = $cit")
         .bind(("node", node))
@@ -265,7 +339,11 @@ async fn merge_node_wires_cite_edge_non_destructively() {
         .expect("edge count")
         .take::<Vec<RecordId>>(0)
         .expect("take");
-    assert_eq!(edges.len(), 1, "replayed merge is idempotent — exactly one cite edge, no double-count");
+    assert_eq!(
+        edges.len(),
+        1,
+        "replayed merge is idempotent — exactly one cite edge, no double-count"
+    );
 }
 
 #[tokio::test]
@@ -291,19 +369,33 @@ async fn citations_for_nodes_dedupes_across_recalled_rows() {
         .expect("take")
         .pop()
         .expect("one citation");
-    db.query("CREATE decision:d SET project = project:p, entry_key = 'k1', title = 't', content = 'c'")
-        .await
-        .expect("decision");
-    db.query("CREATE roadmap:r SET project = project:p, entry_key = 'k2', title = 't', content = 'c'")
-        .await
-        .expect("roadmap");
+    db.query(
+        "CREATE decision:d SET project = project:p, entry_key = 'k1', title = 't', content = 'c'",
+    )
+    .await
+    .expect("decision");
+    db.query(
+        "CREATE roadmap:r SET project = project:p, entry_key = 'k2', title = 't', content = 'c'",
+    )
+    .await
+    .expect("roadmap");
     let decision = RecordId::new("decision", "d");
     let roadmap = RecordId::new("roadmap", "r");
-    merge_node_into_citation(&db, &decision, &citation).await.expect("merge decision");
-    merge_node_into_citation(&db, &roadmap, &citation).await.expect("merge roadmap");
+    merge_node_into_citation(&db, &decision, &citation)
+        .await
+        .expect("merge decision");
+    merge_node_into_citation(&db, &roadmap, &citation)
+        .await
+        .expect("merge roadmap");
 
-    let cits = citations_for_nodes(&db, &[decision, roadmap]).await.expect("batch recall");
-    assert_eq!(cits, vec![citation], "both recalled rows cite the same citation -> deduped to one");
+    let cits = citations_for_nodes(&db, &[decision, roadmap])
+        .await
+        .expect("batch recall");
+    assert_eq!(
+        cits,
+        vec![citation],
+        "both recalled rows cite the same citation -> deduped to one"
+    );
 
     let empty = citations_for_nodes(&db, &[]).await.expect("empty batch");
     assert!(empty.is_empty(), "no recalled nodes -> no citations");
@@ -332,13 +424,19 @@ async fn reward_flows_along_cite_edges() {
         .expect("take")
         .pop()
         .expect("one citation");
-    db.query("CREATE decision:d SET project = project:p, entry_key = 'k', title = 't', content = 'c'")
-        .await
-        .expect("decision");
+    db.query(
+        "CREATE decision:d SET project = project:p, entry_key = 'k', title = 't', content = 'c'",
+    )
+    .await
+    .expect("decision");
     let node = RecordId::new("decision", "d");
-    merge_node_into_citation(&db, &node, &citation).await.expect("merge");
+    merge_node_into_citation(&db, &node, &citation)
+        .await
+        .expect("merge");
 
-    let n = reward_citation_edges(&db, &citation, 0.5).await.expect("reward");
+    let n = reward_citation_edges(&db, &citation, 0.5)
+        .await
+        .expect("reward");
     assert_eq!(n, 1, "the single cite edge into the citation is rewarded");
 
     let weights: Vec<f64> = db
@@ -348,10 +446,17 @@ async fn reward_flows_along_cite_edges() {
         .expect("weights")
         .take::<Vec<f64>>(0)
         .expect("take");
-    assert_eq!(weights, vec![1.5], "edge weight climbed from the merge default 1.0 by delta 0.5");
+    assert_eq!(
+        weights,
+        vec![1.5],
+        "edge weight climbed from the merge default 1.0 by delta 0.5"
+    );
 
     let unlinked = reward_citation_edges(&db, &RecordId::new("citation", "absent"), 1.0)
         .await
         .expect("reward on unlinked citation");
-    assert_eq!(unlinked, 0, "a citation with no cite edges rewards nothing, no error");
+    assert_eq!(
+        unlinked, 0,
+        "a citation with no cite edges rewards nothing, no error"
+    );
 }

@@ -12,7 +12,12 @@ pub(crate) const fn want_full_content(full: bool, snippet: bool) -> bool {
     reason = "multi-stage fallback from RPC to direct DB access with error handling"
 )]
 pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool, snippet: bool) -> i32 {
-    match super::rpc_client::get(project_slug, category, key, want_full_content(full, snippet)) {
+    match super::rpc_client::get(
+        project_slug,
+        category,
+        key,
+        want_full_content(full, snippet),
+    ) {
         Ok(result) if result.found => {
             if let Some(entry) = result.entry {
                 let head = format!(

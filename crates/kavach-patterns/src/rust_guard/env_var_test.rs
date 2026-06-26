@@ -63,7 +63,11 @@ fn false_positive_set_is_empty() {
         "/x/crates/tools/seed/src/lib.rs",
     ];
     for path in must_be_silent {
-        assert_eq!(hits(path, env_call), 0, "must be silent on exempt/ungoverned: {path}");
+        assert_eq!(
+            hits(path, env_call),
+            0,
+            "must be silent on exempt/ungoverned: {path}"
+        );
     }
 }
 

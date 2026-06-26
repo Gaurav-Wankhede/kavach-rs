@@ -5,7 +5,9 @@ use core::ops::ControlFlow;
 
 use super::probe::next_dispatch;
 use crate::gates::stop::shared::StopCtx;
-use crate::gates::stop_dispatch::{SOURCE_DOWN_KEY, AutoVerify, auto_verify_done_cards, claim_card};
+use crate::gates::stop_dispatch::{
+    AutoVerify, SOURCE_DOWN_KEY, auto_verify_done_cards, claim_card,
+};
 
 /// Collect what is being bypassed by a forced stop, for the terminal advisory.
 fn bypass_info(ctx: &StopCtx<'_>) -> String {
@@ -55,7 +57,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
                 "[FORCED_TERMINAL_WITNESS_FAILED] done cards exist but workspace \
                  witnesses failed (cargo check / clippy / nextest / diff). This is \
                  fixable AI work. Re-block to command KEYSTONE_REPAIR. The loop must \
-                 repair the failure before any terminal exit."
+                 repair the failure before any terminal exit.",
             ));
             ctx.session.increment_stop_reblock();
             return ControlFlow::Break(());
@@ -81,7 +83,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
                  Either:\n\
                  1. Set env var KAVACH_VERIFY_CMD to a shell command that verifies the work, then resume.\n\
                  2. Manually promote the cards (kavach db roadmap update <key> --status verified) if work is proven by external audit.\n\
-                 The loop yields only to the user's `Esc`."
+                 The loop yields only to the user's `Esc`.",
             ));
             return ControlFlow::Break(());
         }
@@ -119,7 +121,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
              exits: CLOSE (3-witness verify the work) or DELETE (discard the card). \
              Do NOT stop — make progress or delete the card, then resume. If the \
              card is genuinely un-buildable, delete it (`kavach db delete --category \
-             roadmap --key <key>`) and the loop will dispatch the next task."
+             roadmap --key <key>`) and the loop will dispatch the next task.",
         ));
         return ControlFlow::Break(());
     }

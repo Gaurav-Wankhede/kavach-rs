@@ -29,26 +29,47 @@ async fn family_of(
 #[tokio::test]
 async fn mistake_event_is_tagged_family_mistake() {
     let db = open_memory().await.expect("open in-memory db");
-    append_mistake_event(&db, "shallow_verdict", "cite file:line", "banned", "sess", Some("proj"))
-        .await
-        .expect("append mistake");
-    assert_eq!(family_of(&db, "mistake_event").await.as_deref(), Some(FAMILY_MISTAKE));
+    append_mistake_event(
+        &db,
+        "shallow_verdict",
+        "cite file:line",
+        "banned",
+        "sess",
+        Some("proj"),
+    )
+    .await
+    .expect("append mistake");
+    assert_eq!(
+        family_of(&db, "mistake_event").await.as_deref(),
+        Some(FAMILY_MISTAKE)
+    );
 }
 
 #[tokio::test]
 async fn loophole_event_is_tagged_family_loophole() {
     let db = open_memory().await.expect("open in-memory db");
-    append_loophole_event(&db, "injection", "src/x.py:12 — os.system", "sess", Some("proj"))
-        .await
-        .expect("append loophole");
-    assert_eq!(family_of(&db, "loophole_event").await.as_deref(), Some(FAMILY_LOOPHOLE));
+    append_loophole_event(
+        &db,
+        "injection",
+        "src/x.py:12 — os.system",
+        "sess",
+        Some("proj"),
+    )
+    .await
+    .expect("append loophole");
+    assert_eq!(
+        family_of(&db, "loophole_event").await.as_deref(),
+        Some(FAMILY_LOOPHOLE)
+    );
 }
 
 #[tokio::test]
 async fn empty_loophole_dimension_is_rejected() {
     let db = open_memory().await.expect("open in-memory db");
     assert!(
-        append_loophole_event(&db, "", "site", "sess", None).await.is_err(),
+        append_loophole_event(&db, "", "site", "sess", None)
+            .await
+            .is_err(),
         "an empty dimension must be refused, never a blank-gate row"
     );
 }
@@ -57,7 +78,9 @@ async fn empty_loophole_dimension_is_rejected() {
 async fn anti_pattern_default_family_is_mistake_overlay_is_loophole() {
     let db = open_memory().await.expect("open in-memory db");
     // Back-compat path defaults to mistake.
-    upsert_anti_pattern(&db, "ap-default", "g1", "fix").await.expect("default");
+    upsert_anti_pattern(&db, "ap-default", "g1", "fix")
+        .await
+        .expect("default");
     // Explicit loophole family.
     upsert_anti_pattern_with_family(&db, "ap-loop", "injection", "parameterize", FAMILY_LOOPHOLE)
         .await

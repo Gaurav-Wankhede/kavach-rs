@@ -31,7 +31,11 @@ fn paraphrased_handoffs_the_regex_misses_fire() {
 fn lexical_regex_hits_defer_to_regex_not_double_counted() {
     // These already trip detect_strategic_deferral — the backstop must yield
     // CoveredByRegex, never ParaphrasedHandoff (no double-count).
-    for m in ["defer this to the backlog", "post-launch enhancement", "phase 2 work"] {
+    for m in [
+        "defer this to the backlog",
+        "post-launch enhancement",
+        "phase 2 work",
+    ] {
         assert_eq!(c(m), SemanticDeferral::CoveredByRegex, "regex owns: {m}");
     }
 }
@@ -46,7 +50,11 @@ fn actively_working_turns_never_fire() {
         "Handing nothing off; I'll wire the next call site this turn.",
         "As far as makes sense, so now I will continue with the next card.",
     ] {
-        assert_eq!(c(m), SemanticDeferral::Clear, "active work must not fire: {m}");
+        assert_eq!(
+            c(m),
+            SemanticDeferral::Clear,
+            "active work must not fire: {m}"
+        );
     }
 }
 
@@ -58,6 +66,10 @@ fn ordinary_completion_prose_is_clear() {
         "Fixed the bug at line 42 and the build is green.",
         "The handler now returns 403 on a denied request.",
     ] {
-        assert_eq!(c(m), SemanticDeferral::Clear, "neutral prose must not fire: {m}");
+        assert_eq!(
+            c(m),
+            SemanticDeferral::Clear,
+            "neutral prose must not fire: {m}"
+        );
     }
 }

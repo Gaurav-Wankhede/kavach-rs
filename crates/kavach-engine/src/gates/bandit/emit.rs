@@ -88,8 +88,7 @@ pub(crate) fn maybe_emit_held_out(
     if session_id.is_empty() || roll >= held_out_rate() {
         return;
     }
-    let row =
-        build_row(session_id, now_ms(), context, action, propensity, None).into_held_out();
+    let row = build_row(session_id, now_ms(), context, action, propensity, None).into_held_out();
     let Some(payload) = payload_of(&row) else {
         return;
     };

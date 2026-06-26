@@ -311,7 +311,15 @@ fn collect_mistake_rows(project: &str) -> Option<Vec<(String, u32)>> {
     // rows (roadmap-dispatch default). Without --all the ledger reads as empty when
     // it is only filtered out. SOURCE: roadmap.mistake-ledger-resurrect (DB-proven).
     let out = ProcessCommand::new("kavach")
-        .args(["db", "query", "--project", project, "--category", "pattern", "--all"])
+        .args([
+            "db",
+            "query",
+            "--project",
+            project,
+            "--category",
+            "pattern",
+            "--all",
+        ])
         .output()
         .ok()?;
     if !out.status.success() {

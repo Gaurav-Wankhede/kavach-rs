@@ -1,9 +1,9 @@
+use super::model::{DagEdge, DagNode, RoadmapDag};
 use crate::error::Result;
 use serde::Deserialize;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
-use super::model::{DagNode, DagEdge, RoadmapDag};
 
 #[derive(SurrealValue)]
 struct IdRow {

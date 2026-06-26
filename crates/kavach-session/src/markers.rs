@@ -36,14 +36,12 @@ impl SessionState {
         self.save_or_log();
     }
 
-
     pub fn mark_post_compact(&mut self) {
         self.post_compact = true;
         self.compacted_at = now_datetime();
         self.compact_count = self.compact_count.saturating_add(1);
         self.save_or_log();
     }
-
 
     #[must_use]
     pub const fn is_post_compact(&self) -> bool {
@@ -72,7 +70,6 @@ impl SessionState {
         self.user_directive_turn == self.turn_count && self.turn_count > 0
     }
 
-
     pub fn record_failure_typed(&mut self, tool: &str, failure_type: &str) {
         self.last_failure_tool = tool.into();
         self.last_failure_turn = self.turn_count;
@@ -87,7 +84,6 @@ impl SessionState {
         self.failure_type.clear();
         self.save_or_log();
     }
-
 
     /// True if failure is a valid "not found" result, not a real error.
     #[must_use]
@@ -126,13 +122,11 @@ impl SessionState {
         self.save_or_log();
     }
 
-
     #[must_use]
     pub const fn has_recent_failure(&self) -> bool {
         !self.last_failure_tool.is_empty()
             && (self.last_failure_turn == self.turn_count || self.failure_block_count > 0)
     }
-
 
     /// Max number of times the stop gate will block before allowing forced stop.
     /// Gives Claude 3 chances to fix the failure before giving up.

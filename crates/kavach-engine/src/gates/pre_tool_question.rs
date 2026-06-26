@@ -67,7 +67,12 @@ mod tests {
     fn every_other_vendor_is_exempt() {
         // Cursor (Composer 2.5) is the motivating case; the exemption applies to
         // every non-Claude-Code harness that spawns this binary.
-        for v in [Vendor::Cursor, Vendor::Codex, Vendor::Antigravity, Vendor::Pi] {
+        for v in [
+            Vendor::Cursor,
+            Vendor::Codex,
+            Vendor::Antigravity,
+            Vendor::Pi,
+        ] {
             assert!(vendor_is_exempt(v), "{} must be exempt", v.name());
         }
     }

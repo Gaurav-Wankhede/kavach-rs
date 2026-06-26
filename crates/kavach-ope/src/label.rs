@@ -90,7 +90,11 @@ pub fn reward_tag(action: Action, outcome: VerifyOutcome) -> &'static str {
     // from a mechanically-verified one in `bandit_log` (same {+1,-1} magnitude,
     // distinct provenance). `reward_scalar` parses these back identically.
     if let VerifyOutcome::AiJudged { good } = outcome {
-        return if good { "ai_judged_good" } else { "ai_judged_bad" };
+        return if good {
+            "ai_judged_good"
+        } else {
+            "ai_judged_bad"
+        };
     }
     let scalar = label(action, outcome);
     if scalar > 0.0 {

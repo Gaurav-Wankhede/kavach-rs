@@ -1,5 +1,5 @@
+use super::format::{dm_escape, dm_sanitize, status_class, status_rank};
 use super::model::{DagNode, RoadmapDag, TopoOrder};
-use super::format::{status_rank, status_class, dm_sanitize, dm_escape};
 
 impl RoadmapDag {
     /// Kahn topological sort over `depends_on`∪`blocks` — `Ordered` (prereqs first) or `Cycle` with residual nodes.

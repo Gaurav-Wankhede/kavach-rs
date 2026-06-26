@@ -9,26 +9,42 @@ fn no_flag_no_env_is_none() {
 #[test]
 fn env_override_forces_all() {
     assert_eq!(resolve_depth(None, true), Depth::All);
-    assert_eq!(resolve_depth(Some("40"), true), Depth::All, "env wins over a char flag");
+    assert_eq!(
+        resolve_depth(Some("40"), true),
+        Depth::All,
+        "env wins over a char flag"
+    );
 }
 
 #[test]
 fn all_keyword_is_all() {
     assert_eq!(resolve_depth(Some("all"), false), Depth::All);
-    assert_eq!(resolve_depth(Some("ALL"), false), Depth::All, "case-insensitive");
+    assert_eq!(
+        resolve_depth(Some("ALL"), false),
+        Depth::All,
+        "case-insensitive"
+    );
 }
 
 #[test]
 fn integer_flag_is_chars() {
     assert_eq!(resolve_depth(Some("400"), false), Depth::Chars(400));
-    assert_eq!(resolve_depth(Some("  12 "), false), Depth::Chars(12), "trimmed");
+    assert_eq!(
+        resolve_depth(Some("  12 "), false),
+        Depth::Chars(12),
+        "trimmed"
+    );
 }
 
 #[test]
 fn non_integer_flag_fails_safe_to_none() {
     // A typo must NOT dump the whole body — fail-safe to titles-only.
     assert_eq!(resolve_depth(Some("lots"), false), Depth::None);
-    assert_eq!(resolve_depth(Some("-5"), false), Depth::None, "negative is not usize");
+    assert_eq!(
+        resolve_depth(Some("-5"), false),
+        Depth::None,
+        "negative is not usize"
+    );
 }
 
 #[test]
@@ -64,11 +80,17 @@ fn chars_no_marker_when_body_fits() {
 fn chars_respects_utf8_char_boundary() {
     // 'é' is 2 bytes; Chars(2) must keep 2 CHARS without panicking on a byte split.
     let out = render_content("aérn", Depth::Chars(2)).expect("some");
-    assert!(out.starts_with("aé"), "kept 2 chars across a multi-byte char: {out}");
+    assert!(
+        out.starts_with("aé"),
+        "kept 2 chars across a multi-byte char: {out}"
+    );
 }
 
 #[test]
 fn chars_zero_keeps_nothing_but_marks_truncation() {
     let out = render_content("xyz", Depth::Chars(0)).expect("some");
-    assert!(out.contains("truncated"), "depth 0 on a non-empty body marks a cut: {out}");
+    assert!(
+        out.contains("truncated"),
+        "depth 0 on a non-empty body marks a cut: {out}"
+    );
 }

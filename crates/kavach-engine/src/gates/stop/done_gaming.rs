@@ -44,7 +44,9 @@ const PROOF_TOKENS: &[&str] = &[
 fn is_real_source_write(path: &str) -> bool {
     let p = Path::new(path);
     let is_doc_ext = p.extension().is_some_and(|e| {
-        e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("mdx") || e.eq_ignore_ascii_case("txt")
+        e.eq_ignore_ascii_case("md")
+            || e.eq_ignore_ascii_case("mdx")
+            || e.eq_ignore_ascii_case("txt")
     });
     let in_docs_dir = p
         .components()

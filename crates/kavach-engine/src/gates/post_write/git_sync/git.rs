@@ -32,14 +32,23 @@ pub(super) fn probe() -> Option<GitState> {
     let header = lines.next().unwrap_or_default();
     let uncommitted = lines.filter(|l| !l.is_empty()).count();
     let (branch, ahead, behind) = parse_branch_header(header);
-    Some(GitState { branch, ahead, behind, uncommitted })
+    Some(GitState {
+        branch,
+        ahead,
+        behind,
+        uncommitted,
+    })
 }
 
 /// Parse the `## branch...upstream [ahead N, behind M]` porcelain header line.
 fn parse_branch_header(header: &str) -> (String, u32, u32) {
     let body = header.strip_prefix("## ").unwrap_or(header);
     let branch_part = body.split("...").next().unwrap_or(body);
-    let branch = branch_part.split_whitespace().next().unwrap_or("HEAD").to_owned();
+    let branch = branch_part
+        .split_whitespace()
+        .next()
+        .unwrap_or("HEAD")
+        .to_owned();
     let ahead = extract_track(body, "ahead ");
     let behind = extract_track(body, "behind ");
     (branch, ahead, behind)
@@ -50,7 +59,11 @@ fn parse_branch_header(header: &str) -> (String, u32, u32) {
 fn extract_track(body: &str, marker: &str) -> u32 {
     body.split_once(marker)
         .and_then(|(_, rest)| {
-            let digits: String = rest.trim_start().chars().take_while(char::is_ascii_digit).collect();
+            let digits: String = rest
+                .trim_start()
+                .chars()
+                .take_while(char::is_ascii_digit)
+                .collect();
             digits.parse().ok()
         })
         .unwrap_or(0)

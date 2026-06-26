@@ -43,7 +43,12 @@ async fn current_tier_for_async(project: &str) -> kavach_types::ProjectTier {
         .map_or(kavach_types::ProjectTier::Refactor, |v| v)
 }
 
-pub(crate) fn handle_tier_set(tier: &str, project: &str, reason: &str, allow_downgrade: bool) -> i32 {
+pub(crate) fn handle_tier_set(
+    tier: &str,
+    project: &str,
+    reason: &str,
+    allow_downgrade: bool,
+) -> i32 {
     let tier_lower = tier.to_lowercase();
     let Some(new_tier) = kavach_types::ProjectTier::parse(&tier_lower) else {
         let msg = format!("invalid tier: {tier}. Valid: refactor, feature, platform");

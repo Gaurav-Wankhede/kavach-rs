@@ -80,7 +80,13 @@ pub fn stack_fit_mermaid(invariants: &[StackInvariant]) -> Option<String> {
     }
     let mut out = String::from("graph TD\n");
     for (i, inv) in invariants.iter().enumerate() {
-        writeln!(out, "  c{i}[\"{}\"] --> b{i}{{\"{}\"}}", sf_escape(&inv.component), sf_escape(&inv.invariant)).ok();
+        writeln!(
+            out,
+            "  c{i}[\"{}\"] --> b{i}{{\"{}\"}}",
+            sf_escape(&inv.component),
+            sf_escape(&inv.invariant)
+        )
+        .ok();
     }
     Some(out)
 }

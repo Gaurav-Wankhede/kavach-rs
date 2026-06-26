@@ -21,7 +21,10 @@ fn advisories_for(msg: &str, wrote: bool) -> Vec<String> {
 fn permission_seek_fires_and_is_write_independent() {
     // The reported stall class: asking the user permission to proceed. Fires
     // regardless of whether a file was written (needs_write = false).
-    let adv = advisories_for("I've finished the slice. Should I proceed to the next card?", false);
+    let adv = advisories_for(
+        "I've finished the slice. Should I proceed to the next card?",
+        false,
+    );
     assert!(
         adv.iter().any(|a| a.contains("[PERMISSION_SEEK]")),
         "permission-seek must queue its advisory: {adv:?}"
@@ -31,7 +34,10 @@ fn permission_seek_fires_and_is_write_independent() {
 #[test]
 fn permission_seek_silent_when_user_directed() {
     // The NEG arm exempts user-directed asks — no advisory.
-    let adv = advisories_for("Continuing as you requested; should I proceed with the next step?", false);
+    let adv = advisories_for(
+        "Continuing as you requested; should I proceed with the next step?",
+        false,
+    );
     assert!(
         !adv.iter().any(|a| a.contains("[PERMISSION_SEEK]")),
         "a user-directed ask must NOT fire: {adv:?}"
@@ -68,8 +74,15 @@ fn permission_seek_reports_handback_signal() {
     // The refuse-stop teeth: a permission-menu turn must set handback_or_menu so
     // clean_exit can REFUSE the stop (census-gated), not merely advise.
     let mut session = SessionState::default();
-    let stall = run(&mut session, "I've finished the slice. Should I proceed to the next card?", false);
-    assert!(stall.handback_or_menu, "permission-menu must flag the handback signal");
+    let stall = run(
+        &mut session,
+        "I've finished the slice. Should I proceed to the next card?",
+        false,
+    );
+    assert!(
+        stall.handback_or_menu,
+        "permission-menu must flag the handback signal"
+    );
 }
 
 #[test]
@@ -80,7 +93,10 @@ fn doing_the_work_turn_reports_no_handback() {
     let msg = "Card closed: cargo check --workspace exit 0, git diff --stat landed at \
                stop.rs:148. Claiming the next card now.";
     let stall = run(&mut session, msg, true);
-    assert!(!stall.handback_or_menu, "a doing-the-work turn must not flag handback: {msg}");
+    assert!(
+        !stall.handback_or_menu,
+        "a doing-the-work turn must not flag handback: {msg}"
+    );
 }
 
 #[test]
@@ -95,7 +111,10 @@ fn argued_with_user_fires_and_sets_signal() {
     );
     let mut session = SessionState::default();
     let stall = run(&mut session, msg, false);
-    assert!(stall.argued_with_user, "refuting the user must flag the argued_with_user signal");
+    assert!(
+        stall.argued_with_user,
+        "refuting the user must flag the argued_with_user signal"
+    );
 }
 
 #[test]
@@ -116,7 +135,10 @@ fn obeying_the_user_does_not_flag_argued() {
     let mut session = SessionState::default();
     let msg = "Re-read your instruction. Setting ALLOWED_ORIGINS to your workers.dev URLs now.";
     let stall = run(&mut session, msg, false);
-    assert!(!stall.argued_with_user, "an obeying turn must not flag argued_with_user: {msg}");
+    assert!(
+        !stall.argued_with_user,
+        "an obeying turn must not flag argued_with_user: {msg}"
+    );
 }
 
 #[test]
@@ -129,7 +151,10 @@ fn cors_transcript_refutation_is_blocked() {
                code treats it as a literal exact-match. This is correct behavior as designed; \
                wildcard CORS is structurally impossible for it.";
     let stall = run(&mut session, msg, false);
-    assert!(stall.argued_with_user, "the CORS refutation must flag argued_with_user");
+    assert!(
+        stall.argued_with_user,
+        "the CORS refutation must flag argued_with_user"
+    );
 }
 
 #[test]
@@ -140,7 +165,10 @@ fn cors_transcript_value_gate_is_blocked() {
     let msg = "Listing intended origins now adds zero value until the frontends ship; \
                the entry is dormant but harmless, so it can wait.";
     let stall = run(&mut session, msg, false);
-    assert!(stall.argued_with_user, "the CORS value-gate must flag argued_with_user");
+    assert!(
+        stall.argued_with_user,
+        "the CORS value-gate must flag argued_with_user"
+    );
 }
 
 #[test]
@@ -156,8 +184,14 @@ fn cors_transcript_obey_path_is_allowed() {
 
 #[test]
 fn empty_message_queues_nothing() {
-    assert!(advisories_for("", false).is_empty(), "empty message must be inert");
-    assert!(advisories_for("", true).is_empty(), "empty message must be inert even with a write");
+    assert!(
+        advisories_for("", false).is_empty(),
+        "empty message must be inert"
+    );
+    assert!(
+        advisories_for("", true).is_empty(),
+        "empty message must be inert even with a write"
+    );
 }
 
 #[test]
@@ -170,7 +204,8 @@ fn benign_completion_with_evidence_does_not_over_fire() {
                git diff --stat shows the change landed at stop.rs:148. Claiming the next card now.";
     let adv = advisories_for(msg, true);
     assert!(
-        !adv.iter().any(|a| a.contains("[PERMISSION_SEEK]") || a.contains("[REMAINING_PHASES]")),
+        !adv.iter()
+            .any(|a| a.contains("[PERMISSION_SEEK]") || a.contains("[REMAINING_PHASES]")),
         "a doing-the-work turn must not be flagged as a stall: {adv:?}"
     );
 }

@@ -1,10 +1,10 @@
-mod registry;
 mod npm;
 mod pypi;
+mod registry;
 
-use registry::{crates_index_url, npm_url, pypi_url};
 use npm::npm_deps;
 use pypi::pypi_deps;
+use registry::{crates_index_url, npm_url, pypi_url};
 
 fn find_lockfile() -> Option<String> {
     let mut dir = std::env::current_dir().ok()?;
@@ -39,10 +39,12 @@ fn parse_versions(lock: &str) -> Vec<(String, String)> {
 fn prompt_mentions(prompt_lc: &str, crate_name: &str) -> bool {
     let needle = crate_name.to_lowercase();
     let alt = needle.replace('-', "_");
-    prompt_lc.split(|c: char| !c.is_alphanumeric() && c != '-' && c != '_').any(|tok| {
-        let tok = tok.trim_matches(|c| c == '-' || c == '_');
-        tok == needle || tok.replace('-', "_") == alt
-    })
+    prompt_lc
+        .split(|c: char| !c.is_alphanumeric() && c != '-' && c != '_')
+        .any(|tok| {
+            let tok = tok.trim_matches(|c| c == '-' || c == '_');
+            tok == needle || tok.replace('-', "_") == alt
+        })
 }
 
 pub(super) fn version_pin_block(prompt: &str) -> String {
@@ -54,7 +56,9 @@ pub(super) fn version_pin_block(prompt: &str) -> String {
     let mut seen = std::collections::BTreeSet::new();
     for (name, version) in parse_versions(&lock) {
         if prompt_mentions(&prompt_lc, &name) && seen.insert(name.clone()) {
-            hits.push(format!("  {name} = {version} (installed; pin research to THIS)"));
+            hits.push(format!(
+                "  {name} = {version} (installed; pin research to THIS)"
+            ));
         }
     }
     if let Ok(work_dir) = std::env::current_dir() {
@@ -65,7 +69,9 @@ pub(super) fn version_pin_block(prompt: &str) -> String {
         }
         for (name, version) in pypi_deps(&work_dir) {
             if prompt_mentions(&prompt_lc, &name) && seen.insert(name.clone()) {
-                hits.push(format!("  {name} = {version} (python; pin research to THIS)"));
+                hits.push(format!(
+                    "  {name} = {version} (python; pin research to THIS)"
+                ));
             }
         }
     }

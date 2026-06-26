@@ -1,5 +1,5 @@
 use super::types::{AtomicSeverity, AtomicViolation, Level};
-use super::util::{regex_matches, regex_find_any, PATTERNS};
+use super::util::{PATTERNS, regex_find_any, regex_matches};
 
 pub(super) fn detect_atom_violations(content: &str) -> Vec<AtomicViolation> {
     let mut v = Vec::new();

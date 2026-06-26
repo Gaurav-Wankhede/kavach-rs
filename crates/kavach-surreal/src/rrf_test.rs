@@ -13,7 +13,10 @@ fn consensus_id_outranks_a_single_list_top() {
     let fts = ids(&["a", "b"]);
     let graph = ids(&["c", "b"]);
     let fused = rrf_fuse(&[&fts, &graph], RRF_K);
-    assert_eq!(fused[0].0, "b", "id surfaced by both lists ranks first: {fused:?}");
+    assert_eq!(
+        fused[0].0, "b",
+        "id surfaced by both lists ranks first: {fused:?}"
+    );
 }
 
 #[test]
@@ -26,7 +29,10 @@ fn absent_id_contributes_nothing() {
     assert_eq!(fused.len(), 2);
     let sx = fused.iter().find(|(id, _)| id == "x").unwrap().1;
     let sy = fused.iter().find(|(id, _)| id == "y").unwrap().1;
-    assert!((sx - sy).abs() < f64::EPSILON, "single-list rank-1 ties: {fused:?}");
+    assert!(
+        (sx - sy).abs() < f64::EPSILON,
+        "single-list rank-1 ties: {fused:?}"
+    );
     assert_eq!(fused[0].0, "x", "id-ascending tie-break");
 }
 
@@ -38,7 +44,10 @@ fn rank_position_drives_score_monotonically() {
     assert_eq!(fused[0].0, "first");
     assert_eq!(fused[1].0, "second");
     assert_eq!(fused[2].0, "third");
-    assert!(fused[0].1 > fused[1].1 && fused[1].1 > fused[2].1, "{fused:?}");
+    assert!(
+        fused[0].1 > fused[1].1 && fused[1].1 > fused[2].1,
+        "{fused:?}"
+    );
 }
 
 #[test]

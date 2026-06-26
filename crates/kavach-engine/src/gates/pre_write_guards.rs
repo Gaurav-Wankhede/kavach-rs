@@ -13,9 +13,9 @@ mod nanofile;
 mod quality;
 mod research_consume;
 mod result;
-pub(crate) mod tdd_guard;
 mod retired_pattern;
 mod security;
+pub(crate) mod tdd_guard;
 
 #[cfg(test)]
 mod tests;

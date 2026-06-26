@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::shape::{escape_label, sanitize_id, NodeShape};
+use super::shape::{NodeShape, escape_label, sanitize_id};
 
 /// One step in a flow as supplied by the caller (structured ingest).
 #[derive(Debug, Clone, Serialize, Deserialize)]

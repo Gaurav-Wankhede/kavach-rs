@@ -32,14 +32,20 @@ fn breaks_on_loophole_dismissed_as_na() {
     }
     let mut s = kavach_session::SessionState::default();
     let mut c = ctx_with("Loophole lens: N/A — comment-only edit.", &mut s);
-    assert!(matches!(check(&mut c), ControlFlow::Break(())), "must refuse the stop");
+    assert!(
+        matches!(check(&mut c), ControlFlow::Break(())),
+        "must refuse the stop"
+    );
 }
 
 #[test]
 fn continues_on_clean_completion() {
     let mut s = kavach_session::SessionState::default();
     let mut c = ctx_with("Built it, 933 tests pass, diff landed.", &mut s);
-    assert!(matches!(check(&mut c), ControlFlow::Continue(())), "no dismissal -> allow stop");
+    assert!(
+        matches!(check(&mut c), ControlFlow::Continue(())),
+        "no dismissal -> allow stop"
+    );
 }
 
 #[test]
@@ -49,5 +55,8 @@ fn continues_when_loopholes_closed_with_proof() {
         "Loopholes closed: concurrency FIXED at stop.rs:120 via compare-and-swap.",
         &mut s,
     );
-    assert!(matches!(check(&mut c), ControlFlow::Continue(())), "obey-proof -> allow stop");
+    assert!(
+        matches!(check(&mut c), ControlFlow::Continue(())),
+        "obey-proof -> allow stop"
+    );
 }

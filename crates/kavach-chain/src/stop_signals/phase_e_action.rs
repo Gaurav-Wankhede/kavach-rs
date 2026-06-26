@@ -17,7 +17,7 @@ const COMPLETION_POS: &str = concat!(
 );
 const COMPLETION_NEG: &str = concat!(
     r"(?i)\bgit\s+diff(?:\s+--stat)?\b|\bcargo\s+(?:check|nextest|test|clippy|build)\b|\bnextest\b",
-    r"|\b\w+\.(?:rs|tsx?|jsx?|py|go|sql|toml):\d+\b",       // file:line witness
+    r"|\b\w+\.(?:rs|tsx?|jsx?|py|go|sql|toml):\d+\b", // file:line witness
     r"|\b\d+\s+(?:tests?|files?)\s+(?:run|passed|changed)\b", // test/diff witness
     r"|\bexit\s+0\b|\bpassed\b|\+\d+/-\d+\b",
 );
@@ -74,7 +74,7 @@ const VERDICT_POS: &str = concat!(
     r"|\beverything\s+(?:checks?\s+out|is\s+(?:wired|correct))\b",
 );
 const VERDICT_NEG: &str = concat!(
-    r"(?i)\b\w+\.(?:rs|tsx?|jsx?|py|go|sql|toml):\d+\b",   // file:line citation
+    r"(?i)\b\w+\.(?:rs|tsx?|jsx?|py|go|sql|toml):\d+\b", // file:line citation
     r"|\bsee\s+\w+[\.\w/]+:\d+\b|\bat\s+\w+[\.\w/]+:\d+\b",
     r"|\[RCA\]|\bline\s+\d+\b",
 );

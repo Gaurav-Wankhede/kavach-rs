@@ -4,19 +4,11 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
 pub(super) fn print_gate_info(gate_name: &str) -> i32 {
     let description = match gate_name {
-        "pre-write" => {
-            "Security chain + content check + research gate (Write/Edit/NotebookEdit)"
-        }
-        "post-write" => {
-            "Antiprod scan + quality + lint + memory sync (Write/Edit/NotebookEdit)"
-        }
+        "pre-write" => "Security chain + content check + research gate (Write/Edit/NotebookEdit)",
+        "post-write" => "Antiprod scan + quality + lint + memory sync (Write/Edit/NotebookEdit)",
         "pre-tool" => "Bash blocklist + read validation + subagent budget (all tools)",
-        "post-tool" => {
-            "Context injection + research tracking + task sync (all tools)"
-        }
-        "intent" => {
-            "Intent classification + skill routing + CEO delegation (UserPromptSubmit)"
-        }
+        "post-tool" => "Context injection + research tracking + task sync (all tools)",
+        "intent" => "Intent classification + skill routing + CEO delegation (UserPromptSubmit)",
         "subagent-start" => "Subagent lifecycle start + budget injection",
         "subagent-stop" => "Subagent lifecycle stop + output tracking",
         "session-start" => {
@@ -29,15 +21,9 @@ pub(super) fn print_gate_info(gate_name: &str) -> i32 {
         }
         "post-tool-failure" => "Post-tool failure recovery and error tracking",
         "permission" => "Permission elevation gate for sensitive operations",
-        "permission-request" => {
-            "PermissionRequest event handler (hookSpecificOutput format)"
-        }
-        "notification" => {
-            "Notification dispatch + terminal bell on attention events (CC 2.1.141)"
-        }
-        "message-display" => {
-            "MessageDisplay pass-through transform hook (CC 2.1.152)"
-        }
+        "permission-request" => "PermissionRequest event handler (hookSpecificOutput format)",
+        "notification" => "Notification dispatch + terminal bell on attention events (CC 2.1.141)",
+        "message-display" => "MessageDisplay pass-through transform hook (CC 2.1.152)",
         "teammate-idle" => "Teammate idle detection and task reassignment",
         "task-completed" => "Task completion verification and memory sync",
         "six-file-intent" => {

@@ -38,7 +38,10 @@ impl SpooledWrite {
     /// like the engine glue cannot use a struct literal).
     #[must_use]
     pub const fn new(method: String, params_json: String) -> Self {
-        Self { method, params_json }
+        Self {
+            method,
+            params_json,
+        }
     }
 }
 

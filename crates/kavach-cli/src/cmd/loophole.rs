@@ -63,7 +63,13 @@ fn sweep_round(project: &str, run_id: &str, round: u32) -> Result<RoundOutcome, 
     let mut keys = Vec::new();
     for f in findings.iter().take(MAX_CARDS_PER_ROUND) {
         let incident = incident_key(f);
-        let summary = format!("loophole[{}]: {} ({}:{})", f.lens.slug(), f.hint, f.file, f.line);
+        let summary = format!(
+            "loophole[{}]: {} ({}:{})",
+            f.lens.slug(),
+            f.hint,
+            f.file,
+            f.line
+        );
         let body = card_body(f);
         let code = capture_incident(project, &incident, &summary, &body, "HEAD~1");
         if code == 0 {
@@ -71,7 +77,9 @@ fn sweep_round(project: &str, run_id: &str, round: u32) -> Result<RoundOutcome, 
                 keys.push(incident);
             }
         } else {
-            print_or_exit(&format!("[loophole] WARN: card write returned {code} for {incident}"))?;
+            print_or_exit(&format!(
+                "[loophole] WARN: card write returned {code} for {incident}"
+            ))?;
         }
     }
     let total = findings.len();
@@ -179,7 +187,11 @@ fn card_body(f: &Finding) -> String {
          This is a SUSPECTED loophole (heuristic hint, not proof). Root-cause it via the\n\
          {} attack lens, fix AT THE SOURCE or prove N/A with a file:line citation, then\n\
          3-witness verify. Record the verdict; never silence the lint.\n",
-        f.lens.slug(), f.file, f.line, f.hint, f.lens.slug()
+        f.lens.slug(),
+        f.file,
+        f.line,
+        f.hint,
+        f.lens.slug()
     )
 }
 
@@ -270,7 +282,11 @@ mod tests {
 
     #[test]
     fn streak_saturates_not_overflows() {
-        assert_eq!(next_streak(u32::MAX, 0), u32::MAX, "no wraparound at the cap");
+        assert_eq!(
+            next_streak(u32::MAX, 0),
+            u32::MAX,
+            "no wraparound at the cap"
+        );
     }
 
     #[test]
@@ -279,12 +295,16 @@ mod tests {
         assert!(is_scannable_rust("crates/kavach-cli/src/cmd/loophole.rs"));
         // Every test convention is excluded — including the `_tests.rs` sibling
         // variant this codebase uses (the noise loophole's second face).
-        assert!(!is_scannable_rust("crates/kavach-chain/src/gates/aegis_tests.rs"));
+        assert!(!is_scannable_rust(
+            "crates/kavach-chain/src/gates/aegis_tests.rs"
+        ));
         assert!(!is_scannable_rust("crates/x/src/foo_test.rs"));
         assert!(!is_scannable_rust("crates/x/src/tests.rs"));
         assert!(!is_scannable_rust("crates/x/tests/integration.rs"));
         // Sibling test-support modules (test code with no in-file #[cfg(test)]).
-        assert!(!is_scannable_rust("crates/kavach-chain/src/stop_signals_test_menu.rs"));
+        assert!(!is_scannable_rust(
+            "crates/kavach-chain/src/stop_signals_test_menu.rs"
+        ));
         assert!(!is_scannable_rust("crates/x/src/foo_test_helpers.rs"));
         // A production file that merely contains "test" elsewhere stays scannable.
         assert!(is_scannable_rust("crates/x/src/latest.rs"));
@@ -308,6 +328,10 @@ mod tests {
                 break;
             }
         }
-        assert_eq!(converged_at, Some(5), "two consecutive dry rounds end at round 5");
+        assert_eq!(
+            converged_at,
+            Some(5),
+            "two consecutive dry rounds end at round 5"
+        );
     }
 }

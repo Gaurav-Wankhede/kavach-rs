@@ -161,7 +161,10 @@ mod tests {
         let it = LoopholeIteration::new("run-9", 3, "kavach-rs");
         let p = it.tmp_path();
         // Canonical, predictable /tmp root (not the per-process macOS temp dir).
-        assert!(p.starts_with("/tmp/kavach-loophole"), "fixed /tmp root: {p:?}");
+        assert!(
+            p.starts_with("/tmp/kavach-loophole"),
+            "fixed /tmp root: {p:?}"
+        );
         assert!(p.to_string_lossy().contains("kavach-loophole/run-9"));
         assert!(p.to_string_lossy().ends_with("iter-3.yaml"));
     }

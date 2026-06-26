@@ -1,6 +1,6 @@
+use super::types::AsyncSeverity;
 use regex::Regex;
 use std::sync::LazyLock;
-use super::types::AsyncSeverity;
 
 pub(super) struct Rule {
     pub(super) checker: fn(&str) -> bool,

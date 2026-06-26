@@ -3,8 +3,8 @@
 use kavach_types::HookInput;
 
 use super::detect::{
-    classify_kavach_misuse, detect_port_conflict, is_empty_test_suite, is_package_install,
-    is_package_not_found, is_test_command, KavachMisuse,
+    KavachMisuse, classify_kavach_misuse, detect_port_conflict, is_empty_test_suite,
+    is_package_install, is_package_not_found, is_test_command,
 };
 use super::progress::track_db_progress;
 use super::tests_track::{clear_test_run, resolve_tested_files};
@@ -34,7 +34,11 @@ pub(crate) fn handle(
     // Capture this Bash command to the session trajectory tape (replay/reward
     // signal) WITH its objective outcome — the ground-truth oracle reads this,
     // not the agent's prose. Best-effort: a tape-write error must never block.
-    capture_bash(&session.session_id, command, objective_outcome(input, command, output));
+    capture_bash(
+        &session.session_id,
+        command,
+        objective_outcome(input, command, output),
+    );
 
     if is_test_command(command) {
         clear_test_run(session, command);
@@ -145,8 +149,14 @@ fn objective_outcome(
     // are emitted by the tool, not narrated by the agent.
     if let Some(out) = output {
         const FAILURE_MARKERS: &[&str] = &[
-            "error[E", "error: could not compile", "test result: FAILED", "FAILED",
-            "panicked at", "Compilation failed", "Build failed", "error: test failed",
+            "error[E",
+            "error: could not compile",
+            "test result: FAILED",
+            "FAILED",
+            "panicked at",
+            "Compilation failed",
+            "Build failed",
+            "error: test failed",
         ];
         if FAILURE_MARKERS.iter().any(|m| out.contains(m)) {
             return Some(EventOutcome::Failure);

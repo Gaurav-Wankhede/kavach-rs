@@ -20,7 +20,10 @@
 // loophole_self_interrogation). Downstream `from_kernel` matches MUST break to
 // compile if a lens is ever added — that compile error is the one-source-of-truth
 // guarantee, so `#[non_exhaustive]` (which would force a silent `_ =>`) is wrong.
-#[expect(clippy::exhaustive_enums, reason = "closed 6-lens set; downstream matches must fail on additions")]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "closed 6-lens set; downstream matches must fail on additions"
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Lens {
     /// Two actors at once → TOCTOU / lost-update / double-claim.
@@ -67,7 +70,10 @@ impl Lens {
 /// The file path is supplied by the caller (the kernel scans text, not paths).
 // INTENTIONALLY EXHAUSTIVE: a plain data carrier callers both build and
 // destructure by field; `#[non_exhaustive]` would block struct-literal use here.
-#[expect(clippy::exhaustive_structs, reason = "plain finding record; callers construct and field-match it")]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "plain finding record; callers construct and field-match it"
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LensFinding {
     /// Which attack lens fired.
@@ -110,15 +116,24 @@ pub fn scan_text(source: &str) -> Vec<LensFinding> {
 pub fn classify(l: &str) -> Option<(Lens, &'static str)> {
     // failure: a discarded Result/Option on a fallible op → silent error path.
     if l.contains("let _ =") && (l.contains('?') || l.contains("await") || l.contains("()")) {
-        return Some((Lens::Failure, "discarded Result with `let _ =` — error path swallowed"));
+        return Some((
+            Lens::Failure,
+            "discarded Result with `let _ =` — error path swallowed",
+        ));
     }
     // malformed: unwrap/expect on external input → panic on hostile input.
     if (l.contains(".unwrap()") || l.contains(".expect(")) && !l.contains("#[") {
-        return Some((Lens::Malformed, "unwrap/expect — panics on malformed/unexpected input"));
+        return Some((
+            Lens::Malformed,
+            "unwrap/expect — panics on malformed/unexpected input",
+        ));
     }
     // boundary: raw index/slice → panic on empty/oob.
     if l.contains("[0]") || l.contains(".first().unwrap") {
-        return Some((Lens::Boundary, "direct index/[0] — panics on empty/out-of-bounds"));
+        return Some((
+            Lens::Boundary,
+            "direct index/[0] — panics on empty/out-of-bounds",
+        ));
     }
     // replay: a SQL INSERT without an idempotency key. We match ONLY uppercase
     // `INSERT` (SQL text) — a Rust `.insert(` on a local HashMap/HashSet/Vec is
@@ -126,18 +141,27 @@ pub fn classify(l: &str) -> Option<(Lens, &'static str)> {
     // lens means, and flagging it floods the board (the gates/loader/router FP
     // cluster). SQL inserts live in query strings, which is what we keep.
     if l.contains("INSERT") && !l.contains("upsert") && !l.contains("ON CONFLICT") {
-        return Some((Lens::Replay, "SQL INSERT without idempotency key — re-run may duplicate"));
+        return Some((
+            Lens::Replay,
+            "SQL INSERT without idempotency key — re-run may duplicate",
+        ));
     }
     // concurrency: a DB-level check-then-act (existence probe before a write). We
     // match `exists`/`EXISTS` only — a bare Rust `.contains()` on a local
     // collection is single-threaded membership, not a cross-actor TOCTOU, so
     // matching it produces false positives with near-zero real yield.
     if l.contains("if !") && (l.contains("exists") || l.contains("EXISTS")) {
-        return Some((Lens::Concurrency, "check-then-act — TOCTOU window between existence check and write"));
+        return Some((
+            Lens::Concurrency,
+            "check-then-act — TOCTOU window between existence check and write",
+        ));
     }
     // authz: a handler/route with no visible authorize/allow call on the line.
     if (l.contains("pub async fn") || l.contains("pub fn")) && l.contains("handler") {
-        return Some((Lens::Authz, "handler signature — verify an authorize/allow check guards it"));
+        return Some((
+            Lens::Authz,
+            "handler signature — verify an authorize/allow check guards it",
+        ));
     }
     None
 }

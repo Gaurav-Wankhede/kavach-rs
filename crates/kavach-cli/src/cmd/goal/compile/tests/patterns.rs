@@ -106,9 +106,15 @@ fn fan_out_tiers_shards_cheap_and_synthesis_frontier() {
 #[test]
 fn worker_is_cheap_and_critic_is_frontier() {
     let js = to_workflow_js(&with_harness(Harness::WorkerCritic { critics: 3 }));
-    assert!(js.contains("phase: 'Work', model: 'claude-haiku-4-5'"), "worker cheap:\n{js}");
+    assert!(
+        js.contains("phase: 'Work', model: 'claude-haiku-4-5'"),
+        "worker cheap:\n{js}"
+    );
     // Critic is an adversarial judge → brain → no model pin (keeps its schema).
-    assert!(!js.contains("phase: 'Critique', model:"), "critic must be frontier:\n{js}");
+    assert!(
+        !js.contains("phase: 'Critique', model:"),
+        "critic must be frontier:\n{js}"
+    );
 }
 
 #[test]

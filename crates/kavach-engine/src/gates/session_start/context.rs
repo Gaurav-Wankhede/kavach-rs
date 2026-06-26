@@ -1,11 +1,11 @@
 //! Assemble the `[SESSION_START]` injected context from session + DB sources.
 use std::fmt::Write as _;
 
-use super::memory::auto_query_memory;
-use super::patterns::{hot_pattern_context, learned_policy_context, mistake_ledger_context};
 use super::concepts::concept_context;
 use super::flows::flow_context;
 use super::lld::lld_context;
+use super::memory::auto_query_memory;
+use super::patterns::{hot_pattern_context, learned_policy_context, mistake_ledger_context};
 use super::stack_fit::stack_fit_context;
 
 /// Soft per-section byte budget for OPTIONAL session-start blocks (hot patterns,
@@ -77,7 +77,11 @@ fn resolve_section_budget(project: &str) -> usize {
             default,
         );
         // NaN fails every comparison -> clamp() would propagate NaN, so guard first.
-        let safe = if resolved.is_finite() { resolved } else { default };
+        let safe = if resolved.is_finite() {
+            resolved
+        } else {
+            default
+        };
         let clamped = safe.clamp(BUDGET_FLOOR as f64, BUDGET_CEIL as f64);
         clamped as usize
     }

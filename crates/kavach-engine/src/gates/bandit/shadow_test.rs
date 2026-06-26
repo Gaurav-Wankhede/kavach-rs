@@ -26,13 +26,7 @@ fn action_str_uses_the_bandit_log_snake_case_vocabulary() {
 fn record_shadow_is_a_noop_without_a_session_id() {
     // No session to key the event -> nothing is emitted (and no panic), even if
     // the gate would otherwise diverge. Independent of the env flag.
-    record_shadow(
-        "",
-        "nano_file",
-        "Write",
-        GateAction::Allow,
-        GateAction::Ask,
-    );
+    record_shadow("", "nano_file", "Write", GateAction::Allow, GateAction::Ask);
 }
 
 #[test]

@@ -63,10 +63,41 @@ pub(super) enum KavachMisuse {
 
 /// Shipped top-level verbs (source: `cli.rs::Commands`); drift-guarded.
 const KAVACH_VERBS: &[&str] = &[
-    "status", "web", "servers", "gates", "session", "rules", "db", "install", "heal",
-    "loophole", "schema", "ask", "oversized", "tailwind-plus", "doctor", "phase", "spec",
-    "loop", "verify", "deploy", "verify-frontend", "pipeline", "security", "todos", "tasks",
-    "context", "mistake", "bulk", "goal", "bg", "team", "think", "toolbelt", "lint", "commands",
+    "status",
+    "web",
+    "servers",
+    "gates",
+    "session",
+    "rules",
+    "db",
+    "install",
+    "heal",
+    "loophole",
+    "schema",
+    "ask",
+    "oversized",
+    "tailwind-plus",
+    "doctor",
+    "phase",
+    "spec",
+    "loop",
+    "verify",
+    "deploy",
+    "verify-frontend",
+    "pipeline",
+    "security",
+    "todos",
+    "tasks",
+    "context",
+    "mistake",
+    "bulk",
+    "goal",
+    "bg",
+    "team",
+    "think",
+    "toolbelt",
+    "lint",
+    "commands",
 ];
 
 /// Classify a failed `kavach` call from clap stderr; `None` for non-kavach / non-usage errors.
@@ -79,8 +110,8 @@ pub(super) fn classify_kavach_misuse(cmd: &str, output: Option<&str>) -> Option<
         Some(t) if !t.is_empty() => t,
         _ => return None,
     };
-    let unknown_verb = text.contains("unrecognized subcommand")
-        || text.contains("invalid subcommand");
+    let unknown_verb =
+        text.contains("unrecognized subcommand") || text.contains("invalid subcommand");
     let unknown_flag = text.contains("unexpected argument")
         || text.contains("unexpected value")
         || text.contains("argument was not expected");

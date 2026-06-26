@@ -71,11 +71,31 @@ async fn reclaims_only_orphaned_in_progress() {
     let reclaimed = reclaim_orphaned_in_progress(&db).await.expect("reclaim");
 
     assert_eq!(reclaimed, 2, "exactly the two orphans are reclaimed");
-    assert_eq!(status_of(&db, "live").await, "in_progress", "live holder kept");
-    assert_eq!(status_of(&db, "crashed").await, "todo", "lapsed lease reclaimed");
-    assert_eq!(status_of(&db, "noleased").await, "todo", "no-lease orphan reclaimed");
-    assert_eq!(status_of(&db, "done").await, "done", "finished card untouched");
-    assert_eq!(status_of(&db, "open").await, "todo", "already-todo untouched");
+    assert_eq!(
+        status_of(&db, "live").await,
+        "in_progress",
+        "live holder kept"
+    );
+    assert_eq!(
+        status_of(&db, "crashed").await,
+        "todo",
+        "lapsed lease reclaimed"
+    );
+    assert_eq!(
+        status_of(&db, "noleased").await,
+        "todo",
+        "no-lease orphan reclaimed"
+    );
+    assert_eq!(
+        status_of(&db, "done").await,
+        "done",
+        "finished card untouched"
+    );
+    assert_eq!(
+        status_of(&db, "open").await,
+        "todo",
+        "already-todo untouched"
+    );
 }
 
 #[tokio::test]
@@ -85,5 +105,8 @@ async fn reclaim_is_idempotent() {
     let first = reclaim_orphaned_in_progress(&db).await.expect("first");
     let second = reclaim_orphaned_in_progress(&db).await.expect("second");
     assert_eq!(first, 1, "first sweep reclaims the orphan");
-    assert_eq!(second, 0, "second sweep finds it already todo — no double reset");
+    assert_eq!(
+        second, 0,
+        "second sweep finds it already todo — no double reset"
+    );
 }

@@ -9,7 +9,10 @@ fn user_steering_true_when_directive_stamped_this_turn() {
     let mut s = SessionState::default();
     s.increment_turn(); // turn 1
     s.mark_user_directive(); // user spoke on turn 1
-    assert!(s.user_is_steering_this_turn(), "user spoke THIS turn → steering");
+    assert!(
+        s.user_is_steering_this_turn(),
+        "user spoke THIS turn → steering"
+    );
 }
 
 #[test]
@@ -27,7 +30,10 @@ fn user_steering_false_on_a_later_autonomous_turn() {
 #[test]
 fn user_steering_false_at_session_start_no_directive() {
     let s = SessionState::default();
-    assert!(!s.user_is_steering_this_turn(), "turn 0 / no directive → not steering");
+    assert!(
+        !s.user_is_steering_this_turn(),
+        "turn 0 / no directive → not steering"
+    );
 }
 
 #[test]

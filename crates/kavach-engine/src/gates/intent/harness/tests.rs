@@ -76,7 +76,10 @@ fn sequential_patterns_do_not_demand_parallel_fan_out() {
     // loop-until-done is single-threaded; its directive must not push parallel
     // subagents (would be wrong shape for the work).
     let d = pattern_directive("loop-until-done");
-    assert!(!d.contains("parallel"), "sequential pattern is not fan-out: {d}");
+    assert!(
+        !d.contains("parallel"),
+        "sequential pattern is not fan-out: {d}"
+    );
 }
 
 #[test]
@@ -93,5 +96,8 @@ fn every_pattern_has_a_nonempty_directive() {
 fn persist_block_embeds_the_actionable_directive() {
     let block = persist_for_next_card("", "audit every handler across the workspace");
     assert!(block.contains("fan-out-synthesize"));
-    assert!(block.contains(CHEAP_MODEL), "block must carry the directive: {block}");
+    assert!(
+        block.contains(CHEAP_MODEL),
+        "block must carry the directive: {block}"
+    );
 }

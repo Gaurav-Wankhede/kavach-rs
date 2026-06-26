@@ -15,7 +15,11 @@ const TOOLBELT: &[(&str, &str, &str)] = &[
     ("find", "fd", "gitignore-aware, parallel"),
     ("du", "dust", "tree-sorted disk usage"),
     ("ps", "procs", "colored, human columns"),
-    ("cat", "bat", "syntax highlight + line numbers (reads only — NEVER on .env)"),
+    (
+        "cat",
+        "bat",
+        "syntax highlight + line numbers (reads only — NEVER on .env)",
+    ),
     ("diff", "difft", "structural (AST) diff"),
 ];
 

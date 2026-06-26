@@ -1,9 +1,9 @@
-mod lock;
 mod build;
 mod install;
+mod lock;
 
-use std::path::PathBuf;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
+use std::path::PathBuf;
 
 pub(crate) fn run(skip_tests: bool) -> i32 {
     let Some(root) = workspace_root() else {

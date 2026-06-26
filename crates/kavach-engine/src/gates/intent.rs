@@ -4,10 +4,10 @@ mod classify;
 mod context;
 mod decision_map;
 mod harness;
-mod pattern_dag;
-mod practice_delta;
 mod kvs;
+mod pattern_dag;
 mod phase;
+mod practice_delta;
 mod recall;
 mod version_pin;
 

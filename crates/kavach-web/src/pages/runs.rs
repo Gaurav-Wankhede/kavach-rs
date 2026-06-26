@@ -1,9 +1,9 @@
 //! Runs view — `run.list(project=<id>)` rendered as a run table,
 //! live-refreshed via the SSE `refresh` signal.
 
+use axum::Form;
 use axum::extract::Query;
 use axum::response::Html;
-use axum::Form;
 use maud::{Markup, html};
 use serde::Deserialize;
 use serde_json::json;
@@ -158,7 +158,8 @@ pub async fn cancel(Form(form): Form<CancelForm>) -> Html<String> {
             if resp.success {
                 "Run cancelled successfully.".to_string()
             } else {
-                resp.error.unwrap_or_else(|| "Failed to cancel run.".to_string())
+                resp.error
+                    .unwrap_or_else(|| "Failed to cancel run.".to_string())
             }
         }
         Err(_) => "Failed to cancel run.".to_string(),
@@ -175,7 +176,15 @@ pub async fn spawn(Form(form): Form<SpawnForm>) -> Html<String> {
         .map(|s| s.to_owned())
         .collect();
 
-    let result = match spawn_run(&form.project, &form.entry_key, &form.command, args, form.branch).await {
+    let result = match spawn_run(
+        &form.project,
+        &form.entry_key,
+        &form.command,
+        args,
+        form.branch,
+    )
+    .await
+    {
         Ok(_resp) => "Run spawned successfully.".to_string(),
         Err(e) => format!("Failed to spawn run: {e}"),
     };
@@ -206,7 +215,10 @@ async fn spawn_run(
 
 async fn body(requested: Option<String>) -> Result<Markup, RpcError> {
     let project = resolve_project(requested).await?;
-    let frag = format!("/runs/fragment?project={}", project.as_deref().unwrap_or(""));
+    let frag = format!(
+        "/runs/fragment?project={}",
+        project.as_deref().unwrap_or("")
+    );
     let inner = html! {
         (heading("Runs"))
         (live(&frag, section(project.clone()).await?))

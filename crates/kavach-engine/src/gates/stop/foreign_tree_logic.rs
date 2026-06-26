@@ -68,7 +68,11 @@ mod tests {
     fn mixed_counts_only_the_foreign_ones() {
         let status = " M src/mine.rs\n M src/theirs.rs\n?? other/new.rs\n";
         let own = vec!["mine.rs".to_owned()];
-        assert_eq!(foreign_dirty_count(status, &own), 2, "theirs.rs + new.rs are foreign");
+        assert_eq!(
+            foreign_dirty_count(status, &own),
+            2,
+            "theirs.rs + new.rs are foreign"
+        );
     }
 
     #[test]
@@ -76,7 +80,15 @@ mod tests {
         // Rename "old -> new": the live file is the destination basename.
         let status = "R  src/old.rs -> src/new.rs\n";
         let own_dest = vec!["new.rs".to_owned()];
-        assert_eq!(foreign_dirty_count(status, &own_dest), 0, "dest is mine → not foreign");
-        assert_eq!(foreign_dirty_count(status, &[]), 1, "no own match → foreign");
+        assert_eq!(
+            foreign_dirty_count(status, &own_dest),
+            0,
+            "dest is mine → not foreign"
+        );
+        assert_eq!(
+            foreign_dirty_count(status, &[]),
+            1,
+            "no own match → foreign"
+        );
     }
 }

@@ -27,8 +27,7 @@ pub(super) fn trigger_on_verify(session: &SessionState) {
         clippy::let_underscore_must_use,
         reason = "fire-and-forget RPC; daemon down is silent-fail by design"
     )]
-    let _: Result<serde_json::Value, _> =
-        kavach_rpc::client::call("event.append", Some(params));
+    let _: Result<serde_json::Value, _> = kavach_rpc::client::call("event.append", Some(params));
 
     // Persist procedural-memory seed so retrieve-on-similar finds it.
     // See decision.engine.extract-retrieve-closed-loop.

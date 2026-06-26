@@ -22,7 +22,9 @@ pub(crate) fn run(pr: u64, witness_pass: bool) -> i32 {
     let d = decide(enabled, ci_green, witness_pass, &changed);
 
     if d.allow {
-        return match print_or_exit(&format!("[heal merge-gate] ALLOW: PR #{pr} clears all gates")) {
+        return match print_or_exit(&format!(
+            "[heal merge-gate] ALLOW: PR #{pr} clears all gates"
+        )) {
             Ok(()) => 0,
             Err(io) => into_exit_code(io),
         };

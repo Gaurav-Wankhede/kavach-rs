@@ -29,7 +29,12 @@ const SILENT_FAILURE_WEIGHT: i64 = -3;
 const RCA_PRESENT_WEIGHT: i64 = 2;
 
 fn rule(id: &'static str, class: EventClass, pat: &str, weight: i64) -> Option<SignalRule> {
-    Regex::new(pat).ok().map(|pattern| SignalRule { id, applies_to: class, pattern, weight })
+    Regex::new(pat).ok().map(|pattern| SignalRule {
+        id,
+        applies_to: class,
+        pattern,
+        weight,
+    })
 }
 
 /// The deferral-handoff regex — shared by every stack (universal debit).
@@ -41,7 +46,12 @@ pub(super) const fn deferral_pattern() -> &'static str {
 /// scored from replay severity in reward.rs, not a pattern; deferral IS a pattern).
 fn with_universal(mut rules: Vec<SignalRule>) -> Vec<SignalRule> {
     let universal = [
-        rule("deferral_handoff", EventClass::Stop, deferral_pattern(), DEFERRAL_WEIGHT),
+        rule(
+            "deferral_handoff",
+            EventClass::Stop,
+            deferral_pattern(),
+            DEFERRAL_WEIGHT,
+        ),
         // Phase-4 enriched signals — stack-independent, matched on Write bodies.
         rule(
             "stub_shipped",
@@ -72,10 +82,25 @@ fn with_universal(mut rules: Vec<SignalRule>) -> Vec<SignalRule> {
 pub fn rust_cargo() -> RewardRubric {
     let rules = with_universal(
         [
-            rule("build", EventClass::Bash, r"(?:^|&&|;|\|)\s*(?:[A-Z_][A-Z0-9_]*=\S+\s+)*cargo\s+(check|build)\b", 10),
-            rule("test", EventClass::Bash, r"(?:^|&&|;|\|)\s*(?:[A-Z_][A-Z0-9_]*=\S+\s+)*cargo\s+(test|nextest)\b", 4),
+            rule(
+                "build",
+                EventClass::Bash,
+                r"(?:^|&&|;|\|)\s*(?:[A-Z_][A-Z0-9_]*=\S+\s+)*cargo\s+(check|build)\b",
+                10,
+            ),
+            rule(
+                "test",
+                EventClass::Bash,
+                r"(?:^|&&|;|\|)\s*(?:[A-Z_][A-Z0-9_]*=\S+\s+)*cargo\s+(test|nextest)\b",
+                4,
+            ),
             rule("file", EventClass::Write, r".", 1),
-            rule("substantive_test", EventClass::Write, r"#\[test\]|#\[tokio::test\]", 4),
+            rule(
+                "substantive_test",
+                EventClass::Write,
+                r"#\[test\]|#\[tokio::test\]",
+                4,
+            ),
         ]
         .into_iter()
         .flatten()
@@ -93,10 +118,25 @@ pub fn rust_cargo() -> RewardRubric {
 pub fn ts_bun() -> RewardRubric {
     let rules = with_universal(
         [
-            rule("build", EventClass::Bash, r"(?:^|&&|;|\|)\s*(?:bun\s+run\s+)?(tsc|biome\s+check|bun\s+build)\b", 10),
-            rule("test", EventClass::Bash, r"(?:^|&&|;|\|)\s*(?:bun\s+(test|run\s+test)|vitest|playwright\s+test)\b", 4),
+            rule(
+                "build",
+                EventClass::Bash,
+                r"(?:^|&&|;|\|)\s*(?:bun\s+run\s+)?(tsc|biome\s+check|bun\s+build)\b",
+                10,
+            ),
+            rule(
+                "test",
+                EventClass::Bash,
+                r"(?:^|&&|;|\|)\s*(?:bun\s+(test|run\s+test)|vitest|playwright\s+test)\b",
+                4,
+            ),
             rule("file", EventClass::Write, r".", 1),
-            rule("substantive_test", EventClass::Write, r"\b(it|test|describe)\s*\(", 4),
+            rule(
+                "substantive_test",
+                EventClass::Write,
+                r"\b(it|test|describe)\s*\(",
+                4,
+            ),
         ]
         .into_iter()
         .flatten()
@@ -111,16 +151,32 @@ pub fn ts_bun() -> RewardRubric {
 pub fn python_uv() -> RewardRubric {
     let rules = with_universal(
         [
-            rule("build", EventClass::Bash, r"(?:^|&&|;|\|)\s*(?:uv\s+run\s+)?(ruff\s+check|mypy)\b", 10),
-            rule("test", EventClass::Bash, r"(?:^|&&|;|\|)\s*(?:uv\s+run\s+)?pytest\b", 4),
+            rule(
+                "build",
+                EventClass::Bash,
+                r"(?:^|&&|;|\|)\s*(?:uv\s+run\s+)?(ruff\s+check|mypy)\b",
+                10,
+            ),
+            rule(
+                "test",
+                EventClass::Bash,
+                r"(?:^|&&|;|\|)\s*(?:uv\s+run\s+)?pytest\b",
+                4,
+            ),
             rule("file", EventClass::Write, r".", 1),
-            rule("substantive_test", EventClass::Write, r"\bdef\s+test_\w+\s*\(", 4),
+            rule(
+                "substantive_test",
+                EventClass::Write,
+                r"\bdef\s+test_\w+\s*\(",
+                4,
+            ),
         ]
         .into_iter()
         .flatten()
         .collect(),
     );
-    let vacuous = Regex::new(r"assert\s+True\b|def\s+test_\w+\s*\([^)]*\)\s*:\s*(?:pass|\.\.\.)").ok();
+    let vacuous =
+        Regex::new(r"assert\s+True\b|def\s+test_\w+\s*\([^)]*\)\s*:\s*(?:pass|\.\.\.)").ok();
     RewardRubric::new(rules, vacuous)
 }
 
