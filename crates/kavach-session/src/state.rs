@@ -196,6 +196,9 @@ pub struct SessionState {
     /// True once the `RESEARCH_PENDING` advisory has been injected for the current intent window.
     /// Pre-tool gate sets this on first advisory — suppresses repeats until intent resets.
     pub research_advisory_sent: bool,
+    /// True once the `[FANOUT_NUDGE]` (frontier-model-did-labor-itself reminder) has fired
+    /// this turn — suppresses repeats so only the first direct labor-tool call is nudged.
+    pub fanout_nudge_sent: bool,
     /// True when /arch skill was invoked this turn.
     /// Pre-write arch guard reads this — resets to false at turn boundary.
     pub arch_skill_invoked: bool,
