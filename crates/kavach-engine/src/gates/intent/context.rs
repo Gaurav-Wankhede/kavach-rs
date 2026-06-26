@@ -182,7 +182,8 @@ pub(in crate::gates) fn append_mermaid_views(context: &mut String, project: &str
 pub(in crate::gates) fn append_live_kanban_block(context: &mut String, project: &str) {
     // Session-start path: empty prompt ⇒ whole-board priority order (no relevance
     // narrowing yet — the user's task hasn't been seen).
-    let _ = append_live_kanban(context, project, "");
+    let _appended = append_live_kanban(context, project, "");
+    drop(_appended);
 }
 
 fn append_live_kanban(context: &mut String, project: &str, prompt: &str) -> bool {
