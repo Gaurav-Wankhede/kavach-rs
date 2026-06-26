@@ -11,13 +11,14 @@ fn frontier_model_doing_read_is_nudged() {
     let mut s = session_with_model("claude-opus-4-8");
     let out = nudge(&mut s, "Read").expect("frontier + labor tool must nudge");
     assert!(out.contains("[FANOUT_NUDGE]"));
-    assert!(out.contains("claude-haiku-4-5"));
+    // Names the LIVE resolved cheap tier (env-or-fallback), never a hardcoded id.
+    assert!(out.contains(&kavach_config::model::cheap_executor_tier()));
     assert!(s.fanout_nudge_sent, "flag must latch after firing");
 }
 
 #[test]
 fn cheap_tier_is_never_nudged() {
-    let mut s = session_with_model("claude-haiku-4-5");
+    let mut s = session_with_model(&kavach_config::model::cheap_executor_tier());
     assert!(nudge(&mut s, "Edit").is_none(), "the executor IS the doer");
 }
 
