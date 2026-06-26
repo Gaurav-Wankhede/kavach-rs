@@ -25,6 +25,8 @@ fn task_to_json(task: &NextTaskResult) -> serde_json::Value {
         "key": task.key,
         "title": task.title,
         "status": task.status,
+        "content": task.content,
+        "exec_prompt": task.exec_prompt,
     })
 }
 
