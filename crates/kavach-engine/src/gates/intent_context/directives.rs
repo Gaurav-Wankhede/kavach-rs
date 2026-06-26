@@ -16,6 +16,22 @@ pub(crate) fn append_forbidden(context: &mut String, forbidden: &[String]) {
 
 use crate::gates::directive_cache::dyn_directive;
 
+/// Compiled fan-out law fallback — mirrors gate_config `*/harness.fanout_law`.
+/// Names the cheap executor tier so a dispatched agent is always a fan-out target,
+/// never work the frontier orchestrator does itself. SOURCE: decision.harness.fanout-to-cheap-tier.
+const FANOUT_LAW_FALLBACK: &str = "FAN OUT to the cheap executor tier (claude-haiku-4-5): \
+    spawn this agent for ALL read AND write labor. You are the orchestrator — DECIDE, delegate, \
+    and VERIFY the returned work; do NOT read or edit yourself. Reserve your frontier tokens for \
+    the decision, never the labor. SOURCE: anthropic.com/engineering/multi-agent-research-system.";
+
+/// Append the `[FANOUT_LAW]` directive after a dispatched agent, so the orchestrator
+/// always delegates the labor to the cheap tier. Skill-only routes never call this.
+fn append_fanout_law(context: &mut String) {
+    context.push_str("[FANOUT_LAW] ");
+    context.push_str(&dyn_directive("harness.fanout-law", FANOUT_LAW_FALLBACK));
+    context.push('\n');
+}
+
 /// Append memory DB reminder for memory-type intents. The `[MEMORY_DB]` tag is a
 /// fixed contract; the imperative after it is research-cached (fail-soft literal).
 pub(crate) fn append_memory_db(context: &mut String, intent_type: &str) {
