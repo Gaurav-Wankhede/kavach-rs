@@ -38,12 +38,10 @@ pub struct NextTaskResult {
     pub key: String,
     pub title: String,
     pub status: String,
-    /// The card body — the full spec funneled to the AI so the dispatched task
-    /// arrives self-contained, not a title-only pointer it must re-fetch
-    /// (context-rot fix). Empty for the cycle sentinel and the census list.
+    /// Full card body, funneled so the dispatched task is self-contained (context-rot fix); empty for the sentinel/census list.
     #[serde(default)]
     pub content: String,
-    /// The Opus-authored executor prompt when present, served alongside the body.
+    /// Opus-authored executor prompt, served alongside the body when present.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exec_prompt: Option<String>,
 }
