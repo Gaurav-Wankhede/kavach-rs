@@ -88,14 +88,6 @@ jobs:
       - name: Test (just test — nextest ci profile + doctests)
         run: just test
 
-      - name: Install global CLAUDE.md (derives path from $HOME, no hardcoding)
-        run: bash scripts/install-claude-md.sh
-
-      - name: Verify global CLAUDE.md landed
-        run: |
-          test -f "$HOME/.claude/CLAUDE.md"
-          echo "OK: $HOME/.claude/CLAUDE.md"
-
   # ── Cross-platform compile gate (macOS + Windows — runs on EVERY PR + push) ──
   # The Linux leg above is the full build+test; the heavy macOS/Windows full-test
   # legs stay push-only (10x/2x runner cost). But Kavach targets all three OSes
