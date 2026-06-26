@@ -394,7 +394,7 @@ The loop is **DB-driven, end to end**: the `intent` gate classifies the prompt a
 
 ## 🏗️ Architecture — the crate workspace
 
-The workspace is **21 crates**. The load-bearing ones:
+The workspace is **20 crates**. The load-bearing ones:
 
 ```
 kavach-rs/
