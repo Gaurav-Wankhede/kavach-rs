@@ -11,6 +11,7 @@ impl SessionState {
         self.intent_set_turn = self.turn_count;
         self.think_first_injected = false;
         self.research_advisory_sent = false;
+        self.fanout_nudge_sent = false;
         self.files_modified_this_turn = Vec::new();
         self.tdd_red_units = Vec::new();
         self.rca_block_present = false;
