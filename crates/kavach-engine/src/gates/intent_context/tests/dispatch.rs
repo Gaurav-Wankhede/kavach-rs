@@ -82,6 +82,30 @@ fn test_agent_dispatch_general_invokes_research_director() {
 }
 
 #[test]
+fn dispatch_to_an_agent_carries_the_fanout_law() {
+    for intent in ["debug", "refactor", "general"] {
+        let mut ctx = String::new();
+        append_agent_dispatch(&mut ctx, intent, "", "");
+        assert!(
+            ctx.contains("[FANOUT_LAW]"),
+            "{intent}: an INVOKE_AGENT directive must carry the fan-out-to-cheap-tier law"
+        );
+        assert!(
+            ctx.contains("claude-haiku-4-5"),
+            "{intent}: the fan-out law must name the cheap executor tier"
+        );
+    }
+}
+
+#[test]
+fn skill_only_dispatch_omits_the_fanout_law() {
+    // `implement` routes to a SKILL, not an agent — no agent to fan out to.
+    let mut ctx = String::new();
+    append_agent_dispatch(&mut ctx, "implement", "", "");
+    assert!(!ctx.contains("[FANOUT_LAW]"));
+}
+
+#[test]
 fn test_agent_dispatch_skipped_for_memory() {
     let mut ctx = String::new();
     append_agent_dispatch(&mut ctx, "memory", "", "");
