@@ -130,8 +130,8 @@ fn status_form(q: &EditQ) -> Markup {
             input type="hidden" name="category" value=(q.category);
             input type="hidden" name="key" value=(q.key);
             select name="status" {
-                @for s in ["todo", "inprogress", "done", "verified", "onhold"] {
-                    option value=(s) { (s) }
+                @for status in MemoryStatus::all() {
+                    option value=(status.as_ref()) { (status.as_ref()) }
                 }
             }
             button type="submit" { "Set status" }
