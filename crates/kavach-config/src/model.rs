@@ -42,10 +42,10 @@ impl ModelConfig {
 /// The cheap executor tier — the fan-out target for all read/write labor.
 pub const CHEAP_EXECUTOR_TIER: &str = "claude-haiku-4-5";
 
-/// True when `model_id` is a frontier orchestrator tier (opus/sonnet) that should
-/// DELEGATE labor to the cheap tier rather than do Read/Edit/Write/Bash itself.
+/// True for a frontier orchestrator tier (opus/sonnet) that should DELEGATE labor.
+///
 /// Haiku (the executor) and unknown ids return false — they ARE the doer, so the
-/// fan-out nudge must not fire on them. SOURCE: decision.harness.fanout-to-cheap-tier.
+/// fan-out nudge never fires on them. SOURCE: decision.harness.fanout-to-cheap-tier.
 #[must_use]
 pub fn is_frontier_tier(model_id: &str) -> bool {
     model_id.starts_with("claude-opus-4") || model_id.starts_with("claude-sonnet-4")

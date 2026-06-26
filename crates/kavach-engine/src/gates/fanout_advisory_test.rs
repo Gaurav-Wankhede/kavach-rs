@@ -32,5 +32,8 @@ fn non_labor_tool_is_not_nudged() {
 fn nudge_fires_only_once_per_turn() {
     let mut s = session_with_model("claude-sonnet-4-6");
     assert!(nudge(&mut s, "Bash").is_some());
-    assert!(nudge(&mut s, "Write").is_none(), "second labor call stays silent");
+    assert!(
+        nudge(&mut s, "Write").is_none(),
+        "second labor call stays silent"
+    );
 }
