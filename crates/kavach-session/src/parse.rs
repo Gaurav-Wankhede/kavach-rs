@@ -113,6 +113,7 @@ pub(crate) fn parse_field(state: &mut SessionState, key: &str, value: &str, in_f
         "intent_set_turn" => state.intent_set_turn = pi32(value, 0),
         "think_first_injected" => state.think_first_injected = value == "true",
         "research_advisory_sent" => state.research_advisory_sent = value == "true",
+        "fanout_nudge_sent" => state.fanout_nudge_sent = value == "true",
         "arch_skill_invoked" => state.arch_skill_invoked = value == "true",
         // ARCH: CircuitBreakerParsing — field parsing for circuit breaker state
         // PATTERN: circuit_breaker | SCOPE: session | CAP: AP | SEARCHED: 2026-04
