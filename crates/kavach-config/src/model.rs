@@ -57,9 +57,10 @@ pub fn cheap_executor_tier() -> String {
         .unwrap_or_else(|| CHEAP_EXECUTOR_FALLBACK.to_owned())
 }
 
-/// True when `model_id` is a frontier orchestrator (any capable `claude-*` that is
-/// NOT the cheap `cheap_tier`) that should DELEGATE labor. Defined by exclusion, not
-/// a frozen opus/sonnet allowlist, so new families (Fable) classify correctly.
+/// True when `model_id` is a frontier orchestrator that should DELEGATE labor.
+///
+/// Frontier = any capable `claude-*` that is NOT the cheap `cheap_tier`. Defined by
+/// exclusion, not a frozen opus/sonnet allowlist, so new families (Fable) classify right.
 #[must_use]
 pub fn is_frontier_tier(model_id: &str, cheap_tier: &str) -> bool {
     model_id.starts_with("claude-") && model_id != cheap_tier
