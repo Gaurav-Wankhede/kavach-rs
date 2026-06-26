@@ -16,6 +16,12 @@ fn continuation_menu_blocks_choice_offering() {
         // me to (?:continue|proceed|keep going) ... \bor\b` arm fires on the
         // "Want me to continue ... or" prefix regardless of the post-`or` clause.
         "Want me to continue to a new card, or pause here?",
+        // EXACT verbatim transcript (2026-06-26): long parenthetical between
+        // "continue" and "or" pushed the gap past the old 0,40 window, AND the
+        // or-target is "pause here" (inaction), absent from the pivot alternation.
+        "Want me to continue into the introspect canary-flip (the real Phase 2 prerequisite) now, or pause here with Phase 1 verified and committed?",
+        "Should I proceed with the cutover now, or hold here?",
+        "Continue with the next phase, or stop here for now?",
     ] {
         assert!(detect_continuation_menu(m).unwrap(), "missed: {m}");
     }
