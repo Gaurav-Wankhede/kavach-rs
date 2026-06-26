@@ -145,10 +145,3 @@ fn inline_edit(project: &str, it: &Item) -> Markup {
         div #(result_id) {}
     }
 }
-
-fn norm(status: &str) -> &str {
-    match status {
-        "in_progress" => "inprogress",
-        other => other,
-    }
-}
