@@ -169,6 +169,7 @@ fn try_dynamic_dispatch(context: &mut String, prompt: &str, research_topic: &str
     context.push_str(")\n");
     context.push_str(&agent.description);
     context.push('\n');
+    append_fanout_law(context);
     true
 }
 
