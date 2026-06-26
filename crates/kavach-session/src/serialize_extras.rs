@@ -182,6 +182,11 @@ impl SessionState {
             s.push('\n');
         }
 
+        if self.fanout_nudge_sent {
+            write_kv(s, "fanout_nudge_sent", "true");
+            s.push('\n');
+        }
+
         if self.research_advisory_sent {
             s.push_str("[RESEARCH_ADVISORY]\n");
             write_kv(s, "research_advisory_sent", "true");
