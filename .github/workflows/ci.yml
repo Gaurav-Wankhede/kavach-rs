@@ -237,14 +237,3 @@ jobs:
 
       - name: Test (just test — nextest ci profile + doctests)
         run: just test
-
-      - name: Install global CLAUDE.md (derives path from %USERPROFILE%, no hardcoding)
-        shell: pwsh
-        run: ./scripts/install-claude-md.ps1
-
-      - name: Verify global CLAUDE.md landed
-        shell: pwsh
-        run: |
-          $dest = Join-Path $env:USERPROFILE '.claude\CLAUDE.md'
-          if (-not (Test-Path $dest)) { throw "missing: $dest" }
-          Write-Output "OK: $dest"
