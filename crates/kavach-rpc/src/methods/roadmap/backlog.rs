@@ -71,5 +71,7 @@ pub async fn promote_next_backlog(
         key: picked.entry_key.clone(),
         title: picked.title.clone(),
         status: picked.entry_status_str().to_owned(),
+        content: picked.content.clone(),
+        exec_prompt: picked.exec_prompt.clone(),
     }))
 }
