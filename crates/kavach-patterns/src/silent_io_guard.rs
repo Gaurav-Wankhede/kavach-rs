@@ -247,14 +247,19 @@ mod tests {
         // as the fix (the wrong-injection that let `let _ = (lat,lng)` pass as compliant).
         for rule in RULES.iter() {
             let f = rule.fix;
+            // No rule may endorse a suppression vocabulary as the remedy.
             assert!(!f.contains(".ok()"), "fix endorses .ok() suppression: {f}");
             assert!(
-                !f.contains("if you must discard") && !f.contains("If you must discard"),
+                !f.to_lowercase().contains("if you must discard"),
                 "fix offers a discard escape: {f}"
             );
+        }
+        // The two Result-bearing rules must name a real handling form.
+        for cat in ["let-underscore-print", "let-underscore-fn-call"] {
+            let f = RULES.iter().find(|r| r.category == cat).map(|r| r.fix).unwrap_or("");
             assert!(
                 f.contains("if let Err") || f.contains('?') || f.contains("match"),
-                "fix must name a real handling form: {f}"
+                "{cat} fix must name handling: {f}"
             );
         }
     }
