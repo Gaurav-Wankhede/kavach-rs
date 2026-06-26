@@ -74,6 +74,8 @@ pub async fn list_done_cards(
             key: e.entry_key.clone(),
             title: e.title.clone(),
             status: e.entry_status_str().to_owned(),
+            content: String::new(),
+            exec_prompt: None,
         })
         .collect();
     Ok(done)
