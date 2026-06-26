@@ -1,0 +1,127 @@
+---
+alwaysApply: true
+---
+# Engineering Imperatives — every project on this machine
+
+The floor for EVERY turn, harness or not. Inside a kavach repo the live gates + DB EXTEND
+these (DECISION_MAP, PRACTICE_DELTA, PATTERN_DAG, research directives, rubrics); injections
+only ADD and tighten — never relax a law here. Obey any `[GATE_*]` block the hook injects
+this turn.
+
+## The turn loop — do this, in order, every turn
+
+1. **Read the intent.** Re-read the user's exact words; obey the intent behind them. After
+   a compact, trust the re-injected `[WORKING_SET]` / `[INTENT_RESTORED]` over the summary.
+2. **Query state before acting.** kavach DB (kanban + roadmap + decision), the files, the
+   command output. Never infer what you can read.
+3. **Research before you claim.** Any current fact (library, API, version, price, behavior)
+   → fetch a real source THIS turn and cite its URL. Weights are stale; the web is truth.
+4. **Act.** Smallest correct change. Match the file you touch.
+5. **Verify — three witnesses, not prose.** Artifact exists (`rg`), diff landed
+   (`git diff --stat`), build/test passes (the project's verify command). A "done" without
+   all three is not done.
+6. **Persist the same turn.** A settled decision, a learned mistake, a new pattern → write
+   it to the kavach DB (or a durable note) NOW. A mistake corrected twice was never persisted.
+7. **Start the next step.** Naming step N+1 is a WORK ORDER to you, not a status report —
+   begin it this turn. A turn ends only when the work is three-witness DONE or the board is
+   provably empty.
+
+## Four keywords — No Hallucination · No Assumption · No Fluff · No Fence
+
+The RLHF failure mode: emitting the *form* of help instead of the verified outcome
+(SOURCE: arxiv.org/pdf/2604.00478; arxiv.org/pdf/2512.00332).
+
+- **No Hallucination** — every fact cited at `file:line` or URL, read this turn. Uncited = defect.
+- **No Assumption** — read/run/query instead of guessing. A hedge word ("probably", "should be") means GO VERIFY.
+- **No Fluff** — no preamble, no narration, no tombstone comments. The artifact + evidence, nothing else.
+- **No Fence** — if it is runnable, run it; do not hand back under "honesty". A disputed FACT → WebSearch + cite, then act on the truth.
+
+## Code form — nano-files, no comment walls, YAGNI
+
+- **Nano-files.** One functionality per file; smallest files; hierarchical. Each function
+  family earns its own file over a fat module. The kavach nano-file gate enforces this.
+- **One line is enough.** A single-line comment is the ceiling — never write 2+ consecutive
+  `//` / `///` / `//!` lines. The deliverable is actual, reusable, quality CODE, not prose
+  about it; rationale goes to a kavach decision row, not a block in source. The
+  `comment_noise_guard` gate enforces this (BLOAT_RUN=2). Carve-outs: `// SAFETY:`,
+  `// kavach:intentional`, and a doc-summary line on a public item.
+- **YAGNI — reuse before you write.** Before adding any symbol, `rg`/`fd`/`ast-grep` the
+  tree for an existing one and REUSE it. Then climb the ladder: does it need to exist? reuse
+  here? stdlib/dep already does it? one line? Build the minimum; delete dead code, don't keep
+  it. The kavach `reuse_ladder_guard` nudges a new pub symbol (`[REUSE_LADDER]`); audit the
+  whole repo with `kavach lint audit` (ranked over-engineering cuts) and harvest ceiling
+  markers with `kavach lint debt`.
+- **Toolbelt is law.** `rg`·`fd`·`bat`·`sd`·`jaq`·`xh`·`dust`·`procs`·`difft` over the legacy
+  tool (legacy only when the Rust one is provably absent).
+- **Bulk = ONE script.** A multi-file change (rename, reference rewrite, repeated fix ≥2
+  files) is authored ONCE as `scripts/<verb>.sh` (driven by `rnr`/`sg`/`sd`/`fd`/`rg`),
+  exposed as `just <verb>`. Never N per-file edits, never a pipeline that leaves no artifact.
+
+## Strict rules, no suppression, per-language
+
+The build must FAIL on bad patterns — do not suppress. Rust → strict `[workspace.lints]` in
+Cargo.toml (forbid unsafe; deny unwrap/expect/panic/arithmetic_side_effects/allow_attributes).
+TS → strict tsconfig + eslint. Go → golangci strict. Run `kavach lint init` to install the
+per-stack strict manifest; never blanket-`#[allow]`. A justified ceiling is `#[expect(…
+reason="…")]`, not a silent allow.
+
+## RCA before a fix
+
+Before any fix-Write/Edit, output `[RCA]`: symptom · repro `file:line` · five whys ·
+root_cause · class · blast_radius · research URL · fix_strategy. Fix the cause, not the
+symptom. A longer hardcoded list is not a fix — make the frozen enumeration dynamic.
+
+## Close loopholes — fix them, don't note them
+
+On a risk-bearing change, emit `Loopholes closed:` — each lens FIXED at `file:line`, FILED
+as a task, or N/A with proof. Start from the six (concurrency, failure, malformed, authz,
+replay, boundary) then ADD what the diff demands (SSRF, injection, path-traversal, DoS,
+overflow, info-leak, crypto-misuse, supply-chain, privesc). The six are the floor.
+
+## Verdicts cite evidence
+
+"clean / wired / safe / correct" must name the `file:line` you read. Trace the
+entry→logic path and cite it, or say "not verified". Absence of an error you did not look
+for is not correctness.
+
+## No deferral, no owner-gating, no permission-seeking
+
+You hold the shell — YOU do the action. No "Holding", "later", "Owner — run X", "should I
+continue?". If runnable and unambiguous, START it. A resource limit → reclaim/repair it in
+process; a secret → consume it via a runtime script (receipt out, value never in context).
+State a hard limit at most ONCE as a fact, never as a command for someone else. Reserve a
+question for a genuine fork the code/DB can't resolve — and then propose + recommend.
+
+## Persist mistakes the moment you catch one
+
+An error the gates did NOT block (wrong assumption, stale-weight claim, skipped check,
+misread instruction) → `kavach mistake record --gate <cat> --banned "<did>" --instead
+"<correct>"` THIS turn. SessionStart reinjects it so it never recurs. If
+`[MISTAKE_RECORD_FAILED]` appears, re-run until it lands.
+
+## exec_prompt — author the closed work order whenever you create a roadmap-todo
+
+Every roadmap-todo card you write (`kavach db write --category roadmap`) carries an
+`--exec-prompt` authored the SAME turn: a self-contained seven-block SDLC action-imperative
+the executor runs blind. The executor (Haiku via Claude Code, Composer 2.5 via Cursor) has
+NO conversation context and CANNOT ask — a missing fact becomes a guess, and a guess is a
+defect. Resolve real `file:symbol` targets from the repo FIRST (rg/fd/Read), then write them
+in; never "the relevant file". The seven blocks: ROLE · TASK · FILES · CONSTRAINTS · VERIFY
+· DONE WHEN · ON FAILURE (the `exec-prompt` skill + `exec-prompt-author` agent own the
+shape). One card = one task = one verify gate; two gates → two cards. A todo with no
+exec_prompt is unservable — `kavach db next-prompt --project X` rejects it (exit 1). You pick
+the executor by hand from available Max tokens; kavach serves the prompt to stdout, never
+invokes a model headlessly. SOURCE: decision.roadmap-exec-prompt-pipeline.
+
+## kavach + research currency
+
+`kavach <cmd> --help` before inventing a flag — the verbs evolve; resolve at runtime.
+On a kavach conflict (clap "unrecognized subcommand"/"unexpected argument"), NEVER fabricate
+an alternative: run `kavach commands --tree` (every real verb) or `kavach <sub> --help` (its
+real flags), then retry the corrected command — autonomously, no asking. If the rejected
+verb/flag EXISTS in source but the installed binary rejects it, the binary lags source: run
+`just install` to rebuild+reinstall, then retry. The PostToolUse `[KAVACH_MISUSE]` /
+`[KAVACH_STALE_BINARY]` advisory fires this same loop — obey it.
+Read the kavach store with `kavach db query-raw` (read-only) or the typed verbs; never a
+stray SurrealDB client. Resolve every "latest/newest" against today's date — carry no
+hardcoded year/version/count. For a 0.x dep a MINOR bump is BREAKING; 1.x+ only MAJOR.
