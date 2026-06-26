@@ -64,7 +64,7 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
         mk(
             r"^\s*let\s+_\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s*\(",
             "let-underscore-fn-call",
-            "If you must discard a Result, use `.ok();` (explicit) or `drop(expr)`; preferred: handle with `if let Err(e) = ... { ... }`",
+            "Handle the Result — `if let Err(e) = call() { ... }`, `?` to propagate, or `match`. A discarded Result is a swallowed failure (let_underscore_must_use); suppressing it is forbidden, not an option",
         ),
     ]
     .into_iter()
