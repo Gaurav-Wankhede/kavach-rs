@@ -89,7 +89,7 @@ fn board(project: &str, r: &KanbanResult) -> Markup {
             @for (key, label) in COLUMNS {
                 div.column {
                     h3 { (label) }
-                    @for it in r.items.iter().filter(|i| norm(&i.status) == *key) {
+                    @for it in r.items.iter().filter(|i| i.status == *key) {
                         (kard(project, it))
                     }
                 }
