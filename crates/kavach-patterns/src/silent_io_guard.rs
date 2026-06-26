@@ -49,7 +49,7 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
         mk(
             r"^\s*let\s+_\s*=\s*(writeln!|write!|println!|eprintln!|print!|eprint!)",
             "let-underscore-print",
-            "Use io_safe::print_or_exit (Result propagation) OR explicit `drop(...)` if Display-only",
+            "Handle the write Result: `if let Err(e) = writeln!(...) { ... }` or `?` (use io_safe::print_or_exit for propagation). Never `let _ =`/`drop()` a write that can fail",
         ),
         mk(
             r"^\s*let\s+_\s*=\s*[a-zA-Z_][a-zA-Z0-9_:]*\s*\.\s*(lock|read|write|try_lock|try_read|try_write)\s*\(",
