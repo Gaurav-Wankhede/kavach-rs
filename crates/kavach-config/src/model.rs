@@ -75,16 +75,34 @@ mod tests {
     }
 
     #[test]
-    fn frontier_tier_is_opus_and_sonnet() {
-        assert!(is_frontier_tier("claude-opus-4-8"));
-        assert!(is_frontier_tier("claude-sonnet-4-6"));
+    fn any_capable_claude_is_frontier_including_future_families() {
+        // Opus/Sonnet AND newer families (Fable) are all orchestrator tiers —
+        // the rule must not be a frozen opus/sonnet allowlist (that misclassified
+        // claude-fable-5 as cheap). SOURCE: platform.claude.com models overview.
+        assert!(is_frontier_tier("claude-opus-4-8", "claude-haiku-4-5"));
+        assert!(is_frontier_tier("claude-sonnet-4-6", "claude-haiku-4-5"));
+        assert!(is_frontier_tier("claude-fable-5", "claude-haiku-4-5"));
     }
 
     #[test]
-    fn cheap_executor_is_not_frontier() {
-        assert!(!is_frontier_tier(CHEAP_EXECUTOR_TIER));
-        assert!(!is_frontier_tier("claude-haiku-4-5"));
-        assert!(!is_frontier_tier("gpt-4"));
-        assert!(!is_frontier_tier(""));
+    fn the_resolved_cheap_tier_is_never_frontier() {
+        // Whatever the live cheap tier is, it is the doer, not the orchestrator.
+        assert!(!is_frontier_tier("claude-haiku-4-5", "claude-haiku-4-5"));
+        assert!(!is_frontier_tier("claude-haiku-9-0", "claude-haiku-9-0"));
+    }
+
+    #[test]
+    fn non_claude_or_empty_is_not_frontier() {
+        assert!(!is_frontier_tier("gpt-4", "claude-haiku-4-5"));
+        assert!(!is_frontier_tier("", "claude-haiku-4-5"));
+    }
+
+    #[test]
+    fn cheap_tier_prefers_env_over_fallback() {
+        // SAFETY: test-local env mutation, single-threaded test process.
+        unsafe { std::env::set_var("CLAUDE_CODE_SUBAGENT_MODEL", "claude-haiku-test-id") };
+        assert_eq!(cheap_executor_tier(), "claude-haiku-test-id");
+        unsafe { std::env::remove_var("CLAUDE_CODE_SUBAGENT_MODEL") };
+        assert_eq!(cheap_executor_tier(), CHEAP_EXECUTOR_FALLBACK);
     }
 }
