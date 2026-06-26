@@ -137,8 +137,8 @@ fn inline_edit(project: &str, it: &Item) -> Markup {
             input type="hidden" name="key" value=(it.key);
             select name="status" hx-trigger="change" hx-post="/entries/status"
                 hx-target=(target) hx-swap="innerHTML" hx-include="closest form" {
-                @for s in ["todo", "inprogress", "done", "verified", "onhold"] {
-                    option value=(s) selected[norm(&it.status) == s] { (s) }
+                @for status in MemoryStatus::all() {
+                    option value=(status.as_ref()) selected[it.status == status.as_ref()] { (status.as_ref()) }
                 }
             }
         }
