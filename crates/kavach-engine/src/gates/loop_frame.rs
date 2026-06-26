@@ -69,12 +69,16 @@ pub(crate) fn build_loop_stop(session: &SessionState, goal_title: Option<&str>) 
     let harness = loop_harness_label(session);
     let iter = session.loop_iteration.max(session.turn_count);
     format!(
-        "[LOOP] — DO NOT END THIS TURN. Execute the dispatched card now.\n\
+        "[LOOP] — DO NOT END THIS TURN. FAN OUT the dispatched card now.\n\
          goal: {title}\n\
          harness: {harness}\n\
          iteration: {iter}\n\
-         terminate ONLY on 3-witness (rg ∧ diff ∧ build)\n\
-         on done: status-update + dispatch the next card THIS SAME turn\n\n"
+         do NOT read/grep/edit/verify this card yourself — you are the orchestrator. \
+         SPAWN a cheap-tier worker (Agent) or run /workflow to do ALL the labor \
+         (the reads, the greps, the edits, the witness commands); your job is to \
+         decide, delegate, and VERIFY what it returns.\n\
+         terminate ONLY on 3-witness the worker produced (rg ∧ diff ∧ build)\n\
+         on done: status-update + FAN OUT the next card THIS SAME turn\n\n"
     )
 }
 
