@@ -96,6 +96,7 @@ impl Default for SessionState {
             tdd_red_units: Vec::new(),
             lsp_diag_seen: Vec::new(),
             research_advisory_sent: false,
+            fanout_nudge_sent: false,
             arch_skill_invoked: false,
             // ARCH: CircuitBreakerDefaults — see state.rs for full design rationale
             // PATTERN: circuit_breaker | SCOPE: session | CAP: AP | SEARCHED: 2026-04
