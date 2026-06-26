@@ -66,6 +66,8 @@ pub async fn next_open_task(
             key: "[DAG_CYCLE]".to_owned(),
             title: super::dag_cycle::cycle_message(&cycle),
             status: "dag_cycle".to_owned(),
+            content: String::new(),
+            exec_prompt: None,
         }));
     }
     Ok(None)
