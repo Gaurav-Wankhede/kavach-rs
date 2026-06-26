@@ -39,16 +39,30 @@ impl ModelConfig {
     }
 }
 
-/// The cheap executor tier — the fan-out target for all read/write labor.
-pub const CHEAP_EXECUTOR_TIER: &str = "claude-haiku-4-5";
+/// Env var Claude Code sets to the configured subagent (cheap) model — the LIVE
+/// authoritative source for the executor tier. Never hardcode the model itself.
+pub const SUBAGENT_MODEL_ENV: &str = "CLAUDE_CODE_SUBAGENT_MODEL";
 
-/// True for a frontier orchestrator tier (opus/sonnet) that should DELEGATE labor.
-///
-/// Haiku (the executor) and unknown ids return false — they ARE the doer, so the
-/// fan-out nudge never fires on them. SOURCE: decision.harness.fanout-to-cheap-tier.
+/// Last-resort cheap-tier id used ONLY when the env var is unset — not the source
+/// of truth. Tracks the current Haiku alias. SOURCE: platform.claude.com models.
+pub const CHEAP_EXECUTOR_FALLBACK: &str = "claude-haiku-4-5";
+
+/// Resolve the live cheap executor tier: `CLAUDE_CODE_SUBAGENT_MODEL` env first,
+/// the fallback constant only when unset/empty.
 #[must_use]
-pub fn is_frontier_tier(model_id: &str) -> bool {
-    model_id.starts_with("claude-opus-4") || model_id.starts_with("claude-sonnet-4")
+pub fn cheap_executor_tier() -> String {
+    std::env::var(SUBAGENT_MODEL_ENV)
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or_else(|| CHEAP_EXECUTOR_FALLBACK.to_owned())
+}
+
+/// True when `model_id` is a frontier orchestrator (any capable `claude-*` that is
+/// NOT the cheap `cheap_tier`) that should DELEGATE labor. Defined by exclusion, not
+/// a frozen opus/sonnet allowlist, so new families (Fable) classify correctly.
+#[must_use]
+pub fn is_frontier_tier(model_id: &str, cheap_tier: &str) -> bool {
+    model_id.starts_with("claude-") && model_id != cheap_tier
 }
 
 #[cfg(test)]
