@@ -49,11 +49,12 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             let reward_prefix = loop_frame::build_reward_stop_last(ctx.session);
             drop(kavach_hook::exit_stop_block(&format!(
                 "{loop_prefix}{reward_prefix}STOP BLOCKED ({attempt}/{max}): you have runnable work — \
-                 resume it NOW, do not stop. NEXT {tier} [{priority}]: {title}. This card is CLAIMED \
-                 and in_progress in the Kavach DB. Start it this turn. CONTRACT: claim -> implement \
-                 -> 3-witness verify (artifact exists -> diff landed -> build \
-                 passes) -> close, all this turn; run the loophole lenses before \
-                 you claim done. Do NOT propose a session break.{harness}"
+                 FAN IT OUT NOW, do not stop. NEXT {tier} [{priority}]: {title}. This card is CLAIMED \
+                 and in_progress in the Kavach DB. CONTRACT: claim -> SPAWN a cheap-tier worker \
+                 (Agent) or /workflow to do the implement+verify labor (you do NOT read/edit/grep \
+                 it yourself) -> 3-witness the worker's result (artifact exists -> diff landed -> \
+                 build passes) -> close, all this turn; run the loophole lenses on what it returns \
+                 before you claim done. Do NOT propose a session break.{harness}"
             )));
             ControlFlow::Break(())
         }
