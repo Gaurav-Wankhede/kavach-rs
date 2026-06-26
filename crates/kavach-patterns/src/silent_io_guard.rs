@@ -240,4 +240,22 @@ mod tests {
         assert!(msg.is_some());
         assert!(msg.unwrap().contains("[SILENT_IO_BLOCK]"));
     }
+
+    #[test]
+    fn fix_text_never_endorses_suppression() {
+        // The remedy must MANDATE handling — never teach `.ok()`/`drop(Result)`/`let _`
+        // as the fix (the wrong-injection that let `let _ = (lat,lng)` pass as compliant).
+        for rule in RULES.iter() {
+            let f = rule.fix;
+            assert!(!f.contains(".ok()"), "fix endorses .ok() suppression: {f}");
+            assert!(
+                !f.contains("if you must discard") && !f.contains("If you must discard"),
+                "fix offers a discard escape: {f}"
+            );
+            assert!(
+                f.contains("if let Err") || f.contains('?') || f.contains("match"),
+                "fix must name a real handling form: {f}"
+            );
+        }
+    }
 }
