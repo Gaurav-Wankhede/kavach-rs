@@ -116,6 +116,13 @@ const ROWS: &[(usize, bool, Severity, &str, &str)] = {
             "non-atomic increment",
             "Use AtomicU64::fetch_add() or Mutex — `x += 1` races under concurrent access",
         ),
+        (
+            79,
+            false,
+            P1Advisory,
+            "anonymous let _ = discards a call or live binding",
+            "`let _ = call()` swallows a Result/#[must_use]; `let _ = (a, b)` discards live values. ACT on it (`?`/match/if), or for a genuine unit/guard use `drop(x)` — never `let _ =` of a fallible call or live binding",
+        ),
     ]
 };
 
