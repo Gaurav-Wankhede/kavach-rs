@@ -134,8 +134,8 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     // the Stop gate uses. The session must OPEN with the real board (counts + next
     // card), not a "run kavach db kanban yourself" reminder. Fail-soft on RPC
     // outage: the block is simply omitted (session start is never blocked).
-    if !session.project.is_empty() {
-        super::super::intent::append_live_kanban_block(&mut context, &session.project);
+    if !super::super::intent::append_live_kanban_block(&mut context, &session.project) {
+        context.push_str("\n[KANBAN] board unavailable this session (empty project or DB outage) — run `kavach db kanban` once reachable.\n");
     }
 
     // E7 compaction-seam reconcile: if an in_progress card's TOUCHES paths match
