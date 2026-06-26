@@ -276,8 +276,7 @@ mod tests {
             let f = RULES
                 .iter()
                 .find(|r| r.category == cat)
-                .map(|r| r.fix)
-                .unwrap_or("");
+                .map_or("", |r| r.fix);
             assert!(
                 f.contains("if let Err") || f.contains('?') || f.contains("match"),
                 "{cat} fix must name handling: {f}"
