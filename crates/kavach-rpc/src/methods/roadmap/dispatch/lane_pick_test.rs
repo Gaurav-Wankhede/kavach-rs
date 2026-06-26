@@ -71,6 +71,20 @@ fn operator_gated_marker_does_not_suppress_dispatch() {
 }
 
 #[test]
+fn dispatched_card_carries_its_body_for_a_precise_context_funnel() {
+    // Context-rot fix: the ONE dispatched card must funnel its full spec (content
+    // + exec_prompt), not a title-only pointer the AI then has to re-fetch.
+    let mut c = card("spec", "todo", None);
+    c.content = "FILES: src/x.rs\nDONE WHEN: tests pass".into();
+    c.exec_prompt = Some("ROLE: backend. TASK: ship x.".into());
+    let cards = vec![c];
+    let picked = pick_in_lane(&cards, &cards, "", |e| lane_matches(e, None))
+        .expect("the runnable card dispatches");
+    assert_eq!(picked.content, "FILES: src/x.rs\nDONE WHEN: tests pass");
+    assert_eq!(picked.exec_prompt.as_deref(), Some("ROLE: backend. TASK: ship x."));
+}
+
+#[test]
 fn priority_order_decides_between_two_runnable_cards() {
     // `entries` is pre-sorted by priority; the first match wins. A marker on the
     // first card no longer demotes it — both are runnable, the first is picked.
