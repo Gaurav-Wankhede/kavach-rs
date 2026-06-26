@@ -51,8 +51,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         SecurityResult::Pass => {}
     }
 
-    // Stage 2: Enforcement — carried forward (NOT early-returned) so a soft skill
-    // nudge never SUPPRESSES the Stage-4 language-guard violations. decision.gate.enforcement-merges-not-suppresses
+    // Stage 2: Enforcement carried forward, not early-returned — a skill nudge must not suppress Stage-4 violations. decision.gate.enforcement-merges-not-suppresses
     super::router::observe_tool_call(&mut session, &input.tool_use_id);
     let enforcement = super::pre_write_enforcement::check(&ctx, input, &mut session);
 
