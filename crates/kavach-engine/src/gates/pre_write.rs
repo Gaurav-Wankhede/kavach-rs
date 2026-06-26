@@ -77,6 +77,15 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
 
     // Stage 4: Advisory collection (includes P1 advisories from tiered guards).
     let mut context = advisory_ctx::build(&ctx, input, &mut session, &guard_result);
+    if let Some(advisory) = enforcement {
+        super::router::emit(
+            &mut session,
+            kavach_hook::GateSeverity::P2Advise,
+            "pre_write_enforcement",
+            &advisory,
+        );
+        context = format!("{advisory}\n\n{context}");
+    }
     if let Some(n) = comment_noise {
         context.push_str("\n\n");
         context.push_str(&n);
