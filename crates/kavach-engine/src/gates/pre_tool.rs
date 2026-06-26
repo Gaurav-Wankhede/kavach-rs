@@ -56,7 +56,13 @@ fn handle_unmatched_tool(input: &HookInput, mut session: kavach_session::Session
         super::turn_relay::exit_pre_tool_deny(&deny_reason);
     } else {
         // Warn and Allow/other: both allow relay, with optional context/nudge.
-        let ctx = apply_rule_context_and_nudge(&rule_results, &mut session);
+        let mut ctx = apply_rule_context_and_nudge(&rule_results, &mut session);
+        if let Some(fan) = super::fanout_advisory::nudge(&mut session, &input.tool_name) {
+            ctx = Some(match ctx {
+                Some(c) => format!("{fan}\n\n{c}"),
+                None => fan,
+            });
+        }
         super::turn_relay::exit_pre_tool_allow_relay(&mut session, ctx.as_deref());
     }
 }
