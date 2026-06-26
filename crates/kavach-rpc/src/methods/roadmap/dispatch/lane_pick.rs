@@ -43,6 +43,8 @@ pub(super) fn pick_in_lane(
             key: e.entry_key.clone(),
             title: e.title.clone(),
             status: e.entry_status_str().to_owned(),
+            content: e.content.clone(),
+            exec_prompt: e.exec_prompt.clone(),
         })
 }
 
