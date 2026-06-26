@@ -51,21 +51,10 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         SecurityResult::Pass => {}
     }
 
-    // Stage 2: Enforcement — advisory via router::emit (per-turn cap 10).
+    // Stage 2: Enforcement — carried forward (NOT early-returned) so a soft skill
+    // nudge never SUPPRESSES the Stage-4 language-guard violations. decision.gate.enforcement-merges-not-suppresses
     super::router::observe_tool_call(&mut session, &input.tool_use_id);
-    if let Some(advisory) = super::pre_write_enforcement::check(&ctx, input, &mut session) {
-        let merged = match &comment_noise {
-            Some(n) => format!("{advisory}\n\n{n}"),
-            None => advisory,
-        };
-        super::router::emit(
-            &mut session,
-            kavach_hook::GateSeverity::P2Advise,
-            "pre_write_enforcement",
-            &merged,
-        );
-        return Ok(());
-    }
+    let enforcement = super::pre_write_enforcement::check(&ctx, input, &mut session);
 
     // Stage 3: Language guards (P0 blocks)
     let guard_result = super::pre_write_guards::check(&ctx, input, &session);
