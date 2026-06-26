@@ -20,9 +20,11 @@ fn perturn_nudge(session: &mut kavach_session::SessionState) -> Option<String> {
     }
     session.mark_reinforcement_done();
     Some(String::from(
-        "[QUALITY_NUDGE] Act, don't narrate: execute -> show output -> state result. \
-         Close the active card this turn (claim -> implement -> 3-witness verify -> close); \
-         run the loophole self-check before any done claim. Do not hand labor back.",
+        "[QUALITY_NUDGE] Orchestrate, don't do the labor: decide -> FAN OUT to a cheap-tier \
+         worker (Agent) or /workflow -> verify what it returns -> state result. Close the \
+         active card this turn (claim -> spawn worker for implement+verify -> 3-witness its \
+         result -> close); run the loophole self-check on the returned work before any done \
+         claim. Do not hand labor back to the user, and do not do it yourself when a worker can.",
     ))
 }
 
