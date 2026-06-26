@@ -11,10 +11,11 @@ use crate::error::render;
 use crate::layout::{heading, live, shell};
 use crate::pages::{ProjectQ, resolve_project};
 use crate::rpc::{RpcError, call};
+use kavach_types::MemoryStatus;
 
 const COLUMNS: &[(&str, &str)] = &[
     ("todo", "To Do"),
-    ("inprogress", "In Progress"),
+    ("in_progress", "In Progress"),
     ("done", "Done"),
     ("verified", "Verified"),
 ];

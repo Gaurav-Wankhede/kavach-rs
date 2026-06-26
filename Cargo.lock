@@ -2957,6 +2957,7 @@ dependencies = [
  "axum",
  "futures",
  "kavach-rpc",
+ "kavach-types",
  "maud",
  "serde",
  "serde_json",
