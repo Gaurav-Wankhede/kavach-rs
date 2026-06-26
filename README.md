@@ -411,7 +411,6 @@ kavach-rs/
 │   ├── kavach-hook/         # harness hook I/O + lifecycle plumbing
 │   ├── kavach-advisor/      # advisory client + types
 │   ├── kavach-dtree/        # decision-tree primitives (intent classification)
-│   ├── kavach-rag-core/     # retrieval scan / score / tree walk
 │   ├── kavach-ope/          # order-preserving primitives
 │   ├── kavach-toon/         # token-efficient serialization
 │   ├── kavach-web/          # server-rendered web UI (Axum + maud, `kavach web`)
