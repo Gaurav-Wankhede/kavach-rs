@@ -91,6 +91,12 @@ fn blocker_walk_context_refuses_stop_and_directs_dependency_first_build() {
     assert!(c.contains("Esc"), "yields only to the user halt: {c}");
     // The directive says "never a clean stop" — it must REFUSE, never permit one.
     assert!(c.contains("never a clean stop"), "explicitly refuses a clean stop: {c}");
+    // Self-stating precondition: the directive fires ONLY because auto/bypassPermissions
+    // is live (gated at autonomous_gate.rs); it must announce that, not assume it.
+    assert!(
+        c.contains("auto/bypassPermissions"),
+        "names the autonomous-mode precondition that authorizes the walk: {c}"
+    );
 }
 
 #[test]
