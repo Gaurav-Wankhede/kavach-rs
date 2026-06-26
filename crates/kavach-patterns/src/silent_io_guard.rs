@@ -17,10 +17,9 @@
 //! - `|_|` lambda discard of single argument
 //! - `let _unused_per_doc: ...` if comment cites a reason on same/prev line.
 //!
-//! For genuine intentional discards, the rust-lang.org-cited alternatives are:
-//! - `drop(expr)` — explicit immediate-drop
-//! - `expr.ok()` — explicit Result→Option discard
-//! - `expr?` — bubble the error
+//! HANDLE a fallible Result — never discard it: `expr?` to propagate, `if let Err(e) =
+//! expr { … }`, or `match`. `drop(expr)` is for a true unit/guard ONLY (a value with no
+//! error). `.ok()` / `let _ = <fallible>` SWALLOW the error (let_underscore_must_use) — forbidden.
 
 use regex::Regex;
 use std::sync::LazyLock;
