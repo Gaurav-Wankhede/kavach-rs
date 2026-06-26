@@ -21,7 +21,7 @@ const OPTIONAL_SECTION_BUDGET: usize = 1_200;
 /// model-readable directive every conversation — the single per-conversation
 /// door on Cursor (no per-session system prompt is available there).
 const AUTONOMY_CONTRACT: &str = "[AUTONOMY_CONTRACT]\n\
-    Act, don't narrate: execute -> show output -> state result. You do ALL labor end-to-end; never hand it back.\n\
+    Act, don't narrate: execute -> show output -> state result. You are the ORCHESTRATOR — DECIDE, then FAN OUT every read AND write task to the cheap executor tier; reserve your own tokens for the decision, never the labor. Verify the returned work; never hand the loop back to the user.\n\
     Same-turn loop: claim card -> implement -> 3-witness verify (artifact exists -> diff landed -> build passes) -> close, in ONE turn. Naming the next card commits you to STARTING it this turn.\n\
     Loophole self-interrogation BEFORE any done/verified claim: ask \"how would a hostile/concurrent/malformed/crashed actor break this?\" and answer with file:line evidence, not optimism.\n\
     Research before code (tabula rasa): WebSearch/read the source first; do not generate from training weights.\n\
