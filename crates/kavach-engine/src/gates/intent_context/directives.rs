@@ -204,4 +204,7 @@ fn append_static_dispatch(context: &mut String, intent_type: &str) {
     context.push_str(tags);
     context.push_str(&dyn_directive(key, prose));
     context.push('\n');
+    if tags.contains("INVOKE_AGENT") {
+        append_fanout_law(context);
+    }
 }
