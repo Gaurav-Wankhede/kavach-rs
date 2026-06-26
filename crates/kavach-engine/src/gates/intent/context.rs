@@ -179,12 +179,10 @@ pub(in crate::gates) fn append_mermaid_views(context: &mut String, project: &str
 /// Cross-module entry (used by `session_start`): append the live `[KANBAN]`
 /// block, ignoring the observed/outage flag. Session start is never blocked on
 /// an outage — the block is simply omitted.
-pub(in crate::gates) fn append_live_kanban_block(context: &mut String, project: &str) {
-    // Session-start path: empty prompt ⇒ whole-board priority order (no relevance
-    // narrowing yet — the user's task hasn't been seen).
-    if !append_live_kanban(context, project, "") {
-        tracing::debug!(project, "session-start kanban block omitted (empty project or outage)");
-    }
+pub(in crate::gates) fn append_live_kanban_block(context: &mut String, project: &str) -> bool {
+    // Session-start path: empty prompt ⇒ whole-board priority order. Returns whether
+    // the block was appended (false on empty project/outage) so the caller can act.
+    append_live_kanban(context, project, "")
 }
 
 fn append_live_kanban(context: &mut String, project: &str, prompt: &str) -> bool {
