@@ -103,6 +103,14 @@ fn dim(label: &str, lens_query: &str, markers: &[&str]) -> DimensionRule {
 /// The compiled, tech-agnostic FLOOR — thin per dimension; the graph adds the rest.
 /// Each marker list mixes languages on purpose so one lens fires regardless of stack.
 fn floor_dimensions() -> Vec<DimensionRule> {
+    let mut d = access_money_dims();
+    d.extend(injection_web_dims());
+    d.extend(runtime_supply_dims());
+    d
+}
+
+/// Access-control + value dimensions: authz, idor, crypto, money, concurrency, persistence.
+fn access_money_dims() -> Vec<DimensionRule> {
     vec![
         dim(
             "authz",
@@ -164,6 +172,12 @@ fn floor_dimensions() -> Vec<DimensionRule> {
             "persistence durability partial-write transaction loophole lens",
             &["transaction", "commit", "persist", "BEGIN", "rollback"],
         ),
+    ]
+}
+
+/// Injection + web-sink dimensions: injection, ssrf, xss, csrf, deserialization, path-traversal.
+fn injection_web_dims() -> Vec<DimensionRule> {
+    vec![
         dim(
             "injection",
             "injection sql command template parameterization loophole lens",
@@ -235,6 +249,13 @@ fn floor_dimensions() -> Vec<DimensionRule> {
                 "open(",
             ],
         ),
+    ]
+}
+
+/// Runtime-safety + supply/observability dimensions: memory-safety, integer-overflow,
+/// resource-exhaustion, upload, supply-chain, information-leak, logging.
+fn runtime_supply_dims() -> Vec<DimensionRule> {
+    vec![
         dim(
             "memory-safety",
             "memory-safety use-after-free buffer-overflow oob loophole lens",
