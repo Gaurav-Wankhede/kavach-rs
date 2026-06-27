@@ -6,7 +6,7 @@ use std::path::Path;
 
 /// Exit: 0 = at least one candidate ≥ threshold, 1 = none, 2 = bad input/root.
 #[must_use]
-pub(super) fn run(json: &str, root: &Path) -> i32 {
+pub(super) fn run(json: &str, root: &Path, all: bool) -> i32 {
     if !root.exists() {
         eprintln!("origin: target path missing: {}", root.display());
         return 2;
@@ -34,9 +34,19 @@ pub(super) fn run(json: &str, root: &Path) -> i32 {
         top.cand.line,
         top.score
     );
-    let extra = ranked.len().saturating_sub(1);
-    if extra > 0 {
-        println!("  +{extra} more candidate(s) — tighten the query");
+    if all {
+        for ranked_cand in ranked.iter().skip(1) {
+            let shape = if ranked_cand.cand.is_secret { " [secret]" } else { "" };
+            println!(
+                "  also: '{}' at {}:{} (score {:.2}){shape}",
+                ranked_cand.cand.name, ranked_cand.cand.file, ranked_cand.cand.line, ranked_cand.score
+            );
+        }
+    } else {
+        let extra = ranked.len().saturating_sub(1);
+        if extra > 0 {
+            println!("  +{extra} more candidate(s) — pass --all to list");
+        }
     }
     0
 }
