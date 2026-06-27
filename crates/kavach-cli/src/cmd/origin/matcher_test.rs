@@ -61,9 +61,10 @@ fn finds_enum_variant() {
 }
 
 #[test]
-fn fallback_never_matches_regex_never_panics() {
-    // Validates the fallback regex $.^ is always compilable.
-    // This test ensures expect() on the fallback is justified.
-    let k = kinds("X", "let invalid = [invalid(;");
-    assert!(k.is_empty(), "fallback should never match");
+fn validates_fallback_regex_compiles() {
+    // Validates that the fallback regex "$.^" is always compilable.
+    // This test justifies the expect() call on Regex::new("$.^") in re().
+    use regex::Regex;
+    let fallback = Regex::new("$.^");
+    assert!(fallback.is_ok(), "fallback pattern $.^ must always compile");
 }
