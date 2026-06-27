@@ -38,5 +38,5 @@ fn empty_consumed_by_returns_zero() {
         value: Some("PgPool::connect(url)".into()),
         is_secret: false,
     };
-    assert_eq!(score(&[], &cand), 0.0);
+    assert!((score(&[], &cand) - 0.0).abs() < f32::EPSILON);
 }
