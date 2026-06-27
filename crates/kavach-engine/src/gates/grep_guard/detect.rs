@@ -67,3 +67,24 @@ fn has_dash_cap_i(original: &str) -> bool {
         .split_whitespace()
         .any(|arg| arg.starts_with('-') && !arg.starts_with("--") && arg.contains('I'))
 }
+
+/// Extract likely search pattern (last non-flag, non-path token).
+fn extract_symbol_term(command: &str) -> Option<String> {
+    let tokens: Vec<&str> = command.split_whitespace().collect();
+    for token in tokens.iter().rev() {
+        if !token.starts_with('-') && !token.contains('/') && !token.contains('.') {
+            let t = token.trim_matches(|c| c == '"' || c == '\'' || c == '\\');
+            if is_symbol_shaped(t) {
+                return Some(t.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn is_symbol_shaped(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 64
+        && s.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
