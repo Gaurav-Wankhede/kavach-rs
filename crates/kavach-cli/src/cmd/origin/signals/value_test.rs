@@ -7,7 +7,7 @@ fn regex_matches_value() {
 
 #[test]
 fn regex_does_not_match_value() {
-    assert_eq!(score(Some("^postgres://"), Some("redis://x")), 0.0);
+    assert!((score(Some("^postgres://"), Some("redis://x")) - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
