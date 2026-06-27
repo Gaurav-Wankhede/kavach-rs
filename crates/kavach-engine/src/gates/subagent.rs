@@ -13,6 +13,21 @@ fn is_reviewer_agent(agent_type: &str) -> bool {
     lower.contains("reviewer") || lower.contains("code-review")
 }
 
+/// Hard rules contract injected into EVERY spawned subagent. The parent session's
+/// PreToolUse/PostToolUse gates do NOT fire on a subagent's tool calls (Claude Code
+/// v2.1+; SOURCE: code.claude.com/docs/en/sub-agents), so this preamble is the only
+/// in-context enforcement a worker sees beyond the inherited CLAUDE.md. Frontmatter
+/// hooks (kavach agents gate-sync) add the BLOCKING layer; this is the steering layer.
+const SUBAGENT_RULES_CONTRACT: &str = "[SUBAGENT_RULES] You run UNDER kavach governance — \
+    the same laws as the main session, even though the per-tool gates don't fire on you. \
+    OBEY: (1) TDD — a production .rs Write needs its separate test file touched first. \
+    (2) No suppression — never `let _ =`/`drop()`/`.ok()` a fallible Result; handle it (`?`/`if let Err`/`match`). \
+    (3) Toolbelt — rg/fd/bat/sd/jaq over grep/find/cat/sed. \
+    (4) Single-line comments only; rationale to a kavach decision row. \
+    (5) RCA before any fix-edit; close loopholes on risk-bearing changes. \
+    (6) Return the artifact + 3-witness evidence (rg ∧ diff ∧ build), not prose. \
+    You are a DOER — do NOT spawn further subagents; do the work and return.";
+
 /// `SubagentStart` gate: track agent lifecycle, inject budget context.
 #[expect(clippy::unnecessary_wraps, reason = "uniform gate dispatch")]
 pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
