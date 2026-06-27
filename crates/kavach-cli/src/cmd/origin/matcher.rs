@@ -13,7 +13,7 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
         (Kind::Default, re(&format!(r"impl\s+Default\s+for\s+{n}\b"))),
         (Kind::Type, re(&format!(r"\b(?:struct|enum|trait|type|union)\s+{n}\b"))),
         (Kind::Function, re(&format!(r"\bfn\s+{n}\s*[(<]"))),
-        (Kind::Param, re(&format!(r"\bfn\s+\w+[^)]*\b{n}\s*:"))),
+        (Kind::Param, re(&format!(r"\bfn\s+\w+\s*\([^)]*\b{n}\s*:"))),
         (Kind::Variant, re(&format!(r"^\s*{n}\s*(?:,|\(|\{{|=|$)"))),
         (Kind::ConfigField, re(&format!(r"^\s*(?:pub\s+)?{n}\s*:\s*[A-Za-z]"))),
         (Kind::LetBinding, re(&format!(r"\blet\s+(?:mut\s+)?{n}\s*[:=]"))),
