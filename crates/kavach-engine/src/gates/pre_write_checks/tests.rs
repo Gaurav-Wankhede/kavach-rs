@@ -57,4 +57,9 @@ fn test_is_test_or_exempt() {
     assert!(is_test_or_exempt("README.md"));
     assert!(is_test_or_exempt("CLAUDE.md"));
     assert!(!is_test_or_exempt("src/gates/intent.rs"));
+    // SOURCE: doc.rust-lang.org/reference/items/modules.html (#[path] file modules) — a bare `tests.rs` is a test module.
+    assert!(is_test_or_exempt(
+        "crates/services/comms-data/src/ironmail/repo/write/resolve_recipients/tests.rs"
+    ));
+    assert!(is_test_or_exempt("src/foo/bar_test.rs"));
 }
