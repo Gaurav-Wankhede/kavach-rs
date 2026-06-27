@@ -18,6 +18,11 @@ fn finds_const_declaration() {
 }
 
 #[test]
+fn finds_inline_enum_variant() {
+    assert!(kinds("EnvVar", "enum K { EnvVar, Other }").contains(&Kind::Variant));
+}
+
+#[test]
 fn finds_static_declaration() {
     let k = kinds("REGISTRY", "static REGISTRY: Lazy<Map> = Lazy::new(|| Map::new());");
     assert!(k.contains(&Kind::Static));
