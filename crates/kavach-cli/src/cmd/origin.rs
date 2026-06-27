@@ -3,6 +3,8 @@
 mod matcher;
 mod refine;
 mod site;
+#[cfg(test)]
+mod role_query;
 
 use site::Site;
 use std::path::{Path, PathBuf};
