@@ -25,10 +25,10 @@ pub(super) fn check(
     // Inline tests are FORBIDDEN — tests live in a separate mapped file.
     if has_inline_test(ctx.content) {
         return Some(format!(
-            "[TDD:P0] BLOCKED. `{stem}` carries an inline test — tests must live in a \
-             SEPARATE file (e.g. `{stem}/tests.rs` mapped via `#[path]`), never inside \
-             the production file. FIX: move the test out, then write the code. If this \
-             looks wrong, READ this guard's source and fix the real cause — never route around it."
+            "[TDD:P0] MOVE THE TEST OUT, THEN WRITE THE CODE. `{stem}` carries an inline \
+             test — put it in a SEPARATE file (e.g. `{stem}/tests.rs` mapped via `#[path]`), \
+             never inside the production file. If this looks wrong, READ this guard's \
+             source and fix the real cause — never route around it."
         ));
     }
     // The unit's test must have been OBSERVED RED this turn (recorded in
