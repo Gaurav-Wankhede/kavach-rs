@@ -89,6 +89,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Oversized { action } => oversized::run(action),
         Commands::TailwindPlus { action } => tailwind_plus::run(action),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
+        Commands::Hunt { path } => hunt::run(&path.unwrap_or_else(doctor_workspace_root)),
         Commands::Phase { action } => phase::run(action),
         Commands::Loop { action } => harness_loop::run(action),
         v @ Commands::Verify { .. } => dispatch_verify(v),
