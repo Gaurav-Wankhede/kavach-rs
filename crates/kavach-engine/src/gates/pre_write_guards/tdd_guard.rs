@@ -151,7 +151,7 @@ pub(crate) fn production_stem_of(test_path: &str) -> Option<String> {
 pub(super) fn has_inline_test(content: &str) -> bool {
     content.contains("#[test]")
         || content.contains("#[tokio::test]")
-        || (content.contains("#[cfg(test)]") && !content.contains("#[path"))
+        || (content.contains("#[cfg(test)]") && content.contains("mod tests {"))
 }
 
 #[cfg(test)]
