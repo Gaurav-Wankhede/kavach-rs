@@ -19,7 +19,7 @@ fn clean_file_has_no_findings() {
 #[test]
 fn run_on_missing_path_exits_2() {
     let missing = std::path::Path::new("/nonexistent/kavach/hunt/path");
-    assert_eq!(run(missing), 2, "unreadable root must exit 2, never silent 0");
+    assert_eq!(run(missing, false), 2, "unreadable root must exit 2, never silent 0");
 }
 
 #[test]
