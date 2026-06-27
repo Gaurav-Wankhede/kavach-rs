@@ -195,6 +195,9 @@ pub(crate) enum Commands {
     Hunt {
         /// Directory to scan (default: workspace root / current dir)
         path: Option<std::path::PathBuf>,
+        /// Also run the rustc + clippy backend (requires a compilable cargo project; slower)
+        #[arg(long)]
+        deep: bool,
     },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
