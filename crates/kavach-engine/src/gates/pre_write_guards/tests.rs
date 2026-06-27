@@ -69,3 +69,25 @@ fn fragment_only_would_miss_oversized_file() {
         "a 2-line fragment is under 100 LOC — proves why the fragment path missed it"
     );
 }
+
+// Stage-3 guard chain must hard-block a silent-IO `let _ = fallible()` write —
+// the P0 the SDLC-phase advisory must never be allowed to suppress.
+#[test]
+fn guard_chain_blocks_silent_io_let_underscore() {
+    let mut input = HookInput::default();
+    input.tool_name = "Write".into();
+    input.tool_input = Some(HashMap::from([
+        ("file_path".into(), serde_json::json!("crates/core/x/src/h.rs")),
+        (
+            "content".into(),
+            serde_json::json!("pub fn f() {\n    let _ = do_io();\n}\n"),
+        ),
+    ]));
+    let ctx = WriteContext::extract(&input);
+    let session = kavach_session::get_or_create_session();
+    let result = super::check(&ctx, &input, &session);
+    assert!(
+        result.block.is_some(),
+        "silent-IO let _ = do_io() must P0-block in the guard chain"
+    );
+}
