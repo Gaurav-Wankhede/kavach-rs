@@ -33,7 +33,7 @@ fn parse_partial_only_value_regex() {
     let json = r#"{"value_regex":"^postgres://"}"#;
     let result = RoleQuery::parse(json).expect("parse failed");
     assert_eq!(result.role, "");
-    assert_eq!(result.value_regex, Some("^postgres://".to_string()));
+    assert_eq!(result.value_regex, Some("^postgres://".to_owned()));
     assert!(result.consumed_by.is_empty());
     assert!(result.env_key_hints.is_empty());
     assert!(result.name_aliases.is_empty());
