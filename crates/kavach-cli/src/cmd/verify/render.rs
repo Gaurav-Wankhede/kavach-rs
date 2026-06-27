@@ -29,4 +29,6 @@ pub(super) fn stderr_head(stderr: &str, n: usize) -> String {
 
 #[cfg(test)]
 #[path = "render_test.rs"]
+#[cfg(test)]
+#[path = "render_test.rs"]
 mod tests;

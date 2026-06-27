@@ -9,4 +9,6 @@ pub use types::{SysSeverity, SysViolation};
 
 #[cfg(test)]
 #[path = "system_design_guard_test.rs"]
+#[cfg(test)]
+#[path = "system_design_guard_test.rs"]
 mod tests;

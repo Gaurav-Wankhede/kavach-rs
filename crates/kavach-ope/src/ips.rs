@@ -151,4 +151,6 @@ pub fn estimate_self_normalized<P: TargetPolicy>(samples: &[LoggedSample], polic
 
 #[cfg(test)]
 #[path = "ips_test.rs"]
+#[cfg(test)]
+#[path = "ips_test.rs"]
 mod tests;

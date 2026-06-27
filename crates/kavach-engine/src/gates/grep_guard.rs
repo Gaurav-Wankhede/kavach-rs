@@ -12,9 +12,10 @@
 //! `detect` holds the command classifier; `messages` builds the advisory text.
 mod detect;
 mod messages;
-
 #[cfg(test)]
+#[path = "grep_guard_test.rs"]
+#[cfg(test)]
+#[path = "grep_guard_test.rs"]
 mod tests;
-
 pub(crate) use detect::check_grep_command;
 pub(crate) use messages::origin_pointer;

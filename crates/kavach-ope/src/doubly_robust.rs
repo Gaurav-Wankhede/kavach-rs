@@ -71,4 +71,6 @@ where
 
 #[cfg(test)]
 #[path = "doubly_robust_test.rs"]
+#[cfg(test)]
+#[path = "doubly_robust_test.rs"]
 mod tests;

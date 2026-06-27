@@ -116,4 +116,6 @@ pub fn detect_disobedience_with(vocab: &DisobedienceVocab, message: &str) -> Opt
 
 #[cfg(test)]
 #[path = "disobedience_guard_test.rs"]
+#[cfg(test)]
+#[path = "disobedience_guard_test.rs"]
 mod tests;

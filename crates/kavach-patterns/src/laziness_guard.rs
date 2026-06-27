@@ -321,4 +321,6 @@ fn block_reason() -> String {
 
 #[cfg(test)]
 #[path = "laziness_guard_test.rs"]
+#[cfg(test)]
+#[path = "laziness_guard_test.rs"]
 mod tests;

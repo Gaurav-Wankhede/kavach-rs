@@ -85,6 +85,8 @@ fn effective_body(
     }
     current.replacen(old_string, new_string, 1)
 }
-
 #[cfg(test)]
+#[path = "pre_write_context_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_context_test.rs"]
 mod tests;

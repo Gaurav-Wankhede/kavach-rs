@@ -16,8 +16,9 @@ use surrealdb_types::{RecordId, SurrealValue};
 
 #[cfg(test)]
 #[path = "bandit_test.rs"]
+#[cfg(test)]
+#[path = "bandit_test.rs"]
 mod tests;
-
 /// A returned record id (the create/update `RETURN AFTER` projection).
 #[derive(surrealdb_types::SurrealValue)]
 struct IdRow {

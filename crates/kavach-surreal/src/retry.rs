@@ -100,4 +100,6 @@ where
 
 #[cfg(test)]
 #[path = "retry_test.rs"]
+#[cfg(test)]
+#[path = "retry_test.rs"]
 mod tests;

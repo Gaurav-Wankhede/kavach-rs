@@ -242,4 +242,6 @@ fn refuse_stop_on_unsourced_research(ctx: &mut StopCtx<'_>) -> bool {
 
 #[cfg(test)]
 #[path = "clean_exit_test.rs"]
+#[cfg(test)]
+#[path = "clean_exit_test.rs"]
 mod tests;

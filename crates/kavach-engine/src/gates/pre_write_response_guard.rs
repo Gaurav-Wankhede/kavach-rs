@@ -5,9 +5,10 @@
 //! `deny_unknown_fields`, bool serde defaults.
 mod advisory;
 mod block;
-
 #[cfg(test)]
+#[path = "pre_write_response_guard_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_response_guard_test.rs"]
 mod tests;
-
 pub(crate) use advisory::format_advisory;
 pub(crate) use block::check;

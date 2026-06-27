@@ -4,10 +4,11 @@
 mod deps;
 mod version;
 mod year;
-
 #[cfg(test)]
+#[path = "pre_tool_search_test.rs"]
+#[cfg(test)]
+#[path = "pre_tool_search_test.rs"]
 mod tests;
-
 use kavach_types::HookInput;
 
 use version::check_stale_version_in_query;

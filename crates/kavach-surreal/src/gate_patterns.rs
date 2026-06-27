@@ -356,4 +356,6 @@ pub async fn list_hot(
 
 #[cfg(test)]
 #[path = "gate_patterns_test.rs"]
+#[cfg(test)]
+#[path = "gate_patterns_test.rs"]
 mod tests;

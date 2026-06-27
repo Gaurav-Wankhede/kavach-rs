@@ -12,9 +12,10 @@ mod decision;
 mod outcome;
 mod strip;
 mod triggers;
-
 #[cfg(test)]
+#[path = "pre_write_algo_guard_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_algo_guard_test.rs"]
 mod tests;
-
 pub(crate) use check::check;
 pub(crate) use outcome::AlgoGuardOutcome;

@@ -125,4 +125,6 @@ fn recent_decisions(project: &str) -> Vec<(String, String)> {
 
 #[cfg(test)]
 #[path = "working_set_test.rs"]
+#[cfg(test)]
+#[path = "working_set_test.rs"]
 mod tests;

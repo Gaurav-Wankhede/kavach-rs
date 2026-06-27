@@ -56,4 +56,6 @@ pub fn resolved_session_id() -> String {
 
 #[cfg(test)]
 #[path = "session_id_test.rs"]
+#[cfg(test)]
+#[path = "session_id_test.rs"]
 mod tests;

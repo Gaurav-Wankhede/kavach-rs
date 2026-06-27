@@ -14,10 +14,11 @@ mod patterns;
 pub(in crate::gates) mod reconcile;
 mod stack_fit;
 mod state;
-
 #[cfg(test)]
+#[path = "session_start_test.rs"]
+#[cfg(test)]
+#[path = "session_start_test.rs"]
 mod tests;
-
 // Shared with the Stop gate: an auto-compact can fire a Stop before the next
 // SessionStart reconciles the seam, so the Stop terminal also checks it.
 pub(in crate::gates) use reconcile::reconcile_context;

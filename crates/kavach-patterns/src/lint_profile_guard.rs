@@ -69,4 +69,6 @@ fn rust_is_strict(dir: &Path) -> bool {
 
 #[cfg(test)]
 #[path = "lint_profile_guard_test.rs"]
+#[cfg(test)]
+#[path = "lint_profile_guard_test.rs"]
 mod tests;

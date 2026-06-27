@@ -22,10 +22,11 @@ mod net;
 mod proc;
 mod search;
 mod tool;
-
 #[cfg(test)]
+#[path = "toolbelt_test.rs"]
+#[cfg(test)]
+#[path = "toolbelt_test.rs"]
 mod tests;
-
 pub use files::{count_lines, diff, disk_usage, read_file, tree};
 pub use net::verify_url_reachable;
 pub use proc::{git_diff_stat, git_has_pending_changes};

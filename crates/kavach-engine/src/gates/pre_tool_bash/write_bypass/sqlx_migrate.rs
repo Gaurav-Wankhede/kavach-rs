@@ -3,10 +3,11 @@
 //! Unix sockets) are auto-detected from `DATABASE_URL` and exempted.
 
 use super::segment::segment_first_word_is;
-
 #[cfg(test)]
+#[path = "sqlx_migrate_test.rs"]
+#[cfg(test)]
+#[path = "sqlx_migrate_test.rs"]
 mod tests;
-
 /// Detect if `DATABASE_URL` points to a local/dev database. Local patterns:
 /// localhost, 127.0.0.1, `::1`, docker-compose service names, Unix sockets.
 /// RESEARCH: github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md

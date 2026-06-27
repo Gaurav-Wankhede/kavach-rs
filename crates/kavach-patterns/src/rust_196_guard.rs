@@ -21,4 +21,6 @@ pub use types::{Rust196Severity, Rust196Violation};
 
 #[cfg(test)]
 #[path = "rust_196_guard_test.rs"]
+#[cfg(test)]
+#[path = "rust_196_guard_test.rs"]
 mod tests;

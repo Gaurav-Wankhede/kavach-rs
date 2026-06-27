@@ -4,10 +4,11 @@
 // advisory. This hub wires them into the Write/Edit/NotebookEdit gate.
 mod classify;
 mod message;
-
 #[cfg(test)]
+#[path = "pre_write_path_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_path_test.rs"]
 mod tests;
-
 use kavach_types::HookInput;
 
 use crate::error::EngineError;

@@ -45,4 +45,6 @@ fn workspace_root() -> Option<PathBuf> {
 
 #[cfg(all(test, unix))]
 #[path = "deploy_test.rs"]
+#[cfg(test)]
+#[path = "deploy_test.rs"]
 mod tests;

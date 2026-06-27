@@ -17,6 +17,8 @@
 //! <https://blog.nelhage.com/post/fuzzy-dedup/> (Jaccard threshold guidance).
 mod decision;
 mod shingle;
-
 #[cfg(test)]
+#[path = "duplicate_function_guard_test.rs"]
+#[cfg(test)]
+#[path = "duplicate_function_guard_test.rs"]
 mod tests;

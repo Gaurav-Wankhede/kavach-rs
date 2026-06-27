@@ -88,4 +88,6 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
 
 #[cfg(test)]
 #[path = "nano_file_guard_test.rs"]
+#[cfg(test)]
+#[path = "nano_file_guard_test.rs"]
 mod tests;

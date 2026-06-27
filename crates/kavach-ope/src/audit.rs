@@ -24,8 +24,9 @@ use crate::sample::Action;
 
 #[cfg(test)]
 #[path = "audit_test.rs"]
+#[cfg(test)]
+#[path = "audit_test.rs"]
 mod tests;
-
 /// Conservatism rank of an action on the safety lattice: `Block` (2) is the
 /// tightest, then `Ask` (1), then `Allow` (0). A learned action is a RELAXATION
 /// of a rule action iff its rank is strictly lower.

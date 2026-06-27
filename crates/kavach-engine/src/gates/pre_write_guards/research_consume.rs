@@ -153,6 +153,8 @@ fn content_has_evidence(content: &str) -> bool {
         || content.contains("research(")
         || content.contains("SOURCE:")
 }
-
 #[cfg(test)]
+#[path = "research_consume_test.rs"]
+#[cfg(test)]
+#[path = "research_consume_test.rs"]
 mod tests;

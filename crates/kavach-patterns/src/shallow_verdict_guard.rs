@@ -91,4 +91,6 @@ pub fn detect_shallow_verdict(msg: &str) -> Option<String> {
 
 #[cfg(test)]
 #[path = "shallow_verdict_guard_test.rs"]
+#[cfg(test)]
+#[path = "shallow_verdict_guard_test.rs"]
 mod tests;

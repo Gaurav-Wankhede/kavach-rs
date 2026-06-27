@@ -146,4 +146,6 @@ pub async fn is_in_cycle_sql(db: &Surreal<Db>, card_key: &str) -> Result<bool> {
 
 #[cfg(test)]
 #[path = "roadmap_deps_test.rs"]
+#[cfg(test)]
+#[path = "roadmap_deps_test.rs"]
 mod tests;

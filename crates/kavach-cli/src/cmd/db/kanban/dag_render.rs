@@ -262,4 +262,6 @@ pub(in crate::cmd::db) fn render_dag_from_rows(rows: &[MemoryEntry], format: &st
 
 #[cfg(test)]
 #[path = "dag_render_test.rs"]
+#[cfg(test)]
+#[path = "dag_render_test.rs"]
 mod tests;

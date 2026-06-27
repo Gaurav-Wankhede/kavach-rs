@@ -4,10 +4,11 @@
 //! injected `[AGENT_*]` lines. SOURCE: code.claude.com/docs/en/agent-sdk/hooks.
 mod context;
 mod contract;
-
 #[cfg(test)]
+#[path = "pre_tool_agent_test.rs"]
+#[cfg(test)]
+#[path = "pre_tool_agent_test.rs"]
 mod tests;
-
 pub(crate) use contract::get_contract;
 
 use kavach_hook::Vendor;

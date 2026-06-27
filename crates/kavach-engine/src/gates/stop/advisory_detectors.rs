@@ -287,4 +287,6 @@ pub(super) fn run(
 
 #[cfg(test)]
 #[path = "advisory_detectors_test.rs"]
+#[cfg(test)]
+#[path = "advisory_detectors_test.rs"]
 mod tests;

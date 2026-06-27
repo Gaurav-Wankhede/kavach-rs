@@ -168,4 +168,6 @@ pub fn classify(l: &str) -> Option<(Lens, &'static str)> {
 
 #[cfg(test)]
 #[path = "loophole_lens_test.rs"]
+#[cfg(test)]
+#[path = "loophole_lens_test.rs"]
 mod tests;

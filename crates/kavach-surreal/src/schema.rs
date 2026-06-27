@@ -6,8 +6,9 @@ mod migrations;
 
 #[cfg(test)]
 #[path = "schema_test.rs"]
+#[cfg(test)]
+#[path = "schema_test.rs"]
 mod tests;
-
 use crate::error::Result;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;

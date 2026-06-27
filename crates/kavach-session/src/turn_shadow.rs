@@ -207,4 +207,6 @@ fn truncate_utf8(s: &str, max: usize) -> String {
 
 #[cfg(test)]
 #[path = "turn_shadow_test.rs"]
+#[cfg(test)]
+#[path = "turn_shadow_test.rs"]
 mod tests;

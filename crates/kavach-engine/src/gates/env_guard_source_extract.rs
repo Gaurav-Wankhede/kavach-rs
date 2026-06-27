@@ -4,9 +4,10 @@ mod builtin;
 mod extract;
 mod offset;
 mod scan;
-
 #[cfg(test)]
+#[path = "env_guard_source_extract_test.rs"]
+#[cfg(test)]
+#[path = "env_guard_source_extract_test.rs"]
 mod tests;
-
 pub(crate) use builtin::has_source_builtin;
 pub(crate) use extract::extract_post_source_command;

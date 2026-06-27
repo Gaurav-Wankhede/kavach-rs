@@ -89,4 +89,6 @@ fn emit(found: &mut [Finding]) -> i32 {
 
 #[cfg(test)]
 #[path = "audit_test.rs"]
+#[cfg(test)]
+#[path = "audit_test.rs"]
 mod tests;

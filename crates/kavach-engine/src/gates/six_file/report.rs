@@ -3,10 +3,11 @@
 // `tier` groups missing prefixes by required tier; this hub formats the
 // `[SIX_FILE_BLOCK]` header, coverage summary, tier sections, and draft guide.
 mod tier;
-
 #[cfg(test)]
+#[path = "report_test.rs"]
+#[cfg(test)]
+#[path = "report_test.rs"]
 mod tests;
-
 use kavach_types::WitnessResult;
 use std::fmt::Write as _;
 

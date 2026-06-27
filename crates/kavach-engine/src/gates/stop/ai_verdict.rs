@@ -18,8 +18,9 @@
 
 #[cfg(test)]
 #[path = "ai_verdict_test.rs"]
+#[cfg(test)]
+#[path = "ai_verdict_test.rs"]
 mod tests;
-
 use crate::gates::stop_dispatch::verify::witness::{WitnessRun, run_workspace_witnesses};
 
 /// PURE map from an objective witness outcome to a ±1/abstain verdict.

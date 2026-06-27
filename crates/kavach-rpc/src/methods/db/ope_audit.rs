@@ -24,8 +24,9 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 #[path = "ope_audit_test.rs"]
+#[cfg(test)]
+#[path = "ope_audit_test.rs"]
 mod tests;
-
 /// Audit request: the scan budget plus the soft-vs-hard drift tolerance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]

@@ -157,4 +157,6 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
 
 #[cfg(test)]
 #[path = "kanban_test.rs"]
+#[cfg(test)]
+#[path = "kanban_test.rs"]
 mod tests;

@@ -5,10 +5,11 @@ mod core_gates;
 mod lifecycle_gates;
 mod six_file_gates;
 mod util;
-
 #[cfg(test)]
+#[path = "gate_runner_test.rs"]
+#[cfg(test)]
+#[path = "gate_runner_test.rs"]
 mod tests;
-
 use kavach_types::HookInput;
 
 use crate::error::EngineError;

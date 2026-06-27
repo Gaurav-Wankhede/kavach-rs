@@ -43,4 +43,6 @@ pub(super) fn lane_drained_context(lane: &str) -> String {
 
 #[cfg(test)]
 #[path = "lane_test.rs"]
+#[cfg(test)]
+#[path = "lane_test.rs"]
 mod tests;

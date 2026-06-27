@@ -6,9 +6,10 @@
 //! SOURCE: <https://doc.rust-lang.org/clippy/configuration.html>
 mod advisory;
 mod block;
-
 #[cfg(test)]
+#[path = "pre_write_rust_guard_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_rust_guard_test.rs"]
 mod tests;
-
 pub(crate) use advisory::{format_advisory, format_lint_advisory};
 pub(crate) use block::check;

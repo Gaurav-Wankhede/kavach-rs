@@ -58,4 +58,6 @@ pub(super) fn scan(file_path: &str, content: &str, v: &mut Vec<Violation>) {
 
 #[cfg(test)]
 #[path = "env_var_test.rs"]
+#[cfg(test)]
+#[path = "env_var_test.rs"]
 mod tests;

@@ -51,4 +51,6 @@ mod render;
 
 #[cfg(test)]
 #[path = "help_md_test.rs"]
+#[cfg(test)]
+#[path = "help_md_test.rs"]
 mod tests;

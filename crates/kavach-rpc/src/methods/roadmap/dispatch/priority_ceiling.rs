@@ -62,4 +62,6 @@ pub(super) fn sort_by_effective_priority(entries: &mut [MemoryEntry]) {
 
 #[cfg(test)]
 #[path = "priority_ceiling_test.rs"]
+#[cfg(test)]
+#[path = "priority_ceiling_test.rs"]
 mod tests;

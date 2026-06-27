@@ -82,4 +82,6 @@ pub fn detect_antiprod(fp: &str, content: &str) -> Vec<AntiProdResult> {
 
 #[cfg(test)]
 #[path = "detect_test.rs"]
+#[cfg(test)]
+#[path = "detect_test.rs"]
 mod tests;

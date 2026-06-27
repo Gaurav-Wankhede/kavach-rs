@@ -70,4 +70,6 @@ pub(crate) fn targets_dotenv_file(lc: &str) -> bool {
 
 #[cfg(test)]
 #[path = "target_test.rs"]
+#[cfg(test)]
+#[path = "target_test.rs"]
 mod tests;

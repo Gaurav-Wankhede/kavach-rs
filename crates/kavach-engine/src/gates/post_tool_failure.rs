@@ -6,10 +6,11 @@
 //!   seed the pattern store so occurrence count accumulates toward promotion.
 mod classify;
 mod rpc;
-
 #[cfg(test)]
+#[path = "post_tool_failure_test.rs"]
+#[cfg(test)]
+#[path = "post_tool_failure_test.rs"]
 mod tests;
-
 use std::fmt::Write as _;
 
 use kavach_types::HookInput;

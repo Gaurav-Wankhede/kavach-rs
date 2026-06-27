@@ -132,4 +132,6 @@ pub async fn open_memory() -> Result<Surreal<Db>> {
 
 #[cfg(test)]
 #[path = "connection_test.rs"]
+#[cfg(test)]
+#[path = "connection_test.rs"]
 mod tests;

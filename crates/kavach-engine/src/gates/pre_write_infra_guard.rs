@@ -4,10 +4,11 @@
 //! at-least-once delivery requires idempotency; long-polling → SSE (`advisory`).
 mod advisory;
 mod block;
-
 #[cfg(test)]
+#[path = "pre_write_infra_guard_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_infra_guard_test.rs"]
 mod tests;
-
 pub(crate) use advisory::format_advisory;
 pub(crate) use block::check;
 

@@ -173,4 +173,6 @@ impl BanditRow {
 
 #[cfg(test)]
 #[path = "bandit_log_test.rs"]
+#[cfg(test)]
+#[path = "bandit_log_test.rs"]
 mod tests;

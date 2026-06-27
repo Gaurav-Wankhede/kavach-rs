@@ -8,8 +8,9 @@ mod upsert;
 
 #[cfg(test)]
 #[path = "write_test.rs"]
+#[cfg(test)]
+#[path = "write_test.rs"]
 mod tests;
-
 pub use events::{append_event, rotate_events};
 pub use expire::{ExpireReport, expire_stale};
 pub use priority_lane::{set_lane, set_priority};

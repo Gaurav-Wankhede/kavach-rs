@@ -7,8 +7,9 @@
 mod advisory;
 mod detect;
 mod extract;
-
 #[cfg(test)]
+#[path = "pre_write_gnap_advisory_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_gnap_advisory_test.rs"]
 mod tests;
-
 pub(crate) use advisory::advisory;

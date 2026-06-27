@@ -1,9 +1,10 @@
 // ARCH: see kavach db get --category decision --key arch.decision.fourteen_prefix_const_table
 mod evaluate;
-
 #[cfg(test)]
+#[path = "witness_test.rs"]
+#[cfg(test)]
+#[path = "witness_test.rs"]
 mod tests;
-
 use kavach_types::{FOURTEEN_PREFIXES, ProjectTier, WitnessResult};
 
 use evaluate::evaluate_prefix;

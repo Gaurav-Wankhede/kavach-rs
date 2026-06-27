@@ -81,4 +81,6 @@ pub(super) fn fail_gate_error(vendor: Vendor, gate_name: &str, msg: &str) -> i32
 
 #[cfg(test)]
 #[path = "fail_test.rs"]
+#[cfg(test)]
+#[path = "fail_test.rs"]
 mod tests;

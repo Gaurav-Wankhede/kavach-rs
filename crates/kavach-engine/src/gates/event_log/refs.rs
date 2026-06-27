@@ -94,6 +94,8 @@ pub fn memory_entry_qualified_name(category: &str, entry_key: &str, project_slug
 pub fn extract_memory_entry_references(content: &str) -> Vec<String> {
     extract_content_references(content)
 }
-
 #[cfg(test)]
+#[path = "refs_test.rs"]
+#[cfg(test)]
+#[path = "refs_test.rs"]
 mod tests;

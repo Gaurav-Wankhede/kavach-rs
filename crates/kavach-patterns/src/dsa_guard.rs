@@ -25,4 +25,6 @@ pub use types::{DsaClass, DsaSeverity, DsaViolation};
 
 #[cfg(test)]
 #[path = "dsa_guard_test.rs"]
+#[cfg(test)]
+#[path = "dsa_guard_test.rs"]
 mod tests;

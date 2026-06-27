@@ -31,4 +31,6 @@ pub(crate) fn nudge(session: &mut SessionState, tool_name: &str) -> Option<Strin
 
 #[cfg(test)]
 #[path = "fanout_advisory_test.rs"]
+#[cfg(test)]
+#[path = "fanout_advisory_test.rs"]
 mod tests;

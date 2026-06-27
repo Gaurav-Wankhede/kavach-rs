@@ -5,10 +5,11 @@ mod gates;
 mod package;
 mod patterns;
 mod rca;
-
 #[cfg(test)]
+#[path = "pre_write_enforcement_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_enforcement_test.rs"]
 mod tests;
-
 use crate::gates::pre_write_context::WriteContext;
 use kavach_types::HookInput;
 

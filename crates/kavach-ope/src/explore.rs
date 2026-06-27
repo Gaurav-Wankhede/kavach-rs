@@ -90,4 +90,6 @@ pub fn next_draw(state: &mut u64) -> f32 {
 
 #[cfg(test)]
 #[path = "explore_test.rs"]
+#[cfg(test)]
+#[path = "explore_test.rs"]
 mod tests;

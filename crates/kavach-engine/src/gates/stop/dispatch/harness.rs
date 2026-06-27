@@ -59,6 +59,8 @@ fn format_suffix(harness: &str, workflow_path: &str, verdict: &str) -> String {
          — the harness drives this card autonomously; do NOT hand-execute it."
     )
 }
-
 #[cfg(test)]
+#[path = "harness_test.rs"]
+#[cfg(test)]
+#[path = "harness_test.rs"]
 mod tests;

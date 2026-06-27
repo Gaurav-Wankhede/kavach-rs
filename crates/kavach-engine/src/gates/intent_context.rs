@@ -4,10 +4,11 @@
 mod db_query;
 mod directives;
 mod research;
-
 #[cfg(test)]
+#[path = "intent_context_test.rs"]
+#[cfg(test)]
+#[path = "intent_context_test.rs"]
 mod tests;
-
 pub(crate) use db_query::append_db_query_required;
 pub(crate) use directives::{
     append_agent_dispatch, append_diagram_first, append_forbidden, append_memory_db,

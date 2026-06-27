@@ -23,4 +23,6 @@ pub(crate) fn filter_test_pending_for_project(state: &mut SessionState, work_dir
 
 #[cfg(test)]
 #[path = "filter_test.rs"]
+#[cfg(test)]
+#[path = "filter_test.rs"]
 mod tests;

@@ -17,8 +17,9 @@ use kavach_patterns::bandit_log::GateAction;
 
 #[cfg(test)]
 #[path = "shadow_test.rs"]
+#[cfg(test)]
+#[path = "shadow_test.rs"]
 mod tests;
-
 /// The env flag that arms the canary. Absent/empty/`"0"`/`"false"` ⇒ disarmed.
 const CANARY_FLAG: &str = "KAVACH_RL_CANARY";
 

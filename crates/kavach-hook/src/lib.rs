@@ -15,8 +15,9 @@ pub use vendor::{SchemaSource, Vendor};
 
 #[cfg(test)]
 #[path = "lib_test.rs"]
+#[cfg(test)]
+#[path = "lib_test.rs"]
 mod tests;
-
 // Re-export context functions at crate root for backwards compatibility
 pub use context::{
     CACHE_BOUNDARY_MARKER, context_block, current_month, current_week, current_year,

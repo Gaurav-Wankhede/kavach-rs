@@ -158,4 +158,6 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
 // identical; rca.keystone-trap + rca.monorepo-verify-blind preserved verbatim.
 #[cfg(test)]
 #[path = "witness_test.rs"]
+#[cfg(test)]
+#[path = "witness_test.rs"]
 mod tests;

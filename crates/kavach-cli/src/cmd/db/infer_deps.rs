@@ -263,4 +263,6 @@ fn emit(msg: &str) -> i32 {
 
 #[cfg(test)]
 #[path = "infer_deps_test.rs"]
+#[cfg(test)]
+#[path = "infer_deps_test.rs"]
 mod tests;

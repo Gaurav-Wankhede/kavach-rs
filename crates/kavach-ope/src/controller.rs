@@ -33,4 +33,6 @@ pub use value::{ActionValue, RiskConfig};
 
 #[cfg(test)]
 #[path = "controller_test.rs"]
+#[cfg(test)]
+#[path = "controller_test.rs"]
 mod tests;

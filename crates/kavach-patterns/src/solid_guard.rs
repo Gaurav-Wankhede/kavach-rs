@@ -64,4 +64,6 @@ pub fn warn_count(file_path: &str, content: &str) -> usize {
 
 #[cfg(test)]
 #[path = "solid_guard_test.rs"]
+#[cfg(test)]
+#[path = "solid_guard_test.rs"]
 mod tests;

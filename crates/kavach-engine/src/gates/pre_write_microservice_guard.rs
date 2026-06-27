@@ -9,10 +9,11 @@
 mod detectors;
 mod predicates;
 mod rules;
-
 #[cfg(test)]
+#[path = "pre_write_microservice_guard_test.rs"]
+#[cfg(test)]
+#[path = "pre_write_microservice_guard_test.rs"]
 mod tests;
-
 use super::platform_guard_msg::{build_advisory, build_block};
 use super::platform_guard_paths::is_test;
 use predicates::{is_mod_rs, is_orchestrator, is_rs_file};

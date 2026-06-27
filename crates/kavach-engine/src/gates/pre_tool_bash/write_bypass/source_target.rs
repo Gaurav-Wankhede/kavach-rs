@@ -12,8 +12,9 @@
 
 #[cfg(test)]
 #[path = "source_target_test.rs"]
+#[cfg(test)]
+#[path = "source_target_test.rs"]
 mod tests;
-
 /// File extensions that are hand-authored source the `pre-write` gate guards.
 /// Generated/data formats (`.json .yaml .toml .lock .md`) are intentionally
 /// EXCLUDED — writing those via Bash is the benign advisory case.

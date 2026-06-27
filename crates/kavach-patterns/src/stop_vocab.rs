@@ -102,4 +102,6 @@ impl DoneGamingVocab {
 
 #[cfg(test)]
 #[path = "stop_vocab_test.rs"]
+#[cfg(test)]
+#[path = "stop_vocab_test.rs"]
 mod tests;

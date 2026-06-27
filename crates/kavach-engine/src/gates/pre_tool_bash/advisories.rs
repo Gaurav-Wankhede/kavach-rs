@@ -7,10 +7,11 @@ mod git_add;
 mod nextest;
 mod secret_cli;
 mod toolbelt_cli;
-
 #[cfg(test)]
+#[path = "advisories_test.rs"]
+#[cfg(test)]
+#[path = "advisories_test.rs"]
 mod tests;
-
 pub(super) use cargo_flags::check_multi_crate;
 pub(super) use commit::check_commit_message;
 pub(super) use git_add::is_git_add_all;
