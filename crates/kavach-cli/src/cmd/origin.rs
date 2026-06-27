@@ -1,13 +1,23 @@
 //! `kavach origin <NAME> [path]` — deterministic symbol-origin / config-source finder.
 
 mod matcher;
+mod query;
 mod refine;
-mod site;
-#[allow(dead_code)]
 mod role_query;
+mod scorer;
+mod secret_hints;
+mod signals;
+mod site;
+mod walker;
 
 use site::Site;
 use std::path::{Path, PathBuf};
+
+/// `kavach origin --query '<json>'` entry — dynamic multi-signal role resolver.
+#[must_use]
+pub(crate) fn run_query(json: &str, root: &Path) -> i32 {
+    query::run(json, root)
+}
 
 /// `kavach origin` entry. Exit: 0 = found, 1 = no declaration site, 2 = bad root.
 #[must_use]
