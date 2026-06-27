@@ -66,6 +66,8 @@ fn declared_name(line: &str) -> Option<String> {
     None
 }
 
+#[expect(clippy::string_slice, reason = "eq comes from .find('=') so eq+1 is a valid char boundary")]
+#[expect(clippy::arithmetic_side_effects, reason = "eq+1 bounded by the '=' match position")]
 fn capture_value(line: &str) -> Option<String> {
     let eq = line.find('=')?;
     let rhs = line[eq + 1..].trim().trim_end_matches([';', ',']).trim();
