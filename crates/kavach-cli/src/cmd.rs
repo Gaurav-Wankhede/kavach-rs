@@ -154,7 +154,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 }
 
 fn dispatch_origin(
-    names: Vec<String>,
+    names: &[String],
     path: Option<std::path::PathBuf>,
     query: Option<String>,
     stdin: bool,
