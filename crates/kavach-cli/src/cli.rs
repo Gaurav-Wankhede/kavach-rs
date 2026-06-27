@@ -193,7 +193,7 @@ pub(crate) enum Commands {
     Doctor,
     /// Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice signatures
     #[command(
-        after_help = "Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM."
+        after_help = "Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.\n\nUSE THIS INSTEAD OF grepping for bug patterns by hand — zero LLM tokens."
     )]
     Hunt {
         /// Directory to scan (default: workspace root / current dir)
