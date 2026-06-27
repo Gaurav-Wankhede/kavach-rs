@@ -94,11 +94,12 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             hunt::run(&path.unwrap_or_else(doctor_workspace_root), deep)
         }
         Commands::Origin {
-            name,
+            names,
             path,
             query,
             stdin,
-        } => dispatch_origin(name, path, query, stdin),
+            all,
+        } => dispatch_origin(names, path, query, stdin, all),
         Commands::Phase { action } => phase::run(action),
         Commands::Loop { action } => harness_loop::run(action),
         v @ Commands::Verify { .. } => dispatch_verify(v),
