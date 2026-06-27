@@ -1,7 +1,7 @@
 //! Detector registry — adapts each kavach-patterns detector into `Finding`s.
 
 use super::finding::{Finding, Severity};
-use kavach_patterns::{owasp_guard, rust_guard, silent_io_guard};
+use kavach_patterns::{owasp_guard, rust_196_guard, rust_guard, silent_io_guard};
 
 /// Run every registered detector over one file's content, returning all hits.
 #[must_use]
@@ -10,6 +10,7 @@ pub(super) fn scan_file(path: &str, content: &str) -> Vec<Finding> {
     out.extend(silent_io(path, content));
     out.extend(owasp(path, content));
     out.extend(rust(path, content));
+    out.extend(rust_196(path, content));
     out
 }
 
