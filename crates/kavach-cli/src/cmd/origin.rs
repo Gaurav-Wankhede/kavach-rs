@@ -49,7 +49,7 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
         };
         // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#map_unwrap_or
         let rel = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty())
-            .map_or_else(|| path.clone(), std::path::PathBuf::from);
+            .map_or_else(|| path.clone(), PathBuf::from);
         out.extend(matcher::sites_in(name, &rel.to_string_lossy(), &src));
     }
     out
