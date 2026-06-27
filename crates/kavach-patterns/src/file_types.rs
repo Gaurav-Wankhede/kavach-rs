@@ -81,6 +81,8 @@ pub fn is_test_file(p: &str) -> bool {
         || l.ends_with(".spec.tsx")
         || l.contains("/tests/")
         || l.contains("/test/")
+        || l.starts_with("tests/")
+        || l.starts_with("test/")
         || fbase(p) == "tests.rs"
 }
 #[expect(
