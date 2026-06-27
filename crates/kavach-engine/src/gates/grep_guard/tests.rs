@@ -67,3 +67,24 @@ fn absolute_path_grep_triggers() {
     let r = check_grep_command("/usr/bin/grep foo bar.txt");
     assert!(r.is_some(), "absolute path grep should still be detected");
 }
+
+#[test]
+fn recursive_grep_symbol_appends_origin_hint() {
+    let cmd = "grep -r RoleQuery /src";
+    let r = check_grep_command(cmd);
+    assert!(r.is_some());
+    let msg = r.unwrap();
+    assert!(msg.contains("GREP_PERFORMANCE_BLOCK"));
+    assert!(msg.contains("KAVACH_ORIGIN_HINT"));
+    assert!(msg.contains("RoleQuery"));
+}
+
+#[test]
+fn recursive_grep_non_symbol_no_hint() {
+    let cmd = "grep -r \"pattern with spaces\" /src";
+    let r = check_grep_command(cmd);
+    assert!(r.is_some());
+    let msg = r.unwrap();
+    assert!(msg.contains("GREP_PERFORMANCE_BLOCK"));
+    assert!(!msg.contains("KAVACH_ORIGIN_HINT"));
+}
