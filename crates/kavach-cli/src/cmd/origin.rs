@@ -101,8 +101,9 @@ fn report(name: &str, sites: &[Site], root: &Path) {
         top.file,
         top.line
     );
-    for s in sites.iter().skip(1).take(9) {
-        println!("  also: {} at {}:{}", s.kind.label(), s.file, s.line);
+    let extra = sites.len().saturating_sub(1);
+    if extra > 0 {
+        println!("  +{extra} more site(s) — narrow with a PATH arg");
     }
 }
 
