@@ -204,10 +204,16 @@ pub(crate) enum Commands {
         after_help = "Resolves where NAME is declared (env-var/const/config-field/fn/type/let), config-origins first. `kavach origin DATABASE_URL`."
     )]
     Origin {
-        /// Symbol name to resolve (variable, const, fn, type, env-var, config field)
-        name: String,
+        /// Symbol name to resolve (var, const, fn, type, env-var, config field)
+        name: Option<String>,
         /// Directory to search (default: workspace root / current dir)
         path: Option<std::path::PathBuf>,
+        /// Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help`
+        #[arg(long, conflicts_with = "name")]
+        query: Option<String>,
+        /// Read the role-query JSON from stdin instead of --query
+        #[arg(long, conflicts_with_all = ["name", "query"])]
+        stdin: bool,
     },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
