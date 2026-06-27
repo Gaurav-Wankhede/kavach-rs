@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd /Users/gauravwankhede/kavach-rs
 
-for file in crates/kavach-engine/src/gates/*_test.rs; do
+for file in $(fd '_test\.rs$' crates/kavach-engine/src/); do
   awk '
     /^mod [a-z_]+;$/ {
       next
