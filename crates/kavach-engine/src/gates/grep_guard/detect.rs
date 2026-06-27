@@ -80,7 +80,7 @@ fn extract_symbol_term(command: &str) -> Option<String> {
         if !token.starts_with('-') && !token.contains('/') && !token.contains('.') {
             let t = token.trim_matches(|c| c == '"' || c == '\'' || c == '\\');
             if is_symbol_shaped(t) {
-                return Some(t.to_string());
+                return Some(t.to_owned());
             }
         }
     }
