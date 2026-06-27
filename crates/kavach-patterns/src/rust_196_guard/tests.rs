@@ -185,3 +185,24 @@ fn test_file_skipped() {
     let v = detect("/project/tests/integration.rs", "static mut TEST: u32 = 0;");
     assert!(v.is_empty());
 }
+
+#[test]
+fn detects_assert_matches_idiom() {
+    let v = detect("src/x.rs", "assert!(matches!(roll(), 1..=6));");
+    assert!(v.iter().any(|x| x.pattern == "assert!(matches!) over assert_matches!"));
+}
+
+#[test]
+fn detects_double_negation() {
+    let v = detect("src/x.rs", "let y = - -x;");
+    assert!(v.iter().any(|x| x.pattern == "double negation"));
+}
+
+#[test]
+fn detects_manual_range_struct() {
+    let v = detect(
+        "src/x.rs",
+        "struct Span {\n    start: usize,\n    end: usize,\n}",
+    );
+    assert!(v.iter().any(|x| x.pattern == "manual range struct over core::range"));
+}
