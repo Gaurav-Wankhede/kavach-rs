@@ -11,10 +11,16 @@ fd -g 'tests.rs' crates/ | while read -r file; do
   stem=$(basename "$dir")
   target="${parent_dir}/${stem}_test.rs"
 
-  # Guard against collision
+  # Guard against collision: if target exists, it's stale and must be removed
   if [[ -f "$target" ]]; then
-    echo "COLLISION: $target"
-    exit 1
+    # Check if it's a stale duplicate by verifying the real tests are in the subdirectory
+    if [[ -f "$file" ]]; then
+      echo "Removing stale duplicate: $target"
+      git rm "$target"
+    else
+      echo "COLLISION: $target (but source $file missing)"
+      exit 1
+    fi
   fi
 
   # Move the file
