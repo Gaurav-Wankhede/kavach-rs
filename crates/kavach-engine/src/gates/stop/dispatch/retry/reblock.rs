@@ -111,9 +111,10 @@ fn all_blocked_or_autoverify(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         AutoVerify::WitnessFailed => keystone_repair(),
         AutoVerify::Unprovable => {
             drop(kavach_hook::exit_stop_block(
-                "BLOCKED: `done` cards exist but work CANNOT BE PROVEN. The project is \
+                "NOT YET PROVABLE: `done` cards exist but work isn't proven yet — a \
+                 re-testable condition, not a standing block. The project is \
                  not a Rust workspace (no Cargo.toml) and KAVACH_VERIFY_CMD is not set. \
-                 Either:\n\
+                 Resolve it, then re-test:\n\
                  1. Set env var KAVACH_VERIFY_CMD to a shell command that verifies the work, then resume.\n\
                  2. Manually promote the cards (kavach db roadmap update <key> --status verified) if work is proven by external audit.\n\
                  The loop yields only to the user's `Esc`.",
