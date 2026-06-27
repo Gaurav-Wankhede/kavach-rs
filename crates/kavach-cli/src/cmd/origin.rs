@@ -47,7 +47,7 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
         let Ok(src) = std::fs::read_to_string(&path) else {
             continue;
         };
-        let rel = path.strip_prefix(root).unwrap_or(&path);
+        let rel = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty()).map(|r| r.to_path_buf()).unwrap_or_else(|| path.clone());
         out.extend(matcher::sites_in(name, &rel.to_string_lossy(), &src));
     }
     out
