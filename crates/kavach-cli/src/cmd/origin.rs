@@ -94,7 +94,7 @@ fn report(name: &str, sites: &[Site], root: &Path, all: bool) {
         }
         return;
     }
-    let top = &sites[0];
+    let Some(top) = sites.first() else { return };
     let tag = if top.kind.is_centralized() {
         " (centralized)"
     } else {
