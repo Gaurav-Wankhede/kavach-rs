@@ -212,7 +212,7 @@ pub(crate) enum Commands {
         /// Directory to search (default: workspace root / current dir)
         #[arg(long)]
         path: Option<std::path::PathBuf>,
-        /// Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help`
+        /// Role-query JSON (resolve by ROLE not NAME); schema in EXAMPLES below
         #[arg(long)]
         query: Option<String>,
         /// Read the role-query JSON from stdin instead of --query
