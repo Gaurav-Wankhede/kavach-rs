@@ -199,6 +199,16 @@ pub(crate) enum Commands {
         #[arg(long)]
         deep: bool,
     },
+    /// Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse file:line)
+    #[command(
+        after_help = "Resolves where NAME is declared (env-var/const/config-field/fn/type/let), config-origins first. `kavach origin DATABASE_URL`."
+    )]
+    Origin {
+        /// Symbol name to resolve (variable, const, fn, type, env-var, config field)
+        name: String,
+        /// Directory to search (default: workspace root / current dir)
+        path: Option<std::path::PathBuf>,
+    },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
     Phase {
