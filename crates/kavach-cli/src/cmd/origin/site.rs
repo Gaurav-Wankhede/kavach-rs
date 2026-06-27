@@ -24,6 +24,8 @@ impl Kind {
             Self::Default => "default-impl",
             Self::Type => "type",
             Self::Function => "fn",
+            Self::Param => "param",
+            Self::Variant => "enum-variant",
             Self::LetBinding => "let",
         }
     }
