@@ -127,6 +127,7 @@ pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
     name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
 }
 
+/// Inverse of `test_matches_unit`: the production stem a test file maps back to.
 pub(crate) fn production_stem_of(test_path: &str) -> Option<String> {
     let s = test_path.replace('\\', "/");
     let name = s.rsplit('/').next().unwrap_or(&s);
