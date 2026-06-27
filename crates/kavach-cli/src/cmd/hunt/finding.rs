@@ -33,7 +33,7 @@ pub(super) struct Finding {
 
 impl Finding {
     #[must_use]
-    pub fn dedup_key(&self) -> String {
+    pub(super) fn dedup_key(&self) -> String {
         format!("{}|{}|{}", self.detector, self.file, self.line)
     }
 }
