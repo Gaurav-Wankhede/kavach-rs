@@ -1,10 +1,28 @@
-//! Research-topic extraction from a prompt + intent type.
+//! Research-topic extraction from a prompt.
 
-/// Extract research topic from prompt and intent type.
-pub(crate) fn extract_research_topic(prompt: &str, intent_type: &str) -> String {
+/// Stop-word/instruction openers — a prompt starting with one is steering, not a topic.
+const FILLER_OPENERS: &[&str] = &[
+    "as", "the", "you", "here", "now", "do", "so", "this", "that", "it", "we", "i", "let",
+    "please", "also", "then", "but", "and", "if", "when", "because", "first", "next", "after",
+    "before", "while", "they", "he", "she", "make", "give", "want", "need", "go", "see", "watch",
+    "fix", "refine", "change",
+];
+
+/// Research topic from `prompt`, or `""` when it opens with instruction filler.
+pub(crate) fn extract_research_topic(prompt: &str, _intent_type: &str) -> String {
     let words: Vec<&str> = prompt.split_whitespace().take(6).collect();
-    if words.is_empty() {
-        return intent_type.to_owned();
+    let Some(first) = words.first() else {
+        return String::new();
+    };
+    let lead = first
+        .trim_matches(|c: char| !c.is_alphanumeric())
+        .to_lowercase();
+    if FILLER_OPENERS.contains(&lead.as_str()) {
+        return String::new();
     }
     words.join(" ")
 }
+
+#[cfg(test)]
+#[path = "research_test.rs"]
+mod tests;
