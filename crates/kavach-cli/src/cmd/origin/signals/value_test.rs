@@ -22,5 +22,5 @@ fn missing_regex_returns_zero() {
 
 #[test]
 fn invalid_regex_returns_zero() {
-    assert_eq!(score(Some("("), Some("x")), 0.0);
+    assert!((score(Some("("), Some("x")) - 0.0).abs() < f32::EPSILON);
 }
