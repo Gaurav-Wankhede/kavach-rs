@@ -57,7 +57,12 @@ fn check_recursive_grep(lower: &str, original: &str) -> Option<String> {
     if issues.is_empty() {
         return None;
     }
-    Some(grep_performance_block(&issues.join(", ")))
+    let mut msg = grep_performance_block(&issues.join(", "));
+    if let Some(term) = extract_symbol_term(original) {
+        msg.push_str("\n\n");
+        msg.push_str(&super::messages::origin_pointer(&term));
+    }
+    Some(msg)
 }
 
 /// Check for -I flag (skip binary files) — distinct from -i (case insensitive).
