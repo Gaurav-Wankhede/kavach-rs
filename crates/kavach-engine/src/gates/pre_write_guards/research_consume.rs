@@ -73,6 +73,9 @@ pub(super) fn check(
     if is_local_analysis_intent(session.intent_type.as_str()) {
         return None;
     }
+    if is_comment_only(ctx.content) {
+        return None;
+    }
     // Evidence path 1: the agent self-marked research done AND a live cache entry
     // confirms a completed lookup (self-attestation alone is not enough).
     if session.research_done && cache_is_done(&session.session_id) {
