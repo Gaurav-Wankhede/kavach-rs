@@ -23,8 +23,9 @@ pub(super) fn run(json: &str, root: &Path, all: bool) -> i32 {
         println!("[KAVACH_ORIGIN] role '{}': no candidate >= {:.2} (broaden value_regex / env_key_hints, or try sg / rust-analyzer)", q.role, scorer::THRESHOLD);
         return 1;
     }
-    let top = &ranked[0];
-    let shape = if top.cand.is_secret { " [secret: location only]" } else { "" };
+    // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#indexing_slicing
+    let Some(top) = ranked.first() else { return 1 };
+    let top_shape = if top.cand.is_secret { " [secret: location only]" } else { "" };
     println!(
         "[KAVACH_ORIGIN] role '{}' -> {} '{}' at {}:{} (score {:.2}){shape}",
         q.role,
