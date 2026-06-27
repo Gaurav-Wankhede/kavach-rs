@@ -3,7 +3,7 @@
 const FRAGMENTS: &[&str] = &["pass", "secret", "tok", "api", "cred", "priv"];
 
 #[must_use]
-pub(super) fn is_secret(name: &str) -> bool {
+pub(in crate::cmd::origin) fn is_secret(name: &str) -> bool {
     let l = name.to_ascii_lowercase();
     FRAGMENTS.iter().any(|f| l.contains(f))
 }
