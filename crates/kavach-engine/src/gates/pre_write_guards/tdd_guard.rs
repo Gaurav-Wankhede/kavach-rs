@@ -110,8 +110,7 @@ pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
 }
 
 /// True when the content carries an inline test (forbidden in production files):
-/// a `#[test]`/`#[tokio::test]` fn or an inline `#[cfg(test)] mod`. A `#[path]`
-/// declaration pointing at an external test file is NOT inline.
+/// using the `#[` attribute markers. A `#[path]` to an external file is NOT inline.
 pub(super) fn has_inline_test(content: &str) -> bool {
     content.contains("#[test]")
         || content.contains("#[tokio::test]")
