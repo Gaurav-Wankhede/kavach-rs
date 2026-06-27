@@ -27,8 +27,9 @@ pub(super) fn check(
         return Some(format!(
             "[TDD:P0] BLOCKED. `{stem}` carries an inline test — tests must live in a \
              SEPARATE file (e.g. `{stem}/tests.rs` mapped via `#[path]`), never inside \
-             the production file. Move the test out, then write the code. \
-             Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
+             the production file. FIX: move the test out, then write the code. \
+             (KAVACH_TDD_BYPASS=1 only for a PROVEN false-positive — read this guard's \
+             source to confirm before bypassing; the block is almost always correct.)"
         ));
     }
     // The unit's test must have been OBSERVED RED this turn (recorded in
