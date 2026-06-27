@@ -117,6 +117,5 @@ fn fnv1a(s: &str) -> u64 {
 }
 #[cfg(test)]
 #[path = "explore_emit_test.rs"]
-#[cfg(test)]
 #[path = "explore_emit_test.rs"]
 mod tests;

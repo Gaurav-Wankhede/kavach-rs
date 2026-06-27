@@ -321,6 +321,5 @@ pub async fn gate_config_list(db: &Surreal<Db>, project: &str) -> Result<Vec<Gat
 }
 #[cfg(test)]
 #[path = "gate_config_test.rs"]
-#[cfg(test)]
 #[path = "gate_config_test.rs"]
 mod tests;

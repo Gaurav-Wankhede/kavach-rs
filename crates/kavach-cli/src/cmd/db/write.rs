@@ -547,6 +547,5 @@ async fn suggest_projects(db: &surrealdb::Surreal<surrealdb::engine::any::Any>) 
 }
 #[cfg(test)]
 #[path = "write_test.rs"]
-#[cfg(test)]
 #[path = "write_test.rs"]
 mod tests;

@@ -6,7 +6,6 @@ mod rules;
 mod transcript;
 #[cfg(test)]
 #[path = "pre_write_rca_guard_test.rs"]
-#[cfg(test)]
 #[path = "pre_write_rca_guard_test.rs"]
 mod tests;
 pub(in crate::gates) use detect::has_rca_block;

@@ -7,7 +7,6 @@ mod six_file_gates;
 mod util;
 #[cfg(test)]
 #[path = "gate_runner_test.rs"]
-#[cfg(test)]
 mod tests;
 use kavach_types::HookInput;
 use crate::error::EngineError;

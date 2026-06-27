@@ -11,5 +11,4 @@ pub use detect::{count_arch_fields, detect, has_arch_comment};
 pub use types::{ArchFinding, ArchGuardOutcome, ArchScope};
 #[cfg(test)]
 #[path = "arch_guard_test.rs"]
-#[cfg(test)]
 mod tests;

@@ -4,7 +4,6 @@
 use super::segment::segment_first_word_is;
 #[cfg(test)]
 #[path = "sqlx_migrate_test.rs"]
-#[cfg(test)]
 #[path = "sqlx_migrate_test.rs"]
 mod tests;
 /// Detect if `DATABASE_URL` points to a local/dev database. Local patterns:

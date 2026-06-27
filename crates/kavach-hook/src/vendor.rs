@@ -21,7 +21,6 @@ pub mod cursor;
 pub mod pi;
 #[cfg(test)]
 #[path = "vendor_test.rs"]
-#[cfg(test)]
 #[path = "vendor_test.rs"]
 mod tests;
 /// Which harness invoked kavach. `ClaudeCode` is the canonical dialect (the pivot

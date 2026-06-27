@@ -8,7 +8,6 @@ mod filename;
 mod target;
 #[cfg(test)]
 #[path = "env_guard_dotenv_test.rs"]
-#[cfg(test)]
 #[path = "env_guard_dotenv_test.rs"]
 mod tests;
 pub(crate) use downstream::is_safe_downstream;

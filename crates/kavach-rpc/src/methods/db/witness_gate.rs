@@ -78,6 +78,5 @@ fn now_ms() -> i64 {
 }
 #[cfg(test)]
 #[path = "witness_gate_test.rs"]
-#[cfg(test)]
 #[path = "witness_gate_test.rs"]
 mod tests;

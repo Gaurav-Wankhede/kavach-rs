@@ -22,7 +22,6 @@ use crate::estimate::Estimate;
 use crate::sample::Action;
 #[cfg(test)]
 #[path = "audit_test.rs"]
-#[cfg(test)]
 #[path = "audit_test.rs"]
 mod tests;
 /// Conservatism rank of an action on the safety lattice: `Block` (2) is the

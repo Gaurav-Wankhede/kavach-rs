@@ -141,5 +141,4 @@ fn has_source_ext(tok: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "bulk_op_guard_test.rs"]
-#[cfg(test)]
 mod tests;

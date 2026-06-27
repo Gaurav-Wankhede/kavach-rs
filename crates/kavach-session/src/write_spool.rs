@@ -92,6 +92,5 @@ pub fn drain() -> io::Result<Vec<SpooledWrite>> {
 }
 #[cfg(test)]
 #[path = "write_spool_test.rs"]
-#[cfg(test)]
 #[path = "write_spool_test.rs"]
 mod tests;

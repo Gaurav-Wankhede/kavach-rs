@@ -62,5 +62,4 @@ pub fn classify_semantic_deferral(msg: &str) -> Result<SemanticDeferral, regex::
 }
 #[cfg(test)]
 #[path = "phase_a_semantic_deferral_test.rs"]
-#[cfg(test)]
 mod tests;

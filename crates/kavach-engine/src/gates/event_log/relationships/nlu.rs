@@ -96,6 +96,5 @@ fn is_plausible_key(t: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "nlu_test.rs"]
-#[cfg(test)]
 #[path = "nlu_test.rs"]
 mod tests;

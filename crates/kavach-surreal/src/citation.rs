@@ -331,6 +331,5 @@ pub async fn list_citations_by_project(
 }
 #[cfg(test)]
 #[path = "citation_test.rs"]
-#[cfg(test)]
 #[path = "citation_test.rs"]
 mod tests;

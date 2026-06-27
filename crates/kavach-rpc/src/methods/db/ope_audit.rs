@@ -22,7 +22,6 @@ use kavach_ope::label::{action_from_tag, reward_scalar};
 use serde::{Deserialize, Serialize};
 #[cfg(test)]
 #[path = "ope_audit_test.rs"]
-#[cfg(test)]
 #[path = "ope_audit_test.rs"]
 mod tests;
 /// Audit request: the scan budget plus the soft-vs-hard drift tolerance.

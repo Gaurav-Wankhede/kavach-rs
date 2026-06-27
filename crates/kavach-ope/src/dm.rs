@@ -63,6 +63,5 @@ where
 }
 #[cfg(test)]
 #[path = "dm_test.rs"]
-#[cfg(test)]
 #[path = "dm_test.rs"]
 mod tests;

@@ -5,7 +5,6 @@ use kavach_ope::Action;
 use kavach_ope::label::{VerifyOutcome, action_from_tag, reward_tag};
 #[cfg(test)]
 #[path = "grade_test.rs"]
-#[cfg(test)]
 #[path = "grade_test.rs"]
 mod tests;
 /// The reward tag for one logged row given the session verify outcome, or `None`

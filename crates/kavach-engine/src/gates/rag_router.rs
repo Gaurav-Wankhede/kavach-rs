@@ -19,7 +19,6 @@ mod rpc;
 mod skills;
 #[cfg(test)]
 #[path = "rag_router_test.rs"]
-#[cfg(test)]
 #[path = "rag_router_test.rs"]
 mod tests;
 pub(crate) use advisory::advisory_context_all;

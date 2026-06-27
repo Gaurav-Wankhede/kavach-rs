@@ -8,7 +8,6 @@ mod progress;
 mod tests_track;
 #[cfg(test)]
 #[path = "post_tool_bash_test.rs"]
-#[cfg(test)]
 #[path = "post_tool_bash_test.rs"]
 mod tests;
 pub(crate) use handle::handle;

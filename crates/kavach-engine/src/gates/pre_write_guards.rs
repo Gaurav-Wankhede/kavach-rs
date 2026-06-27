@@ -18,7 +18,6 @@ mod security;
 pub(crate) mod tdd_guard;
 #[cfg(test)]
 #[path = "pre_write_guards_test.rs"]
-#[cfg(test)]
 #[path = "pre_write_guards_test.rs"]
 mod tests;
 use result::Acc;

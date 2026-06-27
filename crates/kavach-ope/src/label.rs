@@ -142,6 +142,5 @@ const fn is_false_decision(action: Action, outcome: VerifyOutcome) -> bool {
 }
 #[cfg(test)]
 #[path = "label_test.rs"]
-#[cfg(test)]
 #[path = "label_test.rs"]
 mod tests;

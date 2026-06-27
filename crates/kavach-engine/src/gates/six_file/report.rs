@@ -5,7 +5,6 @@
 mod tier;
 #[cfg(test)]
 #[path = "report_test.rs"]
-#[cfg(test)]
 #[path = "report_test.rs"]
 mod tests;
 use kavach_types::WitnessResult;

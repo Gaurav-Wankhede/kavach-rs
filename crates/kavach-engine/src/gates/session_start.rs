@@ -16,7 +16,6 @@ mod stack_fit;
 mod state;
 #[cfg(test)]
 #[path = "session_start_test.rs"]
-#[cfg(test)]
 #[path = "session_start_test.rs"]
 mod tests;
 // Shared with the Stop gate: an auto-compact can fire a Stop before the next

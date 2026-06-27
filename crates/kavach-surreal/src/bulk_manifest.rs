@@ -6,7 +6,6 @@ mod sql;
 mod types;
 #[cfg(test)]
 #[path = "bulk_manifest_test.rs"]
-#[cfg(test)]
 #[path = "bulk_manifest_test.rs"]
 mod tests;
 pub use ops::{bump_conformance, close, create, get, list_active, mark_expired};

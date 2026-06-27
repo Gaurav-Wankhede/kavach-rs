@@ -105,6 +105,5 @@ pub(super) fn act_imperative(stripped: &str) -> String {
 }
 #[cfg(test)]
 #[path = "gate_strip_test.rs"]
-#[cfg(test)]
 #[path = "gate_strip_test.rs"]
 mod tests;

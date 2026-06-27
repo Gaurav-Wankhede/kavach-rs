@@ -58,6 +58,5 @@ fn format_suffix(harness: &str, workflow_path: &str, verdict: &str) -> String {
 }
 #[cfg(test)]
 #[path = "harness_test.rs"]
-#[cfg(test)]
 #[path = "harness_test.rs"]
 mod tests;

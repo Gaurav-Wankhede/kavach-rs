@@ -60,6 +60,5 @@ pub fn is_semantic_deferral(message: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "semantic_deferral_test.rs"]
-#[cfg(test)]
 #[path = "semantic_deferral_test.rs"]
 mod tests;

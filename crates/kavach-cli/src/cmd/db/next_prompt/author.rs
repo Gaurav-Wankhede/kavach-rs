@@ -14,6 +14,5 @@ Project: {project}\nCard key: {key}\nTitle: {title}\n\nCard detail:\n{content}"
 }
 #[cfg(test)]
 #[path = "author_test.rs"]
-#[cfg(test)]
 #[path = "author_test.rs"]
 mod tests;

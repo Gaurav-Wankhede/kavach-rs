@@ -223,5 +223,4 @@ pub(crate) fn is_marker_inside_string(line: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "file_types_test.rs"]
-#[cfg(test)]
 mod tests;

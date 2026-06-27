@@ -6,7 +6,6 @@ mod classify;
 mod context;
 #[cfg(test)]
 #[path = "pre_write_checks_test.rs"]
-#[cfg(test)]
 #[path = "pre_write_checks_test.rs"]
 mod tests;
 pub(crate) use checkbox::detect_bulk_checkbox;

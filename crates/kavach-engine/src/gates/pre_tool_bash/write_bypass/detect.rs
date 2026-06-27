@@ -6,7 +6,6 @@ use super::segment::segment_first_word_is;
 use super::tool_write::writes_via_tool;
 #[cfg(test)]
 #[path = "detect_test.rs"]
-#[cfg(test)]
 #[path = "detect_test.rs"]
 mod tests;
 /// Detect Bash commands that modify files, bypassing Write/Edit hooks.

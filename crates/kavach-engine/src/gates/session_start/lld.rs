@@ -53,6 +53,5 @@ pub(super) fn lld_context(project: &str) -> Option<String> {
 }
 #[cfg(test)]
 #[path = "lld_test.rs"]
-#[cfg(test)]
 #[path = "lld_test.rs"]
 mod tests;

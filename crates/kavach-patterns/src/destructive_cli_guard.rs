@@ -80,5 +80,4 @@ pub fn inspect_all(cmd: &str) -> Vec<DestructiveHit> {
 }
 #[cfg(test)]
 #[path = "destructive_cli_guard_test.rs"]
-#[cfg(test)]
 mod tests;

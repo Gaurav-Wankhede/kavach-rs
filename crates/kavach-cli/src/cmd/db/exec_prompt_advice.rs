@@ -17,6 +17,5 @@ pub(crate) fn advise(category: &str, exec_prompt: Option<&str>) -> Option<String
 }
 #[cfg(test)]
 #[path = "exec_prompt_advice_test.rs"]
-#[cfg(test)]
 #[path = "exec_prompt_advice_test.rs"]
 mod tests;

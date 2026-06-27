@@ -46,6 +46,5 @@ pub(super) fn pick_in_lane(
 }
 #[cfg(test)]
 #[path = "lane_pick_test.rs"]
-#[cfg(test)]
 #[path = "lane_pick_test.rs"]
 mod tests;

@@ -24,7 +24,6 @@ mod derive;
 mod result;
 #[cfg(test)]
 #[path = "policy_improve_test.rs"]
-#[cfg(test)]
 #[path = "policy_improve_test.rs"]
 mod tests;
 /// The canonical advisory-policy scope (one versioned singleton node).

@@ -76,6 +76,5 @@ pub(super) fn maybe_self_heal() -> Option<String> {
 }
 #[cfg(test)]
 #[path = "disk_test.rs"]
-#[cfg(test)]
 #[path = "disk_test.rs"]
 mod tests;

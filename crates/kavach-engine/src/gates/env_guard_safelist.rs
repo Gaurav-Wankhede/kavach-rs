@@ -64,7 +64,6 @@ pub(crate) fn is_safe_system_var(var_name: &str) -> bool {
 mod echo;
 #[cfg(test)]
 #[path = "env_guard_safelist_test.rs"]
-#[cfg(test)]
 #[path = "env_guard_safelist_test.rs"]
 mod tests;
 pub(crate) use echo::echo_only_references_safe_vars;

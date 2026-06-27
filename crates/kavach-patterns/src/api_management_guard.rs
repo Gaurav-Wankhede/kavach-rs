@@ -29,6 +29,5 @@ mod types;
 mod webhook;
 #[cfg(test)]
 #[path = "api_management_guard_test.rs"]
-#[cfg(test)]
 #[path = "api_management_guard_test.rs"]
 mod tests;

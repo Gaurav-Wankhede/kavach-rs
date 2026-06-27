@@ -2,7 +2,6 @@ use std::sync::{LazyLock, Mutex};
 mod defaults;
 #[cfg(test)]
 #[path = "config_test.rs"]
-#[cfg(test)]
 mod tests;
 mod types;
 pub use types::{AntiProdLevel, AntiProdResult, Config};

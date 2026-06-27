@@ -80,6 +80,5 @@ struct ReclaimedIdRow {
 }
 #[cfg(test)]
 #[path = "reclaim_test.rs"]
-#[cfg(test)]
 #[path = "reclaim_test.rs"]
 mod tests;

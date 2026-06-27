@@ -36,5 +36,4 @@ pub fn detect(file_path: &str, content: &str) -> Vec<RustViolation> {
 }
 #[cfg(test)]
 #[path = "rust_guard_test.rs"]
-#[cfg(test)]
 mod tests;

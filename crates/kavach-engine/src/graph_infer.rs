@@ -5,7 +5,6 @@ mod scan;
 mod types;
 #[cfg(test)]
 #[path = "graph_infer_test.rs"]
-#[cfg(test)]
 #[path = "graph_infer_test.rs"]
 mod tests;
 pub use infer::infer_relationships;

@@ -5,7 +5,6 @@ mod frontmatter;
 mod nlu;
 #[cfg(test)]
 #[path = "relationships_test.rs"]
-#[cfg(test)]
 #[path = "relationships_test.rs"]
 mod tests;
 use frontmatter::extract_frontmatter_rels;

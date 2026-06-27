@@ -104,6 +104,5 @@ struct RenewedIdRow {
 }
 #[cfg(test)]
 #[path = "renew_test.rs"]
-#[cfg(test)]
 #[path = "renew_test.rs"]
 mod tests;

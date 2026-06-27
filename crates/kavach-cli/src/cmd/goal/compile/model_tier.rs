@@ -39,6 +39,5 @@ pub(super) fn agent_opts(phase: &str, role: Role) -> String {
 }
 #[cfg(test)]
 #[path = "model_tier_test.rs"]
-#[cfg(test)]
 #[path = "model_tier_test.rs"]
 mod tests;

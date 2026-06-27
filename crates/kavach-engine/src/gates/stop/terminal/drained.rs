@@ -210,6 +210,5 @@ fn board_drained_plan_context(census: Option<(u64, u64, u64)>) -> String {
 }
 #[cfg(test)]
 #[path = "drained_test.rs"]
-#[cfg(test)]
 #[path = "drained_test.rs"]
 mod tests;

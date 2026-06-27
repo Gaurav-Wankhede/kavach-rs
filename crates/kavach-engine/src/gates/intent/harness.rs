@@ -136,6 +136,5 @@ pub(crate) fn persist_for_next_card(project: &str, prompt: &str) -> String {
 }
 #[cfg(test)]
 #[path = "harness_test.rs"]
-#[cfg(test)]
 #[path = "harness_test.rs"]
 mod tests;

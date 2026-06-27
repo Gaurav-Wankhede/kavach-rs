@@ -24,7 +24,6 @@ mod search;
 mod tool;
 #[cfg(test)]
 #[path = "toolbelt_test.rs"]
-#[cfg(test)]
 mod tests;
 pub use files::{count_lines, diff, disk_usage, read_file, tree};
 pub use net::verify_url_reachable;

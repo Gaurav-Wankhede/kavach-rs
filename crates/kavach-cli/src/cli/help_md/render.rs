@@ -18,6 +18,5 @@ pub(super) fn arg_row(a: &clap::Arg) -> String {
 }
 #[cfg(test)]
 #[path = "render_test.rs"]
-#[cfg(test)]
 #[path = "render_test.rs"]
 mod tests;

@@ -33,6 +33,5 @@ pub fn has_bug_fix_trigger(lower: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "research_triggers_test.rs"]
-#[cfg(test)]
 #[path = "research_triggers_test.rs"]
 mod tests;

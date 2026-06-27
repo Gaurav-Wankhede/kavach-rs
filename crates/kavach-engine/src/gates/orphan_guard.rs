@@ -5,7 +5,6 @@ mod js;
 mod rust;
 #[cfg(test)]
 #[path = "orphan_guard_test.rs"]
-#[cfg(test)]
 #[path = "orphan_guard_test.rs"]
 mod tests;
 use std::path::Path;

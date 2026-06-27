@@ -60,6 +60,5 @@ pub fn dep_index(pool: &[kavach_surreal::MemoryEntry]) -> HashMap<&str, Vec<Stri
 }
 #[cfg(test)]
 #[path = "cycle_test.rs"]
-#[cfg(test)]
 #[path = "cycle_test.rs"]
 mod tests;

@@ -12,7 +12,6 @@ pub(crate) mod query;
 pub(crate) mod verify;
 #[cfg(test)]
 #[path = "stop_dispatch_test.rs"]
-#[cfg(test)]
 #[path = "stop_dispatch_test.rs"]
 mod tests;
 pub(crate) use card::{

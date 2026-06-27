@@ -29,6 +29,5 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 }
 #[cfg(test)]
 #[path = "disobedience_test.rs"]
-#[cfg(test)]
 #[path = "disobedience_test.rs"]
 mod tests;

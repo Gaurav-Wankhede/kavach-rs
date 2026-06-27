@@ -7,6 +7,5 @@
 mod checks;
 #[cfg(test)]
 #[path = "api_gateway_test.rs"]
-#[cfg(test)]
 mod tests;
 pub use checks::{Severity, Violation, ViolationKind, detect, is_handler_file};

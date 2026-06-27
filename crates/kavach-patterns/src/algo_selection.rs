@@ -78,5 +78,4 @@ pub fn all() -> Vec<&'static AlgoRecommendation> {
 }
 #[cfg(test)]
 #[path = "algo_selection_test.rs"]
-#[cfg(test)]
 mod tests;

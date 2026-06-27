@@ -89,6 +89,5 @@ pub fn extract_memory_entry_references(content: &str) -> Vec<String> {
 }
 #[cfg(test)]
 #[path = "refs_test.rs"]
-#[cfg(test)]
 #[path = "refs_test.rs"]
 mod tests;

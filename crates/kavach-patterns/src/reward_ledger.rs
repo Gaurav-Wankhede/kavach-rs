@@ -81,6 +81,5 @@ pub fn build_ledger(events: &[TrajectoryEvent]) -> TurnLedger {
 }
 #[cfg(test)]
 #[path = "reward_ledger_test.rs"]
-#[cfg(test)]
 #[path = "reward_ledger_test.rs"]
 mod tests;

@@ -189,6 +189,5 @@ pub fn oracle_penalty(events: &[TrajectoryEvent]) -> i64 {
 }
 #[cfg(test)]
 #[path = "oracle_test.rs"]
-#[cfg(test)]
 #[path = "oracle_test.rs"]
 mod tests;

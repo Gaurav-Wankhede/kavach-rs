@@ -5,7 +5,6 @@
 mod config;
 #[cfg(test)]
 #[path = "blocklist_test.rs"]
-#[cfg(test)]
 #[path = "blocklist_test.rs"]
 mod tests;
 use config::config_blocklists;

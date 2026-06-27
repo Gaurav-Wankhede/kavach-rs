@@ -17,7 +17,6 @@
 //! the AI-feedback signal is now the objective build outcome, not self-report).
 #[cfg(test)]
 #[path = "ai_verdict_test.rs"]
-#[cfg(test)]
 #[path = "ai_verdict_test.rs"]
 mod tests;
 use crate::gates::stop_dispatch::verify::witness::{WitnessRun, run_workspace_witnesses};

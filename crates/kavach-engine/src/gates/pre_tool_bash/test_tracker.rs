@@ -7,7 +7,6 @@ mod extract;
 mod guards;
 #[cfg(test)]
 #[path = "test_tracker_test.rs"]
-#[cfg(test)]
 #[path = "test_tracker_test.rs"]
 mod tests;
 pub(in crate::gates::pre_tool_bash) use guards::{

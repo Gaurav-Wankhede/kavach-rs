@@ -6,7 +6,6 @@ mod keywords;
 mod matching;
 #[cfg(test)]
 #[path = "pre_write_tailwind_guard_test.rs"]
-#[cfg(test)]
 #[path = "pre_write_tailwind_guard_test.rs"]
 mod tests;
 pub(crate) use advisory::advisory;
