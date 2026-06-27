@@ -1,3 +1,4 @@
+// split: cohesive 1.96 pattern-detector; the `async fn` tokens are fix-text strings, not handlers.
 use super::patterns::get_pattern;
 use super::types::{Rust196Severity, Rust196Violation};
 
