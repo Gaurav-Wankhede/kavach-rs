@@ -30,3 +30,14 @@ pub(super) fn grep_tool_reminder() -> String {
      TOOLBELT: kavach-engine::toolbelt::search() wraps rg with grep fallback."
         .into()
 }
+
+/// Pointer to `kavach origin` when a search looks like a symbol-declaration lookup.
+pub(crate) fn origin_pointer(symbol: &str) -> String {
+    format!(
+        "[KAVACH_ORIGIN_HINT]\n\
+         Looking for where `{symbol}` is DECLARED? Run this instead of grepping its body:\n\
+         kavach origin {symbol}\n\
+         Returns file:line for var/fn/param/type/enum-variant/const — zero LLM tokens.\n\
+         Many at once: kavach origin NAME1 NAME2 ...   |   Bug sweep: kavach hunt [PATH]"
+    )
+}
