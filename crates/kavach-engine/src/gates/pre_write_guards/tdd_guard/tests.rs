@@ -149,8 +149,3 @@ fn test_matches_unit_recognizes_sibling_conventions() {
         "widget"
     ));
 }
-
-#[test]
-fn production_stem_of_placeholder() {
-    assert!(false, "placeholder_for_red");
-}
