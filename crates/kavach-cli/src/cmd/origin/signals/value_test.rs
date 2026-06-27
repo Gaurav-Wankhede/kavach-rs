@@ -12,7 +12,7 @@ fn regex_does_not_match_value() {
 
 #[test]
 fn missing_value_returns_zero() {
-    assert_eq!(score(Some("^postgres://"), None), 0.0);
+    assert!((score(Some("^postgres://"), None) - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
