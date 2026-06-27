@@ -58,3 +58,23 @@ fn rust(path: &str, content: &str) -> Vec<Finding> {
         })
         .collect()
 }
+
+fn rust_196(path: &str, content: &str) -> Vec<Finding> {
+    use kavach_patterns::rust_196_guard::Rust196Severity as S;
+    rust_196_guard::detect(path, content)
+        .into_iter()
+        .map(|v| Finding {
+            detector: "rust1.96",
+            file: path.to_owned(),
+            line: v.line,
+            severity: match v.severity {
+                S::P0Block => Severity::Block,
+                S::P1Advisory => Severity::Advisory,
+                S::P2Warning => Severity::Warn,
+            },
+            category: v.pattern.to_owned(),
+            snippet: String::new(),
+            fix: v.fix.to_owned(),
+        })
+        .collect()
+}
