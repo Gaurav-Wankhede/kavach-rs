@@ -87,6 +87,10 @@ fn blocks_inline_test_in_production_file() {
         out.contains("inline test"),
         "names the inline-test violation: {out}"
     );
+    assert!(
+        out.contains("MOVE THE TEST OUT") && !out.contains("BLOCKED."),
+        "message is imperative-action, not passive status: {out}"
+    );
 }
 
 #[test]
