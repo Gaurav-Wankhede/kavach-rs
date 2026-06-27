@@ -98,6 +98,8 @@ fn has_inline_test_detects_cfg_test_module() {
     assert!(has_inline_test("fn a() {}\n#[cfg(test)]\nmod tests { }"));
     assert!(has_inline_test("#[test]\nfn t() {}"));
     assert!(!has_inline_test("pub fn build() {}\n// no tests here"));
+    // A bare `#[cfg(test)] mod tests;` is a SEPARATE-file directory submodule, not inline.
+    assert!(!has_inline_test("pub fn f() {}\n#[cfg(test)]\nmod tests;"));
     // A `#[path]` to an external test file is NOT an inline test.
     assert!(!has_inline_test(
         "#[path = \"widget/tests.rs\"]\nmod tests;"
