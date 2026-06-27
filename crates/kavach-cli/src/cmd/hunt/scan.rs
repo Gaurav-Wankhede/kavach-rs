@@ -30,7 +30,7 @@ pub(super) fn scan_parallel(root: &Path, files: &[PathBuf]) -> Vec<Finding> {
         }
     });
     let mut v = out.into_inner().unwrap_or_default();
-    v.sort_by_key(|f| f.dedup_key());
+    v.sort_by_key(Finding::dedup_key);
     v.dedup_by_key(|f| f.dedup_key());
     v
 }
