@@ -24,17 +24,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let comment_noise =
         kavach_patterns::comment_noise_guard::advise(ctx.file_path, &ctx.effective_content);
 
-    // Stage 0: SDLC-phase + iteration-scope advisories (demoted-to-advisory nudges).
-    if let Some(advisory) = prelude::check(&ctx, &session) {
-        let merged = match &comment_noise {
-            Some(n) => format!("{advisory}\n\n{n}"),
-            None => advisory,
-        };
-        super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&merged));
-        return Ok(());
-    }
-
-    // Stage 1: Security
+    // Stage 1: Security FIRST — a P0 block (silent_io/sql/owasp/crypto) must never be
+    // suppressed by a downstream advisory short-circuit. decision.gate.security-before-phase-advisory
     match super::pre_write_security::check(&ctx) {
         SecurityResult::Block(reason) => {
             drop(kavach_hook::exit_pre_tool_deny(&reason));
@@ -49,6 +40,17 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             return Ok(());
         }
         SecurityResult::Pass => {}
+    }
+
+    // Stage 0: SDLC-phase + iteration-scope advisories (demoted-to-advisory nudges).
+    // Consulted only AFTER Security passes, so it can never pre-empt a P0 block.
+    if let Some(advisory) = prelude::check(&ctx, &session) {
+        let merged = match &comment_noise {
+            Some(n) => format!("{advisory}\n\n{n}"),
+            None => advisory,
+        };
+        super::turn_relay::exit_pre_write_allow_relay(&mut session, Some(&merged));
+        return Ok(());
     }
 
     // Stage 2: Enforcement carried forward, not early-returned — a skill nudge must not suppress Stage-4 violations. decision.gate.enforcement-merges-not-suppresses

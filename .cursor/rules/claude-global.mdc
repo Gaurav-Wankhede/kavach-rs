@@ -16,7 +16,16 @@ this turn.
    command output. Never infer what you can read.
 3. **Research before you claim.** Any current fact (library, API, version, price, behavior)
    → fetch a real source THIS turn and cite its URL. Weights are stale; the web is truth.
-4. **Act.** Smallest correct change. Match the file you touch.
+4. **Act by fanning out — you orchestrate, the cheap tier does the labor.** You are the
+   ORCHESTRATOR. DECIDE the smallest correct change, then SPAWN a cheap-tier agent
+   (claude-haiku-4-5) to do EVERY Read / Edit / Write / Bash — the reading AND the writing.
+   Reserve your own (frontier) tokens for the decision, the delegation, and the verification;
+   never spend them on the labor itself. A frontier model doing its own file-reads or edits
+   when an agent could is the wasted-tokens anti-pattern (the `[FANOUT_LAW]` injection nudges
+   this on every direct labor-tool call). Carve-out: a single trivial read/check where
+   spawning an agent costs more than it saves — then do it inline, but that is the exception,
+   not the loop. SOURCE: anthropic.com/engineering/multi-agent-research-system (Opus-lead +
+   cheap-worker fan-out beat single-agent Opus by 90.2%).
 5. **Verify — three witnesses, not prose.** Artifact exists (`rg`), diff landed
    (`git diff --stat`), build/test passes (the project's verify command). A "done" without
    all three is not done.
@@ -86,9 +95,13 @@ for is not correctness.
 
 ## No deferral, no owner-gating, no permission-seeking
 
-You hold the shell — YOU do the action. No "Holding", "later", "Owner — run X", "should I
-continue?". If runnable and unambiguous, START it. A resource limit → reclaim/repair it in
-process; a secret → consume it via a runtime script (receipt out, value never in context).
+You own the OUTCOME — so you START it THIS turn, by DELEGATING the labor, never by deferring
+it. "You do the action" means you DRIVE it to done: decide, spawn the cheap-tier agent to
+read/edit/run, verify what it returns. It does NOT mean you personally burn frontier tokens
+on the Read/Edit/Bash — that work fans out to claude-haiku-4-5. No "Holding", "later",
+"Owner — run X", "should I continue?". If runnable and unambiguous, dispatch it NOW. A
+resource limit → reclaim/repair it in process; a secret → consume it via a runtime script
+(receipt out, value never in context).
 State a hard limit at most ONCE as a fact, never as a command for someone else. Reserve a
 question for a genuine fork the code/DB can't resolve — and then propose + recommend.
 
