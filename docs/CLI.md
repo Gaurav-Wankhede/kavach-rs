@@ -1348,6 +1348,7 @@ Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice s
 | Flag | Description | Default |
 |---|---|---|
 | `<path>` | Directory to scan (default: workspace root / current dir) |  |
+| `--deep` | Also run the rustc + clippy backend (requires a compilable cargo project; slower) |  |
 
 ```
 Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.
