@@ -23,6 +23,11 @@ pub(super) fn check(
         return None;
     }
     let stem = unit_stem(ctx.file_path);
+    // OBSERVED RED proves test-first; short-circuits before the inline-test heuristic so
+    // the detector can never self-block its own source. SOURCE: decision.tdd.red-phase-live-oracle.
+    if session.tdd_red_units.iter().any(|u| u == stem) {
+        return None;
+    }
     // Inline tests are FORBIDDEN — tests live in a separate mapped file.
     if has_inline_test(ctx.content) {
         return Some(format!(
@@ -31,12 +36,6 @@ pub(super) fn check(
              never inside the production file. If this looks wrong, READ this guard's \
              source and fix the real cause — never route around it."
         ));
-    }
-    // The unit's test must have been OBSERVED RED this turn (recorded in
-    // `tdd_red_units` by the post-tool Bash gate) — a test-FILE touch alone is a
-    // vacuous after-the-fact test. SOURCE: decision.tdd.red-phase-live-oracle.
-    if session.tdd_red_units.iter().any(|u| u == stem) {
-        return None;
     }
     // Transitional fallback: the unit's test file was touched but no Red was
     // observed yet — direct the agent to RUN it and watch it fail, naming the
