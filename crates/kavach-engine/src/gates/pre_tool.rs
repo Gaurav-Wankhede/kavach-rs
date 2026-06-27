@@ -108,7 +108,12 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
             Ok(())
         }
         "Grep" | "Glob" => {
-            let pattern = input.tool_input.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
+            let pattern = input
+                .tool_input
+                .as_ref()
+                .and_then(|ti| ti.get("pattern"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             if let Some(advisory) = super::symbol_search_guard::check_tool_search(&input.tool_name, pattern) {
                 let mut session = kavach_session::get_or_create_session();
                 super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&advisory));
