@@ -167,6 +167,10 @@ audit-wiring:
 audit-runtime:
     bash scripts/audit_runtime.sh
 
+# Rename all tests.rs files to {stem}_test.rs and fix references.
+rename-test-files:
+    bash scripts/rename-test-files.sh
+
 # Retire 7 confirmed-orphan RPC verbs (audit #1717). Re-runnable.
 retire-orphans:
     bash scripts/retire-orphans.sh
