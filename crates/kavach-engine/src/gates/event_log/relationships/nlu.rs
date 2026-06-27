@@ -11,7 +11,6 @@
 use super::ExtractedRelationship;
 use regex::Regex;
 use std::sync::LazyLock;
-
 /// Each pattern maps a natural-language dependency cue to its edge type. The
 /// capture group `key` is the referenced card key/qname. Case-insensitive;
 /// the key token is `[\w./-]+` (slug chars + qname separators), so both bare
@@ -39,7 +38,6 @@ static NLU_RULES: LazyLock<Vec<(&'static str, Regex)>> = LazyLock::new(|| {
         ("supersedes", build(r"replace(?:s|d)?")),
     ]
 });
-
 /// Extract NLU dependency edges from prose. Skips frontmatter/wikilink regions
 /// (those are handled by the dedicated extractors) by only matching cue verbs.
 /// Targets are bare keys or qnames; the caller resolves bare keys to the
@@ -59,7 +57,6 @@ pub(super) fn extract_nlu_rels(content: &str, out: &mut Vec<ExtractedRelationshi
         }
     }
 }
-
 /// A target is plausible only if it looks like a card key, not an English
 /// stop-word the verb happened to precede ("after that", "requires it"). A key
 /// has a slug separator (`-`, `/`, `.`) OR is a long single token; bare common
@@ -97,7 +94,6 @@ fn is_plausible_key(t: &str) -> bool {
     }
     !STOP.contains(&t.to_lowercase().as_str())
 }
-
 #[cfg(test)]
 #[path = "nlu_test.rs"]
 #[cfg(test)]

@@ -1,10 +1,8 @@
 mod build;
 mod install;
 mod lock;
-
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 use std::path::PathBuf;
-
 pub(crate) fn run(skip_tests: bool) -> i32 {
     let Some(root) = workspace_root() else {
         if let Err(io_err) =
@@ -35,14 +33,11 @@ pub(crate) fn run(skip_tests: bool) -> i32 {
             return 1;
         }
     };
-
     build::deploy_cli(skip_tests)
 }
-
 fn workspace_root() -> Option<PathBuf> {
     std::env::current_dir().ok()
 }
-
 #[cfg(all(test, unix))]
 #[path = "deploy_test.rs"]
 #[cfg(test)]

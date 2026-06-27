@@ -1,5 +1,4 @@
 use super::super::{NanoSeverity, detect};
-
 #[test]
 fn inline_test_module_in_production_file_blocked() {
     let content = "fn x() {}\n#[cfg(test)]\nmod tests { use super::*; }\n";
@@ -10,7 +9,6 @@ fn inline_test_module_in_production_file_blocked() {
         "a #[cfg(test)] block in a production file must P0-block"
     );
 }
-
 #[test]
 fn cfg_test_mentioned_only_in_a_comment_does_not_flag() {
     // The guard's own fix message documents `#[cfg(test)]`; a naive substring
@@ -23,7 +21,6 @@ fn cfg_test_mentioned_only_in_a_comment_does_not_flag() {
         "a comment mentioning #[cfg(test)] must NOT flag"
     );
 }
-
 #[test]
 fn path_sidecar_declaration_is_not_flagged() {
     // The PRESCRIBED fix — `#[cfg(test)] #[path = "foo_test.rs"] mod tests;` — is a
@@ -40,7 +37,6 @@ fn path_sidecar_declaration_is_not_flagged() {
         );
     }
 }
-
 #[test]
 fn inline_block_with_brace_far_below_cfg_test_is_still_caught() {
     // Reviewer edge case: the `{` opener sits many lines below `#[cfg(test)]`
@@ -61,7 +57,6 @@ fn inline_block_with_brace_far_below_cfg_test_is_still_caught() {
         "an inline block must be caught even with attrs/blanks before the brace"
     );
 }
-
 #[test]
 fn test_sidecar_files_may_hold_the_module() {
     // The extracted homes are exempt: <name>_test.rs, tests.rs, and /tests/.

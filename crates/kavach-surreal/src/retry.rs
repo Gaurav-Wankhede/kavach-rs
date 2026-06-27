@@ -14,11 +14,9 @@
 //! waste the budget. SOURCE: rocksdb#3114 (transient LOCK on concurrent access),
 //! surrealdb-core 3.1.4 `err` variants; CWE-703 (proper handling of transient
 //! exceptional conditions).
-
 use crate::error::Error;
 use std::future::Future;
 use std::time::Duration;
-
 /// Bounded retry budget: 5 attempts total (1 try + 4 retries), exponential
 /// 25ms → 50 → 100 → 200, ~375ms worst-case added latency. Small enough to stay
 /// imperceptible on the human-driven CLI path, large enough to ride out a
@@ -26,7 +24,6 @@ use std::time::Duration;
 /// that outlives the budget is NOT transient — surface it, never spin forever.
 const MAX_ATTEMPTS: u32 = 5;
 const BASE_BACKOFF_MS: u64 = 25;
-
 /// True when a `SurrealDB` error is a TRANSIENT fault worth retrying.
 ///
 /// Transient = `RocksDB` lock/busy contention, a timeout, or a
@@ -60,7 +57,6 @@ pub fn is_transient(err: &Error) -> bool {
         || msg.contains("channel closed");
     lock_busy || connectivity
 }
-
 /// Run a fallible async DB `op` with bounded exponential-backoff retry on
 /// TRANSIENT faults. Permanent errors return immediately on the first failure.
 ///
@@ -97,7 +93,6 @@ where
         }
     }
 }
-
 #[cfg(test)]
 #[path = "retry_test.rs"]
 #[cfg(test)]

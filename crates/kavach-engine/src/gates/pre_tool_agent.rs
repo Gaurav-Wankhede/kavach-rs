@@ -10,10 +10,8 @@ mod contract;
 #[path = "pre_tool_agent_test.rs"]
 mod tests;
 pub(crate) use contract::get_contract;
-
 use kavach_hook::Vendor;
 use kavach_types::HookInput;
-
 /// Smallest doer model per harness — orchestrate strong, execute cheap.
 const fn smallest_doer_model(vendor: Vendor) -> &'static str {
     match vendor {
@@ -21,7 +19,6 @@ const fn smallest_doer_model(vendor: Vendor) -> &'static str {
         _ => "haiku",
     }
 }
-
 /// Build the full `BrainOS` spawn-injection block for a subagent spawn — shared by
 /// the `Agent` and `Task` tool paths. `None` only when nothing was injected.
 pub(crate) fn spawn_injection(description: &str, agent_type: &str) -> Option<String> {
@@ -38,7 +35,6 @@ pub(crate) fn spawn_injection(description: &str, agent_type: &str) -> Option<Str
         Some(lines.join("\n"))
     }
 }
-
 /// PreToolUse:Agent handler. Exit 0 allows (with optional context); a research
 /// nudge is advisory-only. `Ok(())` always (uniform gate dispatch).
 #[expect(clippy::unnecessary_wraps, reason = "uniform gate dispatch signature")]
@@ -51,7 +47,6 @@ pub(crate) fn handle_agent(input: &HookInput) -> Result<(), crate::error::Engine
     } else {
         agent_type_input
     };
-
     // 1. Research nudge for non-local-analysis intents.
     let intent_is_local_analysis = matches!(
         session.intent_type.as_str(),
@@ -74,10 +69,8 @@ pub(crate) fn handle_agent(input: &HookInput) -> Result<(), crate::error::Engine
         ))));
         return Ok(());
     }
-
     // 2. Persist session (spawn tracking is in subagent.rs).
     session.save().ok();
-
     // 3. Emit BrainOS context injection (task + contract + model + research + return).
     let injection = spawn_injection(input.get_string("description"), agent_type);
     drop(kavach_hook::exit_pre_tool_allow(injection.as_deref()));

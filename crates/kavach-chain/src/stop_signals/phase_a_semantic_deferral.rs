@@ -1,6 +1,5 @@
 use super::phase_a_deferral::detect_strategic_deferral;
 use std::sync::LazyLock;
-
 const HANDOFF_PARAPHRASE: &str = concat!(
     r"(?i)\b(?:hand(?:ed|ing)?|pass(?:ed|ing)?|leav(?:e|ing)|left)\b",
     r"\W+(?:\w+\W+){0,4}?\b(?:remainder|rest|residual|continuation|follow[\s-]?up|the\s+next\s+\w+)\b",
@@ -14,7 +13,6 @@ const HANDOFF_PARAPHRASE: &str = concat!(
     r"|\bsomeone\s+(?:else\s+)?(?:can|should)\s+(?:take|carry|finish)\b",
     r"|\bwhoever\s+(?:takes|picks|continues)\b",
 );
-
 const PRESENT_ACTION: &str = concat!(
     r"(?i)\b(?:implementing|building|writing|adding|wiring|fixing|running|editing)\b",
     r"|\blet\s+me\s+(?:build|implement|write|add|wire|fix|run|continue)\b",
@@ -22,12 +20,10 @@ const PRESENT_ACTION: &str = concat!(
     r"|\bcontinuing\s+(?:to|with|on)\b|\bnext\s+i\b",
     r"|\bstart(?:ing)?\s+(?:it|on|the\s+next)\b",
 );
-
 static HANDOFF: LazyLock<Result<regex::Regex, regex::Error>> =
     LazyLock::new(|| regex::Regex::new(HANDOFF_PARAPHRASE));
 static ACTION: LazyLock<Result<regex::Regex, regex::Error>> =
     LazyLock::new(|| regex::Regex::new(PRESENT_ACTION));
-
 /// Verdict of the semantic deferral backstop.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +36,6 @@ pub enum SemanticDeferral {
     /// negate it. This is the gap the backstop exists to close.
     ParaphrasedHandoff,
 }
-
 /// Pure semantic backstop for paraphrased handoffs the lexical deferral regex misses.
 ///
 /// Fires `ParaphrasedHandoff` only when a handoff-paraphrase pattern matches AND
@@ -65,7 +60,6 @@ pub fn classify_semantic_deferral(msg: &str) -> Result<SemanticDeferral, regex::
     }
     Ok(SemanticDeferral::Clear)
 }
-
 #[cfg(test)]
 #[path = "phase_a_semantic_deferral_test.rs"]
 #[cfg(test)]

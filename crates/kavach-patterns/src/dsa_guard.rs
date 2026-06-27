@@ -15,14 +15,11 @@
 //! - <https://lib.rs/data-structures>
 //! - <https://doc.rust-lang.org/std/collections/struct.HashMap.html#method.entry>
 //! - <https://docs.rs/rustc-hash/latest/rustc_hash>/
-
 mod dispatch;
 mod patterns;
 mod types;
-
 pub use dispatch::{detect, warn_count};
 pub use types::{DsaClass, DsaSeverity, DsaViolation};
-
 #[cfg(test)]
 #[path = "dsa_guard_test.rs"]
 #[cfg(test)]

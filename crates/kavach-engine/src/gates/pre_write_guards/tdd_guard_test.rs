@@ -1,9 +1,7 @@
 //! Red-Green proofs for the TDD pre-write gate. Outcomes drive the code.
-
 use super::{check, has_inline_test, production_stem_of, test_matches_unit, unit_stem};
 use crate::gates::pre_write_context::WriteContext;
 use kavach_session::SessionState;
-
 fn ctx<'a>(path: &'a str, content: &'a str) -> WriteContext<'a> {
     WriteContext {
         file_path: path,
@@ -16,13 +14,11 @@ fn ctx<'a>(path: &'a str, content: &'a str) -> WriteContext<'a> {
         is_frontend: false,
     }
 }
-
 fn session_with_turn_files(files: &[&str]) -> SessionState {
     let mut s = SessionState::default();
     s.files_modified_this_turn = files.iter().map(|f| (*f).to_owned()).collect();
     s
 }
-
 #[test]
 fn blocks_production_code_when_no_test_came_first() {
     let s = SessionState::default();
@@ -30,7 +26,6 @@ fn blocks_production_code_when_no_test_came_first() {
     let out = check(&c, &s).expect("must block: code without a prior test");
     assert!(out.contains("[TDD"), "block reason is tagged: {out}");
 }
-
 #[test]
 fn allows_comment_only_change_without_a_test() {
     // A comment/doc edit changes no executable code — TDD must NOT block it, so
@@ -45,7 +40,6 @@ fn allows_comment_only_change_without_a_test() {
         "comment-only edit is exempt from TDD"
     );
 }
-
 #[test]
 fn blocks_when_test_touched_but_not_observed_red() {
     // A touched test file WITHOUT an observed Red run is a vacuous after-the-fact
@@ -62,7 +56,6 @@ fn blocks_when_test_touched_but_not_observed_red() {
         "directs RUN-it-red: {out}"
     );
 }
-
 #[test]
 fn allows_when_test_observed_red_this_turn() {
     // The unit's test was RUN and FAILED this turn (recorded in tdd_red_units) —
@@ -72,7 +65,6 @@ fn allows_when_test_observed_red_this_turn() {
     let c = ctx("crates/foo/src/widget.rs", "pub fn build() {}");
     assert!(check(&c, &s).is_none(), "observed-Red satisfies test-first");
 }
-
 #[test]
 fn blocks_inline_test_in_production_file() {
     // Inline #[test] in a production file is FORBIDDEN — tests live in a separate
@@ -92,7 +84,6 @@ fn blocks_inline_test_in_production_file() {
         "message is imperative-action, not passive status: {out}"
     );
 }
-
 #[test]
 fn has_inline_test_detects_cfg_test_module() {
     assert!(has_inline_test("fn a() {}\n#[cfg(test)]\nmod tests { }"));
@@ -105,21 +96,18 @@ fn has_inline_test_detects_cfg_test_module() {
         "#[path = \"widget/tests.rs\"]\nmod tests;"
     ));
 }
-
 #[test]
 fn allows_writing_the_test_file_itself() {
     let s = SessionState::default();
     let c = ctx("crates/foo/src/widget_test.rs", "#[test] fn t() {}");
     assert!(check(&c, &s).is_none(), "the test write is never blocked");
 }
-
 #[test]
 fn allows_non_code_files() {
     let s = SessionState::default();
     let c = ctx("README.md", "# docs");
     assert!(check(&c, &s).is_none(), "non-code is exempt");
 }
-
 #[test]
 fn bypass_env_disables_the_gate() {
     if std::env::var_os("KAVACH_TDD_BYPASS").is_some() {
@@ -128,13 +116,11 @@ fn bypass_env_disables_the_gate() {
         assert!(check(&c, &s).is_none());
     }
 }
-
 #[test]
 fn unit_stem_strips_dir_and_extension() {
     assert_eq!(unit_stem("crates/foo/src/widget.rs"), "widget");
     assert_eq!(unit_stem("bare.rs"), "bare");
 }
-
 #[test]
 fn test_matches_unit_recognizes_sibling_conventions() {
     assert!(test_matches_unit("crates/foo/src/widget_test.rs", "widget"));
@@ -155,7 +141,6 @@ fn test_matches_unit_recognizes_sibling_conventions() {
         "widget"
     ));
 }
-
 #[test]
 fn comment_only_ignores_unchanged_context_lines() {
     let current = "fn f() {}\n";
@@ -168,7 +153,6 @@ fn comment_only_ignores_unchanged_context_lines() {
         current
     ));
 }
-
 #[test]
 fn production_stem_of_inverts_every_test_convention() {
     assert_eq!(production_stem_of("a/b/widget_test.rs").as_deref(), Some("widget"));

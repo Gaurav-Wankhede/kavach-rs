@@ -13,14 +13,11 @@
 //! Lower variance than plain IPS (the model absorbs most of the signal) and less
 //! biased than DM (the correction fixes model error) — the best default OPE
 //! estimate for the deploy gate.
-
 use crate::dm::RewardModel;
 use crate::estimate::Estimate;
 use crate::ips::TargetPolicy;
 use crate::sample::{Action, LoggedSample};
-
 const ACTIONS: [Action; 3] = [Action::Allow, Action::Ask, Action::Block];
-
 /// Estimate the target policy's value by the Doubly-Robust method.
 ///
 /// Per-sample value = DM baseline + IPS correction on the logged action's
@@ -52,7 +49,6 @@ where
             baseline + correction
         })
         .collect();
-
     let n_f = f64::from(u32::try_from(n).unwrap_or(u32::MAX));
     let mean = per_sample.iter().sum::<f64>() / n_f;
     let std_error = if n == 1 {
@@ -61,14 +57,12 @@ where
         let var = per_sample.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (n_f - 1.0);
         (var / n_f).sqrt()
     };
-
     Estimate {
         value: mean,
         std_error,
         n,
     }
 }
-
 #[cfg(test)]
 #[path = "doubly_robust_test.rs"]
 #[cfg(test)]

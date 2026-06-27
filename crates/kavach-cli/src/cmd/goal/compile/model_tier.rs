@@ -10,11 +10,9 @@
 // session model); doers (implement/migrate/shard/candidate/worker) = CHEAP.
 //
 // SOURCE: decision.harness.model-tiering · global ~/.claude/CLAUDE.md delegation_tiers.
-
 /// Cheap fast doer model — Claude Code's implementation tier (Haiku). A doer is
 /// a doer even for shard/candidate/worker/critic-as-doer work.
 pub(super) const CHEAP_MODEL: &str = "claude-haiku-4-5";
-
 /// Phase role: which tier a phase's agents run at. Doer phases fan out cheap;
 /// JUDGE/SYNTHESIS phases run on the frontier brain (the workflow's inherited
 /// session model — we do NOT pin a frontier ID, so it always tracks the live
@@ -26,7 +24,6 @@ pub(super) enum Role {
     /// Decision/judge/synthesis — inherits the frontier brain (no model pin).
     Brain,
 }
-
 /// The `opts` fragment for an `agent()` call given its phase + role. A `Doer`
 /// gets `model: '<cheap>'`; a `Brain` gets no model key so it inherits the
 /// session (frontier) model. Always includes the `phase` so the progress tree
@@ -40,7 +37,6 @@ pub(super) fn agent_opts(phase: &str, role: Role) -> String {
         Role::Brain => format!("phase: '{phase}'"),
     }
 }
-
 #[cfg(test)]
 #[path = "model_tier_test.rs"]
 #[cfg(test)]

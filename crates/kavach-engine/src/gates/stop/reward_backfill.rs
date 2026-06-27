@@ -6,9 +6,7 @@
 //! waiting on, so here we fire `db.bandit_backfill_session` to grade that
 //! session's un-rewarded decisions. Fire-and-forget: a down daemon must never
 //! block or alter the Stop hook (which carries security duties).
-
 use kavach_session::{RewardOutcome, SessionState};
-
 #[cfg(test)]
 #[path = "reward_backfill_test.rs"]
 #[cfg(test)]
@@ -17,7 +15,6 @@ mod tests;
 /// Max rows graded per stop — a generous cap on one session's decisions, so a
 /// runaway log can never make the back-fill RPC unbounded.
 const BACKFILL_LIMIT: u32 = 512;
-
 /// Grade this session's logged bandit decisions against its verify outcome.
 ///
 /// No-op on an empty `session_id` (nothing to join on). The reward signal is
@@ -70,7 +67,6 @@ pub(super) fn backfill_session_rewards(session: &mut SessionState) {
     // so a reward signal is never lost; the Stop gate still never blocks.
     super::spool_writes::call_or_spool("db.bandit_backfill_session", &params);
 }
-
 /// Score the session's trajectory under its PROJECT-ADAPTIVE rubric and map the
 /// scalar to a reward outcome: positive (verified work outweighs penalties) →
 /// clean, negative (gate-block / deferral-handoff dominates) → not-clean, zero
@@ -95,14 +91,12 @@ fn rubric_outcome(session: &SessionState) -> RewardOutcome {
         _ => RewardOutcome::Abstain,
     }
 }
-
 /// z-score for ~95% pessimism in the stop-time learning pass.
 const POLICY_Z: f64 = 1.96;
 /// `DataCOPE` coverage floor (ESS ≥ 10% of n) the candidate must clear (GATE-A).
 const POLICY_MIN_COVERAGE: f64 = 0.1;
 /// Soft-vs-hard reward-hacking slack forwarded to the audit (GATE-B).
 const POLICY_DRIFT_TOLERANCE: f64 = 0.05;
-
 /// Learn from the freshly-graded rewards: fire `db.policy_improve` so the daemon
 /// re-derives and — ONLY if trust coverage, the reward-hacking audit, and a
 /// strict LCB win all clear — promotes a learned advisory policy into the graph.

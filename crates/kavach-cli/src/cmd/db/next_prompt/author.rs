@@ -1,7 +1,6 @@
 // TIME: O(n) in card text | SPACE: O(n)
 //! Build the Haiku authoring prompt for a promptless top card — kavach fills the
 //! exec_prompt in-place (no skip) so the main LLM never reasons about the gap.
-
 /// Compose the seven-block authoring instruction from the card's own fields.
 #[must_use]
 pub(super) fn authoring_prompt(project: &str, key: &str, title: &str, content: &str) -> String {
@@ -13,7 +12,6 @@ ROLE · TASK · FILES · CONSTRAINTS · VERIFY · DONE WHEN · ON FAILURE.\n\n\
 Project: {project}\nCard key: {key}\nTitle: {title}\n\nCard detail:\n{content}"
     )
 }
-
 #[cfg(test)]
 #[path = "author_test.rs"]
 #[cfg(test)]

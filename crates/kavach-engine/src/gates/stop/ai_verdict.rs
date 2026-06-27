@@ -15,14 +15,12 @@
 //! SOURCE: operator directive 2026-06-18 (witnesses, not assumptions) ·
 //! kavach `decision.arch.harness-rl.design-2026-06-05` (RLAIF intent preserved,
 //! the AI-feedback signal is now the objective build outcome, not self-report).
-
 #[cfg(test)]
 #[path = "ai_verdict_test.rs"]
 #[cfg(test)]
 #[path = "ai_verdict_test.rs"]
 mod tests;
 use crate::gates::stop_dispatch::verify::witness::{WitnessRun, run_workspace_witnesses};
-
 /// PURE map from an objective witness outcome to a ±1/abstain verdict.
 ///
 /// `Passed` => `Some(true)`; `Failed`/`SpawnError` => `Some(false)` (a Rust project
@@ -38,7 +36,6 @@ pub(super) const fn verdict_from_witness(run: WitnessRun) -> Option<bool> {
         WitnessRun::Unprovable => None,
     }
 }
-
 /// Derive the autonomous completion verdict from the OBJECTIVE workspace witnesses,
 /// NOT from the assistant's prose.
 ///

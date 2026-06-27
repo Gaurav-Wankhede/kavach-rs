@@ -16,7 +16,6 @@
 //! - <https://www.nucamp.co/blog/data-structures-and-algorithms-in-2026>
 //! - <https://doc.rust-lang.org/std/collections/index.html>
 //! - <https://arxiv.org/abs/2504.17033> (STOC 2025 SSSP successor — research-tier)
-
 mod basic_maps;
 mod caches_filters;
 mod collections;
@@ -34,11 +33,9 @@ mod scale_throughput;
 mod shortest_paths;
 mod sorting_graphs;
 mod workload;
-
 // Re-export public API types
 pub use filters::ScaleConcern;
 pub use workload::{AlgoRecommendation, WorkloadClass};
-
 /// Assemble the complete recommendation table from all leaf modules.
 const TABLE: &[&[AlgoRecommendation]] = &[
     basic_maps::MAPS,
@@ -57,7 +54,6 @@ const TABLE: &[&[AlgoRecommendation]] = &[
     shortest_paths::SHORTEST_PATHS,
     sorting_graphs::SORTING_GRAPHS,
 ];
-
 /// Filter recommendations by scale concern.
 #[must_use]
 pub fn for_scale_concern(concern: ScaleConcern) -> Vec<&'static AlgoRecommendation> {
@@ -67,7 +63,6 @@ pub fn for_scale_concern(concern: ScaleConcern) -> Vec<&'static AlgoRecommendati
         .filter(|r| concern.matches(r.class))
         .collect()
 }
-
 /// Look up recommendation by workload class.
 #[must_use]
 pub fn recommend(class: WorkloadClass) -> Option<&'static AlgoRecommendation> {
@@ -76,13 +71,11 @@ pub fn recommend(class: WorkloadClass) -> Option<&'static AlgoRecommendation> {
         .flat_map(|slice| slice.iter())
         .find(|r| r.class == class)
 }
-
 /// Iterate the full rubric.
 #[must_use]
 pub fn all() -> Vec<&'static AlgoRecommendation> {
     TABLE.iter().flat_map(|slice| slice.iter()).collect()
 }
-
 #[cfg(test)]
 #[path = "algo_selection_test.rs"]
 #[cfg(test)]

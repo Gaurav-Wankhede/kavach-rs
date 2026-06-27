@@ -1,11 +1,8 @@
 //! Stop-gate teeth for willful disobedience: REFUSE a stop whose turn dismissed a
 //! fired imperative in prose without obeying it. Models `done_gaming::check`.
 //! See `decision.engine.disobedience-guard`.
-
 use core::ops::ControlFlow;
-
 use super::shared::StopCtx;
-
 /// Refuses the stop when this turn's message argued an imperative away (dismissal
 /// vocab + imperative marker + no obey-proof). Bypass: `KAVACH_DISOBEY_BYPASS=1`.
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
@@ -30,7 +27,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     )));
     ControlFlow::Break(())
 }
-
 #[cfg(test)]
 #[path = "disobedience_test.rs"]
 #[cfg(test)]

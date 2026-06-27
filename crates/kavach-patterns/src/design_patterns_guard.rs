@@ -8,14 +8,12 @@
 //! - <https://rust-unofficial.github.io/patterns/anti_patterns/deref.html>
 //! - <https://rust-unofficial.github.io/patterns/idioms/coercion-arguments.html>
 //! - <https://rust-unofficial.github.io/patterns/patterns/creational/builder.html>
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum PatternSeverity {
     P1Advisory,
     P2Warning,
 }
-
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct PatternViolation {
@@ -24,9 +22,7 @@ pub struct PatternViolation {
     pub fix: &'static str,
     pub line: usize,
 }
-
 use crate::design_patterns_scan as scan;
-
 /// Scan content for Rust design pattern advisories.
 pub fn detect(file_path: &str, content: &str) -> Vec<PatternViolation> {
     if content.is_empty() || crate::file_types::is_test_file(file_path) {
@@ -38,9 +34,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<PatternViolation> {
     {
         return vec![];
     }
-
     let mut violations = Vec::with_capacity(4);
-
     for (i, line) in content.lines().enumerate() {
         for rule in crate::design_patterns_rules::RULES.iter() {
             if rule.re.as_ref().is_some_and(|re| re.is_match(line)) {
@@ -53,7 +47,6 @@ pub fn detect(file_path: &str, content: &str) -> Vec<PatternViolation> {
             }
         }
     }
-
     if let Some(line) = scan::many_arg_constructor(content) {
         violations.push(PatternViolation {
             severity: PatternSeverity::P1Advisory,
@@ -78,10 +71,8 @@ pub fn detect(file_path: &str, content: &str) -> Vec<PatternViolation> {
             line,
         });
     }
-
     violations
 }
-
 #[cfg(test)]
 #[path = "design_patterns_guard_test.rs"]
 #[cfg(test)]

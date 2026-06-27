@@ -4,15 +4,12 @@
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
-
 use super::types::LEASE_TTL_SECS;
 use crate::error::{Error, Result};
 use surrealdb_types::SurrealValue;
-
 /// The leased tables a renewal sweep covers. Mirrors `recovery::LEASED_TABLES`;
 /// any table whose cards carry the `occupied_*` lease columns belongs here.
 const LEASED_TABLES: &[&str] = &["roadmap", "decision", "app_spec"];
-
 /// The renewal cadence: renew at one third of the TTL so two consecutive misses
 /// (e.g. a paused daemon) are tolerated before a lease actually lapses. 300s TTL
 /// → renew every 100s.
@@ -21,7 +18,6 @@ const LEASED_TABLES: &[&str] = &["roadmap", "decision", "app_spec"];
     reason = "intentional floor: TTL/3 cadence, exact remainder irrelevant"
 )]
 pub const RENEW_INTERVAL_SECS: u64 = (LEASE_TTL_SECS as u64) / 3;
-
 /// Extend the expiry of every lease that is STILL actively held and whose card
 /// is STILL in progress, across all leased tables. Returns the number of leases
 /// renewed this sweep.
@@ -59,7 +55,6 @@ pub async fn renew_active_leases(db: &Surreal<Db>) -> Result<usize> {
     }
     Ok(renewed)
 }
-
 /// Renew the live leases of a single table. Counts the rows actually extended.
 async fn renew_table(
     db: &Surreal<Db>,
@@ -93,7 +88,6 @@ async fn renew_table(
         Err(e) => Err(Error::Surreal(e)),
     }
 }
-
 /// True when the error is `SurrealDB`'s "table does not exist" — the only error
 /// `renew_table` swallows (an absent leased table simply holds no renewable
 /// lease). Matched on the rendered message because the typed `NotFound` variant
@@ -104,12 +98,10 @@ fn is_missing_table(e: &surrealdb::Error) -> bool {
     let msg = e.to_string();
     msg.contains("does not exist")
 }
-
 #[derive(surrealdb_types::SurrealValue)]
 struct RenewedIdRow {
     id: surrealdb_types::RecordId,
 }
-
 #[cfg(test)]
 #[path = "renew_test.rs"]
 #[cfg(test)]

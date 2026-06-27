@@ -1,9 +1,6 @@
 use std::fmt::Write as _;
-
 use kavach_types::HookInput;
-
 use crate::error::EngineError;
-
 /// True when the `agent_type` identifies a code-reviewer specialist.
 /// Matches namespaced `subagent_type` strings like `pr-review-toolkit:code-reviewer`
 /// (Claude Code plugin marketplace convention) as well as `code-reviewer`,
@@ -12,7 +9,6 @@ fn is_reviewer_agent(agent_type: &str) -> bool {
     let lower = agent_type.to_lowercase();
     lower.contains("reviewer") || lower.contains("code-review")
 }
-
 /// Hard rules contract injected into EVERY spawned subagent. The parent session's
 /// PreToolUse/PostToolUse gates do NOT fire on a subagent's tool calls (Claude Code
 /// v2.1+; SOURCE: code.claude.com/docs/en/sub-agents), so this preamble is the only
@@ -34,16 +30,13 @@ const SUBAGENT_RULES_CONTRACT: &str = "[SUBAGENT_RULES] You are a BOUNDED EXECUT
     (7) Return the artifact + 3-witness evidence (rg ∧ diff ∧ build), OR an honest blocker report — not prose, \
     not a fake-done. \
     You are a DOER — do NOT spawn further subagents; do the work and return.";
-
 /// `SubagentStart` gate: track agent lifecycle, inject budget context.
 #[expect(clippy::unnecessary_wraps, reason = "uniform gate dispatch")]
 pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
     let agent_id = &input.agent_id;
     let agent_type = &input.agent_type;
-
     let mut session = kavach_session::get_or_create_session();
     session.track_subagent_start(agent_id);
-
     // Build budget context for the subagent
     let limits = kavach_config::load_output_limits();
     let effective_limit = session.get_effective_output_limit(
@@ -54,7 +47,6 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
             .map(|(k, v)| (k.clone(), i32::try_from(*v).unwrap_or(i32::MAX)))
             .collect(),
     );
-
     let limit_str = effective_limit.to_string();
     let active_str = session.active_subagents.to_string();
     let phase = session.context_phase.clone();
@@ -68,20 +60,17 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
             ("phase", &phase),
         ],
     );
-
     context.push('\n');
     context.push_str(&crate::gates::directive_cache::dyn_directive(
         "subagent.rules-contract",
         SUBAGENT_RULES_CONTRACT,
     ));
     context.push('\n');
-
     let modules = kavach_config::load_modules(&["agents", "model-routing"]);
     if !modules.is_empty() {
         context.push_str("\n[MODULE:LAZY_LOADED]\n");
         context.push_str(&modules);
     }
-
     // P0 SECURITY: Propagate denied tools from parent context to subagent.
     // SOURCE: github.com/nousresearch/hermes-agent — gate inheritance pattern
     let denied_ctx = session.get_denied_tools_context();
@@ -89,7 +78,6 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
         context.push('\n');
         context.push_str(&denied_ctx);
     }
-
     // Inject blast radius warning if threshold exceeded.
     if session.is_blast_escalated() {
         let (files, apis, db) = session.get_blast_stats();
@@ -103,30 +91,24 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
             "\n[BLAST_ESCALATED]\nfiles_written: {files}\nexternal_apis: {apis}\ndb_mutations: {db}\n{warn}"
         ).ok();
     }
-
     session.queue_lifecycle_relay(&context);
     // CC path: systemMessage. Cursor drops allow output — relay above.
     drop(kavach_hook::exit_subagent_start(&context));
     Ok(())
 }
-
 /// `SubagentStop` gate: record output size, update tracking.
 #[expect(clippy::unnecessary_wraps, reason = "uniform gate dispatch")]
 pub(crate) fn run_stop(input: &HookInput) -> Result<(), EngineError> {
     let agent_id = &input.agent_id;
     let agent_type = &input.agent_type;
-
     let mut session = kavach_session::get_or_create_session();
-
     // Estimate output size from tool response
     let output_size = input
         .tool_response
         .as_ref()
         .map(|r| serde_json::to_string(r).unwrap_or_default().len())
         .map_or(0, |len| i32::try_from(len).unwrap_or(i32::MAX));
-
     session.track_subagent_stop(agent_id, output_size);
-
     // Bug B fix: stamp review-completion when a reviewer agent finishes.
     // Cures REVIEW_GATE over-firing — completion_guard reads this to skip
     // the warning when an existing review covers the current diff.
@@ -134,7 +116,6 @@ pub(crate) fn run_stop(input: &HookInput) -> Result<(), EngineError> {
     if is_reviewer_agent(agent_type) {
         session.mark_review_completed();
     }
-
     let size_str = output_size.to_string();
     let active_str = session.active_subagents.to_string();
     let context = kavach_hook::context_block(
@@ -145,12 +126,10 @@ pub(crate) fn run_stop(input: &HookInput) -> Result<(), EngineError> {
             ("agents", &active_str),
         ],
     );
-
     session.queue_lifecycle_relay(&context);
     drop(kavach_hook::exit_subagent_stop(&context));
     Ok(())
 }
-
 #[cfg(test)]
 #[path = "subagent_test.rs"]
 #[cfg(test)]

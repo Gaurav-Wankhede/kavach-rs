@@ -3,17 +3,13 @@
 //! `P1Advisory` only — the host gate emits `[IRREVERSIBLE]` context per
 //! kavach-engine/CLAUDE.md severity policy.
 //! SOURCE: <https://github.com/Dicklesworthstone/destructive_command_guard>
-
 mod rules;
-
 use std::path::Path;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum IrreversibleSeverity {
     P1Advisory,
 }
-
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct IrreversibleHit {
@@ -22,7 +18,6 @@ pub struct IrreversibleHit {
     pub fix: &'static str,
     pub line: usize,
 }
-
 #[must_use]
 pub fn detect(file_path: &str, content: &str) -> Vec<IrreversibleHit> {
     if content.is_empty() || crate::file_types::is_test_file(file_path) {
@@ -66,7 +61,6 @@ pub fn detect(file_path: &str, content: &str) -> Vec<IrreversibleHit> {
     }
     hits
 }
-
 #[cfg(test)]
 #[path = "irreversible_guard_tests.rs"]
 mod tests;

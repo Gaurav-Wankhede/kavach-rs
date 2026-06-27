@@ -1,7 +1,6 @@
 //! HARD BLOCK for `sqlx migrate run` against a production DB without an [RCA]
 //! block this turn. Local/dev databases (localhost, 127.0.0.1, docker-compose,
 //! Unix sockets) are auto-detected from `DATABASE_URL` and exempted.
-
 use super::segment::segment_first_word_is;
 #[cfg(test)]
 #[path = "sqlx_migrate_test.rs"]
@@ -44,7 +43,6 @@ fn is_local_database_url() -> bool {
     }
     false
 }
-
 /// `Some(reason)` when the command is `sqlx migrate run ...` (sqlx or cargo-sqlx
 /// in command position) AND no RCA was recorded this turn AND the target is not
 /// a local/dev DB. Read-only introspection (`--help`/`-h`/`--version`/

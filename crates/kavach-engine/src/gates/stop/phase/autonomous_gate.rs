@@ -2,11 +2,8 @@
 //! ONLY in Auto (`permission_mode=="auto"`) or `bypassPermissions`; every other
 //! mode (plan/default/acceptEdits/dontAsk) allows a clean stop. See
 //! decision.engine.stop-autonomous-mode-only.
-
 use core::ops::ControlFlow;
-
 use super::super::shared::StopCtx;
-
 /// True iff the harness reports an autonomous mode where the Stop gate's
 /// auto-continue dispatch should run: dedicated Auto or `bypassPermissions`
 /// (pure → unit-testable). SOURCE: code.claude.com/docs/en/permissions.
@@ -14,7 +11,6 @@ use super::super::shared::StopCtx;
 pub(crate) fn stop_gate_fires(permission_mode: &str) -> bool {
     matches!(permission_mode, "auto" | "bypassPermissions")
 }
-
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // A live user message THIS turn is the highest authority — honor it even in
     // auto/bypass (the user just typed; never re-dispatch a card over their words).
@@ -44,7 +40,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     drop(kavach_hook::exit_silent());
     ControlFlow::Break(())
 }
-
 #[cfg(test)]
 #[path = "autonomous_gate_test.rs"]
 #[cfg(test)]

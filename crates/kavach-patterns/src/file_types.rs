@@ -1,12 +1,10 @@
 use crate::regex_patterns::fbase;
 use std::path::Path;
-
 fn check_ext_ignore_case(p: &str, exts: &[&str]) -> bool {
     let path = Path::new(p);
     path.extension()
         .is_some_and(|ext| exts.iter().any(|e| ext.eq_ignore_ascii_case(e)))
 }
-
 #[must_use]
 pub fn is_frontend_file(p: &str) -> bool {
     let is_ts_js = check_ext_ignore_case(p, &["tsx", "ts", "jsx", "js", "astro"]);
@@ -166,7 +164,6 @@ pub fn is_non_config_file(p: &str) -> bool {
 pub(crate) fn has_env_fallback(l: &str) -> bool {
     l.contains("??") || l.contains("||") || l.contains("import.meta.env")
 }
-
 /// Returns true when every occurrence of a task-marker word on `line` is inside
 /// a quoted string literal (`"..."` or `'...'`). Used to suppress false positives
 /// where status values like `"todo"` or `"done"` appear as match-arm patterns.
@@ -224,7 +221,6 @@ pub(crate) fn is_marker_inside_string(line: &str) -> bool {
     }
     true // all marker occurrences were inside string literals (or none found)
 }
-
 #[cfg(test)]
 #[path = "file_types_test.rs"]
 #[cfg(test)]

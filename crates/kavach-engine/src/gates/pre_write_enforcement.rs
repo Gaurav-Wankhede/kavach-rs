@@ -12,7 +12,6 @@ mod rca;
 mod tests;
 use crate::gates::pre_write_context::WriteContext;
 use kavach_types::HookInput;
-
 /// Run all enforcement checks. Returns `Some(block_reason)` on hard block, None on pass.
 pub(crate) fn check(
     ctx: &WriteContext<'_>,

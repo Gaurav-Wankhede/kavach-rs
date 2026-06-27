@@ -7,10 +7,8 @@
 //!   EVERY harness — including Cursor — because a backing-store outage must not
 //!   silently allow a destructive op or break the stop loop. Observational
 //!   gates fail OPEN (their block is meaningless).
-
 use kavach_hook::Vendor;
 use kavach_types::HookResponse;
-
 /// `true` iff `gate_name` ENFORCES (its block actually prevents an action), so a
 /// run-time failure inside it must fail CLOSED. The observational gates
 /// (post-*, session/notification/etc.) cannot meaningfully block — a "block"
@@ -18,7 +16,6 @@ use kavach_types::HookResponse;
 fn is_enforcement_gate(gate_name: &str) -> bool {
     matches!(gate_name, "pre-tool" | "pre-write" | "stop")
 }
-
 /// Emit a vendor-native FAILURE for an UNREADABLE payload and return its exit
 /// code. The gate never ran — the JSON could not be parsed.
 ///
@@ -45,7 +42,6 @@ pub(super) fn fail_unreadable(vendor: Vendor, gate_name: &str, msg: &str) -> i32
     );
     kavach_hook::output_native(vendor, &resp).max(2)
 }
-
 /// Emit a vendor-native FAILURE for a gate that RAN but errored — the canonical
 /// RPC/DB-down path (`run_gate` returned `Err`). Returns its exit code.
 ///
@@ -78,7 +74,6 @@ pub(super) fn fail_gate_error(vendor: Vendor, gate_name: &str, msg: &str) -> i32
     ));
     kavach_hook::output_native(vendor, &resp).max(2)
 }
-
 #[cfg(test)]
 #[path = "fail_test.rs"]
 #[cfg(test)]

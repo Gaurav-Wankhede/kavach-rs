@@ -9,16 +9,13 @@
 //! `check` returns `Some(block_reason)` to DENY; `None` when research is satisfied or
 //! not applicable. Carve-outs (never block): test files, non-code, local-analysis
 //! intents (audit/analyze/explain/read/review/explore), and `KAVACH_RESEARCH_BYPASS=1`.
-
 use crate::gates::pre_write_context::WriteContext;
-
 /// Canonical local-analysis intents — the fail-soft floor of intents that inspect
 /// existing local artifacts and need no external research. The dynamic path may
 /// ADD to this (Brain-OS-surfaced intents) but never removes one, so the P0 block
 /// can only ever loosen toward more carve-outs, never tighten away a safe one.
 const LOCAL_ANALYSIS_INTENTS: [&str; 6] =
     ["audit", "analyze", "explain", "read", "review", "explore"];
-
 /// True when `intent` is a local-analysis intent — canonical list OR a Brain-OS-
 /// surfaced synonym. The canonical set is checked first (cheap, no RPC); only an
 /// unknown intent pays the lookup. Fail-soft: a daemon blip ⇒ canonical-only.
@@ -31,7 +28,6 @@ fn is_local_analysis_intent(intent: &str) -> bool {
     }
     brain_local_analysis_synonyms().iter().any(|s| s == intent)
 }
-
 /// Brain-OS-surfaced local-analysis intent synonyms (e.g. "inspect", "trace",
 /// "investigate"). Bare entry keys mapped to their trailing segment; fail-soft to
 /// empty on any RPC error ⇒ canonical-only enforcement.
@@ -47,7 +43,6 @@ fn brain_local_analysis_synonyms() -> Vec<String> {
         .filter(|s| !s.is_empty())
         .collect()
 }
-
 /// Returns `Some(block_reason)` to DENY a research-required production write that
 /// carries no source evidence — fail-closed internet-first enforcement. Drives the
 /// Internet on the spot (kicks the background lookup) so the agent can satisfy the
@@ -86,11 +81,9 @@ pub(super) fn check(
     if content_has_evidence(&ctx.effective_content) {
         return None;
     }
-
     // No evidence → BLOCK. Drive the Internet so the agent can cite + retry now.
     Some(block_for_missing_research(session))
 }
-
 /// Build the fail-closed block message. Reads the live research cache; kicks a fresh
 /// background web search (`kavach_advisor::kickoff`) when none is running so findings
 /// arrive fast; names exactly what unblocks the write (cite a URL / [RESEARCH] /
@@ -123,12 +116,10 @@ fn block_for_missing_research(session: &kavach_session::SessionState) -> String 
          never route around it."
     )
 }
-
 /// True when the live research cache for this session reports `done`.
 fn cache_is_done(session_id: &str) -> bool {
     kavach_advisor::read_findings(session_id).is_some_and(|f| f.status == "done")
 }
-
 /// True when every non-blank changed line is a comment/attribute (no executable code).
 fn is_comment_only(changed: &str) -> bool {
     let mut saw = false;
@@ -144,7 +135,6 @@ fn is_comment_only(changed: &str) -> bool {
     }
     saw
 }
-
 /// True when the content cites a source URL or carries a research/RCA marker.
 fn content_has_evidence(content: &str) -> bool {
     content.contains("http://")

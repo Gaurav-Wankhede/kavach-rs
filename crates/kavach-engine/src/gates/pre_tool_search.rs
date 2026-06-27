@@ -10,10 +10,8 @@ mod year;
 #[path = "pre_tool_search_test.rs"]
 mod tests;
 use kavach_types::HookInput;
-
 use version::check_stale_version_in_query;
 use year::check_stale_year_in_query;
-
 /// Pre-tool search gate: advise when a `WebSearch` query steers toward stale
 /// (training-weight) years or versions. Advisory-only — never hard-blocks.
 pub(crate) fn run(input: &HookInput) {

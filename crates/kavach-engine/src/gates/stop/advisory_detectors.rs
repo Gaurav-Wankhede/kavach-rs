@@ -55,12 +55,10 @@
 //!   `detect_self_review_stop`           [DUP] defined twice; the `phase_b_review.rs`
 //!                                          copy is an orphan (not mod-declared) —
 //!                                          DELETE it, do not wire.
-
 use kavach_chain::stop_signals::{
     self, SemanticDeferral, classify_semantic_deferral, detect_user_report_dismissal,
     detect_value_gating,
 };
-
 /// Backstop adapter: fire ONLY on a paraphrased handoff the lexical
 /// `detect_strategic_deferral` regex missed. `CoveredByRegex`/`Clear` → false, so
 /// this never double-counts a regex hit and never fires on an actively-working
@@ -68,7 +66,6 @@ use kavach_chain::stop_signals::{
 fn semantic_deferral_backstop(msg: &str) -> Result<bool, regex::Error> {
     Ok(classify_semantic_deferral(msg)? == SemanticDeferral::ParaphrasedHandoff)
 }
-
 /// One detector in the dispatch table: a chain predicate, the advisory it emits
 /// when it fires, and the mistake-ledger metadata. `needs_write` gates the
 /// verification-claim detectors so they fire only when a file was actually
@@ -87,7 +84,6 @@ struct Entry {
     /// The fix-first advisory queued for the next turn's intent injector.
     advisory: &'static str,
 }
-
 /// The dispatch table. Order is irrelevant (every firing entry queues its own
 /// advisory; advisories never block). Each `advisory` points the model back at
 /// the kavach DB / verify gate — never at the user.
@@ -197,7 +193,6 @@ const TABLE: &[Entry] = &[
         advisory: "[VALUE_GATED_REQUEST] last turn argued the user's request adds no value / is not worth it / can wait — value-gating the user's OWN explicit request is argue-not-obey (global CLAUDE.md §No-Fence, §No-Fluff). BUILD what the user asked THIS turn. If genuinely uncertain about scope, ask ONE tight clarifying question — never refuse or defer.",
     },
 ];
-
 /// Which refuse-stop-eligible stall classes fired this turn. ADVISORY firing is a
 /// pure side-effect of `run`; these flags let `clean_exit` give two laws TEETH
 /// (refuse the stop, breaker-bounded) instead of an advisory the model can ignore.
@@ -219,7 +214,6 @@ pub(super) struct StallSignals {
     /// behavioral gating; a prose "don't argue" nudge is proven NOT to work).
     pub argued_with_user: bool,
 }
-
 /// Gate keys whose firing means the turn ended on a HANDBACK or PERMISSION-MENU
 /// rather than the next action — the argue-not-obey class. Distinct from the
 /// verification-claim entries (which only mean "prove it", not "you disobeyed").
@@ -229,7 +223,6 @@ const HANDBACK_GATES: &[&str] = &[
     "incomplete_work_at_stop",
     "semantic_deferral_at_stop",
 ];
-
 /// Gate keys whose firing means the turn ARGUED WITH the user — refuted what the
 /// user reported, or value-gated the user's own request — rather than obeying the
 /// stated intent. Distinct from HANDBACK (which defers): these turns actively push
@@ -239,7 +232,6 @@ const ARGUE_GATES: &[&str] = &[
     "argued_with_user_at_stop",
     "value_gated_user_request_at_stop",
 ];
-
 /// Run the advisory-detector table over the final message. For each firing
 /// entry, record a mistake-ledger row (learning loop) and queue a harness-neutral
 /// pending advisory (re-surfaces at the top of the next turn, before the next
@@ -284,7 +276,6 @@ pub(super) fn run(
     }
     signals
 }
-
 #[cfg(test)]
 #[path = "advisory_detectors_test.rs"]
 #[cfg(test)]

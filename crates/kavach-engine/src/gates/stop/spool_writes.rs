@@ -12,9 +12,7 @@
 //!
 //! Every spool/replay error is best-effort (logged via `tracing`, never
 //! propagated) — the gate's non-blocking contract is preserved end to end.
-
 use kavach_session::{SpooledWrite, drain_write_spool, enqueue_write_spool};
-
 /// Call `method` with `params`; on transport/daemon error, append it to the
 /// durable spool so the next successful Stop replays it instead of losing the
 /// learning signal. Never returns an error — the worst case is a best-effort
@@ -34,7 +32,6 @@ pub(crate) fn call_or_spool(method: &str, params: &serde_json::Value) {
         eprintln!("kavach spool: enqueue failed for {method} ({e}); learning write lost");
     }
 }
-
 /// Drain the durable spool and replay each write via the live RPC. A write that
 /// fails again is re-spooled (via `call_or_spool`), so the signal survives across
 /// many failed Stops until the daemon is back. Run ONCE, early on the Stop path,
@@ -63,7 +60,6 @@ pub(super) fn drain_and_replay() {
         }
     }
 }
-
 #[cfg(test)]
 #[path = "spool_writes_test.rs"]
 #[cfg(test)]

@@ -23,10 +23,8 @@ pub(crate) mod tdd_guard;
 mod tests;
 use result::Acc;
 pub(crate) use result::GuardResult;
-
 use crate::gates::pre_write_context::WriteContext;
 use kavach_types::HookInput;
-
 /// Run chain verification and tiered guards.
 /// P0 (security) = hard block. P1 (quality) = advisory. P2 (style) = silent.
 ///
@@ -39,7 +37,6 @@ pub(crate) fn check(
 ) -> GuardResult {
     let mut acc = Acc::default();
     let mut runner = kavach_chain::Runner::new(&session.session_id);
-
     // TDD runs FIRST: no production code lands without a test-first (Red) signal.
     if let Some(block) = tdd_guard::check(ctx, session) {
         return GuardResult {
@@ -71,7 +68,6 @@ pub(crate) fn check(
             };
         }
     }
-
     // Internet-first is a P0 LAW: a research-required production write with no cited
     // source is BLOCKED at write time (fail-closed). Runs FIRST — no source, no claim,
     // no other guard even evaluated. The gate still drives the lookup so the agent can
@@ -84,7 +80,6 @@ pub(crate) fn check(
             p1_advisories: Vec::new(),
         };
     }
-
     // Ordered guard chain; the first `Some(reason)` blocks and short-circuits.
     let block = retired_pattern::check(ctx, &session.project) // F: ledger-retired pattern
         .or_else(|| chain::check(ctx, input, session, &mut runner))
@@ -103,7 +98,6 @@ pub(crate) fn check(
         .or_else(|| algo_arch::arch(ctx, session, &mut acc)) // P0/inject arch
         .or_else(|| platform(ctx, &mut acc)) // P1 response/infra + P0 microservice
         .or_else(|| guards2026::check(ctx, &mut acc)); // 2026 guard block
-
     GuardResult {
         block,
         algo_advisory: acc.algo_advisory,
@@ -111,7 +105,6 @@ pub(crate) fn check(
         p1_advisories: acc.p1_advisories,
     }
 }
-
 /// Universal platform guards in original order: response (P1), microservice
 /// (P0 block), infra (P1), then the API-gateway pattern advisory (P1).
 fn platform(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
@@ -133,7 +126,6 @@ fn platform(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     production_audit(ctx, acc);
     None
 }
-
 /// Multi-category production-pattern audit (`kavach_patterns::production_patterns`).
 /// This detector was a `pub mod` with ZERO call sites — defined-but-never-enforced.
 /// Wired here as a P1 ADVISORY rollup (NOT a block): it overlaps existing P0

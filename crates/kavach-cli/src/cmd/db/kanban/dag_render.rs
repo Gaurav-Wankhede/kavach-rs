@@ -9,12 +9,9 @@
 // awareness signal (cheap to inject, names READY/BLOCKED/CYCLE inline).
 use std::collections::HashMap;
 use std::fmt::Write as _;
-
 use kavach_surreal::graph::roadmap_dag::TopoOrder;
 use kavach_surreal::{DagEdge, DagNode, MemoryEntry, RoadmapDag};
-
 use crate::cmd::io_safe::{into_exit_code, print_or_exit};
-
 /// Build a `RoadmapDag` from the roadmap ROWS (`list_by_project`) — the same
 /// source the flat board and the scheduler read — instead of the entity-graph
 /// mirror, which is unpopulated for roadmap cards. Edges come from the cards'
@@ -68,11 +65,9 @@ fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
     }
     RoadmapDag { nodes, edges }
 }
-
 /// Only these relations are dependency edges (prerequisite -> dependent). Mirror
 /// of the scheduler's edge filter in `roadmap_dag.rs::toposort_or_cycle`.
 const DEP_RELS: &[&str] = &["depends_on", "blocks"];
-
 /// Assign each node its dependency depth (tier): tier 0 has no unmet
 /// prerequisite among the dependency edges; tier N unlocks once tier <N closes.
 ///
@@ -104,7 +99,6 @@ fn tiers(order: &[String], edges: &[DagEdge]) -> HashMap<String, usize> {
     }
     depth
 }
-
 /// True when `node` is dispatchable (`todo`/`in_progress` with unmet prerequisites
 /// = 0) — i.e. every node it depends on is already `verified`/`done` AND the
 /// node itself is not yet closed. That is the "ready to dispatch NOW" signal.
@@ -124,7 +118,6 @@ fn is_ready(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) 
                 .is_none_or(|src| matches!(src.entry_status.as_str(), "verified" | "done"))
         })
 }
-
 /// Inline `depends-on` suffix for a node (the prereq keys), or empty when none.
 fn deps_suffix(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) -> String {
     let prereqs: Vec<&str> = edges
@@ -138,7 +131,6 @@ fn deps_suffix(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode
         format!("  ⤷ depends-on: {}", prereqs.join(", "))
     }
 }
-
 /// Render the topo-tiered text DAG. Returns the assembled string (caller prints).
 fn render_tiered_text(dag: &RoadmapDag) -> String {
     let by_id: HashMap<&str, &DagNode> = dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
@@ -203,14 +195,12 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
     }
     out
 }
-
 /// Sanitize a node id into a Mermaid-safe identifier (alphanumerics + `_`).
 fn mermaid_id(raw: &str) -> String {
     raw.chars()
         .map(|c| if c.is_alphanumeric() { c } else { '_' })
         .collect()
 }
-
 /// Render a `flowchart TD` of the cards + dependency edges (human/GUI export).
 fn render_mermaid(dag: &RoadmapDag) -> String {
     let by_id: HashMap<&str, &DagNode> = dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
@@ -242,7 +232,6 @@ fn render_mermaid(dag: &RoadmapDag) -> String {
     }
     out
 }
-
 /// Entry point: build the DAG from roadmap `rows`, render it in the requested
 /// `format`, and print it. `format` is `"dag"` (tiered text) or `"mermaid"`;
 /// any other value is treated as `"dag"` (clap restricts the flag, so this is
@@ -259,7 +248,6 @@ pub(in crate::cmd::db) fn render_dag_from_rows(rows: &[MemoryEntry], format: &st
         Err(io_err) => into_exit_code(io_err),
     }
 }
-
 #[cfg(test)]
 #[path = "dag_render_test.rs"]
 #[cfg(test)]

@@ -3,21 +3,18 @@
 //! Returns `Some(Decision)` to short-circuit; `None` to fall through to the
 //! stateful advisory tail. Ordered so every P0 hard-block precedes advisories.
 mod config;
-
 #[cfg(test)]
 #[path = "blocklist_test.rs"]
 #[cfg(test)]
 #[path = "blocklist_test.rs"]
 mod tests;
 use config::config_blocklists;
-
 use super::advisories::is_git_add_all;
 use super::decision::Decision;
 use super::test_tracker::check_unscoped_test_run;
 use super::write_bypass::{
     check_psql_blocked, check_sqlx_migrate_requires_rca, is_write_bypass, targets_tracked_source,
 };
-
 pub(super) fn check(command: &str) -> Option<Decision> {
     destructive_cli(command)
         .or_else(|| config_blocklists(command))
@@ -26,7 +23,6 @@ pub(super) fn check(command: &str) -> Option<Decision> {
         .or_else(|| db_blocks(command))
         .or_else(|| test_and_toolbelt(command))
 }
-
 /// Shell-syntax-aware destructive guard (P0 deny / P1 confirm; P2 falls through).
 fn destructive_cli(command: &str) -> Option<Decision> {
     use kavach_patterns::destructive_cli_guard::DestructiveSeverity::{P0Block, P1Confirm, P2Warn};
@@ -43,7 +39,6 @@ fn destructive_cli(command: &str) -> Option<Decision> {
         P2Warn => None,
     }
 }
-
 /// Write-bypass guard + `git add .` advisory.
 ///
 /// A Bash file-write sidesteps the `pre-write` research / anti-pattern gate
@@ -79,7 +74,6 @@ fn bypass_advisories(command: &str) -> Option<Decision> {
     }
     None
 }
-
 /// Bulk-op → single-script steer (advisory).
 ///
 /// A rename / reference-rewrite / edge-case sweep typed inline as `rnr` / `sg` /
@@ -95,7 +89,6 @@ fn bulk_op_advisory(command: &str) -> Option<Decision> {
     let reason = kavach_patterns::bulk_op_guard::detect_bulk_op_with(&vocab, command)?;
     Some(Decision::Allow(Some(format!("[BULK_VIA_SCRIPT] {reason}"))))
 }
-
 /// psql hard-block + sqlx-migrate RCA advisory.
 fn db_blocks(command: &str) -> Option<Decision> {
     if let Some(reason) = check_psql_blocked(command) {
@@ -111,7 +104,6 @@ fn db_blocks(command: &str) -> Option<Decision> {
     }
     None
 }
-
 /// Unscoped-test advisory + the §TOOLBELT legacy-tool advisory.
 ///
 /// The nextest-config scaffold runs FIRST (even for a to-be-denied test

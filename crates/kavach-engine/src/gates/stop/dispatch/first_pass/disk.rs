@@ -11,13 +11,11 @@
 //! This module probes free bytes on the kavach DB volume and, when critically
 //! low, returns an ACT-driven self-heal directive instead of the neutral
 //! source-down text — never an `rm` command handed to the operator.
-
 /// Below this many free bytes the `SurrealDB` WAL cannot reliably commit, so a
 /// source-down is almost certainly disk-caused. 512 MiB: the transcript showed
 /// the WAL append still ENOSPC at ~130 MB free, so the band is set well above
 /// the observed failure point to catch the pressure BEFORE the DB wedges.
 const CRITICAL_FREE_BYTES: u64 = 512 * 1024 * 1024;
-
 /// Free bytes on the volume holding the kavach state/DB dir, or `None` if the
 /// probe itself fails (treated as "not known low" — never manufacture pressure).
 fn free_bytes_on_db_volume() -> Option<u64> {
@@ -35,7 +33,6 @@ fn free_bytes_on_db_volume() -> Option<u64> {
         }
     }
 }
-
 /// The ACT-driven self-heal directive for a disk-caused source-down. Imperative
 /// register only — the agent frees regenerable space IN-PROCESS, re-probes, and
 /// completes the blocked write. It NEVER hands an `rm` to the operator and NEVER
@@ -66,7 +63,6 @@ pub(super) fn self_heal_directive(free_mib: u64) -> String {
          WAL cannot append. {body}"
     )
 }
-
 /// If the DB volume is critically low, return the self-heal directive text;
 /// otherwise `None` (the caller falls back to the neutral source-down message).
 #[must_use]
@@ -78,7 +74,6 @@ pub(super) fn maybe_self_heal() -> Option<String> {
     }
     None
 }
-
 #[cfg(test)]
 #[path = "disk_test.rs"]
 #[cfg(test)]

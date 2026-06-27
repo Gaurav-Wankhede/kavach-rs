@@ -13,9 +13,7 @@
 // — `OracleConfig` carries a hardcoded `Default` fail-safe, and the engine layer
 // overrides it from a research-refreshed kavach-DB row. That is what removes the
 // "hardcoded parameters" objection at its root.
-
 use crate::eval_replay::{EventKind, EventOutcome, TrajectoryEvent};
-
 /// One dimension's independent verdict on a completion claim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -28,7 +26,6 @@ pub enum DimVerdict {
     /// blind dimension can never poison the vote (the J<0-collapse guard).
     Abstain,
 }
-
 /// Tunable oracle parameters.
 ///
 /// The hardcoded [`Default`] is the fail-safe served when the DB override is
@@ -52,7 +49,6 @@ pub struct OracleConfig {
     /// never a hardcoded slice the verdict structurally depends on.
     pub failure_vocab: Vec<String>,
 }
-
 impl Default for OracleConfig {
     fn default() -> Self {
         Self {
@@ -67,7 +63,6 @@ impl Default for OracleConfig {
         }
     }
 }
-
 /// Compiled fail-safe failure vocabulary. Only the seed for `OracleConfig::default`
 /// — the live system serves the DB-refreshed list; this is what ships when the DB
 /// is unreachable so the oracle is never worse than its compiled floor.
@@ -81,7 +76,6 @@ const DEFAULT_FAILURE_VOCAB: &[&str] = &[
     "error: test failed",
     "failures:",
 ];
-
 /// Completion/success vocabulary for the claim side. Broad on purpose: a penalty
 /// only lands when the dimension vote ALSO contradicts, so over-matching is benign.
 const DONE_MARKERS: &[&str] = &[
@@ -102,7 +96,6 @@ const DONE_MARKERS: &[&str] = &[
     "all set",
     "ready",
 ];
-
 /// `true` iff a Stop in the trajectory narrates completion — the claim under test.
 fn claims_completion(events: &[TrajectoryEvent]) -> bool {
     events.iter().any(|e| match &e.event_kind {
@@ -113,10 +106,8 @@ fn claims_completion(events: &[TrajectoryEvent]) -> bool {
         _ => false,
     })
 }
-
 // ── Orthogonal dimensions ───────────────────────────────────────────────────
 // Each reads a DIFFERENT artifact, so gaming one does not blind the others.
-
 /// Process-exit dimension: the recorded objective `EventOutcome` on verify events.
 /// Any `Failure` → Contradict; some `Success` and no `Failure` → Agree; no recorded
 /// outcome at all → Abstain (the host never flagged anything — no signal to vote).
@@ -135,7 +126,6 @@ fn dim_process_exit(events: &[TrajectoryEvent]) -> DimVerdict {
         DimVerdict::Abstain
     }
 }
-
 /// Output-failure-vocab dimension: a Bash command's own text contains a failure
 /// token from the (DB-refreshable) vocab. This is the dimension that USED to be the
 /// whole oracle — now it is one vote of several, and its vocab is data. It is
@@ -154,7 +144,6 @@ fn dim_output_failure(events: &[TrajectoryEvent], vocab: &[String]) -> DimVerdic
     }
     DimVerdict::Abstain
 }
-
 /// The weighted contradiction tally across all dimensions for `events` under
 /// `cfg`. Returns `(contradict_score, agree_score)`; abstaining dimensions add to
 /// neither, so a blind channel is inert.
@@ -174,7 +163,6 @@ fn tally(events: &[TrajectoryEvent], cfg: &OracleConfig) -> (i64, i64) {
     }
     (contradict, agree)
 }
-
 /// Oracle penalty under an explicit [`OracleConfig`] — the multidimensional vote.
 ///
 /// `0` unless (a) a Stop claims completion AND (b) the weighted dimension vote
@@ -193,14 +181,12 @@ pub fn oracle_penalty_with(events: &[TrajectoryEvent], cfg: &OracleConfig) -> i6
         0
     }
 }
-
 /// Oracle penalty under the compiled fail-safe [`OracleConfig::default`]. The
 /// engine layer prefers [`oracle_penalty_with`] threaded with a DB-refreshed config.
 #[must_use]
 pub fn oracle_penalty(events: &[TrajectoryEvent]) -> i64 {
     oracle_penalty_with(events, &OracleConfig::default())
 }
-
 #[cfg(test)]
 #[path = "oracle_test.rs"]
 #[cfg(test)]

@@ -6,11 +6,9 @@
 //! the declared-dep adjacency and, on the first cycle found, returns the keys on
 //! it so the caller can emit a `[DAG_CYCLE]` allow-stop NAMING them, instead of
 //! an invisible stall. Pure over the entry slice — no DB, no I/O.
-
 use super::super::readiness::parse_declared_deps;
 use kavach_surreal::MemoryEntry;
 use std::collections::HashMap;
-
 /// DFS visit colour for back-edge cycle detection.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mark {
@@ -19,7 +17,6 @@ enum Mark {
     /// Fully explored, no cycle through it — never revisited.
     Done,
 }
-
 /// Detect ONE `depends_on` cycle among `entries`. Returns the keys on the cycle
 /// (in traversal order, cycle-start repeated implicitly by the caller's message)
 /// or `None` when the declared-dep graph is acyclic.
@@ -41,7 +38,6 @@ pub(super) fn detect_cycle(entries: &[MemoryEntry]) -> Option<Vec<String>> {
             (e.entry_key.as_str(), deps)
         })
         .collect();
-
     let mut mark: HashMap<&str, Mark> = HashMap::new();
     let mut stack: Vec<String> = Vec::new();
     for e in entries {
@@ -51,7 +47,6 @@ pub(super) fn detect_cycle(entries: &[MemoryEntry]) -> Option<Vec<String>> {
     }
     None
 }
-
 /// Recursive DFS: returns the cycle path (from the re-entered node to the current
 /// node) on the first back edge, else `None`. `stack` holds the current path keys
 /// so the cycle slice can be reported by name. The `'a` lifetime ties the visit
@@ -90,7 +85,6 @@ fn dfs<'a>(
     mark.insert(node, Mark::Done);
     None
 }
-
 /// Format the `[DAG_CYCLE]` allow-stop message naming the cycle keys.
 #[must_use]
 pub(super) fn cycle_message(keys: &[String]) -> String {
@@ -101,7 +95,6 @@ pub(super) fn cycle_message(keys: &[String]) -> String {
         keys.join(" -> ")
     )
 }
-
 #[cfg(test)]
 #[path = "dag_cycle_test.rs"]
 #[cfg(test)]

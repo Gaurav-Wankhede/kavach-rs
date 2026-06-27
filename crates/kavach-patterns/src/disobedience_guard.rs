@@ -3,7 +3,6 @@
 //! The model dismisses a fired imperative in prose instead of executing its
 //! mandated tool call. SOURCE: arxiv 2603.23806 (Willful Disobedience detector)
 //! + `decision.engine.disobedience-guard`.
-
 /// Dismissal phrases the model uses to argue an imperative away rather than obey.
 const DISMISSAL: &[&str] = &[
     "n/a here",
@@ -26,7 +25,6 @@ const DISMISSAL: &[&str] = &[
     "skip the lens",
     "lens: n/a",
 ];
-
 /// Imperative markers whose presence in the SAME message means an imperative fired
 /// and is being responded to. Pairing a marker with a dismissal = argue-not-obey.
 const IMPERATIVE_MARKER: &[&str] = &[
@@ -41,7 +39,6 @@ const IMPERATIVE_MARKER: &[&str] = &[
     "internet-first",
     "websearch",
 ];
-
 /// Proof tokens that show the mandated action was actually taken this turn — their
 /// presence clears the guard (obeyed, not argued).
 const OBEYED: &[&str] = &[
@@ -51,7 +48,6 @@ const OBEYED: &[&str] = &[
     "https://",
     "[rca]",
 ];
-
 /// Disobedience-detector vocabulary AS DATA: floor + additive graph overlay.
 ///
 /// Mirrors [`crate::stop_vocab::DoneGamingVocab`]: the compiled `const` lists are the
@@ -72,7 +68,6 @@ pub struct DisobedienceVocab {
     /// Obey-proof tokens whose presence clears the guard.
     pub obeyed: Vec<String>,
 }
-
 impl Default for DisobedienceVocab {
     fn default() -> Self {
         Self {
@@ -82,7 +77,6 @@ impl Default for DisobedienceVocab {
         }
     }
 }
-
 /// `Some(reason)` when the message dismisses a fired imperative WITHOUT obey-proof.
 ///
 /// Floor-default wrapper over [`detect_disobedience_with`] — the compiled vocabulary.
@@ -91,7 +85,6 @@ impl Default for DisobedienceVocab {
 pub fn detect_disobedience(message: &str) -> Option<String> {
     detect_disobedience_with(&DisobedienceVocab::default(), message)
 }
-
 /// As [`detect_disobedience`], but against a resolved [`DisobedienceVocab`] (floor +
 /// graph overlay). The match logic is identical; only the phrase source differs.
 #[must_use]
@@ -113,7 +106,6 @@ pub fn detect_disobedience_with(vocab: &DisobedienceVocab, message: &str) -> Opt
          (no URL / Loopholes closed: file:line / [RCA])"
     ))
 }
-
 #[cfg(test)]
 #[path = "disobedience_guard_test.rs"]
 #[cfg(test)]

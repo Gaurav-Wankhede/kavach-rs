@@ -1,9 +1,7 @@
 // `kavach lint audit` — over-engineering scan, ranked biggest-cut first; report-only.
 use std::path::Path;
-
 use crate::cmd::io_safe;
 use crate::cmd::lint::walk::walk_rs;
-
 /// One over-engineering finding. `weight` orders the ranking (bigger cut first).
 struct Finding {
     tag: &'static str,
@@ -11,7 +9,6 @@ struct Finding {
     loc: String,
     weight: u32,
 }
-
 /// Tag a single line if it carries a high-signal over-engineering pattern.
 /// Conservative on purpose — a report nudges, it never blocks.
 fn tag_line(line: &str) -> Option<(&'static str, &'static str, u32)> {
@@ -41,7 +38,6 @@ fn tag_line(line: &str) -> Option<(&'static str, &'static str, u32)> {
     }
     None
 }
-
 /// Scan `root`; print ranked findings + net conclusion. Returns 0 (report-only).
 pub(crate) fn run(root: &Path) -> i32 {
     let mut found: Vec<Finding> = Vec::new();
@@ -62,11 +58,9 @@ pub(crate) fn run(root: &Path) -> i32 {
     });
     emit(&mut found)
 }
-
 fn is_test_path(rel: &str) -> bool {
     rel.ends_with("_test.rs") || rel.contains("/tests/") || rel.ends_with("/tests.rs")
 }
-
 fn emit(found: &mut [Finding]) -> i32 {
     if found.is_empty() {
         return io_safe::print_or_exit("Lean already. Ship.")
@@ -86,7 +80,6 @@ fn emit(found: &mut [Finding]) -> i32 {
     );
     io_safe::print_or_exit(&summary).map_or_else(io_safe::into_exit_code, |()| 0)
 }
-
 #[cfg(test)]
 #[path = "audit_test.rs"]
 #[cfg(test)]

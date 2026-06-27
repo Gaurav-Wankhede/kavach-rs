@@ -11,15 +11,11 @@
 //! single newline-terminated line is atomic on every mainstream filesystem, so a
 //! crash mid-append never corrupts an earlier line. SOURCE:
 //! <https://users.rust-lang.org/t/correct-way-to-save-a-file-atomically-but-without-interferring-with-performance/89223>
-
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
-
 use crate::paths::state_dir;
-
 /// One deferred RPC write: the method name + its JSON params, enough to replay
 /// `kavach_rpc::client::call(method, params)` verbatim on drain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -31,7 +27,6 @@ pub struct SpooledWrite {
     /// so the spool stays a flat line-delimited file with no nested escaping rules.
     pub params_json: String,
 }
-
 impl SpooledWrite {
     /// Construct a spooled write from a method name and its serialized params.
     /// Provided because the struct is `#[non_exhaustive]` (cross-crate callers
@@ -44,12 +39,10 @@ impl SpooledWrite {
         }
     }
 }
-
 /// Absolute path to the spool file under the session state dir.
 fn spool_path() -> PathBuf {
     state_dir().join("write_spool.jsonl")
 }
-
 /// Append one deferred write to the durable spool (one JSON line, flushed).
 ///
 /// Non-blocking by construction: a single newline-terminated line append is
@@ -71,7 +64,6 @@ pub fn enqueue(write: &SpooledWrite) -> io::Result<()> {
     f.flush()?;
     Ok(())
 }
-
 /// Read every spooled write and REMOVE the file, returning entries in append order.
 ///
 /// The caller replays each via `kavach_rpc::client::call`; any that
@@ -98,7 +90,6 @@ pub fn drain() -> io::Result<Vec<SpooledWrite>> {
         .filter_map(|l| serde_json::from_str::<SpooledWrite>(l).ok())
         .collect())
 }
-
 #[cfg(test)]
 #[path = "write_spool_test.rs"]
 #[cfg(test)]

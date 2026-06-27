@@ -1,15 +1,12 @@
 use std::collections::HashMap;
-
 // SOURCE: https://docs.rs/linfa-trees/ — decision tree classification integration
 use crate::chain_state::ChainState;
 use crate::helpers::{contains_any, extract_agents};
 use crate::intent_features::extract_features;
 use crate::intent_tree::build_intent_tree;
 use crate::types::{IntentAnalysis, VerificationResult};
-
 pub(crate) fn run_gate(state: &mut ChainState, prompt: &str) {
     let intent = analyze_intent(prompt);
-
     let mut result = VerificationResult {
         gate: "INTENT".into(),
         status: "pass".into(),
@@ -25,7 +22,6 @@ pub(crate) fn run_gate(state: &mut ChainState, prompt: &str) {
         timestamp: String::new(),
         next_action: String::new(),
     };
-
     if intent.risk_level == "critical" && intent.confidence < 0.7 {
         result.status = "warn".into();
         result.reason = format!(
@@ -33,7 +29,6 @@ pub(crate) fn run_gate(state: &mut ChainState, prompt: &str) {
             intent.confidence
         );
     }
-
     // [ROUTE] one-line agent suggestion per CLAUDE.md §13 budget.
     // 3-tier cost-balance suppression (decision:rca.agent_routing_token_cost):
     //   T1: skip when complexity=simple — trivial work doesn't justify suggestion overhead
@@ -46,7 +41,6 @@ pub(crate) fn run_gate(state: &mut ChainState, prompt: &str) {
     let is_trivial = matches!(intent.complexity.as_str(), "simple")
         && matches!(intent.risk_level.as_str(), "low");
     let should_suggest = !is_trivial;
-
     if should_suggest && let Some(loader) = crate::loader::global_loader() {
         let raw = loader.suggest_for_intent(&intent.intent_type, prompt, 3);
         // T2: require at least one strong capability match (score ≥ 100) for
@@ -55,14 +49,12 @@ pub(crate) fn run_gate(state: &mut ChainState, prompt: &str) {
         let pass_t2 = matches!(intent.complexity.as_str(), "complex")
             || intent.risk_level == "critical"
             || has_capability_match;
-
         if pass_t2 {
             // T3: drop saturated agents (already suggested ≥3× this session).
             let filtered: Vec<_> = raw
                 .into_iter()
                 .filter(|(a, _)| !state.is_suggestion_saturated(&a.name, 3))
                 .collect();
-
             if !filtered.is_empty() {
                 let names: Vec<String> = filtered
                     .iter()
@@ -81,11 +73,9 @@ pub(crate) fn run_gate(state: &mut ChainState, prompt: &str) {
             }
         }
     }
-
     state.intent = Some(intent);
     state.add_result(result);
 }
-
 #[must_use]
 pub fn analyze_intent(prompt: &str) -> IntentAnalysis {
     // Primary path: decision tree classification
@@ -95,14 +85,12 @@ pub fn analyze_intent(prompt: &str) -> IntentAnalysis {
         let lower = prompt.to_lowercase();
         let sd = kavach_config::paths::skills_dir();
         let mut skills = outcome.required_skills.clone();
-
         // Augment with NLP keyword routing for additional skills
         for skill in kavach_patterns::skill_keyword_router::skills_from_keywords(prompt) {
             if sd.join(&skill).join("SKILL.md").exists() && !skills.iter().any(|s| s == &skill) {
                 skills.push(skill);
             }
         }
-
         return IntentAnalysis {
             intent_type: outcome.intent_type.clone(),
             confidence: outcome.confidence,
@@ -118,11 +106,9 @@ pub fn analyze_intent(prompt: &str) -> IntentAnalysis {
             risk_level: outcome.risk_level.clone(),
         };
     }
-
     // Fallback: keyword-based classification
     classify_by_keywords(prompt)
 }
-
 /// Fallback intent classifier used when the decision tree abstains.
 /// Pure keyword/NLP routing — extracted from `analyze_intent` to keep each
 /// function under the `too_many_lines` threshold.
@@ -137,13 +123,11 @@ fn classify_by_keywords(prompt: &str) -> IntentAnalysis {
         complexity: "simple".into(),
         risk_level: "low".into(),
     };
-
     apply_keyword_arms(&lower, &mut a);
     augment_skills_from_keywords(prompt, &mut a.required_skills);
     a.required_agents = extract_agents(&lower);
     a
 }
-
 /// Applies the static keyword-category arms to a working `IntentAnalysis`.
 /// Each arm refines intent type, risk, complexity, confidence, and skills.
 fn apply_keyword_arms(lower: &str, a: &mut IntentAnalysis) {
@@ -236,7 +220,6 @@ fn apply_keyword_arms(lower: &str, a: &mut IntentAnalysis) {
         a.confidence = 0.75;
     }
 }
-
 /// Dynamic NLP skill routing — Aho-Corasick multi-pattern matching across all
 /// installed skills. Appends only skills that exist on disk and are not already
 /// present, deduplicating against `skills`.
@@ -248,7 +231,6 @@ fn augment_skills_from_keywords(prompt: &str, skills: &mut Vec<String>) {
         }
     }
 }
-
 #[cfg(test)]
 #[path = "intent_tests.rs"]
 mod tests;

@@ -15,7 +15,6 @@ pub(crate) fn advise(category: &str, exec_prompt: Option<&str>) -> Option<String
             .to_owned(),
     )
 }
-
 #[cfg(test)]
 #[path = "exec_prompt_advice_test.rs"]
 #[cfg(test)]

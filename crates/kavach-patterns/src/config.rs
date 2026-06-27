@@ -1,18 +1,13 @@
 use std::sync::{LazyLock, Mutex};
-
 mod defaults;
 #[cfg(test)]
 #[path = "config_test.rs"]
 #[cfg(test)]
 mod tests;
 mod types;
-
 pub use types::{AntiProdLevel, AntiProdResult, Config};
-
 use defaults::load_defaults;
-
 static CACHED_CONFIG: LazyLock<Mutex<Option<Config>>> = LazyLock::new(|| Mutex::new(None));
-
 pub fn load() -> std::sync::MutexGuard<'static, Option<Config>> {
     let mut guard = CACHED_CONFIG
         .lock()
@@ -22,14 +17,12 @@ pub fn load() -> std::sync::MutexGuard<'static, Option<Config>> {
     }
     guard
 }
-
 pub fn reload() {
     let mut g = CACHED_CONFIG
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     *g = Some(build_config());
 }
-
 fn build_config() -> Config {
     let mut cfg = Config {
         sensitive: Vec::new(),
@@ -43,7 +36,6 @@ fn build_config() -> Config {
     load_defaults(&mut cfg);
     cfg
 }
-
 #[expect(
     clippy::redundant_pub_crate,
     reason = "crate-internal API surfaced cross-module"

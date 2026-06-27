@@ -15,9 +15,7 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, read_stdin_body_or_exit};
 use kavach_types::Priority;
 use std::fmt::Write as _;
-
 const ROADMAP_CATEGORY: &str = "roadmap";
-
 /// THE single source of truth for the valid memory-entry category vocabulary.
 ///
 /// Categories that require explicit `--new` or `--update-key` intent AND the
@@ -29,7 +27,6 @@ const ROADMAP_CATEGORY: &str = "roadmap";
 /// else; the equivalence test below fails closed if `CATEGORY_HELP` desyncs.
 pub(crate) const STRICT_CATEGORIES: &[&str] =
     &["decision", "research", "roadmap", "pattern", "app_spec"];
-
 /// clap `--category` help text — DERIVED from [`STRICT_CATEGORIES`], not a
 /// duplicated literal. Every `#[arg]` with a `--category` flag references
 /// this via `#[arg(help = CATEGORY_HELP)]` so the help can never drift from
@@ -39,11 +36,9 @@ pub(crate) const STRICT_CATEGORIES: &[&str] =
 /// the `#[arg]` attribute position. KEEP IN SYNC WITH `STRICT_CATEGORIES` —
 /// the `category_help_matches_strict_categories` test asserts exact equality.
 pub(crate) const CATEGORY_HELP: &str = "Category (decision, research, roadmap, pattern, app_spec)";
-
 /// Fuzzy-match threshold: titles with normalized Levenshtein similarity >=
 /// this value are flagged as likely duplicates when --new is used.
 const FUZZY_THRESHOLD: f64 = 0.85;
-
 /// Normalized Levenshtein similarity: 1.0 - (dist / `max_len`). Returns 0..=1.
 #[expect(
     clippy::indexing_slicing,
@@ -74,7 +69,6 @@ fn similarity(a: &str, b: &str) -> f64 {
     }
     1.0 - (prev[n] as f64 / max)
 }
-
 /// Keywords in roadmap keys that indicate important items requiring protection.
 const PROTECTED_KEY_PATTERNS: &[&str] = &[
     "market-gap",
@@ -91,7 +85,6 @@ const PROTECTED_KEY_PATTERNS: &[&str] = &[
     "grpc",
     "api-",
 ];
-
 /// Title patterns that indicate closure/archival intent.
 const CLOSURE_PATTERNS: &[&str] = &[
     "closed",
@@ -101,7 +94,6 @@ const CLOSURE_PATTERNS: &[&str] = &[
     "superseded",
     "obsolete",
 ];
-
 /// Check if a roadmap write is attempting to close a protected item.
 /// Returns Some(warning) if protected, None if safe to proceed.
 fn check_protected_closure(key: &str, title: &str) -> Option<String> {
@@ -125,7 +117,6 @@ fn check_protected_closure(key: &str, title: &str) -> Option<String> {
          To force closure via write, add '--force-close' or rename the key."
     ))
 }
-
 /// Mirror `--depends-on` flag targets into a `DEPENDS_ON:` content line so the
 /// dispatch readiness check (which parses deps from CONTENT) honors them. Returns
 /// `body` unchanged when there are no flag deps. Idempotent: a target already
@@ -151,7 +142,6 @@ fn mirror_depends_on_into_content(body: String, depends_on: &[String]) -> String
         format!("{line}\n{body}")
     }
 }
-
 /// `true` iff `body` already names `dep` on a `DEPENDS_ON:`/`BLOCKED_BY:` line —
 /// the same lines the readiness parser reads. Whitespace/comma tolerant.
 fn body_declares_dep(body: &str, dep: &str) -> bool {
@@ -164,7 +154,6 @@ fn body_declares_dep(body: &str, dep: &str) -> bool {
                 .any(|tok| tok == dep)
         })
 }
-
 #[expect(
     clippy::too_many_lines,
     reason = "single unified CLI command handler with inlined validation and upsert logic"
@@ -218,7 +207,6 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         ..*req
     };
     let eff = &effective_req;
-
     // STRICT MODE: for canonical categories the caller must declare intent.
     if STRICT_CATEGORIES.contains(&category) && !new && update_key.is_none() {
         let msg = format!(
@@ -234,7 +222,6 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
     }
     // --update-key narrows the write to a confirmed existing row.
     let effective_key = update_key.map_or(key, |uk| uk);
-
     if category == ROADMAP_CATEGORY
         && let Some(warning) = check_protected_closure(effective_key, title)
     {
@@ -244,13 +231,11 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         }
         return 1;
     }
-
     if let Some(nudge) = super::exec_prompt_advice::advise(category, req.exec_prompt)
         && let Err(io_err) = ewrite_or_exit(&nudge)
     {
         return into_exit_code(io_err);
     }
-
     // RPC-FIRST (single_writer invariant): route the write through the daemon
     // — the sole RocksDB writer — so the CLI never opens a second handle and
     // races the lock. Only when the daemon is unreachable (DAEMON_UNAVAILABLE)
@@ -286,7 +271,6 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
             };
         }
     }
-
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
         Err(e) => {
@@ -297,7 +281,6 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
             return 1;
         }
     };
-
     runtime.block_on(async {
         let db = match kavach_surreal::open_default().await {
             Ok(d) => d,
@@ -416,7 +399,6 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                 }
             }
         }
-
         // Atomic upsert: memory entry + event log + graph entity + edges
         // ALL in a single SurrealDB BEGIN/COMMIT transaction.
         let event_source = format!("kavach_db_write/{category}");
@@ -522,10 +504,8 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         }
     })
 }
-
 // project_memory_entry_via_db removed — graph projection now happens
 // atomically inside kavach_surreal::upsert_entry_full's transaction.
-
 // Best-effort hints on the not-found error path. Caller already returns
 // exit 1; if a hint write fails we surface the IO failure code instead.
 async fn suggest_projects(db: &surrealdb::Surreal<surrealdb::engine::any::Any>) -> i32 {
@@ -565,7 +545,6 @@ async fn suggest_projects(db: &surrealdb::Surreal<surrealdb::engine::any::Any>) 
     }
     0
 }
-
 #[cfg(test)]
 #[path = "write_test.rs"]
 #[cfg(test)]

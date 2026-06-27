@@ -15,7 +15,6 @@
 //! Failure mode: a token whose basename is exactly `.env`/`.envrc`/`.env.<x>` is a
 //! target; a real source dir among the path roots downgrades a multi-root search
 //! to ALLOW (it is a repo grep, not a dotenv read).
-
 /// True when `tok` (one shell word, already lowercased) names a `.env` file —
 /// i.e. its **basename** is `.env`, `.envrc`, or `.env.<suffix>`.
 ///
@@ -31,7 +30,6 @@ fn token_is_dotenv_file(tok: &str) -> bool {
     };
     base == ".env" || base == ".envrc" || base.starts_with(".env.")
 }
-
 /// Known source roots whose presence in a multi-path search proves the command
 /// is a repository grep, not a dotenv read. See `decision.engine.dotenv_named_roots_only`.
 fn is_source_root(tok: &str) -> bool {
@@ -41,7 +39,6 @@ fn is_source_root(tok: &str) -> bool {
     let t = tok.trim_end_matches('/');
     ROOTS.contains(&t)
 }
-
 /// Decide whether a command actually targets a `.env` FILE for reading/searching.
 ///
 /// Returns `false` (allow) when no token's basename is a dotenv file, OR when a
@@ -67,7 +64,6 @@ pub(crate) fn targets_dotenv_file(lc: &str) -> bool {
     }
     saw_dotenv && !saw_source_root
 }
-
 #[cfg(test)]
 #[path = "target_test.rs"]
 #[cfg(test)]

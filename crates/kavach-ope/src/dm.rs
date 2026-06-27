@@ -8,11 +8,9 @@
 //! reward model's error: a wrong `r̂` gives a confidently wrong value. That bias
 //! is why Doubly-Robust (DM + an IPS correction on the residual) exists — DM
 //! alone is the low-variance anchor, not the final word.
-
 use crate::estimate::Estimate;
 use crate::ips::TargetPolicy;
 use crate::sample::{Action, LoggedSample};
-
 /// A learned reward model: predict the reward for taking `action` in `context`.
 /// The caller trains/loads this (e.g. a ridge regression over the context
 /// features); the estimator only queries it.
@@ -20,9 +18,7 @@ pub trait RewardModel {
     /// Predicted reward `r̂(x, a)` for `action` given the context features.
     fn predict(&self, context: &[f64], action: Action) -> f64;
 }
-
 const ACTIONS: [Action; 3] = [Action::Allow, Action::Ask, Action::Block];
-
 /// Estimate the target policy's value by the Direct Method over logged contexts.
 ///
 /// For each sample, the per-context value is `Σ_a π(a|x) · r̂(x, a)`; the estimate
@@ -51,7 +47,6 @@ where
                 .sum()
         })
         .collect();
-
     let n_f = f64::from(u32::try_from(n).unwrap_or(u32::MAX));
     let mean = per_context.iter().sum::<f64>() / n_f;
     let std_error = if n == 1 {
@@ -60,14 +55,12 @@ where
         let var = per_context.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (n_f - 1.0);
         (var / n_f).sqrt()
     };
-
     Estimate {
         value: mean,
         std_error,
         n,
     }
 }
-
 #[cfg(test)]
 #[path = "dm_test.rs"]
 #[cfg(test)]

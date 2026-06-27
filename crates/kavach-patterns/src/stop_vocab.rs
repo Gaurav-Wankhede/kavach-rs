@@ -10,7 +10,6 @@
 //! Mirrors `reward::oracle::OracleConfig` (the `#[serde(default)]` config-as-data
 //! pattern): each list a DB row omits is filled from the default, so a partial
 //! override is honored and a malformed blob degrades to the full floor.
-
 /// Done-by-redefinition + narration/sign-off phrases (compiled floor).
 ///
 /// Lower-cased substring match. Each is a completion-claim the model uses to END a
@@ -34,7 +33,6 @@ pub const DEFAULT_GAMING_PHRASES: &[&str] = &[
     "one-line summary",
     "single source of truth for the migration",
 ];
-
 /// Operator-handback / surrender phrases (compiled floor).
 ///
 /// The abolished "push it to the owner" pattern. Fires unconditionally of the proof
@@ -53,7 +51,6 @@ pub const DEFAULT_HANDBACK_PHRASES: &[&str] = &[
     "i'm holding",
     "i am holding",
 ];
-
 /// The Stop gate's done-detection vocabulary, resolved per project from the DB.
 ///
 /// `#[serde(default)]`: a row omitting either list keeps that list's compiled floor,
@@ -68,7 +65,6 @@ pub struct DoneGamingVocab {
     /// Operator-handback / surrender phrases (lower-cased substrings).
     pub handback_phrases: Vec<String>,
 }
-
 impl Default for DoneGamingVocab {
     fn default() -> Self {
         Self {
@@ -83,14 +79,12 @@ impl Default for DoneGamingVocab {
         }
     }
 }
-
 impl DoneGamingVocab {
     /// `true` when `lc` (a lower-cased message) contains any gaming phrase.
     #[must_use]
     pub fn has_gaming_phrase(&self, lc: &str) -> bool {
         self.gaming_phrases.iter().any(|p| lc.contains(p.as_str()))
     }
-
     /// `true` when `lc` (a lower-cased message) contains any handback phrase.
     #[must_use]
     pub fn has_handback_phrase(&self, lc: &str) -> bool {
@@ -99,7 +93,6 @@ impl DoneGamingVocab {
             .any(|p| lc.contains(p.as_str()))
     }
 }
-
 #[cfg(test)]
 #[path = "stop_vocab_test.rs"]
 #[cfg(test)]

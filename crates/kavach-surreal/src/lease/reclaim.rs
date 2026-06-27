@@ -8,14 +8,11 @@
 use chrono::Utc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
-
 use crate::error::{Error, Result};
 use surrealdb_types::SurrealValue;
-
 /// Tables whose cards carry the `occupied_*` lease columns. Mirrors
 /// `recovery::LEASED_TABLES` / `renew::LEASED_TABLES`.
 const LEASED_TABLES: &[&str] = &["roadmap", "decision", "app_spec"];
-
 /// Reclaim crash-orphaned cards across all leased tables.
 ///
 /// Any card still `in_progress` whose lease has LAPSED (`occupied_until <= now`)
@@ -41,7 +38,6 @@ pub async fn reclaim_orphaned_in_progress(db: &Surreal<Db>) -> Result<usize> {
     }
     Ok(reclaimed)
 }
-
 /// Reclaim orphaned cards in one table. Counts the rows actually reset.
 async fn reclaim_table(db: &Surreal<Db>, table: &str, now: chrono::DateTime<Utc>) -> Result<usize> {
     // The lapsed-OR-absent lease test is the crux: `occupied_until = NONE`
@@ -73,18 +69,15 @@ async fn reclaim_table(db: &Surreal<Db>, table: &str, now: chrono::DateTime<Utc>
         Err(e) => Err(Error::Surreal(e)),
     }
 }
-
 /// True when the error is `SurrealDB`'s "table does not exist" — the only error
 /// `reclaim_table` swallows (mirrors `renew::is_missing_table`).
 fn is_missing_table(e: &surrealdb::Error) -> bool {
     e.to_string().contains("does not exist")
 }
-
 #[derive(surrealdb_types::SurrealValue)]
 struct ReclaimedIdRow {
     id: surrealdb_types::RecordId,
 }
-
 #[cfg(test)]
 #[path = "reclaim_test.rs"]
 #[cfg(test)]

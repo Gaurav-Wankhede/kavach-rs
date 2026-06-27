@@ -26,7 +26,6 @@ mod worker_critic;
 mod tests;
 use super::loop_yaml::{GoalLoopYaml, Harness};
 use std::path::{Path, PathBuf};
-
 /// Render a goal as a Claude Code Workflow script, dispatching on its harness
 /// pattern. Absent harness (legacy YAML) compiles as the Pattern-6 loop.
 pub(crate) fn to_workflow_js(goal_yaml: &GoalLoopYaml) -> String {
@@ -41,7 +40,6 @@ pub(crate) fn to_workflow_js(goal_yaml: &GoalLoopYaml) -> String {
         Harness::LoopUntilDone => loop_until_done::emit(goal_yaml),
     }
 }
-
 /// Compile a goal's `loop.yaml` to a sibling `workflow.js` under `root`.
 /// Returns the repo-relative path written.
 pub(crate) fn compile_to_workflow(
@@ -64,7 +62,6 @@ pub(crate) fn compile_to_workflow(
     std::fs::rename(&tmp, &abs)?;
     Ok(rel)
 }
-
 /// `kavach goal compile` — read a goal's loop.yaml and emit its workflow.js.
 pub(crate) fn run(goal_id: &str) -> i32 {
     let yaml_path = Path::new(".kavach")

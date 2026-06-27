@@ -5,14 +5,11 @@
 //! from the file; advises only when the strict profile is absent. Fail-soft: no
 //! manifest, or one already strict, is silent. SOURCE: decision.lint.language-profile-template.
 use std::path::Path;
-
 const SOURCE_EXTS: &[&str] = &[".rs", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go"];
-
 fn is_source(path: &str) -> bool {
     let p = path.to_lowercase();
     SOURCE_EXTS.iter().any(|e| p.ends_with(e))
 }
-
 /// Advisory (P1) when the edited source sits in a project missing its strict
 /// profile. `None` when clean, non-source, or no manifest is found upward.
 #[must_use]
@@ -32,7 +29,6 @@ pub fn advise(file_path: &str) -> Option<String> {
         root = root.display(),
     ))
 }
-
 /// Walk up from `start` to the nearest project manifest; return its root dir,
 /// the manifest name, and whether a strict profile is already installed.
 fn find_project(start: &Path) -> Option<(std::path::PathBuf, &'static str, bool)> {
@@ -59,14 +55,12 @@ fn find_project(start: &Path) -> Option<(std::path::PathBuf, &'static str, bool)
     }
     None
 }
-
 /// A Rust project is strict if its Cargo.toml carries a lints table (workspace
 /// or per-crate). Read failure = treat as not-strict (advise, never panic).
 fn rust_is_strict(dir: &Path) -> bool {
     let toml = std::fs::read_to_string(dir.join("Cargo.toml")).unwrap_or_default();
     toml.contains("[workspace.lints") || toml.contains("[lints")
 }
-
 #[cfg(test)]
 #[path = "lint_profile_guard_test.rs"]
 #[cfg(test)]

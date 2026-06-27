@@ -14,18 +14,14 @@
 //! it deletes the card's existing out-edges then re-creates them from the
 //! current dep list, so re-running on an edited card converges (last-writer
 //! wins) without duplicate edges.
-
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
-
 use crate::error::{Error, Result};
-
 /// `entity_type` tag for a kanban card node in the shared `entity` graph table.
 /// Distinct from `concept`/`flow_step` so a card's edges never collide with the
 /// knowledge graph; the unique `idx_entity_type_name` index keys on
 /// `(entity_type, name)` so `name = <card key>` is the stable anchor.
 const CARD_KIND: &str = "roadmap_card";
-
 /// Validate a card key before it is interpolated as a bound param value. Keys are
 /// authored as kanban slugs (alphanumeric + `_`/`-`/`.`); rejecting anything else
 /// keeps a hostile/malformed key out of the graph at the edge (illegal states
@@ -44,7 +40,6 @@ fn validate_key(key: &str) -> Result<()> {
         "roadmap card key '{key}' has illegal chars (allowed: alphanumeric _ - .)"
     )))
 }
-
 /// Mirror one card's declared dependency keys into `depends_on` RELATE edges.
 ///
 /// Idempotent: clears `card`'s existing out-edges, then RELATEs `card -> dep`
@@ -94,7 +89,6 @@ pub async fn mirror_card_deps(db: &Surreal<Db>, card_key: &str, deps: &[String])
          DELETE $src->depends_on; \
          {dep_clauses}COMMIT TRANSACTION;"
     );
-
     let mut query = db
         .query(q)
         .bind(("kind", CARD_KIND))
@@ -105,7 +99,6 @@ pub async fn mirror_card_deps(db: &Surreal<Db>, card_key: &str, deps: &[String])
     query.await?.check()?;
     Ok(())
 }
-
 /// SQL-native cycle check: does `card_key` participate in a `depends_on` cycle?
 ///
 /// Uses `SurrealDB` 3.1 recursive graph traversal `->depends_on->{..}` to walk the
@@ -143,7 +136,6 @@ pub async fn is_in_cycle_sql(db: &Surreal<Db>, card_key: &str) -> Result<bool> {
     let cyclic: Option<bool> = res.take(1)?;
     Ok(cyclic.unwrap_or(false))
 }
-
 #[cfg(test)]
 #[path = "roadmap_deps_test.rs"]
 #[cfg(test)]

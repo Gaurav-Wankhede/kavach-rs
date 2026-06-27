@@ -25,12 +25,10 @@ mod promote;
 mod scope;
 mod select;
 mod value;
-
 pub use promote::promote;
 pub use scope::{AdvisoryCandidates, GateScope};
 pub use select::choose;
 pub use value::{ActionValue, RiskConfig};
-
 #[cfg(test)]
 #[path = "controller_test.rs"]
 #[cfg(test)]

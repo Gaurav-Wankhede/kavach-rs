@@ -19,9 +19,7 @@
 //! (`clean_exit`) and the retry terminal emit the IDENTICAL verdict. The verdict
 //! is loop-SAFE: callers emit it via `exit_stop_context` (allows the turn to end,
 //! no hard block), so it can never spin.
-
 mod lane;
-
 /// The census-aware terminal context for a drained dispatch.
 ///
 /// `open_set_census` returns `Some((runnable, blocked))` or `None` on RPC outage;
@@ -41,7 +39,6 @@ pub(in crate::gates::stop) fn drained_terminal_context(project: &str) -> String 
     }
     board_drained_plan_context(census)
 }
-
 /// One-line census STAMP proving the gate read the kavach DB roadmap table THIS
 /// stop. `Some` → the live counts; `None` (RPC outage) → an explicit
 /// unobservable marker so the verdict never *claims* a read it could not make.
@@ -58,7 +55,6 @@ fn census_stamp(census: Option<(u64, u64, u64)>) -> String {
             .to_owned(),
     }
 }
-
 /// True iff the census proves a DISPATCHABLE remainder the single-source dispatch
 /// probe failed to surface: at least one runnable-status card AND not every one of
 /// them is blocked/cyclic — i.e. a card the gate counts as runnable+unblocked yet
@@ -75,7 +71,6 @@ const fn census_has_dispatchable_remainder(census: Option<(u64, u64, u64)>) -> b
         None => false,
     }
 }
-
 /// Public divergence check for the terminal callers: did the census prove a
 /// dispatchable roadmap todo the probe missed? When true the caller REFUSES the
 /// stop (parity with the loophole / cycle refuse-stops) so the loop always acts on
@@ -84,7 +79,6 @@ const fn census_has_dispatchable_remainder(census: Option<(u64, u64, u64)>) -> b
 pub(in crate::gates::stop) fn roadmap_todos_remain(project: &str) -> bool {
     census_has_dispatchable_remainder(crate::gates::stop_dispatch::open_set_census(project))
 }
-
 /// The REFUSE-STOP verdict emitted when `roadmap_todos_remain` is true: command a
 /// DIRECT roadmap-todo query (not the dispatch probe that just missed them) and a
 /// claim+start THIS turn. This makes "always check the roadmap for todos" an
@@ -115,7 +109,6 @@ pub(in crate::gates::stop) fn roadmap_todos_remain_context(project: &str) -> Str
     );
     format!("{block}{RESEARCH_MODE_DIRECTIVE}")
 }
-
 /// True iff the census proves a BLOCKED remainder: at least one runnable-status
 /// card AND every one of them blocked by dependencies or cyclic. `None` (RPC
 /// outage) → false → fail closed to the PLAN nudge. An empty board (`runnable
@@ -130,7 +123,6 @@ const fn census_is_all_blocked(census: Option<(u64, u64, u64)>) -> bool {
         None => false,
     }
 }
-
 /// Public all-blocked check for `clean_exit`: every runnable card blocked by deps
 /// (or a cycle). When true, `clean_exit` REFUSES the stop with `blocker_walk_context`
 /// — an all-blocked board is a blocker to BUILD, never a terminal.
@@ -139,7 +131,6 @@ pub(in crate::gates::stop) fn board_is_all_blocked(project: &str) -> bool {
     let census = crate::gates::stop_dispatch::open_set_census(project);
     census.is_some_and(|(_, _, cyclic)| cyclic > 0) || census_is_all_blocked(census)
 }
-
 /// The single refuse-stop directive for a fully-blocked board (every runnable card
 /// held by a dependency or a cycle). NOT a stop, NOT a hand-off: WALK to the
 /// blocker and BUILD it leaf-first; a stale edge gets corrected, a cycle broken, a
@@ -172,7 +163,6 @@ pub(in crate::gates::stop) fn blocker_walk_context() -> String {
         )],
     )
 }
-
 /// Research-Mode directive appended to every "find the next task" verdict. The
 /// loop's next-task selection is RESEARCH-FIRST: Tabula Rasa = truth, never the
 /// model's training weights (which are stale by construction). Mirrors the global
@@ -183,7 +173,6 @@ const RESEARCH_MODE_DIRECTIVE: &str = "\nRESEARCH MODE (built-in next-task step)
      and corroborate across 2+. TABULA RASA = TRUTH: NEVER trust training weights — knowledge ages, \
      the precise contract lives on the internet, not in the model. Sync the resolved finding to the \
      kavach DB (research/decision row) the same turn so it is never re-guessed.";
-
 /// Case 2: board holds no runnable-status card. The loop never self-terminates —
 /// it re-scans the kavach DB (roadmap + decisions, ALL statuses) and the active
 /// `[PLAN]` for the next actionable item, RESEARCHES it against current truth,
@@ -219,7 +208,6 @@ fn board_drained_plan_context(census: Option<(u64, u64, u64)>) -> String {
     );
     format!("{block}{RESEARCH_MODE_DIRECTIVE}")
 }
-
 #[cfg(test)]
 #[path = "drained_test.rs"]
 #[cfg(test)]

@@ -6,9 +6,7 @@ mod evaluate;
 #[path = "witness_test.rs"]
 mod tests;
 use kavach_types::{FOURTEEN_PREFIXES, ProjectTier, WitnessResult};
-
 use evaluate::evaluate_prefix;
-
 #[must_use]
 pub(crate) fn run_witness(
     rows: &[(String, String)],
@@ -17,7 +15,6 @@ pub(crate) fn run_witness(
 ) -> WitnessResult {
     let mut missing = Vec::new();
     let mut present = 0u8;
-
     for prefix in FOURTEEN_PREFIXES.iter().filter(|p| p.required_at(tier)) {
         match evaluate_prefix(prefix, rows) {
             Ok(()) => {
@@ -32,7 +29,6 @@ pub(crate) fn run_witness(
             Err(absent) => missing.push(absent),
         }
     }
-
     let required = u8::try_from(
         FOURTEEN_PREFIXES
             .iter()
@@ -40,7 +36,6 @@ pub(crate) fn run_witness(
             .count(),
     )
     .unwrap_or(u8::MAX);
-
     WitnessResult {
         project_slug: project_slug.to_owned(),
         tier,

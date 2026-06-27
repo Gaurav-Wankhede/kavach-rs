@@ -14,14 +14,11 @@
 //! policy (Cursor fails OPEN; Codex/Claude Code fail closed).
 //!
 //! SOURCES: <https://cursor.com/docs/hooks> · <https://developers.openai.com/codex/hooks>
-
 use kavach_types::{HookInput, HookResponse};
-
 pub mod antigravity;
 pub mod codex;
 pub mod cursor;
 pub mod pi;
-
 #[cfg(test)]
 #[path = "vendor_test.rs"]
 #[cfg(test)]
@@ -52,10 +49,8 @@ pub enum Vendor {
     /// Pi's Stop-equivalent. Extension at `~/.pi/agent/extensions/kavach/index.ts`.
     Pi,
 }
-
 /// The env var that force-selects a vendor, overriding payload auto-detect.
 pub const VENDOR_ENV: &str = "KAVACH_HARNESS";
-
 /// The live upstream source for a vendor's hook-contract schema.
 ///
 /// Lets Kavach reference the CURRENT contract from the internet when a vendor
@@ -85,7 +80,6 @@ pub enum SchemaSource {
         url: &'static str,
     },
 }
-
 impl SchemaSource {
     /// The primary URL to reference for this vendor — the JSON Schema when one
     /// exists, else the prose contract page.
@@ -95,7 +89,6 @@ impl SchemaSource {
             Self::JsonSchema { url, .. } | Self::Prose { url } => url,
         }
     }
-
     /// `true` when this source is a machine-readable JSON Schema a drift-watcher
     /// may fetch and diff (vs. prose a human must read).
     #[must_use]
@@ -103,7 +96,6 @@ impl SchemaSource {
         matches!(self, Self::JsonSchema { .. })
     }
 }
-
 impl Vendor {
     /// Parse a vendor tag (CLI `--vendor` value or `KAVACH_HARNESS`), case-insensitive.
     /// `None` for an empty/unknown tag so the caller falls through to auto-detect.
@@ -118,7 +110,6 @@ impl Vendor {
             _ => None,
         }
     }
-
     /// Resolve the vendor for one invocation — the hybrid policy:
     /// 1. `explicit` (CLI `--vendor`) if it names a known vendor,
     /// 2. else `$KAVACH_HARNESS`,
@@ -137,7 +128,6 @@ impl Vendor {
         }
         Self::detect(raw_payload)
     }
-
     /// Auto-detect the vendor from the raw payload's shape, then — only if the
     /// payload is inconclusive — from the process environment.
     ///
@@ -156,7 +146,6 @@ impl Vendor {
         }
         Self::detect_from_env().unwrap_or_default()
     }
-
     /// Detect from payload shape alone. `None` when the payload carries no
     /// vendor-distinguishing signal (a bare Claude-Code-shaped object, or any
     /// non-object) — the caller then consults the environment.
@@ -168,7 +157,6 @@ impl Vendor {
         let v = serde_json::from_str::<serde_json::Value>(raw_payload).ok()?;
         let has = |k: &str| v.get(k).is_some_and(|x| !x.is_null());
         let event = v.get("hook_event_name").and_then(|e| e.as_str());
-
         // Cursor: any of its unique top-level fields, OR a camelCase event name
         // from its vocabulary — the latter is the ONLY signal on `workspaceOpen`,
         // which omits every id field but still names a Cursor-only event.
@@ -187,7 +175,6 @@ impl Vendor {
         }
         None
     }
-
     /// Detect from harness-exported env markers — the cross-event fallback for
     /// lifecycle events whose payload is Claude-Code-shaped. `None` when no marker
     /// is set, so the caller defaults to Claude Code.
@@ -207,7 +194,6 @@ impl Vendor {
         }
         None
     }
-
     /// Lower a raw native payload into the canonical [`HookInput`] pivot. Every
     /// vendor path is null-tolerant (the W1 invariant) and maps native field
     /// names + event names onto the canonical ones.
@@ -223,7 +209,6 @@ impl Vendor {
             Self::Pi => pi::lower(raw_payload),
         }
     }
-
     /// Render a canonical [`HookResponse`] verdict into this vendor's native
     /// output contract as a stdout-ready JSON string. The event defaults to the
     /// one stamped on the response; use [`Self::render_for`] when the answered
@@ -236,7 +221,6 @@ impl Vendor {
             .map_or("", |h| h.hook_event_name.as_str());
         self.render_for(resp, event)
     }
-
     /// Render a verdict scoped to the canonical `event` being answered. Only
     /// Cursor's output contract is event-dependent (its `Stop` differs from its
     /// permission events); Claude Code and Codex render identically regardless.
@@ -252,7 +236,6 @@ impl Vendor {
             Self::Pi => pi::render(resp),
         }
     }
-
     /// The process exit code this vendor expects to signal a hard block. Claude
     /// Code, Cursor, Antigravity, and Pi signal via the JSON body (exit 0 — Pi
     /// blocks with `{"block":true}`, Antigravity with `{"decision":"deny"}`, not
@@ -264,7 +247,6 @@ impl Vendor {
             Self::Codex => 2,
         }
     }
-
     /// The live upstream hook-contract schema source for this vendor, so Kavach
     /// can reference the CURRENT contract from the internet rather than a frozen
     /// in-binary assumption. Claude Code and Cursor publish a machine-readable
@@ -295,7 +277,6 @@ impl Vendor {
             },
         }
     }
-
     /// Every vendor in detection order — the canonical roster a `--all` schema
     /// listing iterates. Kept in sync with [`Self`]'s variants by exhaustiveness:
     /// adding a variant forces this array (and `schema_url`) to be updated.
@@ -309,7 +290,6 @@ impl Vendor {
             Self::Pi,
         ]
     }
-
     /// Stable lowercase name for reports and `--vendor` round-trips. Defined here
     /// (not duplicated in callers) so the `#[non_exhaustive]` enum stays the SOLE
     /// match site — adding a variant forces an update in exactly one place.
@@ -324,7 +304,6 @@ impl Vendor {
         }
     }
 }
-
 /// True if `event` is a Cursor camelCase hook event. Cursor is the only harness
 /// whose event names are camelCase (`beforeShellExecution`, `workspaceOpen`…);
 /// Claude Code and Codex both use `PascalCase` (`PreToolUse`, `SessionStart`), so a
@@ -357,7 +336,6 @@ fn is_cursor_event(event: &str) -> bool {
             | "workspaceOpen"
     )
 }
-
 /// Last-ditch Claude-Code block JSON if the canonical response fails to serialize
 /// (mirrors the existing `write_json` fallback so behavior is identical).
 fn claude_fallback_block() -> String {

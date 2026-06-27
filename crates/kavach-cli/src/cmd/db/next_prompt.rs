@@ -4,13 +4,10 @@ use kavach_surreal::MemoryEntry;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::RecordId;
-
 mod author;
-
 #[cfg(test)]
 #[path = "next_prompt/next_prompt_test.rs"]
 mod tests;
-
 /// Outcome of selecting a servable prompt from a priority-ordered roadmap list.
 pub(crate) enum Pick<'a> {
     /// The top todo card carries a non-empty exec_prompt — serve it.
@@ -20,7 +17,6 @@ pub(crate) enum Pick<'a> {
     /// No todo card on the board.
     Empty,
 }
-
 /// Pick the first `todo` roadmap card from a priority-ordered slice and classify
 /// its exec_prompt. Pure — the IO wrapper below renders the outcome.
 pub(crate) fn pick(rows: &[MemoryEntry]) -> Pick<'_> {
@@ -32,7 +28,6 @@ pub(crate) fn pick(rows: &[MemoryEntry]) -> Pick<'_> {
         _ => Pick::Missing(top),
     }
 }
-
 /// `kavach db next-prompt --project X`: print the prompt to stdout, or a stderr
 /// warning + non-zero exit when the top card has none / the board is empty.
 pub(crate) fn run(project: &str) -> i32 {
@@ -67,7 +62,6 @@ pub(crate) fn run(project: &str) -> i32 {
         }
     })
 }
-
 /// Author the missing exec_prompt via Haiku, write it back to the SAME card (no
 /// skip), then serve it. Fail-soft: any author/write error falls back to the
 /// strict missing-prompt error so the harness never crashes.
@@ -112,7 +106,6 @@ async fn author_and_serve(
         Err(io_err) => into_exit_code(io_err),
     }
 }
-
 fn render_err(msg: &str) -> i32 {
     match ewrite_or_exit(msg) {
         Ok(()) => 1,

@@ -2,7 +2,6 @@
 //! from `verify.rs`). Discovers the Rust workspace (root or monorepo subdir) and
 //! runs cargo check + clippy + nextest + git-diff; the orchestration that consumes
 //! [`WitnessRun`]/[`run_workspace_witnesses`] lives in the `verify.rs` hub.
-
 /// Whether the cargo workspace witnesses ran and what they found.
 ///
 /// `Passed`: all witnesses (cargo check, clippy, nextest) executed and succeeded.
@@ -17,13 +16,11 @@ pub(crate) enum WitnessRun {
     SpawnError,
     Unprovable,
 }
-
 /// True iff `dir` itself holds a `Cargo.toml`. Pure, dir-parameterized so the
 /// rule is unit-testable without the test process's CWD. SOURCE: rca.keystone-trap.
 fn is_rust_workspace(dir: &std::path::Path) -> bool {
     dir.join("Cargo.toml").exists()
 }
-
 /// Discover the Rust workspace dir to verify in: `root` itself, else an immediate
 /// child holding a `Cargo.toml`. Returns `None` for a non-Rust project.
 ///
@@ -51,12 +48,10 @@ fn discover_rust_workspace(root: &std::path::Path) -> Option<std::path::PathBuf>
     children.sort();
     children.into_iter().find(|c| is_rust_workspace(c))
 }
-
 /// Read `KAVACH_VERIFY_CMD` if set (the non-Rust escape hatch).
 fn verify_command_env() -> Option<String> {
     std::env::var("KAVACH_VERIFY_CMD").ok()
 }
-
 /// First non-empty `WITNESS_ROOT: <path>` line in a card (trimmed, verbatim, `~`
 /// NOT expanded), or `None`. Lets a cross-repo card name its real workspace.
 #[must_use]
@@ -69,7 +64,6 @@ pub(crate) fn witness_root_from_card(content: &str) -> Option<String> {
             .map(str::to_owned)
     })
 }
-
 /// Run the build+test witnesses ONCE. Workspace precedence, most-specific first:
 /// per-card `card_root` hint → `WITNESS_ROOT` env → CWD → `KAVACH_VERIFY_CMD` → Unprovable.
 pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
@@ -99,7 +93,6 @@ pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
         },
     )
 }
-
 /// Agent-facing failure report: the failing witness command + the tail of its
 /// captured compiler output. Pure/testable. SOURCE: rca.opaque-witness — a bare
 /// "witnesses FAILED" drove an agent to call a real clippy error a "phantom".
@@ -110,7 +103,6 @@ pub(crate) fn failing_witness_report(cmd: &str, output_tail: &str) -> String {
         output_tail.trim_end()
     )
 }
-
 /// Run cargo check + clippy + nextest + git-diff IN `ws` (the discovered Rust
 /// workspace dir) — `current_dir(ws)` so a monorepo's `Backend/` is verified. On
 /// failure, ECHO the failing command + its output to stderr so the agent sees the
@@ -152,7 +144,6 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
     // Change-landed witness: a committed (clean) tree is landed too, not a failure.
     WitnessRun::Passed
 }
-
 // Tests lifted to a sibling (§NANO_FILE: this machinery file stays ≤100 LOC).
 // decision.kavach.verify-rs-nanofile-split-2026-06-17 — mechanical, behavior-
 // identical; rca.keystone-trap + rca.monorepo-verify-blind preserved verbatim.

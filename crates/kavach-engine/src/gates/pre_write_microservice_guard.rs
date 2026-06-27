@@ -17,7 +17,6 @@ mod tests;
 use super::platform_guard_msg::{build_advisory, build_block};
 use super::platform_guard_paths::is_test;
 use predicates::{is_mod_rs, is_orchestrator, is_rs_file};
-
 /// P0 microservice-structure check. Returns a block message on any violation.
 pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
     if !is_rs_file(file_path) || is_test(file_path) {
@@ -36,7 +35,6 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
     }
     Some(build_block("MICROSERVICE_GUARD", &p0))
 }
-
 /// P1 advisory for a service file mixing struct + impl + async handler + axum.
 pub(crate) fn format_advisory(file_path: &str, content: &str) -> Option<String> {
     if !is_rs_file(file_path) || is_test(file_path) {

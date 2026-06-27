@@ -2,13 +2,11 @@ mod error;
 mod resilience;
 mod witness;
 mod write_request;
-
 pub(crate) use error::{format_err, should_fallback_to_direct};
 pub(crate) use resilience::{open_direct_resilient, or_str};
 pub(crate) use witness::mint_receipt;
 pub(crate) use write_request::WriteRequest;
 pub(crate) use write_request::write;
-
 use kavach_rpc::client::call;
 use kavach_rpc::methods::db::{
     ArchiveParams, ArchiveResult, DeleteParams, DeleteResult, EventParams, EventResult,
@@ -20,7 +18,6 @@ use kavach_rpc::methods::db::{
     SetParentParams, SetParentResult, SetPriorityParams, SetPriorityResult, StatusUpdateParams,
     StatusUpdateResult, TreeParams, TreeResult, WipeProjectParams, WipeProjectResult,
 };
-
 #[expect(
     dead_code,
     reason = "RPC API surface — kanban::run staged for RPC fallback wiring (Phase 2 of CLI->RPC migration)"
@@ -39,7 +36,6 @@ pub(super) fn kanban(
     );
     call::<_, KanbanResult>("db.kanban", Some(params)).map_err(format_err)
 }
-
 pub(super) fn query(
     project: &str,
     category: Option<&str>,
@@ -52,18 +48,15 @@ pub(super) fn query(
     };
     call::<_, QueryResult>("db.query", Some(params)).map_err(format_err)
 }
-
 pub(super) fn list_projects() -> Result<ListProjectsResult, String> {
     call::<_, ListProjectsResult>("db.list_projects", Some(ListProjectsParams)).map_err(format_err)
 }
-
 pub(super) fn list_parts(project: &str) -> Result<ListPartsResult, String> {
     let params = ListPartsParams {
         project: project.to_owned(),
     };
     call::<_, ListPartsResult>("db.list_parts", Some(params)).map_err(format_err)
 }
-
 pub(super) fn set_parent(child: &str, parent: Option<&str>) -> Result<SetParentResult, String> {
     let params = SetParentParams {
         child: child.to_owned(),
@@ -71,7 +64,6 @@ pub(super) fn set_parent(child: &str, parent: Option<&str>) -> Result<SetParentR
     };
     call::<_, SetParentResult>("db.set_parent", Some(params)).map_err(format_err)
 }
-
 pub(super) fn register(
     slug: &str,
     abs_path: &str,
@@ -84,7 +76,6 @@ pub(super) fn register(
     };
     call::<_, RegisterResult>("db.register", Some(params)).map_err(format_err)
 }
-
 pub(super) fn register_part(
     project: &str,
     name: &str,
@@ -99,33 +90,27 @@ pub(super) fn register_part(
     };
     call::<_, RegisterPartResult>("db.register_part", Some(params)).map_err(format_err)
 }
-
 pub(super) fn rotate(days: i64) -> Result<RotateResult, String> {
     call::<_, RotateResult>("db.rotate", Some(RotateParams { days })).map_err(format_err)
 }
-
 pub(super) fn expire() -> Result<ExpireResult, String> {
     call::<_, ExpireResult>("db.expire", Some(ExpireParams)).map_err(format_err)
 }
-
 pub(super) fn find_project(abs_path: &str) -> Result<FindResult, String> {
     let params = FindParams {
         abs_path: abs_path.to_owned(),
     };
     call::<_, FindResult>("db.find_project", Some(params)).map_err(format_err)
 }
-
 pub(super) fn find_part(abs_path: &str) -> Result<FindResult, String> {
     let params = FindParams {
         abs_path: abs_path.to_owned(),
     };
     call::<_, FindResult>("db.find_part", Some(params)).map_err(format_err)
 }
-
 pub(super) fn tree() -> Result<TreeResult, String> {
     call::<_, TreeResult>("db.tree", Some(TreeParams)).map_err(format_err)
 }
-
 pub(super) fn search(
     project: &str,
     category: Option<&str>,
@@ -144,7 +129,6 @@ pub(super) fn search(
     };
     call::<_, SearchResult>("db.search", Some(params)).map_err(format_err)
 }
-
 pub(super) fn get(
     project: &str,
     category: &str,
@@ -159,7 +143,6 @@ pub(super) fn get(
     };
     call::<_, GetResult>("db.get", Some(params)).map_err(format_err)
 }
-
 pub(super) fn set_priority(
     project: &str,
     category: &str,
@@ -174,7 +157,6 @@ pub(super) fn set_priority(
     };
     call::<_, SetPriorityResult>("db.set_priority", Some(params)).map_err(format_err)
 }
-
 pub(super) fn set_lane(
     project: &str,
     category: &str,
@@ -189,7 +171,6 @@ pub(super) fn set_lane(
     };
     call::<_, SetLaneResult>("db.set_lane", Some(params)).map_err(format_err)
 }
-
 pub(super) fn status_update(
     project: &str,
     category: &str,
@@ -206,7 +187,6 @@ pub(super) fn status_update(
     };
     call::<_, StatusUpdateResult>("db.status_update", Some(params)).map_err(format_err)
 }
-
 pub(super) fn kanban_close(
     project: &str,
     key: &str,
@@ -219,7 +199,6 @@ pub(super) fn kanban_close(
     };
     call::<_, KanbanCloseResult>("db.kanban_close", Some(params)).map_err(format_err)
 }
-
 pub(super) fn delete(
     project: &str,
     category: &str,
@@ -239,7 +218,6 @@ pub(super) fn delete(
     };
     call::<_, DeleteResult>("db.delete", Some(params)).map_err(format_err)
 }
-
 pub(super) fn delete_by_key_prefix(
     project: &str,
     category: &str,
@@ -258,7 +236,6 @@ pub(super) fn delete_by_key_prefix(
     };
     call::<_, DeleteResult>("db.delete", Some(params)).map_err(format_err)
 }
-
 pub(super) fn wipe_project(
     project: &str,
     dry_run: bool,
@@ -271,7 +248,6 @@ pub(super) fn wipe_project(
     };
     call::<_, WipeProjectResult>("db.wipe_project", Some(params)).map_err(format_err)
 }
-
 pub(super) fn archive(floor_days: i64, dry_run: bool) -> Result<ArchiveResult, String> {
     let params = ArchiveParams {
         floor_days,
@@ -279,7 +255,6 @@ pub(super) fn archive(floor_days: i64, dry_run: bool) -> Result<ArchiveResult, S
     };
     call::<_, ArchiveResult>("db.archive", Some(params)).map_err(format_err)
 }
-
 pub(super) fn event(
     event_type: &str,
     payload: Option<&str>,
@@ -292,7 +267,6 @@ pub(super) fn event(
     };
     call::<_, EventResult>("db.event", Some(params)).map_err(format_err)
 }
-
 pub(super) fn graph_query(
     entity_type: Option<&str>,
     name: Option<&str>,
@@ -305,7 +279,6 @@ pub(super) fn graph_query(
     };
     call::<_, GraphQueryResult>("db.graph_query", Some(params)).map_err(format_err)
 }
-
 pub(super) fn flow_upsert(
     project_slug: &str,
     flow_key: &str,
@@ -325,7 +298,6 @@ pub(super) fn flow_upsert(
     call::<_, kavach_rpc::methods::db::FlowUpsertResult>("db.flow_upsert", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn flow_render(
     project_slug: &str,
     flow_key: &str,
@@ -339,7 +311,6 @@ pub(super) fn flow_render(
     call::<_, kavach_rpc::methods::db::FlowRenderResult>("db.flow_render", Some(params))
         .map_err(format_err)
 }
-
 #[expect(
     dead_code,
     reason = "Probe API for callers that need to gate behavior on daemon presence — kept public for downstream consumers"
@@ -347,7 +318,6 @@ pub(super) fn flow_render(
 pub(super) fn is_daemon_available() -> bool {
     call::<(), serde_json::Value>("system.health", None::<()>).is_ok()
 }
-
 pub(super) fn concept_add(
     name: &str,
     display: &str,
@@ -365,7 +335,6 @@ pub(super) fn concept_add(
     call::<_, kavach_rpc::methods::concept::IdResult>("concept.add", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn concept_link(from: &str, edge: &str, to: &str) -> Result<String, String> {
     let params = kavach_rpc::methods::concept::LinkParams {
         from: from.to_owned(),
@@ -374,7 +343,6 @@ pub(super) fn concept_link(from: &str, edge: &str, to: &str) -> Result<String, S
     };
     call::<_, String>("concept.link", Some(params)).map_err(format_err)
 }
-
 pub(super) fn concept_delete(name: &str) -> Result<i64, String> {
     let params = kavach_rpc::methods::concept::DeleteParams {
         name: name.to_owned(),
@@ -383,7 +351,6 @@ pub(super) fn concept_delete(name: &str) -> Result<i64, String> {
         .map(|r| r.removed)
         .map_err(format_err)
 }
-
 pub(super) fn concept_delete_by_prefix(prefix: &str, confirm: bool) -> Result<i64, String> {
     let params = kavach_rpc::methods::concept::DeleteByPrefixParams {
         prefix: prefix.to_owned(),
@@ -393,7 +360,6 @@ pub(super) fn concept_delete_by_prefix(prefix: &str, confirm: bool) -> Result<i6
         .map(|r| r.removed)
         .map_err(format_err)
 }
-
 pub(super) fn concept_search(
     query: &str,
     limit: usize,
@@ -404,12 +370,10 @@ pub(super) fn concept_search(
     };
     call::<_, Vec<kavach_surreal::Entity>>("concept.search", Some(params)).map_err(format_err)
 }
-
 pub(super) fn concept_list(limit: usize) -> Result<Vec<kavach_surreal::Entity>, String> {
     let params = kavach_rpc::methods::concept::ListParams { limit: Some(limit) };
     call::<_, Vec<kavach_surreal::Entity>>("concept.list", Some(params)).map_err(format_err)
 }
-
 pub(super) fn citation_add(
     project: &str,
     entry_key: &str,
@@ -425,7 +389,6 @@ pub(super) fn citation_add(
     call::<_, kavach_rpc::methods::citation::IdResult>("citation.add", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn citation_get(
     project: &str,
     entry_key: &str,
@@ -436,14 +399,12 @@ pub(super) fn citation_get(
     };
     call::<_, Option<kavach_surreal::Citation>>("citation.get", Some(params)).map_err(format_err)
 }
-
 pub(super) fn citation_list(project: &str) -> Result<Vec<kavach_surreal::Citation>, String> {
     let params = kavach_rpc::methods::citation::ListParams {
         project: project.to_owned(),
     };
     call::<_, Vec<kavach_surreal::Citation>>("citation.list", Some(params)).map_err(format_err)
 }
-
 pub(super) fn citation_link(node: &str, citation: &str) -> Result<String, String> {
     let params = kavach_rpc::methods::citation::LinkParams {
         node: node.to_owned(),
@@ -451,7 +412,6 @@ pub(super) fn citation_link(node: &str, citation: &str) -> Result<String, String
     };
     call::<_, String>("citation.link", Some(params)).map_err(format_err)
 }
-
 pub(super) fn citation_traverse(citation: &str) -> Result<Vec<String>, String> {
     let params = kavach_rpc::methods::citation::TraverseParams {
         citation: citation.to_owned(),
@@ -460,7 +420,6 @@ pub(super) fn citation_traverse(citation: &str) -> Result<Vec<String>, String> {
         .map(|r| r.citers)
         .map_err(format_err)
 }
-
 pub(super) fn citation_refresh(citation: &str, delta: f64) -> Result<usize, String> {
     let params = kavach_rpc::methods::citation::RefreshParams {
         citation: citation.to_owned(),
@@ -470,7 +429,6 @@ pub(super) fn citation_refresh(citation: &str, delta: f64) -> Result<usize, Stri
         .map(|r| r.rewarded)
         .map_err(format_err)
 }
-
 pub(super) fn gate_config_get(
     project: &str,
     gate_key: &str,
@@ -482,7 +440,6 @@ pub(super) fn gate_config_get(
     call::<_, Option<kavach_rpc::methods::db::GateValueDto>>("db.gate_config_get", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn gate_config_set(
     project: &str,
     gate_key: &str,
@@ -495,7 +452,6 @@ pub(super) fn gate_config_set(
     };
     call::<_, String>("db.gate_config_set", Some(params)).map_err(format_err)
 }
-
 pub(super) fn gate_config_delete(project: &str, gate_key: &str) -> Result<String, String> {
     let params = kavach_rpc::methods::db::GateCfgDeleteParams {
         project: project.to_owned(),
@@ -503,7 +459,6 @@ pub(super) fn gate_config_delete(project: &str, gate_key: &str) -> Result<String
     };
     call::<_, String>("db.gate_config_delete", Some(params)).map_err(format_err)
 }
-
 pub(super) fn gate_config_list(
     project: &str,
 ) -> Result<Vec<kavach_surreal::GateConfigEntry>, String> {
@@ -513,7 +468,6 @@ pub(super) fn gate_config_list(
     call::<_, Vec<kavach_surreal::GateConfigEntry>>("db.gate_config_list", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn bridge_create(
     src_table: &str,
     src_key: &str,
@@ -529,13 +483,11 @@ pub(super) fn bridge_create(
     call::<_, kavach_rpc::methods::bridge::IdResult>("bridge.create", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn bridge_concepts_for(project: &str) -> Result<Vec<kavach_surreal::BridgeHit>, String> {
     let params = kavach_rpc::methods::bridge::ConceptsForParams::new(project.to_owned());
     call::<_, Vec<kavach_surreal::BridgeHit>>("bridge.concepts_for", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn bridge_projects_for(
     concept: &str,
 ) -> Result<Vec<kavach_surreal::ProjectHit>, String> {
@@ -543,7 +495,6 @@ pub(super) fn bridge_projects_for(
     call::<_, Vec<kavach_surreal::ProjectHit>>("bridge.projects_for", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn mistake_hit_count(
     name: &str,
 ) -> Result<kavach_rpc::methods::mistake::HitCountResult, String> {
@@ -551,7 +502,6 @@ pub(super) fn mistake_hit_count(
     call::<_, kavach_rpc::methods::mistake::HitCountResult>("mistake.hit_count", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn mistake_purge(
     gate: &str,
 ) -> Result<kavach_rpc::methods::mistake::PurgeResult, String> {
@@ -559,29 +509,24 @@ pub(super) fn mistake_purge(
     call::<_, kavach_rpc::methods::mistake::PurgeResult>("mistake.purge", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn ope_evaluate(
     params: kavach_rpc::methods::db::OpeEvaluateParams,
 ) -> Result<kavach_rpc::methods::db::OpeEvaluateResult, String> {
     call::<_, kavach_rpc::methods::db::OpeEvaluateResult>("db.ope_evaluate", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn ope_audit(
     params: kavach_rpc::methods::db::OpeAuditParams,
 ) -> Result<kavach_rpc::methods::db::OpeAuditResult, String> {
     call::<_, kavach_rpc::methods::db::OpeAuditResult>("db.ope_audit", Some(params))
         .map_err(format_err)
 }
-
 pub(super) fn run_record(params: serde_json::Value) -> Result<serde_json::Value, String> {
     call::<_, serde_json::Value>("run.record", Some(params)).map_err(format_err)
 }
-
 pub(super) fn run_update_status(params: serde_json::Value) -> Result<serde_json::Value, String> {
     call::<_, serde_json::Value>("run.update_status", Some(params)).map_err(format_err)
 }
-
 pub(super) fn raw_query(query: &str) -> Result<kavach_rpc::methods::db::RawQueryResult, String> {
     let params = kavach_rpc::methods::db::RawQueryParams {
         query: query.to_owned(),
@@ -589,7 +534,6 @@ pub(super) fn raw_query(query: &str) -> Result<kavach_rpc::methods::db::RawQuery
     call::<_, kavach_rpc::methods::db::RawQueryResult>("db.raw_query", Some(params))
         .map_err(format_err)
 }
-
 #[cfg(test)]
 #[path = "rpc_client_test.rs"]
 #[cfg(test)]

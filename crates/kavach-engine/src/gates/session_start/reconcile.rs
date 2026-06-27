@@ -1,6 +1,5 @@
 //! Compaction-seam reconcile predicate (E7): decide resume-verify vs re-dispatch
 //! for an `in_progress` card after a possible auto-compact seam.
-
 #[cfg(test)]
 #[path = "reconcile_test.rs"]
 #[cfg(test)]
@@ -15,7 +14,6 @@ pub(crate) enum ReconcileAction {
     /// No overlap / clean tree / already recorded → normal dispatch.
     ReDispatch,
 }
-
 /// Parse a card's `TOUCHES: <p1> <p2> …` line (ws/comma-sep); first line wins,
 /// empties dropped. Matched by basename downstream, so a bare filename suffices.
 #[must_use]
@@ -32,11 +30,9 @@ pub(crate) fn touched_paths_from_card(content: &str) -> Vec<String> {
         })
         .unwrap_or_default()
 }
-
 fn basename(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path)
 }
-
 /// Destination path of a porcelain `XY <path>` line (rename → dest); short → None.
 fn porcelain_path(line: &str) -> Option<&str> {
     let rest = line.get(3..)?.trim();
@@ -45,7 +41,6 @@ fn porcelain_path(line: &str) -> Option<&str> {
     }
     Some(rest.rsplit(" -> ").next().unwrap_or(rest).trim())
 }
-
 fn dirty_overlaps_card(porcelain: &str, card_paths: &[String]) -> bool {
     if card_paths.is_empty() {
         return false;
@@ -56,7 +51,6 @@ fn dirty_overlaps_card(porcelain: &str, card_paths: &[String]) -> bool {
         .filter_map(porcelain_path)
         .any(|p| wanted.contains(basename(p)))
 }
-
 /// `ResumeVerify` iff `in_progress` AND no status cmd recorded AND dirty tree
 /// overlaps the card's `TOUCHES` paths; every other combination is `ReDispatch`
 /// (fail-safe — a missing hint / clean tree / recorded transition never resumes).
@@ -73,7 +67,6 @@ pub(crate) fn reconcile_action(
         ReconcileAction::ReDispatch
     }
 }
-
 /// Impure wrapper: emit a `[RECONCILE]` block only in the seam case. Fail-soft —
 /// any RPC/git miss or non-seam verdict returns `None`. Called by BOTH the
 /// session-start hook AND the Stop gate: an auto-compact can fire a Stop before the
@@ -102,7 +95,6 @@ pub(in crate::gates) fn reconcile_context(project: &str) -> Option<String> {
         ReconcileAction::ReDispatch => None,
     }
 }
-
 /// The single `in_progress` roadmap card `(key, content)`, or `None` on RPC miss.
 fn in_progress_card(project: &str) -> Option<(String, String)> {
     let params = serde_json::json!({ "project": project });
@@ -119,7 +111,6 @@ fn in_progress_card(project: &str) -> Option<(String, String)> {
         .unwrap_or_default();
     Some((key.to_owned(), content.to_owned()))
 }
-
 fn git_status_porcelain() -> Option<String> {
     let out = std::process::Command::new("git")
         .args(["status", "--porcelain"])

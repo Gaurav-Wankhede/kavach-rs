@@ -1,11 +1,8 @@
 use std::collections::HashSet;
-
 use chrono::Local;
-
 use crate::types::{
     AegisVerification, CEODecision, IntentAnalysis, ResearchStatus, VerificationResult,
 };
-
 //   {"name":"Vec<String> + .contains","reason":"O(N) lookup per gate-check; N small enough to be fine but HashSet is idiomatic and read-dominated"},
 //   {"name":"BTreeSet<String>","reason":"O(log N) ordered lookup unneeded; we don't iterate in order; HashSet's O(1) average wins"},
 //   {"name":"HashSet<&'static str>","reason":"would force gate-name allowlist at compile-time; we want runtime extensibility per §13 inviolable"}
@@ -44,7 +41,6 @@ pub struct ChainState {
     #[serde(default)]
     pub kernel_observed: Option<String>,
 }
-
 impl ChainState {
     #[must_use]
     pub fn new(session_id: &str) -> Self {
@@ -61,7 +57,6 @@ impl ChainState {
             kernel_observed: None,
         }
     }
-
     /// Record that the router suggested `agent_name` this turn. Returns the
     /// new count for the agent (post-increment). Single-lookup entry pattern.
     pub fn record_suggestion(&mut self, agent_name: &str) -> u32 {
@@ -72,7 +67,6 @@ impl ChainState {
         *entry = entry.saturating_add(1);
         *entry
     }
-
     /// True iff the router has already suggested `agent_name` >= `threshold`
     /// times this session — caller should suppress further suggestions.
     #[must_use]
@@ -81,7 +75,6 @@ impl ChainState {
             .get(agent_name)
             .is_some_and(|c| *c >= threshold)
     }
-
     pub fn add_result(&mut self, mut result: VerificationResult) {
         result.timestamp = Local::now().to_rfc3339();
         if result.status == "block" {
@@ -89,12 +82,10 @@ impl ChainState {
         }
         self.results.push(result);
     }
-
     #[must_use]
     pub fn is_blocked(&self) -> bool {
         self.final_status == "blocked"
     }
-
     #[must_use]
     pub fn get_block_reason(&self) -> String {
         for r in &self.results {
@@ -104,19 +95,16 @@ impl ChainState {
         }
         String::new()
     }
-
     /// Mark a gate as satisfied for the remainder of this session.
     pub fn mark_satisfied(&mut self, gate: &str) {
         self.satisfied_gates.insert(gate.to_owned());
     }
-
     /// Check whether a gate has already been satisfied this session.
     #[must_use]
     pub fn is_satisfied(&self, gate: &str) -> bool {
         self.satisfied_gates.contains(gate)
     }
 }
-
 #[cfg(test)]
 #[path = "types_tests.rs"]
 mod tests;

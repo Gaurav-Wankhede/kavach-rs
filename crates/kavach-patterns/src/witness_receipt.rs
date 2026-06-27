@@ -6,12 +6,9 @@
 //! HEAD`) without ever spawning cargo — so the same evidence contract the CLI
 //! enforces also binds every direct RPC caller, with no tokio-worker block and no
 //! nextest→hook→daemon re-entrancy. SOURCE: decision.cli-verifier.witness-receipt-rpc-boundary.
-
 use serde::{Deserialize, Serialize};
-
 /// Freshness window: a receipt older than this is stale (the tree may have moved).
 const FRESHNESS_MS: i64 = 300_000; // 5 minutes
-
 /// A proof that the workspace witnesses passed against a specific commit, for a
 /// specific session, at a specific time. Minted only by the witness path.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +23,6 @@ pub struct Receipt {
     /// The session that minted it — anti cross-session replay.
     pub session_id: String,
 }
-
 impl Receipt {
     /// Construct a receipt (non-exhaustive struct needs a cross-crate constructor).
     #[must_use]
@@ -39,7 +35,6 @@ impl Receipt {
         }
     }
 }
-
 /// Why a receipt was refused — surfaced verbatim to the agent so it knows to
 /// re-run the witness rather than guess.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,7 +49,6 @@ pub enum ReceiptError {
     /// No session bound, or it does not match the promoting session.
     SessionMismatch,
 }
-
 impl std::fmt::Display for ReceiptError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
@@ -66,7 +60,6 @@ impl std::fmt::Display for ReceiptError {
         f.write_str(s)
     }
 }
-
 /// Validate a receipt against the daemon's live view. Cheap and total — no I/O.
 ///
 /// The caller supplies `head_now`/`now_ms`/`session_now`: the current `HEAD`, the
@@ -97,7 +90,6 @@ pub fn validate(
     }
     Ok(())
 }
-
 #[cfg(test)]
 #[path = "witness_receipt_test.rs"]
 #[cfg(test)]

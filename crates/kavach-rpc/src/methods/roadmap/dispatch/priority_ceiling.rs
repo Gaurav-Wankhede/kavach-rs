@@ -12,14 +12,11 @@
 //! keeps skipping B for less-important pri-2..8 cards while A starves — A can
 //! NEVER run until B does. Ceiling lifts B's EFFECTIVE priority to 1 (A's), so B
 //! is dispatched next and A unblocks. Pure: computes a sort key, no I/O.
-
 use super::super::readiness::parse_declared_deps;
 use kavach_surreal::MemoryEntry;
 use std::collections::HashMap;
-
 /// Absent priority sorts last — mirrors `read.rs`'s `priority ?? 999999`.
 const PRIORITY_NONE: i64 = 999_999;
-
 /// Effective dispatch priority for each entry, keyed by `entry_key`: the entry's
 /// own priority OR the most-urgent (numerically smallest) priority among the
 /// cards that declare a `DEPENDS_ON` on it — whichever is more urgent.
@@ -35,7 +32,6 @@ pub(super) fn effective_priorities(entries: &[MemoryEntry]) -> HashMap<String, i
         .iter()
         .map(|e| (e.entry_key.clone(), raw(e)))
         .collect();
-
     for dependent in entries {
         let dep_pri = raw(dependent);
         for blocker_key in parse_declared_deps(&dependent.content) {
@@ -47,7 +43,6 @@ pub(super) fn effective_priorities(entries: &[MemoryEntry]) -> HashMap<String, i
     }
     eff
 }
-
 /// Re-sort `entries` in place by EFFECTIVE priority (ascending = most urgent
 /// first), `created_at` as the stable tiebreak — matching the DB read's
 /// `ORDER BY _sort_priority ASC, created_at ASC` but with ceilings applied.
@@ -59,7 +54,6 @@ pub(super) fn sort_by_effective_priority(entries: &mut [MemoryEntry]) {
         pa.cmp(&pb).then_with(|| a.created_at.cmp(&b.created_at))
     });
 }
-
 #[cfg(test)]
 #[path = "priority_ceiling_test.rs"]
 #[cfg(test)]

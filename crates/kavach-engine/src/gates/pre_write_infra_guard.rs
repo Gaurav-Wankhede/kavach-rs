@@ -11,12 +11,10 @@ mod block;
 mod tests;
 pub(crate) use advisory::format_advisory;
 pub(crate) use block::check;
-
 // Split needles to avoid self-triggering when this file is scanned.
 const GQL: &str = concat!("graph", "ql");
 const INTRO: &str = concat!("intros", "pection");
 const ENABLED: &str = concat!("enabl", "ed");
-
 /// True for `.ts`/`.tsx`/`.rs` files (the infra-protocol surface).
 fn is_infra_file(path: &str) -> bool {
     std::path::Path::new(path).extension().is_some_and(|e| {

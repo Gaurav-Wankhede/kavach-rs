@@ -10,31 +10,25 @@ mod phase;
 mod practice_delta;
 mod recall;
 mod version_pin;
-
 #[cfg(test)]
 mod rag_tests;
 #[cfg(test)]
 #[path = "intent_tests.rs"]
 mod tests;
-
 use kavach_types::HookInput;
-
 // Re-export so `session_start` can inject the SAME live `[KANBAN]` block at
 // SessionStart that the UserPromptSubmit hook injects — both read the live board.
 pub(in crate::gates) use context::append_live_kanban_block;
 // SINGLE canonical emitter of the DECISION_MAP/PRACTICE_DELTA/PATTERN_DAG triad —
 // both this hook and SessionStart call it, so the triad can never drift out of one.
 pub(in crate::gates) use context::append_mermaid_views;
-
 use super::intent_context::extract_research_topic;
 use classify::{
     apply_focus_marker, collapse_required_via_rag, filter_invocable_skills, prompt_injection_block,
 };
 use context::append_context_blocks;
 use kvs::build_base_context;
-
 use crate::error::EngineError;
-
 /// Intent gate entry point. Classifies the prompt, mutates session enforcement
 /// state, and emits the `[INTENT]` context block.
 #[expect(
@@ -52,7 +46,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         drop(kavach_hook::exit_prompt_submit_block(&msg));
         return Ok(());
     }
-
     let mut session = kavach_session::get_or_create_session();
     session.reset_research_for_new_prompt();
     session.reset_evidence_window();
@@ -63,7 +56,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // steered is NOT hijacked onto a different kanban card by the dispatcher.
     session.mark_user_directive();
     apply_focus_marker(&mut session, prompt);
-
     let intent = kavach_chain::analyze_intent(prompt);
     // Authoritatively write the freshly-derived classification back NOW: it is a
     // pure function of THIS prompt, but the parse.rs load-guard refuses to
@@ -76,7 +68,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     if !skills.is_empty() {
         session.set_required_skills(skills);
     }
-
     if kavach_session::SessionState::detect_new_crate_confirmation(prompt) {
         session.confirm_new_crate();
     }
@@ -95,16 +86,13 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         &intent.risk_level,
         &session.project,
     );
-
     // L4: classify the prompt into a harness pattern + persist it on the next
     // card so the L3 stop-gate dispatches that workflow. Fail-soft + advisory.
     let harness_block = harness::persist_for_next_card(&session.project, prompt);
-
     let router = kavach_chain::SkillFirstRouter::new();
     let keywords: Vec<&str> = prompt.split_whitespace().collect();
     let routing = router.route(prompt, &keywords);
     let forbidden = kavach_chain::ResearchGate::new().check_forbidden_phrases(prompt);
-
     let mut context = build_base_context(&intent, &routing, &session);
     // Pin research to installed versions: hand the LLM exact Cargo.lock versions of
     // any dependency named in the prompt, so a query can never drift to stale weights.
@@ -128,7 +116,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         prompt,
         &forbidden,
     );
-
     // Cursor turn shadow: persist compact per-turn context for preToolUse relay.
     let harness_pattern = harness::classify_harness(prompt);
     let top_skill = super::rag_router::top_skill_names_all("", prompt, &intent.intent_type, 1)
@@ -141,7 +128,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         top_skill.as_deref(),
     );
     session.store_turn_shadow(&shadow);
-
     drop(kavach_hook::exit_prompt_context(&context));
     Ok(())
 }

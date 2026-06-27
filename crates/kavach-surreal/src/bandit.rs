@@ -8,12 +8,10 @@
 //! back-filled DOWNSTREAM once the 3-witness verify resolves. This crate stays
 //! decoupled from `kavach-patterns`: the typed `BanditRow` is serialized by the
 //! caller and stored opaquely as JSON.
-
 use crate::error::Result;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
-
 #[cfg(test)]
 #[path = "bandit_test.rs"]
 #[cfg(test)]
@@ -24,14 +22,12 @@ mod tests;
 struct IdRow {
     id: RecordId,
 }
-
 /// One stored payload row, read back from `bandit_log`. Holds the opaque
 /// `surrealdb_types::Value` (the SDK's `take` needs `SurrealValue`, not serde).
 #[derive(surrealdb_types::SurrealValue)]
 struct BanditPayloadRow {
     payload: surrealdb_types::Value,
 }
-
 /// Append one Layer-A RLVR bandit-log row (harness-rl Wave P2).
 ///
 /// `payload` is the serialized `BanditRow` JSON (the `(x, a, p, r)` tuple) -- this
@@ -63,7 +59,6 @@ pub async fn append_bandit_row(db: &Surreal<Db>, payload: &str) -> Result<Record
         )),
     }
 }
-
 /// Read back the stored bandit-log payloads, newest first, capped at `limit`.
 ///
 /// Each returned string is the serialized `BanditRow` JSON the OPE layer
@@ -79,7 +74,6 @@ pub async fn list_bandit_rows(db: &Surreal<Db>, limit: u32) -> Result<Vec<String
     let rows: Vec<BanditPayloadRow> = response.take(0)?;
     rows.into_iter().map(payload_to_json).collect()
 }
-
 /// List logged decisions whose reward has NOT been back-filled yet (P3a input).
 ///
 /// A row is un-rewarded when its stored `payload.reward` is `null` — the emitter
@@ -104,7 +98,6 @@ pub async fn list_unrewarded_bandit_rows(db: &Surreal<Db>, limit: u32) -> Result
         .take(limit as usize)
         .collect()
 }
-
 /// List a SINGLE session's un-rewarded decisions — the P3a JOIN input.
 ///
 /// This is the join the reward back-fill needs: the stop gate knows the
@@ -141,7 +134,6 @@ pub async fn list_unrewarded_bandit_rows_for_session(
         .take(limit as usize)
         .collect()
 }
-
 /// Back-fill the realized reward on one logged decision (P3a write).
 ///
 /// Re-derives the content-addressed key from the ORIGINAL un-rewarded `payload`
@@ -169,7 +161,6 @@ pub async fn update_bandit_reward(db: &Surreal<Db>, payload: &str, reward: &str)
     }
     Ok(())
 }
-
 /// The content-addressed record key for a payload: the first 32 hex of its
 /// BLAKE3 digest. The single definition both the append and the back-fill share,
 /// so the key derivation can never drift between write and update.
@@ -181,7 +172,6 @@ fn content_key(payload: &str) -> String {
         .unwrap_or(digest.as_str())
         .to_owned()
 }
-
 /// Fetch every stored payload as JSON, newest first (unbounded — callers filter
 /// then `take`). The shared read both un-rewarded listers build on.
 async fn select_all_payloads(db: &Surreal<Db>) -> Result<Vec<Result<String>>> {
@@ -190,7 +180,6 @@ async fn select_all_payloads(db: &Surreal<Db>) -> Result<Vec<Result<String>>> {
     let rows: Vec<BanditPayloadRow> = response.take(0)?;
     Ok(rows.into_iter().map(payload_to_json).collect())
 }
-
 /// Bridge one opaque stored payload to its plain-JSON string.
 ///
 /// `into_json_value` emits PLAIN JSON; `serde_json::to_value` would emit
@@ -200,7 +189,6 @@ fn payload_to_json(r: BanditPayloadRow) -> Result<String> {
     let json = r.payload.into_json_value();
     serde_json::to_string(&json).map_err(crate::error::Error::Json)
 }
-
 /// True when the serialized `BanditRow` JSON carries no realized reward yet —
 /// `reward` is absent or JSON null. A parse failure counts as "still pending" so
 /// a malformed row is surfaced to the caller, never silently graded.
@@ -209,7 +197,6 @@ fn reward_is_absent(payload: &str) -> bool {
         .ok()
         .is_none_or(|v| reward_absent_in(&v))
 }
-
 /// True when this row is un-rewarded AND logged under `session_id` — the
 /// per-session JOIN predicate. Parses the payload ONCE and tests both fields on
 /// the same `Value`; a parse failure surfaces the row (both predicates default
@@ -219,12 +206,10 @@ fn pending_for_session(payload: &str, session_id: &str) -> bool {
         .ok()
         .is_none_or(|v| reward_absent_in(&v) && session_matches_in(&v, session_id))
 }
-
 /// `reward` field is absent or JSON null on an already-parsed row.
 fn reward_absent_in(v: &serde_json::Value) -> bool {
     v.get("reward").is_none_or(serde_json::Value::is_null)
 }
-
 /// `session_id` field equals `session_id` on an already-parsed row.
 fn session_matches_in(v: &serde_json::Value, session_id: &str) -> bool {
     v.get("session_id").and_then(serde_json::Value::as_str) == Some(session_id)

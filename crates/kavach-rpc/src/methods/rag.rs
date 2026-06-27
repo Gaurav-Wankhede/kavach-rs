@@ -9,7 +9,6 @@ use kavach_surreal::{
     rag_tree_list_refreshable, rag_tree_upsert_with_dir,
 };
 use serde::Deserialize;
-
 #[cfg(test)]
 #[path = "rag_test.rs"]
 #[cfg(test)]
@@ -23,7 +22,6 @@ mod tests;
 pub async fn tree_list_labels(state: &AppState) -> Result<Vec<RagTreeLabel>, ErrorObjectOwned> {
     rag_tree_list(&state.db).await.map_err(surreal_to_rpc)
 }
-
 /// Lists refreshable RAG trees.
 ///
 /// # Errors
@@ -36,13 +34,11 @@ pub async fn tree_list_refreshable(
         .await
         .map_err(surreal_to_rpc)
 }
-
 #[derive(Debug, Deserialize)]
 #[non_exhaustive]
 pub struct TreeGetParams {
     pub source: String,
 }
-
 /// Fetches one persisted `rag_tree` row (blob + hash) by source label.
 ///
 /// # Errors
@@ -56,7 +52,6 @@ pub async fn tree_get(
         .await
         .map_err(surreal_to_rpc)
 }
-
 #[derive(Debug, Deserialize)]
 #[non_exhaustive]
 pub struct TreeUpsertParams {
@@ -66,7 +61,6 @@ pub struct TreeUpsertParams {
     pub source_hash: String,
     pub source_dir: String,
 }
-
 /// Persists (upserts) a built `rag_tree` blob keyed by source label.
 ///
 /// # Errors

@@ -5,9 +5,7 @@
 //! words and replace the procedure with a DB-fetched imperative
 //! (`gate.owner-gate-act-imperative`) telling the agent to DECOMPOSE the
 //! buildable sub-task or DELETE the anchor — both completed this turn.
-
 use crate::gates::directive_cache::dyn_directive;
-
 /// Title-prefix / inline markers (matched case-insensitively) that flag a card
 /// whose title declares an external/owner gate. These are the exact shapes the
 /// looping transcript showed dispatched as "runnable". Kept as a small const
@@ -20,7 +18,6 @@ const GATE_MARKERS: [&str; 6] = [
     "await greenlight",
     "owner-action",
 ];
-
 /// `true` iff `title` is gate-shaped — it announces an owner/external gate that
 /// would otherwise be dispatched as runnable and looped on with "Holding".
 #[must_use]
@@ -28,7 +25,6 @@ pub(super) fn is_gate_shaped(title: &str) -> bool {
     let lower = title.to_lowercase();
     GATE_MARKERS.iter().any(|m| lower.contains(m))
 }
-
 /// Strip the gate words from a gate-shaped title so the agent sees the WORK, not
 /// the gate framing. Removes a leading `GATE:` / `OWNER-GATE:` prefix and any
 /// inline gate marker token, collapsing surrounding separators. Falls back to the
@@ -72,7 +68,6 @@ pub(super) fn strip_gate_words(title: &str) -> String {
         cleaned
     }
 }
-
 /// The ACT-driven imperative injected when a gate-shaped card is dispatched.
 ///
 /// Imperative register only: the agent extracts the buildable sub-task or
@@ -108,7 +103,6 @@ pub(super) fn act_imperative(stripped: &str) -> String {
          its gate words are removed. WORK: \"{stripped}\". {body}"
     )
 }
-
 #[cfg(test)]
 #[path = "gate_strip_test.rs"]
 #[cfg(test)]

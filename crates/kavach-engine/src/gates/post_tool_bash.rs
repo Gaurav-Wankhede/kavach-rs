@@ -12,7 +12,6 @@ mod tests_track;
 #[path = "post_tool_bash_test.rs"]
 mod tests;
 pub(crate) use handle::handle;
-
 /// Public accessor for the trimming path (`track_state_only`).
 #[must_use]
 pub(crate) fn is_test_command_pub(cmd: &str) -> bool {

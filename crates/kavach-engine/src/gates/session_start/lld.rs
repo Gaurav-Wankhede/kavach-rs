@@ -8,14 +8,12 @@
 //!
 //! Scoped to the kavach project ONLY — every other project's SessionStart is
 //! untouched, so this never spends another codebase's token budget on kavach's map.
-
 /// Project slugs for which the kavach self-architecture is relevant. A non-kavach
 /// project gets `None` (the block is omitted entirely).
 fn is_kavach_project(project: &str) -> bool {
     let p = project.to_ascii_lowercase();
     p == "kavach-rs" || p == "kavach" || p.starts_with("kavach-")
 }
-
 /// The compact LLD awareness block — a single Mermaid flowchart of the governing
 /// loop plus a one-line crate/CLI/store legend. Kept tight on purpose: the session
 /// already carries the live board + ledger; this is the static self-model only.
@@ -41,7 +39,6 @@ CLI groups (~35 verbs): store(db get|write|kanban-close|context) · loop(loop|he
 awareness(think|ask|doctor|oversized|spec|schema|security) · \
 lifecycle(phase|session|verify|verify-frontend|deploy|mistake) · ops(status|web|servers|gates|install|rules|toolbelt|tailwind-plus|todos|tasks). \
 Source of truth for any flag: `kavach <cmd> --help`.\n";
-
 /// `Some(block)` with the kavach LLD awareness for a kavach project, else `None`.
 ///
 /// Fail-soft by construction: a non-kavach project (or empty slug) yields `None`,
@@ -54,7 +51,6 @@ pub(super) fn lld_context(project: &str) -> Option<String> {
     }
     Some(KAVACH_LLD.to_owned())
 }
-
 #[cfg(test)]
 #[path = "lld_test.rs"]
 #[cfg(test)]

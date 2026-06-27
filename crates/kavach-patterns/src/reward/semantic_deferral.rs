@@ -17,7 +17,6 @@
 //!
 //! SOURCE: card roadmap.unit.infra.kavach-harness.semantic-deferral-detector;
 //! global CLAUDE.md forbidden-handoff-phrases law; RLAIF judge idiom (`ai_verdict.rs`).
-
 /// Handoff verbs/phrases that signal the assistant is RELINQUISHING the work
 /// rather than doing it. Paraphrase-robust stems the literal regex lacks.
 const HANDOFF_SIGNALS: [&str; 10] = [
@@ -32,7 +31,6 @@ const HANDOFF_SIGNALS: [&str; 10] = [
     "when you're ready",
     "whenever you're ready",
 ];
-
 /// Second-person-actor cues that confirm the relinquished work is aimed at the
 /// USER. Required to co-occur with a handoff signal so neutral "you" prose in a
 /// genuine completion summary is not misread as a deferral (fail-safe to false).
@@ -44,7 +42,6 @@ const ACTOR_SIGNALS: [&str; 6] = [
     "you'll want",
     "if you'd like",
 ];
-
 /// Classify a Stop `final_message` as a semantic deferral/false-blocker handoff.
 ///
 /// Returns `true` ONLY when a handoff signal AND a second-person-actor cue both
@@ -61,7 +58,6 @@ pub fn is_semantic_deferral(message: &str) -> bool {
     let has_actor = ACTOR_SIGNALS.iter().any(|s| lowered.contains(s));
     has_handoff && has_actor
 }
-
 #[cfg(test)]
 #[path = "semantic_deferral_test.rs"]
 #[cfg(test)]

@@ -22,11 +22,8 @@ mod tests;
 // Shared with the Stop gate: an auto-compact can fire a Stop before the next
 // SessionStart reconciles the seam, so the Stop terminal also checks it.
 pub(in crate::gates) use reconcile::reconcile_context;
-
 use kavach_types::HookInput;
-
 use crate::error::EngineError;
-
 /// `SessionStart` gate: detect model ID, set token budget, init session.
 /// Claude Code sends `model` field in `SessionStart` hook input.
 ///
@@ -41,10 +38,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // Load session row from DB — fresh state after /clear (session boundary).
     // See decision.engine.session-start-aware-load.
     let mut session = kavach_session::get_or_create_session_for(&input.session_id);
-
     state::set_model(&mut session, input);
     state::reset_stale_state(&mut session);
-
     // Heavy boot work (skill-dir scan + GUI bringup) is skipped under
     // `cargo test`/`nextest` and when KAVACH_SKIP_HEAVY_BOOT=1: rebuilding the
     // registry on every invocation would blow the per-test timeout under the
@@ -57,14 +52,12 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         gui::ensure_gui_up();
     }
     let context = context::build(&mut session);
-
     super::event_log::log_session(
         &session.session_id,
         "session_start",
         &session.model_id,
         &session.project,
     );
-
     drop(kavach_hook::exit_session_start_full(
         &context,
         true,

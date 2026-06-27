@@ -10,7 +10,6 @@
 //! SOURCE: bug-hunt-loop §LAW (read-only suspicion is noise; a reproducing
 //! artifact is signal) + the symmetric corollary enforced here — a *clean*
 //! verdict is noise unless it cites the leaf it reached.
-
 /// A subsystem-level clean/wired/verified verdict found in prose.
 const VERDICT_CUES: &[&str] = &[
     "wired correctly",
@@ -40,7 +39,6 @@ const VERDICT_CUES: &[&str] = &[
     "are safe",
     "fail-safe",
 ];
-
 /// Cheap check: does the prose cite a concrete `something.rs:NN` source
 /// location?
 ///
@@ -60,7 +58,6 @@ fn cites_file_line(msg: &str) -> bool {
     }
     false
 }
-
 /// Detect a shallow verdict.
 ///
 /// Returns `Some(reason)` when the message asserts a subsystem clean/wired
@@ -88,7 +85,6 @@ pub fn detect_shallow_verdict(msg: &str) -> Option<String> {
             .to_owned(),
     )
 }
-
 #[cfg(test)]
 #[path = "shallow_verdict_guard_test.rs"]
 #[cfg(test)]

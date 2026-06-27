@@ -17,14 +17,10 @@
 //! ACCOMPANIES real proof (`git diff --stat` / `cargo check` / an `rg` `file:line`
 //! / a `claim`/`status-update`) never fires. Escape: `KAVACH_DONE_GAMING_BYPASS=1`
 //! for a genuine doc-only deliverable turn (logged via the block being skipped).
-
 use core::ops::ControlFlow;
 use std::path::Path;
-
 use kavach_patterns::stop_vocab::DoneGamingVocab;
-
 use super::shared::StopCtx;
-
 /// Proof tokens whose presence means real work accompanies the prose — NEG-arm.
 /// Any one present → the turn cited an artifact, so it is NOT pure gaming.
 const PROOF_TOKENS: &[&str] = &[
@@ -37,7 +33,6 @@ const PROOF_TOKENS: &[&str] = &[
     "files changed",
     "insertions(+)",
 ];
-
 /// True when a turn-modified path is a REAL source/code file, not a doc. A
 /// `.md`/`.txt`/`.mdx` write or anything under a `docs/` segment is a doc write
 /// and does NOT count as real work for this gate.
@@ -53,7 +48,6 @@ fn is_real_source_write(path: &str) -> bool {
         .any(|c| c.as_os_str().eq_ignore_ascii_case("docs"));
     !is_doc_ext && !in_docs_dir
 }
-
 /// `true` when the message carries gaming/narration vocabulary OR an emoji
 /// status-block line (a `✅`/`⏸`/`❌` on a `Phase:`/`State:`/`DONE` line).
 fn has_gaming_language(vocab: &DoneGamingVocab, lc: &str, raw: &str) -> bool {
@@ -67,7 +61,6 @@ fn has_gaming_language(vocab: &DoneGamingVocab, lc: &str, raw: &str) -> bool {
                 || line.to_uppercase().contains("DONE"))
     })
 }
-
 /// The block verdict (`Break`) when the three-condition AND holds; else `Continue`.
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Re-entrant stop (hook already active) and explicit bypass: never fire.
@@ -76,11 +69,9 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     }
     let raw = ctx.input.last_assistant_message.trim();
     let lc = raw.to_lowercase();
-
     // Vocab is DB-sourced (gate.done_gaming_vocab) with the compiled phrase floor
     // as fail-open default — the marker lists are DATA, hot-editable, not literals.
     let vocab = crate::gates::stop_dispatch::done_gaming_vocab_for(&ctx.session.project);
-
     // HANDBACK ARM fires regardless of the proof NEG-arm and census (the ENOSPC
     // transcript ran cargo check/df yet still handed back), so it is checked first
     // and does not consult PROOF_TOKENS. SOURCE: decision.done-gaming-vocab-dynamic.
@@ -100,7 +91,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         ));
         return ControlFlow::Break(());
     }
-
     // Cond 1: gaming/narration language present.
     if !has_gaming_language(&vocab, &lc, raw) {
         return ControlFlow::Continue(());
@@ -124,7 +114,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         Some((runnable, _, _)) if runnable > 0 => runnable,
         _ => return ControlFlow::Continue(()),
     };
-
     drop(kavach_hook::exit_stop_block(&format!(
         "[DONE_GAMING] (non-surrenderable) {runnable} runnable card(s) remain and this turn \
          produced NO code/DB work — only narration (a status block / \"documentation pass\" / \
@@ -140,7 +129,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     )));
     ControlFlow::Break(())
 }
-
 #[cfg(test)]
 #[path = "done_gaming_test.rs"]
 #[cfg(test)]

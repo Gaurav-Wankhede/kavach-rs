@@ -3,11 +3,8 @@
 //! Tracks recent Read/Glob/Grep/WebSearch calls. Warns if the same
 //! file is read or the same search is executed multiple times without
 //! changes in between.
-
 use kavach_session::SessionState;
-
 const MAX_DUPLICATES: usize = 2;
-
 /// Check if a read/search tool call is a duplicate.
 /// Returns Some(warning) if duplicate detected.
 pub(crate) fn check_duplicate_tool(
@@ -18,14 +15,12 @@ pub(crate) fn check_duplicate_tool(
     if target.is_empty() {
         return None;
     }
-
     let key = format!("{tool_name}:{target}");
     let count = session
         .recent_commands
         .iter()
         .filter(|c| c.as_str() == key)
         .count();
-
     if count >= MAX_DUPLICATES {
         return Some(format!(
             "[DUPLICATE_TOOL]\n\
@@ -39,7 +34,6 @@ pub(crate) fn check_duplicate_tool(
     }
     None
 }
-
 /// Record a tool call for duplicate tracking.
 pub(crate) fn record_tool_call(session: &mut SessionState, tool_name: &str, target: &str) {
     if target.is_empty() {
@@ -52,7 +46,6 @@ pub(crate) fn record_tool_call(session: &mut SessionState, tool_name: &str, targ
         session.recent_commands.remove(0);
     }
 }
-
 fn truncate(s: &str, max: usize) -> &str {
     if s.len() <= max {
         s
@@ -63,7 +56,6 @@ fn truncate(s: &str, max: usize) -> &str {
             .unwrap_or(s)
     }
 }
-
 #[cfg(test)]
 #[path = "duplicate_tool_guard_tests.rs"]
 mod tests;

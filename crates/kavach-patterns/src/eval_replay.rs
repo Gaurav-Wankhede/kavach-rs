@@ -15,11 +15,9 @@
 //             https://www.preprints.org/manuscript/202604.0428
 // fix_strategy: pure-Rust replay primitive: TrajectoryEvent JSONL → replay() → Vec<GateOutcome>;
 //               wires into all *_guard::detect() so a single replay run exercises every gate
-
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
-
 /// One step of an agent trajectory — the smallest replayable unit.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[expect(
@@ -37,7 +35,6 @@ pub struct TrajectoryEvent {
     #[serde(default)]
     pub outcome: Option<EventOutcome>,
 }
-
 /// Agent-independent outcome attached to a trajectory event — the ground truth
 /// the reward oracle scores a success/done claim against. SOURCE above.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,7 +46,6 @@ pub enum EventOutcome {
     /// The operation objectively failed (non-zero exit / tests failed / build error).
     Failure,
 }
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[non_exhaustive]
@@ -63,7 +59,6 @@ pub enum EventKind {
     /// Agent stop / claim of done.
     Stop { final_message: String },
 }
-
 /// Result of replaying a single event against the gate set.
 #[derive(Debug, Clone)]
 #[expect(
@@ -75,7 +70,6 @@ pub struct GateOutcome {
     pub severity: ReplaySeverity,
     pub message: String,
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[expect(
     clippy::exhaustive_enums,
@@ -87,7 +81,6 @@ pub enum ReplaySeverity {
     Advise,
     Allow,
 }
-
 /// Replay one trajectory event against all gates.
 /// Returns the highest-severity outcome and a list of all triggered gates.
 fn replay_bash_event(command: &str) -> Vec<GateOutcome> {
@@ -107,7 +100,6 @@ fn replay_bash_event(command: &str) -> Vec<GateOutcome> {
     }
     out
 }
-
 fn replay_write_event(file_path: &str, content: &str) -> Vec<GateOutcome> {
     let mut out = Vec::new();
     for v in crate::solid_guard::detect(file_path, content) {
@@ -195,7 +187,6 @@ fn replay_write_event(file_path: &str, content: &str) -> Vec<GateOutcome> {
     }
     out
 }
-
 fn replay_stop_event(final_message: &str) -> Vec<GateOutcome> {
     let mut out = Vec::new();
     if FALSE_COMPLETION
@@ -211,7 +202,6 @@ fn replay_stop_event(final_message: &str) -> Vec<GateOutcome> {
     }
     out
 }
-
 #[must_use]
 pub fn replay_event(event: &TrajectoryEvent) -> Vec<GateOutcome> {
     match &event.event_kind {
@@ -221,12 +211,10 @@ pub fn replay_event(event: &TrajectoryEvent) -> Vec<GateOutcome> {
         EventKind::Stop { final_message } => replay_stop_event(final_message),
     }
 }
-
 static FALSE_COMPLETION: LazyLock<Option<Regex>> = LazyLock::new(|| {
     // Claims-of-done without paired evidence verbs (test/verify/build/check).
     Regex::new(r"(?i)\b(?:done|complete|completed|shipped|finished|fixed)\b").ok()
 });
-
 /// Replay a full trajectory. Returns one (`event_index`, outcomes) per event.
 #[must_use]
 pub fn replay_trajectory(events: &[TrajectoryEvent]) -> Vec<(usize, Vec<GateOutcome>)> {
@@ -236,7 +224,6 @@ pub fn replay_trajectory(events: &[TrajectoryEvent]) -> Vec<(usize, Vec<GateOutc
     }
     out
 }
-
 /// Summary: how many events triggered Block / Confirm / Advise / Allow.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[expect(
@@ -250,7 +237,6 @@ pub struct ReplaySummary {
     pub advises: usize,
     pub allows: usize,
 }
-
 #[must_use]
 pub fn summarize(events: &[TrajectoryEvent]) -> ReplaySummary {
     let mut s = ReplaySummary {
@@ -281,7 +267,6 @@ pub fn summarize(events: &[TrajectoryEvent]) -> ReplaySummary {
     }
     s
 }
-
 /// Errors produced by the trajectory JSONL emitter/reader.
 #[derive(Debug)]
 #[expect(
@@ -292,7 +277,6 @@ pub enum EmitError {
     Io(std::io::Error),
     Serde(serde_json::Error),
 }
-
 impl std::fmt::Display for EmitError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -301,21 +285,17 @@ impl std::fmt::Display for EmitError {
         }
     }
 }
-
 impl std::error::Error for EmitError {}
-
 impl From<std::io::Error> for EmitError {
     fn from(e: std::io::Error) -> Self {
         Self::Io(e)
     }
 }
-
 impl From<serde_json::Error> for EmitError {
     fn from(e: serde_json::Error) -> Self {
         Self::Serde(e)
     }
 }
-
 /// Default trajectory directory: ~/.kavach/trajectories/
 /// Stop hooks call this with their session id to append a single line.
 ///
@@ -341,7 +321,6 @@ pub fn default_trajectory_path(session_id: &str) -> Result<std::path::PathBuf, E
     std::fs::create_dir_all(&dir)?;
     Ok(dir.join(format!("{session_id}.jsonl")))
 }
-
 /// Append one event as a single JSONL line.
 ///
 /// Single `write_all` for sub-PIPE_BUF atomicity across concurrent hook processes.
@@ -363,7 +342,6 @@ pub fn emit_to_jsonl(path: &std::path::Path, event: &TrajectoryEvent) -> Result<
     file.write_all(&line)?;
     Ok(())
 }
-
 /// Append one event to a session's default trajectory tape on disk.
 ///
 /// The single capture entry point for the live gates: resolves
@@ -385,7 +363,6 @@ pub fn capture(
     }
     capture_with_outcome(session_id, timestamp_ms, event_kind, None)
 }
-
 /// Capture a trajectory event WITH its objective outcome.
 ///
 /// The outcome is the ground-truth signal (a Bash exit code, a build/test result)
@@ -413,7 +390,6 @@ pub fn capture_with_outcome(
     };
     emit_to_jsonl(&path, &event)
 }
-
 /// Read a JSONL trajectory back into events.
 ///
 /// Skips malformed lines silently — replay is best-effort; corrupt lines must not block evaluation.
@@ -436,7 +412,6 @@ pub fn read_jsonl(path: &std::path::Path) -> Result<Vec<TrajectoryEvent>, EmitEr
     }
     Ok(out)
 }
-
 #[cfg(test)]
 #[path = "eval_replay_test.rs"]
 #[cfg(test)]

@@ -10,7 +10,6 @@
 //! Fail-closed throughout: on any miss — no row, daemon down, malformed value —
 //! the resolver returns the caller's compiled default (see `kavach_types`).
 use kavach_types::GateValueDto;
-
 /// The injected RPC transport: resolve `(project, gate_key)` via the daemon.
 /// `.ok()` swallows transport/daemon-down (fail-closed to default); `flatten`
 /// collapses a `Some(None)` "no row" to `None`.
@@ -20,32 +19,27 @@ fn rpc_fetch(project: &str, gate_key: &str) -> Option<GateValueDto> {
         .ok()
         .flatten()
 }
-
 /// Resolve a numeric threshold, falling back to `default` on any miss.
 #[must_use]
 pub fn gate_threshold(project: &str, gate_key: &str, default: f64) -> f64 {
     kavach_types::gate_threshold(rpc_fetch, project, gate_key, default)
 }
-
 /// Resolve a boolean enablement toggle, falling back to `default` on any miss.
 #[must_use]
 pub fn gate_enabled(project: &str, gate_key: &str, default: bool) -> bool {
     kavach_types::gate_enabled(rpc_fetch, project, gate_key, default)
 }
-
 /// Resolve injected text (or a severity string), falling back to `default`.
 #[must_use]
 pub fn gate_text(project: &str, gate_key: &str, default: &str) -> String {
     kavach_types::gate_text(rpc_fetch, project, gate_key, default)
 }
-
 /// Resolve a detection-pattern / safelist ADDITIVELY (compiled floor + DB extras,
 /// floor immutable). See `kavach_types::gate_patterns` for the invariant.
 #[must_use]
 pub fn gate_patterns(project: &str, gate_key: &str, default: &[&str]) -> Vec<String> {
     kavach_types::gate_patterns(rpc_fetch, project, gate_key, default)
 }
-
 #[cfg(test)]
 #[path = "gate_config_test.rs"]
 #[cfg(test)]

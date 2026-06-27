@@ -4,10 +4,8 @@
 //! `db.set_harness` RPC so the L3 stop-gate dispatches that workflow.
 //! SOURCE: decision.goal-harness-6-patterns · roadmap.unit.harness-loop-L4-classifier.
 use serde_json::json;
-
 /// Cheap doer tier (Haiku) — mirrors `goal::compile::model_tier::CHEAP_MODEL`.
 pub(crate) const CHEAP_MODEL: &str = "claude-haiku-4-5";
-
 /// Actionable per-pattern dispatch directive; parallel patterns name the Haiku tier + `Agent` spawn.
 pub(crate) fn pattern_directive(pattern: &str) -> String {
     match pattern {
@@ -34,7 +32,6 @@ pub(crate) fn pattern_directive(pattern: &str) -> String {
             .to_owned(),
     }
 }
-
 /// The six harness patterns, in kebab-case (matches the `Harness` serde rename).
 /// The single source of truth for the valid set; the test suite asserts every
 /// classification is a member.
@@ -47,7 +44,6 @@ pub(crate) const PATTERNS: [&str; 6] = [
     "pairwise-tournament",
     "loop-until-done",
 ];
-
 /// Classify a prompt into a harness pattern (Pattern-1 Classify-and-Act). Keyword
 /// routing over the lowered prompt; the default for open-ended build/fix work is
 /// `loop-until-done` (the original goal-loop behavior, so nothing regresses).
@@ -111,11 +107,9 @@ pub(crate) fn classify_harness(prompt: &str) -> &'static str {
         "loop-until-done"
     }
 }
-
 fn has_any(haystack: &str, needles: &[&str]) -> bool {
     needles.iter().any(|n| haystack.contains(n))
 }
-
 /// Persist the classified harness onto the project's next-open card via
 /// `db.set_harness`, returning the ready-to-append `[HARNESS]` context block.
 /// Fail-soft: any RPC error is swallowed (classification is advisory; the loop

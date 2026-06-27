@@ -1,5 +1,4 @@
 //! Production anti-patterns: multi-category code audit.
-
 mod api_interaction;
 mod business_logic;
 mod data_validation;
@@ -13,9 +12,7 @@ mod scanners;
 mod security;
 mod system_design;
 mod types;
-
 pub use types::{PatternCategory, PatternMatch, Severity};
-
 /// Scan file content, skipping test files. Returns sorted matches.
 #[must_use]
 pub fn scan(file_path: &str, content: &str) -> Vec<PatternMatch> {
@@ -24,7 +21,6 @@ pub fn scan(file_path: &str, content: &str) -> Vec<PatternMatch> {
     }
     scanner_all::scan(content)
 }
-
 /// Count critical severity matches.
 #[must_use]
 pub fn count_critical(matches: &[PatternMatch]) -> usize {
@@ -33,7 +29,6 @@ pub fn count_critical(matches: &[PatternMatch]) -> usize {
         .filter(|m| m.severity == Severity::P0Critical)
         .count()
 }
-
 #[cfg(test)]
 #[path = "production_patterns_test.rs"]
 #[cfg(test)]

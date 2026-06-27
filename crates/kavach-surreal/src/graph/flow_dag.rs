@@ -13,12 +13,10 @@
 //
 // SOURCE: https://surrealdb.com/docs/surrealql/statements/relate
 // SOURCE: https://mermaid.js.org/syntax/flowchart.html
-
 mod fetch;
 mod model;
 mod shape;
 mod upsert;
-
 #[cfg(test)]
 #[path = "flow_dag_test.rs"]
 #[cfg(test)]

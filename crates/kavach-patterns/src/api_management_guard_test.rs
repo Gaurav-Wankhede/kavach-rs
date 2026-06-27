@@ -1,7 +1,6 @@
 //! Sidecar tests for `api_management_guard` (included by the parent as
 //! `#[path] mod tests;`, so this file is the module body — no inner `mod tests`).
 use crate::api_management_guard::detect;
-
 fn live_credential_string() -> String {
     let prefix = format!("{}_{}", "sk", "live");
     let suffix = "_abcdef0123456789xyz";
@@ -11,7 +10,6 @@ fn live_credential_string() -> String {
     s.push_str("\";");
     s
 }
-
 #[test]
 fn detects_frontend_bare_fetch() {
     let v = detect(

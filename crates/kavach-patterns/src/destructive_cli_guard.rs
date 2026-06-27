@@ -11,10 +11,8 @@
 //! <https://blog.trailofbits.com/2025/10/22/prompt-injection-to-rce-in-ai-agents/>
 mod kinds;
 mod patterns;
-
 pub use kinds::{DestructiveCategory, DestructiveHit, DestructiveSeverity};
 use patterns::{PATTERNS, PatternRow};
-
 pub(crate) fn canonicalize(cmd: &str) -> String {
     let stripped: String = cmd
         .chars()
@@ -35,7 +33,6 @@ pub(crate) fn canonicalize(cmd: &str) -> String {
     }
     out.trim().to_owned()
 }
-
 fn hit(row: &PatternRow, canonical: &str) -> DestructiveHit {
     let (cat, sev, pat, fix, _) = row;
     DestructiveHit {
@@ -46,7 +43,6 @@ fn hit(row: &PatternRow, canonical: &str) -> DestructiveHit {
         canonical: canonical.to_owned(),
     }
 }
-
 const fn rank(s: DestructiveSeverity) -> u8 {
     match s {
         DestructiveSeverity::P0Block => 3,
@@ -54,7 +50,6 @@ const fn rank(s: DestructiveSeverity) -> u8 {
         DestructiveSeverity::P2Warn => 1,
     }
 }
-
 /// Highest-severity matching pattern, or `None` if the command is clean.
 pub fn inspect(cmd: &str) -> Option<DestructiveHit> {
     let canonical = canonicalize(cmd);
@@ -71,7 +66,6 @@ pub fn inspect(cmd: &str) -> Option<DestructiveHit> {
     }
     best
 }
-
 /// Every matching pattern (for callers that surface all hits at once).
 pub fn inspect_all(cmd: &str) -> Vec<DestructiveHit> {
     let canonical = canonicalize(cmd);
@@ -84,7 +78,6 @@ pub fn inspect_all(cmd: &str) -> Vec<DestructiveHit> {
         .map(|row| hit(row, &canonical))
         .collect()
 }
-
 #[cfg(test)]
 #[path = "destructive_cli_guard_test.rs"]
 #[cfg(test)]

@@ -1,9 +1,7 @@
 //! TDD pre-write gate: block production code unless its test came first (Red).
 //! Fast-path = the unit's test was touched earlier this turn, or the write
 //! carries an in-file `#[test]`. Escape: `KAVACH_TDD_BYPASS=1`.
-
 use crate::gates::pre_write_context::WriteContext;
-
 /// `Some(reason)` blocks the write when production code lacks a test-first signal.
 pub(super) fn check(
     ctx: &WriteContext<'_>,
@@ -61,14 +59,12 @@ pub(super) fn check(
          guard's source and fix the real cause — never route around it."
     ))
 }
-
 /// True for any test file — the shared detector OR the `_test(s).rs` suffix the
 /// shared `is_test_file` misses. A test write is never gated.
 fn is_test_path(path: &str) -> bool {
     let name = path.rsplit('/').next().unwrap_or(path);
     kavach_patterns::is_test_file(path) || name.ends_with("_test.rs") || name.ends_with("_tests.rs")
 }
-
 /// True when every non-blank line of `changed` is a comment (`//`/`///`/`//!`) or
 /// an attribute — i.e. the change adds no executable code.
 fn is_comment_only(changed: &str) -> bool {
@@ -85,7 +81,6 @@ fn is_comment_only(changed: &str) -> bool {
     }
     saw_line
 }
-
 /// Comment-only check that treats lines already in `current` as unchanged context.
 fn is_comment_only_added(changed: &str, current: &str) -> bool {
     let mut saw_line = false;
@@ -102,7 +97,6 @@ fn is_comment_only_added(changed: &str, current: &str) -> bool {
     }
     saw_line
 }
-
 /// Basename without the `.rs` extension.
 pub(crate) fn unit_stem(path: &str) -> &str {
     path.rsplit('/')
@@ -110,7 +104,6 @@ pub(crate) fn unit_stem(path: &str) -> &str {
         .unwrap_or(path)
         .trim_end_matches(".rs")
 }
-
 /// True when `test_path` is a recognised test for `stem`: sibling
 /// `{stem}_test(s).rs`, a `tests/{stem}.rs` integration test, or the in-engine
 /// `{stem}/tests.rs` subdir module.
@@ -125,7 +118,6 @@ pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
     }
     name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
 }
-
 /// Inverse of `test_matches_unit`: the production stem a test file maps back to.
 pub(crate) fn production_stem_of(test_path: &str) -> Option<String> {
     let s = test_path.replace('\\', "/");
@@ -144,7 +136,6 @@ pub(crate) fn production_stem_of(test_path: &str) -> Option<String> {
     }
     None
 }
-
 /// True when the content carries an inline test (forbidden in production files):
 /// using the `#[` attribute markers. A `#[path]` to an external file is NOT inline.
 pub(super) fn has_inline_test(content: &str) -> bool {
@@ -152,7 +143,6 @@ pub(super) fn has_inline_test(content: &str) -> bool {
         || content.contains("#[tokio::test]")
         || (content.contains("#[cfg(test)]") && content.contains("mod tests {"))
 }
-
 #[cfg(test)]
 #[path = "tdd_guard_test.rs"]
 #[cfg(test)]

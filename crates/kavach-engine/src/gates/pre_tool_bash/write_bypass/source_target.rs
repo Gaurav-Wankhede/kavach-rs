@@ -9,7 +9,6 @@
 //! mediate. This module isolates the narrow "is the target a source file?"
 //! predicate so the deny stays scoped and its false-positive surface auditable.
 //! SOURCE: github.com/liberzon/claude-hooks (decompose; match each token)
-
 #[cfg(test)]
 #[path = "source_target_test.rs"]
 #[cfg(test)]
@@ -19,7 +18,6 @@ mod tests;
 /// Generated/data formats (`.json .yaml .toml .lock .md`) are intentionally
 /// EXCLUDED — writing those via Bash is the benign advisory case.
 const SOURCE_EXTS: &[&str] = &[".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".sql"];
-
 /// True when the command appears to write a tracked SOURCE file — a path under
 /// a `crates/`, `src/`, or `tests/` directory whose name ends in a source
 /// extension AND that resolves INSIDE the active governed workspace. Conservative
@@ -61,7 +59,6 @@ pub(in crate::gates::pre_tool_bash) fn targets_tracked_source(cmd: &str) -> bool
             && in_workspace_jurisdiction(tok, workspace_root.as_deref())
     })
 }
-
 /// The active governed workspace root: the nearest ancestor of cwd holding a
 /// `Cargo.toml`. `None` when cwd is not inside a Rust workspace (e.g. tests run
 /// from a scratch dir) — then jurisdiction falls back to relative-only (below),
@@ -72,7 +69,6 @@ fn workspace_root() -> Option<std::path::PathBuf> {
         .find(|dir| dir.join("Cargo.toml").is_file())
         .map(std::path::Path::to_path_buf)
 }
-
 /// True when `tok` (a lowercased path token) is a write the pre-write gate would
 /// govern — i.e. it lands INSIDE the workspace.
 ///
@@ -94,7 +90,6 @@ fn in_workspace_jurisdiction(tok: &str, workspace_root: Option<&std::path::Path>
     // root (None) ⇒ treat the absolute path as external (fail OPEN, see doc).
     workspace_root.is_some_and(|root| tok.starts_with(&root.to_string_lossy().to_lowercase()))
 }
-
 /// Split a command into candidate path tokens. Paths can be wrapped in quotes,
 /// abut a redirect (`>file`), or sit among `open('crates/...','w')` arguments —
 /// so we break on shell + Python punctuation, NOT just whitespace, and keep

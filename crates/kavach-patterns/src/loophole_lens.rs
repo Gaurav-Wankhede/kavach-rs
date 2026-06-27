@@ -11,7 +11,6 @@
 //! intentionally conservative (a hint, not a proof): the agent that picks up the
 //! finding does the real root-cause. First match wins so one line yields at most
 //! one finding (keeps the (lens,site) key unambiguous).
-
 /// One adversarial attack lens.
 ///
 /// Each names a failure mode the happy path never exercises; the scan runs every
@@ -39,7 +38,6 @@ pub enum Lens {
     /// empty / max / negative / off-by-one.
     Boundary,
 }
-
 impl Lens {
     /// Every lens, in the canonical order the sweep runs them.
     pub const ALL: [Self; 6] = [
@@ -50,7 +48,6 @@ impl Lens {
         Self::Replay,
         Self::Boundary,
     ];
-
     /// Stable kebab slug (also the mistakes-row + card-key fragment).
     #[must_use]
     pub const fn slug(self) -> &'static str {
@@ -64,7 +61,6 @@ impl Lens {
         }
     }
 }
-
 /// One suspected loophole: which lens, which 1-based line, and a human hint.
 ///
 /// The file path is supplied by the caller (the kernel scans text, not paths).
@@ -83,7 +79,6 @@ pub struct LensFinding {
     /// Conservative hint describing the suspected failure mode.
     pub hint: &'static str,
 }
-
 /// Run every lens over `source` (a Rust file's text) and collect hints.
 ///
 /// Stops at the file's `#[cfg(test)]` boundary: test code legitimately uses
@@ -109,7 +104,6 @@ pub fn scan_text(source: &str) -> Vec<LensFinding> {
     }
     out
 }
-
 /// Map a single code line to a lens + hint, or `None`. First match wins so one
 /// line yields at most one finding.
 #[must_use]
@@ -165,7 +159,6 @@ pub fn classify(l: &str) -> Option<(Lens, &'static str)> {
     }
     None
 }
-
 #[cfg(test)]
 #[path = "loophole_lens_test.rs"]
 #[cfg(test)]

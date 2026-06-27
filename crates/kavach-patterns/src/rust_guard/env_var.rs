@@ -5,7 +5,6 @@
 //! exempted globally by `detect()`.
 //! SOURCE: .claude/rules/centralized-config.md · kavach `arch.centralized-config-LAW`.
 use crate::severity::{Severity, Violation};
-
 /// True when `path` is one of the enumerated `§CENTRALIZED_CONFIG` exceptions where
 /// a raw env read is sanctioned: the fragment internals, the dotenvy loader,
 /// `main.rs` boot wiring, or a startup env validator.
@@ -16,7 +15,6 @@ fn is_exempt_path(path: &str) -> bool {
         || path.contains("/startup/env_validation")
         || path.contains("/startup/")
 }
-
 /// Only `crates/{core,api,services}` are governed; the harness, frontend, tools,
 /// and tests are out of scope for this LAW.
 fn is_governed_path(path: &str) -> bool {
@@ -24,7 +22,6 @@ fn is_governed_path(path: &str) -> bool {
         || path.contains("/crates/api/")
         || path.contains("/crates/services/")
 }
-
 /// Push a `P0Block` for each raw `env::var` read on a governed, non-exempt path.
 ///
 /// Hard-block (not advisory): routed through `guards2026::severity::centralized_config`,
@@ -55,7 +52,6 @@ pub(super) fn scan(file_path: &str, content: &str, v: &mut Vec<Violation>) {
         }
     }
 }
-
 #[cfg(test)]
 #[path = "env_var_test.rs"]
 #[cfg(test)]

@@ -10,9 +10,7 @@
 //! — the gate blocked a change the dev overrode and it then verified clean — as
 //! the costly error, the SAME as a false allow. Otherwise an over-firing gate
 //! would look free and the optimizer would learn to block everything.
-
 use crate::sample::Action;
-
 /// What the 3-witness verify reported for the work the decision gated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -42,7 +40,6 @@ pub enum VerifyOutcome {
         good: bool,
     },
 }
-
 /// The realized reward scalar for a logged decision, on the same scale the OPE
 /// estimators consume (`+1` good, `0` neutral abstention, `-1` costly error).
 ///
@@ -78,7 +75,6 @@ pub const fn label(action: Action, outcome: VerifyOutcome) -> f64 {
     // neutral abstention: no counterfactual, so no reward and no penalty.
     0.0
 }
-
 /// The wire-enum tag (`kavach_patterns::Reward`, `snake_case`) for a labeled
 /// decision — the string `update_bandit_reward` writes back into `bandit_log`.
 ///
@@ -105,7 +101,6 @@ pub fn reward_tag(action: Action, outcome: VerifyOutcome) -> &'static str {
         "needed_ask"
     }
 }
-
 /// Parse a `bandit_log` `action` field (`snake_case` wire string) into the OPE
 /// [`Action`]; `None` for an unknown/garbled tag.
 ///
@@ -120,7 +115,6 @@ pub fn action_from_tag(tag: &str) -> Option<Action> {
         _ => None,
     }
 }
-
 /// Parse a `bandit_log` `reward` field (the `snake_case` wire enum) back to the
 /// OPE scalar — the inverse of [`reward_tag`].
 ///
@@ -137,7 +131,6 @@ pub fn reward_scalar(tag: &str) -> Option<f64> {
         _ => None,
     }
 }
-
 /// The two costly false decisions, scored `-1`: a false allow (shipped a break)
 /// and a false block (overridden, then verified clean).
 const fn is_false_decision(action: Action, outcome: VerifyOutcome) -> bool {
@@ -147,7 +140,6 @@ const fn is_false_decision(action: Action, outcome: VerifyOutcome) -> bool {
             | (_, VerifyOutcome::BlockedThenOverriddenClean)
     )
 }
-
 #[cfg(test)]
 #[path = "label_test.rs"]
 #[cfg(test)]

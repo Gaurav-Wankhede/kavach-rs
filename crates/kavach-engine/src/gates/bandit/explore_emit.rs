@@ -20,10 +20,8 @@
 //!
 //! Disarmed (the default), [`explore_action`] returns `(greedy, 1.0)` — the exact
 //! pre-P7 deterministic behavior.
-
 use kavach_ope::explore::{epsilon_greedy_select, next_draw};
 use kavach_patterns::bandit_log::GateAction;
-
 /// Env flag that arms live exploration. Absent/empty/`"0"`/`"false"` ⇒ disarmed.
 const EXPLORE_FLAG: &str = "KAVACH_RL_EXPLORE";
 /// Env override for the exploration rate; falls back to [`DEFAULT_EPSILON`].
@@ -32,12 +30,10 @@ const EPSILON_FLAG: &str = "KAVACH_RL_EPSILON";
 /// A small band: most turns still emit the greedy action, but enough mass leaks
 /// onto the abstention action to give the estimators non-degenerate overlap.
 const DEFAULT_EPSILON: f32 = 0.1;
-
 /// The advisory action set the emit path may explore over. `Block` is
 /// deliberately absent (the C2 hard-block bar) — exploration can only ever move
 /// between permitting and the safe abstention `Ask`, never synthesize a stop.
 const ADVISORY_CANDIDATES: [GateAction; 2] = [GateAction::Allow, GateAction::Ask];
-
 /// Resolve the action + TRUE propensity to log for a decision whose deterministic
 /// (argmax) choice is `greedy`.
 ///
@@ -59,7 +55,6 @@ pub(crate) fn explore_action(
     let draw = next_draw(&mut state);
     epsilon_greedy_select(greedy, &ADVISORY_CANDIDATES, epsilon, draw)
 }
-
 /// A uniform draw in `[0,1)` for the P8 held-out sampler, seeded independently
 /// from the exploration draw so the two samplings never correlate.
 ///
@@ -74,7 +69,6 @@ pub(crate) fn held_out_roll(session_id: &str, timestamp_ms: i64) -> f32 {
     state |= 1; // never the xorshift fixed point after the salt XOR
     next_draw(&mut state)
 }
-
 /// The exploration rate IFF exploration is armed this process, else `None`.
 ///
 /// Armed = `KAVACH_RL_EXPLORE` truthy. The rate is `KAVACH_RL_EPSILON` when it
@@ -91,7 +85,6 @@ fn armed_epsilon() -> Option<f32> {
         .unwrap_or(DEFAULT_EPSILON);
     Some(eps)
 }
-
 /// Only an explicit truthy arms exploration (mirrors the canary flag semantics).
 fn is_truthy(v: &str) -> bool {
     matches!(
@@ -99,7 +92,6 @@ fn is_truthy(v: &str) -> bool {
         "1" | "true" | "yes" | "on"
     )
 }
-
 /// A non-zero `xorshift64*` seed from the decision's identity.
 ///
 /// `timestamp_ms` mixed with a cheap FNV-1a hash of `session_id` so two sessions
@@ -113,7 +105,6 @@ fn seed(session_id: &str, timestamp_ms: i64) -> u64 {
     let ts = timestamp_ms.cast_unsigned();
     (ts ^ fnv1a(session_id)) | 1
 }
-
 /// FNV-1a 64-bit over the session id — a dep-free, well-mixing string hash for the
 /// exploration seed (not a security or content-addressing hash).
 fn fnv1a(s: &str) -> u64 {
@@ -124,7 +115,6 @@ fn fnv1a(s: &str) -> u64 {
     }
     h
 }
-
 #[cfg(test)]
 #[path = "explore_emit_test.rs"]
 #[cfg(test)]

@@ -2,7 +2,6 @@
 mod parse;
 mod routes;
 mod types;
-
 #[cfg(test)]
 #[path = "skill_keyword_router_test.rs"]
 #[cfg(test)]

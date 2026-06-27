@@ -7,7 +7,6 @@
 //! `TABULA_RASA` non-determinism. They now all consult this list, so the config
 //! file can only *extend* the floor, never silently drop below it (fail-closed).
 //! SOURCE: <https://martinfowler.com/bliki/SingleSourceOfTruth.html>
-
 /// Canonical bug/fix research-trigger tokens.
 ///
 /// Research is required regardless of the user-tunable `research_triggers` in
@@ -27,13 +26,11 @@ pub const BUG_FIX_TRIGGERS: &[&str] = &[
     "resolve",
     "debug",
 ];
-
 /// `true` iff `lower` (already lowercased) contains any canonical bug/fix token.
 #[must_use]
 pub fn has_bug_fix_trigger(lower: &str) -> bool {
     BUG_FIX_TRIGGERS.iter().any(|t| lower.contains(t))
 }
-
 #[cfg(test)]
 #[path = "research_triggers_test.rs"]
 #[cfg(test)]

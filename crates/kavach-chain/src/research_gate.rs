@@ -1,8 +1,6 @@
 use chrono::Local;
-
 use crate::helpers::contains_any;
 use crate::router::framework_detect::load_framework_patterns;
-
 pub static FORBIDDEN_PHRASES: &[&str] = &[
     "Based on my knowledge",
     "I think",
@@ -12,14 +10,12 @@ pub static FORBIDDEN_PHRASES: &[&str] = &[
     "I recall",
     "From what I know",
 ];
-
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ResearchGate {
     pub today_date: String,
     pub current_year: String,
 }
-
 impl ResearchGate {
     #[must_use]
     pub fn new() -> Self {
@@ -29,7 +25,6 @@ impl ResearchGate {
             current_year: now.format("%Y").to_string(),
         }
     }
-
     #[must_use]
     pub fn require_research(&self, task: &str) -> Option<ResearchRequirement> {
         let lower = task.to_lowercase();
@@ -55,12 +50,10 @@ impl ResearchGate {
         }
         None
     }
-
     #[must_use]
     pub fn build_search_query(&self, topic: &str) -> String {
         format!("{topic} {} documentation latest", self.current_year)
     }
-
     #[must_use]
     pub fn validate_research_done(&self, context: &str) -> bool {
         let patterns = [
@@ -73,7 +66,6 @@ impl ResearchGate {
         ];
         patterns.iter().any(|p| context.contains(p))
     }
-
     #[must_use]
     pub fn check_forbidden_phrases(&self, text: &str) -> Vec<String> {
         let lower = text.to_lowercase();
@@ -84,13 +76,11 @@ impl ResearchGate {
             .collect()
     }
 }
-
 impl Default for ResearchGate {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct ResearchRequirement {
@@ -99,7 +89,6 @@ pub struct ResearchRequirement {
     pub mandatory: bool,
     pub reason: String,
 }
-
 #[cfg(test)]
 #[path = "research_gate_tests.rs"]
 mod tests;

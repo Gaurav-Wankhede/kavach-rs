@@ -11,13 +11,10 @@
 //! SOURCE: `arxiv.org/pdf/2602.22402` (structurally-lossless trimming),
 //! `redis.io/blog/context-rot`.
 // kavach:intentional cohesive compaction-seam reconstructor (one concern, RPC-backed)
-
 use std::fmt::Write as _;
-
 /// How many recent decision rows to re-inject. Bounded so the reconstruction stays a
 /// tight spine, never a full dump that re-triggers compaction (the amnesia loop).
 const RECENT_DECISIONS: usize = 8;
-
 /// Rebuild the lossless `[WORKING_SET]` block from live DB state, or `None` when the
 /// project is empty or the DB yields nothing (fail-soft — `PostCompact` then relies on
 /// the summary alone, exactly as before). The block is exact + re-derivable: it names
@@ -60,7 +57,6 @@ pub(in crate::gates) fn reconstruct(project: &str) -> Option<String> {
     );
     Some(out)
 }
-
 /// The active card's title rendered as the restored intent, or empty when blank.
 /// The card TITLE *is* the work intent; re-emitting it kills the post-compact
 /// amnesia loop — the model resumes the SAME goal, not a summary-of-a-summary.
@@ -71,7 +67,6 @@ fn render_intent_line(title: &str) -> String {
     }
     format!("[INTENT_RESTORED] {title} — this is the active intent; resume it, do NOT re-derive.\n")
 }
-
 /// The single in-progress card as `(key, title, touches-string)`, or `None` on miss.
 fn active_card(project: &str) -> Option<(String, String, String)> {
     let params = serde_json::json!({ "project": project });
@@ -98,7 +93,6 @@ fn active_card(project: &str) -> Option<(String, String, String)> {
     };
     Some((key.to_owned(), title.to_owned(), touches))
 }
-
 /// The most recent `RECENT_DECISIONS` decision rows as `(key, title)`, newest first;
 /// empty on any RPC miss (fail-soft).
 fn recent_decisions(project: &str) -> Vec<(String, String)> {
@@ -122,7 +116,6 @@ fn recent_decisions(project: &str) -> Vec<(String, String)> {
         .take(RECENT_DECISIONS)
         .collect()
 }
-
 #[cfg(test)]
 #[path = "working_set_test.rs"]
 #[cfg(test)]

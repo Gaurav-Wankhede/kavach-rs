@@ -1,17 +1,14 @@
 //! `[LOOP]` and `[REWARD]` frame formatters + compact turn shadow builder.
 //! SOURCE: docs/loop-engineering-injection-strategy.md Part IV.
 use std::fmt::Write as _;
-
 use kavach_chain::IntentAnalysis;
 use kavach_session::SessionState;
-
 /// Byte cap for the per-turn shadow relayed on Cursor preToolUse.
 pub(crate) const TURN_SHADOW_CAP: usize = 800;
 /// Byte cap for session-start `[REWARD:stats]`.
 pub(crate) const REWARD_SESSION_CAP: usize = 400;
 /// Rolling 30-day baseline pass rate (fail-soft when RPC stats unavailable).
 const BASELINE_30D: f64 = 0.61;
-
 /// Build the compact turn shadow persisted on `UserPromptSubmit` and flushed on Cursor.
 #[must_use]
 pub(crate) fn build_turn_shadow(
@@ -59,7 +56,6 @@ pub(crate) fn build_turn_shadow(
     }
     truncate_utf8(&out, TURN_SHADOW_CAP)
 }
-
 /// Full `[LOOP]` frame for stop followup (prepend to `[AUTO_CONTINUE]`).
 #[must_use]
 pub(crate) fn build_loop_stop(session: &SessionState, goal_title: Option<&str>) -> String {
@@ -81,7 +77,6 @@ pub(crate) fn build_loop_stop(session: &SessionState, goal_title: Option<&str>) 
          on done: status-update + FAN OUT the next card THIS SAME turn\n\n"
     )
 }
-
 /// Three-line compact `[LOOP]` for `pre_write` production paths.
 #[must_use]
 pub(crate) fn build_loop_compact(session: &SessionState, goal_title: Option<&str>) -> String {
@@ -95,7 +90,6 @@ pub(crate) fn build_loop_compact(session: &SessionState, goal_title: Option<&str
          done:3-witness→close→next same turn"
     )
 }
-
 /// Session-start running reward stats (~400 bytes, optional budget).
 #[must_use]
 pub(crate) fn build_reward_session_stats(session: &SessionState) -> Option<String> {
@@ -131,7 +125,6 @@ pub(crate) fn build_reward_session_stats(session: &SessionState) -> Option<Strin
     }
     Some(truncate_utf8(&out, REWARD_SESSION_CAP))
 }
-
 /// Stop followup last-action reward line.
 #[must_use]
 pub(crate) fn build_reward_stop_last(session: &SessionState) -> String {
@@ -155,21 +148,18 @@ pub(crate) fn build_reward_stop_last(session: &SessionState) -> String {
         session.last_reward_summary
     )
 }
-
 const fn resolve_goal_title(session: &SessionState) -> Option<&str> {
     if !session.current_kanban_card.is_empty() {
         return Some(session.current_kanban_card.as_str());
     }
     None
 }
-
 const fn loop_harness_label(session: &SessionState) -> &str {
     if !session.loop_target.is_empty() {
         return session.loop_target.as_str();
     }
     "loop-until-done"
 }
-
 fn truncate_utf8(s: &str, max: usize) -> String {
     if s.len() <= max {
         return s.to_owned();
@@ -186,7 +176,6 @@ fn truncate_utf8(s: &str, max: usize) -> String {
     }
     out
 }
-
 #[cfg(test)]
 #[path = "loop_frame_test.rs"]
 #[cfg(test)]

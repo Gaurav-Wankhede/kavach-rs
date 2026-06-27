@@ -16,16 +16,12 @@ use kavach_surreal::{
     DeployedPolicyProps, graph_top_deployed_policies, graph_upsert_deployed_policy,
 };
 use serde::{Deserialize, Serialize};
-
 use derive::derive_candidate;
 use result::{Metrics, blocked_reason, finish, load_failed};
-
 use super::ope_audit::{OpeAuditParams, ope_audit};
 use super::ope_shared::sample_from_row;
-
 mod derive;
 mod result;
-
 #[cfg(test)]
 #[path = "policy_improve_test.rs"]
 #[cfg(test)]
@@ -33,7 +29,6 @@ mod result;
 mod tests;
 /// The canonical advisory-policy scope (one versioned singleton node).
 const POLICY_SCOPE: &str = "policy.advisory.global";
-
 /// Request for one offline policy-improvement pass.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]
@@ -47,7 +42,6 @@ pub struct PolicyImproveParams {
     /// Soft-vs-hard drift tolerance forwarded to the reward-hacking audit — GATE-B.
     pub drift_tolerance: f64,
 }
-
 /// The policy-improvement verdict: whether a learned policy was promoted, and if
 /// not, which gate refused it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,7 +68,6 @@ pub struct PolicyImproveResult {
     /// Set on a load / persist error; verdict fields are then fail-closed defaults.
     pub error: Option<String>,
 }
-
 /// Run one offline policy-improvement pass; persist the learned policy IFF it
 /// clears trust coverage AND the reward-hacking audit AND a strict LCB win.
 ///
@@ -93,11 +86,9 @@ pub async fn policy_improve(
     if samples.is_empty() {
         return Ok(finish(false, Some("no_samples"), Metrics::empty()));
     }
-
     let cand = derive_candidate(&samples, params.z);
     let cand_policy = FixedPolicy::new(cand.allow, cand.ask, cand.block);
     let cand_lcb = cand.estimate.lower_confidence_bound(params.z);
-
     // GATE-A trust coverage; GATE-B reward-hacking audit (reused); GATE-C the
     // strict LCB win over the persisted incumbent (the floor on the first run).
     let trust = kavach_ope::trust::assess(&samples, &cand_policy);
@@ -122,7 +113,6 @@ pub async fn policy_improve(
         &Estimate::new(incumbent_lcb, 0.0, 1),
         params.z,
     );
-
     let m = Metrics {
         candidate_lcb: cand_lcb,
         incumbent_lcb,
@@ -139,7 +129,6 @@ pub async fn policy_improve(
     ) {
         return Ok(finish(false, Some(reason), m));
     }
-
     // All gates cleared -> persist the learned advisory policy (single-writer).
     let props = DeployedPolicyProps::new(
         cand.allow,

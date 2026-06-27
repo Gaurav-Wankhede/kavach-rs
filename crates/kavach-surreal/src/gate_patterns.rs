@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
-
 const TIER_RESEARCH: &str = "research";
 const TIER_AUTONOMOUS: &str = "autonomous";
 const PROMOTION_THRESHOLD: i64 = 50;
@@ -24,11 +23,9 @@ const MAX_TOKENS: usize = 20;
 const MIN_TOKEN_LEN: usize = 3;
 const SCAN_LIMIT: i64 = 200;
 const MIN_SIM: f64 = 0.35;
-
 const COLS: &str = "id, project, tool_name, gate_name, error_tokens, fix_strategy, \
                     imperative_rewrite, dsa_rationale, occurrence_count, bloom_bytes, tier, \
                     time::unix(updated_at) AS updated_unix";
-
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
 pub struct GatePattern {
@@ -49,7 +46,6 @@ pub struct GatePattern {
     #[serde(default)]
     pub updated_unix: Option<i64>,
 }
-
 #[derive(Debug)]
 #[expect(
     clippy::exhaustive_structs,
@@ -64,7 +60,6 @@ pub struct UpsertParams<'a> {
     pub tool_name: &'a str,
     pub gate_name: &'a str,
 }
-
 #[must_use]
 pub fn tokenize(error: &str) -> String {
     let mut tokens: Vec<String> = error
@@ -77,7 +72,6 @@ pub fn tokenize(error: &str) -> String {
     tokens.truncate(MAX_TOKENS);
     tokens.join(" ")
 }
-
 #[must_use]
 pub fn bloom_from_tokens(tokens: &str) -> Vec<u8> {
     let mut bits = vec![0u8; BLOOM_BYTE_LEN];
@@ -89,7 +83,6 @@ pub fn bloom_from_tokens(tokens: &str) -> Vec<u8> {
     }
     bits
 }
-
 #[must_use]
 pub fn bloom_might_match(bloom: &[u8], query_tokens: &str) -> bool {
     if bloom.len() < BLOOM_BYTE_LEN {
@@ -106,7 +99,6 @@ pub fn bloom_might_match(bloom: &[u8], query_tokens: &str) -> bool {
     }
     true
 }
-
 fn set_bit(bytes: &mut [u8], pos: usize) {
     // `pos >> 3` ≡ `pos / 8`, `pos & 7` ≡ `pos % 8` for bit-packed bytes;
     // avoids clippy::integer_division on a known-exact byte-index calc.
@@ -114,13 +106,11 @@ fn set_bit(bytes: &mut [u8], pos: usize) {
         *byte |= 1u8 << (pos & 7);
     }
 }
-
 fn test_bit(bytes: &[u8], pos: usize) -> bool {
     bytes
         .get(pos >> 3)
         .is_some_and(|b| b & (1u8 << (pos & 7)) != 0)
 }
-
 fn fnv1a(s: &str, seed: u32) -> u32 {
     let mut h = seed;
     for b in s.bytes() {
@@ -129,18 +119,15 @@ fn fnv1a(s: &str, seed: u32) -> u32 {
     }
     h
 }
-
 #[derive(surrealdb_types::SurrealValue)]
 struct ExistingRow {
     id: RecordId,
     occurrence_count: i64,
 }
-
 #[derive(surrealdb_types::SurrealValue)]
 struct IdRow {
     id: RecordId,
 }
-
 /// Upsert a `gate_pattern` row. Increments `occurrence_count` for an existing
 /// (project, `error_tokens`) pair or creates a new row in `research` tier.
 ///
@@ -156,9 +143,7 @@ pub async fn upsert(db: &Surreal<Db>, p: &UpsertParams<'_>) -> Result<RecordId> 
         .bind(("project", p.project.clone()))
         .bind(("tokens", tokens.clone()))
         .await?;
-
     let existing: Option<ExistingRow> = response.take(0)?;
-
     if let Some(row) = existing {
         let new_count = row.occurrence_count.saturating_add(1);
         let (tier, bloom): (&str, Option<Vec<u8>>) = if new_count >= PROMOTION_THRESHOLD {
@@ -202,7 +187,6 @@ pub async fn upsert(db: &Surreal<Db>, p: &UpsertParams<'_>) -> Result<RecordId> 
             .ok_or_else(|| Error::Migration("gate_pattern create returned no id".into()))
     }
 }
-
 /// Find the best-matching autonomous-tier `gate_pattern` for `error` via
 /// TF-IDF scored against the candidate set scoped to `project`.
 ///
@@ -220,7 +204,6 @@ pub async fn find_autonomous(
     if query_vec.is_empty() {
         return Ok(None);
     }
-
     let q = format!(
         "SELECT {COLS} FROM gate_pattern \
          WHERE project = $project AND tier = 'autonomous' \
@@ -245,7 +228,6 @@ pub async fn find_autonomous(
     }
     Ok(tfidf_best_match(candidates, &query_vec, &query_tokens))
 }
-
 #[expect(
     clippy::float_arithmetic,
     clippy::cast_precision_loss,
@@ -322,7 +304,6 @@ fn tfidf_best_match(
         })
         .map(|(_, pat)| pat)
 }
-
 /// List the hottest (highest `occurrence_count`) `gate_pattern` rows for a project.
 ///
 /// # Errors
@@ -353,7 +334,6 @@ pub async fn list_hot(
         Err(e) => Err(e.into()),
     }
 }
-
 #[cfg(test)]
 #[path = "gate_patterns_test.rs"]
 #[cfg(test)]

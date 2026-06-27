@@ -1,6 +1,5 @@
 // TIME: O(n) in arg count | SPACE: O(n)
 //! Render the resolved cargo command + stderr head so a verify FAIL is diagnosable.
-
 /// `cargo check -p <crate>` (or workspace) as a single display string.
 #[must_use]
 pub(super) fn cargo_cmd(sub: &[&str], crate_name: Option<&str>) -> String {
@@ -15,7 +14,6 @@ pub(super) fn cargo_cmd(sub: &[&str], crate_name: Option<&str>) -> String {
     }
     s
 }
-
 /// First `n` non-empty lines of captured stderr, for an inline FAIL excerpt.
 #[must_use]
 pub(super) fn stderr_head(stderr: &str, n: usize) -> String {
@@ -26,7 +24,6 @@ pub(super) fn stderr_head(stderr: &str, n: usize) -> String {
         .collect::<Vec<_>>()
         .join("\n")
 }
-
 #[cfg(test)]
 #[path = "render_test.rs"]
 #[cfg(test)]

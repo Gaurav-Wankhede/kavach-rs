@@ -1,6 +1,5 @@
 //! Pure path/content predicates for the nano-file guard, split out of the hub
 //! to keep `nano_file_guard.rs` itself under the 100-LOC ceiling it enforces.
-
 /// Header-region markers (first 15 lines) that exempt a file from the LOC count:
 /// a NAMED ceiling is intent, not bloat. SOURCE: decision.harness.nano-file-ladder-not-loc.
 const LOC_EXEMPT_MARKERS: [&str; 4] = [
@@ -9,7 +8,6 @@ const LOC_EXEMPT_MARKERS: [&str; 4] = [
     "// hub:",
     "kavach:intentional",
 ];
-
 /// True when the file declares any exempt marker in its header region (first 15
 /// lines), so it stays visible in review and cannot be buried.
 #[must_use]
@@ -19,7 +17,6 @@ pub(super) fn is_loc_exempt(content: &str) -> bool {
         .take(15)
         .any(|line| LOC_EXEMPT_MARKERS.iter().any(|m| line.contains(m)))
 }
-
 /// True when a NON-test source file carries an inline `#[cfg(test)]` module.
 /// Test sidecars are exempt: a path ending `_test.rs`, `tests.rs`, or living
 /// under a `/tests/` dir IS the extracted home, so it may hold the module.
@@ -48,7 +45,6 @@ pub(super) fn has_inline_tests(file_path: &str, content: &str) -> bool {
         .filter(|(_, t)| !t.starts_with("//") && t.starts_with("#[cfg(test)]"))
         .any(|(i, _)| gates_inline_block(lines.get(i.saturating_add(1)..).unwrap_or(&[])))
 }
-
 /// Given the lines AFTER a `#[cfg(test)]`, decide whether it gates an inline
 /// module BODY. Steps over intervening attributes (`#[path=...]`), blanks, and
 /// comments to the first `mod` item: a `{` opener = inline block (VIOLATION); a
@@ -63,21 +59,18 @@ fn gates_inline_block(rest: &[&str]) -> bool {
         .and_then(|l| mod_tail(l))
         .is_some_and(|m| m.contains('{'))
 }
-
 /// A line is decisive (stops the forward scan) when it is the gated `mod` item
 /// or any non-attribute, non-blank, non-comment statement.
 fn is_decisive(line: &str) -> bool {
     mod_tail(line).is_some()
         || !(line.is_empty() || line.starts_with("#[") || line.starts_with("//"))
 }
-
 /// The text after a `mod ` keyword on a trimmed line (leading or mid-line, e.g.
 /// `pub(crate) mod`), or `None` if the line declares no module.
 fn mod_tail(line: &str) -> Option<&str> {
     line.strip_prefix("mod ")
         .or_else(|| line.split_once(" mod ").map(|(_, m)| m))
 }
-
 /// Directory depth below the nearest `/src/`, or `None` when the path has no
 /// `src` segment. Used to enforce the depth ceiling.
 #[must_use]

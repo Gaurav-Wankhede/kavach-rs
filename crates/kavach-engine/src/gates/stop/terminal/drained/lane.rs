@@ -5,12 +5,10 @@
 //! NOT reach into them and must NOT invent PLAN phases for another lane's work.
 //! The loop still re-scans this lane's DB rows and yields only to the user's
 //! `Esc`; it never self-terminates.
-
 /// The session's pinned lane, if any. Empty/unset → None → unlaned behavior.
 pub(super) fn lane_env() -> Option<String> {
     std::env::var("KAVACH_LANE").ok().filter(|l| !l.is_empty())
 }
-
 /// Own lane + unlaned backlog both drained. Re-scan this lane's DB rows; never
 /// cross into a foreign lane, never fabricate a plan phase. The loop yields only
 /// to the user's `Esc`.
@@ -40,7 +38,6 @@ pub(super) fn lane_drained_context(lane: &str) -> String {
         ],
     )
 }
-
 #[cfg(test)]
 #[path = "lane_test.rs"]
 #[cfg(test)]

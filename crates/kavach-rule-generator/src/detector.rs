@@ -1,8 +1,6 @@
 //! Detects code patterns from file paths and content.
-
 use crate::patterns::all_patterns;
 use kavach_patterns::{is_dockerfile, is_frontend_file, is_go_file, is_python_file, is_rust_file};
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[expect(
     clippy::exhaustive_enums,
@@ -13,7 +11,6 @@ pub enum PatternType {
     Framework,
     Tool,
 }
-
 #[derive(Debug, Clone)]
 #[expect(
     clippy::exhaustive_structs,
@@ -25,7 +22,6 @@ pub struct DetectedPattern {
     pub confidence: f64,
     pub evidence: Vec<String>,
 }
-
 #[must_use]
 pub fn detect_patterns(files: &[&str], content: &str) -> Vec<DetectedPattern> {
     let mut results = Vec::new();
@@ -38,7 +34,6 @@ pub fn detect_patterns(files: &[&str], content: &str) -> Vec<DetectedPattern> {
     });
     results
 }
-
 fn push_lang(out: &mut Vec<DetectedPattern>, name: &str, count: u32, total: f64) {
     if count > 0 {
         out.push(DetectedPattern {
@@ -56,7 +51,6 @@ fn push_lang(out: &mut Vec<DetectedPattern>, name: &str, count: u32, total: f64)
         });
     }
 }
-
 fn detect_languages(files: &[&str], out: &mut Vec<DetectedPattern>) {
     let (mut rs, mut go, mut py, mut fe) = (0u32, 0u32, 0u32, 0u32);
     for f in files {
@@ -83,7 +77,6 @@ fn detect_languages(files: &[&str], out: &mut Vec<DetectedPattern>) {
     push_lang(out, "python", py, total);
     push_lang(out, "typescript", fe, total);
 }
-
 fn detect_frameworks(files: &[&str], content: &str, out: &mut Vec<DetectedPattern>) {
     for pat in all_patterns() {
         let file_hit = files.iter().any(|f| {
@@ -123,7 +116,6 @@ fn detect_frameworks(files: &[&str], content: &str, out: &mut Vec<DetectedPatter
         });
     }
 }
-
 #[cfg(test)]
 #[path = "detector_tests.rs"]
 mod tests;

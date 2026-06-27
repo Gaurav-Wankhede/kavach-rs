@@ -18,10 +18,8 @@
 //!    reward hacking — so the audit freezes promotion and raises an alarm.
 //!
 //! Both default to the conservative verdict on missing/non-informative data.
-
 use crate::estimate::Estimate;
 use crate::sample::Action;
-
 #[cfg(test)]
 #[path = "audit_test.rs"]
 #[cfg(test)]
@@ -37,7 +35,6 @@ const fn conservatism(action: Action) -> u8 {
         Action::Allow => 0,
     }
 }
-
 /// The C2 safety-floor proof for one decision: does the learned `shadow` action
 /// honor the floor set by the static `rule` action?
 ///
@@ -60,7 +57,6 @@ pub const fn safety_floor_held(rule: Action, shadow: Action) -> bool {
         Action::Allow | Action::Ask => true,
     }
 }
-
 /// Audit a batch of (rule, shadow) decision pairs against the C2 floor.
 ///
 /// Returns the first VIOLATING pair (rule, shadow) if any learned action relaxed
@@ -73,7 +69,6 @@ pub fn first_floor_violation(pairs: &[(Action, Action)]) -> Option<(Action, Acti
         .copied()
         .find(|&(rule, shadow)| !safety_floor_held(rule, shadow))
 }
-
 /// The audit's verdict on whether the learned policy is reward-hacking.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
@@ -92,7 +87,6 @@ pub enum AuditVerdict {
     /// as not-promotable until a real held-out signal exists.
     Inconclusive,
 }
-
 /// Two-tier reward-hacking detector (design §4): compare the HARD witness value
 /// against the SOFT held-out real-verification value.
 ///
@@ -123,7 +117,6 @@ pub fn detect_reward_hacking(hard: &Estimate, soft: &Estimate, tolerance: f64) -
         AuditVerdict::Healthy
     }
 }
-
 /// Whether an estimate carries usable information: a finite SE computed from at
 /// least one sample. A zero-sample or infinite-SE estimate is non-informative.
 const fn is_informative(e: &Estimate) -> bool {

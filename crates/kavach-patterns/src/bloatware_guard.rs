@@ -11,9 +11,7 @@
 //! Exactness keeps the false-positive set empty: only a COMMENT line (`//`/`--`/`#`
 //! prefix after trim) carrying a removal-marker fires. The same word inside a
 //! string literal, an identifier, or live code never does (proven in the test).
-
 use crate::severity::{Severity, Violation};
-
 /// Removal-marker phrases that turn a comment into a tombstone. Matched
 /// case-insensitively as whole substrings of the comment body.
 const TOMBSTONE_MARKERS: [&str; 8] = [
@@ -26,7 +24,6 @@ const TOMBSTONE_MARKERS: [&str; 8] = [
     "used to be",
     "historical on-disk",
 ];
-
 /// Only governed source is policed (same surface as `dedup_guard` plus `.sql`):
 /// tombstones in docs/notes/markdown are out of scope.
 fn is_governed_path(path: &str) -> bool {
@@ -40,7 +37,6 @@ fn is_governed_path(path: &str) -> bool {
         .is_some_and(|e| e.eq_ignore_ascii_case("rs") || e.eq_ignore_ascii_case("sql"));
     governed_tree && source_ext
 }
-
 /// Strip a line to its comment body iff the line IS a comment (`//`/`--`/`#`
 /// after leading whitespace). Returns `None` for non-comment (live-code) lines —
 /// that is what excludes string literals and identifiers from ever firing.
@@ -53,7 +49,6 @@ fn comment_body(line: &str) -> Option<&str> {
     }
     None
 }
-
 /// Block (`P0Block`) every comment line whose body carries a removal-marker.
 /// The deletion + git history are the record — a tombstone comment is bloat.
 #[must_use]
@@ -82,7 +77,6 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Violation> {
     }
     out
 }
-
 #[cfg(test)]
 #[path = "bloatware_guard_test.rs"]
 #[cfg(test)]

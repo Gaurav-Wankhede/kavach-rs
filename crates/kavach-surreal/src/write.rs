@@ -1,11 +1,9 @@
 // kavach:intentional split — write/mutation ops; queries use static literals + .bind(), no user-input concat
-
 mod events;
 mod expire;
 mod priority_lane;
 mod status;
 mod upsert;
-
 #[cfg(test)]
 #[path = "write_test.rs"]
 #[cfg(test)]

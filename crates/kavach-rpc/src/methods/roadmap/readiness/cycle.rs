@@ -9,7 +9,6 @@
 use super::dep_key::parse_declared_deps;
 use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasher;
-
 /// True iff `start` participates in a dependency cycle reachable through the
 /// content-declared `DEPENDS_ON:`/`BLOCKED_BY:` edges resolved against `by_key`.
 ///
@@ -51,7 +50,6 @@ pub fn is_in_cycle<S: BuildHasher>(start: &str, by_key: &HashMap<&str, Vec<Strin
     }
     false
 }
-
 /// Index every entry's declared deps once, keyed by `entry_key`, for repeated
 /// [`is_in_cycle`] queries over the same pool.
 #[must_use]
@@ -60,7 +58,6 @@ pub fn dep_index(pool: &[kavach_surreal::MemoryEntry]) -> HashMap<&str, Vec<Stri
         .map(|e| (e.entry_key.as_str(), parse_declared_deps(&e.content)))
         .collect()
 }
-
 #[cfg(test)]
 #[path = "cycle_test.rs"]
 #[cfg(test)]

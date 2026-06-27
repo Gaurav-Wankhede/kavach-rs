@@ -1,6 +1,5 @@
 // YAGNI reuse-ladder advisory: nudge a write that adds a new pub symbol to climb the ladder first.
 use std::collections::BTreeSet;
-
 const KINDS: &[&str] = &[
     "pub fn ",
     "pub struct ",
@@ -9,11 +8,9 @@ const KINDS: &[&str] = &[
     "pub const ",
     "pub type ",
 ];
-
 fn is_rust(path: &str) -> bool {
     path.to_lowercase().ends_with(".rs")
 }
-
 /// The public symbol name declared on a `pub <kind> Name` line, if any.
 fn pub_symbol(line: &str) -> Option<String> {
     let t = line.trim_start();
@@ -25,11 +22,9 @@ fn pub_symbol(line: &str) -> Option<String> {
         .collect();
     (!name.is_empty()).then_some(name)
 }
-
 fn pub_symbols(content: &str) -> BTreeSet<String> {
     content.lines().filter_map(pub_symbol).collect()
 }
-
 /// Advisory (P1) listing public symbols this write ADDS (absent from `old`) with
 /// the reuse-ladder. `None` when no new symbol, non-Rust, or a test file.
 #[must_use]
@@ -54,7 +49,6 @@ pub fn advise(file_path: &str, old: &str, new: &str) -> Option<String> {
     msg.push_str("  proof: search the tree for each name before adding it.\n");
     Some(msg)
 }
-
 #[cfg(test)]
 #[path = "reuse_ladder_guard_test.rs"]
 #[cfg(test)]

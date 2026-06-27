@@ -1,11 +1,8 @@
 //! Fan-out nudge: when a FRONTIER model does Read/Edit/Write/Bash itself, remind it
 //! to delegate the labor to the cheap executor tier. Advisory only — never blocks.
 //! SOURCE: decision.harness.fanout-to-cheap-tier.
-
 use kavach_session::SessionState;
-
 const LABOR_TOOLS: &[&str] = &["Read", "Edit", "Write", "MultiEdit", "NotebookEdit", "Bash"];
-
 /// Return the one-per-turn `[FANOUT_NUDGE]` when `session`'s model is a frontier tier
 /// and `tool_name` is a direct labor tool. `None` on the cheap tier (it IS the doer),
 /// on a non-labor tool, or after the nudge already fired this turn. Sets the sent-flag
@@ -28,7 +25,6 @@ pub(crate) fn nudge(session: &mut SessionState, tool_name: &str) -> Option<Strin
          anthropic.com/engineering/multi-agent-research-system."
     ))
 }
-
 #[cfg(test)]
 #[path = "fanout_advisory_test.rs"]
 #[cfg(test)]

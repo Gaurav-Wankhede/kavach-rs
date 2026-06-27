@@ -7,10 +7,8 @@
 //! all weights are equal and collapses toward 1 when one weight dominates. A low
 //! `ESS / n` ratio means "do not trust this estimate, gather more data" — the
 //! fail-closed guard before any deploy decision (design: `DataCOPE` trust check).
-
 use crate::ips::TargetPolicy;
 use crate::sample::LoggedSample;
-
 /// A trust verdict over the logged data for a target policy.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
@@ -22,7 +20,6 @@ pub struct Trust {
     /// `ESS / n` in `[0, 1]`: 1.0 = perfect coverage, →0 = a few weights dominate.
     pub coverage_ratio: f64,
 }
-
 impl Trust {
     /// Whether the estimate clears a coverage floor (e.g. 0.1 = ESS ≥ 10% of n).
     ///
@@ -33,7 +30,6 @@ impl Trust {
         self.coverage_ratio >= min_coverage_ratio
     }
 }
-
 /// Compute the trust verdict for a target policy over logged samples.
 ///
 /// Empty input is untrustworthy (zero ESS, zero coverage) — no data supports any
@@ -69,7 +65,6 @@ pub fn assess<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Trust {
         coverage_ratio: ess / n_f,
     }
 }
-
 #[cfg(test)]
 #[path = "trust_test.rs"]
 #[cfg(test)]

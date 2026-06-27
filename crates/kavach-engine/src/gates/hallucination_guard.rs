@@ -3,7 +3,6 @@
 //! Scans written content for fabricated URLs (non-resolvable domains),
 //! invented crate names, and suspicious API patterns that LLMs commonly
 //! hallucinate during code generation.
-
 /// URL patterns that LLMs commonly hallucinate.
 const FAKE_URL_PATTERNS: &[&str] = &[
     "example.com/api",
@@ -20,7 +19,6 @@ const FAKE_URL_PATTERNS: &[&str] = &[
     "test-api.com",
     "sample-api.com",
 ];
-
 /// Suspicious placeholder values in code.
 const PLACEHOLDER_VALUES: &[&str] = &[
     "sk-your-api-key",
@@ -35,21 +33,17 @@ const PLACEHOLDER_VALUES: &[&str] = &[
     "XXX_REPLACE",
     "TODO_REPLACE",
 ];
-
 /// Check written content for hallucination indicators.
 /// Returns Some(warning) if suspicious patterns found.
 pub(crate) fn check_for_hallucinations(content: &str) -> Option<String> {
     let lower = content.to_lowercase();
     let mut issues: Vec<String> = Vec::new();
-
     check_fake_urls(&lower, &mut issues);
     check_placeholder_values(content, &mut issues);
     check_invented_imports(&lower, &mut issues);
-
     if issues.is_empty() {
         return None;
     }
-
     Some(format!(
         "[HALLUCINATION_WARNING]\n\
          Suspicious patterns detected:\n{}\n\
@@ -58,7 +52,6 @@ pub(crate) fn check_for_hallucinations(content: &str) -> Option<String> {
         issues.join("\n")
     ))
 }
-
 fn check_fake_urls(lower: &str, issues: &mut Vec<String>) {
     for pattern in FAKE_URL_PATTERNS {
         if lower.contains(pattern) {
@@ -66,7 +59,6 @@ fn check_fake_urls(lower: &str, issues: &mut Vec<String>) {
         }
     }
 }
-
 fn check_placeholder_values(content: &str, issues: &mut Vec<String>) {
     for pattern in PLACEHOLDER_VALUES {
         if content.contains(pattern) {
@@ -74,7 +66,6 @@ fn check_placeholder_values(content: &str, issues: &mut Vec<String>) {
         }
     }
 }
-
 fn check_invented_imports(lower: &str, issues: &mut Vec<String>) {
     if lower.contains("use ") && lower.contains("_imaginary") {
         issues.push("  - Suspicious import: contains '_imaginary'".into());
@@ -83,7 +74,6 @@ fn check_invented_imports(lower: &str, issues: &mut Vec<String>) {
         issues.push("  - Suspicious import: contains 'nonexistent'".into());
     }
 }
-
 #[cfg(test)]
 #[path = "hallucination_guard_tests.rs"]
 mod tests;

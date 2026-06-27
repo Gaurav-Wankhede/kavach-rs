@@ -10,9 +10,7 @@ mod util;
 #[cfg(test)]
 mod tests;
 use kavach_types::HookInput;
-
 use crate::error::EngineError;
-
 /// Dispatch a gate by name. Called by the CLI with parsed `HookInput`.
 /// Each gate handler reads session state, runs checks, and writes
 /// JSON response to stdout via `kavach_hook` helpers.

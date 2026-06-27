@@ -5,7 +5,6 @@
 //! string is data, not a call. SOURCE: global CLAUDE.md §Toolbelt-is-law;
 //! decision.engine.toolbelt-cli-advisory.
 use crate::gates::pre_tool_bash::strip_quoted_regions;
-
 /// (legacy command word, Rust replacement, one-line why). Matched as a command word
 /// at a boundary so `find` in `findstr`/`oldfind` or an arg substring never fires.
 const TOOLBELT: &[(&str, &str, &str)] = &[
@@ -22,7 +21,6 @@ const TOOLBELT: &[(&str, &str, &str)] = &[
     ),
     ("diff", "difft", "structural (AST) diff"),
 ];
-
 /// `Some(advisory)` when a legacy tool appears as a command word and its Rust
 /// toolbelt replacement should be used. `None` otherwise.
 pub(crate) fn check_toolbelt_cli(command: &str) -> Option<String> {
@@ -41,7 +39,6 @@ pub(crate) fn check_toolbelt_cli(command: &str) -> Option<String> {
         hits.join("\n")
     ))
 }
-
 /// True when `tool` appears as a command word: at the start of the command or right
 /// after a `;`/`|`/`&`/`(` separator, and followed by whitespace/EOL — never as a
 /// substring of another token (`oldfind`, `category`, `procstat`).
@@ -54,7 +51,6 @@ fn is_command_word(scrubbed: &str, tool: &str) -> bool {
                 .is_some_and(|rest| rest.is_empty() || rest.starts_with(char::is_whitespace))
         })
 }
-
 #[cfg(test)]
 #[path = "toolbelt_cli_test.rs"]
 #[cfg(test)]

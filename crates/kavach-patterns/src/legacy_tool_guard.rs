@@ -30,7 +30,6 @@
 //!     safety boundary (`prod_guard/env_guard` P0s precede it and own
 //!     destructive/injection content). A missed lazy tool is recoverable;
 //!     a false P0 with no escape is the worse failure (#6409).
-
 /// A blocked legacy-tool invocation and its mandated replacement.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +39,6 @@ pub struct Hit {
     /// The toolbelt replacement to use instead (e.g. `rg`).
     pub replacement: &'static str,
 }
-
 /// legacy command word → toolbelt replacement (§TOOLBELT canonical map).
 fn replacement_for(cmd: &str) -> Option<&'static str> {
     Some(match cmd {
@@ -58,19 +56,16 @@ fn replacement_for(cmd: &str) -> Option<&'static str> {
         _ => return None,
     })
 }
-
 /// Tokens that, anywhere in a `find` segment, mean find is being used as an
 /// ACTION (not a search) — `fd` cannot express these, so exempt.
 const FIND_ACTION_TOKENS: &[&str] = &[
     "-delete", "-exec", "-execdir", "-ok", "-okdir", "-newer", "-prune", "-fprint",
 ];
-
 /// Wrapper binaries whose first token is the bin and a later token is a
 /// subcommand — the POSIX legacy tool is NOT being invoked.
 fn is_wrapper_bin(cmd: &str) -> bool {
     matches!(cmd, "git" | "cargo" | "rustup" | "docker" | "kubectl")
 }
-
 /// True if `command` contains a construct that could let an argument escape
 /// into command position (command/process substitution). Fail-closed: we
 /// do NOT block on these (a different gate owns injection); we just decline
@@ -81,7 +76,6 @@ fn has_ambiguous_substitution(command: &str) -> bool {
         || command.contains("<(")
         || command.contains(">(")
 }
-
 /// The command word of a pipeline segment: first token after skipping
 /// `!`, `time`, and `VAR=value` assignment prefixes. None if the segment
 /// has no command word (empty / all-prefixes).
@@ -106,7 +100,6 @@ fn segment_command_word(tokens: &[String]) -> Option<&str> {
     }
     None
 }
-
 /// Inspect a Bash command string. Returns `Some(Hit)` iff a pipeline
 /// segment's command word is a bare legacy tool with a toolbelt
 /// replacement and no exemption applies. Pure; no I/O.
@@ -123,7 +116,6 @@ pub fn inspect(command: &str) -> Option<Hit> {
     let Ok(tokens) = shell_words::split(command) else {
         return None; // unparseable → not our call to block
     };
-
     // Split the flat token stream into pipeline/sequence segments on the
     // shell operators (shell_words yields operators as standalone tokens).
     for segment in tokens.split(|t| matches!(t.as_str(), "|" | "|&" | ";" | "&&" | "||" | "&")) {
@@ -133,7 +125,6 @@ pub fn inspect(command: &str) -> Option<Hit> {
         // `grep` and `/usr/bin/grep` and `./grep` all invoke the POSIX
         // tool — compare on the basename.
         let base = cmd.rsplit('/').next().unwrap_or(cmd);
-
         if is_wrapper_bin(base) {
             continue; // `git grep` / `cargo …` — subcommand, not POSIX bin
         }
@@ -164,7 +155,6 @@ pub fn inspect(command: &str) -> Option<Hit> {
     }
     None
 }
-
 #[cfg(test)]
 #[path = "legacy_tool_guard_tests.rs"]
 mod tests;

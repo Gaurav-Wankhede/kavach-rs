@@ -4,7 +4,6 @@
 //!
 //! Severity: `P1Advisory`. Host emits `[TOOL_CHAIN_MISMATCH]` context.
 //! SOURCE: kavach-engine/CLAUDE.md Gate Severity Policy
-
 //   {"name":"VecDeque","reason":"eviction adds correctness surface; perf gain immeasurable at N=10"},
 //   {"name":"SmallVec","reason":"workspace dep for ~80B inline savings; not justified"}
 // ]
@@ -12,13 +11,11 @@
 // YEAR: 2026 | SEARCHED: 2026-05
 //   state already enforces a recent-tools cap upstream.
 // SOURCE: https://doc.rust-lang.org/std/collections/struct.VecDeque.html#performance
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ChainSeverity {
     P1Advisory,
 }
-
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct ChainHit {
@@ -26,14 +23,12 @@ pub struct ChainHit {
     pub reason: &'static str,
     pub fix: &'static str,
 }
-
 const RESEARCH_WRITE_TOOLS: &[&str] = &["Edit", "Write", "NotebookEdit"];
 const READ_TOOLS: &[&str] = &["Read", "Grep", "Glob"];
 const WRITE_TOOLS: &[&str] = &["Edit", "Write"];
 const DEBUG_EDITS_THRESHOLD: usize = 3;
 const IMPLEMENT_EDITS_THRESHOLD: usize = 3;
 const READ_LOOKBACK: usize = 5;
-
 #[must_use]
 pub fn validate(
     intent_type: &str,
@@ -83,7 +78,6 @@ pub fn validate(
     }
     None
 }
-
 #[cfg(test)]
 #[path = "tool_chain_validator_tests.rs"]
 mod tests;

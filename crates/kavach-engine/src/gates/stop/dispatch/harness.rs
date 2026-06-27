@@ -4,7 +4,6 @@
 //! card's harness link + the oracle's latest verdict via the sync RPC client
 //! (`db.get_harness`, `db.latest_goal_attempt`). SOURCE: decision.goal-harness-6-patterns.
 use serde_json::json;
-
 /// Build the harness-dispatch suffix for a freshly-claimed card, or `None` when
 /// the card has no harness (ordinary kanban dispatch). Fail-soft: any RPC error
 /// or absent link yields `None` so the normal dispatch message still fires.
@@ -27,7 +26,6 @@ pub(crate) fn harness_suffix(project: &str, key: &str) -> Option<String> {
         &latest_verdict(project),
     ))
 }
-
 /// Read the oracle's latest `goal_loop_attempt` verdict string, or "none" when
 /// no attempt has run yet. Fail-soft to "unknown" on RPC error.
 fn latest_verdict(project: &str) -> String {
@@ -46,7 +44,6 @@ fn latest_verdict(project: &str) -> String {
         .unwrap_or("pending")
         .to_owned()
 }
-
 fn format_suffix(harness: &str, workflow_path: &str, verdict: &str) -> String {
     let run = if workflow_path.is_empty() {
         "compile the loop.yaml first (kavach goal compile), then run the emitted workflow.js"

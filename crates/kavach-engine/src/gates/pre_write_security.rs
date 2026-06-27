@@ -18,7 +18,6 @@ mod path_stages;
 #[path = "pre_write_security_test.rs"]
 mod tests;
 use crate::gates::pre_write_context::WriteContext;
-
 /// Result of the security stage.
 pub(crate) enum SecurityResult {
     /// Hard block — deny the write with this reason.
@@ -28,7 +27,6 @@ pub(crate) enum SecurityResult {
     /// No security issue — continue to next stage.
     Pass,
 }
-
 /// Run all security checks against the write context, first hit wins.
 pub(crate) fn check(ctx: &WriteContext<'_>) -> SecurityResult {
     path_stages::empty_path(ctx)

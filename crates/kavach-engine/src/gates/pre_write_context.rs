@@ -2,7 +2,6 @@
 // Eliminates the repeated content extraction pattern across pre_write stages.
 use crate::gates::pre_write_checks::{is_code_write, is_test_or_exempt};
 use kavach_types::HookInput;
-
 /// Shared context for the pre-write pipeline. Extracted once, read by all stages.
 #[expect(
     clippy::struct_excessive_bools,
@@ -18,7 +17,6 @@ pub(crate) struct WriteContext<'a> {
     pub is_rust: bool,
     pub is_frontend: bool,
 }
-
 impl<'a> WriteContext<'a> {
     pub(crate) fn extract(input: &'a HookInput) -> Self {
         let file_path = input.get_string("file_path");
@@ -45,7 +43,6 @@ impl<'a> WriteContext<'a> {
         }
     }
 }
-
 /// Reconstruct the TRUE post-edit file body so downstream guards judge the
 /// RESULT, not stale content. For Edit, read the current file and apply the
 /// single `old_string`→`new_string` replacement (Claude Code Edit replaces the

@@ -1,5 +1,4 @@
 use crate::state::SessionState;
-
 impl SessionState {
     pub fn reset_research_for_new_prompt(&mut self) {
         // Preserve research + skill state when task is active (plan execution).
@@ -20,7 +19,6 @@ impl SessionState {
         self.subagent_files_read = 0;
         self.save_or_log();
     }
-
     #[must_use]
     pub const fn needs_reinforcement(&self) -> bool {
         let threshold = if self.reinforce_every_n == 0 {
@@ -30,19 +28,16 @@ impl SessionState {
         };
         self.turn_count.saturating_sub(self.last_reinforce_turn) >= threshold
     }
-
     pub fn mark_reinforcement_done(&mut self) {
         self.last_reinforce_turn = self.turn_count;
         self.save_or_log();
     }
-
     pub fn set_model(&mut self, model_id: &str) {
         self.model_id = model_id.into();
         let cfg = kavach_config::ModelConfig::from_model_id(model_id);
         self.token_budget_total = cfg.usable_budget;
         self.update_context_phase(); // update_context_phase calls save()
     }
-
     pub fn update_context_phase(&mut self) {
         if self.token_budget_total <= 0 {
             let cfg = kavach_config::ModelConfig::from_model_id(&self.model_id);
@@ -65,7 +60,6 @@ impl SessionState {
         self.save_or_log();
     }
 }
-
 #[cfg(test)]
 #[path = "phase_tests.rs"]
 mod tests;

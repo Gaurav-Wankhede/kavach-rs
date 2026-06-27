@@ -7,10 +7,8 @@ mod advise;
 mod bloatware;
 mod dedup;
 mod severity;
-
 use super::result::Acc;
 use crate::gates::pre_write_context::WriteContext;
-
 /// Run the 2026 guard block in the original order. `Some(reason)` blocks.
 pub(super) fn check(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if ctx.is_test {
@@ -44,7 +42,6 @@ pub(super) fn check(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     }
     severity::webhook(ctx, acc)
 }
-
 #[cfg(test)]
 #[path = "guards2026_test.rs"]
 #[cfg(test)]

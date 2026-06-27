@@ -12,14 +12,10 @@ mod rpc;
 #[path = "post_tool_failure_test.rs"]
 mod tests;
 use std::fmt::Write as _;
-
 use kavach_types::HookInput;
-
 use classify::{action_for_type, classify_failure, is_repeat_failure};
 use rpc::{find_autonomous_via_rpc, tier2_context, upsert_via_rpc};
-
 use crate::error::EngineError;
-
 #[expect(
     clippy::unnecessary_wraps,
     reason = "uniform gate dispatch via gate_runner.rs"
@@ -31,7 +27,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     } else {
         &input.error
     };
-
     let failure_type = classify_failure(error_text);
     let mut session = kavach_session::get_or_create_session();
     session.increment_turn();
@@ -45,7 +40,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     } else {
         "false"
     };
-
     let context =
         if let Some(pat) = find_autonomous_via_rpc(&session.project, error_text, tool_name) {
             // Tier 1: inject stored fix + imperative rewrite. Bump occurrence count.
@@ -94,7 +88,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 error_text,
             )
         };
-
     drop(kavach_hook::exit_post_tool_failure_context(&context));
     if super::turn_relay::should_relay() {
         let one_line = context.lines().next().unwrap_or(&context);

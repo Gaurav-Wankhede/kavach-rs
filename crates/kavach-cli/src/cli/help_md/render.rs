@@ -16,7 +16,6 @@ pub(super) fn arg_row(a: &clap::Arg) -> String {
         .join(", ");
     format!("| `{flag}` | {help} | {default} |\n")
 }
-
 #[cfg(test)]
 #[path = "render_test.rs"]
 #[cfg(test)]

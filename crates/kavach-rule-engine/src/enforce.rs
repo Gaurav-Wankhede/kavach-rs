@@ -1,7 +1,5 @@
 //! Tiered skill enforcement: critical must all pass, advisory any-one.
-
 use crate::file_matcher::FileMatchResult;
-
 #[derive(Debug)]
 #[expect(
     clippy::exhaustive_enums,
@@ -14,7 +12,6 @@ pub enum EnforcementDecision {
         missing_advisory: Vec<String>,
     },
 }
-
 /// Check if invoked skills satisfy the file match requirements.
 ///
 /// Critical skills: ALL must be invoked.
@@ -28,42 +25,35 @@ pub fn check_enforcement(
     if !matches.has_matches() {
         return EnforcementDecision::Allowed;
     }
-
     let missing_critical: Vec<String> = matches
         .critical
         .iter()
         .filter(|s| !invoked_skills.iter().any(|inv| inv == *s))
         .cloned()
         .collect();
-
     // All critical present AND all satisfied → advisory waived.
     if !matches.critical.is_empty() && missing_critical.is_empty() {
         return EnforcementDecision::Allowed;
     }
-
     // Advisory: at least one must be invoked (unless none required).
     let advisory_satisfied = matches.advisory.is_empty()
         || matches
             .advisory
             .iter()
             .any(|s| invoked_skills.iter().any(|inv| inv == s));
-
     if missing_critical.is_empty() && advisory_satisfied {
         return EnforcementDecision::Allowed;
     }
-
     let missing_advisory = if advisory_satisfied {
         vec![]
     } else {
         matches.advisory.clone()
     };
-
     EnforcementDecision::Blocked {
         missing_critical,
         missing_advisory,
     }
 }
-
 /// Format a block reason message from an enforcement decision.
 #[must_use]
 pub fn format_block_reason(decision: &EnforcementDecision, file_path: &str) -> String {
@@ -92,7 +82,6 @@ pub fn format_block_reason(decision: &EnforcementDecision, file_path: &str) -> S
         }
     }
 }
-
 #[cfg(test)]
 #[path = "enforce_tests.rs"]
 mod tests;

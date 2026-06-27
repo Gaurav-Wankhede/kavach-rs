@@ -12,9 +12,7 @@
 //!   gates bypass the controller and never reach here.
 //! - The controller defaults to `Ask` (abstention) under uncertainty, so a
 //!   shadow that would diverge toward a RISKIER action is the signal to inspect.
-
 use kavach_patterns::bandit_log::GateAction;
-
 #[cfg(test)]
 #[path = "shadow_test.rs"]
 #[cfg(test)]
@@ -22,7 +20,6 @@ use kavach_patterns::bandit_log::GateAction;
 mod tests;
 /// The env flag that arms the canary. Absent/empty/`"0"`/`"false"` ⇒ disarmed.
 const CANARY_FLAG: &str = "KAVACH_RL_CANARY";
-
 /// Whether the canary is armed this process (reads `KAVACH_RL_CANARY`).
 ///
 /// Disarmed is the safe default: any value other than a clear truthy
@@ -31,7 +28,6 @@ const CANARY_FLAG: &str = "KAVACH_RL_CANARY";
 pub(crate) fn canary_armed() -> bool {
     std::env::var(CANARY_FLAG).is_ok_and(|v| is_truthy(&v))
 }
-
 /// Parse a flag value as a boolean — only an explicit truthy arms the canary.
 fn is_truthy(v: &str) -> bool {
     matches!(
@@ -39,7 +35,6 @@ fn is_truthy(v: &str) -> bool {
         "1" | "true" | "yes" | "on"
     )
 }
-
 /// Record a shadow decision: what the controller WOULD choose vs the rule's
 /// actual action. No-op unless the canary is armed. Fire-and-forget, never
 /// blocks the gate, never alters its verdict.
@@ -77,7 +72,6 @@ pub(crate) fn record_shadow(
     )]
     let _: Result<serde_json::Value, _> = kavach_rpc::client::call("db.event", Some(params));
 }
-
 /// The `snake_case` wire string for a gate action, matching `bandit_log`'s
 /// encoding so a shadow event joins the on-policy rows on the same vocabulary.
 const fn action_str(action: GateAction) -> &'static str {

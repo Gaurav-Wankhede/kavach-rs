@@ -1,7 +1,5 @@
 //! Cross-project leakage guard for `test_files_pending`.
-
 use crate::state::SessionState;
-
 /// Remove `test_files_pending` entries that don't belong to the current `work_dir`.
 /// Prevents cross-project test enforcement leakage when switching directories.
 pub(crate) fn filter_test_pending_for_project(state: &mut SessionState, work_dir: &str) {
@@ -20,7 +18,6 @@ pub(crate) fn filter_test_pending_for_project(state: &mut SessionState, work_dir
         state.test_nudge_count = 0;
     }
 }
-
 #[cfg(test)]
 #[path = "filter_test.rs"]
 #[cfg(test)]

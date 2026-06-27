@@ -1,6 +1,5 @@
 // POSIX-standard non-secret system variables safe to read via echo/printenv.
 // See decision.engine.env-guard-safelist-arch.
-
 /// POSIX-standard non-secret system variables — safe to read via `echo` or `printenv`.
 ///
 /// Excludes loader-injection vars (LD_*, DYLD_*, `NODE_OPTIONS`, etc.) per
@@ -47,7 +46,6 @@ pub(crate) const SAFE_SYSTEM_VARS: &[&str] = &[
     // Hostname (commonly-used non-POSIX but standard)
     "hostname",
 ];
-
 /// Return true when `var_name` is a POSIX-standard non-secret system variable.
 ///
 /// Lookup is O(n) over a small const slice (n=~27, no allocation). `HashSet` would
@@ -63,7 +61,6 @@ pub(crate) fn is_safe_system_var(var_name: &str) -> bool {
     }
     SAFE_SYSTEM_VARS.contains(&lc.as_str())
 }
-
 mod echo;
 #[cfg(test)]
 #[path = "env_guard_safelist_test.rs"]

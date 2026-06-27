@@ -1,18 +1,14 @@
 use std::io::{self, BufRead, Write};
-
 use kavach_types::{HookInput, HookResponse};
 use serde::Serialize;
-
 pub mod cc21;
 pub mod context;
 pub mod lifecycle;
 pub mod severity;
 pub mod toon;
 pub mod vendor;
-
 pub use severity::GateSeverity;
 pub use vendor::{SchemaSource, Vendor};
-
 #[cfg(test)]
 #[path = "lib_test.rs"]
 #[cfg(test)]
@@ -24,7 +20,6 @@ pub use context::{
     exit_approve_ctx, exit_block_ctx, exit_modify_ctx, exit_modify_ctx_with_module,
     exit_session_end_ctx, exit_user_prompt_submit_ctx, now_full, today, today_full,
 };
-
 // Re-export CC 2.1 functions at crate root
 pub use cc21::{
     exit_notification_context, exit_notification_with_sequence, exit_post_tool_block,
@@ -33,7 +28,6 @@ pub use cc21::{
     exit_prompt_submit_block, exit_session_start_context, exit_session_start_full, exit_stop_block,
     exit_stop_context,
 };
-
 // Re-export lifecycle functions at crate root
 pub use lifecycle::{
     exit_elicitation_decline, exit_permission_allow, exit_permission_deny,
@@ -41,7 +35,6 @@ pub use lifecycle::{
     exit_subagent_start, exit_subagent_stop, exit_user_prompt_submit,
     exit_user_prompt_submit_silent,
 };
-
 /// What the hook wants to do after outputting JSON.
 #[derive(Debug)]
 #[expect(
@@ -52,9 +45,7 @@ pub enum HookAction {
     Done,
     Error,
 }
-
 // --- Input ---
-
 /// Read a hook input payload from stdin.
 ///
 /// # Errors
@@ -63,7 +54,6 @@ pub fn read_hook_input() -> Result<HookInput, String> {
     let stdin = io::stdin();
     read_hook_input_from(stdin.lock())
 }
-
 /// Read a hook input payload from an arbitrary reader.
 ///
 /// # Errors
@@ -77,7 +67,6 @@ pub fn read_hook_input_from<R: BufRead>(reader: R) -> Result<HookInput, String> 
     let raw = buf.join("\n");
     parse_hook_input(&raw)
 }
-
 /// Parse a raw hook-input payload into [`HookInput`], tolerating explicit JSON
 /// `null` on any field.
 ///
@@ -101,7 +90,6 @@ pub fn parse_hook_input(raw: &str) -> Result<HookInput, String> {
     }
     serde_json::from_value(value).map_err(|e| format!("JSON parse error: {e}"))
 }
-
 /// Read a hook input payload through the NATIVE EDGE for a resolved harness.
 ///
 /// Reads stdin once, resolves the vendor (hybrid: `explicit` `--vendor` wins,
@@ -148,7 +136,6 @@ pub fn read_hook_input_native(
         }
     }
 }
-
 /// Emit a canonical [`HookResponse`] in `vendor`'s NATIVE output contract and
 /// return the process exit code that vendor expects (Codex blocks via exit 2).
 #[must_use = "the returned exit code must be passed to process::exit for Codex's exit-2 block"]
@@ -161,7 +148,6 @@ pub fn output_native(vendor: Vendor, resp: &HookResponse) -> i32 {
         0
     }
 }
-
 /// Write `json` to stdout, or fail CLOSED if the write errors.
 ///
 /// stdout is the gate's ONLY verdict channel to the host. A swallowed write
@@ -188,14 +174,11 @@ fn emit_or_fail_closed(json: &str) {
     eprintln!("kavach: stdout write failed ({e}) — fail-closed, host must not proceed");
     std::process::exit(EXIT_HOOK_ERROR);
 }
-
 /// Hook-error exit code. A non-zero hook exit tells every supported host "the
 /// gate did not produce a verdict — do not proceed", which is the fail-closed
 /// outcome when the verdict cannot be delivered on stdout.
 const EXIT_HOOK_ERROR: i32 = 2;
-
 // --- Output helpers ---
-
 #[expect(
     clippy::print_stderr,
     reason = "hook last-ditch diagnostic path; no tracing subscriber in hook binary, broken-pipe surfaces via SIGPIPE (RFC 1869)"
@@ -214,7 +197,6 @@ pub(crate) fn write_json<T: Serialize>(val: &T) {
         eprintln!("kavach: stdout write failed");
     }
 }
-
 std::thread_local! {
     /// The harness whose NATIVE dialect this thread's gate output must speak.
     /// The edge (`read_hook_input_native`) sets it once per invocation; every
@@ -229,7 +211,6 @@ std::thread_local! {
     /// doesn't stamp the event itself.
     static OUTPUT_EVENT: std::cell::RefCell<String> = const { std::cell::RefCell::new(String::new()) };
 }
-
 /// Set the native dialect + answered event for all subsequent gate output on
 /// THIS thread.
 ///
@@ -242,19 +223,16 @@ pub fn set_output_context(vendor: Vendor, event: &str) {
     OUTPUT_VENDOR.with(|v| v.set(vendor));
     OUTPUT_EVENT.with(|e| e.replace(event.to_owned()));
 }
-
 /// The native dialect currently selected for this thread's gate output.
 #[must_use]
 pub fn output_vendor() -> Vendor {
     OUTPUT_VENDOR.with(std::cell::Cell::get)
 }
-
 /// The canonical event the current thread's gate is answering ("" if unset).
 #[must_use]
 pub fn output_event() -> String {
     OUTPUT_EVENT.with(|e| e.borrow().clone())
 }
-
 #[expect(
     clippy::print_stderr,
     reason = "hook last-ditch diagnostic path; no tracing subscriber in hook binary, broken-pipe surfaces via SIGPIPE (RFC 1869)"
@@ -282,15 +260,12 @@ pub fn block(reason: &str) {
 pub fn modify(reason: &str, ctx: &str) {
     output(&HookResponse::new_modify(reason, ctx));
 }
-
 // --- Exit helpers ---
-
 #[must_use]
 pub fn exit_silent() -> HookAction {
     approve("ok");
     HookAction::Done
 }
-
 #[must_use]
 pub fn exit_approve(reason: &str) -> HookAction {
     approve(reason);

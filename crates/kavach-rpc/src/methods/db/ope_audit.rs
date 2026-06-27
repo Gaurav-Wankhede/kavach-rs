@@ -13,7 +13,6 @@
 //!
 //! Pure report: no policy is promoted here. The promotion gate reads this verdict
 //! and refuses to ship on any floor violation or a `Hacking` drift verdict.
-
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_ope::Action;
@@ -21,7 +20,6 @@ use kavach_ope::Estimate;
 use kavach_ope::audit::{AuditVerdict, detect_reward_hacking};
 use kavach_ope::label::{action_from_tag, reward_scalar};
 use serde::{Deserialize, Serialize};
-
 #[cfg(test)]
 #[path = "ope_audit_test.rs"]
 #[cfg(test)]
@@ -37,7 +35,6 @@ pub struct OpeAuditParams {
     /// counts as reward hacking. A small positive slack absorbs sampling noise.
     pub drift_tolerance: f64,
 }
-
 /// The reward-hacking audit report.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]
@@ -61,7 +58,6 @@ pub struct OpeAuditResult {
     /// Set on a load error; the verdict fields are then fail-closed defaults.
     pub error: Option<String>,
 }
-
 /// Run the P5 reward-hacking audit over the logged decisions.
 ///
 /// # Errors
@@ -76,13 +72,11 @@ pub async fn ope_audit(
         Ok(rows) => rows,
         Err(e) => return Ok(load_failed(e.to_string())),
     };
-
     let pairs: Vec<(Action, Action)> = raw
         .iter()
         .filter_map(|json| rule_shadow_pair(json))
         .collect();
     let floor_violations = pairs.iter().filter(|&&(r, s)| relaxes_block(r, s)).count();
-
     let hard: Vec<f64> = raw
         .iter()
         .filter_map(|j| channel_reward(j, false))
@@ -93,7 +87,6 @@ pub async fn ope_audit(
         &mean_estimate(&soft),
         params.drift_tolerance,
     );
-
     let (tag, gap) = match drift {
         AuditVerdict::Healthy => ("healthy", 0.0),
         AuditVerdict::Hacking { gap } => ("hacking", gap),
@@ -102,7 +95,6 @@ pub async fn ope_audit(
         AuditVerdict::Inconclusive | _ => ("inconclusive", 0.0),
     };
     let promotable = floor_violations == 0 && matches!(drift, AuditVerdict::Healthy);
-
     Ok(OpeAuditResult {
         success: true,
         promotable,
@@ -114,14 +106,12 @@ pub async fn ope_audit(
         error: None,
     })
 }
-
 /// Whether `(rule, shadow)` is a relaxation of a hard block — the predicate the
 /// floor-violation count tallies (the audit crate decides per-pair; we only
 /// negate its floor check to count, not just find-first).
 const fn relaxes_block(rule: Action, shadow: Action) -> bool {
     !kavach_ope::audit::safety_floor_held(rule, shadow)
 }
-
 /// Project a bandit row into the `(rule_action, shadow_action)` pair the C2 floor
 /// audits, or `None` when the row lacks a shadow action (most rows — only canary
 /// shadow rows carry both).
@@ -131,7 +121,6 @@ fn rule_shadow_pair(json: &str) -> Option<(Action, Action)> {
     let shadow = action_from_tag(v.get("shadow_action")?.as_str()?)?;
     Some((rule, shadow))
 }
-
 /// The realized reward for a row, IF it belongs to the requested channel.
 /// `want_held_out = false` ⇒ the hard witness channel (rows without
 /// `held_out: true`); `true` ⇒ the soft held-out channel.
@@ -146,7 +135,6 @@ fn channel_reward(json: &str, want_held_out: bool) -> Option<f64> {
     }
     reward_scalar(v.get("reward")?.as_str()?)
 }
-
 /// A sample-mean estimate over a reward channel, with the standard error of the
 /// mean. An empty channel yields a zero-sample, infinite-SE estimate so the audit
 /// reads it as non-informative (`Inconclusive`) rather than a confident zero.
@@ -164,7 +152,6 @@ fn mean_estimate(rewards: &[f64]) -> Estimate {
     let var = rewards.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / denom;
     Estimate::new(mean, (var / denom).sqrt(), n)
 }
-
 /// The fail-closed result for a store-load failure: not promotable, zero
 /// channels, the error surfaced.
 const fn load_failed(error: String) -> OpeAuditResult {

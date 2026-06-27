@@ -9,7 +9,6 @@
 //! This is the BASH-side complement to `write_bypass` (which denies laundering ONE
 //! Edit past the pre-write gate): here the concern is the opposite shape — a genuine
 //! bulk op that should be authored ONCE as a script. Advisory tier; never blocks.
-
 /// Bulk-content mutators: their presence in command position is a rewrite, not a read.
 /// Rust-toolbelt-first: `rnr` (batch renamer — any invocation is a bulk op), `sg` /
 /// `ast-grep` (structural multi-file rewrite — bulk by nature), and `sd` (the modern
@@ -17,15 +16,12 @@
 /// fanned out (see `fanout_markers`). `rnr` / `sg` / `ast-grep` are inherent-bulk
 /// (in `INHERENT_BULK`); the rest need a fan-out marker.
 const MUTATORS: &[&str] = &["rnr", "sg", "ast-grep", "sd", "sed", "perl"];
-
 /// Mutators whose every invocation is inherently a bulk op (a batch renamer / a
 /// structural rewriter operate across a tree by design, not per single file).
 const INHERENT_BULK: &[&str] = &["rnr", "sg", "ast-grep"];
-
 /// Fan-out markers proving a mutator is applied across MANY targets in one command:
 /// `fd … -x`, `xargs`, a `find … -exec`, or a glob/brace expansion of paths.
 const FANOUT_MARKERS: &[&str] = &["-x ", " -exec", "xargs", "*.", "{}"];
-
 /// Bulk-op steer vocabulary AS DATA: floor + additive graph overlay.
 ///
 /// Mirrors [`crate::disobedience_guard::DisobedienceVocab`]: the compiled `const`
@@ -45,7 +41,6 @@ pub struct BulkOpVocab {
     /// Markers proving a mutator is fanned out across many targets.
     pub fanout_markers: Vec<String>,
 }
-
 impl Default for BulkOpVocab {
     fn default() -> Self {
         Self {
@@ -55,14 +50,12 @@ impl Default for BulkOpVocab {
         }
     }
 }
-
 /// `Some(reason)` when the command is a bulk multi-file mutation that belongs in one
 /// committed `scripts/*.sh`. Floor-default wrapper over [`detect_bulk_op_with`].
 #[must_use]
 pub fn detect_bulk_op(command: &str) -> Option<String> {
     detect_bulk_op_with(&BulkOpVocab::default(), command)
 }
-
 /// As [`detect_bulk_op`], but against a resolved [`BulkOpVocab`] (floor + overlay).
 ///
 /// Fires when the command is a bulk MUTATION and is NOT already a committed script.
@@ -106,13 +99,11 @@ pub fn detect_bulk_op_with(vocab: &BulkOpVocab, command: &str) -> Option<String>
     // the write-bypass guard's single-file domain; only steer when truly fanned out.
     fanned.then(|| steer("a multi-file rewrite (sd/sed across many files)"))
 }
-
 /// True when `tool` appears as a standalone word (driver target like `xargs sd` /
 /// `fd … -x sd`), not as a substring of another token (`sediment`, `password`).
 fn word_present(lower: &str, tool: &str) -> bool {
     lower.split_whitespace().any(|w| w == tool)
 }
-
 /// The advisory text: name the op and point at the one-script canonical form, run
 /// via a `just` recipe (preferred) — itself wrapping the committed `scripts/<verb>.sh`.
 fn steer(op: &str) -> String {
@@ -125,19 +116,16 @@ fn steer(op: &str) -> String {
          leaves no artifact."
     )
 }
-
 /// True when the command's job is to RUN the committed bulk script: a `just` recipe
 /// (the preferred entry point) OR a direct `scripts/*.sh` invocation.
 fn runs_committed_script(lower: &str) -> bool {
     command_head(lower) == "just" || (lower.contains("scripts/") && lower.contains(".sh"))
 }
-
 /// First word in command position (after stripping a leading `./`), lower-cased.
 fn command_head(lower: &str) -> &str {
     let first = lower.split_whitespace().next().unwrap_or_default();
     first.strip_prefix("./").unwrap_or(first)
 }
-
 /// Count explicit file-path arguments (tokens with a `/` or a source extension that
 /// are not flags). ≥2 means the rewrite targets multiple files by hand.
 fn explicit_path_args(command: &str) -> usize {
@@ -146,13 +134,11 @@ fn explicit_path_args(command: &str) -> usize {
         .filter(|t| !t.starts_with('-') && (t.contains('/') || has_source_ext(t)))
         .count()
 }
-
 /// True when a token ends in a tracked source extension.
 fn has_source_ext(tok: &str) -> bool {
     const EXTS: &[&str] = &[".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".sql"];
     EXTS.iter().any(|e| tok.ends_with(e))
 }
-
 #[cfg(test)]
 #[path = "bulk_op_guard_test.rs"]
 #[cfg(test)]

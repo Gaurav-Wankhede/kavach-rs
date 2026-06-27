@@ -2,11 +2,9 @@
 // its strict-rules manifest, fail-soft + never clobber an existing manifest.
 // SOURCE: decision.lint.language-profile-template.
 use std::path::Path;
-
 use crate::cmd::io_safe;
 use crate::cmd::lint::detect::{Stack, detect};
 use crate::cmd::lint::profiles::{go, rust, ts};
-
 /// Install (or report) the strict profile for every detected stack at `root`.
 /// `dry_run` reports what WOULD be written without touching disk.
 pub(crate) fn run(root: &Path, dry_run: bool) -> i32 {
@@ -22,7 +20,6 @@ pub(crate) fn run(root: &Path, dry_run: bool) -> i32 {
     }
     code
 }
-
 /// Install one stack's profile. Rust APPENDS the workspace-lints table to an
 /// existing Cargo.toml (idempotent on the marker); TS/Go WRITE a new manifest
 /// only when absent. Returns non-zero on a write error (surfaced, never silent).
@@ -45,7 +42,6 @@ fn install_one(root: &Path, stack: Stack, dry_run: bool) -> i32 {
         Stack::Ts | Stack::Go => write_if_absent(&target, body, stack),
     }
 }
-
 /// Append the `[workspace.lints]` table to Cargo.toml unless already present
 /// (idempotent — re-running never duplicates). Cargo.toml always exists here
 /// (detection keyed on it), so this only ever appends.
@@ -66,7 +62,6 @@ fn append_rust(target: &Path, body: &str) -> i32 {
         )),
     }
 }
-
 /// Write a manifest only when absent — never overwrite a project's existing
 /// tsconfig/golangci config (the user's tuning wins; we only seed a missing one).
 fn write_if_absent(target: &Path, body: &str, stack: Stack) -> i32 {
@@ -88,15 +83,12 @@ fn write_if_absent(target: &Path, body: &str, stack: Stack) -> i32 {
         )),
     }
 }
-
 fn emit(msg: &str) -> i32 {
     io_safe::print_or_exit(msg).map_or_else(io_safe::into_exit_code, |()| 0)
 }
-
 fn fail(msg: &str) -> i32 {
     io_safe::ewrite_or_exit(msg).map_or_else(io_safe::into_exit_code, |()| 1)
 }
-
 #[cfg(test)]
 #[path = "init_test.rs"]
 #[cfg(test)]

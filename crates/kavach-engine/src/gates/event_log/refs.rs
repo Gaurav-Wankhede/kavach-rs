@@ -1,7 +1,6 @@
 //! Content-reference extraction: `[[wikilinks]]` + `INVOKE skill` directives,
 //! file-extension→skill mapping, and the qualified-name builder. Shared by the
 //! file-write and memory-entry graph projections.
-
 /// Map file extension to skill name for graph edges.
 pub(super) fn skill_for_file(path: &str) -> &'static str {
     let p = std::path::Path::new(path);
@@ -17,7 +16,6 @@ pub(super) fn skill_for_file(path: &str) -> &'static str {
         _ => "",
     }
 }
-
 /// Extract referenced names from file content: `[[wikilinks]]` and
 /// `INVOKE skill-name` directives, sorted + deduped.
 //
@@ -33,7 +31,6 @@ pub(super) fn extract_content_references(content: &str) -> Vec<String> {
     refs.dedup();
     refs
 }
-
 fn collect_wikilinks(line: &str, refs: &mut Vec<String>) {
     let mut rest = line;
     while let Some(start) = rest.find("[[") {
@@ -55,9 +52,7 @@ fn collect_wikilinks(line: &str, refs: &mut Vec<String>) {
         rest = s;
     }
 }
-
 const INVOKE_PREFIX: &str = "INVOKE ";
-
 fn collect_invoke(line: &str, refs: &mut Vec<String>) {
     let Some(pos) = line.find(INVOKE_PREFIX) else {
         return;
@@ -74,7 +69,6 @@ fn collect_invoke(line: &str, refs: &mut Vec<String>) {
         refs.push(skill.to_owned());
     }
 }
-
 /// Build the legacy namespaced name for a memory entry:
 /// `<project>/<category>/<entry_key>`. Public so kavach-cli and any other graph
 /// reader can construct lookup keys that match what projections write.
@@ -86,7 +80,6 @@ pub fn memory_entry_qualified_name(category: &str, entry_key: &str, project_slug
         format!("{project_slug}/{category}/{entry_key}")
     }
 }
-
 /// Pure-fn parser exposed for kavach-cli's inline projection. Both the CLI
 /// direct-DB variant and the engine RPC variant share this as the single source
 /// of truth for `[[wikilink]]` + `INVOKE` markers.

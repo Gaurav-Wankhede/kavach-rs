@@ -4,7 +4,6 @@
 //! (Rust Book ch07, `LogRocket` web services patterns).
 //! Thin hub + nano-file leaves (≤100 LOC each), following `rust_guard.rs` template.
 //! All public API stable — zero change to rpc.rs callers.
-
 mod archive;
 mod bandit_backfill;
 mod delete;
@@ -41,7 +40,6 @@ mod util;
 mod wipe_project;
 mod witness_gate;
 mod write;
-
 pub use archive::{ArchiveParams, ArchiveResult, archive};
 pub use bandit_backfill::{BanditBackfillParams, BanditBackfillResult, bandit_backfill_session};
 pub use delete::{
@@ -90,7 +88,6 @@ pub use wipe_project::{
     WipeProjectParams, WipeProjectResult, WipeReportDto, wipe_confirm_phrase, wipe_project,
 };
 pub use write::{WriteParams, WriteResult, write};
-
 #[cfg(test)]
 #[path = "db_test.rs"]
 #[cfg(test)]

@@ -5,15 +5,12 @@
 //! - <https://sunshowers.io/posts/cancelling-async-rust>/
 //! - <https://rfd.shared.oxide.computer/rfd/0400> (cancel-safe-futures)
 //! - <https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html>
-
 mod detect;
 mod rules;
 mod types;
 mod walk;
-
 pub use detect::detect;
 pub use types::{AsyncSeverity, AsyncViolation};
-
 #[cfg(test)]
 #[path = "async_sync_guard_test.rs"]
 #[cfg(test)]

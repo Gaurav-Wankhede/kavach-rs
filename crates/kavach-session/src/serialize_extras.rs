@@ -2,7 +2,6 @@ use crate::save::join_csv;
 use crate::serialize::write_kv;
 use crate::state::SessionState;
 use std::fmt::Write;
-
 impl SessionState {
     #[expect(
         clippy::too_many_lines,
@@ -19,7 +18,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         s.push_str("[TOKEN_BUDGET]\n");
         write_kv(
             s,
@@ -29,7 +27,6 @@ impl SessionState {
         write_kv(s, "token_budget_used", &self.token_budget_used.to_string());
         write_kv(s, "context_phase", &self.context_phase);
         s.push('\n');
-
         s.push_str("[SUBAGENT_TRACKING]\n");
         write_kv(s, "active_subagents", &self.active_subagents.to_string());
         write_kv(
@@ -73,19 +70,16 @@ impl SessionState {
             writeln!(s, "output:{id}: {chars}").ok();
         }
         s.push('\n');
-
         if !self.modules_injected.is_empty() {
             s.push_str("[MODULES]\n");
             write_kv(s, "modules_injected", &join_csv(&self.modules_injected));
             s.push('\n');
         }
-
         if !self.specs_injected.is_empty() {
             s.push_str("[SPECS]\n");
             write_kv(s, "specs_injected", &join_csv(&self.specs_injected));
             s.push('\n');
         }
-
         if !self.last_failure_tool.is_empty() {
             s.push_str("[FAILURE_TRACKING]\n");
             write_kv(s, "last_failure_tool", &self.last_failure_tool);
@@ -130,7 +124,6 @@ impl SessionState {
             &self.last_progress_snapshot_db_writes.to_string(),
         );
         s.push('\n');
-
         // Review-tracking — written only when a review has occurred this session.
         // Bug fix: completion_guard.rs::check_review_isolation was firing on every
         // stop with files_modified.len() >= 5; persisting these lets the gate
@@ -146,25 +139,21 @@ impl SessionState {
             write_kv(s, "last_review_at", &self.last_review_at.to_string());
             s.push('\n');
         }
-
         if self.new_crate_confirmed {
             s.push_str("[NEW_CRATE]\n");
             write_kv(s, "new_crate_confirmed", "true");
             s.push('\n');
         }
-
         if self.algo_hunter_invoked {
             s.push_str("[ALGO_HUNTER]\n");
             write_kv(s, "algo_hunter_invoked", "true");
             s.push('\n');
         }
-
         if self.arch_skill_invoked {
             s.push_str("[ARCH_GATE]\n");
             write_kv(s, "arch_skill_invoked", "true");
             s.push('\n');
         }
-
         if self.websearch_count_since_intent > 0 || self.intent_set_turn > 0 {
             s.push_str("[EVIDENCE_CHAIN]\n");
             write_kv(
@@ -175,24 +164,20 @@ impl SessionState {
             write_kv(s, "intent_set_turn", &self.intent_set_turn.to_string());
             s.push('\n');
         }
-
         if self.think_first_injected {
             s.push_str("[ELICITATION]\n");
             write_kv(s, "think_first_injected", "true");
             s.push('\n');
         }
-
         if self.fanout_nudge_sent {
             write_kv(s, "fanout_nudge_sent", "true");
             s.push('\n');
         }
-
         if self.research_advisory_sent {
             s.push_str("[RESEARCH_ADVISORY]\n");
             write_kv(s, "research_advisory_sent", "true");
             s.push('\n');
         }
-
         if !self.files_modified_this_turn.is_empty() {
             s.push_str("[SURGICAL_TRACKING]\n");
             write_kv(
@@ -202,12 +187,10 @@ impl SessionState {
             );
             s.push('\n');
         }
-
         if !self.tdd_red_units.is_empty() {
             write_kv(s, "tdd_red_units", &self.tdd_red_units.join(","));
             s.push('\n');
         }
-
         // FIX [contract_violation] reviewer BLOCK-J — lsp_diag_seen was added
         // to SessionState (commit 729529a) without serialize/parse wiring;
         // the §LSP-FIRST advisory would re-fire every turn because the
@@ -224,13 +207,11 @@ impl SessionState {
             write_kv(s, "lsp_diag_seen", &view.join(","));
             s.push('\n');
         }
-
         if !self.active_test_crates.is_empty() {
             s.push_str("[TEST_RUN_TRACKING]\n");
             write_kv(s, "active_test_crates", &self.active_test_crates.join(","));
             s.push('\n');
         }
-
         //            {"name":"bincode","reason":"binary blobs hostile to grep"},
         //            {"name":"per-key INI line","reason":"unbounded section bloat"}]
         // TIME: O(n log n) sort (deterministic order) | SPACE: O(n)
@@ -277,7 +258,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         // ARCH: PhaseGatedSerialization — persist phase enforcement state
         // PATTERN: phase_gate | SCOPE: session | CAP: AP | SEARCHED: 2026-04
         if !self.current_phase.is_empty() && self.current_phase != "PLAN"
@@ -299,7 +279,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         // ARCH: PhaseCompletionSerialization — persist per-phase DoD tracking
         // PATTERN: dod_tracking | SCOPE: phase | CAP: AP | SEARCHED: 2026-04
         if !self.plan_done_files.is_empty()
@@ -326,7 +305,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         // ARCH: KanbanSequenceSerialization — persist kanban ordering state
         // PATTERN: kanban_sequence | SCOPE: project | CAP: AP | SEARCHED: 2026-04
         if !self.current_kanban_card.is_empty() || !self.blocked_cards.is_empty() {
@@ -339,7 +317,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         // §FOCUS — the user's pinned scope OUTRANKS the kanban. Persisted in
         // its own section (not KANBAN_SEQUENCE) because it is the OVERRIDE of
         // the queue, not a member of it.
@@ -348,7 +325,6 @@ impl SessionState {
             write_kv(s, "user_focus", &self.user_focus);
             s.push('\n');
         }
-
         // ARCH: GoalOrientedLoopSerialization — persist goal state
         // PATTERN: goal_loop | SCOPE: session | CAP: AP | SEARCHED: 2026-04
         if !self.goal_state.is_empty()
@@ -380,7 +356,6 @@ impl SessionState {
             write_kv(s, "goal_set_turn", &self.goal_set_turn.to_string());
             s.push('\n');
         }
-
         // ARCH: AutonomousLoopSerialization — persist loop state
         // PATTERN: pev_loop | SCOPE: session | CAP: AP | SEARCHED: 2026-05
         // SOURCE: martinfowler.com/articles/harness-engineering.html
@@ -403,7 +378,6 @@ impl SessionState {
             write_kv(s, "loop_start_turn", &self.loop_start_turn.to_string());
             s.push('\n');
         }
-
         // ARCH: MultiTurnRcaTracking — see state.rs
         if self.rca_block_present || self.rca_set_turn > 0 {
             s.push_str("[RCA_TRACKING]\n");
@@ -425,7 +399,6 @@ impl SessionState {
             write_kv(s, "rca_set_turn", &self.rca_set_turn.to_string());
             s.push('\n');
         }
-
         // ARCH: SubagentBlastSerialization — persist blast radius tracking
         // PATTERN: blast_radius | SCOPE: session | CAP: AP | SEARCHED: 2026-05
         // SOURCE: github.com/nousresearch/hermes-agent — persistent memory
@@ -470,7 +443,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         if self.turn_shadow_pending
             || !self.turn_shadow.is_empty()
             || !self.pending_advisories.is_empty()
@@ -497,7 +469,6 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         if !self.last_reward_summary.is_empty()
             || self.reward_session_pass > 0
             || self.reward_session_total > 0
@@ -522,11 +493,9 @@ impl SessionState {
             }
             s.push('\n');
         }
-
         self.serialize_enforcement_sections(s);
     }
 }
-
 // Tests moved to serialize_tests.rs (test_to_ini, test_to_ini_full_roundtrip)
 #[cfg(test)]
 #[path = "serialize_tests.rs"]

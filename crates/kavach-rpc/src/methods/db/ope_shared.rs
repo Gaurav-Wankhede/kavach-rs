@@ -4,7 +4,6 @@
 use kavach_ope::dm::RewardModel;
 use kavach_ope::label::{action_from_tag, reward_scalar};
 use kavach_ope::{Action, LoggedSample};
-
 /// A constant reward model `r̂(x, a) = mean(reward)` — the low-variance DM anchor
 /// for V1. It ignores context (every prediction is the global mean reward), so
 /// Doubly-Robust reduces to IPS plus a mean baseline: unbiased if the logged
@@ -14,13 +13,11 @@ pub(super) struct MeanRewardModel {
     /// The single predicted reward (global mean over the usable samples).
     pub mean: f64,
 }
-
 impl RewardModel for MeanRewardModel {
     fn predict(&self, _context: &[f64], _action: Action) -> f64 {
         self.mean
     }
 }
-
 /// Mean realized reward over the usable samples (0.0 when empty) — the constant
 /// DM model's single prediction.
 #[expect(
@@ -34,7 +31,6 @@ pub(super) fn mean_reward(samples: &[LoggedSample]) -> f64 {
     let n = f64::from(u32::try_from(samples.len()).unwrap_or(u32::MAX));
     samples.iter().map(|s| s.reward).sum::<f64>() / n
 }
-
 /// Project one stored `BanditRow` JSON into a `LoggedSample`, or `None` if the
 /// row is unparseable OR its reward is not yet back-filled (un-rewarded rows are
 /// not usable for OPE — only graded decisions carry signal).
@@ -49,7 +45,6 @@ pub(super) fn sample_from_row(json: &str) -> Option<LoggedSample> {
         action, propensity, reward, context,
     ))
 }
-
 /// Project the `BanditContext` object into the numeric feature vector the Direct
 /// Method consumes: `[diff_bytes, prior_fire_count, risk_level]`, where the risk
 /// label is ordinal-encoded (low=0, medium=1, high=2, unknown=0).
@@ -73,7 +68,6 @@ fn context_features(ctx: Option<&serde_json::Value>) -> Vec<f64> {
         });
     vec![diff_bytes, prior, risk]
 }
-
 #[cfg(test)]
 #[path = "ope_test.rs"]
 mod tests;

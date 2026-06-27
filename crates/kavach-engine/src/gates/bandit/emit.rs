@@ -4,9 +4,7 @@
 //! emit logic lives once and is tested once. A deterministic gate logs
 //! propensity 1.0; the timestamp is read here (callers stay clock-free/testable
 //! via [`build_row`]).
-
 use kavach_patterns::bandit_log::{BanditContext, BanditRow, GateAction, Reward};
-
 /// Build a row from its parts (clock-free — caller supplies `timestamp_ms`).
 ///
 /// Kept separate from the RPC fire so tests assert the exact serialized shape
@@ -23,7 +21,6 @@ pub(crate) fn build_row(
     row.reward = reward;
     row
 }
-
 /// Serialize a row to the JSON payload the `db.bandit_row` RPC expects.
 ///
 /// Returns `None` if serialization fails (it cannot for this type, but the emit
@@ -31,7 +28,6 @@ pub(crate) fn build_row(
 pub(crate) fn payload_of(row: &BanditRow) -> Option<String> {
     serde_json::to_string(row).ok()
 }
-
 /// Emit one decision row to the daemon (fire-and-forget).
 ///
 /// No-op on an empty `session_id` (nothing to key the row to) or a serialize
@@ -67,7 +63,6 @@ pub(crate) fn emit_decision(
     )]
     let _: Result<serde_json::Value, _> = kavach_rpc::client::call("db.bandit_row", Some(params));
 }
-
 /// Emit a SOFT held-out reward row for this decision (P8), IF the held-out
 /// sampler fires for the given `roll` (a uniform draw in `[0,1)`).
 ///
@@ -99,7 +94,6 @@ pub(crate) fn maybe_emit_held_out(
     )]
     let _: Result<serde_json::Value, _> = kavach_rpc::client::call("db.bandit_row", Some(params));
 }
-
 /// The held-out sampling rate from `KAVACH_RL_HELDOUT_RATE`, clamped to `[0,1]`.
 /// Absent / unparseable / non-finite ⇒ 0.0 (held-out channel disabled), the
 /// fail-safe default: no held-out rows means the audit reads the soft channel as
@@ -112,14 +106,12 @@ fn held_out_rate() -> f32 {
         .unwrap_or(0.0)
         .clamp(0.0, 1.0)
 }
-
 /// Wall-clock ms since the epoch; 0 if the clock is before the epoch.
 pub(crate) fn now_ms() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX))
 }
-
 #[cfg(test)]
 #[path = "emit_test.rs"]
 #[cfg(test)]

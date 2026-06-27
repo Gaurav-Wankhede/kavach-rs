@@ -1,17 +1,13 @@
 // Nano-file invariants. SOURCE: decision.harness.nano-file-ladder-not-loc
-
 mod predicates;
 mod types;
-
 use predicates::{depth_below_src, has_inline_tests, is_loc_exempt};
 pub use types::{NanoFileViolation, NanoSeverity};
-
 pub const MAX_DEPTH_BELOW_SRC: usize = 7;
 /// Smell trigger: at/above this, advise the reuse-ladder (P1), never block.
 pub const WARN_LOC_NEW_FILE: usize = 120;
 /// Genuine-monolith ceiling: above this, hard-block (P0) — split or mark intentional.
 pub const HARD_LOC_NEW_FILE: usize = 250;
-
 #[must_use]
 pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileViolation> {
     let mut v = Vec::new();
@@ -21,7 +17,6 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
     {
         return v;
     }
-
     if file_path.ends_with("/mod.rs") || file_path.ends_with("\\mod.rs") {
         v.push(NanoFileViolation {
             severity: NanoSeverity::P0Block,
@@ -31,7 +26,6 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
                 .to_owned(),
         });
     }
-
     if let Some(depth) = depth_below_src(file_path)
         && depth > MAX_DEPTH_BELOW_SRC
     {
@@ -44,7 +38,6 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
             ),
         });
     }
-
     if has_inline_tests(file_path, content) {
         v.push(NanoFileViolation {
             severity: NanoSeverity::P0Block,
@@ -56,7 +49,6 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
                 .to_owned(),
         });
     }
-
     let loc = content.lines().count();
     let _ = tool_name;
     // Graduated band: WARN advises the ladder (cohesion may be fine); HARD blocks a monolith.
@@ -82,10 +74,8 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
             ),
         });
     }
-
     v
 }
-
 #[cfg(test)]
 #[path = "nano_file_guard_test.rs"]
 #[cfg(test)]

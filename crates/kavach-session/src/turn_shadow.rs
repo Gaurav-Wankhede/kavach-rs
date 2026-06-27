@@ -1,6 +1,5 @@
 //! Turn shadow + post-tool advisory queue for Cursor relay (Phases 1 & 5).
 use crate::state::SessionState;
-
 /// The realized verify outcome for a card, on the `[REWARD:last]` followup.
 ///
 /// Four states, NOT a bool: the mechanical 3-witness oracle yields `Passed`
@@ -24,7 +23,6 @@ pub enum RewardOutcome {
     /// the session total (the false-negative-reward fix, preserved).
     Abstain,
 }
-
 impl RewardOutcome {
     /// `Some(true/false)` for a graded ±1 sample (mechanical OR AI-judged),
     /// `None` for a true abstention. The single place the four states collapse
@@ -38,7 +36,6 @@ impl RewardOutcome {
             Self::Abstain => None,
         }
     }
-
     /// The human-readable `[REWARD:last]` tag for this outcome.
     #[must_use]
     pub const fn tag(self) -> &'static str {
@@ -51,14 +48,12 @@ impl RewardOutcome {
         }
     }
 }
-
 /// Max bytes for the compact per-turn shadow (never compete with `[AUTONOMY_CONTRACT]`).
 const TURN_SHADOW_CAP: usize = 800;
 /// Max FIFO advisories queued between flushes.
 const PENDING_ADVISORY_CAP: usize = 3;
 /// Max bytes per queued advisory line.
 const ADVISORY_LINE_CAP: usize = 200;
-
 /// Which parts of the relay queue to flush on this hook.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -68,7 +63,6 @@ pub enum RelayFlush {
     /// Turn shadow + advisories — pre-write (point-of-action).
     Full,
 }
-
 impl SessionState {
     /// Persist a compact turn shadow and mark it pending for the next relay flush.
     pub fn store_turn_shadow(&mut self, shadow: &str) {
@@ -76,12 +70,10 @@ impl SessionState {
         self.turn_shadow_pending = !self.turn_shadow.is_empty();
         self.save_or_log();
     }
-
     #[must_use]
     pub const fn turn_shadow_pending(&self) -> bool {
         self.turn_shadow_pending
     }
-
     /// Append lifecycle-hook context (preCompact, subagentStart) for the next
     /// Cursor relay flush. Merges into `turn_shadow` without displacing an
     /// existing shadow from intent — merge point: `take_relay_payload` via
@@ -98,7 +90,6 @@ impl SessionState {
             self.store_turn_shadow(&merged);
         }
     }
-
     /// Queue a one-line post-tool advisory (FIFO, max 3).
     pub fn queue_pending_advisory(&mut self, line: &str) {
         let trimmed = line.trim();
@@ -112,7 +103,6 @@ impl SessionState {
         self.pending_advisories.push(entry);
         self.save_or_log();
     }
-
     /// Drain the pending advisories as standalone lines, clearing them.
     ///
     /// Harness-NEUTRAL counterpart to `take_relay_payload`: that path is the
@@ -130,7 +120,6 @@ impl SessionState {
         self.save_or_log();
         Some(drained)
     }
-
     /// Take merged relay payload and clear the flushed parts.
     #[must_use]
     pub fn take_relay_payload(&mut self, flush: RelayFlush) -> Option<String> {
@@ -162,7 +151,6 @@ impl SessionState {
         self.save_or_log();
         Some(out)
     }
-
     /// Record verify outcome for `[REWARD:last]` stop followup.
     ///
     /// Four-state [`RewardOutcome`], NOT a bool: `Passed` (+1) / `Failed` (-1)
@@ -187,7 +175,6 @@ impl SessionState {
         self.save_or_log();
     }
 }
-
 fn truncate_utf8(s: &str, max: usize) -> String {
     if s.len() <= max {
         return s.to_owned();
@@ -204,7 +191,6 @@ fn truncate_utf8(s: &str, max: usize) -> String {
     }
     out
 }
-
 #[cfg(test)]
 #[path = "turn_shadow_test.rs"]
 #[cfg(test)]

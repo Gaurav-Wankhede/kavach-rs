@@ -1,7 +1,6 @@
 //! Typed inter-entry relationship extraction from row content. Two surfaces:
 //! YAML frontmatter (`frontmatter` submodule) and Markdown typed wikilinks
 //! (`[[memory:slug/cat/key]]` → a `references` edge).
-
 mod frontmatter;
 mod nlu;
 #[cfg(test)]
@@ -11,7 +10,6 @@ mod nlu;
 mod tests;
 use frontmatter::extract_frontmatter_rels;
 use nlu::extract_nlu_rels;
-
 /// A typed relationship extracted from row content.
 ///
 /// `rel` is one of: `depends_on`, blocks, supersedes, references. `target` is
@@ -24,7 +22,6 @@ pub struct ExtractedRelationship {
     pub rel: String,
     pub target: String,
 }
-
 impl ExtractedRelationship {
     /// Construct an edge. The canonical cross-crate entry point — the struct is
     /// `#[non_exhaustive]`, so downstream crates (e.g. the CLI `--depends-on`
@@ -37,7 +34,6 @@ impl ExtractedRelationship {
         }
     }
 }
-
 /// Extract typed inter-entry relationships from row content.
 ///
 /// Sources: frontmatter keys, `[[memory:...]]` wikilinks, and NLU prose cues
@@ -62,7 +58,6 @@ pub fn extract_memory_entry_relationships(content: &str) -> Vec<ExtractedRelatio
     out.dedup();
     out
 }
-
 fn extract_typed_wikilinks(content: &str, out: &mut Vec<ExtractedRelationship>) {
     for line in content.lines() {
         let mut rest = line;
@@ -93,17 +88,14 @@ fn extract_typed_wikilinks(content: &str, out: &mut Vec<ExtractedRelationship>) 
         }
     }
 }
-
 #[cfg(test)]
 mod supersedes_extraction_tests {
     use super::extract_memory_entry_relationships as extract;
-
     fn has_supersedes(body: &str, target: &str) -> bool {
         extract(body)
             .iter()
             .any(|e| e.rel == "supersedes" && e.target == target)
     }
-
     #[test]
     fn fenced_frontmatter_yields_supersedes() {
         let body = "---\nsupersedes: dioxus-0.7-websys-gap\n---\nbody\n";
@@ -113,7 +105,6 @@ mod supersedes_extraction_tests {
             extract(body)
         );
     }
-
     #[test]
     fn loose_leading_kv_yields_supersedes() {
         let body = "supersedes: dioxus-0.7-websys-gap\n";
@@ -123,7 +114,6 @@ mod supersedes_extraction_tests {
             extract(body)
         );
     }
-
     #[test]
     fn nlu_prose_yields_supersedes() {
         let body = "This supersedes dioxus-0.7-websys-gap; adopt use_route.\n";

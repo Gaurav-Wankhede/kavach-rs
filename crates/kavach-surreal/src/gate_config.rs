@@ -12,13 +12,10 @@ use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::SurrealValue;
-
 use crate::error::{Error, Result};
-
 /// The global (project-agnostic) row sentinel. A per-project lookup falls back
 /// to this when no project-scoped row exists.
 pub const GLOBAL_PROJECT: &str = "*";
-
 /// The kind tag that selects which `value_*` column carries the payload. Mirrors
 /// the `ASSERT` on `gate_config.kind` in `schema.rs`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, SurrealValue)]
@@ -36,7 +33,6 @@ pub enum GateConfigKind {
     /// Injected context text (the autonomy contract, advisory copy).
     Text,
 }
-
 impl GateConfigKind {
     /// The bare wire string stored in the SCHEMAFULL `gate_config.kind` column.
     /// MUST be bound as this `&str` (not the enum) — a `SurrealValue`-derived
@@ -52,7 +48,6 @@ impl GateConfigKind {
             Self::Text => "text",
         }
     }
-
     /// Parse the bare wire string back to the kind; `None` on an unknown tag
     /// (fail-closed: a corrupt `kind` reads as no-override).
     #[must_use]
@@ -67,7 +62,6 @@ impl GateConfigKind {
         }
     }
 }
-
 /// A resolved gate-config value — the discriminated union the resolver returns.
 /// Exactly one variant is produced per row, matching its [`GateConfigKind`].
 #[derive(Debug, Clone, PartialEq)]
@@ -82,7 +76,6 @@ pub enum GateConfigValue {
     /// `kind = severity` or `kind = text` (both string-shaped).
     Text(String),
 }
-
 /// Raw row as stored — the four optional value columns + the kind tag. Only the
 /// column matching `kind` is ever `Some` after a validated `set`.
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
@@ -103,7 +96,6 @@ struct GateConfigRow {
     #[serde(default)]
     value_text: Option<String>,
 }
-
 impl GateConfigRow {
     /// Project the populated value column for this row's `kind`. Returns `None`
     /// on an unknown kind OR a shape mismatch (the wrong column populated) —
@@ -122,7 +114,6 @@ impl GateConfigRow {
         }
     }
 }
-
 /// The four value columns for one row — exactly one is `Some`, matching the
 /// row's kind. Built by [`Columns::for_value`] so column population happens in a
 /// single place and a `set` can never write two columns.
@@ -132,7 +123,6 @@ struct Columns<'a> {
     list: Option<&'a Vec<String>>,
     text: Option<&'a String>,
 }
-
 impl<'a> Columns<'a> {
     const fn for_value(value: &'a GateConfigValue) -> Self {
         match value {
@@ -163,7 +153,6 @@ impl<'a> Columns<'a> {
         }
     }
 }
-
 /// The `kind` tag a value carries — used to stamp the row so reads project the
 /// right column. `Text` maps to `Text`; `Severity` is written by the caller via
 /// [`set_with_kind`] when the string is a severity rather than free text.
@@ -175,7 +164,6 @@ const fn kind_of(value: &GateConfigValue) -> GateConfigKind {
         GateConfigValue::Text(_) => GateConfigKind::Text,
     }
 }
-
 /// Fetch the override for `(project, gate_key)`, or `None` when absent.
 ///
 /// One exact lookup — the caller orders any project-then-global fallback.
@@ -200,7 +188,6 @@ pub async fn gate_config_get(
         .map_err(Error::Surreal)?;
     Ok(row.and_then(|r| r.value()))
 }
-
 /// Resolve `(project, gate_key)` with project-then-global fallback.
 ///
 /// A project-scoped row wins; absent that, the global `*` row; absent both,
@@ -220,7 +207,6 @@ pub async fn gate_config_resolve(
     }
     gate_config_get(db, GLOBAL_PROJECT, gate_key).await
 }
-
 /// Upsert an override, idempotent on `(project, gate_key)`.
 ///
 /// DELETE-then-CREATE keeps exactly one row per key (last write wins), so a
@@ -238,7 +224,6 @@ pub async fn gate_config_set(
 ) -> Result<()> {
     set_with_kind(db, project, gate_key, value, kind_of(value)).await
 }
-
 /// As [`gate_config_set`] but with an explicit `kind` stamp.
 ///
 /// The only way to store a `Severity` (whose value is `Text`-shaped). Validates
@@ -293,7 +278,6 @@ pub async fn set_with_kind(
     .map_err(Error::Surreal)?;
     Ok(())
 }
-
 /// Remove the override for `(project, gate_key)`.
 ///
 /// Reverts the gate to its file/compiled default. Idempotent: deleting an absent
@@ -309,7 +293,6 @@ pub async fn gate_config_delete(db: &Surreal<Db>, project: &str, gate_key: &str)
         .map_err(Error::Surreal)?;
     Ok(())
 }
-
 /// One overridden key's identity, for `list`/inspection.
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
@@ -322,7 +305,6 @@ pub struct GateConfigEntry {
     /// `enabled`/`severity`/`text`) — matches the `TYPE string` DB column.
     pub kind: String,
 }
-
 /// List every override for `project` (pass [`GLOBAL_PROJECT`] for the globals).
 ///
 /// # Errors
@@ -337,7 +319,6 @@ pub async fn gate_config_list(db: &Surreal<Db>, project: &str) -> Result<Vec<Gat
         .map_err(Error::Surreal)?;
     Ok(rows)
 }
-
 #[cfg(test)]
 #[path = "gate_config_test.rs"]
 #[cfg(test)]

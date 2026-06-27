@@ -3,15 +3,12 @@
 // vector) drives scoring so every stack — not just Rust/cargo — scores correctly.
 // WHY this design: decision.arch.harness-rlaif-project-adaptive-rubric.
 // WHY un-gameable weighting + reward-hack RCA: decision.harness-reward-ungameable.
-
 pub mod oracle;
 pub mod presets;
 pub mod rubric;
 pub mod semantic_deferral;
-
 use crate::eval_replay::{EventKind, ReplaySeverity, TrajectoryEvent, replay_event};
 use rubric::{EventClass, RewardRubric};
-
 // Named weight constants — the canonical scalar weights the default Rust rubric
 // uses. Re-exported for tests + the ledger so call sites name the weight rather
 // than a magic number. The rubric presets hold the authoritative copies.
@@ -21,7 +18,6 @@ pub const FILE_LANDED: i64 = 1;
 pub const VACUOUS_TEST: i64 = 0;
 /// Deferral/false-blocker handoff penalty (stack-independent; dominates any single build).
 pub const DEFERRAL_HANDOFF_PENALTY: i64 = presets::DEFERRAL_WEIGHT;
-
 /// Text + class of an event, for rubric matching.
 fn event_text(event: &TrajectoryEvent) -> (EventClass, &str) {
     match &event.event_kind {
@@ -31,7 +27,6 @@ fn event_text(event: &TrajectoryEvent) -> (EventClass, &str) {
         EventKind::Tool { .. } => (EventClass::Bash, ""),
     }
 }
-
 /// The reward contribution of one event under `rubric`. Sums every matching
 /// rule's weight; a `Write` whose body trips the rubric's vacuous-guard forfeits
 /// its positive (credit) rules — the reward-hack guard (AC-5).
@@ -44,14 +39,12 @@ fn score_event(event: &TrajectoryEvent, rubric: &RewardRubric) -> i64 {
             .count(),
     )
     .map_or(0, |n| n.saturating_mul(presets::GATE_BLOCK_WEIGHT));
-
     let (class, text) = event_text(event);
     let is_vacuous = class == EventClass::Write
         && rubric
             .vacuous_guard
             .as_ref()
             .is_some_and(|g| g.is_match(text));
-
     let matched: Vec<_> = rubric
         .rules
         .iter()
@@ -61,12 +54,10 @@ fn score_event(event: &TrajectoryEvent, rubric: &RewardRubric) -> i64 {
         // always-pass test still "landed a file", it just earns no test credit.
         .filter(|r| !(is_vacuous && r.weight > FILE_LANDED))
         .collect();
-
     let signal = matched
         .iter()
         .map(|r| r.weight)
         .fold(0_i64, i64::saturating_add);
-
     // Semantic-deferral backstop (card semantic-deferral-detector): the literal
     // `deferral_pattern()` regex is the cheap first pass; when it did NOT fire on
     // a Stop, run the paraphrase-robust judge. A positive applies the SAME
@@ -81,19 +72,16 @@ fn score_event(event: &TrajectoryEvent, rubric: &RewardRubric) -> i64 {
     } else {
         0
     };
-
     signal
         .saturating_add(gate_penalty)
         .saturating_add(semantic_penalty)
 }
-
 /// Deterministic reward of a whole trajectory under an explicit `rubric` (AC-1).
 /// Read-only over `events` (INV-2): same input -> same output.
 #[must_use]
 pub fn score_trajectory_with(events: &[TrajectoryEvent], rubric: &RewardRubric) -> i64 {
     score_trajectory_full(events, rubric, &oracle::OracleConfig::default())
 }
-
 /// Deterministic reward under an explicit `rubric` AND an explicit oracle `cfg`.
 ///
 /// The engine threads a DB-refreshed `cfg`; the back-compat [`score_trajectory_with`]
@@ -112,14 +100,12 @@ pub fn score_trajectory_full(
         .fold(0_i64, i64::saturating_add);
     self_report.saturating_add(oracle::oracle_penalty_with(events, cfg))
 }
-
 /// Score under the default Rust/cargo rubric (back-compat: the original API).
 /// The engine uses [`score_trajectory_with`] + the project's `gate.reward_rubric`.
 #[must_use]
 pub fn score_trajectory(events: &[TrajectoryEvent]) -> i64 {
     score_trajectory_with(events, &presets::rust_cargo())
 }
-
 /// `true` iff `command` is a real verify under the Rust default rubric — kept for
 /// the ledger's credit-classification (a build/test line item).
 #[must_use]
@@ -129,7 +115,6 @@ pub fn is_real_verify(command: &str) -> bool {
         .iter()
         .any(|r| r.applies_to == EventClass::Bash && r.weight > 0 && r.pattern.is_match(command))
 }
-
 #[cfg(test)]
 #[path = "reward_test.rs"]
 #[cfg(test)]

@@ -1,10 +1,8 @@
 //! Emits TOON-formatted skill file content from `SkillDefinition`.
-
 use crate::detector::DetectedPattern;
 use crate::template::{generate_error_handling, generate_pending_tasks};
 use kavach_rule_ast::SkillDefinition;
 use std::fmt::Write;
-
 #[must_use]
 pub fn emit_skill(skill: &SkillDefinition) -> String {
     let mut buf = String::with_capacity(512);
@@ -13,7 +11,6 @@ pub fn emit_skill(skill: &SkillDefinition) -> String {
     emit_research_gate(&mut buf, skill);
     buf
 }
-
 #[must_use]
 pub fn emit_full_skill(skill: &SkillDefinition, pattern: &DetectedPattern) -> String {
     let mut buf = String::with_capacity(768);
@@ -24,7 +21,6 @@ pub fn emit_full_skill(skill: &SkillDefinition, pattern: &DetectedPattern) -> St
     emit_pending_tasks(&mut buf, pattern);
     buf
 }
-
 fn emit_frontmatter(buf: &mut String, skill: &SkillDefinition) {
     buf.push_str("---\n");
     writeln!(buf, "name: {}", skill.metadata.name).ok();
@@ -32,7 +28,6 @@ fn emit_frontmatter(buf: &mut String, skill: &SkillDefinition) {
     writeln!(buf, "description: {}", skill.metadata.description).ok();
     buf.push_str("---\n\n");
 }
-
 fn emit_skill_block(buf: &mut String, skill: &SkillDefinition) {
     writeln!(buf, "SKILL:{}", skill.metadata.name).ok();
     writeln!(buf, "  description: {}", skill.metadata.description).ok();
@@ -42,7 +37,6 @@ fn emit_skill_block(buf: &mut String, skill: &SkillDefinition) {
     }
     buf.push('\n');
 }
-
 fn emit_research_gate(buf: &mut String, skill: &SkillDefinition) {
     buf.push_str("RESEARCH_GATE\n");
     let mandatory_str = if skill.research_gate.mandatory {
@@ -54,7 +48,6 @@ fn emit_research_gate(buf: &mut String, skill: &SkillDefinition) {
     writeln!(buf, "  rule: {}", skill.research_gate.rule).ok();
     buf.push('\n');
 }
-
 fn emit_error_handling(buf: &mut String, pattern: &DetectedPattern) {
     let eh = generate_error_handling(pattern);
     buf.push_str("ERROR_HANDLING\n");
@@ -65,7 +58,6 @@ fn emit_error_handling(buf: &mut String, pattern: &DetectedPattern) {
     }
     buf.push('\n');
 }
-
 fn emit_pending_tasks(buf: &mut String, pattern: &DetectedPattern) {
     let pt = generate_pending_tasks(pattern);
     let mandatory_str = if pt.mandatory { "true" } else { "false" };
@@ -76,7 +68,6 @@ fn emit_pending_tasks(buf: &mut String, pattern: &DetectedPattern) {
         writeln!(buf, "    - {m}").ok();
     }
 }
-
 #[cfg(test)]
 #[path = "emitter_tests.rs"]
 mod tests;

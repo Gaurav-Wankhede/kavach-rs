@@ -1,13 +1,11 @@
 use crate::paths::{detect_project, today};
 use crate::state::SessionState;
 use chrono::Local;
-
 mod circuit_breaker;
 mod loop_control;
 mod research;
 mod skills;
 mod test_tracking;
-
 pub(crate) fn generate_session_id(work_dir: &str) -> String {
     let mut hasher = blake3::Hasher::new();
     hasher.update(work_dir.as_bytes());
@@ -23,7 +21,6 @@ pub(crate) fn generate_session_id(work_dir: &str) -> String {
         });
     format!("sess_{hex}")
 }
-
 impl SessionState {
     #[must_use]
     pub fn new(work_dir: &str) -> Self {
@@ -38,7 +35,6 @@ impl SessionState {
         }
     }
 }
-
 #[cfg(test)]
 #[path = "enforcement/enforcement_test.rs"]
 mod tests;

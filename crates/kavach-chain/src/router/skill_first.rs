@@ -1,13 +1,10 @@
 // SOURCE: https://docs.rs/dashmap/latest/dashmap/struct.DashMap.html (DashMap 6.1)
 use dashmap::DashMap;
-
 use super::types::RoutingDecision;
-
 #[derive(Debug)]
 pub struct SkillFirstRouter {
     skill_triggers: DashMap<String, String>,
 }
-
 impl SkillFirstRouter {
     #[must_use]
     pub fn new() -> Self {
@@ -15,12 +12,10 @@ impl SkillFirstRouter {
             skill_triggers: DashMap::new(),
         }
     }
-
     pub fn register_skill_trigger(&self, keyword: &str, skill_name: &str) {
         self.skill_triggers
             .insert(keyword.to_lowercase(), skill_name.into());
     }
-
     #[must_use]
     pub fn route(&self, intent: &str, keywords: &[&str]) -> RoutingDecision {
         // clone-on-get: release the DashMap shard lock (a held Ref deadlocks)
@@ -73,13 +68,11 @@ impl SkillFirstRouter {
         }
     }
 }
-
 impl Default for SkillFirstRouter {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[cfg(test)]
 #[path = "skill_first_tests.rs"]
 mod tests;

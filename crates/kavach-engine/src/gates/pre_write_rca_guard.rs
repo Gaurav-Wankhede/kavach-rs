@@ -11,10 +11,8 @@ mod transcript;
 mod tests;
 pub(in crate::gates) use detect::has_rca_block;
 pub(in crate::gates) use transcript::scan_transcript_for_rca;
-
 use bypass::{BYPASS_ENV, active_bulk_sweep, bypass_active};
 use rules::{REQUIRES_RCA, is_rca_exempt_path, risk_requires_rca};
-
 /// Returns `Some(reason)` when the gate should block, `None` when allow.
 /// SOURCE: pattern matches existing `pre_write_*_guard.rs` return convention.
 /// `session_rca_present` carries persistent multi-turn signal from session state.
@@ -54,7 +52,6 @@ pub(crate) fn check(
          SOURCE: CLAUDE.md §RCA + §COMMENTS."
     ))
 }
-
 /// True when an active bulk sweep or break-glass bypass authorizes this edit.
 /// Both emit a structured stderr audit line (the hook engine's log channel).
 #[expect(

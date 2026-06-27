@@ -10,16 +10,13 @@ mod message;
 #[path = "pre_write_path_test.rs"]
 mod tests;
 use kavach_types::HookInput;
-
 use crate::error::EngineError;
-
 #[expect(clippy::unnecessary_wraps, reason = "uniform gate dispatch signature")]
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let tool = &input.tool_name;
     if !matches!(tool.as_str(), "Write" | "Edit" | "NotebookEdit") {
         return Ok(());
     }
-
     let mut path = String::new();
     input.get_string("file_path").clone_into(&mut path);
     if path.is_empty() {
@@ -28,11 +25,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     if path.is_empty() {
         return Ok(());
     }
-
     if classify::is_allowlisted(&path) {
         return Ok(());
     }
-
     if classify::is_forbidden(&path) {
         // DEMOTED to advisory per roadmap.unit.gate-severity-classification.
         // Path-based six-file enforcement was P0Block; trained agents to halt and
@@ -41,6 +36,5 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         let reason = message::format_block(&path);
         drop(kavach_hook::exit_approve(&reason));
     }
-
     Ok(())
 }

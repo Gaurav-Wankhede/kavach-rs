@@ -5,10 +5,8 @@
 //
 // INV-5: a MutationProposal is DATA — it is NEVER auto-applied to a live gate.
 // AC-2: one reflection call per failed trajectory yields at most one proposal.
-
 use crate::eval_replay::{GateOutcome, TrajectoryEvent, replay_trajectory};
 use std::fmt::Write as _;
-
 /// The kind of rule edit a reflection can propose. Closed set — a proposal can
 /// only ever be one of these, so an "illegal" edit cannot be represented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,7 +17,6 @@ pub enum EditKind {
     /// The gate under-fired (missed a real defect) — propose tightening.
     Tighten,
 }
-
 impl EditKind {
     fn parse(s: &str) -> Option<Self> {
         match s.trim().to_ascii_lowercase().as_str() {
@@ -29,7 +26,6 @@ impl EditKind {
         }
     }
 }
-
 /// Exactly ONE proposed gate-rule edit (AC-2). Constructed only via `parse_proposal`,
 /// so every field is non-empty and the gate name is one the harness actually has.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,7 +40,6 @@ pub struct MutationProposal {
     /// The session id whose trajectory motivated this proposal (provenance).
     pub from_session: String,
 }
-
 /// The single-LLM-call boundary. Real impl wraps the model API (wired at P4);
 /// tests inject a deterministic stub. Returns `None` when the model declines or
 /// errors — the caller fails closed (no proposal).
@@ -52,7 +47,6 @@ pub trait Reflector {
     /// Run one reflection over `prompt`. `None` = no usable response.
     fn reflect(&self, prompt: &str) -> Option<String>;
 }
-
 /// The gate names a proposal is allowed to target. A proposal naming anything
 /// outside this set is rejected (fail-closed) — prevents a hallucinated gate.
 const KNOWN_GATES: &[&str] = &[
@@ -68,7 +62,6 @@ const KNOWN_GATES: &[&str] = &[
     "axum_guard",
     "false_completion_detector",
 ];
-
 /// Build the reflection prompt from a scored-low trajectory.
 ///
 /// Pure + deterministic (same inputs → same prompt): the events, the gates that
@@ -107,7 +100,6 @@ pub fn assemble_reflection_prompt(
     p.push('\n');
     p
 }
-
 /// Parse a model response into a validated `MutationProposal`.
 ///
 /// Fail-closed: returns `None` for empty input, the wrong shape, an unknown gate,
@@ -128,7 +120,6 @@ pub fn parse_proposal(response: &str, from_session: &str) -> Option<MutationProp
         })
     })
 }
-
 /// One reflection over one failed trajectory (AC-2).
 ///
 /// Assemble the prompt, run the injected reflector, parse the result. `None` if the
@@ -145,7 +136,6 @@ pub fn reflect_once<R: Reflector>(
     let response = reflector.reflect(&prompt)?;
     parse_proposal(&response, session_id)
 }
-
 #[cfg(test)]
 #[path = "reflect_test.rs"]
 #[cfg(test)]

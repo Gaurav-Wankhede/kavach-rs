@@ -7,9 +7,7 @@
 // NOTE: Debug here is SAFE — every field is non-secret telemetry (a session UUID,
 // a coarse risk label, byte counts, an enum). No credential/PII is carried. This
 // is the rust196-debug false-positive class (pattern.rust196-debug-fp-numeric-budget).
-
 use serde::{Deserialize, Serialize};
-
 /// The action a gate took. Fixed set — the bandit's action space.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -22,7 +20,6 @@ pub enum GateAction {
     /// Hard-stop the tool.
     Block,
 }
-
 /// The downstream reward of a decision, back-filled when the 3-witness lands.
 ///
 /// Signs (fail-closed bias): a false-block — the gate blocked a change the dev
@@ -41,7 +38,6 @@ pub enum Reward {
     /// (false block — dev overrode and it later verified). The costly error.
     FalseDecision,
 }
-
 impl Reward {
     /// The scalar value used by the offline OPE estimators (Layer B).
     #[must_use]
@@ -53,7 +49,6 @@ impl Reward {
         }
     }
 }
-
 /// The features a gate already sees at decision time — the bandit context `x`.
 /// Every field is something the live gate computes; nothing new is collected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -72,7 +67,6 @@ pub struct BanditContext {
     /// How many times this gate already fired this session (recurrence prior).
     pub prior_fire_count: u32,
 }
-
 impl BanditContext {
     /// Construct a decision context. The only way to build one outside this crate
     /// (the struct is `#[non_exhaustive]`), so the emit seam in `kavach-engine`
@@ -96,7 +90,6 @@ impl BanditContext {
         }
     }
 }
-
 /// One logged-bandit row (the RLVR tuple). Append-only; the store assigns the id.
 ///
 /// `propensity` is the CURRENT rule-gate's probability of `action` given the
@@ -128,7 +121,6 @@ pub struct BanditRow {
     #[serde(default)]
     pub held_out: bool,
 }
-
 impl BanditRow {
     /// Construct a freshly-logged decision (reward pending). The emitter passes
     /// `timestamp_ms` so this stays clock-free + deterministic in tests.
@@ -150,7 +142,6 @@ impl BanditRow {
             held_out: false,
         }
     }
-
     /// Mark this row as belonging to the SOFT held-out channel (P8).
     ///
     /// Consumes and returns `self` so the emit seam can tag a sampled decision in
@@ -163,14 +154,12 @@ impl BanditRow {
         self.held_out = true;
         self
     }
-
     /// Whether this row still needs its reward back-filled (Layer-A -> 3-witness).
     #[must_use]
     pub const fn awaits_reward(&self) -> bool {
         self.reward.is_none()
     }
 }
-
 #[cfg(test)]
 #[path = "bandit_log_test.rs"]
 #[cfg(test)]

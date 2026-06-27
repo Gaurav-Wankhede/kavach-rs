@@ -8,9 +8,7 @@ use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
-
 pub use crate::graph::{citations_cited_by, traverse_with_citations as traverse};
-
 /// Non-destructively merge an existing learning-tier node (mistake / anti-pattern
 /// / decision / roadmap) into the citation DAG by relating it `->cite->` the
 /// citation it draws on.
@@ -46,7 +44,6 @@ pub async fn merge_node_into_citation(
     }
     Ok(())
 }
-
 /// Recall bridge: for a batch of recalled decision/roadmap nodes, gather every
 /// citation they cite in ONE round-trip, deduped and order-stable.
 ///
@@ -77,7 +74,6 @@ pub async fn citations_for_nodes(db: &Surreal<Db>, nodes: &[RecordId]) -> Result
     }
     Ok(out)
 }
-
 /// RLAIF reward: when a citation contributed to a successful turn, flow `delta`
 /// reward along every `cite` edge pointing into it, bumping each edge `weight`.
 ///
@@ -104,18 +100,15 @@ pub async fn reward_citation_edges(
     };
     Ok(updated.len())
 }
-
 /// Seconds in the freshness window.
 ///
 /// A citation whose `updated_at` is older than this is STALE and must be
 /// re-researched against the official docs (C5). 24h — versions/APIs move fast
 /// and weights are never trusted, so re-confirm daily.
 pub const FRESHNESS_WINDOW_SECS: i64 = 24 * 60 * 60;
-
 /// The `[STALE]` marker prepended to a stale citation's injected text so the
 /// model treats served-stale content with suspicion until C5 refreshes it.
 pub const STALE_MARKER: &str = "[STALE]";
-
 /// Freshness verdict for a citation row, decided purely from its `updated_unix`
 /// and a caller-supplied `now` epoch — no clock read, no I/O, fully testable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,7 +119,6 @@ pub enum Freshness {
     /// Older than the window, or missing `updated_unix` (legacy/never-stamped).
     Stale,
 }
-
 /// Classify a citation by age. `None`/future `updated_unix` and any age beyond
 /// the window are `Stale` (fail-suspicious: an unstamped row is not trusted).
 #[must_use]
@@ -136,7 +128,6 @@ pub const fn freshness(updated_unix: Option<i64>, now: i64) -> Freshness {
         _ => Freshness::Stale,
     }
 }
-
 /// Prefix `text` with `STALE_MARKER` when the verdict is `Stale`, else return it
 /// unchanged — the one place injection decides whether to flag served content.
 #[must_use]
@@ -146,7 +137,6 @@ pub fn mark_if_stale(verdict: Freshness, text: &str) -> String {
         Freshness::Fresh => text.to_owned(),
     }
 }
-
 /// One stale citation queued for re-research: its `entry_key` plus every
 /// official-docs URL to re-fetch.
 ///
@@ -158,7 +148,6 @@ pub struct RefreshTarget {
     pub entry_key: String,
     pub urls: Vec<String>,
 }
-
 /// On-recall lazy refresh plan: which recalled citations are stale and must be
 /// re-researched THIS turn, and the marker-decorated text to serve meanwhile.
 ///
@@ -169,7 +158,6 @@ pub struct RefreshPlan {
     pub refresh: Vec<RefreshTarget>,
     pub served: Vec<String>,
 }
-
 /// Partition recalled citations by freshness.
 ///
 /// Stale ones become `refresh` targets (queued for re-research) AND are still
@@ -191,11 +179,9 @@ pub fn plan_refresh(citations: &[Citation], now: i64) -> RefreshPlan {
     }
     RefreshPlan { refresh, served }
 }
-
 const COLS: &str = "id, project, entry_key, name, metadata, access_count, \
                     time::unix(created_at) AS created_unix, \
                     time::unix(updated_at) AS updated_unix";
-
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
 pub struct CitationMeta {
@@ -214,7 +200,6 @@ pub struct CitationMeta {
     #[serde(default)]
     pub tradeoff: String,
 }
-
 impl CitationMeta {
     #[must_use]
     pub const fn new(slug: String, url: String) -> Self {
@@ -230,7 +215,6 @@ impl CitationMeta {
         }
     }
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 #[non_exhaustive]
 pub struct Citation {
@@ -247,12 +231,10 @@ pub struct Citation {
     #[serde(default)]
     pub updated_unix: Option<i64>,
 }
-
 #[derive(surrealdb_types::SurrealValue)]
 struct IdRow {
     id: RecordId,
 }
-
 #[derive(Debug)]
 #[expect(
     clippy::exhaustive_structs,
@@ -264,7 +246,6 @@ pub struct UpsertCitation<'a> {
     pub name: &'a str,
     pub metadata: Vec<CitationMeta>,
 }
-
 /// Upsert a citation row keyed by (`project`, `entry_key`). Refreshes `name` +
 /// `metadata` and bumps `updated_at` on an existing row; creates one otherwise.
 ///
@@ -280,7 +261,6 @@ pub async fn upsert_citation(db: &Surreal<Db>, c: &UpsertCitation<'_>) -> Result
         .bind(("key", c.entry_key.to_owned()))
         .await?;
     let existing: Option<IdRow> = response.take(0)?;
-
     if let Some(IdRow { id }) = existing {
         db.query("UPDATE $id SET name = $name, metadata = $meta, updated_at = time::now()")
             .bind(("id", id.clone()))
@@ -305,7 +285,6 @@ pub async fn upsert_citation(db: &Surreal<Db>, c: &UpsertCitation<'_>) -> Result
             .ok_or_else(|| Error::Migration("citation create returned no id".into()))
     }
 }
-
 /// Fetch one citation by (`project`, `entry_key`), bumping `access_count`.
 ///
 /// # Errors
@@ -331,7 +310,6 @@ pub async fn get_citation(
         Err(e) => Err(e.into()),
     }
 }
-
 /// List every citation row for `project`, newest-updated first.
 ///
 /// # Errors
@@ -351,7 +329,6 @@ pub async fn list_citations_by_project(
         Err(e) => Err(e.into()),
     }
 }
-
 #[cfg(test)]
 #[path = "citation_test.rs"]
 #[cfg(test)]

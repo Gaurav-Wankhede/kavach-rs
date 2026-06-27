@@ -1,12 +1,10 @@
 // SPEC: docs/architecture/session-occupancy-lease.md §Acquire (CAS via SurrealDB OCC)
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
-
 use super::acquire::acquire;
 use super::types::{AcquireOutcome, Lease};
 use super::unlock::unlock;
 use crate::error::Result;
-
 /// Outcome of an all-or-nothing batch reservation over a `Vec` of keys.
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[expect(
@@ -23,7 +21,6 @@ pub enum AcquireSetOutcome {
         held_by: String,
     },
 }
-
 /// Atomically reserve a SET of keys for one session: all-or-nothing.
 ///
 /// Each key is CAS-acquired via [`acquire`]; on the FIRST conflict every already-won
@@ -65,7 +62,6 @@ pub async fn acquire_set(
         won.into_iter().map(|(_, l)| l).collect(),
     ))
 }
-
 /// Release every already-won lease (fencing-matched). Best-effort: a failed unlock
 /// is ignored so the original conflict/error is what the caller sees; the orphaned
 /// lease then expires by TTL rather than wedging the set forever.
@@ -76,13 +72,11 @@ async fn rollback(db: &Surreal<Db>, table: &str, won: &[(String, Lease)]) {
         if let Err(_e) = unlock(db, table, key, lease).await {}
     }
 }
-
 /// Keys with duplicates removed, input order preserved.
 fn dedupe_preserving_order<'a>(keys: &[&'a str]) -> Vec<&'a str> {
     let mut seen = std::collections::HashSet::new();
     keys.iter().copied().filter(|k| seen.insert(*k)).collect()
 }
-
 #[cfg(test)]
 #[path = "acquire_set_test.rs"]
 #[cfg(test)]

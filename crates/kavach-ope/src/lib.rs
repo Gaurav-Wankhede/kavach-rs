@@ -19,13 +19,10 @@
     reason = "this crate IS floating-point statistics (IPS/DR estimators + CIs); \
               the workspace restriction lint does not fit an estimator crate"
 )]
-
 mod sample;
 pub use sample::{Action, LoggedSample};
-
 mod estimate;
 pub use estimate::Estimate;
-
 pub mod audit;
 pub mod controller;
 pub mod dm;
@@ -34,7 +31,6 @@ pub mod explore;
 pub mod ips;
 pub mod label;
 pub mod trust;
-
 #[cfg(test)]
 #[path = "lib_test.rs"]
 #[cfg(test)]

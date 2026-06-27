@@ -9,12 +9,9 @@
 //! Both actions fail OPEN: any git or RPC error is swallowed so a VCS hiccup can
 //! never block the post-write pipeline (mirrors `git_sync`'s read-only probes).
 //! Escape hatch: `KAVACH_AUTOCOMMIT_OFF=1` disables the commit (CI / bisect).
-
 use std::process::Command;
-
 /// Env switch to disable the local auto-commit (set to any non-empty value).
 const DISABLE_ENV: &str = "KAVACH_AUTOCOMMIT_OFF";
-
 /// Realtime-touch the active kanban card and commit the working tree LOCALLY.
 /// Returns a one-line `[AUTOCOMMIT]` receipt for the post-write block, or `None`
 /// when disabled, outside a repo, or nothing committable. NEVER pushes.
@@ -29,7 +26,6 @@ pub(super) fn run(card_key: &str) -> Option<String> {
     }
     commit_local()
 }
-
 /// Best-effort `roadmap.claim_card` re-assert (idempotent `in_progress`). Silent on
 /// any transport error — the heartbeat is advisory, never load-bearing.
 fn touch_card_in_progress(card_key: &str) {
@@ -44,7 +40,6 @@ fn touch_card_in_progress(card_key: &str) {
         Some(params),
     ));
 }
-
 /// Resolve the active project slug from the session (empty when unknown — the RPC
 /// then no-ops, fail-open).
 fn current_project() -> String {
@@ -54,7 +49,6 @@ fn current_project() -> String {
         .map(|s| s.project)
         .unwrap_or_default()
 }
-
 /// `git add -A && git commit` LOCALLY. No push. `None` outside a repo, on a clean
 /// tree (nothing to commit), or any git error. Returns a `[AUTOCOMMIT]` receipt.
 fn commit_local() -> Option<String> {
@@ -102,7 +96,6 @@ fn commit_local() -> Option<String> {
         "[AUTOCOMMIT] committed locally (no push) — {msg}. Push is agent-driven via /pr-review."
     ))
 }
-
 #[cfg(test)]
 #[path = "autocommit_tests.rs"]
 mod tests;

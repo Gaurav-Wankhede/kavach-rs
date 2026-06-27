@@ -1,7 +1,6 @@
 //! The `is_write_bypass` aggregate: detect Bash commands that modify files,
 //! bypassing the Write/Edit hooks. Composes the sed/-i check, file-redirect
 //! detection, `tee`, file-writing tools, and Python file/DB writes.
-
 use super::redirect::has_file_redirect;
 use super::segment::segment_first_word_is;
 use super::tool_write::writes_via_tool;
@@ -36,7 +35,6 @@ pub(in crate::gates::pre_tool_bash) fn is_write_bypass(cmd: &str) -> bool {
     }
     false
 }
-
 /// Detect a Python (or Perl) invocation that writes a file or pipes to a DB.
 ///
 /// Covers the script-from-stdin / heredoc form `python3 - <<'PY'` and `perl -e`
@@ -69,7 +67,6 @@ fn writes_via_interpreter(lower: &str) -> bool {
     }
     false
 }
-
 /// True when a Python `open(...)` names a write/append mode in any quote or
 /// byte-string variant: `'w' "w" 'a' "a" 'wb' "wb" 'ab' "ab" 'w+' 'x'`.
 fn opens_in_write_mode(lower: &str) -> bool {

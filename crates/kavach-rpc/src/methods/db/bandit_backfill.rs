@@ -7,13 +7,10 @@
 //! known to the stop gate). When the gate learns a session's pass/fail it calls
 //! this RPC, which grades that session's un-rewarded rows. Single-writer: the
 //! engine never writes the reward — only the daemon, here.
-
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use serde::{Deserialize, Serialize};
-
 mod grade;
-
 #[cfg(test)]
 #[path = "bandit_backfill_test.rs"]
 #[cfg(test)]
@@ -32,7 +29,6 @@ pub struct BanditBackfillParams {
     /// Max rows to grade this pass (newest first). 0 ⇒ no rows.
     pub limit: u32,
 }
-
 /// The back-fill report: rows graded vs surfaced-skipped.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]
@@ -46,7 +42,6 @@ pub struct BanditBackfillResult {
     /// Set on a load error; the counts are then zero.
     pub error: Option<String>,
 }
-
 /// Grade one closed session's logged decisions against its verify outcome (P3a).
 ///
 /// # Errors
@@ -73,7 +68,6 @@ pub async fn bandit_backfill_session(
             });
         }
     };
-
     let mut graded: usize = 0;
     let mut skipped: usize = 0;
     for payload in &rows {
@@ -90,7 +84,6 @@ pub async fn bandit_backfill_session(
         error: None,
     })
 }
-
 /// Label one row (via the pure `grade` map) and write its reward back; `true` on
 /// success. A malformed row, unknown action, or write failure is a surfaced skip
 /// (`false`) — never silently graded. The update is content-addressed by the

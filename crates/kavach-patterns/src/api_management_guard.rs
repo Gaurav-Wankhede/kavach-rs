@@ -13,10 +13,8 @@
 //! - <https://docs.stripe.com/webhooks>
 //! - <https://www.rfc-editor.org/rfc/rfc9457>
 //! - <https://aip.dev/4222>
-
 pub use self::detect::detect;
 pub use self::types::{ApiSeverity, ApiViolation};
-
 mod backend;
 mod backend_flags;
 mod boundary;
@@ -29,7 +27,6 @@ mod gateway;
 mod patterns;
 mod types;
 mod webhook;
-
 #[cfg(test)]
 #[path = "api_management_guard_test.rs"]
 #[cfg(test)]

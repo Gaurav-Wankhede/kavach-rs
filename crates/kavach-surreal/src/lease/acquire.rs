@@ -4,10 +4,8 @@
 use chrono::{Duration, Utc};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
-
 use super::types::{AcquireOutcome, LEASE_TTL_SECS, Lease, LeaseRow};
 use crate::error::{Error, Result};
-
 /// Attempt to acquire a lease on the given key for the session.
 ///
 /// # Errors
@@ -81,7 +79,6 @@ pub async fn acquire(
         expires_at: row.occupied_until.unwrap_or(now),
     })
 }
-
 #[cfg(test)]
 #[path = "acquire_test.rs"]
 #[cfg(test)]

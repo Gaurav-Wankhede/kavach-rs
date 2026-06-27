@@ -1,7 +1,5 @@
 // SOURCE: https://docs.rs/linfa-trees/ — feature extraction for classification
-
 use kavach_dtree::FeatureSet;
-
 /// Extract boolean features from a prompt for decision tree classification.
 #[must_use]
 pub fn extract_features(prompt: &str) -> FeatureSet {
@@ -20,16 +18,13 @@ pub fn extract_features(prompt: &str) -> FeatureSet {
             count
         })
 }
-
 mod destructive;
-
 fn has_deploy(s: &str) -> bool {
     contains_any(
         s,
         &["deploy", "release", "publish", "production", "go live"],
     )
 }
-
 fn has_security(s: &str) -> bool {
     contains_any(
         s,
@@ -43,7 +38,6 @@ fn has_security(s: &str) -> bool {
         ],
     )
 }
-
 fn has_debug(s: &str) -> bool {
     contains_any(
         s,
@@ -64,21 +58,18 @@ fn has_debug(s: &str) -> bool {
         ],
     )
 }
-
 fn has_refactor(s: &str) -> bool {
     contains_any(
         s,
         &["refactor", "restructure", "clean up", "improve", "optimize"],
     )
 }
-
 fn has_implement(s: &str) -> bool {
     contains_any(
         s,
         &["implement", "create", "build", "add", "develop", "write"],
     )
 }
-
 fn has_memory(s: &str) -> bool {
     contains_any(
         s,
@@ -90,11 +81,9 @@ fn has_memory(s: &str) -> bool {
         ],
     )
 }
-
 fn contains_any(s: &str, patterns: &[&str]) -> bool {
     patterns.iter().any(|p| s.contains(p))
 }
-
 #[cfg(test)]
 #[path = "intent_features_test.rs"]
 #[cfg(test)]

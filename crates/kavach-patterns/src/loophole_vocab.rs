@@ -8,7 +8,6 @@
 //! compiled baseline (fail-closed). SOURCE: decision.loophole-mistake-umbrella +
 //! decision.w5 (a security detector's vocabulary stays in-binary). Dimension taxonomy
 //! from OWASP Top 10:2025 + CWE Top 25 2025.
-
 /// One risk dimension of the loophole taxonomy.
 ///
 /// Carries its short `label` (the heading taxonomy), a Brain-OS `lens_query` (steers
@@ -23,7 +22,6 @@ pub struct DimensionRule {
     /// Cross-language substrings whose presence fires this dimension.
     pub markers: Vec<String>,
 }
-
 /// The loophole-lens vocabulary AS DATA: a thin agnostic floor + additive overlay.
 ///
 /// `#[serde(default)]` fills each field the row omits from the compiled floor, so a
@@ -36,7 +34,6 @@ pub struct LoopholeVocab {
     /// Per-dimension rules (label + lens query + agnostic markers).
     pub dimensions: Vec<DimensionRule>,
 }
-
 impl LoopholeVocab {
     /// Flatten every dimension's markers into the trigger set (the scope half of the
     /// detector — content touching any of these warrants the adversarial prompt).
@@ -48,7 +45,6 @@ impl LoopholeVocab {
             .collect()
     }
 }
-
 impl Default for LoopholeVocab {
     fn default() -> Self {
         Self {
@@ -56,7 +52,6 @@ impl Default for LoopholeVocab {
         }
     }
 }
-
 /// `Some(label)` for the dimension owning `token`, else `None`.
 ///
 /// Matches the real scanner's semantics: a floor marker fires when it is a SUBSTRING
@@ -71,7 +66,6 @@ pub fn dimension_for_marker(vocab: &LoopholeVocab, token: &str) -> Option<String
         .find(|d| d.markers.iter().any(|m| token.contains(m.as_str())))
         .map(|d| d.label.clone())
 }
-
 /// Distinct dimension labels for the fired `markers`, comma-joined, dedup-preserving
 /// order. Empty / all-unknown ⇒ `general` (the catch-all floor). SOURCE:
 /// decision.loophole-surface-heading-dynamic.
@@ -90,7 +84,6 @@ pub fn fired_dimensions(vocab: &LoopholeVocab, markers: &[&str]) -> String {
     }
     seen.join(", ")
 }
-
 /// Build one floor dimension from static cross-language marker slices.
 fn dim(label: &str, lens_query: &str, markers: &[&str]) -> DimensionRule {
     DimensionRule {
@@ -99,7 +92,6 @@ fn dim(label: &str, lens_query: &str, markers: &[&str]) -> DimensionRule {
         markers: markers.iter().map(|s| (*s).to_owned()).collect(),
     }
 }
-
 /// The compiled, tech-agnostic FLOOR — thin per dimension; the graph adds the rest.
 /// Each marker list mixes languages on purpose so one lens fires regardless of stack.
 fn floor_dimensions() -> Vec<DimensionRule> {
@@ -108,7 +100,6 @@ fn floor_dimensions() -> Vec<DimensionRule> {
     d.extend(runtime_supply_dims());
     d
 }
-
 /// Access-control + value dimensions: authz, idor, crypto, money, concurrency, persistence.
 fn access_money_dims() -> Vec<DimensionRule> {
     vec![
@@ -174,7 +165,6 @@ fn access_money_dims() -> Vec<DimensionRule> {
         ),
     ]
 }
-
 /// Injection + web-sink dimensions: injection, ssrf, xss, csrf, deserialization, path-traversal.
 fn injection_web_dims() -> Vec<DimensionRule> {
     vec![
@@ -251,7 +241,6 @@ fn injection_web_dims() -> Vec<DimensionRule> {
         ),
     ]
 }
-
 /// Runtime-safety + supply/observability dimensions: memory-safety, integer-overflow,
 /// resource-exhaustion, upload, supply-chain, information-leak, logging.
 fn runtime_supply_dims() -> Vec<DimensionRule> {
@@ -339,7 +328,6 @@ fn runtime_supply_dims() -> Vec<DimensionRule> {
         ),
     ]
 }
-
 #[cfg(test)]
 #[path = "loophole_vocab_test.rs"]
 #[cfg(test)]

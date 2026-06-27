@@ -6,9 +6,7 @@
 //! discard, so it UNCONDITIONALLY snapshots the durable working set to the DB and
 //! re-injects the spine into the post-compact context. See
 //! `decision.engine.precompact-anti-amnesia-guard`.
-
 use kavach_types::HookInput;
-
 pub(crate) fn run(input: &HookInput) {
     let mut session = kavach_session::get_or_create_session();
     // DYNAMIC INJECTION: pull the durable spine live from the DB — the active card +
@@ -17,14 +15,12 @@ pub(crate) fn run(input: &HookInput) {
     // decision row first so it survives even the post-compact context itself.
     let memory_guard = build_memory_guard(&session.project);
     let ci = &input.custom_instructions;
-
     // HARD: never exit_silent when there is durable state to protect — the injection
     // is unconditional whenever a guard block exists, regardless of custom_instructions.
     if memory_guard.is_none() && ci.is_empty() {
         drop(kavach_hook::exit_silent());
         return;
     }
-
     let mut context = String::new();
     if let Some(guard) = memory_guard {
         context.push_str(&guard);
@@ -42,7 +38,6 @@ pub(crate) fn run(input: &HookInput) {
     // CC path: notification context. Cursor drops allow output — relay above.
     drop(kavach_hook::exit_notification_context(&context));
 }
-
 /// Build the `[MEMORY_GUARD]` block from live DB state: the `in_progress` card, its
 /// TOUCHES paths, and the resume directive. Returns `None` when there is no active
 /// card (nothing to protect — fail-soft to today's silent behavior). When a card IS
@@ -81,7 +76,6 @@ fn build_memory_guard(project: &str) -> Option<String> {
     super::intent::append_mermaid_views(&mut block, project, "");
     Some(block)
 }
-
 /// Render the `persisted:` line for the guard from the snapshot-write outcome (F2).
 /// `true` → the recall command; `false` → an explicit FAILED warning so the agent
 /// copies the working set NOW instead of trusting a row that was never written.
@@ -99,7 +93,6 @@ fn persisted_line(ok: bool, project: &str, key: &str) -> String {
         )
     }
 }
-
 /// Persist the working-set snapshot to a decision row so it outlives the summarized
 /// context. Returns `true` iff the row was written; the caller surfaces a `false`
 /// into the guard block so the failure is LLM-visible, not swallowed (F2).
@@ -119,7 +112,6 @@ fn snapshot_to_decision(project: &str, card_key: &str, touches: &str) -> bool {
     });
     kavach_rpc::client::call::<_, serde_json::Value>("db.write", Some(params)).is_ok()
 }
-
 /// The single `in_progress` roadmap card `(key, content)`, or `None` on RPC miss.
 fn in_progress_card(project: &str) -> Option<(String, String)> {
     let params = serde_json::json!({ "project": project });
@@ -136,7 +128,6 @@ fn in_progress_card(project: &str) -> Option<(String, String)> {
         .unwrap_or_default();
     Some((key.to_owned(), content.to_owned()))
 }
-
 #[cfg(test)]
 #[path = "pre_compact_test.rs"]
 #[cfg(test)]

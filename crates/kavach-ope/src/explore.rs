@@ -16,7 +16,6 @@
 //! propensity arithmetic is tested without an RNG. [`next_draw`] is the dep-free
 //! xorshift the live call site uses to produce that draw (`rand` is not a
 //! workspace dependency; this is exploration sampling, not cryptography).
-
 /// Select an advisory action under epsilon-greedy with its true propensity.
 ///
 /// The propensity is the probability the policy assigns the returned action —
@@ -65,7 +64,6 @@ pub fn epsilon_greedy_select<A: Copy + PartialEq>(
         (greedy, greedy_p)
     }
 }
-
 /// A dep-free uniform draw in `[0,1)` from a `xorshift64*` state, advancing it.
 ///
 /// `state` must be non-zero (zero is the xorshift fixed point); seed the live
@@ -87,7 +85,6 @@ pub fn next_draw(state: &mut u64) -> f32 {
     // Top 24 bits → [0,1): a 24-bit mantissa is f32's exact integer range.
     (v >> 40) as f32 / 16_777_216.0
 }
-
 #[cfg(test)]
 #[path = "explore_test.rs"]
 #[cfg(test)]

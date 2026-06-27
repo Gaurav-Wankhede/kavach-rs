@@ -5,9 +5,7 @@
 //! the makespan: the bottleneck task starts as early as possible, so its tail
 //! of dependents is not the thing that ends up gating the whole project.
 use std::collections::HashMap;
-
 use kavach_surreal::graph::roadmap_dag::RoadmapDag;
-
 /// Map each node id to its critical-path length (count of nodes on the longest
 /// dependency chain rooted at it, inclusive — a leaf is 1).
 ///
@@ -39,7 +37,6 @@ pub(super) fn critical_path_lengths(
                 .push(e.target.as_str());
         }
     }
-
     let mut cp: HashMap<String, u32> = HashMap::with_capacity(topo_order.len());
     // Reverse topological order: every successor is resolved before its source.
     for id in topo_order.iter().rev() {
@@ -54,7 +51,6 @@ pub(super) fn critical_path_lengths(
     }
     cp
 }
-
 /// Reorder `ready` so the longest-critical-path node comes first. Stable on
 /// ties (equal cp length keeps the incoming topological order). `topo_order` is
 /// the same order used to compute the lengths — passed through to avoid a
@@ -73,7 +69,6 @@ pub(super) fn prioritize_by_critical_path(
     });
     ready
 }
-
 #[cfg(test)]
 #[path = "critical_path_test.rs"]
 #[cfg(test)]

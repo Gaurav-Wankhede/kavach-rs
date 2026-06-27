@@ -1,5 +1,4 @@
 //! Central rule engine: loads skill definitions and evaluates them.
-
 use crate::compliance::check_sp_compliance;
 use crate::context::EvalContext;
 use crate::matcher::{match_config_skills, match_rules};
@@ -8,14 +7,12 @@ use crate::result::{RuleAction, RuleResult};
 use kavach_rule_ast::SkillDefinition;
 use std::io::{self, Write};
 use std::path::PathBuf;
-
 /// Central rule engine that loads and evaluates TOON skill rules.
 #[derive(Debug)]
 pub struct RuleEngine {
     skills_dir: PathBuf,
     pub(crate) skills: Vec<SkillDefinition>,
 }
-
 impl RuleEngine {
     #[must_use]
     pub const fn new(skills_dir: PathBuf) -> Self {
@@ -24,7 +21,6 @@ impl RuleEngine {
             skills: Vec::new(),
         }
     }
-
     /// Load all skill definitions from the skills directory.
     /// Supports both directory-based skills (SKILL.md) and flat .toon files.
     pub fn load_skills(&mut self) {
@@ -63,7 +59,6 @@ impl RuleEngine {
             }
         }
     }
-
     /// Evaluate all applicable rules against the context.
     #[must_use]
     pub fn evaluate(&self, ctx: &EvalContext) -> Vec<RuleResult> {
@@ -90,7 +85,6 @@ impl RuleEngine {
         results.sort_by_key(|r| std::cmp::Reverse(r.severity));
         results
     }
-
     /// Get the highest-severity action from a list of results.
     #[must_use]
     pub fn worst_action(results: &[RuleResult]) -> RuleAction {
@@ -105,7 +99,6 @@ impl RuleEngine {
             })
             .unwrap_or(RuleAction::Allow)
     }
-
     fn parse_skill_file(path: &PathBuf) -> Result<SkillDefinition, String> {
         let content = std::fs::read_to_string(path).map_err(|e| format!("read: {e}"))?;
         let fm = kavach_rule_parser::parse_frontmatter(&content)
@@ -127,7 +120,6 @@ impl RuleEngine {
         })
     }
 }
-
 #[cfg(test)]
 #[path = "engine_tests.rs"]
 mod tests;

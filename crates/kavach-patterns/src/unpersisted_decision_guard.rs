@@ -10,7 +10,6 @@
 //!
 //! SOURCE: global CLAUDE.md "persist decisions the turn you make them" +
 //! `decision.stop-gate.kill-blocking-keep-autocontinue` (advisory, not HALT).
-
 /// Prose cues that a DECISION was settled this turn (a conclusion, not a
 /// question or a plan). Phrased to catch the assertion, kept lowercase for a
 /// single `to_lowercase` contains-scan.
@@ -29,7 +28,6 @@ const DECISION_CUES: &[&str] = &[
     "settled on ",
     "the tradeoff is",
 ];
-
 /// Signals the decision WAS already persisted this turn (a bracket block the
 /// scanner caught, or an explicit kavach db write). If any appear, no nudge.
 const PERSISTED_SIGNALS: &[&str] = &[
@@ -41,7 +39,6 @@ const PERSISTED_SIGNALS: &[&str] = &[
     "category decision",
     "category research",
 ];
-
 /// Detect a settled decision stated in prose that was NOT persisted this turn.
 ///
 /// Returns `Some(advisory)` when the message asserts a decision cue AND carries
@@ -72,7 +69,6 @@ pub fn detect_unpersisted_decision(msg: &str, wrote_decision_this_turn: bool) ->
             .to_owned(),
     )
 }
-
 #[cfg(test)]
 #[path = "unpersisted_decision_guard_test.rs"]
 #[cfg(test)]

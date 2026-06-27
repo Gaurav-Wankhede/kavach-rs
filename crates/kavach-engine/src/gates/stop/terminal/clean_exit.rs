@@ -2,13 +2,10 @@
 //! re-block breaker and emit the census-aware DB-rescan verdict (never a
 //! hardcoded self-stop — the loop yields only to the user's `Esc`), plus any
 //! ride-along advisories. Always Breaks (terminal for THIS turn, not the loop).
-
 use core::ops::ControlFlow;
-
 use super::super::shared::StopCtx;
 use crate::gates::bandit::{emit, explore_emit};
 use kavach_patterns::bandit_log::{BanditContext, GateAction};
-
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Clean exit = GREEDY Allow, logged via epsilon-greedy (explore only when
     // KAVACH_RL_EXPLORE armed; never converts to Block). Reward back-filled at
@@ -43,12 +40,10 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Work is genuinely done at the dispatch level — reset the pending-work
     // re-block breaker before composing the terminal verdict.
     ctx.session.clear_stop_reblock();
-
     // Drained board != finished plan: emit the census-aware verdict ([ALL_BLOCKED]
     // or board-drained [PLAN]), never a silent stop hiding un-built phases.
     // Loop-safe (ALLOWS the stop). See decision.engine.clean-exit-drained-plan.
     let mut full = super::drained::drained_terminal_context(&ctx.session.project);
-
     // Ride-alongs (all advisory; the stop still proceeds): an explicit user stop
     // reason, the semver advisory, and the U3 capture-finding nudge (a decision
     // settled in prose but not persisted this turn) — appended only when present
@@ -106,7 +101,6 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push_str(continuation_ctx);
     }
     super::super::pattern_extract::trigger_on_verify(ctx.session);
-
     // Loophole surface: RESOLVE, never block. Sites already recorded + carried
     // forward; attach awareness as a ride-along and let the stop proceed.
     // SOURCE: decision.loophole.resolve-not-handback.
@@ -114,17 +108,14 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         full.push('\n');
         full.push_str(advisory);
     }
-
     // Ordered refuse-stop checks (roadmap-todos → disobedience → research → all-blocked),
     // each breaker-bounded. Extracted to keep `check` under the 100-LOC ceiling.
     if try_refuse_stop(ctx, &full).is_break() {
         return ControlFlow::Break(());
     }
-
     drop(kavach_hook::exit_stop_context(&full));
     ControlFlow::Break(())
 }
-
 /// The ordered refuse-stop pipeline: each arm REFUSES the clean stop (emits an
 /// `exit_stop_block` and Breaks) when its breaker-bounded condition holds. Returns
 /// `Continue` when none fire, so the caller proceeds to the clean `exit_stop_context`.
@@ -191,7 +182,6 @@ fn try_refuse_stop(ctx: &mut StopCtx<'_>, full: &str) -> ControlFlow<()> {
     }
     ControlFlow::Continue(())
 }
-
 /// Decide whether a drained-board clean-stop must be REFUSED because the turn
 /// shipped risk-bearing work with an un-closed loophole.
 /// Decide whether the drained-board clean-stop must be REFUSED because the census
@@ -204,7 +194,6 @@ fn refuse_stop_on_roadmap_todos(ctx: &mut StopCtx<'_>) -> bool {
     super::drained::roadmap_todos_remain(&ctx.session.project)
         && super::super::shared::should_block_behavioral(ctx.session, "roadmap_todos_remain")
 }
-
 /// Decide whether the clean-stop must be REFUSED because this turn ARGUED WITH the
 /// user — refuted what the user reported, or value-gated the user's own request —
 /// instead of obeying the stated intent. CENSUS-INDEPENDENT (arguing with the user
@@ -216,7 +205,6 @@ fn refuse_stop_on_argued_with_user(ctx: &mut StopCtx<'_>) -> bool {
     ctx.argued_with_user
         && super::super::shared::should_block_behavioral(ctx.session, "argued_with_user")
 }
-
 /// Decide whether the clean-stop must be REFUSED because this turn argued instead
 /// of obeying (handback / permission-menu / name-then-stop / paraphrased-handoff)
 /// WHILE census proves a dispatchable roadmap todo remains. Census-gated so a
@@ -228,7 +216,6 @@ fn refuse_stop_on_disobedience_handback(ctx: &mut StopCtx<'_>) -> bool {
         && super::drained::roadmap_todos_remain(&ctx.session.project)
         && super::super::shared::should_block_behavioral(ctx.session, "disobedience_handback")
 }
-
 /// Decide whether the clean-stop must be REFUSED because this turn made an
 /// unsourced current-knowledge claim (`detect_claim_without_research` fired).
 /// Breaker-bounded (`research_unsourced`) so a turn that genuinely cannot source a
@@ -239,7 +226,6 @@ fn refuse_stop_on_unsourced_research(ctx: &mut StopCtx<'_>) -> bool {
     ctx.research_unsourced
         && super::super::shared::should_block_behavioral(ctx.session, "research_unsourced")
 }
-
 #[cfg(test)]
 #[path = "clean_exit_test.rs"]
 #[cfg(test)]

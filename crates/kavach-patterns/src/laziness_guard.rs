@@ -13,7 +13,6 @@
 //! marker AND a sibling option is the higher-effort do-the-work path. A genuine
 //! direction question (auth method, library choice, design A vs B) carries no
 //! effort-asymmetry markers and is never flagged.
-
 /// Low-effort / labor-deferral markers. An option carrying one of these is the
 /// "don't do the work now" path. Matched case-insensitively against the option's
 /// label + description.
@@ -54,7 +53,6 @@ const LAZY_MARKERS: &[&str] = &[
     "table for",
     "hold off",
 ];
-
 /// Higher-effort / do-the-work markers — the option that actually does the labor.
 /// Presence of one of these as a SIBLING confirms the choice is an effort split,
 /// not a direction split.
@@ -86,21 +84,17 @@ const WORK_MARKERS: &[&str] = &[
     "the full",
     "properly",
 ];
-
 /// The `(Recommended)` suffix the agent appends to its recommended option per the
 /// `AskUserQuestion` tool contract.
 const RECOMMENDED: &str = "recommended";
-
 /// One option's text, lowercased for matching.
 struct Opt {
     text: String,
     recommended: bool,
 }
-
 fn any_marker(text: &str, markers: &[&str]) -> bool {
     markers.iter().any(|m| text.contains(m))
 }
-
 /// Parse the `AskUserQuestion` `tool_input` JSON into PER-QUESTION option groups
 /// (one inner `Vec<Opt>` per question), each option being label + description
 /// joined and lowercased, with its recommended flag. Keeping options grouped by
@@ -130,7 +124,6 @@ fn extract_option_groups(tool_input: &serde_json::Value) -> Vec<Vec<Opt>> {
     }
     groups
 }
-
 /// Tokens that mark a question's subject as a CONCRETE EXTERNAL artifact whose
 /// correct value lives on the internet (docs / source / RFC), not in the user's
 /// head: a library, an API, a version, a flag, an algorithm. A question framed
@@ -168,7 +161,6 @@ const RESEARCHABLE_SUBJECT: &[&str] = &[
     "correct way to",
     "right way to",
 ];
-
 /// Question phrasings that ask for a FACTUAL/TECHNICAL answer ("which / what is")
 /// rather than a DIRECTION tradeoff. Combined with a researchable subject, these
 /// mark a question the internet answers definitively.
@@ -185,7 +177,6 @@ const FACTUAL_QUESTION_FORMS: &[&str] = &[
     "what flag",
     "what api",
 ];
-
 /// Markers of a GENUINE direction / authorization decision — the user's call,
 /// never researchable. Their presence SUPPRESSES the researchable-question flag
 /// so a real tradeoff ("which approach fits OUR latency budget", "priority",
@@ -212,7 +203,6 @@ const DIRECTION_OR_AUTH_MARKERS: &[&str] = &[
     "preference",
     "irreversible",
 ];
-
 /// Return `Some(advisory)` when an `AskUserQuestion` poses a RESEARCHABLE
 /// factual/technical question.
 ///
@@ -260,7 +250,6 @@ pub fn detect_researchable_question(tool_input: &serde_json::Value) -> Option<St
     }
     None
 }
-
 fn researchable_advisory() -> String {
     "[RESEARCH_FIRST] This AskUserQuestion asks a FACTUAL/TECHNICAL question \
      (a library / API / version / flag / algorithm choice) whose authoritative \
@@ -272,7 +261,6 @@ fn researchable_advisory() -> String {
      authorization (global CLAUDE.md §research_before_building / §act_not_narrate)."
         .to_owned()
 }
-
 /// Return `Some(reason)` when an `AskUserQuestion` recommends the lower-effort
 /// path over a higher-effort do-the-work sibling — the labor-as-direction
 /// loophole. `None` for genuine direction questions.
@@ -290,7 +278,6 @@ pub fn detect_lazy_recommendation(tool_input: &serde_json::Value) -> Option<Stri
     }
     None
 }
-
 /// True when, WITHIN one question's options, a `(Recommended)` option carries a
 /// LAZY marker and a non-recommended sibling carries a WORK marker.
 fn group_is_lazy_recommendation(opts: &[Opt]) -> bool {
@@ -306,7 +293,6 @@ fn group_is_lazy_recommendation(opts: &[Opt]) -> bool {
         .any(|o| !o.recommended && any_marker(&o.text, WORK_MARKERS));
     recommended_is_lazy && sibling_is_work
 }
-
 fn block_reason() -> String {
     "[LAZINESS_BLOCK] This AskUserQuestion recommends the LOWER-EFFORT option \
      (a 'leave as-is / skip / later / defer' choice) over a do-the-work sibling. \
@@ -318,7 +304,6 @@ fn block_reason() -> String {
      authorization (push/delete/send) — never to choose whether to do work you can do."
         .to_owned()
 }
-
 #[cfg(test)]
 #[path = "laziness_guard_test.rs"]
 #[cfg(test)]

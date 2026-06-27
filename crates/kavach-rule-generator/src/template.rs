@@ -1,8 +1,6 @@
 //! Generates `SkillDefinition` from detected code patterns.
-
 use crate::detector::{DetectedPattern, PatternType};
 use kavach_rule_ast::{ErrorHandling, PendingTasks, ResearchGate, SkillDefinition, SkillMetadata};
-
 #[must_use]
 pub fn generate_skill(pattern: &DetectedPattern) -> SkillDefinition {
     SkillDefinition {
@@ -10,7 +8,6 @@ pub fn generate_skill(pattern: &DetectedPattern) -> SkillDefinition {
         research_gate: build_research_gate(pattern),
     }
 }
-
 #[must_use]
 pub fn generate_error_handling(pattern: &DetectedPattern) -> ErrorHandling {
     match pattern.name.as_str() {
@@ -32,7 +29,6 @@ pub fn generate_error_handling(pattern: &DetectedPattern) -> ErrorHandling {
         },
     }
 }
-
 #[must_use]
 pub fn generate_pending_tasks(pattern: &DetectedPattern) -> PendingTasks {
     let macros = match pattern.pattern_type {
@@ -54,7 +50,6 @@ pub fn generate_pending_tasks(pattern: &DetectedPattern) -> PendingTasks {
         macros,
     }
 }
-
 fn build_metadata(pattern: &DetectedPattern) -> SkillMetadata {
     let description = match pattern.pattern_type {
         PatternType::Language => format!("{} development skill", capitalize(&pattern.name)),
@@ -77,7 +72,6 @@ fn build_metadata(pattern: &DetectedPattern) -> SkillMetadata {
         priority: kavach_rule_ast::SkillPriority::default(),
     }
 }
-
 fn build_research_gate(pattern: &DetectedPattern) -> ResearchGate {
     let rule = match pattern.pattern_type {
         PatternType::Framework => format!(
@@ -98,7 +92,6 @@ fn build_research_gate(pattern: &DetectedPattern) -> ResearchGate {
         rule,
     }
 }
-
 fn capitalize(s: &str) -> String {
     let mut c = s.chars();
     let Some(f) = c.next() else {
@@ -108,7 +101,6 @@ fn capitalize(s: &str) -> String {
     result.push_str(c.as_str());
     result
 }
-
 #[cfg(test)]
 #[path = "template_tests.rs"]
 mod tests;

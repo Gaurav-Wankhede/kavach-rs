@@ -14,7 +14,6 @@
 // for human review. --apply is the explicit opt-in to mutate real roadmap rows.
 use crate::cmd::db::rpc_client::{self, WriteRequest};
 use crate::cmd::io_safe::{into_exit_code, print_or_exit};
-
 /// A card reduced to the two facts inference needs: its full key and the parsed
 /// `(namespace, token_letter, sequence)` of its trailing segment (if any).
 struct Card {
@@ -23,7 +22,6 @@ struct Card {
     content: String,
     seq: Option<Seq>,
 }
-
 /// The parsed trailing sequence of a card key: the namespace it shares with its
 /// siblings, the alphabetic token kind (`p`/`f`/`step`/…, empty for a bare
 /// number), and the numeric position. Two cards are sequential siblings iff they
@@ -34,18 +32,15 @@ struct Seq {
     token: String,
     n: u64,
 }
-
 /// One inferred edge: `card` should declare `depends_on prereq`.
 struct InferredEdge {
     card: String,
     prereq: String,
 }
-
 /// Recognised alphabetic sequence-token prefixes, longest-first so `phase`
 /// matches before a bare `p`. A trailing segment of the form `<token><digits>`
 /// (e.g. `p7`, `phase2`, `step10`) or bare `<digits>` is a sequence position.
 const TOKENS: [&str; 8] = ["phase", "wave", "task", "iter", "step", "p", "f", "v"];
-
 /// Parse a card key's trailing sequence segment.
 ///
 /// The namespace is everything up to (and excluding) the final `.`-delimited
@@ -83,7 +78,6 @@ fn parse_seq(key: &str) -> Option<Seq> {
     }
     None
 }
-
 /// Pure inference core: given the card keys, return the edges that the
 /// sequence-token heuristic proposes, deduplicated and deterministic.
 ///
@@ -116,7 +110,6 @@ fn infer(cards: &[Card]) -> Vec<InferredEdge> {
     }
     edges
 }
-
 /// Whether `content` already declares `prereq` on a `DEPENDS_ON:` line. Mirrors
 /// the GUI's `kanban::deps::declared_deps` parse (comma/space-separated keys
 /// after a `DEPENDS_ON:` prefix) so the append below is idempotent against the
@@ -130,7 +123,6 @@ fn already_declares(content: &str, prereq: &str) -> bool {
         })
     })
 }
-
 /// Append a `DEPENDS_ON: <prereq>` line to `content`, returning the new content.
 /// The tier GUI (`kanban::deps::declared_deps`) parses this line from card TEXT
 /// — the relationship-graph edge from `--depends-on` alone is NOT what the tier
@@ -143,7 +135,6 @@ fn append_dep_line(content: &str, prereq: &str) -> String {
     };
     format!("{content}{sep}DEPENDS_ON: {prereq}\n")
 }
-
 /// `kavach db infer-deps` entry point. Lists roadmap cards, infers edges, prints
 /// the proposal, and (only with `apply`) writes each edge via the daemon.
 pub(crate) fn run(project: &str, apply: bool) -> i32 {
@@ -171,7 +162,6 @@ pub(crate) fn run(project: &str, apply: bool) -> i32 {
     if edges.is_empty() {
         return emit("infer-deps: no sequence-based dependencies inferred.");
     }
-
     let header = if apply {
         format!("infer-deps: applying {} edge(s):", edges.len())
     } else {
@@ -198,7 +188,6 @@ pub(crate) fn run(project: &str, apply: bool) -> i32 {
     if !apply {
         return 0;
     }
-
     let card_by_key = |k: &str| cards.iter().find(|c| c.key == k);
     let mut failures = 0_u32;
     let mut skipped = 0_u32;
@@ -253,14 +242,12 @@ pub(crate) fn run(project: &str, apply: bool) -> i32 {
         emit(&format!("infer-deps: {failures} edge(s) failed to write"))
     }
 }
-
 fn emit(msg: &str) -> i32 {
     match print_or_exit(msg) {
         Ok(()) => 0,
         Err(io_err) => into_exit_code(io_err),
     }
 }
-
 #[cfg(test)]
 #[path = "infer_deps_test.rs"]
 #[cfg(test)]
