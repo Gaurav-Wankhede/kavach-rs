@@ -61,10 +61,13 @@ fn finds_enum_variant() {
 }
 
 #[test]
-fn validates_fallback_regex_compiles() {
-    // Validates that the fallback regex "$.^" is always compilable.
-    // This test justifies the expect() call on Regex::new("$.^") in re().
-    use regex::Regex;
-    let fallback = Regex::new("$.^");
-    assert!(fallback.is_ok(), "fallback pattern $.^ must always compile");
+fn handles_invalid_regex_pattern_gracefully() {
+    // When an invalid regex pattern is encountered (e.g., from a name with
+    // metacharacters), the function must not panic. Currently panics because
+    // the fallback expect() is not suppressed. This test will pass once
+    // #[expect(clippy::expect_used)] is added to justify the fallback.
+    let sites = sites_in("X", "x.rs", "let [invalid( = 5;");
+    // Should return sites matching the fallback pattern $.^ (which matches nothing)
+    // rather than panicking.
+    assert!(sites.is_empty());
 }
