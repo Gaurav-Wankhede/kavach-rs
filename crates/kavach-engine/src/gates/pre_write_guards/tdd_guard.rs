@@ -86,6 +86,23 @@ fn is_comment_only(changed: &str) -> bool {
     saw_line
 }
 
+/// Comment-only check that treats lines already in `current` as unchanged context.
+fn is_comment_only_added(changed: &str, current: &str) -> bool {
+    let mut saw_line = false;
+    for line in changed.lines() {
+        let t = line.trim_start();
+        if t.is_empty() {
+            continue;
+        }
+        saw_line = true;
+        let is_comment = t.starts_with("//") || t.starts_with("#[") || t.starts_with("#!");
+        if !is_comment && !current.contains(line) {
+            return false;
+        }
+    }
+    saw_line
+}
+
 /// Basename without the `.rs` extension.
 pub(crate) fn unit_stem(path: &str) -> &str {
     path.rsplit('/')
