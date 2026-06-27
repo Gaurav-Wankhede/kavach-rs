@@ -71,6 +71,7 @@ fn handle_unmatched_tool(input: &HookInput, mut session: kavach_session::Session
 
 /// Pre-tool umbrella gate: bash blocklist + read validation + subagent budget.
 /// Runs before any tool use (except Write/Edit which go through pre-write).
+#[expect(clippy::too_many_lines, reason = "single linear gate-dispatch chain")]
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // MCP / shell-proxy tools that carry a raw `command` must run the destructive
     // blocklist too — else `rm -rf /` through an MCP tool (tool_name="MCP: …")
