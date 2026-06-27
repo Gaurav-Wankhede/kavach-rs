@@ -188,6 +188,14 @@ pub(crate) enum Commands {
         after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
     )]
     Doctor,
+    /// Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice signatures
+    #[command(
+        after_help = "Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM."
+    )]
+    Hunt {
+        /// Directory to scan (default: workspace root / current dir)
+        path: Option<std::path::PathBuf>,
+    },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
     Phase {
