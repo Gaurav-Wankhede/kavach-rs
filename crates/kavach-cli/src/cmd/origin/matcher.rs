@@ -35,7 +35,11 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
 }
 
 fn re(pat: &str) -> Regex {
-    Regex::new(pat).unwrap_or_else(|_| Regex::new("$.^").expect("never-match fallback compiles"))
+    // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#expect_used
+    Regex::new(pat).unwrap_or_else(|_| {
+        #[expect(clippy::unwrap_used, reason = "literal '$.^' is a compile-time-constant valid regex")]
+        Regex::new("$.^").unwrap()
+    })
 }
 
 #[cfg(test)]
