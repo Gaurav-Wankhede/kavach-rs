@@ -24,7 +24,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let comment_noise =
         kavach_patterns::comment_noise_guard::advise(ctx.file_path, &ctx.effective_content);
 
-    // Stage 1: Security FIRST so a P0 block can't be suppressed by a later advisory. decision.gate.security-before-phase-advisory
+    // Stage 1: Security FIRST — a later advisory must not suppress a P0 block.
     match super::pre_write_security::check(&ctx) {
         SecurityResult::Block(reason) => {
             drop(kavach_hook::exit_pre_tool_deny(&reason));
