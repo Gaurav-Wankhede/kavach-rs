@@ -6,7 +6,7 @@ use regex::Regex;
 /// All declaration sites of `name` in `content` (one file). Usages are ignored.
 pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
     let n = regex::escape(name);
-    let rules: [(Kind, Regex); 10] = [
+    let rules: [(Kind, Regex); 11] = [
         (Kind::EnvVar, re(&format!(r#"env::var\w*\(\s*"{n}""#))),
         (Kind::Const, re(&format!(r"\bconst\s+{n}\b"))),
         (Kind::Static, re(&format!(r"\bstatic\s+(?:mut\s+)?{n}\b"))),
