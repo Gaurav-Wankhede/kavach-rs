@@ -2,10 +2,8 @@
 
 /// Stop-word/instruction openers — a prompt starting with one is steering, not a topic.
 const FILLER_OPENERS: &[&str] = &[
-    "as", "the", "you", "here", "now", "do", "so", "this", "that", "it", "we", "i", "let",
-    "please", "also", "then", "but", "and", "if", "when", "because", "first", "next", "after",
-    "before", "while", "they", "he", "she", "make", "give", "want", "need", "go", "see", "watch",
-    "fix", "refine", "change",
+    "as", "the", "you", "here", "now", "so", "this", "that", "it", "we", "i", "let", "please",
+    "also", "then", "but", "and", "if", "when", "because", "while", "they", "he", "she",
 ];
 
 /// Research topic from `prompt`, or `""` when it opens with instruction filler.
