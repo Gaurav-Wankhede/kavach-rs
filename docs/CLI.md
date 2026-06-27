@@ -1341,6 +1341,18 @@ Proactive bug-hunt: run the repo's non-AI quality gates (cargo check, clippy -D 
 |---|---|---|
 | `--project` | Project slug the cards belong to |  |
 
+## `kavach hunt`
+
+Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice signatures
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | Directory to scan (default: workspace root / current dir) |  |
+
+```
+Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.
+```
+
 ## `kavach install`
 
 Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…)
