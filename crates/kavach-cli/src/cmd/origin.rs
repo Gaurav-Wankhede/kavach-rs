@@ -56,6 +56,9 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
 const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", "dist", "build", ".venv"];
 
 fn source_files(root: &Path) -> Vec<PathBuf> {
+    if root.is_file() {
+        return if kavach_patterns::is_code_file(&root.to_string_lossy()) { vec![root.to_path_buf()] } else { Vec::new() };
+    }
     let mut out = Vec::new();
     collect(root, &mut out);
     out
