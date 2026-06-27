@@ -1536,6 +1536,19 @@ Aggregate hit counts by gate (dashboard for recurring failures)
 |---|---|---|
 | `--project` | Project slug |  |
 
+## `kavach origin`
+
+Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse file:line)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<name>` | Symbol name to resolve (variable, const, fn, type, env-var, config field) |  |
+| `<path>` | Directory to search (default: workspace root / current dir) |  |
+
+```
+Resolves where NAME is declared (env-var/const/config-field/fn/type/let), config-origins first. `kavach origin DATABASE_URL`.
+```
+
 ## `kavach oversized`
 
 Scan for oversized files and circular dependency clusters
