@@ -81,7 +81,7 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-fn report(name: &str, sites: &[Site], root: &Path) {
+fn report(name: &str, sites: &[Site], root: &Path, all: bool) {
     if sites.is_empty() {
         println!("[KAVACH_ORIGIN] {name}: no declaration site found (it may be imported, generated, or a usage only)");
         if let Some(hint) = refine::tool_hint(root) {
@@ -101,9 +101,15 @@ fn report(name: &str, sites: &[Site], root: &Path) {
         top.file,
         top.line
     );
-    let extra = sites.len().saturating_sub(1);
-    if extra > 0 {
-        println!("  +{extra} more site(s) — narrow with a PATH arg");
+    if all {
+        for site in sites.iter().skip(1) {
+            println!("  also: {} at {}:{}", site.kind.label(), site.file, site.line);
+        }
+    } else {
+        let extra = sites.len().saturating_sub(1);
+        if extra > 0 {
+            println!("  +{extra} more — pass --all to list");
+        }
     }
 }
 
