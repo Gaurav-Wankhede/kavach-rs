@@ -18,7 +18,8 @@ pub(super) fn check(
     // A comment/doc-only change (the written/edited text is all comments+blanks)
     // carries no executable code → exempt, so the comment sweep needs no per-file
     // test. Uses ctx.content (the changed text), not the whole post-edit file.
-    if is_comment_only(ctx.content) {
+    let current = std::fs::read_to_string(ctx.file_path).unwrap_or_default();
+    if is_comment_only(ctx.content) || is_comment_only_added(ctx.content, &current) {
         return None;
     }
     let stem = unit_stem(ctx.file_path);
