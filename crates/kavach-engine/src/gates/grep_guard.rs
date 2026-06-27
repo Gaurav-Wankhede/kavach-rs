@@ -17,3 +17,4 @@ mod messages;
 mod tests;
 
 pub(crate) use detect::check_grep_command;
+pub(crate) use messages::origin_pointer;
