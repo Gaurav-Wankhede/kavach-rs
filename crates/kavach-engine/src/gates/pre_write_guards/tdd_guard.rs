@@ -109,6 +109,24 @@ pub(super) fn test_matches_unit(test_path: &str, stem: &str) -> bool {
     name == format!("{stem}_test.rs") || name == format!("{stem}_tests.rs")
 }
 
+pub(crate) fn production_stem_of(test_path: &str) -> Option<String> {
+    let s = test_path.replace('\\', "/");
+    let name = s.rsplit('/').next().unwrap_or(&s);
+    if name == "tests.rs" {
+        let parent = s.strip_suffix("/tests.rs").and_then(|p| p.rsplit('/').next());
+        return parent.filter(|p| *p != "src" && !p.is_empty()).map(str::to_owned);
+    }
+    if let Some(file) = name.strip_suffix(".rs") {
+        if let Some(stem) = file.strip_suffix("_test").or_else(|| file.strip_suffix("_tests")) {
+            return (!stem.is_empty()).then(|| stem.to_owned());
+        }
+        if s.contains("/tests/") {
+            return (!file.is_empty()).then(|| file.to_owned());
+        }
+    }
+    None
+}
+
 /// True when the content carries an inline test (forbidden in production files):
 /// using the `#[` attribute markers. A `#[path]` to an external file is NOT inline.
 pub(super) fn has_inline_test(content: &str) -> bool {
