@@ -162,7 +162,7 @@ fn dispatch_origin(
 ) -> i32 {
     let root = path.unwrap_or_else(doctor_workspace_root);
     if !root.exists() {
-        io_safe::ewrite_or_exit(&format!("origin: target path missing: {}", root.display()));
+        io_safe::ewrite_or_exit(&format!("origin: target path missing: {}", root.display())).ok();
         return 2;
     }
     if stdin {
