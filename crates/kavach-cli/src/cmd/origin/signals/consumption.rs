@@ -1,6 +1,7 @@
 //! Consumption signal: is the candidate's name fed into one of the role's consumer symbols.
 
 use crate::cmd::origin::role_query::Candidate;
+use crate::cmd::origin::site::Kind;
 
 #[must_use]
 pub(in crate::cmd::origin) fn score(consumed_by: &[String], c: &Candidate) -> f32 {
