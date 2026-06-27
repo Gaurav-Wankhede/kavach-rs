@@ -201,7 +201,7 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         context.push_str(&truncate_section(&lld_ctx, budget));
     }
 
-    context.push_str("\n[ZERO_GREP_TOOLS] Before Grep/Glob/grep, use kavach's zero-token lookups:\n  kavach origin <SYMBOL> [<SYMBOL>...]  -> where a var/fn/param/type/enum-variant/const is declared (file:line)\n  kavach hunt [PATH]                    -> regex bug-pattern sweep, no LLM\n");
+    context.push_str("\n[ZERO_GREP_TOOLS] NEVER reach for Grep/Glob/grep first — RUN kavach's zero-token lookups:\n  RESOLVE a declaration: kavach origin <SYMBOL> [<SYMBOL>...]  -> exact file:line for var/fn/param/type/enum-variant/const\n  SWEEP for bug patterns: kavach hunt [PATH]                   -> regex worst-practice scan, no LLM\n");
 
     // DECISION_MAP/PRACTICE_DELTA/PATTERN_DAG triad via the SINGLE canonical
     // emitter both hooks share (no hand-listed copy → can't drift). "" prompt →
