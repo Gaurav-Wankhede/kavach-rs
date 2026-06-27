@@ -42,7 +42,7 @@ fn parse_line(line: &str) -> Option<Finding> {
     let level = msg.get("level")?.as_str()?;
     let span = msg.get("spans")?.as_array()?.first()?;
     let file = span.get("file_name")?.as_str()?.to_owned();
-    let line_no = span.get("line_start")?.as_u64()? as usize;
+    let line_no = usize::try_from(span.get("line_start")?.as_u64()?).unwrap_or(0);
     let code = msg
         .get("code")
         .and_then(|c| c.get("code"))
