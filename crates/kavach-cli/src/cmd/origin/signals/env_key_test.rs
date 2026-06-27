@@ -12,5 +12,5 @@ fn hint_not_found() {
 
 #[test]
 fn empty_hints_returns_zero() {
-    assert_eq!(score(&[], "X"), 0.0);
+    assert!((score(&[], "X") - 0.0).abs() < f32::EPSILON);
 }
