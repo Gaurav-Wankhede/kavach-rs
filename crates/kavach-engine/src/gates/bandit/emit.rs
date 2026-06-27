@@ -114,5 +114,4 @@ pub(crate) fn now_ms() -> i64 {
 }
 #[cfg(test)]
 #[path = "emit_test.rs"]
-#[path = "emit_test.rs"]
 mod tests;

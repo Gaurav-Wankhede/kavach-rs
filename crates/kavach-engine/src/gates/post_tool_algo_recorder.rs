@@ -16,6 +16,5 @@ mod record;
 mod verify;
 #[cfg(test)]
 #[path = "post_tool_algo_recorder_test.rs"]
-#[path = "post_tool_algo_recorder_test.rs"]
 mod tests;
 pub(in crate::gates) use record::record;

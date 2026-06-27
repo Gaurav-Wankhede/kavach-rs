@@ -91,5 +91,4 @@ fn fail(msg: &str) -> i32 {
 }
 #[cfg(test)]
 #[path = "init_test.rs"]
-#[path = "init_test.rs"]
 mod tests;

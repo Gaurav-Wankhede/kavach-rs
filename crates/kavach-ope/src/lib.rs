@@ -33,5 +33,4 @@ pub mod label;
 pub mod trust;
 #[cfg(test)]
 #[path = "lib_test.rs"]
-#[path = "lib_test.rs"]
 mod tests;

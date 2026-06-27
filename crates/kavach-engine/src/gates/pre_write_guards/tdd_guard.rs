@@ -145,5 +145,4 @@ pub(super) fn has_inline_test(content: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "tdd_guard_test.rs"]
-#[path = "tdd_guard_test.rs"]
 mod tests;

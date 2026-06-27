@@ -7,7 +7,6 @@ mod extract;
 mod guards;
 #[cfg(test)]
 #[path = "test_tracker_test.rs"]
-#[path = "test_tracker_test.rs"]
 mod tests;
 pub(in crate::gates::pre_tool_bash) use guards::{
     check_duplicate_test_run, check_unscoped_test_run, register_test_run,

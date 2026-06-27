@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 mod grade;
 #[cfg(test)]
 #[path = "bandit_backfill_test.rs"]
-#[path = "bandit_backfill_test.rs"]
 mod tests;
 /// Back-fill request: the session to grade + whether its 3-witness verify passed.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -71,5 +71,4 @@ pub fn block_count(file_path: &str, content: &str) -> usize {
 }
 #[cfg(test)]
 #[path = "database_ops_guard_test.rs"]
-#[path = "database_ops_guard_test.rs"]
 mod tests;

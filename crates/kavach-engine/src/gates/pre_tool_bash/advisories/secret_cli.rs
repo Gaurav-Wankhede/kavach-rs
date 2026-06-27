@@ -50,5 +50,4 @@ pub(crate) fn check_secret_cli_read(command: &str) -> Option<String> {
 }
 #[cfg(test)]
 #[path = "secret_cli_test.rs"]
-#[path = "secret_cli_test.rs"]
 mod tests;

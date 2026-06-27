@@ -13,7 +13,6 @@ mod model;
 mod oracle;
 #[cfg(test)]
 #[path = "loop_yaml_test.rs"]
-#[path = "loop_yaml_test.rs"]
 mod tests;
 pub(crate) use harness::Harness;
 pub(crate) use limits::LoopLimits;

@@ -9,7 +9,6 @@ mod secret_cli;
 mod toolbelt_cli;
 #[cfg(test)]
 #[path = "advisories_test.rs"]
-#[path = "advisories_test.rs"]
 mod tests;
 pub(super) use cargo_flags::check_multi_crate;
 pub(super) use commit::check_commit_message;

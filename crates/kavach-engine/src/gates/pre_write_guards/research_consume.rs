@@ -145,5 +145,4 @@ fn content_has_evidence(content: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "research_consume_test.rs"]
-#[path = "research_consume_test.rs"]
 mod tests;

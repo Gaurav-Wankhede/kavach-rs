@@ -5,7 +5,6 @@
 mod tier;
 #[cfg(test)]
 #[path = "report_test.rs"]
-#[path = "report_test.rs"]
 mod tests;
 use kavach_types::WitnessResult;
 use std::fmt::Write as _;

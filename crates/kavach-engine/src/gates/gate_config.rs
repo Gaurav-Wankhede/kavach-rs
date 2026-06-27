@@ -42,5 +42,4 @@ pub fn gate_patterns(project: &str, gate_key: &str, default: &[&str]) -> Vec<Str
 }
 #[cfg(test)]
 #[path = "gate_config_test.rs"]
-#[path = "gate_config_test.rs"]
 mod tests;

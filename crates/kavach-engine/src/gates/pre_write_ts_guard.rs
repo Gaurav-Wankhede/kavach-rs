@@ -6,7 +6,6 @@ mod block;
 mod component;
 #[cfg(test)]
 #[path = "pre_write_ts_guard_test.rs"]
-#[path = "pre_write_ts_guard_test.rs"]
 mod tests;
 pub(crate) use block::{check, format_advisory};
 pub(crate) use component::check_component_oversized;

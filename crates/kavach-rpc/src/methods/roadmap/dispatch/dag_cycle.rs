@@ -97,5 +97,4 @@ pub(super) fn cycle_message(keys: &[String]) -> String {
 }
 #[cfg(test)]
 #[path = "dag_cycle_test.rs"]
-#[path = "dag_cycle_test.rs"]
 mod tests;

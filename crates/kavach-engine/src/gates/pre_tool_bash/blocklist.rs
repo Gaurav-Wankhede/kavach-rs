@@ -5,7 +5,6 @@
 mod config;
 #[cfg(test)]
 #[path = "blocklist_test.rs"]
-#[path = "blocklist_test.rs"]
 mod tests;
 use config::config_blocklists;
 use super::advisories::is_git_add_all;

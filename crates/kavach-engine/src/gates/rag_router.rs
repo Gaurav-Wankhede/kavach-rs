@@ -19,7 +19,6 @@ mod rpc;
 mod skills;
 #[cfg(test)]
 #[path = "rag_router_test.rs"]
-#[path = "rag_router_test.rs"]
 mod tests;
 pub(crate) use advisory::advisory_context_all;
 pub(crate) use skills::{SKILL_MATCH_FLOOR, SkillMatch, top_skill_match, top_skill_names_all};

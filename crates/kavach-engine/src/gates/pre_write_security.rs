@@ -14,7 +14,6 @@ mod content_stages;
 mod path_stages;
 #[cfg(test)]
 #[path = "pre_write_security_test.rs"]
-#[path = "pre_write_security_test.rs"]
 mod tests;
 use crate::gates::pre_write_context::WriteContext;
 /// Result of the security stage.

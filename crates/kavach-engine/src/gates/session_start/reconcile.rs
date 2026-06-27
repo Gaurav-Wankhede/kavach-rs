@@ -2,7 +2,6 @@
 //! for an `in_progress` card after a possible auto-compact seam.
 #[cfg(test)]
 #[path = "reconcile_test.rs"]
-#[path = "reconcile_test.rs"]
 mod tests;
 /// What `SessionStart` does with an `in_progress` card after a possible seam.
 #[non_exhaustive]

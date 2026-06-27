@@ -14,6 +14,5 @@ mod check;
 mod classify;
 #[cfg(test)]
 #[path = "pre_write_immutable_migration_test.rs"]
-#[path = "pre_write_immutable_migration_test.rs"]
 mod tests;
 pub(crate) use check::check;

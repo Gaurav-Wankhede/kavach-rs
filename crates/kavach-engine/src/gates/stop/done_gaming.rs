@@ -131,5 +131,4 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 }
 #[cfg(test)]
 #[path = "done_gaming_test.rs"]
-#[path = "done_gaming_test.rs"]
 mod tests;

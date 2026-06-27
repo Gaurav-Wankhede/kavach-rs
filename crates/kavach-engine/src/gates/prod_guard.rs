@@ -10,7 +10,6 @@ mod detect;
 mod ops;
 #[cfg(test)]
 #[path = "prod_guard_test.rs"]
-#[path = "prod_guard_test.rs"]
 mod tests;
 pub(crate) use destructive::check_prod_destructive;
 pub(crate) use ops::check_prod_ops;

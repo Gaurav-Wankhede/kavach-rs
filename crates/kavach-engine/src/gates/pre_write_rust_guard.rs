@@ -8,7 +8,6 @@ mod advisory;
 mod block;
 #[cfg(test)]
 #[path = "pre_write_rust_guard_test.rs"]
-#[path = "pre_write_rust_guard_test.rs"]
 mod tests;
 pub(crate) use advisory::{format_advisory, format_lint_advisory};
 pub(crate) use block::check;

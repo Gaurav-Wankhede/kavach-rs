@@ -12,7 +12,6 @@ pub(crate) mod query;
 pub(crate) mod verify;
 #[cfg(test)]
 #[path = "stop_dispatch_test.rs"]
-#[path = "stop_dispatch_test.rs"]
 mod tests;
 pub(crate) use card::{
     SOURCE_DOWN_KEY, card_entry_status, card_is_still_open, claim_card, live_lease_holder,

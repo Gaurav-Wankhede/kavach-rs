@@ -5,6 +5,5 @@ mod context;
 mod path;
 #[cfg(test)]
 #[path = "test_inject_test.rs"]
-#[path = "test_inject_test.rs"]
 mod tests;
 pub(crate) use context::build_test_context;

@@ -130,5 +130,4 @@ fn in_progress_card(project: &str) -> Option<(String, String)> {
 }
 #[cfg(test)]
 #[path = "pre_compact_test.rs"]
-#[path = "pre_compact_test.rs"]
 mod tests;

@@ -6,7 +6,6 @@ mod context;
 mod contract;
 #[cfg(test)]
 #[path = "pre_tool_agent_test.rs"]
-#[path = "pre_tool_agent_test.rs"]
 mod tests;
 pub(crate) use contract::get_contract;
 use kavach_hook::Vendor;

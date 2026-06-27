@@ -21,7 +21,6 @@ mod pairwise_tournament;
 mod worker_critic;
 #[cfg(test)]
 #[path = "compile_test.rs"]
-#[path = "compile_test.rs"]
 mod tests;
 use super::loop_yaml::{GoalLoopYaml, Harness};
 use std::path::{Path, PathBuf};

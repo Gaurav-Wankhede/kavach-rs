@@ -13,5 +13,4 @@ pub use detect::detect;
 pub use types::{AsyncSeverity, AsyncViolation};
 #[cfg(test)]
 #[path = "async_sync_guard_test.rs"]
-#[path = "async_sync_guard_test.rs"]
 mod tests;

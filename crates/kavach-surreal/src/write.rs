@@ -6,7 +6,6 @@ mod status;
 mod upsert;
 #[cfg(test)]
 #[path = "write_test.rs"]
-#[path = "write_test.rs"]
 mod tests;
 pub use events::{append_event, rotate_events};
 pub use expire::{ExpireReport, expire_stale};

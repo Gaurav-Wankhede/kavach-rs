@@ -178,5 +178,4 @@ fn truncate_utf8(s: &str, max: usize) -> String {
 }
 #[cfg(test)]
 #[path = "loop_frame_test.rs"]
-#[path = "loop_frame_test.rs"]
 mod tests;

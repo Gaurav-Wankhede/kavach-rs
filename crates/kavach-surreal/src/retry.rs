@@ -95,5 +95,4 @@ where
 }
 #[cfg(test)]
 #[path = "retry_test.rs"]
-#[path = "retry_test.rs"]
 mod tests;

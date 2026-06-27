@@ -53,5 +53,4 @@ fn is_command_word(scrubbed: &str, tool: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "toolbelt_cli_test.rs"]
-#[path = "toolbelt_cli_test.rs"]
 mod tests;

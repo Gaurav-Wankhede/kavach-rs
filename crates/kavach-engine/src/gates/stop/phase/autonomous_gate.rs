@@ -42,5 +42,4 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
 }
 #[cfg(test)]
 #[path = "autonomous_gate_test.rs"]
-#[path = "autonomous_gate_test.rs"]
 mod tests;

@@ -20,5 +20,4 @@ pub(crate) fn extract_research_topic(prompt: &str, _intent_type: &str) -> String
 }
 #[cfg(test)]
 #[path = "research_test.rs"]
-#[path = "research_test.rs"]
 mod tests;

@@ -117,5 +117,4 @@ pub fn is_real_verify(command: &str) -> bool {
 }
 #[cfg(test)]
 #[path = "reward_test.rs"]
-#[path = "reward_test.rs"]
 mod tests;

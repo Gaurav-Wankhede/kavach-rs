@@ -14,7 +14,6 @@ use surrealdb::engine::any::Any as Db;
 use surrealdb_types::{RecordId, SurrealValue};
 #[cfg(test)]
 #[path = "bandit_test.rs"]
-#[path = "bandit_test.rs"]
 mod tests;
 /// A returned record id (the create/update `RETURN AFTER` projection).
 #[derive(surrealdb_types::SurrealValue)]

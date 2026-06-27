@@ -86,5 +86,4 @@ fn contains_any(s: &str, patterns: &[&str]) -> bool {
 }
 #[cfg(test)]
 #[path = "intent_features_test.rs"]
-#[path = "intent_features_test.rs"]
 mod tests;

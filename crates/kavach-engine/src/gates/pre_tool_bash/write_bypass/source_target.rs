@@ -11,7 +11,6 @@
 //! SOURCE: github.com/liberzon/claude-hooks (decompose; match each token)
 #[cfg(test)]
 #[path = "source_target_test.rs"]
-#[path = "source_target_test.rs"]
 mod tests;
 /// File extensions that are hand-authored source the `pre-write` gate guards.
 /// Generated/data formats (`.json .yaml .toml .lock .md`) are intentionally

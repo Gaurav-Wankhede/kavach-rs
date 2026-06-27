@@ -8,7 +8,6 @@ mod classify;
 mod rpc;
 #[cfg(test)]
 #[path = "post_tool_failure_test.rs"]
-#[path = "post_tool_failure_test.rs"]
 mod tests;
 use std::fmt::Write as _;
 use kavach_types::HookInput;

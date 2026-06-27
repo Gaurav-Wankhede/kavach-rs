@@ -44,5 +44,4 @@ pub(super) fn check(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
 }
 #[cfg(test)]
 #[path = "guards2026_test.rs"]
-#[path = "guards2026_test.rs"]
 mod tests;

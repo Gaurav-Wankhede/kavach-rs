@@ -79,5 +79,4 @@ fn dedupe_preserving_order<'a>(keys: &[&'a str]) -> Vec<&'a str> {
 }
 #[cfg(test)]
 #[path = "acquire_set_test.rs"]
-#[path = "acquire_set_test.rs"]
 mod tests;

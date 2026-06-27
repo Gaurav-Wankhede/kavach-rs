@@ -14,7 +14,6 @@ mod detect;
 mod messages;
 #[cfg(test)]
 #[path = "grep_guard_test.rs"]
-#[path = "grep_guard_test.rs"]
 mod tests;
 pub(crate) use detect::check_grep_command;
 pub(crate) use messages::origin_pointer;

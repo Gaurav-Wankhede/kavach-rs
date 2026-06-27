@@ -67,5 +67,4 @@ pub fn assess<P: TargetPolicy>(samples: &[LoggedSample], policy: &P) -> Trust {
 }
 #[cfg(test)]
 #[path = "trust_test.rs"]
-#[path = "trust_test.rs"]
 mod tests;

@@ -6,7 +6,6 @@ mod classify;
 mod message;
 #[cfg(test)]
 #[path = "pre_write_path_test.rs"]
-#[path = "pre_write_path_test.rs"]
 mod tests;
 use kavach_types::HookInput;
 use crate::error::EngineError;

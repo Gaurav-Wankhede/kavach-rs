@@ -62,5 +62,4 @@ pub(super) fn drain_and_replay() {
 }
 #[cfg(test)]
 #[path = "spool_writes_test.rs"]
-#[path = "spool_writes_test.rs"]
 mod tests;

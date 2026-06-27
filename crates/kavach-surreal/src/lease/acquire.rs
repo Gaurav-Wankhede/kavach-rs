@@ -81,5 +81,4 @@ pub async fn acquire(
 }
 #[cfg(test)]
 #[path = "acquire_test.rs"]
-#[path = "acquire_test.rs"]
 mod tests;

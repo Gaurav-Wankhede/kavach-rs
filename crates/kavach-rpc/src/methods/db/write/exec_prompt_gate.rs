@@ -23,5 +23,4 @@ pub(super) fn blocked(
 }
 #[cfg(test)]
 #[path = "exec_prompt_gate_test.rs"]
-#[path = "exec_prompt_gate_test.rs"]
 mod tests;

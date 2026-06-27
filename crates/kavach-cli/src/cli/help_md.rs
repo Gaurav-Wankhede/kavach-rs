@@ -44,5 +44,4 @@ fn section(cmd: &clap::Command, path: &str, out: &mut String) {
 mod render;
 #[cfg(test)]
 #[path = "help_md_test.rs"]
-#[path = "help_md_test.rs"]
 mod tests;

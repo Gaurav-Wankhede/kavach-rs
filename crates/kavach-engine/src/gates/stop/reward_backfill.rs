@@ -9,7 +9,6 @@
 use kavach_session::{RewardOutcome, SessionState};
 #[cfg(test)]
 #[path = "reward_backfill_test.rs"]
-#[path = "reward_backfill_test.rs"]
 mod tests;
 /// Max rows graded per stop — a generous cap on one session's decisions, so a
 /// runaway log can never make the back-fill RPC unbounded.

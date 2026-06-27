@@ -56,5 +56,4 @@ fn emit(rows: &[Debt]) -> i32 {
 }
 #[cfg(test)]
 #[path = "debt_test.rs"]
-#[path = "debt_test.rs"]
 mod tests;

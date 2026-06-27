@@ -5,6 +5,5 @@ mod shapes;
 mod validate;
 #[cfg(test)]
 #[path = "validators_test.rs"]
-#[path = "validators_test.rs"]
 mod tests;
 pub(crate) use validate::validate;

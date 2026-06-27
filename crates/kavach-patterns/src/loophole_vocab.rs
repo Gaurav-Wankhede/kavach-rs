@@ -330,5 +330,4 @@ fn runtime_supply_dims() -> Vec<DimensionRule> {
 }
 #[cfg(test)]
 #[path = "loophole_vocab_test.rs"]
-#[path = "loophole_vocab_test.rs"]
 mod tests;

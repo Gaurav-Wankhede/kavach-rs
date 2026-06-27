@@ -90,5 +90,4 @@ pub use wipe_project::{
 pub use write::{WriteParams, WriteResult, write};
 #[cfg(test)]
 #[path = "db_test.rs"]
-#[path = "db_test.rs"]
 mod tests;

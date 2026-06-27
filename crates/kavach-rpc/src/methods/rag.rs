@@ -11,7 +11,6 @@ use kavach_surreal::{
 use serde::Deserialize;
 #[cfg(test)]
 #[path = "rag_test.rs"]
-#[path = "rag_test.rs"]
 mod tests;
 /// Lists all RAG tree labels.
 ///

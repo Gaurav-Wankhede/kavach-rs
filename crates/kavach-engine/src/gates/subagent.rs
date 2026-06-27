@@ -132,5 +132,4 @@ pub(crate) fn run_stop(input: &HookInput) -> Result<(), EngineError> {
 }
 #[cfg(test)]
 #[path = "subagent_test.rs"]
-#[path = "subagent_test.rs"]
 mod tests;

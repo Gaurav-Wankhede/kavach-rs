@@ -2,7 +2,6 @@
 mod evaluate;
 #[cfg(test)]
 #[path = "witness_test.rs"]
-#[path = "witness_test.rs"]
 mod tests;
 use kavach_types::{FOURTEEN_PREFIXES, ProjectTier, WitnessResult};
 use evaluate::evaluate_prefix;

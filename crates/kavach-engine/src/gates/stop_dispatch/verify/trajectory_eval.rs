@@ -38,5 +38,4 @@ pub(super) fn eval_advisory(_project_slug: &str, card_key: &str) -> Option<Strin
 }
 #[cfg(test)]
 #[path = "trajectory_eval_test.rs"]
-#[path = "trajectory_eval_test.rs"]
 mod tests;

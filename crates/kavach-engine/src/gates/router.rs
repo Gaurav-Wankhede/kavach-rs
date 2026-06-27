@@ -8,7 +8,6 @@ mod budget;
 mod dispatch;
 #[cfg(test)]
 #[path = "router_test.rs"]
-#[path = "router_test.rs"]
 mod tests;
 pub(crate) use budget::{observe_tool_call, reset_for_new_turn};
 pub(crate) use dispatch::emit;

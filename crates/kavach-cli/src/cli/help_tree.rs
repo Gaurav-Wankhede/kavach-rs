@@ -29,5 +29,4 @@ fn walk(cmd: &clap::Command, depth: usize, out: &mut String) {
 }
 #[cfg(test)]
 #[path = "help_tree_test.rs"]
-#[path = "help_tree_test.rs"]
 mod tests;

@@ -6,7 +6,6 @@ mod allow;
 mod destructive;
 #[cfg(test)]
 #[path = "permission_request_test.rs"]
-#[path = "permission_request_test.rs"]
 mod tests;
 use kavach_types::HookInput;
 use allow::{is_kavach_command, is_safe_auto_allow, is_safe_rm_target};
