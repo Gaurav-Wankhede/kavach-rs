@@ -149,3 +149,45 @@ fn test_matches_unit_recognizes_sibling_conventions() {
         "widget"
     ));
 }
+
+#[test]
+fn production_stem_of_strips_test_suffix() {
+    assert_eq!(
+        production_stem_of("a/b/dispatch_msg_test.rs"),
+        Some("dispatch_msg".to_owned())
+    );
+}
+
+#[test]
+fn production_stem_of_strips_tests_suffix() {
+    assert_eq!(
+        production_stem_of("a/b/widget_tests.rs"),
+        Some("widget".to_owned())
+    );
+}
+
+#[test]
+fn production_stem_of_extracts_from_subdir_tests() {
+    assert_eq!(
+        production_stem_of("a/b/foo/tests.rs"),
+        Some("foo".to_owned())
+    );
+}
+
+#[test]
+fn production_stem_of_extracts_from_integration_form() {
+    assert_eq!(
+        production_stem_of("a/tests/bar.rs"),
+        Some("bar".to_owned())
+    );
+}
+
+#[test]
+fn production_stem_of_returns_none_for_production_file() {
+    assert_eq!(production_stem_of("a/b/foo.rs"), None);
+}
+
+#[test]
+fn production_stem_of_returns_none_for_bare_tests() {
+    assert_eq!(production_stem_of("a/tests.rs"), None);
+}
