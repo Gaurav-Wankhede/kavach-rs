@@ -51,6 +51,25 @@ fn blocks_when_research_required_and_no_evidence() {
 }
 
 #[test]
+fn allows_comment_only_edit_without_source() {
+    // A doc-comment/lint fix (e.g. backticking `subject_ids` for clippy::doc_markdown)
+    // carries no factual claim, so the research gate must NOT block it — else it
+    // deadlocks against the comment-noise gate on a trivial doc edit.
+    if std::env::var_os("KAVACH_RESEARCH_BYPASS").is_some() {
+        return;
+    }
+    let s = session_needing_research();
+    let c = ctx(
+        "crates/foo/src/lib.rs",
+        "/// Resolve the `subject_ids` into recipients.",
+    );
+    assert!(
+        super::check(&c, &s).is_none(),
+        "comment-only edit must be exempt from research enforcement"
+    );
+}
+
+#[test]
 fn allows_when_content_cites_source_url() {
     let s = session_needing_research();
     let c = ctx(
