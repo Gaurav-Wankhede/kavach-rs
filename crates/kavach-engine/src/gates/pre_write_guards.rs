@@ -61,7 +61,7 @@ pub(crate) fn check(
                 block: Some(
                     "[COMMENT_BLOAT:P0] BLOCKED. This write adds a 6+-line prose comment \
                      block — keep comments concise; move rationale to a decision row. \
-                     Bypass: KAVACH_COMMENT_BLOCK_OFF=1."
+                     If this looks wrong, READ this guard's source and fix the real cause — never route around it."
                         .to_owned(),
                 ),
                 algo_advisory: None,
