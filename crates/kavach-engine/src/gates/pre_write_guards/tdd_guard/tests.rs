@@ -155,6 +155,19 @@ fn test_matches_unit_recognizes_sibling_conventions() {
 }
 
 #[test]
+fn comment_only_ignores_unchanged_context_lines() {
+    let current = "fn f() {}\n";
+    assert!(super::is_comment_only_added(
+        "/// doc\nfn f() {}\n",
+        current
+    ));
+    assert!(!super::is_comment_only_added(
+        "/// doc\nfn g() {}\n",
+        current
+    ));
+}
+
+#[test]
 fn production_stem_of_inverts_every_test_convention() {
     assert_eq!(production_stem_of("a/b/widget_test.rs").as_deref(), Some("widget"));
     assert_eq!(production_stem_of("a/b/widget_tests.rs").as_deref(), Some("widget"));
