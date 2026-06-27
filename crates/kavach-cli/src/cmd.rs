@@ -180,7 +180,7 @@ fn dispatch_origin(
             .map_or(1, |()| 2);
     }
     let mut code = 0;
-    for name in &names {
+    for name in names {
         code |= origin::run(name, &root, all);
     }
     code
