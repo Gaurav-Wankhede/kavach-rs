@@ -209,10 +209,10 @@ pub(crate) enum Commands {
         /// Directory to search (default: workspace root / current dir)
         path: Option<std::path::PathBuf>,
         /// Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help`
-        #[arg(long, conflicts_with = "name")]
+        #[arg(long)]
         query: Option<String>,
         /// Read the role-query JSON from stdin instead of --query
-        #[arg(long, conflicts_with_all = ["name", "query"])]
+        #[arg(long, conflicts_with = "query")]
         stdin: bool,
     },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
