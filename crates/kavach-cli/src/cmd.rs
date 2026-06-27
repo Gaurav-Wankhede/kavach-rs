@@ -158,7 +158,10 @@ fn dispatch_origin(
     query: Option<String>,
     stdin: bool,
 ) -> i32 {
-    let root = path.unwrap_or_else(doctor_workspace_root);
+    let positional_root = path.or_else(|| {
+        (query.is_some() || stdin).then(|| name.as_deref().map(std::path::PathBuf::from))?
+    });
+    let root = positional_root.unwrap_or_else(doctor_workspace_root);
     if stdin {
         let mut json = String::new();
         if std::io::Read::read_to_string(&mut std::io::stdin(), &mut json).is_err() {
