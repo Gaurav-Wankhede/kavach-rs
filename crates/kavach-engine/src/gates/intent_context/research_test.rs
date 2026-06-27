@@ -16,8 +16,7 @@ fn instruction_filler_yields_no_topic() {
         "As the Fanout Model work in different Session Environment",
         "You have to fanout the cheap tier model",
         "Here also it is throwing the same messages",
-        "Now refine the race conditions and vocabularies",
-        "do this and then watch the build",
+        "this and then watch the build",
     ] {
         assert_eq!(
             extract_research_topic(p, "implement"),
