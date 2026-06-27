@@ -42,6 +42,8 @@ fn candidates_on_line(line: &str, file: &str, line_no: usize) -> Vec<Candidate> 
         .collect()
 }
 
+#[expect(clippy::string_slice, reason = "byte offsets come from .find()/.len() so they land on valid UTF-8 boundaries")]
+#[expect(clippy::arithmetic_side_effects, reason = "offsets bounded by the .find() match position")]
 fn declared_name(line: &str) -> Option<String> {
     let t = line.trim_start();
     for kw in ["pub const ", "pub static ", "pub fn ", "pub struct ", "const ", "static ", "let ", "fn ", "struct ", "enum ", "type "] {
