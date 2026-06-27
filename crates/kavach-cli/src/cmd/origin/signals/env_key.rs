@@ -1,7 +1,7 @@
 //! Env-key signal: does the candidate name contain a role env-key hint fragment.
 
 #[must_use]
-pub(super) fn score(hints: &[String], name: &str) -> f32 {
+pub(in crate::cmd::origin) fn score(hints: &[String], name: &str) -> f32 {
     if hints.is_empty() {
         return 0.0;
     }
