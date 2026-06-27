@@ -139,6 +139,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Toolbelt { action } => toolbelt::run(action),
         Commands::Lint { action } => lint::run(action),
         Commands::CommandTree { tree, markdown } => commands::run(tree, markdown),
+        Commands::Hunt { path } => hunt::run(&path.unwrap_or_else(doctor_workspace_root)),
     }
 }
 
