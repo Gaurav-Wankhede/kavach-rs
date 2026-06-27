@@ -44,6 +44,7 @@ pub(crate) mod verify_frontend_detect;
 use crate::cli::Commands;
 
 /// Dispatch CLI command and return exit code (0 = success, 1 = error).
+#[expect(clippy::too_many_lines, reason = "flat match over every CLI subcommand; see https://rust-lang.github.io/rust-clippy/master/index.html#too_many_lines")]
 pub(crate) fn dispatch(command: Commands) -> i32 {
     match command {
         Commands::Status => status::run(),
