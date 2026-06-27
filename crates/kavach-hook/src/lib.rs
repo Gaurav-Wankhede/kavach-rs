@@ -14,7 +14,7 @@ pub use severity::GateSeverity;
 pub use vendor::{SchemaSource, Vendor};
 
 #[cfg(test)]
-#[path = "tests.rs"]
+#[path = "lib_test.rs"]
 mod tests;
 
 // Re-export context functions at crate root for backwards compatibility

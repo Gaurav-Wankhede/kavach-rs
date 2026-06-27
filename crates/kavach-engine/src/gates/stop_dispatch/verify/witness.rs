@@ -157,5 +157,5 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
 // decision.kavach.verify-rs-nanofile-split-2026-06-17 — mechanical, behavior-
 // identical; rca.keystone-trap + rca.monorepo-verify-blind preserved verbatim.
 #[cfg(test)]
-#[path = "tests.rs"]
+#[path = "witness_test.rs"]
 mod tests;
