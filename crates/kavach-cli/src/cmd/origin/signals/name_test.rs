@@ -14,7 +14,7 @@ fn partial_jaccard_score() {
 
 #[test]
 fn empty_aliases_returns_zero() {
-    assert_eq!(score(&[], "X"), 0.0);
+    assert!((score(&[], "X") - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
