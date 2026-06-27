@@ -12,7 +12,9 @@ pub(super) fn walk(root: &Path) -> Vec<Candidate> {
         let Ok(src) = std::fs::read_to_string(&path) else {
             continue;
         };
-        let rel_path = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty()).map(|r| r.to_path_buf()).unwrap_or_else(|| path.clone());
+        // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#map_unwrap_or
+        let rel_path = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty())
+            .map_or_else(|| path.clone(), std::path::Path::to_path_buf);
         let rel = rel_path.to_string_lossy().into_owned();
         for (i, line) in src.lines().enumerate() {
             out.extend(candidates_on_line(line, &rel, i + 1));
