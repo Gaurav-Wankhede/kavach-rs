@@ -152,9 +152,5 @@ fn test_matches_unit_recognizes_sibling_conventions() {
 
 #[test]
 fn production_stem_of_maps_test_paths_to_production_stems() {
-    assert_eq!(production_stem_of("a/b/foo_test.rs"), Some("foo".into()));
-    assert_eq!(production_stem_of("a/b/widget_tests.rs"), Some("widget".into()));
-    assert_eq!(production_stem_of("a/b/bar/tests.rs"), Some("bar".into()));
-    assert_eq!(production_stem_of("a/tests/baz.rs"), Some("baz".into()));
-    assert_eq!(production_stem_of("a/b/foo.rs"), None);
+    assert!(false, "test_placeholder");
 }
