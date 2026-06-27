@@ -17,7 +17,7 @@ fn missing_value_returns_zero() {
 
 #[test]
 fn missing_regex_returns_zero() {
-    assert_eq!(score(None, Some("x")), 0.0);
+    assert!((score(None, Some("x")) - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
