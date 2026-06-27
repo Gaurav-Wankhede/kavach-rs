@@ -204,7 +204,7 @@ pub(crate) enum Commands {
     },
     /// Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse file:line)
     #[command(
-        after_help = "Resolves where NAME(s) are declared (env-var/const/config-field/fn/type/let/param/enum-variant), config-origins first.\n\nEXAMPLES:\n  kavach origin DATABASE_URL\n  kavach origin DATABASE_URL retry_limit\n  kavach origin DATABASE_URL --all\n  kavach origin --path crates/kavach-cli/src --query '{...}'"
+        after_help = "Resolves where NAME(s) are declared (env-var/const/config-field/fn/type/let/param/enum-variant), config-origins first.\n\nEXAMPLES:\n  kavach origin DATABASE_URL\n  kavach origin DATABASE_URL retry_limit\n  kavach origin DATABASE_URL --all\n  kavach origin --query '{\"value_regex\":\"^postgres://\",\"consumed_by\":[\"PgPool\"],\"env_key_hints\":[\"db\"],\"name_aliases\":[\"DATABASE_URL\"]}'\n\nUSE THIS INSTEAD OF grep/rg to find where a symbol lives — zero LLM tokens. Role-query fields are all optional; a value_regex alone resolves an arbitrarily-named var."
     )]
     Origin {
         /// Symbol name(s) to resolve (var, const, fn, type, env-var, config field, param, enum-variant)
