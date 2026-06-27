@@ -59,3 +59,10 @@ fn finds_enum_variant() {
     let k = kinds("EnvVar", "    EnvVar,");
     assert!(k.contains(&Kind::Variant));
 }
+
+#[test]
+fn invalid_regex_falls_back_to_never_match() {
+    // Regex with invalid pattern must not panic; fallback pattern $.^ never matches
+    let k = kinds("X", "let Y = std::env::var(\"[invalid()\");");
+    assert!(k.is_empty(), "invalid regex fallback should match nothing");
+}
