@@ -35,9 +35,9 @@ pub(super) fn grep_tool_reminder() -> String {
 pub(crate) fn origin_pointer(symbol: &str) -> String {
     format!(
         "[KAVACH_ORIGIN_HINT]\n\
-         Looking for where `{symbol}` is DECLARED? Run this instead of grepping its body:\n\
+         STOP — do NOT grep for where `{symbol}` is declared. RUN this instead:\n\
          kavach origin {symbol}\n\
-         Returns file:line for var/fn/param/type/enum-variant/const — zero LLM tokens.\n\
-         Many at once: kavach origin NAME1 NAME2 ...   |   Bug sweep: kavach hunt [PATH]"
+         It returns the exact file:line (var/fn/param/type/enum-variant/const) at zero token cost.\n\
+         RESOLVE many at once: kavach origin NAME1 NAME2 ...   |   SWEEP for bug patterns: kavach hunt [PATH]"
     )
 }
