@@ -14,6 +14,5 @@ pub(crate) fn is_test_or_exempt(path: &str) -> bool {
     if !is_code_write(path) {
         return true;
     }
-    let test_patterns = ["_tests.rs", "_test.rs", "tests/", "test_"];
-    test_patterns.iter().any(|pat| path.contains(pat))
+    kavach_patterns::is_test_file(path)
 }
