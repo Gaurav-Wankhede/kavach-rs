@@ -6,6 +6,7 @@ use super::{matcher, site::Site, source_files};
 use std::path::Path;
 
 #[must_use]
+#[expect(clippy::arithmetic_side_effects, reason = "line index i+1 for 1-based display; bounded by file line count")]
 pub(super) fn walk(root: &Path) -> Vec<Candidate> {
     let mut out = Vec::new();
     for path in source_files(root) {
