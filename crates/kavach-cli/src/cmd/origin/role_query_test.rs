@@ -52,6 +52,6 @@ fn parse_invalid_json() {
 fn parse_arbitrary_name_alias() {
     let json = r#"{"name_aliases": ["ABC", "DEF", "GHI"]}"#;
     let result = RoleQuery::parse(json).expect("parse failed");
-    assert!(result.name_aliases.contains(&"ABC".to_string()));
+    assert!(result.name_aliases.contains(&"ABC".to_owned()));
     assert_eq!(result.name_aliases, vec!["ABC", "DEF", "GHI"]);
 }
