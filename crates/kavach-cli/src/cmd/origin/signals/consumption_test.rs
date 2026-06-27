@@ -12,7 +12,7 @@ fn consumed_by_symbol_in_value() {
         value: Some("PgPool::connect(url)".into()),
         is_secret: false,
     };
-    assert_eq!(score(&["PgPool".into()], &cand), 1.0);
+    assert!((score(&["PgPool".into()], &cand) - 1.0).abs() < f32::EPSILON);
 }
 
 #[test]
