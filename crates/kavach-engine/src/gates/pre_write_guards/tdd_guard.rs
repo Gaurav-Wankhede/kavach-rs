@@ -58,7 +58,8 @@ pub(super) fn check(
     };
     Some(format!(
         "[TDD:P0] BLOCKED. Production code for `{stem}` has no observed-Red test-first. \
-         {red_hint}, THEN write the code. Bypass (emergencies only): KAVACH_TDD_BYPASS=1."
+         {red_hint}, THEN write the code. (KAVACH_TDD_BYPASS=1 only for a PROVEN \
+         false-positive — read this guard's source to confirm; the block is almost always correct.)"
     ))
 }
 
