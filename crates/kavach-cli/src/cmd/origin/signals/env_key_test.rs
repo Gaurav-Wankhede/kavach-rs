@@ -2,7 +2,7 @@ use super::score;
 
 #[test]
 fn hint_found_case_insensitive() {
-    assert_eq!(score(&["url".into()], "DATABASE_URL"), 1.0);
+    assert!((score(&["url".into()], "DATABASE_URL") - 1.0).abs() < f32::EPSILON);
 }
 
 #[test]
