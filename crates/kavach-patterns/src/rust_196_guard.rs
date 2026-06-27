@@ -12,6 +12,7 @@
 //! - <https://sherlock.xyz/post/rust-security-auditing-guide-2026>
 
 mod detect;
+mod detect_196;
 mod patterns;
 mod types;
 
