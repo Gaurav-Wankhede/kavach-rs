@@ -25,7 +25,7 @@ fn consumed_by_not_found_with_none_value() {
         value: None,
         is_secret: false,
     };
-    assert_eq!(score(&["PgPool".into()], &cand), 0.0);
+    assert!((score(&["PgPool".into()], &cand) - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
