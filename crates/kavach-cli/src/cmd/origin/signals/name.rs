@@ -32,6 +32,10 @@ fn tokens(s: &str) -> Vec<String> {
     t
 }
 
+// SOURCE: rust-lang.github.io/rust-clippy/master/index.html#float_arithmetic
+#[expect(clippy::float_arithmetic, reason = "Jaccard similarity ratio, not money")]
+#[expect(clippy::arithmetic_side_effects, reason = "inter <= min(a,b) so a.len()+b.len()-inter never underflows")]
+#[expect(clippy::cast_precision_loss, reason = "set sizes are small alias counts, well within f32 mantissa")]
 fn jaccard(a: &[String], b: &[String]) -> f32 {
     if a.is_empty() || b.is_empty() {
         return 0.0;
