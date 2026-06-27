@@ -2,7 +2,7 @@ use super::score;
 
 #[test]
 fn regex_matches_value() {
-    assert_eq!(score(Some("^postgres://"), Some("postgres://x")), 1.0);
+    assert!((score(Some("^postgres://"), Some("postgres://x")) - 1.0).abs() < f32::EPSILON);
 }
 
 #[test]
