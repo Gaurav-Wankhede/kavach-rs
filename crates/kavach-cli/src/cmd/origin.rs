@@ -2,7 +2,6 @@
 
 mod matcher;
 mod refine;
-mod role_query;
 mod site;
 
 use site::Site;
