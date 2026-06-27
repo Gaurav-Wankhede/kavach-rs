@@ -1352,6 +1352,8 @@ Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice s
 
 ```
 Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.
+
+USE THIS INSTEAD OF grepping for bug patterns by hand — zero LLM tokens.
 ```
 
 ## `kavach install`
@@ -1544,7 +1546,7 @@ Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse 
 |---|---|---|
 | `<names>` | Symbol name(s) to resolve (var, const, fn, type, env-var, config field, param, enum-variant) |  |
 | `--path` | Directory to search (default: workspace root / current dir) |  |
-| `--query` | Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help` |  |
+| `--query` | Role-query JSON (resolve by ROLE not NAME); schema in EXAMPLES below |  |
 | `--stdin` | Read the role-query JSON from stdin instead of --query |  |
 | `--all` | Show every site, not just the top one + count |  |
 
@@ -1555,7 +1557,9 @@ EXAMPLES:
   kavach origin DATABASE_URL
   kavach origin DATABASE_URL retry_limit
   kavach origin DATABASE_URL --all
-  kavach origin --path crates/kavach-cli/src --query '{...}'
+  kavach origin --query '{"value_regex":"^postgres://","consumed_by":["PgPool"],"env_key_hints":["db"],"name_aliases":["DATABASE_URL"]}'
+
+USE THIS INSTEAD OF grep/rg to find where a symbol lives — zero LLM tokens. Role-query fields are all optional; a value_regex alone resolves an arbitrarily-named var.
 ```
 
 ## `kavach oversized`
