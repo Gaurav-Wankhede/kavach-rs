@@ -59,8 +59,8 @@ pub(crate) fn check(
         ) {
             return GuardResult {
                 block: Some(
-                    "[COMMENT_BLOAT:P0] BLOCKED. This write adds a 6+-line prose comment \
-                     block — keep comments concise; move rationale to a decision row. \
+                    "[COMMENT_BLOAT:P0] TRIM THE COMMENT, MOVE RATIONALE TO A DECISION ROW. \
+                     This write adds a 6+-line prose comment block — keep comments concise. \
                      If this looks wrong, READ this guard's source and fix the real cause — never route around it."
                         .to_owned(),
                 ),
