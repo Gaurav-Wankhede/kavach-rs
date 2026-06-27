@@ -9,7 +9,7 @@ fn exact_match_case_insensitive() {
 #[test]
 fn partial_jaccard_score() {
     let s = score(&["db_url".into()], "database_url");
-    assert!(s >= 0.0 && s <= 1.0);
+    assert!((0.0..=1.0).contains(&s));
 }
 
 #[test]
