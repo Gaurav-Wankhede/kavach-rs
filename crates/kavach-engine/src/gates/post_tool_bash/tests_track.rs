@@ -48,7 +48,8 @@ pub(super) fn record_red_units(session: &mut SessionState) {
         .files_modified_this_turn
         .iter()
         .filter(|f| kavach_patterns::is_test_file(f) || f.contains("_test."))
-        .map(|f| crate::gates::pre_write_guards::tdd_guard::unit_stem(f).to_owned())
+        // SOURCE: decision.tdd.red-recorder-stem-mismatch
+        .filter_map(|f| crate::gates::pre_write_guards::tdd_guard::production_stem_of(f))
         .filter(|s| !s.is_empty())
         .collect();
     if stems.is_empty() {
