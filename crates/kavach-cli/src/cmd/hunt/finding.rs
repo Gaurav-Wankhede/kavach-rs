@@ -21,7 +21,7 @@ impl Severity {
 
 /// One detector hit at a precise site — the antivirus "signature match".
 #[derive(Debug, Clone)]
-pub struct Finding {
+pub(super) struct Finding {
     pub detector: &'static str,
     pub file: String,
     pub line: usize,
