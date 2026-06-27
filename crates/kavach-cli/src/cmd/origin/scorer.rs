@@ -39,6 +39,10 @@ fn score_one(q: &RoleQuery, c: &Candidate) -> f32 {
     if c.kind.is_centralized() {
         s += 0.05;
     }
+    let precise_hit = val >= 1.0 || cons >= 1.0;
+    if precise_hit {
+        s = s.max(THRESHOLD + 0.05 * (val + cons));
+    }
     s.min(1.0)
 }
 
