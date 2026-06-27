@@ -6,6 +6,7 @@ fn test_file_types() {
     assert!(is_test_file("a_test.go"));
     assert!(is_test_file("src/gates/intent_tests.rs"));
     assert!(is_test_file("crates/x/src/foo/tests.rs"));
+    assert!(is_test_file("tests/integration.rs"));
 }
 #[test]
 fn test_allowlist_claude_rules_md() {
