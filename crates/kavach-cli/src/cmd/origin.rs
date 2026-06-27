@@ -3,7 +3,7 @@
 mod matcher;
 mod refine;
 mod site;
-#[cfg(test)]
+#[allow(dead_code)]
 mod role_query;
 
 use site::Site;
