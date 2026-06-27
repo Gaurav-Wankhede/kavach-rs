@@ -4,7 +4,7 @@ set -euo pipefail
 cd /Users/gauravwankhede/kavach-rs
 
 for file in $(rg -l 'mod tests;' crates/ --type rust); do
-  sed -i '' '/#\[cfg(test)\]$/{N;N;s/#\[cfg(test)\]\n#\[path = "[^"]*"\]\n#\[cfg(test)\]/#[cfg(test)]\n#[path = "TEST_NAME"/;};' "$file"
+  awk '/^#\[cfg\(test\)\]$/ { if (prev ~ /^#\[path = /) { next } } { print; prev = $0 }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 done
 
 echo "Done"
