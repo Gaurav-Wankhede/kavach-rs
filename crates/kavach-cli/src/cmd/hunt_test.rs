@@ -27,6 +27,6 @@ fn run_on_clean_tmp_dir_exits_0() {
     let dir = std::env::temp_dir().join(format!("kavach_hunt_{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("mk tmp dir");
     std::fs::write(dir.join("clean.rs"), "pub fn f() -> u8 { 1 }\n").expect("seed clean");
-    assert_eq!(run(&dir), 0, "a clean tree exits 0");
+    assert_eq!(run(&dir, false), 0, "a clean tree exits 0");
     std::fs::remove_dir_all(&dir).ok();
 }
