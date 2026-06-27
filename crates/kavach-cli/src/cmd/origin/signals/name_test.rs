@@ -20,5 +20,5 @@ fn empty_aliases_returns_zero() {
 #[test]
 fn no_match_score_in_valid_range() {
     let s = score(&["totally_other".into()], "ABC");
-    assert!(s >= 0.0 && s <= 1.0);
+    assert!((0.0..=1.0).contains(&s));
 }
