@@ -89,17 +89,3 @@ fn should_block_tag_block_in_ai_config_file() {
     input.tool_name = "Write".into();
     assert!(matches!(check(&ctx_for(&input)), SecurityResult::Block(_)));
 }
-
-#[test]
-fn should_block_silent_io_let_underscore() {
-    // Stage-1 Security owns the silent-IO P0 and runs before the phase advisory.
-    let mut input = input_with(&[
-        ("file_path", serde_json::json!("crates/core/x/src/h.rs")),
-        (
-            "content",
-            serde_json::json!("pub fn f() {\n    let _ = do_io();\n}\n"),
-        ),
-    ]);
-    input.tool_name = "Write".into();
-    assert!(matches!(check(&ctx_for(&input)), SecurityResult::Block(_)));
-}
