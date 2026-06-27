@@ -29,7 +29,8 @@ fn session_needing_research() -> SessionState {
 fn blocks_when_research_required_and_no_evidence() {
     // Fail-closed: a research-required production write with no cited source is
     // DENIED at write time — no source, no claim. The block still drives the lookup
-    // so the agent can cite + retry immediately.
+    // so the agent can cite + retry immediately. The message is action-imperative:
+    // tells the agent the exact action to unblock (cite a source, then retry).
     if std::env::var_os("KAVACH_RESEARCH_BYPASS").is_some() {
         return; // bypass set in this env ⇒ enforcement disabled (covered elsewhere)
     }
@@ -41,8 +42,8 @@ fn blocks_when_research_required_and_no_evidence() {
         "P0 block tag: {block}"
     );
     assert!(
-        block.contains("BLOCKED"),
-        "must suppress the write: {block}"
+        block.contains("CITE A SOURCE THEN RETRY"),
+        "action-imperative leading phrase: {block}"
     );
     assert!(
         block.contains("No source -> no claim"),

@@ -23,7 +23,7 @@ pub(super) fn check(
     }
     let stem = unit_stem(ctx.file_path);
     // Inline tests are FORBIDDEN — tests live in a separate mapped file.
-    if has_inline_test(&ctx.effective_content) {
+    if has_inline_test(ctx.content) {
         return Some(format!(
             "[TDD:P0] BLOCKED. `{stem}` carries an inline test — tests must live in a \
              SEPARATE file (e.g. `{stem}/tests.rs` mapped via `#[path]`), never inside \
