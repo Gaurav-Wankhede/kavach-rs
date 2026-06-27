@@ -170,7 +170,10 @@ mod tests {
             c.contains("let _") && c.contains(".ok()"),
             "must forbid suppression"
         );
-        assert!(c.contains("Toolbelt") || c.contains("rg/fd"), "must carry toolbelt");
+        assert!(
+            c.contains("Toolbelt") || c.contains("rg/fd"),
+            "must carry toolbelt"
+        );
         assert!(c.contains("RCA"), "must carry RCA-before-fix");
         assert!(c.contains("3-witness"), "must demand 3-witness evidence");
         assert!(
