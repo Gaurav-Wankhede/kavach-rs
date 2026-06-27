@@ -152,32 +152,37 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
     }
 }
 
-/// Dispatch `origin` — name path (existing) or `--query`/`--stdin` role-query path.
 fn dispatch_origin(
-    name: Option<String>,
+    names: Vec<String>,
     path: Option<std::path::PathBuf>,
     query: Option<String>,
     stdin: bool,
+    all: bool,
 ) -> i32 {
-    let positional_root = path.or_else(|| {
-        (query.is_some() || stdin).then(|| name.as_deref().map(std::path::PathBuf::from))?
-    });
-    let root = positional_root.unwrap_or_else(doctor_workspace_root);
+    let root = path.unwrap_or_else(doctor_workspace_root);
+    if !root.exists() {
+        let _ = io_safe::ewrite_or_exit(&format!("origin: target path missing: {}", root.display()));
+        return 2;
+    }
     if stdin {
         let mut json = String::new();
         if std::io::Read::read_to_string(&mut std::io::stdin(), &mut json).is_err() {
             return io_safe::ewrite_or_exit("origin: failed to read stdin").map_or(1, |()| 2);
         }
-        return origin::run_query(&json, &root);
+        return origin::run_query(&json, &root, all);
     }
     if let Some(json) = query {
-        return origin::run_query(&json, &root);
+        return origin::run_query(&json, &root, all);
     }
-    match name {
-        Some(n) => origin::run(&n, &root),
-        None => io_safe::ewrite_or_exit("origin: pass a NAME, --query <json>, or --stdin")
-            .map_or(1, |()| 2),
+    if names.is_empty() {
+        return io_safe::ewrite_or_exit("origin: pass NAME(s), --query <json>, or --stdin")
+            .map_or(1, |()| 2);
     }
+    let mut code = 0;
+    for name in &names {
+        code |= origin::run(name, &root, all);
+    }
+    code
 }
 
 /// Dispatch `verify` — extracted to keep `dispatch` under the nano-file ceiling.
