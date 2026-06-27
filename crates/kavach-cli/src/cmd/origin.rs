@@ -15,13 +15,13 @@ use std::path::{Path, PathBuf};
 
 /// `kavach origin --query '<json>'` entry — dynamic multi-signal role resolver.
 #[must_use]
-pub(crate) fn run_query(json: &str, root: &Path) -> i32 {
-    query::run(json, root)
+pub(crate) fn run_query(json: &str, root: &Path, all: bool) -> i32 {
+    query::run(json, root, all)
 }
 
 /// `kavach origin` entry. Exit: 0 = found, 1 = no declaration site, 2 = bad root.
 #[must_use]
-pub(crate) fn run(name: &str, root: &Path) -> i32 {
+pub(crate) fn run(name: &str, root: &Path, all: bool) -> i32 {
     if name.is_empty() {
         eprintln!("origin: empty symbol name");
         return 2;
@@ -37,7 +37,7 @@ pub(crate) fn run(name: &str, root: &Path) -> i32 {
             .then_with(|| (a.file.clone(), a.line).cmp(&(b.file.clone(), b.line)))
     });
     sites.dedup_by(|a, b| a.dedup_key() == b.dedup_key());
-    report(name, &sites, root);
+    report(name, &sites, root, all);
     i32::from(sites.is_empty())
 }
 
