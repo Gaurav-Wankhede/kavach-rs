@@ -7,7 +7,7 @@ fn hint_found_case_insensitive() {
 
 #[test]
 fn hint_not_found() {
-    assert_eq!(score(&["dsn".into()], "DATABASE_URL"), 0.0);
+    assert!((score(&["dsn".into()], "DATABASE_URL") - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
