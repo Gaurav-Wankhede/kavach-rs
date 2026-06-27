@@ -56,9 +56,9 @@ pub(super) fn check(
         )
     };
     Some(format!(
-        "[TDD:P0] BLOCKED. Production code for `{stem}` has no observed-Red test-first. \
-         {red_hint}, THEN write the code. If this looks wrong, READ this guard's source \
-         and fix the real cause — never route around it."
+        "[TDD:P0] WRITE THE TEST FIRST. Production code for `{stem}` has no observed-Red \
+         test-first. {red_hint}, THEN write the code. If this looks wrong, READ this \
+         guard's source and fix the real cause — never route around it."
     ))
 }
 
