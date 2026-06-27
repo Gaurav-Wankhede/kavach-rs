@@ -64,8 +64,13 @@ fn report(findings: &[Finding], files_scanned: usize) {
         findings.len()
     );
     for f in findings {
+        let snip = if f.snippet.is_empty() {
+            String::new()
+        } else {
+            format!(" `{}`", f.snippet)
+        };
         println!(
-            "  [{}] {}:{} {}/{} — {}",
+            "  [{}] {}:{} {}/{}{snip} — {}",
             f.severity.label(),
             f.file,
             f.line,
