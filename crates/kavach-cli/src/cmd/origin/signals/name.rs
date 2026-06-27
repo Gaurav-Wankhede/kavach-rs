@@ -1,7 +1,7 @@
 //! Name signal: exact/alias/normalized-token jaccard — 0 for an arbitrary name, never blocking.
 
 #[must_use]
-pub(super) fn score(aliases: &[String], name: &str) -> f32 {
+pub(in crate::cmd::origin) fn score(aliases: &[String], name: &str) -> f32 {
     if aliases.is_empty() {
         return 0.0;
     }
