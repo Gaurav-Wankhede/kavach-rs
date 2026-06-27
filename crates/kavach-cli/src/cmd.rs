@@ -151,6 +151,31 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
     }
 }
 
+/// Dispatch `origin` — name path (existing) or `--query`/`--stdin` role-query path.
+fn dispatch_origin(
+    name: Option<String>,
+    path: Option<std::path::PathBuf>,
+    query: Option<String>,
+    stdin: bool,
+) -> i32 {
+    let root = path.unwrap_or_else(doctor_workspace_root);
+    if stdin {
+        let mut json = String::new();
+        if std::io::Read::read_to_string(&mut std::io::stdin(), &mut json).is_err() {
+            return io_safe::ewrite_or_exit("origin: failed to read stdin").map_or(1, |()| 2);
+        }
+        return origin::run_query(&json, &root);
+    }
+    if let Some(json) = query {
+        return origin::run_query(&json, &root);
+    }
+    match name {
+        Some(n) => origin::run(&n, &root),
+        None => io_safe::ewrite_or_exit("origin: pass a NAME, --query <json>, or --stdin")
+            .map_or(1, |()| 2),
+    }
+}
+
 /// Dispatch `verify` — extracted to keep `dispatch` under the nano-file ceiling.
 fn dispatch_verify(command: Commands) -> i32 {
     let Commands::Verify {
