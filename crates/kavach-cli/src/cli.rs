@@ -50,6 +50,9 @@ Close a card:   kavach db status-update … --status done\n  \
                 kavach verify --project <slug> --key <unit> --crate-name <crate>\n  \
                 kavach db kanban-close --project <slug> --key <unit>\n  \
 Health check:   kavach db kanban && kavach context (direct DB — no RPC required)\n\n\
+ZERO-GREP LOOKUPS (use these BEFORE rg/grep — save tokens):\n  \
+Where declared: kavach origin <SYMBOL> [<SYMBOL>...]   # var/fn/param/type/enum-variant/const -> file:line\n  \
+Find bugs:      kavach hunt [PATH]                      # regex worst-practice sweep, no LLM\n\n\
 Run `kavach <command> --help` for subcommands, flags, and examples.",
     version = KAVACH_VERSION
 )]
