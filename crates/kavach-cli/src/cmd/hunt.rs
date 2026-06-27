@@ -3,19 +3,23 @@
 mod finding;
 mod registry;
 mod scan;
+mod toolchain;
 
 use finding::{Finding, Severity};
 use std::path::{Path, PathBuf};
 
-/// `kavach hunt` entry. Exit: 0 = clean, 1 = findings, 2 = unreadable root.
+/// `kavach hunt` entry (`deep` adds clippy). Exit: 0 clean, 1 findings, 2 bad root.
 #[must_use]
-pub(crate) fn run(root: &Path) -> i32 {
+pub(crate) fn run(root: &Path, deep: bool) -> i32 {
     if !root.exists() {
         eprintln!("hunt: target path missing: {}", root.display());
         return 2;
     }
     let files = source_files(root);
-    let findings = scan::scan_parallel(root, &files);
+    let mut findings = scan::scan_parallel(root, &files);
+    if deep {
+        findings.extend(toolchain::run_clippy(root));
+    }
     report(&findings, files.len());
     i32::from(!findings.is_empty())
 }
