@@ -1542,8 +1542,10 @@ Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse 
 
 | Flag | Description | Default |
 |---|---|---|
-| `<name>` | Symbol name to resolve (variable, const, fn, type, env-var, config field) |  |
+| `<name>` | Symbol name to resolve (var, const, fn, type, env-var, config field) |  |
 | `<path>` | Directory to search (default: workspace root / current dir) |  |
+| `--query` | Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help` |  |
+| `--stdin` | Read the role-query JSON from stdin instead of --query |  |
 
 ```
 Resolves where NAME is declared (env-var/const/config-field/fn/type/let), config-origins first. `kavach origin DATABASE_URL`.

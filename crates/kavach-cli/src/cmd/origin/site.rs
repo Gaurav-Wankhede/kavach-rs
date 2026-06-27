@@ -9,6 +9,8 @@ pub(super) enum Kind {
     Default,
     Type,
     Function,
+    Param,
+    Variant,
     LetBinding,
 }
 
