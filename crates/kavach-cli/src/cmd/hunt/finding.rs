@@ -10,7 +10,7 @@ pub(super) enum Severity {
 
 impl Severity {
     #[must_use]
-    pub const fn label(self) -> &'static str {
+    pub(super) const fn label(self) -> &'static str {
         match self {
             Self::Block => "BLOCK",
             Self::Warn => "WARN",
