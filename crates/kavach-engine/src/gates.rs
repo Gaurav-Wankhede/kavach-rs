@@ -96,6 +96,7 @@ pub mod session_end;
 pub mod session_start;
 pub(crate) mod sql_destructive;
 pub mod status_gate;
+pub(crate) mod symbol_search_guard;
 pub mod stop;
 pub(crate) mod stop_decisions;
 pub(crate) mod stop_dispatch;
