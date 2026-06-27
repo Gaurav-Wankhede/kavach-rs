@@ -1542,13 +1542,20 @@ Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse 
 
 | Flag | Description | Default |
 |---|---|---|
-| `<name>` | Symbol name to resolve (var, const, fn, type, env-var, config field) |  |
-| `<path>` | Directory to search (default: workspace root / current dir) |  |
+| `<names>` | Symbol name(s) to resolve (var, const, fn, type, env-var, config field, param, enum-variant) |  |
+| `--path` | Directory to search (default: workspace root / current dir) |  |
 | `--query` | Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help` |  |
 | `--stdin` | Read the role-query JSON from stdin instead of --query |  |
+| `--all` | Show every site, not just the top one + count |  |
 
 ```
-Resolves where NAME is declared (env-var/const/config-field/fn/type/let), config-origins first. `kavach origin DATABASE_URL`.
+Resolves where NAME(s) are declared (env-var/const/config-field/fn/type/let/param/enum-variant), config-origins first.
+
+EXAMPLES:
+  kavach origin DATABASE_URL
+  kavach origin DATABASE_URL retry_limit
+  kavach origin DATABASE_URL --all
+  kavach origin --path crates/kavach-cli/src --query '{...}'
 ```
 
 ## `kavach oversized`
