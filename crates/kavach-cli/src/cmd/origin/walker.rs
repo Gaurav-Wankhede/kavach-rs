@@ -14,7 +14,7 @@ pub(super) fn walk(root: &Path) -> Vec<Candidate> {
         };
         // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#map_unwrap_or
         let rel_path = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty())
-            .map_or_else(|| path.clone(), std::path::Path::to_path_buf);
+            .map_or_else(|| path.clone(), Path::to_path_buf);
         let rel = rel_path.to_string_lossy().into_owned();
         for (i, line) in src.lines().enumerate() {
             out.extend(candidates_on_line(line, &rel, i + 1));
