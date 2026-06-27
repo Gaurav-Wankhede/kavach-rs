@@ -27,7 +27,7 @@ pub(super) fn run(json: &str, root: &Path, all: bool) -> i32 {
     let Some(top) = ranked.first() else { return 1 };
     let top_shape = if top.cand.is_secret { " [secret: location only]" } else { "" };
     println!(
-        "[KAVACH_ORIGIN] role '{}' -> {} '{}' at {}:{} (score {:.2}){shape}",
+        "[KAVACH_ORIGIN] role '{}' -> {} '{}' at {}:{} (score {:.2}){top_shape}",
         q.role,
         top.cand.kind.label(),
         top.cand.name,
