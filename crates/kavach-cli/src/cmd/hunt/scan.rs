@@ -7,7 +7,7 @@ use std::sync::Mutex;
 
 /// Scan every file across scoped threads (one shard per worker), merging results.
 #[must_use]
-pub fn scan_parallel(root: &Path, files: &[PathBuf]) -> Vec<Finding> {
+pub(super) fn scan_parallel(root: &Path, files: &[PathBuf]) -> Vec<Finding> {
     let out: Mutex<Vec<Finding>> = Mutex::new(Vec::new());
     let workers = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
     let chunk = files.len().div_ceil(workers).max(1);
