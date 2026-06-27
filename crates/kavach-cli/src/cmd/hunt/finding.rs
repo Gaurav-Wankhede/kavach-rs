@@ -2,7 +2,7 @@
 
 /// Worst-practice severity, mapped from the source detector's tier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Severity {
+pub(super) enum Severity {
     Block,
     Warn,
     Advisory,
