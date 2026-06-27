@@ -117,10 +117,10 @@ fn block_for_missing_research(session: &kavach_session::SessionState) -> String 
         }
     };
     format!(
-        "[RESEARCH_FIRST:P0] BLOCKED. This turn requires research and this production \
-         write cites NO source (no URL / [RESEARCH] / SOURCE: marker, and the research \
-         cache is not done). No source -> no claim. {tail} If this looks wrong, READ this \
-         guard's source and fix the real cause — never route around it."
+        "[RESEARCH_FIRST:P0] CITE A SOURCE THEN RETRY. This production write needs a \
+         source (URL / [RESEARCH] / SOURCE: marker) — No source -> no claim. Do this now: \
+         {tail} If this looks wrong, READ this guard's source and fix the real cause — \
+         never route around it."
     )
 }
 
