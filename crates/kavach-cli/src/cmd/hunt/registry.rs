@@ -5,7 +5,7 @@ use kavach_patterns::{owasp_guard, rust_guard, silent_io_guard};
 
 /// Run every registered detector over one file's content, returning all hits.
 #[must_use]
-pub fn scan_file(path: &str, content: &str) -> Vec<Finding> {
+pub(super) fn scan_file(path: &str, content: &str) -> Vec<Finding> {
     let mut out = Vec::new();
     out.extend(silent_io(path, content));
     out.extend(owasp(path, content));
