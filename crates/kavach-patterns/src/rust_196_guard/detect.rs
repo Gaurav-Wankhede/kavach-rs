@@ -171,6 +171,8 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
         });
     }
 
+    super::detect_196::check(content, &mut violations);
+
     let has_safe_arith = content.contains("checked_") || content.contains("saturating_");
     if get_pattern(4).is_some_and(|p| p.is_match(content)) && !has_safe_arith {
         violations.push(Rust196Violation {
