@@ -3,7 +3,7 @@
 use crate::cmd::origin::role_query::Candidate;
 
 #[must_use]
-pub(super) fn score(consumed_by: &[String], c: &Candidate) -> f32 {
+pub(in crate::cmd::origin) fn score(consumed_by: &[String], c: &Candidate) -> f32 {
     if consumed_by.is_empty() {
         return 0.0;
     }
