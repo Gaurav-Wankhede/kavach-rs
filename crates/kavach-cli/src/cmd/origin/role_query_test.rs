@@ -11,7 +11,7 @@ fn parse_full_query() {
     }"#;
     let result = RoleQuery::parse(json).expect("parse failed");
     assert_eq!(result.role, "db_user");
-    assert_eq!(result.value_regex, Some("^postgres://".to_string()));
+    assert_eq!(result.value_regex, Some("^postgres://".to_owned()));
     assert_eq!(result.consumed_by, vec!["app1", "app2"]);
     assert_eq!(result.env_key_hints, vec!["DB_URL", "DATABASE_URI"]);
     assert_eq!(result.name_aliases, vec!["postgres_creds", "pg_auth"]);
