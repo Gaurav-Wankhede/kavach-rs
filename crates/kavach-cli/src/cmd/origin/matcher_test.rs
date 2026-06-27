@@ -1,5 +1,5 @@
-use super::matcher::sites_in;
-use super::site::Kind;
+use super::sites_in;
+use crate::cmd::origin::site::Kind;
 
 fn kinds(name: &str, src: &str) -> Vec<Kind> {
     sites_in(name, "x.rs", src).into_iter().map(|s| s.kind).collect()
