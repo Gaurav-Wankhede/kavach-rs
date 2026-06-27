@@ -201,12 +201,13 @@ pub(crate) enum Commands {
     },
     /// Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse file:line)
     #[command(
-        after_help = "Resolves where NAME is declared (env-var/const/config-field/fn/type/let), config-origins first. `kavach origin DATABASE_URL`."
+        after_help = "Resolves where NAME(s) are declared (env-var/const/config-field/fn/type/let/param/enum-variant), config-origins first.\n\nEXAMPLES:\n  kavach origin DATABASE_URL\n  kavach origin DATABASE_URL retry_limit\n  kavach origin DATABASE_URL --all\n  kavach origin --path crates/kavach-cli/src --query '{...}'"
     )]
     Origin {
-        /// Symbol name to resolve (var, const, fn, type, env-var, config field)
-        name: Option<String>,
+        /// Symbol name(s) to resolve (var, const, fn, type, env-var, config field, param, enum-variant)
+        names: Vec<String>,
         /// Directory to search (default: workspace root / current dir)
+        #[arg(long)]
         path: Option<std::path::PathBuf>,
         /// Role-query JSON: resolve by ROLE not NAME — see `kavach origin --help`
         #[arg(long)]
@@ -214,6 +215,9 @@ pub(crate) enum Commands {
         /// Read the role-query JSON from stdin instead of --query
         #[arg(long, conflicts_with = "query")]
         stdin: bool,
+        /// Show every site, not just the top one + count
+        #[arg(long)]
+        all: bool,
     },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
