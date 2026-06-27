@@ -7,7 +7,6 @@ mod validation;
 #[cfg(test)]
 mod blocking_test;
 
-#[path = "checks/config_test.rs"]
 #[cfg(test)]
 mod config_test;
 

@@ -37,5 +37,4 @@ pub fn count_critical(matches: &[PatternMatch]) -> usize {
 #[cfg(test)]
 #[path = "production_patterns_test.rs"]
 #[cfg(test)]
-#[path = "production_patterns_test.rs"]
 mod tests;

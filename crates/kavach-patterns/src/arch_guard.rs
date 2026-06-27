@@ -14,5 +14,4 @@ pub use types::{ArchFinding, ArchGuardOutcome, ArchScope};
 #[cfg(test)]
 #[path = "arch_guard_test.rs"]
 #[cfg(test)]
-#[path = "arch_guard_test.rs"]
 mod tests;

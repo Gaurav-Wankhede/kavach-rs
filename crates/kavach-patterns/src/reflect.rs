@@ -149,5 +149,4 @@ pub fn reflect_once<R: Reflector>(
 #[cfg(test)]
 #[path = "reflect_test.rs"]
 #[cfg(test)]
-#[path = "reflect_test.rs"]
 mod tests;

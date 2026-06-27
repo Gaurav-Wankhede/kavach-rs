@@ -101,5 +101,4 @@ pub fn validate(
 #[cfg(test)]
 #[path = "witness_receipt_test.rs"]
 #[cfg(test)]
-#[path = "witness_receipt_test.rs"]
 mod tests;

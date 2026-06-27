@@ -58,5 +58,4 @@ pub fn advise(file_path: &str, old: &str, new: &str) -> Option<String> {
 #[cfg(test)]
 #[path = "reuse_ladder_guard_test.rs"]
 #[cfg(test)]
-#[path = "reuse_ladder_guard_test.rs"]
 mod tests;

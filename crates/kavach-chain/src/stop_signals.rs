@@ -63,5 +63,4 @@ mod phase_e_action;
 #[cfg(test)]
 #[path = "stop_signals_test.rs"]
 #[cfg(test)]
-#[path = "stop_signals_test.rs"]
 mod tests;

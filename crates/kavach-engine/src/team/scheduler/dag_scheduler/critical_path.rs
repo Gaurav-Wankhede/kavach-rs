@@ -77,5 +77,4 @@ pub(super) fn prioritize_by_critical_path(
 #[cfg(test)]
 #[path = "critical_path_test.rs"]
 #[cfg(test)]
-#[path = "critical_path_test.rs"]
 mod tests;

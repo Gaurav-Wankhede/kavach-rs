@@ -63,5 +63,4 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Violation> {
 #[cfg(test)]
 #[path = "dedup_guard_test.rs"]
 #[cfg(test)]
-#[path = "dedup_guard_test.rs"]
 mod tests;

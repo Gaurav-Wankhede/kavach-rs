@@ -76,5 +76,4 @@ pub fn detect_unpersisted_decision(msg: &str, wrote_decision_this_turn: bool) ->
 #[cfg(test)]
 #[path = "unpersisted_decision_guard_test.rs"]
 #[cfg(test)]
-#[path = "unpersisted_decision_guard_test.rs"]
 mod tests;

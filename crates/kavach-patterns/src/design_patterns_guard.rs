@@ -85,5 +85,4 @@ pub fn detect(file_path: &str, content: &str) -> Vec<PatternViolation> {
 #[cfg(test)]
 #[path = "design_patterns_guard_test.rs"]
 #[cfg(test)]
-#[path = "design_patterns_guard_test.rs"]
 mod tests;

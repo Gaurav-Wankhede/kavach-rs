@@ -9,7 +9,6 @@ mod types;
 #[cfg(test)]
 #[path = "scheduler_test.rs"]
 #[cfg(test)]
-#[path = "scheduler_test.rs"]
 mod tests;
 pub use dag_scheduler::DagScheduler;
 pub use types::{DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};

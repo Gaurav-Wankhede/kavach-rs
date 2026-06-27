@@ -5,7 +5,6 @@
 #[path = "database_ops_guard/test_sql.rs"]
 mod test_sql;
 
-#[path = "database_ops_guard/test_nosql.rs"]
 mod test_nosql;
 
 #[path = "database_ops_guard/test_kv.rs"]

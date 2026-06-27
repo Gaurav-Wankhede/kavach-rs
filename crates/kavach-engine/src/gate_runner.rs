@@ -8,7 +8,6 @@ mod util;
 #[cfg(test)]
 #[path = "gate_runner_test.rs"]
 #[cfg(test)]
-#[path = "gate_runner_test.rs"]
 mod tests;
 use kavach_types::HookInput;
 

@@ -3,7 +3,6 @@
 #[path = "solid_guard/test_srp.rs"]
 mod test_srp;
 
-#[path = "solid_guard/test_ocp.rs"]
 mod test_ocp;
 
 #[path = "solid_guard/test_lsp.rs"]

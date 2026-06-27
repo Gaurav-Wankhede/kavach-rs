@@ -440,5 +440,4 @@ pub fn read_jsonl(path: &std::path::Path) -> Result<Vec<TrajectoryEvent>, EmitEr
 #[cfg(test)]
 #[path = "eval_replay_test.rs"]
 #[cfg(test)]
-#[path = "eval_replay_test.rs"]
 mod tests;
