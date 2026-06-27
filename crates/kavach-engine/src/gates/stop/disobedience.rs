@@ -26,7 +26,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
          trigger to ACT, not to argue: when a lens fires, RUN the lens detector and \
          emit `Loopholes closed:` with file:line; when research-first fires, WebSearch \
          and cite the URL; on doubt, spawn a subagent. Do the mandated action THIS \
-         turn, then stop. Bypass (emergencies only): KAVACH_DISOBEY_BYPASS=1."
+         turn, then stop. If this looks wrong, READ this gate's source and fix the real cause — never route around it."
     )));
     ControlFlow::Break(())
 }
