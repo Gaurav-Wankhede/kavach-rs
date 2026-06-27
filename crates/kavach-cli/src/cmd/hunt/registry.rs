@@ -37,7 +37,7 @@ fn owasp(path: &str, content: &str) -> Vec<Finding> {
             line: f.line,
             severity: Severity::Block,
             category: f.category.to_owned(),
-            snippet: String::new(),
+            snippet: f.pattern,
             fix: f.fix.to_owned(),
         })
         .collect()
@@ -51,9 +51,9 @@ fn rust(path: &str, content: &str) -> Vec<Finding> {
             file: path.to_owned(),
             line: v.line,
             severity: Severity::Advisory,
-            category: v.pattern.to_owned(),
-            snippet: String::new(),
-            fix: v.suggestion.to_owned(),
+            category: v.pattern.clone(),
+            snippet: v.pattern,
+            fix: v.fix,
         })
         .collect()
 }
