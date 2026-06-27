@@ -34,9 +34,9 @@ pub(super) fn run(json: &str, root: &Path) -> i32 {
         top.cand.line,
         top.score
     );
-    for s in ranked.iter().skip(1).take(4) {
-        let sh = if s.cand.is_secret { " [secret]" } else { "" };
-        println!("  also: '{}' at {}:{} (score {:.2}){sh}", s.cand.name, s.cand.file, s.cand.line, s.score);
+    let extra = ranked.len().saturating_sub(1);
+    if extra > 0 {
+        println!("  +{extra} more candidate(s) — tighten the query");
     }
     0
 }
