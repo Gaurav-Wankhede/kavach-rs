@@ -35,6 +35,9 @@ pub(super) fn get_pattern(idx: usize) -> Option<&'static Regex> {
     static P15: OnceLock<Option<Regex>> = OnceLock::new();
     static P16: OnceLock<Option<Regex>> = OnceLock::new();
     static P17: OnceLock<Option<Regex>> = OnceLock::new();
+    static P18: OnceLock<Option<Regex>> = OnceLock::new();
+    static P19: OnceLock<Option<Regex>> = OnceLock::new();
+    static P20: OnceLock<Option<Regex>> = OnceLock::new();
 
     let init = |lock: &'static OnceLock<Option<Regex>>, pat: &str| {
         lock.get_or_init(|| Regex::new(pat).ok()).as_ref()
