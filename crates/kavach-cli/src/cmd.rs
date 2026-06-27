@@ -11,6 +11,7 @@ pub(crate) mod db;
 pub(crate) mod deploy;
 mod doctor;
 mod hunt;
+mod origin;
 mod gates;
 pub(crate) mod harness_loop;
 mod heal;
