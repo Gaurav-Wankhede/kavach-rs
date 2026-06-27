@@ -61,10 +61,9 @@ fn finds_enum_variant() {
 }
 
 #[test]
-#[should_panic]
-fn invalid_regex_pattern_does_not_panic() {
-    // TEMPORARY: This test will fail until the expect() fix is applied.
-    // The re() function must handle invalid patterns gracefully via fallback.
-    // Once expect() is properly annotated, remove this should_panic.
-    let _k = kinds("X", "let invalid = [invalid(;");
+fn fallback_never_matches_regex_never_panics() {
+    // Validates the fallback regex $.^ is always compilable.
+    // This test ensures expect() on the fallback is justified.
+    let k = kinds("X", "let invalid = [invalid(;");
+    assert!(k.is_empty(), "fallback should never match");
 }
