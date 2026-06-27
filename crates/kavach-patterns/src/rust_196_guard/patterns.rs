@@ -84,6 +84,12 @@ pub(super) fn get_pattern(idx: usize) -> Option<&'static Regex> {
             &P17,
             r"#\[(?:export_name|link_name|link_section)[\s\S]{0,120}#\[(?:export_name|link_name|link_section)",
         ),
+        19 => init(&P18, r"assert!\s*\(\s*matches!\s*\("),
+        20 => init(&P19, r"[^-\w]-\s+-\s*\w"),
+        21 => init(
+            &P20,
+            r"struct\s+\w+\s*\{[\s\S]{0,80}\bstart\s*:\s*usize\s*,[\s\S]{0,40}\bend\s*:\s*usize\s*,",
+        ),
         _ => None,
     }
 }
