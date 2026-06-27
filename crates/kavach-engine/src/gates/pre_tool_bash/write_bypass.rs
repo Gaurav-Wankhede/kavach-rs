@@ -9,7 +9,7 @@
 mod detect;
 mod psql;
 mod redirect;
-mod segment;
+pub(super) mod segment;
 mod source_target;
 mod sqlx_migrate;
 mod tool_write;
