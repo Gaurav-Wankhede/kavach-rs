@@ -42,3 +42,15 @@ fn ignores_a_mere_usage_not_a_declaration() {
     let sites = sites_in("MAX_RETRIES", "x.rs", "if attempts < MAX_RETRIES { retry(); }");
     assert!(sites.is_empty(), "a usage must not be reported as an origin");
 }
+
+#[test]
+fn finds_fn_param() {
+    let k = kinds("timeout", "fn connect(timeout: u32) {}");
+    assert!(k.contains(&Kind::Param));
+}
+
+#[test]
+fn finds_enum_variant() {
+    let k = kinds("EnvVar", "    EnvVar,");
+    assert!(k.contains(&Kind::Variant));
+}
