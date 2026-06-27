@@ -129,6 +129,22 @@ fn cache_is_done(session_id: &str) -> bool {
     kavach_advisor::read_findings(session_id).is_some_and(|f| f.status == "done")
 }
 
+/// True when every non-blank changed line is a comment/attribute (no executable code).
+fn is_comment_only(changed: &str) -> bool {
+    let mut saw = false;
+    for line in changed.lines() {
+        let t = line.trim_start();
+        if t.is_empty() {
+            continue;
+        }
+        saw = true;
+        if !(t.starts_with("//") || t.starts_with("#[") || t.starts_with("#!")) {
+            return false;
+        }
+    }
+    saw
+}
+
 /// True when the content cites a source URL or carries a research/RCA marker.
 fn content_has_evidence(content: &str) -> bool {
     content.contains("http://")
