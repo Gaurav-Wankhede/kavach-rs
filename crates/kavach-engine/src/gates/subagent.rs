@@ -62,6 +62,13 @@ pub(crate) fn run_start(input: &HookInput) -> Result<(), EngineError> {
         ],
     );
 
+    context.push('\n');
+    context.push_str(&crate::gates::directive_cache::dyn_directive(
+        "subagent.rules-contract",
+        SUBAGENT_RULES_CONTRACT,
+    ));
+    context.push('\n');
+
     let modules = kavach_config::load_modules(&["agents", "model-routing"]);
     if !modules.is_empty() {
         context.push_str("\n[MODULE:LAZY_LOADED]\n");
