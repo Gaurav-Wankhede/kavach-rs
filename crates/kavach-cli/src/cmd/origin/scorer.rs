@@ -30,6 +30,8 @@ pub(super) fn rank(q: &RoleQuery, cands: Vec<Candidate>) -> Vec<Scored> {
     out
 }
 
+// SOURCE: rust-lang.github.io/rust-clippy/master/index.html#float_arithmetic
+#[expect(clippy::float_arithmetic, reason = "relevance scoring weights, not money or safety-critical")]
 fn score_one(q: &RoleQuery, c: &Candidate) -> f32 {
     let val = signals::value::score(q.value_regex.as_deref(), c.value.as_deref());
     let cons = signals::consumption::score(&q.consumed_by, c);
