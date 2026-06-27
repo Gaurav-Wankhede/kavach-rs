@@ -1,6 +1,6 @@
 use super::*;
 
-#[path = "inline_test_rule_tests.rs"]
+#[path = "nano_file_guard/inline_test_rule_tests.rs"]
 mod inline_test_rule;
 
 #[test]

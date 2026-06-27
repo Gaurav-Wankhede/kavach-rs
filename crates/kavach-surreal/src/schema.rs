@@ -5,7 +5,7 @@ mod memory;
 mod migrations;
 
 #[cfg(test)]
-#[path = "schema/tests.rs"]
+#[path = "schema_test.rs"]
 mod tests;
 
 use crate::error::Result;

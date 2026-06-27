@@ -20,7 +20,7 @@ mod shape;
 mod upsert;
 
 #[cfg(test)]
-#[path = "flow_dag/tests.rs"]
+#[path = "flow_dag_test.rs"]
 mod tests;
 
 pub use fetch::{fetch_flow, list_flows};

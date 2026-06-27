@@ -7,7 +7,7 @@ mod status;
 mod upsert;
 
 #[cfg(test)]
-#[path = "write/tests.rs"]
+#[path = "write_test.rs"]
 mod tests;
 
 pub use events::{append_event, rotate_events};

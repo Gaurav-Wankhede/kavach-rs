@@ -24,5 +24,5 @@ pub use dispatch::{detect, warn_count};
 pub use types::{DsaClass, DsaSeverity, DsaViolation};
 
 #[cfg(test)]
-#[path = "dsa_guard/tests.rs"]
+#[path = "dsa_guard_test.rs"]
 mod tests;

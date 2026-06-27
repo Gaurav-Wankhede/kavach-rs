@@ -8,5 +8,5 @@ pub use expr::FilterExpr;
 pub use value::FilterValue;
 
 #[cfg(test)]
-#[path = "filter/tests.rs"]
+#[path = "filter_test.rs"]
 mod tests;

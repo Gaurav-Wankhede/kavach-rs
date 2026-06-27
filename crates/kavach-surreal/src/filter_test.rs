@@ -1,4 +1,4 @@
-use crate::filter::{FilterBuilder, FilterExpr, FilterValue};
+use super::*;
 
 #[test]
 fn test_eq_filter() {
@@ -127,4 +127,14 @@ fn test_string_escape() {
         value: FilterValue::String("it's a test".to_owned()),
     };
     assert_eq!(filter.to_surql(), "title = 'it\\'s a test'");
+}
+
+#[test]
+fn injection_backslash_escaped_before_quote() {
+    // CWE-89 regression: a backslash-quote payload must escape the backslash
+    // FIRST, then the quote — else `\' ` collapses to a real `'` and breaks out.
+    let v = FilterValue::String("a\\'b".to_owned());
+    assert_eq!(v.to_surql(), "'a\\\\\\'b'");
+    let payload = FilterValue::String("\\' OR 1=1 --".to_owned());
+    assert_eq!(payload.to_surql(), "'\\\\\\' OR 1=1 --'");
 }

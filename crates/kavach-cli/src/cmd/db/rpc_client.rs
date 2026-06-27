@@ -591,5 +591,5 @@ pub(super) fn raw_query(query: &str) -> Result<kavach_rpc::methods::db::RawQuery
 }
 
 #[cfg(test)]
-#[path = "rpc_client/tests.rs"]
+#[path = "rpc_client_test.rs"]
 mod tests;

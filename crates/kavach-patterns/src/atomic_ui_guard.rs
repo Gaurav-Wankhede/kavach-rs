@@ -5,7 +5,7 @@ mod types;
 mod util;
 
 #[cfg(test)]
-#[path = "atomic_ui_guard/tests.rs"]
+#[path = "atomic_ui_guard_test.rs"]
 mod tests;
 
 pub use types::{AtomicSeverity, AtomicViolation};

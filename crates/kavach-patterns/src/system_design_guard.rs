@@ -8,5 +8,5 @@ pub use detect::detect;
 pub use types::{SysSeverity, SysViolation};
 
 #[cfg(test)]
-#[path = "system_design_guard/tests.rs"]
+#[path = "system_design_guard_test.rs"]
 mod tests;
