@@ -1,3 +1,4 @@
+// SOURCE: ~/.claude/CLAUDE.md Code form § nano-files: tests in separate mapped files
 use crate::state::SessionState;
 
 impl SessionState {
@@ -19,27 +20,5 @@ impl SessionState {
     #[must_use]
     pub const fn has_task(&self) -> bool {
         !self.current_task.is_empty()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::state::SessionState;
-
-    #[test]
-    fn test_add_file_modified() {
-        let mut s = SessionState::default();
-        assert!(s.add_file_modified("a.rs"));
-        assert!(!s.add_file_modified("a.rs"));
-        assert!(s.add_file_modified("b.rs"));
-        assert_eq!(s.files_modified.len(), 2);
-    }
-
-    #[test]
-    fn test_has_task() {
-        let mut s = SessionState::default();
-        assert!(!s.has_task());
-        s.current_task = "test".into();
-        assert!(s.has_task());
     }
 }
