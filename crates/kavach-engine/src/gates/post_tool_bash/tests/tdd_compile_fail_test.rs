@@ -46,8 +46,8 @@ fn cargo_nextest_compile_error_classifies_as_failure() {
     drop(handle(&input, &mut session));
 
     assert!(
-        session.tdd_red_units.contains(&"foo_test".to_owned()),
-        "compile-error on foo_test must record it RED in tdd_red_units; got {:?}",
+        session.tdd_red_units.contains(&"foo".to_owned()),
+        "compile-error on foo_test must record its production stem (foo) RED in tdd_red_units; got {:?}",
         session.tdd_red_units
     );
 }
