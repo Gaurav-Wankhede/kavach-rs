@@ -15,6 +15,21 @@ Ask the advisor (Haiku executor + Opus advisor)
 | `<prompt>` | Prompt to send to the advisor |  |
 | `--max-uses` | Maximum advisor consultations (default 3) | 3 |
 
+## `kavach audit`
+
+Unified zero-LLM code auditor: one command over all four lenses (yagni · self · worst-practice · security)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | Directory to scan (default: workspace root / current dir) |  |
+| `--lens` | Which lens(es) to run: all \| code \| self \| security | all |
+| `--deep` | Also run the rustc + clippy backend (slower; requires a compilable cargo project) |  |
+| `--fix-cards` | Write self-heal cards for security-lens findings (opt-in; default report-only) |  |
+
+```
+Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM.
+```
+
 ## `kavach bg`
 
 Bg-mode: declare a CC 2.1.152+ /bg background-session intent keyed to a roadmap unit. SOURCE: roadmap.unit.kavach-bg-session · code.claude.com/docs/en/changelog 2.1.152
