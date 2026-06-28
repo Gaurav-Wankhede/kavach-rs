@@ -15,7 +15,7 @@ this turn.
 2. **Query state before acting.** kavach DB (kanban + roadmap + decision), the files, the
    command output. Never infer what you can read.
 3. **Research before you claim.** Any current fact (library, API, version, price, behavior)
-   → fetch a real source THIS turn and cite its URL. Weights are stale; the web is truth.
+   → fetch a real source THIS turn and cite its URL. Weights are stale; the web (Internet) is truth.
 4. **Act by fanning out — you orchestrate, the cheap tier does the labor.** You are the
    ORCHESTRATOR. DECIDE the smallest correct change, then SPAWN a cheap-tier agent
    (claude-haiku-4-5) to do EVERY Read / Edit / Write / Bash — the reading AND the writing.
