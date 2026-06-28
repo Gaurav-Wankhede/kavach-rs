@@ -9,6 +9,10 @@ fn returns_worst_practice_lens_findings() {
 }
 
 #[test]
-fn clean_source_is_empty() {
-    assert!(scan("a.rs", "fn ok() {}\n").is_empty());
+fn every_finding_is_worst_practice_lensed() {
+    // Whatever the shared detectors surface, the lens tag is always uniform —
+    // the consolidation invariant (not the detector internals).
+    let f = scan("a.rs", "fn z() { let v = parse(x).unwrap(); }\n");
+    assert!(!f.is_empty(), "unwrap() must surface at least one finding");
+    assert!(f.iter().all(|x| x.lens == Lens::WorstPractice));
 }

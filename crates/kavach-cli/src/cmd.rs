@@ -92,6 +92,17 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Oversized { action } => oversized::run(action),
         Commands::TailwindPlus { action } => tailwind_plus::run(action),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
+        Commands::Audit {
+            path,
+            lens,
+            deep,
+            fix_cards,
+        } => audit::run(
+            &path.unwrap_or_else(doctor_workspace_root),
+            deep,
+            audit::lens::Selection::from_flag(&lens),
+            fix_cards,
+        ),
         Commands::Hunt { path, deep } => {
             hunt::run(&path.unwrap_or_else(doctor_workspace_root), deep)
         }

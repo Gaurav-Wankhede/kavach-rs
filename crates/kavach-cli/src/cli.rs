@@ -191,6 +191,23 @@ pub(crate) enum Commands {
         after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
     )]
     Doctor,
+    /// Unified zero-LLM code auditor: one command over all four lenses (yagni · self · worst-practice · security)
+    #[command(
+        after_help = "Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM."
+    )]
+    Audit {
+        /// Directory to scan (default: workspace root / current dir)
+        path: Option<std::path::PathBuf>,
+        /// Which lens(es) to run: all | code | self | security
+        #[arg(long, default_value = "all")]
+        lens: String,
+        /// Also run the rustc + clippy backend (slower; requires a compilable cargo project)
+        #[arg(long)]
+        deep: bool,
+        /// Write self-heal cards for security-lens findings (opt-in; default report-only)
+        #[arg(long)]
+        fix_cards: bool,
+    },
     /// Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice signatures
     #[command(
         after_help = "Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.\n\nUSE THIS INSTEAD OF grepping for bug patterns by hand — zero LLM tokens."

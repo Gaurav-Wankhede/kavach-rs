@@ -1,19 +1,13 @@
 //! Audit lenses — one detector family per file, all returning unified Findings.
+mod selection;
 pub(crate) mod security;
 pub(crate) mod silent_fail;
 pub(crate) mod worst_practice;
 pub(crate) mod yagni;
 
-use super::finding::Finding;
+pub(crate) use selection::Selection;
 
-/// Which lenses to run. `All` runs every lens (default).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Selection {
-    Code,
-    SelfAudit,
-    Security,
-    All,
-}
+use super::finding::Finding;
 
 /// Run the selected lenses over one file's content.
 #[must_use]
