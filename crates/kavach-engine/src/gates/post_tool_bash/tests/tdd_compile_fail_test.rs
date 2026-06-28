@@ -103,7 +103,7 @@ fn cargo_nextest_with_host_error_flag_on_compile_fail_records_red() {
     session.session_id = "test_compile_err4".to_owned();
     session.files_modified_this_turn.push("src/qux_test.rs".to_owned());
 
-    let mut tool_input = std::collections::HashMap::new();
+    let mut tool_input = HashMap::new();
     tool_input.insert(
         "command".to_owned(),
         serde_json::Value::String("cargo nextest run -p my-crate qux_test".to_owned()),
