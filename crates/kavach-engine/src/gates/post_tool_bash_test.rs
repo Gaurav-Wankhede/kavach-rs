@@ -1,5 +1,9 @@
 //! `post_tool_bash` tests, split by family: output classifiers vs scope/clear.
+#[path = "post_tool_bash/tests/capture.rs"]
 mod capture;
+#[path = "post_tool_bash/tests/classify.rs"]
 mod classify;
+#[path = "post_tool_bash/tests/scope.rs"]
 mod scope;
+#[path = "post_tool_bash/tests/tdd_compile_fail_test.rs"]
 mod tdd_compile_fail_test;
