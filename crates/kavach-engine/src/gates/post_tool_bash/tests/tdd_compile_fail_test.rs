@@ -77,3 +77,57 @@ fn cargo_test_compile_error_classifies_as_failure() {
         session.tdd_red_units
     );
 }
+
+#[test]
+fn cargo_nextest_with_no_output_on_compile_fail_records_red() {
+    let mut session = kavach_session::SessionState::default();
+    session.session_id = "test_compile_err3".to_owned();
+    session.files_modified_this_turn.push("src/baz_test.rs".to_owned());
+
+    let input = bash_input_with_output(
+        "cargo nextest run -p my-crate baz_test",
+        "",
+    );
+    drop(handle(&input, &mut session));
+
+    assert!(
+        session.tdd_red_units.is_empty(),
+        "empty output with no host_error flag should NOT record RED; got {:?}",
+        session.tdd_red_units
+    );
+}
+
+#[test]
+fn cargo_nextest_with_host_error_flag_on_compile_fail_records_red() {
+    let mut session = kavach_session::SessionState::default();
+    session.session_id = "test_compile_err4".to_owned();
+    session.files_modified_this_turn.push("src/qux_test.rs".to_owned());
+
+    let mut tool_input = std::collections::HashMap::new();
+    tool_input.insert(
+        "command".to_owned(),
+        serde_json::Value::String("cargo nextest run -p my-crate qux_test".to_owned()),
+    );
+    let mut resp = std::collections::HashMap::new();
+    resp.insert(
+        "output".to_owned(),
+        serde_json::Value::String("".to_owned()),
+    );
+    resp.insert(
+        "is_error".to_owned(),
+        serde_json::Value::Bool(true),
+    );
+    let input = HookInput {
+        tool_name: "Bash".to_owned(),
+        tool_input: Some(tool_input),
+        tool_response: Some(resp),
+        ..HookInput::default()
+    };
+    drop(handle(&input, &mut session));
+
+    assert!(
+        session.tdd_red_units.contains(&"qux".to_owned()),
+        "host_error flag (no output needed) must record RED; got {:?}",
+        session.tdd_red_units
+    );
+}
