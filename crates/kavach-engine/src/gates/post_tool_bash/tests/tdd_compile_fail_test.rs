@@ -6,7 +6,6 @@
 use crate::gates::post_tool_bash::handle;
 use kavach_types::HookInput;
 use std::collections::HashMap;
-use HashMap as HM;
 
 fn bash_input_with_output(command: &str, output: &str) -> HookInput {
     let mut tool_input = HashMap::new();
