@@ -2,26 +2,8 @@
 //! the RED is recorded. Tests the full path from Write hook → files_modified_this_turn →
 //! PostToolUse:Bash record_red_units.
 use crate::gates::post_tool_bash::handle;
-use crate::gates::post_write;
 use kavach_types::HookInput;
 use std::collections::HashMap;
-
-fn write_input(file_path: &str, content: &str) -> HookInput {
-    let mut tool_input = HashMap::new();
-    tool_input.insert(
-        "file_path".to_owned(),
-        serde_json::Value::String(file_path.to_owned()),
-    );
-    tool_input.insert(
-        "content".to_owned(),
-        serde_json::Value::String(content.to_owned()),
-    );
-    HookInput {
-        tool_name: "Write".to_owned(),
-        tool_input: Some(tool_input),
-        ..HookInput::default()
-    }
-}
 
 fn bash_input_with_output(command: &str, output: &str) -> HookInput {
     let mut tool_input = HashMap::new();
