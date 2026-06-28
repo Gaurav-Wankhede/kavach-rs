@@ -108,7 +108,7 @@ fn cargo_nextest_with_host_error_flag_on_compile_fail_records_red() {
         "command".to_owned(),
         serde_json::Value::String("cargo nextest run -p my-crate qux_test".to_owned()),
     );
-    let mut resp = std::collections::HashMap::new();
+    let mut resp = HashMap::new();
     resp.insert(
         "output".to_owned(),
         serde_json::Value::String("".to_owned()),
