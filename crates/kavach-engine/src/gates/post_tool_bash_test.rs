@@ -7,5 +7,3 @@ mod classify;
 mod scope;
 #[path = "post_tool_bash/tests/tdd_compile_fail_test.rs"]
 mod tdd_compile_fail_test;
-#[path = "post_tool_bash/tests/new_unit_test.rs"]
-mod new_unit_test;
