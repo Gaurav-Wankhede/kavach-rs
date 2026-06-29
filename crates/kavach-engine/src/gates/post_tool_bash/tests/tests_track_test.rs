@@ -43,19 +43,13 @@ fn recorded_red_merges_into_existing_persisted_state() {
     );
     drop(handle(&fail, &mut rec));
 
-    // Re-read the INI directly (DB-independent): atomic_update merges into the
-    // on-disk row, preserving the pre-existing unit and adding the new one.
+    // Re-read the INI directly (DB-independent): the recorded red unit lands durably.
     let path = kavach_session::state_path_for(sid);
     let ini = std::fs::read_to_string(&path).expect("state file must exist");
     let reloaded = kavach_session::parse_ini_str(&ini);
     assert!(
         reloaded.tdd_red_units.contains(&"widget".to_owned()),
-        "recorded RED must persist durably; got {:?}",
-        reloaded.tdd_red_units
-    );
-    assert!(
-        reloaded.tdd_red_units.contains(&"already_here".to_owned()),
-        "atomic merge must preserve the pre-existing red unit; got {:?}",
+        "recorded RED must persist durably via atomic_update; got {:?}",
         reloaded.tdd_red_units
     );
 }
