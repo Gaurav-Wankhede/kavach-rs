@@ -117,6 +117,34 @@ fn bypass_env_disables_the_gate() {
     }
 }
 #[test]
+fn allows_pure_relocation_marked_intentional() {
+    // A §MICRO_FILE split relocates already-tested code into a smaller nano-file —
+    // it adds NO new behavior, so TDD's Red (which applies to new behavior only)
+    // owes nothing. The explicit `// kavach:relocated` marker declares the intent
+    // and exempts the destination write. SOURCE: martinfowler.com/bliki/TestDrivenDevelopment.html.
+    let s = SessionState::default();
+    let c = ctx(
+        "crates/foo/src/cors_layer.rs",
+        "// kavach:relocated from cors.rs (§MICRO_FILE split)\npub fn layer() {}",
+    );
+    assert!(
+        check(&c, &s).is_none(),
+        "a marked pure relocation owes no Red"
+    );
+}
+#[test]
+fn relocation_marker_does_not_excuse_new_behavior_with_inline_test() {
+    // The relocation carve-out must NOT become a blanket bypass: an inline #[test]
+    // smuggled in under the marker is still the forbidden in-file test.
+    let s = SessionState::default();
+    let c = ctx(
+        "crates/foo/src/cors_layer.rs",
+        "// kavach:relocated\npub fn layer() {}\n#[test]\nfn t() {}",
+    );
+    let out = check(&c, &s).expect("inline test still blocks even under relocation marker");
+    assert!(out.contains("inline test"), "names the violation: {out}");
+}
+#[test]
 fn unit_stem_strips_dir_and_extension() {
     assert_eq!(unit_stem("crates/foo/src/widget.rs"), "widget");
     assert_eq!(unit_stem("bare.rs"), "bare");
