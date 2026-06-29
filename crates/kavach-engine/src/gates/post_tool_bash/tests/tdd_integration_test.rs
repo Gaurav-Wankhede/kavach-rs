@@ -37,12 +37,17 @@ fn recorded_red_survives_a_concurrent_blind_save_of_stale_state() {
     stale.session_id = sid.to_owned();
     stale.save().ok();
 
-    // Recorder loads its own copy, records RED, persists (the unit under fix).
+    // Recorder runs via the REAL public handle() on a failing test run — records
+    // RED, persists (the unit under fix).
     let mut rec = kavach_session::SessionState::new("/tmp/race");
     rec.session_id = sid.to_owned();
     rec.files_modified_this_turn
         .push("crates/foo/src/widget_test.rs".to_owned());
-    handle::record_red_units_for_test(&mut rec);
+    let fail = bash_input_with_output(
+        "cargo nextest run -p foo widget_test",
+        "test result: FAILED. 0 passed; 1 failed",
+    );
+    drop(handle::handle(&fail, &mut rec));
 
     // The stale hook blind-saves AFTER the recorder — the lost-update window. A
     // merge-under-lock persist must NOT let this erase the recorded red unit.
