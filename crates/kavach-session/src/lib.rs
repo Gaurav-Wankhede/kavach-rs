@@ -44,6 +44,8 @@ pub use get_or_create::{
     get_or_create_session, get_or_create_session_for, resolved_session_id, set_session_context,
 };
 pub use load::{load_session_state, load_session_state_for, parse_ini_str};
+// SOURCE: doc.rust-lang.org/reference/items/use-declarations.html (re-export for test/tooling).
+pub use paths::state_path_for;
 pub use mistake_ledger::{
     Mistake, RecordOutcome, record as record_mistake, record_and_surface as record_mistake_surfaced,
 };
