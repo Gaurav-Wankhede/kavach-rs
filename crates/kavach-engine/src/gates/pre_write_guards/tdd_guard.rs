@@ -35,9 +35,11 @@ pub(super) fn check(
              source and fix the real cause — never route around it."
         ));
     }
+    if is_relocation(ctx.content) {
+        return None;
+    }
     // Transitional fallback: the unit's test file was touched but no Red was
-    // observed yet — direct the agent to RUN it and watch it fail, naming the
-    // missing proof explicitly rather than silently passing on a touch.
+    // observed yet — direct the agent to RUN it and watch it fail.
     let touched = session
         .files_modified_this_turn
         .iter()
