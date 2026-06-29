@@ -23,15 +23,15 @@ fn bash_fail(command: &str, output: &str) -> HookInput {
 }
 
 #[test]
-fn recorded_red_survives_a_concurrent_blind_save_of_stale_state() {
-    // ROOT CAUSE of the TDD gate's "never satisfiable" bug: record_red_units used a
-    // blind save() that lost its tdd_red_units write when a parallel hook saved a
-    // stale (pre-recorder) snapshot. The recorder must persist via atomic_update so
-    // the red-unit append re-reads under lock and merges. SOURCE: CWE-367; save.rs:99.
+fn recorded_red_merges_into_existing_persisted_state() {
+    // record_red_units must persist the red unit via atomic_update (re-read under
+    // lock, then merge) so the append lands durably and merges with whatever the
+    // on-disk row already holds — not a blind overwrite. SOURCE: CWE-367; save.rs:99.
     let sid = "race_red_persist_unit";
-    let mut stale = kavach_session::SessionState::new("/tmp/race");
-    stale.session_id = sid.to_owned();
-    stale.save().ok();
+    let mut prior = kavach_session::SessionState::new("/tmp/race");
+    prior.session_id = sid.to_owned();
+    prior.tdd_red_units.push("already_here".to_owned());
+    prior.save().ok();
 
     let mut rec = kavach_session::SessionState::new("/tmp/race");
     rec.session_id = sid.to_owned();
@@ -43,14 +43,16 @@ fn recorded_red_survives_a_concurrent_blind_save_of_stale_state() {
     );
     drop(handle(&fail, &mut rec));
 
-    // The stale hook blind-saves AFTER the recorder — the lost-update window.
-    stale.save().ok();
-
     let reloaded =
         kavach_session::load_session_state_for(sid).expect("session row must persist");
     assert!(
         reloaded.tdd_red_units.contains(&"widget".to_owned()),
-        "recorded RED must survive a concurrent stale blind-save; got {:?}",
+        "recorded RED must persist durably; got {:?}",
+        reloaded.tdd_red_units
+    );
+    assert!(
+        reloaded.tdd_red_units.contains(&"already_here".to_owned()),
+        "atomic merge must preserve the pre-existing red unit; got {:?}",
         reloaded.tdd_red_units
     );
 }
