@@ -35,14 +35,9 @@ pub(crate) fn check(
 ) -> GuardResult {
     let mut acc = Acc::default();
     let mut runner = kavach_chain::Runner::new(&session.session_id);
-    // TDD runs FIRST: no production code lands without a test-first (Red) signal.
-    if let Some(block) = tdd_guard::check(ctx, session) {
-        return GuardResult {
-            block: Some(block),
-            algo_advisory: None,
-            runner_compact: runner.to_compact(),
-            p1_advisories: Vec::new(),
-        };
+    // TDD is advisory, never a block. SOURCE: decision.tdd-gate-is-advisory-not-block.
+    if let Some(nudge) = tdd_guard::check(ctx, session) {
+        acc.p1_advisories.push(nudge);
     }
     // Comment-bloat BLOCK: deny only a write that INTRODUCES new bloat (pre-existing
     // bloat stays editable). Escape: KAVACH_COMMENT_BLOCK_OFF=1.
