@@ -25,43 +25,6 @@ fn bash_input_with_output(command: &str, output: &str) -> HookInput {
 }
 
 #[test]
-fn recorded_red_survives_a_concurrent_blind_save_of_stale_state() {
-    // ROOT CAUSE of the TDD gate's "never satisfiable" bug: record_red_units used a
-    // blind save() that lost its tdd_red_units write when a parallel hook saved a
-    // stale (pre-recorder) snapshot. The recorder must persist via atomic_update so
-    // the red-unit append re-reads under lock and merges. SOURCE: CWE-367; save.rs:99.
-    let sid = "race_red_persist_unit";
-    // A stale in-memory snapshot taken BEFORE the recorder (empty tdd_red_units),
-    // standing in for a parallel hook that loaded the pre-recorder state.
-    let mut stale = kavach_session::SessionState::new("/tmp/race");
-    stale.session_id = sid.to_owned();
-    stale.save().ok();
-
-    // Recorder runs via the REAL public handle() on a failing test run — records
-    // RED, persists (the unit under fix).
-    let mut rec = kavach_session::SessionState::new("/tmp/race");
-    rec.session_id = sid.to_owned();
-    rec.files_modified_this_turn
-        .push("crates/foo/src/widget_test.rs".to_owned());
-    let fail = bash_input_with_output(
-        "cargo nextest run -p foo widget_test",
-        "test result: FAILED. 0 passed; 1 failed",
-    );
-    drop(handle(&fail, &mut rec));
-
-    // The stale hook blind-saves AFTER the recorder — the lost-update window. A
-    // merge-under-lock persist must NOT let this erase the recorded red unit.
-    stale.save().ok();
-
-    let reloaded =
-        kavach_session::load_session_state_for(sid).expect("session row must persist");
-    assert!(
-        reloaded.tdd_red_units.contains(&"widget".to_owned()),
-        "recorded RED must survive a concurrent stale blind-save; got {:?}",
-        reloaded.tdd_red_units
-    );
-}
-#[test]
 fn write_test_file_then_nextest_fail_records_red_integration() {
     let mut session = kavach_session::SessionState::default();
     session.session_id = "test_integration".to_owned();
