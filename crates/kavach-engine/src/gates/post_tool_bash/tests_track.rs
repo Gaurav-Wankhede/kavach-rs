@@ -55,12 +55,16 @@ pub(super) fn record_red_units(session: &mut SessionState) {
     if stems.is_empty() {
         return;
     }
-    for s in stems {
-        if !session.tdd_red_units.contains(&s) {
-            session.tdd_red_units.push(s);
-        }
-    }
-    session.save().ok();
+    // atomic_update merges under lock vs lost-update. SOURCE: decision.tdd.red-recorder-atomic-merge.
+    session
+        .atomic_update(|s| {
+            for stem in &stems {
+                if !s.tdd_red_units.contains(stem) {
+                    s.tdd_red_units.push(stem.clone());
+                }
+            }
+        })
+        .ok();
 }
 
 /// Clear only pending files matching the test scope.
