@@ -138,6 +138,14 @@ pub(crate) fn production_stem_of(test_path: &str) -> Option<String> {
     }
     None
 }
+/// True when the first non-blank line is a `// kavach:relocated` comment (pure move, owes no Red).
+fn is_relocation(content: &str) -> bool {
+    content
+        .lines()
+        .map(str::trim_start)
+        .find(|l| !l.is_empty())
+        .is_some_and(|l| l.starts_with("//") && l.contains("kavach:relocated"))
+}
 /// True when the content carries an inline test (forbidden in production files):
 /// using the `#[` attribute markers. A `#[path]` to an external file is NOT inline.
 pub(super) fn has_inline_test(content: &str) -> bool {
