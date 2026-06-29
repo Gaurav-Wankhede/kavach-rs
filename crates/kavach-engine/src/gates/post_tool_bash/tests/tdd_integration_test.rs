@@ -30,23 +30,24 @@ fn recorded_red_survives_a_concurrent_blind_save_of_stale_state() {
     // blind save() that lost its tdd_red_units write when a parallel hook saved a
     // stale (pre-recorder) snapshot. The recorder must persist via atomic_update so
     // the red-unit append re-reads under lock and merges. SOURCE: CWE-367; save.rs:99.
-    let sid = "race_red_persist";
-    // Stale snapshot A: loaded before the recorder ran (empty tdd_red_units).
+    let sid = "race_red_persist_unit";
+    // A stale in-memory snapshot taken BEFORE the recorder (empty tdd_red_units),
+    // standing in for a parallel hook that loaded the pre-recorder state.
     let mut stale = kavach_session::SessionState::new("/tmp/race");
     stale.session_id = sid.to_owned();
     stale.save().ok();
 
-    // Recorder runs on its own load, records RED, persists.
+    // Recorder loads its own copy, records RED, persists (the unit under fix).
     let mut rec = kavach_session::SessionState::new("/tmp/race");
     rec.session_id = sid.to_owned();
     rec.files_modified_this_turn
         .push("crates/foo/src/widget_test.rs".to_owned());
-    handle::__test_record_red_units(&mut rec);
+    handle::record_red_units_for_test(&mut rec);
 
-    // The stale hook now blind-saves AFTER the recorder — the lost-update window.
+    // The stale hook blind-saves AFTER the recorder — the lost-update window. A
+    // merge-under-lock persist must NOT let this erase the recorded red unit.
     stale.save().ok();
 
-    // The durable state must STILL carry the red unit.
     let reloaded =
         kavach_session::load_session_state_for(sid).expect("session row must persist");
     assert!(
