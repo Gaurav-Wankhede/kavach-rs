@@ -47,7 +47,7 @@ fn recorded_red_survives_a_concurrent_blind_save_of_stale_state() {
         "cargo nextest run -p foo widget_test",
         "test result: FAILED. 0 passed; 1 failed",
     );
-    drop(handle::handle(&fail, &mut rec));
+    drop(handle(&fail, &mut rec));
 
     // The stale hook blind-saves AFTER the recorder — the lost-update window. A
     // merge-under-lock persist must NOT let this erase the recorded red unit.
