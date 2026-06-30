@@ -13,14 +13,22 @@
 //! Every spool/replay error is best-effort (logged via `tracing`, never
 //! propagated) — the gate's non-blocking contract is preserved end to end.
 use kavach_session::{SpooledWrite, drain_write_spool, enqueue_write_spool};
-/// Call `method` with `params`; on transport/daemon error, append it to the
-/// durable spool so the next successful Stop replays it instead of losing the
-/// learning signal. Never returns an error — the worst case is a best-effort
-/// spool-write failure that is logged and dropped (same floor as the old
-/// discard, but now only after the live call AND the durable append both fail).
+use std::time::Duration;
+/// Bounded wait; the Stop hook never blocks past this. SOURCE: doc.rust-lang.org/std/sync/mpsc/
+const CALL_TIMEOUT: Duration = Duration::from_secs(3);
+/// Run the blocking RPC detached; true only if it finished OK within CALL_TIMEOUT.
+fn call_within_timeout(method: &str, params: &serde_json::Value) -> bool {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let (m, p) = (method.to_owned(), params.clone());
+    std::thread::spawn(move || {
+        let res: Result<serde_json::Value, _> = kavach_rpc::client::call(&m, Some(p));
+        tx.send(res.is_ok()).ok();
+    });
+    matches!(rx.recv_timeout(CALL_TIMEOUT), Ok(true))
+}
+/// On error OR timeout, spool `method` for idempotent replay — never blocks the Stop hook.
 pub(crate) fn call_or_spool(method: &str, params: &serde_json::Value) {
-    let res: Result<serde_json::Value, _> = kavach_rpc::client::call(method, Some(params.clone()));
-    if res.is_ok() {
+    if call_within_timeout(method, params) {
         return;
     }
     let Ok(params_json) = serde_json::to_string(params) else {
