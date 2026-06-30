@@ -133,7 +133,7 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
     // read projects the dependency graph (tiered text by default, or mermaid via
     // `--format mermaid`) so the agent always sees the exact task graph + which
     // cards are done/ready/blocked — never a dependency-blind flat list. Built
-    // from the SAME roadmap rows + declared DEPENDS_ON:/BLOCKED_BY: deps the
+    // from the SAME roadmap rows + declared DEPENDS_ON: deps the
     // scheduler uses, so the view and the dispatch order agree by construction.
     // `--json` keeps the machine-parseable card list for tooling that needs it.
     if filters.json {

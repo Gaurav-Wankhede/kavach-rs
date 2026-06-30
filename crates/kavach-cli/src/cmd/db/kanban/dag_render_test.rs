@@ -126,7 +126,7 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
     let rows = vec![
         row("u1", "no deps"),
         row("u2", "DEPENDS_ON: u1"),
-        row("u3", "BLOCKED_BY: u2 ghost"),
+        row("u3", "DEPENDS_ON: u2 ghost"),
     ];
     let dag = dag_from_roadmap(&rows);
     assert_eq!(

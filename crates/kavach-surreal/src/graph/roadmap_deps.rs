@@ -1,6 +1,6 @@
 //! Kanban dependency edges as FIRST-CLASS `SurrealDB` graph edges.
 //!
-//! Historically the kanban DAG lived only as `DEPENDS_ON:`/`BLOCKED_BY:` TEXT
+//! Historically the kanban DAG lived only as `DEPENDS_ON:` TEXT
 //! lines in a card's content, parsed in Rust and walked by a hand-rolled DFS
 //! (`kavach-rpc roadmap::readiness::cycle`). That bypassed `SurrealDB`'s native
 //! graph engine entirely. This module mirrors those declared deps into real

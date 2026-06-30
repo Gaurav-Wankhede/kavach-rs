@@ -42,7 +42,7 @@ fn legacy_and_terminal_statuses_are_not_runnable() {
 fn parse_deps_inline_and_bullet_forms() {
     assert!(parse_declared_deps("no deps here").is_empty());
     assert_eq!(
-        parse_declared_deps("BLOCKED_BY: erp.phase1"),
+        parse_declared_deps("DEPENDS_ON: erp.phase1"),
         ["erp.phase1"]
     );
     assert_eq!(
@@ -56,10 +56,10 @@ fn parse_deps_inline_and_bullet_forms() {
 #[test]
 fn parse_deps_prose_false_positive_is_fail_closed() {
     assert!(
-        parse_declared_deps("As noted, BLOCKED_BY: must not appear inline.").is_empty(),
+        parse_declared_deps("As noted, DEPENDS_ON: must not appear inline.").is_empty(),
         "mid-line prose mention is NOT a declaration"
     );
-    let literal_line = "BLOCKED_BY: looks-like-a-dep";
+    let literal_line = "DEPENDS_ON: looks-like-a-dep";
     assert_eq!(parse_declared_deps(literal_line), ["looks-like-a-dep"]);
     let all: Vec<kavach_surreal::MemoryEntry> = Vec::new();
     assert!(
@@ -94,7 +94,7 @@ fn leaf_card_with_no_deps_is_ready() {
 #[test]
 fn card_with_unmet_dep_is_not_ready() {
     let all = vec![
-        entry("child", "todo", "BLOCKED_BY: parent"),
+        entry("child", "todo", "DEPENDS_ON: parent"),
         entry("parent", "todo", ""),
     ];
     assert!(!deps_satisfied(first(&all), &all));
@@ -113,9 +113,9 @@ fn card_with_met_dep_is_ready() {
 fn loop_termination_all_todo_but_dep_blocked_yields_no_dispatchable() {
     let all = vec![
         entry("root", "todo", ""),
-        entry("a", "todo", "BLOCKED_BY: root"),
+        entry("a", "todo", "DEPENDS_ON: root"),
         entry("b", "todo", "DEPENDS_ON: root"),
-        entry("c", "todo", "BLOCKED_BY: missing.unbuilt.key"),
+        entry("c", "todo", "DEPENDS_ON: missing.unbuilt.key"),
     ];
     let any_dispatchable = all
         .iter()
@@ -131,7 +131,7 @@ fn loop_termination_all_todo_but_dep_blocked_yields_no_dispatchable() {
 fn chain_unblocks_when_root_completes() {
     let all = vec![
         entry("root", "verified", ""),
-        entry("a", "todo", "BLOCKED_BY: root"),
+        entry("a", "todo", "DEPENDS_ON: root"),
     ];
     let dependent = all.get(1).expect("fixture has 2 entries");
     assert!(

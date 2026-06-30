@@ -15,7 +15,7 @@ use crate::cmd::io_safe::{into_exit_code, print_or_exit};
 /// Build a `RoadmapDag` from the roadmap ROWS (`list_by_project`) — the same
 /// source the flat board and the scheduler read — instead of the entity-graph
 /// mirror, which is unpopulated for roadmap cards. Edges come from the cards'
-/// declared `DEPENDS_ON:`/`BLOCKED_BY:` lines via the scheduler's own parser
+/// declared `DEPENDS_ON:` lines via the scheduler's own parser
 /// (`parse_declared_deps`), so the awareness DAG and dispatch order agree by
 /// construction. A declared dep whose key is absent from the project is dropped
 /// (it cannot be a node), mirroring the scheduler's tolerance.

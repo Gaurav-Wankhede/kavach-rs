@@ -49,10 +49,9 @@ pub fn is_dep_key_shaped(tok: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/'))
 }
 
-/// Parse `BLOCKED_BY:` / `DEPENDS_ON:` declarations from a card's content.
+/// Parse `DEPENDS_ON:` declarations from a card's content.
 ///
-/// Convention: a line whose trimmed form starts with `BLOCKED_BY:` or
-/// `DEPENDS_ON:`, followed by comma- or whitespace-separated keys, OR a
+/// Convention: a line whose trimmed form starts with `DEPENDS_ON:`, followed by comma- or whitespace-separated keys, OR a
 /// following indented `- key` bullet list. Tolerant: a card with no such
 /// line yields an empty Vec.
 #[must_use]
@@ -61,9 +60,7 @@ pub fn parse_declared_deps(content: &str) -> Vec<String> {
     let mut in_dep_block = false;
     for raw in content.lines() {
         let line = raw.trim();
-        let header = line
-            .strip_prefix("BLOCKED_BY:")
-            .or_else(|| line.strip_prefix("DEPENDS_ON:"));
+        let header = line.strip_prefix("DEPENDS_ON:");
         if let Some(rest) = header {
             in_dep_block = true;
             // Admit ONLY card-key-shaped tokens: a `DEPENDS_ON:` line may run into
@@ -229,7 +226,7 @@ mod tests {
         // Bullet path takes the first whitespace token of each `- ` line. A bullet
         // whose first token carries markup drops; a bare-word first token is kept
         // (it can't be distinguished from a bare key u1/ghost — same shape).
-        let content = "BLOCKED_BY:\n- roadmap.real-one\n- <not-a-key>\n- decision.real-two";
+        let content = "DEPENDS_ON:\n- roadmap.real-one\n- <not-a-key>\n- decision.real-two";
         let mut deps = parse_declared_deps(content);
         deps.sort();
         assert_eq!(deps, vec!["decision.real-two", "roadmap.real-one"]);

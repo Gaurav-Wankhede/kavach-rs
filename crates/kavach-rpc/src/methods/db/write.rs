@@ -48,7 +48,7 @@ pub struct WriteResult {
 /// Mirror `depends_on` edge targets from `relationships` into a `DEPENDS_ON:`
 /// content line so the dispatch readiness check (which parses deps from CONTENT)
 /// honors them. Returns `content` unchanged when there are no `depends_on` edges.
-/// Idempotent: a target already named on a `DEPENDS_ON:`/`BLOCKED_BY:` content
+/// Idempotent: a target already named on a `DEPENDS_ON:` content
 /// line is not re-added, so re-running an update never duplicates the line.
 fn mirror_depends_on_into_content(content: &str, relationships: &[(String, String)]) -> String {
     let fresh: Vec<&str> = relationships
@@ -69,13 +69,13 @@ fn mirror_depends_on_into_content(content: &str, relationships: &[(String, Strin
     }
 }
 
-/// `true` iff `content` already names `dep` on a `DEPENDS_ON:`/`BLOCKED_BY:` line
+/// `true` iff `content` already names `dep` on a `DEPENDS_ON:` line
 /// — the same lines the readiness parser reads. Whitespace/comma tolerant.
 fn content_declares_dep(content: &str, dep: &str) -> bool {
     content
         .lines()
         .map(str::trim)
-        .filter(|l| l.starts_with("DEPENDS_ON:") || l.starts_with("BLOCKED_BY:"))
+        .filter(|l| l.starts_with("DEPENDS_ON:"))
         .any(|l| {
             l.split([':', ',', ' ', '\t'])
                 .map(str::trim)

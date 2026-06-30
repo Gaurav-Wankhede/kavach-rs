@@ -122,7 +122,7 @@ pub async fn list_by_project(
 
 /// List every row of `table` across ALL projects.
 ///
-/// Dependency keys (`DEPENDS_ON:`/`BLOCKED_BY:`) are a global key space — a
+/// Dependency keys (`DEPENDS_ON:`) are a global key space — a
 /// card may declare a prerequisite that lives under a different project. A
 /// project-scoped lookup cannot see such a row and fail-closes it to
 /// "unsatisfied", permanently stalling dispatch. This unscoped read is the

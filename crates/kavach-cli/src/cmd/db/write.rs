@@ -120,7 +120,7 @@ fn check_protected_closure(key: &str, title: &str) -> Option<String> {
 /// Mirror `--depends-on` flag targets into a `DEPENDS_ON:` content line so the
 /// dispatch readiness check (which parses deps from CONTENT) honors them. Returns
 /// `body` unchanged when there are no flag deps. Idempotent: a target already
-/// present on an existing `DEPENDS_ON:`/`BLOCKED_BY:` content line is not
+/// present on an existing `DEPENDS_ON:` content line is not
 /// re-added, so `--update-key … --depends-on x` re-runs never duplicate it. New
 /// targets are appended as one `DEPENDS_ON: a, b` line at the top of the body
 /// (the parser scans all lines, so position is immaterial; top keeps it visible).
@@ -142,12 +142,12 @@ fn mirror_depends_on_into_content(body: String, depends_on: &[String]) -> String
         format!("{line}\n{body}")
     }
 }
-/// `true` iff `body` already names `dep` on a `DEPENDS_ON:`/`BLOCKED_BY:` line —
+/// `true` iff `body` already names `dep` on a `DEPENDS_ON:` line —
 /// the same lines the readiness parser reads. Whitespace/comma tolerant.
 fn body_declares_dep(body: &str, dep: &str) -> bool {
     body.lines()
         .map(str::trim)
-        .filter(|l| l.starts_with("DEPENDS_ON:") || l.starts_with("BLOCKED_BY:"))
+        .filter(|l| l.starts_with("DEPENDS_ON:"))
         .any(|l| {
             l.split([':', ',', ' ', '\t'])
                 .map(str::trim)

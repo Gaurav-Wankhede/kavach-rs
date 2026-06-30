@@ -10,7 +10,7 @@ use super::dep_key::parse_declared_deps;
 use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasher;
 /// True iff `start` participates in a dependency cycle reachable through the
-/// content-declared `DEPENDS_ON:`/`BLOCKED_BY:` edges resolved against `by_key`.
+/// content-declared `DEPENDS_ON:` edges resolved against `by_key`.
 ///
 /// Self-dependency (`A` declares `A`) is the boundary case and returns `true`.
 /// Dep keys absent from `by_key` are dead-ends (cannot close a cycle), matching

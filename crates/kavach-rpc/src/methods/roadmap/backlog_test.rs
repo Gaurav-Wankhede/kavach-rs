@@ -152,7 +152,7 @@ fn priority_skipped_when_deps_unmet() {
         entry_with_priority("p3.ready", "todo", Some(3)),
     ];
     if let Some(first) = entries.first_mut() {
-        first.content = "BLOCKED_BY: missing.dep".into();
+        first.content = "DEPENDS_ON: missing.dep".into();
     }
     let picked = pick_first(&entries).expect("runnable exists");
     assert_eq!(picked.entry_key, "p3.ready");
