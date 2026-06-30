@@ -11,7 +11,7 @@ EOF
 
 P_KEY="card-depends-on-line-must-be-clean-key-list"
 P_TITLE="A DEPENDS_ON: card line must be ONLY <category>.<slug> keys on its own line, prose elsewhere"
-kavach db write --project kavach-rs --category pattern --update-key "$P_KEY" --title "$P_TITLE" <<'EOF'
+kavach db write --project kavach-rs --category pattern --key "$P_KEY" --update-key "$P_KEY" --title "$P_TITLE" <<'EOF'
 PATTERN (learned 2026-06-16; legacy blocker-prefix alias retired 2026-06-30): when authoring a kavach card with a dependency, put DEPENDS_ON: <key>[,<key>...] on its OWN line with NOTHING but real card keys after it; keep all prose (SCOPE/APPROACH) on SEPARATE lines below. DEPENDS_ON: is the ONLY accepted dependency prefix. A dep key is <category>.<slug> (decision/roadmap/research/pattern/app_spec). RATIONALE: the readiness parser turns each token after DEPENDS_ON: into a DAG edge; prose on that line = phantom missing nodes = the whole Continuous Loop wedges to ALL_BLOCKED. ALSO: depend on a ROADMAP card (which has a kanban status), never a decision/research row (no status -> never resolves).
 EOF
 
