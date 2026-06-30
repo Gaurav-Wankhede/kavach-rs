@@ -30,6 +30,25 @@ fn call_or_spool_enqueues_when_daemon_is_down() {
 }
 
 #[test]
+fn call_or_spool_returns_promptly_never_blocking_the_stop_hook() {
+    isolate("prompt");
+    // The Stop hook's fire-and-forget contract: even if a live daemon / running
+    // SurrealDB makes the RPC round-trip block, call_or_spool MUST return within a
+    // bounded wall-clock. Pre-fix this blocked ~60s against a running server (the
+    // reward_backfill timeouts); post-fix it is bounded and spools on timeout.
+    let start = std::time::Instant::now();
+    call_or_spool(
+        "db.bandit_backfill_session",
+        &serde_json::json!({"session_id": "sess_timeout_probe", "verified_clean": true, "limit": 512}),
+    );
+    assert!(
+        start.elapsed() < std::time::Duration::from_secs(10),
+        "call_or_spool must not block the Stop hook: took {:?}",
+        start.elapsed()
+    );
+}
+
+#[test]
 fn drain_and_replay_is_a_noop_when_spool_empty() {
     isolate("empty");
     // Nothing spooled → replay drains an empty spool and returns cleanly.
