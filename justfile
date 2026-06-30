@@ -187,3 +187,11 @@ agentize-descriptions:
 # Validate every mermaid block in an HTML/MD file with mmdc BEFORE it ships (exit 1 on syntax error).
 mermaid-check FILE:
     bash scripts/mermaid-check.sh {{FILE}}
+
+# Retire the BLOCKED_BY: dependency alias for canonical DEPENDS_ON: across source (idempotent).
+rename-blocked-by:
+    bash scripts/rename-blocked-by.sh
+
+# Migrate DB rows off the retired blocker-prefix alias to DEPENDS_ON (idempotent; needs the daemon).
+migrate-blocked-by-db:
+    bash scripts/migrate-blocked-by-db.sh
