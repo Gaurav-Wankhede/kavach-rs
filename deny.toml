@@ -49,10 +49,27 @@ unmaintained = "all"
 # WHY this advisory is accepted (typically: unfixable upstream, no
 # patched version available). Empty by default; add only with a row.
 ignore = [
+    # gtk-rs GTK3 bindings family (transitive via dioxus-desktop → wry
+    # → webkit2gtk → gtk). gtk-rs deprecated GTK3 in favour of GTK4;
+    # dioxus-desktop 0.7.9 has not yet migrated. Re-evaluate on each
+    # dioxus bump. Filed: decision crate.gtk-rs.gtk3-unmaintained-transitive.
+    "RUSTSEC-2024-0411", "RUSTSEC-2024-0412", "RUSTSEC-2024-0413",
+    "RUSTSEC-2024-0416", "RUSTSEC-2024-0418",
+    # Proc-macro deps unmaintained — paste, proc-macro-error and related
+    # (transitive via various older derive crates). Each waits on its
+    # consumer to migrate (no kavach-rs direct dep). Filed:
+    # decision crate.proc-macro-deps.unmaintained-transitive.
+    "RUSTSEC-2024-0370", "RUSTSEC-2024-0414", "RUSTSEC-2024-0415",
+    "RUSTSEC-2024-0419", "RUSTSEC-2024-0420", "RUSTSEC-2024-0436",
     # bincode 1.x unmaintained (2.x is the active line). Transitive via
     # surrealdb-core; surrealdb has not bumped. Filed:
     # decision crate.bincode.1x-unmaintained-transitive.
     "RUSTSEC-2025-0141",
+    # number_prefix 0.4.0 unmaintained. Transitive via
+    # indicatif -> hf-hub -> fastembed -> kavach-surreal. No safe upgrade
+    # path; awaits upstream fastembed/hf-hub migration to a maintained
+    # alternative. Filed: decision crate.number_prefix.unmaintained-transitive.
+    "RUSTSEC-2025-0119",
 ]
 
 # ─────────────────────────────────────────────────────────────
