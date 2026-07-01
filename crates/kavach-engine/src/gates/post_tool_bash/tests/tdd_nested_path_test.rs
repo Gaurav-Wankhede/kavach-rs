@@ -8,9 +8,7 @@ fn production_stem_of_nested_path_selection_test() {
     assert_eq!(
         stem,
         Some("selection".to_owned()),
-        "nested path {} should map to stem 'selection', got {:?}",
-        nested_path,
-        stem
+        "nested path {nested_path} should map to stem 'selection', got {stem:?}"
     );
 }
 
