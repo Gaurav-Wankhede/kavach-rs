@@ -107,7 +107,15 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         context.push_str(&pending);
     }
     context.push_str(&harness_block);
-    model_route::append_model_route(&mut context, input, &intent.complexity, &intent.risk_level);
+    model_route::append_model_route(
+        &mut context,
+        input,
+        &intent.complexity,
+        &intent.risk_level,
+        &session.project,
+        prompt,
+        &session.session_id,
+    );
     // Brain-OS auto-recall: consult memory on every prompt (fail-soft, advisory).
     context.push_str(&recall::recall_block(prompt));
     append_context_blocks(
