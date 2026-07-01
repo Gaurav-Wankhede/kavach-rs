@@ -39,6 +39,25 @@ pub(crate) fn log_intent(session_id: &str, intent_type: &str, risk: &str, projec
     );
 }
 
+/// Log a model-route recommendation for OPE tuning. SOURCE: decision.model-shift-router-advisory
+pub(crate) fn log_model_route(
+    session_id: &str,
+    from_model: &str,
+    recommend: &str,
+    reason: &str,
+    project_slug: &str,
+) {
+    let payload =
+        format!(r#"{{"from":"{from_model}","recommend":"{recommend}","reason":"{reason}"}}"#);
+    log_raw_rpc(
+        session_id,
+        "model_route",
+        "gate:intent",
+        project_slug,
+        Some(&payload),
+    );
+}
+
 /// Log a session lifecycle event; create session→project edge on `session_start`.
 pub(crate) fn log_session(session_id: &str, event_type: &str, model: &str, project_slug: &str) {
     let payload = format!(r#"{{"model":"{model}"}}"#);
