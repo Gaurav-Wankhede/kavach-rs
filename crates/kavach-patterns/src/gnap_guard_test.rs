@@ -27,7 +27,7 @@ fn blocks_client_secret_assignment() {
 
 #[test]
 fn allows_client_secret_type_declaration() {
-    let code = r#"pub client_secret: Option<String>,"#;
+    let code = r"pub client_secret: Option<String>,";
     let f = detect("src/dto.rs", code);
     assert!(f.is_empty(), "Type declaration should not be flagged");
 }
@@ -133,7 +133,7 @@ fn blocks_client_secret_literal() {
 
 #[test]
 fn allows_stripe_client_secret_dto() {
-    let code = r#"pub client_secret: Option<String>,"#;
+    let code = r"pub client_secret: Option<String>,";
     let f = detect("src/payments/stripe_dto.rs", code);
     assert!(f.is_empty(), "Stripe DTO field should not be flagged");
 }
