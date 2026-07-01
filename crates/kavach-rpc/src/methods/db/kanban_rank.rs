@@ -119,6 +119,7 @@ pub async fn kanban_ranked(
             key: i.key,
             title: i.title,
             status: i.status,
+            category: i.category,
         })
         .collect();
 
