@@ -15,6 +15,7 @@ pub(crate) fn default_gates_config() -> GatesConfig {
     st.insert("debug".into(), vec!["debug-like-expert".into()]);
     st.insert("security".into(), vec!["security".into()]);
     GatesConfig {
+        model: ModelRouteConfig::default(),
         schema: "kavach-gates/1.0".into(),
         description: "Default kavach gates config".into(),
         read: ReadConfig {
