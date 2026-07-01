@@ -34,7 +34,7 @@ fn allows_client_secret_type_declaration() {
 
 #[test]
 fn allows_client_id_type_declaration() {
-    let code = r#"client_id: String,"#;
+    let code = r"client_id: String,";
     let f = detect("src/models.rs", code);
     assert!(f.is_empty(), "Type declaration should not be flagged");
 }
