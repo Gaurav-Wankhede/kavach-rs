@@ -45,6 +45,8 @@ pub struct RankableCard {
     pub title: String,
     /// `todo` or `in_progress` (runnable statuses only).
     pub status: String,
+    /// Card category; drives model routing. SOURCE: decision.model-shift-router-advisory
+    pub category: String,
 }
 
 /// Result of `db.kanban_ranked`.
