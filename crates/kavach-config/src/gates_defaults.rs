@@ -1,6 +1,7 @@
+// SOURCE: decision.model-shift-router-advisory
 use crate::gates_config::{
-    BashConfig, ContextConfig, EnforcerConfig, GatesConfig, IntentConfig, QualityConfig,
-    ReadConfig, ResearchConfig, WriteConfig,
+    BashConfig, ContextConfig, EnforcerConfig, GatesConfig, IntentConfig, ModelRouteConfig,
+    QualityConfig, ReadConfig, ResearchConfig, WriteConfig,
 };
 use std::collections::HashMap;
 
