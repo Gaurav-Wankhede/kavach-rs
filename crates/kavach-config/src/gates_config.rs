@@ -29,6 +29,19 @@ pub struct GatesConfig {
     pub context: ContextConfig,
     #[serde(default)]
     pub quality: QualityConfig,
+    #[serde(default)]
+    pub model: ModelRouteConfig,
+}
+
+/// Model-shift router config. SOURCE: decision.model-shift-router-advisory
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "cross-crate literal DTO; non_exhaustive => E0639"
+)]
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ModelRouteConfig {
+    #[serde(default)]
+    pub autoswitch: bool,
 }
 
 #[expect(
