@@ -6,6 +6,7 @@ fn card(key: &str, status: &str) -> RankableCard {
         key: key.to_owned(),
         title: format!("title for {key}"),
         status: status.to_owned(),
+        category: "roadmap".to_owned(),
     }
 }
 
