@@ -161,19 +161,7 @@ pub struct QualityConfig {
     pub max_file_size_kb: usize,
 }
 
+// SOURCE: decision.model-shift-router-advisory
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_gates_config_json_deserialize() {
-        let json = r#"{
-            "$schema": "test",
-            "read": { "enabled": true, "blocked_paths": ["/secret"] },
-            "bash": { "enabled": false }
-        }"#;
-        let cfg: GatesConfig = serde_json::from_str(json).expect("parse");
-        assert!(cfg.read.enabled);
-        assert!(!cfg.bash.enabled);
-        assert_eq!(cfg.read.blocked_paths, vec!["/secret"]);
-    }
-}
+#[path = "gates_config_test.rs"]
+mod tests;
