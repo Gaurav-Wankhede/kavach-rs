@@ -22,7 +22,8 @@ pub use refs::{extract_memory_entry_references, memory_entry_qualified_name};
 pub use relationships::{ExtractedRelationship, extract_memory_entry_relationships};
 
 // Gate-facing loggers (pub(crate)).
+// SOURCE: decision.model-shift-router-advisory
 pub(crate) use loggers::{
-    ToolFailureLog, log_file_write, log_gate_decision, log_intent, log_session, log_skill_invoke,
-    log_tool_failure,
+    ToolFailureLog, log_file_write, log_gate_decision, log_intent, log_model_route, log_session,
+    log_skill_invoke, log_tool_failure,
 };
