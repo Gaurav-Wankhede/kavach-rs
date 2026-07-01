@@ -18,8 +18,6 @@ fn is_real_verify_with_path_filter() {
     let is_verify = kavach_patterns::reward::is_real_verify(cmd);
     assert!(
         is_verify,
-        "command with path filter {} should be real_verify, got {}",
-        cmd,
-        is_verify
+        "command with path filter {cmd} should be real_verify, got {is_verify}"
     );
 }
