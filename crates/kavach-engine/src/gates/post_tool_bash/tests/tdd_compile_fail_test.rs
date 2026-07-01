@@ -111,7 +111,7 @@ fn cargo_nextest_with_host_error_flag_on_compile_fail_records_red() {
     let mut resp = HashMap::new();
     resp.insert(
         "output".to_owned(),
-        serde_json::Value::String("".to_owned()),
+        serde_json::Value::String(String::new()),
     );
     resp.insert(
         "is_error".to_owned(),
