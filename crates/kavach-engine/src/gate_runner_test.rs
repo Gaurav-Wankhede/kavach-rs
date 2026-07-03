@@ -20,8 +20,7 @@ fn test_lifecycle_gates_approve() {
 #[test]
 fn test_new_gates() {
     let input = HookInput::default();
-    // NOTE: "stop" gate is expensive (session I/O); it has dedicated integration
-    // tests. This smoke test verifies dispatch correctness for the lightweight gates.
+    // "stop" gate does live session I/O; covered by its own integration tests, excluded from this dispatch smoke test
     assert!(run_gate("notification", &input).is_ok());
     assert!(run_gate("permission", &input).is_ok());
     assert!(run_gate("post-tool-failure", &input).is_ok());
