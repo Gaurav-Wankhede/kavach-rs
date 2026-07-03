@@ -2,6 +2,7 @@ use kavach_types::HookInput;
 
 /// Notification gate: handle Notification events.
 /// Injects context based on notification type.
+/// SOURCE: https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md
 pub(crate) fn run(input: &HookInput) {
     let message = &input.message;
     let notification_type = &input.notification_type;
@@ -12,16 +13,31 @@ pub(crate) fn run(input: &HookInput) {
     // despite unresolved failures (has_recent_failure uses turn equality).
 
     let msg_preview: String = message.chars().take(200).collect();
-    let context = kavach_hook::context_block(
+    let ty_lower = notification_type.to_ascii_lowercase();
+    let mut full_context = kavach_hook::context_block(
         "NOTIFICATION",
         &[("type", notification_type), ("message", &msg_preview)],
     );
+
+    if ty_lower == "agent_completed" {
+        let completed_ctx = kavach_hook::context_block(
+            "AGENT_COMPLETED",
+            &[("guidance", "run three-witness verify: artifact exists, diff landed, build passes")],
+        );
+        full_context.push_str(&completed_ctx);
+    } else if ty_lower == "agent_needs_input" {
+        let input_ctx = kavach_hook::context_block(
+            "AGENT_NEEDS_INPUT",
+            &[("guidance", "prefer querying kavach DB or reading code over asking")],
+        );
+        full_context.push_str(&input_ctx);
+    }
 
     // CC 2.1.141: ring the terminal bell on attention-needing notifications
     // (permission stalls, idle prompts, errors) so a backgrounded session is
     // noticed; stay silent on purely informational ones.
     drop(kavach_hook::exit_notification_with_sequence(
-        &context,
+        &full_context,
         terminal_sequence_for(notification_type, message),
     ));
 }
@@ -48,32 +64,5 @@ fn terminal_sequence_for(notification_type: &str, message: &str) -> &'static str
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_notification_default() {
-        let input = HookInput {
-            message: "test notification".into(),
-            notification_type: "info".into(),
-            ..Default::default()
-        };
-        run(&input);
-    }
-
-    #[test]
-    fn bell_on_permission_and_idle_only() {
-        // Attention-needing types ring the bell.
-        assert_eq!(terminal_sequence_for("permission", ""), "\x07");
-        assert_eq!(terminal_sequence_for("Idle", ""), "\x07");
-        assert_eq!(terminal_sequence_for("error", ""), "\x07");
-        // Informational types stay silent.
-        assert_eq!(terminal_sequence_for("info", ""), "");
-        // Empty type falls back to the message text.
-        assert_eq!(
-            terminal_sequence_for("", "Claude needs your permission"),
-            "\x07"
-        );
-        assert_eq!(terminal_sequence_for("", "task done"), "");
-    }
-}
+#[path = "notification_test.rs"]
+mod tests;
