@@ -1,6 +1,6 @@
 //! Guard (P0, user-authority): AUTONOMOUS-MODE GATE — the Stop dispatch fires
 //! ONLY in Auto (`permission_mode=="auto"`) or `bypassPermissions`; every other
-//! mode (plan/default/acceptEdits/dontAsk) allows a clean stop. See
+//! mode (plan/default/manual/acceptEdits/dontAsk) allows a clean stop. See
 //! decision.engine.stop-autonomous-mode-only.
 use core::ops::ControlFlow;
 use super::super::shared::StopCtx;
