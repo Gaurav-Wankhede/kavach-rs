@@ -53,7 +53,11 @@ fn record_metrics(level_str: &str, input: &str, output: &str, project: Option<&s
     let delta_pct = if tokens_in > 0 {
         let tok_in_i = i64::try_from(tokens_in).unwrap_or(i64::MAX);
         let tok_out_i = i64::try_from(tokens_out).unwrap_or(i64::MAX);
-        tok_out_i.saturating_sub(tok_in_i).saturating_mul(100) / tok_in_i
+        tok_out_i
+            .saturating_sub(tok_in_i)
+            .saturating_mul(100)
+            .checked_div(tok_in_i)
+            .unwrap_or(0)
     } else {
         0
     };
