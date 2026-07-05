@@ -36,7 +36,7 @@ pub fn exit_pre_tool_ask(reason: &str) -> HookAction {
 /// `PostToolUse`: block with reason + context.
 #[must_use]
 pub fn exit_post_tool_block(reason: &str, context: &str) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     let resp = HookResponse::new_post_tool_use_block(reason, &context);
     output(&resp);
     HookAction::Done
