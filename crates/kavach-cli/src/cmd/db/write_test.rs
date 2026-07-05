@@ -1,4 +1,50 @@
-use super::{CATEGORY_HELP, STRICT_CATEGORIES, mirror_depends_on_into_content};
+use super::{
+    CATEGORY_HELP, STRICT_CATEGORIES, mirror_depends_on_into_content, partition_speculative_deps,
+};
+use kavach_engine::ExtractedRelationship;
+
+fn rel(rel: &str, target: &str, speculative: bool) -> ExtractedRelationship {
+    let mut r = ExtractedRelationship::new(rel, target);
+    r.speculative = speculative;
+    r
+}
+
+/// A speculative (NLU-origin) target absent from `known` is dropped.
+#[test]
+fn unresolvable_speculative_dep_is_dropped() {
+    let rels = vec![rel("depends_on", "row.body_blake3", true)];
+    let (kept, dropped) = partition_speculative_deps(rels, &["real-key".to_owned()]);
+    assert!(kept.is_empty());
+    assert_eq!(dropped, vec!["row.body_blake3".to_owned()]);
+}
+
+/// A speculative target that DOES resolve against a known key passes through.
+#[test]
+fn resolvable_speculative_dep_passes_through() {
+    let rels = vec![rel("depends_on", "real-key", true)];
+    let (kept, dropped) = partition_speculative_deps(rels, &["real-key".to_owned()]);
+    assert_eq!(kept.len(), 1);
+    assert!(dropped.is_empty());
+}
+
+/// Non-speculative (explicit/frontmatter/wikilink) edges pass through UNTOUCHED
+/// even when their target resolves against no known row — author intent wins.
+#[test]
+fn non_speculative_dep_passes_through_when_unresolvable() {
+    let rels = vec![rel("depends_on", "ghost-target", false)];
+    let (kept, dropped) = partition_speculative_deps(rels, &[]);
+    assert_eq!(kept.len(), 1);
+    assert!(dropped.is_empty());
+}
+
+/// A qualified target (`slug/cat/key`) resolves against the bare tail of a known key.
+#[test]
+fn qualified_target_resolves_against_bare_known_key() {
+    let rels = vec![rel("depends_on", "proj/roadmap/real-key", true)];
+    let (kept, dropped) = partition_speculative_deps(rels, &["real-key".to_owned()]);
+    assert_eq!(kept.len(), 1);
+    assert!(dropped.is_empty());
+}
 
 /// No flag deps → body is returned unchanged (no spurious `DEPENDS_ON` line).
 #[test]
