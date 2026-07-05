@@ -81,6 +81,24 @@ fn should_block_bidi_in_ai_config_file() {
 }
 
 #[test]
+fn should_block_hardcoded_secret_with_action_imperative_message() {
+    let mut input = input_with(&[
+        ("file_path", serde_json::json!("src/config.rs")),
+        (
+            "content",
+            serde_json::json!("let key = \"AKIAIOSFODNN7EXAMPLE\";"),
+        ),
+    ]);
+    input.tool_name = "Write".into();
+    let SecurityResult::Block(msg) = check(&ctx_for(&input)) else {
+        panic!("hardcoded secret must block");
+    };
+    assert!(msg.contains("[SECRETS]"), "action tag: {msg}");
+    assert!(msg.contains("move the credential to an env var"), "names the action: {msg}");
+    assert!(msg.contains("retry"), "closes with retry: {msg}");
+}
+
+#[test]
 fn should_block_tag_block_in_ai_config_file() {
     let mut input = input_with(&[
         ("file_path", serde_json::json!("/proj/.cursorrules")),
