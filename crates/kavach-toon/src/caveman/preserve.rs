@@ -40,7 +40,7 @@ fn inline_code(text: &str) -> Vec<String> {
     let bytes = text.as_bytes();
     let mut i = 0usize;
     while i < bytes.len() {
-        if bytes[i] == b'`'
+        if bytes.get(i) == Some(&b'`')
             && let Some(rel_end) = text.get(i.saturating_add(1)..).and_then(|t| t.find('`'))
         {
             let end = i.saturating_add(1).saturating_add(rel_end).saturating_add(1);
