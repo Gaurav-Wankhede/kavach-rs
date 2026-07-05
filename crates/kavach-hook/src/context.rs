@@ -107,6 +107,8 @@ pub fn exit_block_ctx(gate: &str, reason: &str) -> HookAction {
         gate,
         &[("status", "block"), ("reason", reason), ("date", &d)],
     );
+    // SOURCE: crates/kavach-toon/src/caveman.rs (public compress() API, lossless-preserving)
+    let context = kavach_toon::caveman::compress(&context, kavach_toon::caveman::Level::Full);
     let resp = HookResponse {
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "PreToolUse".into(),
