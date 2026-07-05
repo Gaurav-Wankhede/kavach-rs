@@ -98,7 +98,7 @@ pub fn exit_session_start_full(
     reload_skills: bool,
     session_title: &str,
 ) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     let resp = HookResponse {
         system_message: context,
         hook_specific_output: Some(HookSpecificOutput {
