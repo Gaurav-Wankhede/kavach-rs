@@ -14,7 +14,8 @@ pub fn exit_pre_tool_deny(reason: &str) -> HookAction {
 #[must_use]
 pub fn exit_pre_tool_allow(context: Option<&str>) -> HookAction {
     // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
-    let compressed = context.map(|ctx| kavach_toon::caveman::compress(ctx, kavach_toon::caveman::Level::Full));
+    let compressed =
+        context.map(|ctx| kavach_toon::caveman::compress(ctx, kavach_toon::caveman::Level::Full));
     let resp = compressed.as_deref().map_or_else(
         || HookResponse::new_pre_tool_use_allow("allow"),
         |ctx| HookResponse::new_pre_tool_use_with_context("allow", ctx),
