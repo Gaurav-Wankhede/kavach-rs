@@ -116,7 +116,7 @@ pub fn exit_session_start_full(
 /// Stop hooks don't support hookSpecificOutput — use `system_message` instead.
 #[must_use]
 pub fn exit_stop_context(context: &str) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     let resp = HookResponse {
         system_message: context,
         ..Default::default()
