@@ -51,9 +51,9 @@ fn bypass_advisories(command: &str) -> Option<Decision> {
     if is_write_bypass(command) {
         if targets_tracked_source(command) {
             return Some(Decision::Deny(
-                "[BLOCKED:write-bypass] Writing a tracked SOURCE file via Bash bypasses the \
-                 pre-write research / anti-pattern gate. Use the Write or Edit tool so the gate \
-                 can mediate the change — do NOT route source edits through python/sed/redirects."
+                "[WRITE_BYPASS] Writing a tracked SOURCE file via Bash bypasses the pre-write \
+                 research / anti-pattern gate -> use the Write or Edit tool so the gate can \
+                 mediate the change, not python/sed/redirects -> retry."
                     .to_owned(),
             ));
         }
