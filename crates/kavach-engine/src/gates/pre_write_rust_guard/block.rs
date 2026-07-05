@@ -34,11 +34,11 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
         }
     }
     msg.push_str(
-        "\nREQUIRED: Fix all P0 violations before this write can proceed.\n\n\
+        "\n-> fix all P0 violations before this write can proceed.\n\n\
          RESEARCH: WebSearch \"rust error handling best practices {search_year}\"\n\
          SKILL: Invoke `error` skill for propagation patterns.\n\
          FIX: Use `?` operator for propagation, `thiserror` for custom types,\n\
-         `map_err` to add context. Never `unwrap`/`expect` in production.",
+         `map_err` to add context. Never `unwrap`/`expect` in production -> retry.",
     );
     Some(msg)
 }
