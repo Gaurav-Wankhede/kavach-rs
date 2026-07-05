@@ -4,7 +4,7 @@
 /// Format the `[SIX_FILE_BLOCK]` advisory for a forbidden `path`.
 pub(super) fn format_block(path: &str) -> String {
     format!(
-        "[SIX_FILE_BLOCK] Forbidden path: {path}\n\n\
+        "[SIX_FILE_POLICY] Forbidden path: {path}\n\n\
          The Six-File Context methodology is kavach-db–native (CLAUDE.md §15).\n\
          Markdown spec/context files duplicate state already typed in kavach-db\n\
          and create drift between docs and code.\n\n\
