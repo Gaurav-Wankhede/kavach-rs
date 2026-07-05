@@ -71,7 +71,8 @@ pub async fn upsert(
                      part_type = $part_type, stack = $stack, description = $description, \
                      updated_at = time::now() \
                  RETURN AFTER";
-    let project_slug = format!("{:?}", &project_id.key);
+    // SOURCE: decision.bug.recordid-nested-key-str — bare slug, no Debug wrapper
+    let project_slug = crate::key_str::project_key_str(project_id);
     let mut response = db
         .query(query)
         .bind(("project", project_id.clone()))

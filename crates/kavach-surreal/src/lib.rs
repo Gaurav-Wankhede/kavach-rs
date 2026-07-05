@@ -30,6 +30,7 @@ pub mod gate_config;
 pub mod gate_patterns;
 pub mod graph;
 pub mod harness_link;
+pub mod key_str; // SOURCE: decision.bug.recordid-nested-key-str
 pub mod lease;
 pub mod nlm;
 pub mod parts;

@@ -2,8 +2,7 @@
 mod events;
 mod expire;
 mod priority_lane;
-// SOURCE: surrealdb-types 3.1.4 RecordIdKey::String — docs.rs/surrealdb-types/3.1.4
-mod key_str;
+// SOURCE: key_str relocated to crate root (crate::key_str) — decision.bug.recordid-nested-key-str
 mod status;
 mod upsert;
 #[cfg(test)]

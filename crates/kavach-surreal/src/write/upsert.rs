@@ -24,7 +24,7 @@ pub async fn upsert_entry(
     content: &str,
     priority: Option<Priority>,
 ) -> Result<RecordId> {
-    let pk = super::key_str::project_key_str(project_id);
+    let pk = crate::key_str::project_key_str(project_id);
     let rid = RecordId::new(category, format!("{pk}:{entry_key}"));
     let query = match category {
         "decision" => {
@@ -171,7 +171,7 @@ pub async fn upsert_entry_full(
             )));
         }
     };
-    let pk = super::key_str::project_key_str(project_id);
+    let pk = crate::key_str::project_key_str(project_id);
     let rid = RecordId::new(table, format!("{pk}:{entry_key}"));
     let rid_returned = rid.clone();
 
@@ -218,7 +218,7 @@ pub async fn upsert_entry_full(
     append_entity_graph_stmts(&mut q, qualified_name, references);
     q.push_str("COMMIT TRANSACTION;");
 
-    let project_name = super::key_str::project_key_str(project_id);
+    let project_name = crate::key_str::project_key_str(project_id);
     let priority_i64 = priority.map(Priority::get);
     crate::retry::with_retry(|| async {
         let response = db
