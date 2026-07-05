@@ -467,6 +467,29 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                         ));
                     }
                 }
+                // Resolve-or-drop: an NLU-harvested (speculative) target that
+                // resolves to no known row would otherwise become a permanently-
+                // missing DAG node. Explicit/frontmatter/wikilink edges are exempt.
+                let mut known_keys: Vec<String> = Vec::new();
+                for tbl in STRICT_CATEGORIES {
+                    match kavach_surreal::list_all_by_table(&db, tbl).await {
+                        Ok(rows) => known_keys.extend(rows.into_iter().map(|r| r.entry_key)),
+                        Err(e) => {
+                            let warn = format!("warning: dep resolve lookup failed for {tbl}: {e}");
+                            if let Err(io_err) = ewrite_or_exit(&warn) {
+                                return into_exit_code(io_err);
+                            }
+                        }
+                    }
+                }
+                let (relationships, dropped) =
+                    resolve_speculative_deps(relationships, &known_keys);
+                for target in dropped {
+                    let notice = format!("dep-guess dropped (no such card): {target}");
+                    if let Err(io_err) = print_or_exit(&notice) {
+                        return into_exit_code(io_err);
+                    }
+                }
                 if !relationships.is_empty() {
                     // Resolve bare keys to fully-qualified names: same project, same category.
                     // Wikilinks already carry the full qname.
