@@ -51,8 +51,8 @@ pub(super) fn empty_code_write(ctx: &WriteContext<'_>) -> Option<SecurityResult>
     (ctx.tool_name == "Write" && is_code_write(ctx.file_path) && ctx.content.is_empty()).then(
         || {
             SecurityResult::Block(
-                "BLOCKED: Write called with empty content on a code file. \
-             All content guards (rust, ts, sql, css) would be silently bypassed."
+                "[EMPTY_WRITE] Write called with empty content on a code file — all content \
+             guards (rust, ts, sql, css) would be silently bypassed -> supply real content -> retry."
                     .to_owned(),
             )
         },
