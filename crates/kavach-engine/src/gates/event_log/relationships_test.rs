@@ -8,14 +8,8 @@ fn should_parse_yaml_frontmatter_with_fences() {
     let c = "---\ndepends_on: [foo, bar]\nblocks: baz\n---\nbody";
     let rels = extract_memory_entry_relationships(c);
     assert_eq!(rels.len(), 3);
-    assert!(rels.contains(&ExtractedRelationship {
-        rel: "depends_on".into(),
-        target: "foo".into()
-    }));
-    assert!(rels.contains(&ExtractedRelationship {
-        rel: "blocks".into(),
-        target: "baz".into()
-    }));
+    assert!(rels.contains(&ExtractedRelationship::new("depends_on", "foo")));
+    assert!(rels.contains(&ExtractedRelationship::new("blocks", "baz")));
 }
 
 #[test]
