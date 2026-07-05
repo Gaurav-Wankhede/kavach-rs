@@ -181,8 +181,9 @@ pub fn exit_post_tool_trimmed(trimmed_output: &str, context: &str) -> HookAction
 /// `PostToolUseFailure`: context injection via systemMessage (no hookSpecificOutput).
 #[must_use]
 pub fn exit_post_tool_failure_context(context: &str) -> HookAction {
+    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
     let resp = HookResponse {
-        system_message: context.into(),
+        system_message: context,
         ..Default::default()
     };
     output(&resp);
