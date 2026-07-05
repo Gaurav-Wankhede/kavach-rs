@@ -21,8 +21,8 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
         .collect();
 
     let mut msg = String::from(
-        "RUST GUARD BLOCKED: Production code violations detected\n\n\
-         P0 VIOLATIONS (HARD BLOCK):\n",
+        "[RUST_LAW] Production code violations detected\n\n\
+         P0 VIOLATIONS:\n",
     );
     for v in &p0 {
         writeln!(msg, "  {} — {}", v.pattern, v.fix).ok();
