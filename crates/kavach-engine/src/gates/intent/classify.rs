@@ -7,8 +7,8 @@ use kavach_session::SessionState;
 pub(super) fn prompt_injection_block(prompt: &str) -> Option<String> {
     let hit = kavach_patterns::prompt_injection_guard::first_blocking_hit(prompt)?;
     Some(format!(
-        "[PROMPT_INJECTION_BLOCKED]\npattern: {}\ncategory: {:?}\ndescription: {}\nmatched: \"{}\"\n\nThis prompt contains patterns associated with prompt injection attacks. \
-         If this is a false positive, rephrase without system-override language.",
+        "[PROMPT_INJECTION] pattern: {}\ncategory: {:?}\ndescription: {}\nmatched: \"{}\"\n\nThis prompt contains patterns associated with prompt injection attacks \
+         -> if this is a false positive, rephrase without system-override language -> retry.",
         hit.pattern_name, hit.category, hit.description, hit.matched_text,
     ))
 }
