@@ -15,9 +15,11 @@ pub(crate) struct UserPromptSubmitOutput {
 /// Write `UserPromptSubmit` JSON to stdout.
 #[must_use]
 pub fn exit_user_prompt_submit(context: &str) -> HookAction {
+    // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
     let out = UserPromptSubmitOutput {
         hook_event_name: "UserPromptSubmit".into(),
-        additional_context: context.into(),
+        additional_context: context,
     };
     write_json(&out);
     HookAction::Done
