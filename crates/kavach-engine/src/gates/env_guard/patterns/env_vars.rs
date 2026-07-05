@@ -94,8 +94,8 @@ pub(crate) fn check_python_environ(lc: &str) -> Option<String> {
             && !lc.contains("os.environ['")
             && !lc.contains("os.environ[\""));
     (has_python && has_environ && dumps).then(|| {
-        "BLOCKED: `os.environ`/`os.getenv` exposes secret values. \
-         Read variable names with `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) instead."
+        "[SECRET_CONSUME] `os.environ`/`os.getenv` exposes secret values \
+         -> read variable names with `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) instead -> retry."
             .into()
     })
 }
