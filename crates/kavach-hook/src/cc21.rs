@@ -99,8 +99,9 @@ pub fn exit_session_start_full(
     reload_skills: bool,
     session_title: &str,
 ) -> HookAction {
+    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
     let resp = HookResponse {
-        system_message: context.into(),
+        system_message: context,
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "SessionStart".into(),
             reload_skills: reload_skills.then_some(true),
