@@ -41,7 +41,7 @@ pub(super) fn hardcoded_secret(ctx: &WriteContext<'_>) -> Option<SecurityResult>
     }
     kavach_config::has_secret_in_content(ctx.content).map(|secret_msg| {
         SecurityResult::Block(format!(
-            "BLOCKED: {secret_msg} in {}. Move credentials to environment variables.",
+            "[SECRETS] {secret_msg} in {} -> move the credential to an env var (runtime script, value never in context) -> retry.",
             ctx.file_path
         ))
     })
