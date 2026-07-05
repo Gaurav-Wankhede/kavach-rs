@@ -35,7 +35,7 @@ pub fn exit_user_prompt_submit_silent() -> HookAction {
 /// `SessionEnd` with context.
 #[must_use]
 pub fn exit_session_end(context: &str) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     output(&HookResponse::new_session_end_context(&context));
     HookAction::Done
 }
