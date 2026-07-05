@@ -1,14 +1,18 @@
 use std::io::{self, BufRead, Write};
 use kavach_types::{HookInput, HookResponse};
 use serde::Serialize;
+// SOURCE: doc.rust-lang.org/edition-guide/rust-2018/path-changes.html — 2018+ module paths need no mod.rs
 pub mod cc21;
 pub mod context;
+pub mod input;
 pub mod lifecycle;
 pub mod severity;
 pub mod toon;
 pub mod vendor;
 pub use severity::GateSeverity;
 pub use vendor::{SchemaSource, Vendor};
+// Re-export input functions at crate root for backwards compatibility
+pub use input::{parse_hook_input, read_hook_input, read_hook_input_from};
 #[cfg(test)]
 #[path = "lib_test.rs"]
 mod tests;
