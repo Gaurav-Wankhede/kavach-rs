@@ -35,10 +35,9 @@ fn record_metric(input: &str, output: &str) {
     let Ok(params_json) = serde_json::to_string(&params) else {
         return;
     };
-    let sw = kavach_session::SpooledWrite::new("db.write".to_string(), params_json);
-    if let Err(e) = kavach_session::enqueue_write_spool(&sw) {
-        eprintln!("kavach: compact metric spool enqueue failed: {e}");
-    }
+    let sw = kavach_session::SpooledWrite::new("db.write".to_owned(), params_json);
+    // Fire-and-forget: an enqueue failure is best-effort lost, never blocks the gate.
+    drop(kavach_session::enqueue_write_spool(&sw));
 }
 
 #[cfg(test)]
