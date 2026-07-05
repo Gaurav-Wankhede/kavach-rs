@@ -15,10 +15,9 @@ pub(super) fn python_ban(ctx: &WriteContext<'_>) -> Option<SecurityResult> {
     let session_wd = kavach_session::get_or_create_session().work_dir;
     (!session_wd.is_empty() && ctx.file_path.starts_with(&session_wd)).then(|| {
         SecurityResult::Block(
-            "BLOCKED: .py files are banned in this workspace. \
-             Python bypasses the kavach hook pipeline. \
-             SQL ops: Write tool → .sql file → sqlx migrate run. \
-             Scripts: use Bash directly or implement as a Rust binary."
+            "[PYTHON_POLICY] .py files are banned in this workspace — Python bypasses \
+             the kavach hook pipeline -> SQL ops: Write tool → .sql file → sqlx migrate run; \
+             scripts: use Bash directly or implement as a Rust binary -> retry."
                 .to_owned(),
         )
     })
