@@ -21,10 +21,7 @@ pub(super) fn extract_frontmatter_rels(content: &str, out: &mut Vec<ExtractedRel
             && REL_KEYS.contains(&key.as_str())
         {
             for tgt in parse_yaml_scalar_or_array(&val) {
-                out.push(ExtractedRelationship {
-                    rel: key.clone(),
-                    target: tgt,
-                });
+                out.push(ExtractedRelationship::new(key.clone(), tgt));
             }
         }
     }
