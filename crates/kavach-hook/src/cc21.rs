@@ -62,7 +62,8 @@ pub fn exit_post_tool_context(context: &str) -> HookAction {
 /// `UserPromptSubmit`: context injection via hookSpecificOutput.
 #[must_use]
 pub fn exit_prompt_context(context: &str) -> HookAction {
-    let resp = HookResponse::new_user_prompt_submit_context(context);
+    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let resp = HookResponse::new_user_prompt_submit_context(&context);
     output(&resp);
     HookAction::Done
 }
