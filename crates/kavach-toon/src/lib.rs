@@ -5,8 +5,6 @@ use thiserror::Error;
 
 // SOURCE: doc.rust-lang.org/reference/items/modules.html
 pub mod caveman;
-#[cfg(test)]
-mod caveman_test;
 
 // Typed error via thiserror (vs Result<T,String>/Box<dyn Error>/anyhow).
 // See decision.toon.typed-error.
