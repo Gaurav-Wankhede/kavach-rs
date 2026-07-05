@@ -13,6 +13,7 @@ impl SessionState {
             return false;
         }
         self.files_modified.push(file_path.into());
+        self.files_modified_this_turn.push(file_path.into());
         self.save_or_log();
         true
     }
@@ -22,3 +23,7 @@ impl SessionState {
         !self.current_task.is_empty()
     }
 }
+
+#[cfg(test)]
+#[path = "task_test.rs"]
+mod task_test;

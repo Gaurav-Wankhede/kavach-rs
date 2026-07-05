@@ -2,6 +2,8 @@
 mod events;
 mod expire;
 mod priority_lane;
+// SOURCE: surrealdb-types 3.1.4 RecordIdKey::String — docs.rs/surrealdb-types/3.1.4
+mod key_str;
 mod status;
 mod upsert;
 #[cfg(test)]
