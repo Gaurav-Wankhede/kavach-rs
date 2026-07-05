@@ -72,11 +72,10 @@ pub(crate) fn check_prod_destructive(command: &str) -> Option<String> {
         && !lower.contains("-target")
     {
         return Some(
-            "BLOCKED: Infrastructure destruction detected. \
-             Destroying infrastructure without targeting specific resources is dangerous. \
-             FIX: 1) Run with --dry-run first to see what will be destroyed. \
-             2) Use -target to destroy specific resources only. \
-             3) If intentional, run the command manually."
+            "[DESTRUCTIVE_OP] Infrastructure destruction detected — destroying without \
+             targeting specific resources is dangerous -> run with --dry-run first to see \
+             what will be destroyed, use -target to destroy specific resources only, and if \
+             intentional, run the command manually -> retry."
                 .to_owned(),
         );
     }
