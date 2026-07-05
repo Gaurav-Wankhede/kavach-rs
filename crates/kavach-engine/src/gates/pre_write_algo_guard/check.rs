@@ -4,12 +4,11 @@ use super::outcome::AlgoGuardOutcome;
 use super::strip::strip_string_literals;
 use super::triggers::ALGO_TRIGGERS;
 
-const BLOCK_MSG: &str = "ALGO_HUNTER_REQUIRED: this write introduces algorithmic or data-structure logic.\n\
-     \n\
-     Run /arch BEFORE this write. Do NOT write any provenance comment.\n\
-     1. Invoke /arch — research the problem class, compare ≥3 candidates with current benchmarks.\n\
-     2. Persist the choice as a kavach decision row (choice + source link + rationale). Comments waste tokens; the row is the record.\n\
-     3. Retry this Write — the gate approves on the recorded /arch invocation.";
+const BLOCK_MSG: &str = "[ALGO_HUNTER_REQUIRED] this write introduces algorithmic or data-structure logic.\n\
+     Do this now, then retry:\n\
+     1. Run /arch — research the problem class, compare \u{2265}3 candidates with current benchmarks.\n\
+     2. Record the choice as the typed algo decision row (choice + source link + rationale) \u{2014} the /arch recorder does this, not a comment.\n\
+     3. RETRY this Write \u{2014} the gate approves on the recorded /arch invocation.";
 
 /// Check whether the write requires prior `/arch` invocation.
 ///
