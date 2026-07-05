@@ -7,8 +7,8 @@ use crate::gates::pre_write_context::WriteContext;
 pub(super) fn empty_path(ctx: &WriteContext<'_>) -> Option<SecurityResult> {
     ctx.file_path.is_empty().then(|| {
         SecurityResult::Block(
-            "BLOCKED: Write/Edit called with empty file_path. \
-             All content guards would be bypassed. Malformed tool input."
+            "[PATH_POLICY] Write/Edit called with empty file_path — all content guards \
+             would be bypassed -> supply a real file_path -> retry."
                 .to_owned(),
         )
     })
