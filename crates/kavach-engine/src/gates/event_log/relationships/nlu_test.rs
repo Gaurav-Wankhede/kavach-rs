@@ -70,3 +70,9 @@ fn short_bare_token_rejected_long_slug_accepted() {
         "edgeauthoring"
     ));
 }
+
+#[test]
+fn nlu_edges_are_marked_speculative() {
+    let out = rels("This depends on dag-gap1-critical-path.");
+    assert!(out.iter().all(|r| r.speculative), "{out:?}");
+}
