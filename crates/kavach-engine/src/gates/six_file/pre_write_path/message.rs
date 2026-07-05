@@ -18,6 +18,6 @@ pub(super) fn format_block(path: &str) -> String {
          - specs/NN-feature.md  → category=roadmap, key=roadmap.unit.NN.<slug>\n\n\
          Invoke Skill `six-file-context` for the write protocol, or Agent\n\
          `spec-author` to draft the rows. Then `kavach db write --category <cat>\n\
-         --key <key> --content \"<spec>\"`."
+         --key <key> --content \"<spec>\"` -> retry."
     )
 }
