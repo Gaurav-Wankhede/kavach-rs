@@ -5,7 +5,7 @@
 /// `issue_list` is a comma-joined summary of the missing-flag findings.
 pub(super) fn grep_performance_block(issue_list: &str) -> String {
     format!(
-        "[GREP_PERFORMANCE_BLOCK]\n\
+        "[GREP_PERFORMANCE_POLICY]\n\
          Recursive grep: {issue_list}\n\
          This causes 30+ minute hangs on large codebases.\n\n\
          USE `rg` (ripgrep) instead — 5-13x faster, auto-skips .git/binaries:\n\
@@ -13,7 +13,7 @@ pub(super) fn grep_performance_block(issue_list: &str) -> String {
          TOOLBELT: kavach-engine::toolbelt::search() wraps rg with grep fallback.\n\n\
          If you MUST use Bash grep:\n\
          grep -rI --exclude-dir=.git --exclude-dir=target \
-         --exclude-dir=node_modules --include='*.rs' PATTERN PATH"
+         --exclude-dir=node_modules --include='*.rs' PATTERN PATH -> retry"
     )
 }
 
