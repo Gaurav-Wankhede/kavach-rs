@@ -25,6 +25,7 @@ regex = { workspace = true }
 surrealdb = { workspace = true }
 surrealdb-types = { workspace = true }
 kavach-advisor = { path = "../kavach-advisor" }
+kavach-toon = { path = "../kavach-toon" }
 postgres = { workspace = true }
 postgres-native-tls = { workspace = true }
 native-tls = { workspace = true }
