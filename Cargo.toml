@@ -101,6 +101,7 @@ subtle = "2"
 # behind an internal mutex so test code never writes `unsafe { set_var }` itself.
 # SOURCE: https://docs.rs/temp-env/0.3 (2026, Rust 2024 edition compatible)
 temp-env = "0.3"
+kavach-toon = { path = "crates/kavach-toon" }
 
 [workspace.lints.rust]
 # unsafe_code is FORBID — no escape hatch, no per-site `#[allow]`. The only
