@@ -45,11 +45,5 @@ pub(crate) fn format_advisory(file_path: &str, content: &str) -> Option<String> 
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn should_allow_parameterized_query() {
-        assert!(check("query.sql", "SELECT id FROM users WHERE id = $1").is_none());
-    }
-}
+#[path = "pre_write_sql_guard_test.rs"]
+mod tests;
