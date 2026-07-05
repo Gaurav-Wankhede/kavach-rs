@@ -40,11 +40,10 @@ pub(crate) fn check_prod_destructive(command: &str) -> Option<String> {
         || lower.contains("bucket delete")
     {
         return Some(
-            "BLOCKED: Cloud storage/volume deletion detected. \
-             This is an irreversible destructive operation that can cause data loss. \
-             FIX: 1) Verify backups exist in a separate location. \
-             2) Confirm this is NOT production storage. \
-             3) If intentional, run the command manually with explicit confirmation."
+            "[DESTRUCTIVE_OP] Cloud storage/volume deletion detected — irreversible, can \
+             cause data loss -> verify backups exist elsewhere, confirm this is NOT production \
+             storage, and if intentional, run the command manually with explicit confirmation \
+             -> retry."
                 .to_owned(),
         );
     }
