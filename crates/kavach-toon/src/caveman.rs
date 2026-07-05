@@ -31,7 +31,7 @@ pub fn compress(text: &str, level: Level) -> String {
     preserve::unmask(&dropped, &originals)
 }
 
-/// Errors with [`CavemanError::PreservedTokenDropped`] if a span was lost.
+/// # Errors: [`CavemanError::PreservedTokenDropped`] if a preserved span was lost.
 pub fn assert_lossless(original: &str, compressed: &str) -> Result<(), CavemanError> {
     verify::check_lossless(original, compressed)
 }
