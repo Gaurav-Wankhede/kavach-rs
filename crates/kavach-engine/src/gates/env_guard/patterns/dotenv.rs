@@ -62,11 +62,11 @@ pub(crate) fn check_dotenv_grep(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED (`grep`/`rg` on .env prints secret values). NOT a hand-back. \
+        "[SECRET_CONSUME] `grep`/`rg` on .env prints secret values. NOT a hand-back. \
          DO THE TASK: if you need a value, consume it inside a runtime script \
          (`dotenvy` + `std::env::var`) that runs the operation and prints ONLY a receipt — \
          never the value. To inspect only NAMES: `rg -o '^[A-Z][A-Z0-9_]*' .env | sort`. \
-         To read only public vars: `rg '^PUBLIC_' .env`. Do NOT defer to the user."
+         To read only public vars: `rg '^PUBLIC_' .env`. Run it yourself -> retry."
             .into(),
     )
 }
