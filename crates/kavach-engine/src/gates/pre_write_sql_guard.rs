@@ -16,11 +16,11 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
         .map(|v| format!("  {} — {}", v.pattern, v.fix))
         .collect();
     Some(format!(
-        "SQL GUARD BLOCKED: Production code violations detected\n\n\
-         P0 VIOLATIONS (HARD BLOCK):\n{}\n\n\
+        "[SQL_SAFETY] Production code violations detected\n\n\
+         P0 VIOLATIONS:\n{}\n\n\
          RESEARCH: WebSearch \"sql injection prevention parameterized queries {{search_year}}\"\n\
          SKILL: Invoke `data` skill (SQL section) for safe query patterns.\n\
-         FIX: Use $1/$2 params with sqlx::query!(). Never format!() into SQL.",
+         FIX: Use $1/$2 params with sqlx::query!(). Never format!() into SQL -> retry.",
         lines.join("\n")
     ))
 }
