@@ -161,6 +161,8 @@ fn build_and_print_payload(
         more = limit > 0 && total > limit,
     );
 
+    // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    let payload = kavach_toon::compact::compress(&payload, kavach_toon::compact::Level::Full);
     if let Err(io_err) = print_or_exit(&payload) {
         return into_exit_code(io_err);
     }
