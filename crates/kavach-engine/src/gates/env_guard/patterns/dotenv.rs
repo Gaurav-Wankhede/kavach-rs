@@ -42,14 +42,14 @@ pub(crate) fn check_dotenv_read(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED (would leak every .env value into context). This is NOT a hand-back. \
+        "[SECRET_CONSUME] would leak every .env value into context. NOT a hand-back. \
          DO THE TASK: WRITE a runtime Rust script (or `cargo run`-able bin / `rust-script`) \
          that calls `dotenvy::from_path(\".env\")` then `std::env::var(..)` INSIDE its own \
          process, performs the operation the task needs (migration / deletion / query / op), \
          and prints ONLY a pass/fail receipt — never the secret value. The value lives in the \
          child process, never in your context. If a required key is absent after the load, \
          print `{\"ok\":false,\"missing\":[\"KEY\"]}` and file a card naming KEY. \
-         (TypeScript with strict types only if Rust cannot reach the engine.) Do NOT ask the user to run it."
+         (TypeScript with strict types only if Rust cannot reach the engine.) Run it yourself -> retry."
             .into(),
     )
 }
