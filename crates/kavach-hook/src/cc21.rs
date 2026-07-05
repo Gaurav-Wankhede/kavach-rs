@@ -46,10 +46,11 @@ pub fn exit_post_tool_block(reason: &str, context: &str) -> HookAction {
 /// `PostToolUse`: context injection.
 #[must_use]
 pub fn exit_post_tool_context(context: &str) -> HookAction {
+    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
     let resp = HookResponse {
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "PostToolUse".into(),
-            additional_context: context.into(),
+            additional_context: context,
             ..Default::default()
         }),
         ..Default::default()
