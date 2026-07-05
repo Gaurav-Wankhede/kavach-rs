@@ -77,3 +77,17 @@ fn allows_no_trigger_keywords() {
 fn allows_empty_content() {
     assert!(is_allow(&check("src/lib.rs", "", false, "")));
 }
+
+#[test]
+fn block_message_is_action_imperative() {
+    let kw = ALGO_TRIGGERS[6];
+    let AlgoGuardOutcome::Block(msg) = check("src/cache.rs", &trigger_line(kw), false, "") else {
+        panic!("expected Block outcome");
+    };
+    assert!(msg.contains("Run /arch"), "names the step: {msg}");
+    assert!(
+        msg.contains("typed algo decision row"),
+        "names the satisfaction mechanic: {msg}"
+    );
+    assert!(msg.contains("retry"), "closes with retry: {msg}");
+}
