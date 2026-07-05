@@ -56,11 +56,10 @@ pub(crate) fn check_prod_destructive(command: &str) -> Option<String> {
         && !lower.contains("--dry-run")
     {
         return Some(
-            "BLOCKED: Cloud database deletion detected. \
-             This permanently destroys the database and may not be recoverable. \
-             FIX: 1) Ensure final snapshots are enabled. \
-             2) Verify deletion protection is disabled intentionally. \
-             3) If intentional, run the command manually."
+            "[DESTRUCTIVE_OP] Cloud database deletion detected — permanently destroys the \
+             database and may not be recoverable -> ensure final snapshots are enabled, verify \
+             deletion protection is disabled intentionally, and if intentional, run the command \
+             manually -> retry."
                 .to_owned(),
         );
     }
