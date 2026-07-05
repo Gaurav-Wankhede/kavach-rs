@@ -113,7 +113,7 @@ impl HookResponse {
             hook_specific_output: Some(HookSpecificOutput {
                 hook_event_name: "PreToolUse".into(),
                 permission_decision: "deny".into(),
-                permission_decision_reason: reason.into(),
+                permission_decision_reason: with_next_action(reason),
                 ..Default::default()
             }),
             ..Default::default()
