@@ -7,18 +7,17 @@ pub(crate) fn handle_read(input: &HookInput) {
 
     if kavach_config::is_blocked_path(file_path) {
         drop(kavach_hook::exit_pre_tool_deny(&format!(
-            "BLOCKED: {file_path} is a system credential/key file. \
-             Read from environment variables or a .env file instead — \
-             system credential and key files are off-limits."
+            "[READ_POLICY] {file_path} is a system credential/key file -> read from \
+             environment variables or a .env file instead -> retry."
         )));
         return;
     }
 
     if kavach_config::is_blocked_extension(file_path) {
         drop(kavach_hook::exit_pre_tool_deny(&format!(
-            "BLOCKED: {file_path} has a restricted extension (.pem/.key/.p12/.pfx). \
-             Use `openssl x509 -text -noout` via Bash to inspect certificate \
-             metadata — reading private key material directly exposes key material."
+            "[READ_POLICY] {file_path} has a restricted extension (.pem/.key/.p12/.pfx) \
+             -> use `openssl x509 -text -noout` via Bash to inspect certificate metadata \
+             instead of reading private key material directly -> retry."
         )));
         return;
     }
@@ -26,8 +25,9 @@ pub(crate) fn handle_read(input: &HookInput) {
     // Block /proc/self/environ — exposes all process environment values.
     if file_path.contains("/proc/") && file_path.contains("/environ") {
         drop(kavach_hook::exit_pre_tool_deny(
-            "BLOCKED: /proc/*/environ exposes all process environment variables including secrets. \
-             Use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` to list variable names only (toolbelt: rg).",
+            "[READ_POLICY] /proc/*/environ exposes all process environment variables \
+             including secrets -> use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` to list \
+             variable names only (toolbelt: rg) -> retry.",
         ));
         return;
     }
