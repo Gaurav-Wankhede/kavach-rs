@@ -216,8 +216,7 @@ pub fn block(reason: &str) {
     output(&HookResponse::new_block(reason));
 }
 pub fn modify(reason: &str, ctx: &str) {
-    // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents — compress injection to cut context-rot tokens
-    let ctx = kavach_toon::caveman::compress(ctx, kavach_toon::caveman::Level::Full);
+    let ctx = crate::inject::caveman_inject(ctx);
     output(&HookResponse::new_modify(reason, &ctx));
 }
 // --- Exit helpers ---
