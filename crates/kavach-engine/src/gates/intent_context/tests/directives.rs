@@ -27,10 +27,10 @@ fn test_rca_protocol_injected_for_debug() {
     let mut ctx = String::new();
     append_root_cause_protocol(&mut ctx, "debug");
     assert!(ctx.contains("ROOT_CAUSE_PROTOCOL"));
-    assert!(ctx.contains("CLAUDE.md §1"));
-    assert!(ctx.contains("[RCA] block"));
+    assert!(ctx.contains("Fix cause"));
+    assert!(ctx.contains("[RCA]"));
     assert!(ctx.contains("blast_radius"));
-    assert!(ctx.contains("why1..why5"));
+    assert!(ctx.contains("why×5"));
 }
 
 #[test]
