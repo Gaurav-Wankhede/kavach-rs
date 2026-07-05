@@ -212,7 +212,7 @@ impl HookResponse {
     pub fn new_permission_deny(reason: &str) -> Self {
         Self {
             decision: "block".into(),
-            reason: reason.into(),
+            reason: with_next_action(reason),
             ..Default::default()
         }
     }
