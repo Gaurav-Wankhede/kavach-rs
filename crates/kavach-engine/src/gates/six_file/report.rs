@@ -12,7 +12,7 @@ use super::auto_draft;
 #[must_use]
 pub(crate) fn format_block(result: &WitnessResult) -> String {
     let mut buf = String::new();
-    buf.push_str("[SIX_FILE_BLOCK]\n\n");
+    buf.push_str("[SIX_FILE_POLICY]\n\n");
     write!(
         buf,
         "Project: {}\nTier: {}\n",
