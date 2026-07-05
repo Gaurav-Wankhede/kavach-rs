@@ -3,6 +3,7 @@
 use kavach_toon::compact::{compress, Level};
 
 /// Compress `text` at Full level, fire-and-forget a rot-savings metric, return the text.
+#[must_use]
 pub fn compact_inject(text: &str) -> String {
     let out = compress(text, Level::Full);
     record_metric(text, &out);
@@ -12,7 +13,9 @@ pub fn compact_inject(text: &str) -> String {
 fn record_metric(input: &str, output: &str) {
     let tokens_in = input.split_whitespace().count();
     let tokens_out = output.split_whitespace().count();
-    let delta = tokens_in as i64 - tokens_out as i64;
+    let delta = i64::try_from(tokens_in).unwrap_or(i64::MAX).saturating_sub(
+        i64::try_from(tokens_out).unwrap_or(i64::MAX),
+    );
     let session_id = kavach_session::resolved_session_id();
     if session_id.is_empty() {
         return;
