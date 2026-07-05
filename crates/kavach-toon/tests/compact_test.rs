@@ -1,4 +1,4 @@
-use kavach_toon::caveman::{Level, assert_lossless, compress};
+use kavach_toon::compact::{Level, assert_lossless, compress};
 
 #[test]
 fn inline_code_span_survives_full_and_ultra() {

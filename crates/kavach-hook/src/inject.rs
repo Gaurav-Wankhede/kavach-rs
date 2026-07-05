@@ -1,8 +1,8 @@
 //! Single choke for gate injection: compress + fire-and-forget metric record.
-use kavach_toon::caveman::{compress, Level};
+use kavach_toon::compact::{compress, Level};
 
 /// Compress `text` at Full level, fire-and-forget a rot-savings metric, return the text.
-pub fn caveman_inject(text: &str) -> String {
+pub fn compact_inject(text: &str) -> String {
     let out = compress(text, Level::Full);
     record_metric(text, &out);
     out
@@ -23,8 +23,8 @@ fn record_metric(input: &str, output: &str) {
     let params = serde_json::json!({
         "project": state.project,
         "category": "pattern",
-        "key": format!("caveman.metric.{session_id}"),
-        "title": "Caveman compression metrics (session)",
+        "key": format!("compact.metric.{session_id}"),
+        "title": "Compact compression metrics (session)",
         "content": format!("last_delta_tok={delta} tok_in={tokens_in} tok_out={tokens_out}"),
         "new": true,
     });
@@ -33,7 +33,7 @@ fn record_metric(input: &str, output: &str) {
     };
     let sw = kavach_session::SpooledWrite::new("db.write".to_string(), params_json);
     if let Err(e) = kavach_session::enqueue_write_spool(&sw) {
-        eprintln!("kavach: caveman metric spool enqueue failed: {e}");
+        eprintln!("kavach: compact metric spool enqueue failed: {e}");
     }
 }
 

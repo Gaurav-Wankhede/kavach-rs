@@ -104,11 +104,11 @@ pub(crate) enum Commands {
         #[arg(long)]
         vendor: Option<String>,
     },
-    /// Compress stdin text with the caveman injection compressor (debug/witness).
+    /// Compress stdin text with the compact injection compressor (debug/witness).
     #[command(
-        after_help = "EXAMPLES:\n  echo 'the gate is binding' | kavach caveman\n  echo 'see `file.rs:9` and https://x.io' | kavach caveman --level ultra --verify\n\nWHEN: prove the deployed binary compresses injection prose; verify preserved tokens survive."
+        after_help = "EXAMPLES:\n  echo 'the gate is binding' | kavach compact\n  echo 'see `file.rs:9` and https://x.io' | kavach compact --level ultra --verify\n\nWHEN: prove the deployed binary compresses injection prose; verify preserved tokens survive."
     )]
-    Caveman {
+    Compact {
         /// Compression level: lite | full | ultra (default full).
         #[arg(long, default_value = "full")]
         level: String,

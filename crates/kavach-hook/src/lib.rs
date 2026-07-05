@@ -216,7 +216,7 @@ pub fn block(reason: &str) {
     output(&HookResponse::new_block(reason));
 }
 pub fn modify(reason: &str, ctx: &str) {
-    let ctx = inject::caveman_inject(ctx);
+    let ctx = inject::compact_inject(ctx);
     output(&HookResponse::new_modify(reason, &ctx));
 }
 // --- Exit helpers ---

@@ -1,4 +1,4 @@
-// SOURCE: github.com/JuliusBrussee/caveman README (fetched 2026-07-06)
+// SOURCE: github.com/JuliusBrussee/compact README (fetched 2026-07-06)
 mod preserve;
 mod rules;
 mod verify;
@@ -17,7 +17,7 @@ pub enum Level {
 /// Error returned when a preserved span is lost during compression.
 #[derive(Debug, Error)]
 #[expect(clippy::exhaustive_enums, reason = "cross-crate error")]
-pub enum CavemanError {
+pub enum CompactError {
     #[error("preserved span dropped: {0}")]
     PreservedTokenDropped(String),
 }
@@ -32,6 +32,6 @@ pub fn compress(text: &str, level: Level) -> String {
 }
 
 #[expect(clippy::missing_errors_doc, reason = "single-sentence summary above covers it")]
-pub fn assert_lossless(original: &str, compressed: &str) -> Result<(), CavemanError> {
+pub fn assert_lossless(original: &str, compressed: &str) -> Result<(), CompactError> {
     verify::check_lossless(original, compressed)
 }

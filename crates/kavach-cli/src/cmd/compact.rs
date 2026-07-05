@@ -1,9 +1,9 @@
 use std::io::Read as _;
 
-use kavach_toon::caveman::{self, Level};
+use kavach_toon::compact::{self, Level};
 use serde_json::json;
 
-/// `kavach caveman` — compress stdin with the deployed caveman compressor (debug/witness).
+/// `kavach compact` — compress stdin with the deployed compact compressor (debug/witness).
 pub(super) fn run(level: &str, verify: bool, record: bool, project: Option<&str>) -> i32 {
     let level_str = level;
     let level = match level.to_ascii_lowercase().as_str() {
@@ -11,7 +11,7 @@ pub(super) fn run(level: &str, verify: bool, record: bool, project: Option<&str>
         "full" => Level::Full,
         "ultra" => Level::Ultra,
         other => {
-            eprintln!("kavach caveman: unknown --level '{other}' (expected lite|full|ultra)");
+            eprintln!("kavach compact: unknown --level '{other}' (expected lite|full|ultra)");
             return 2;
         }
     };
@@ -19,16 +19,16 @@ pub(super) fn run(level: &str, verify: bool, record: bool, project: Option<&str>
     let mut input = String::new();
     let read_result = std::io::stdin().lock().read_to_string(&mut input);
     if let Err(e) = read_result {
-        eprintln!("kavach caveman: failed to read stdin: {e}");
+        eprintln!("kavach compact: failed to read stdin: {e}");
         return 2;
     }
 
     // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
-    let output = caveman::compress(&input, level);
+    let output = compact::compress(&input, level);
     println!("{output}");
 
-    if verify && let Err(e) = caveman::assert_lossless(&input, &output) {
-        eprintln!("kavach caveman: lossless check failed: {e}");
+    if verify && let Err(e) = compact::assert_lossless(&input, &output) {
+        eprintln!("kavach compact: lossless check failed: {e}");
         return 1;
     }
 
@@ -42,7 +42,7 @@ pub(super) fn run(level: &str, verify: bool, record: bool, project: Option<&str>
 /// Measure the compression Δ, verify losslessness, and persist a metric row via `db.write`.
 fn record_metrics(level_str: &str, input: &str, output: &str, project: Option<&str>) -> i32 {
     let Some(proj) = project else {
-        eprintln!("kavach caveman: --record requires --project (no session resolver available)");
+        eprintln!("kavach compact: --record requires --project (no session resolver available)");
         return 2;
     };
 
@@ -61,10 +61,10 @@ fn record_metrics(level_str: &str, input: &str, output: &str, project: Option<&s
     } else {
         0
     };
-    let lossless_ok = caveman::assert_lossless(input, output).is_ok();
+    let lossless_ok = compact::assert_lossless(input, output).is_ok();
 
-    let key = format!("caveman.run.{proj}.{tokens_in}x{tokens_out}");
-    let title = format!("Caveman compression metrics ({proj})");
+    let key = format!("compact.run.{proj}.{tokens_in}x{tokens_out}");
+    let title = format!("Compact compression metrics ({proj})");
     let content = format!(
         "level={level_str} bytes_in={bytes_in} bytes_out={bytes_out} tok_in={tokens_in} tok_out={tokens_out} delta_pct={delta_pct} lossless={lossless_ok}"
     );
@@ -80,12 +80,12 @@ fn record_metrics(level_str: &str, input: &str, output: &str, project: Option<&s
     if let Err(e) =
         kavach_rpc::client::call::<serde_json::Value, serde_json::Value>("db.write", Some(params))
     {
-        eprintln!("kavach caveman: rpc db.write: {e}");
+        eprintln!("kavach compact: rpc db.write: {e}");
         return 3;
     }
 
     eprintln!(
-        "[CAVEMAN_RECORDED] {level_str} {tokens_in}->{tokens_out} tok ({delta_pct}%) lossless={lossless_ok} row={proj}/pattern/{key}"
+        "[COMPACTION_RECORDED] {level_str} {tokens_in}->{tokens_out} tok ({delta_pct}%) lossless={lossless_ok} row={proj}/pattern/{key}"
     );
     0
 }

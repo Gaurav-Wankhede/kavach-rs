@@ -13,7 +13,7 @@ pub fn exit_pre_tool_deny(reason: &str) -> HookAction {
 /// `PreToolUse`: allow with optional context via hookSpecificOutput.
 #[must_use]
 pub fn exit_pre_tool_allow(context: Option<&str>) -> HookAction {
-    let compressed = context.map(crate::inject::caveman_inject);
+    let compressed = context.map(crate::inject::compact_inject);
     let resp = compressed.as_deref().map_or_else(
         || HookResponse::new_pre_tool_use_allow("allow"),
         |ctx| HookResponse::new_pre_tool_use_with_context("allow", ctx),
@@ -36,7 +36,7 @@ pub fn exit_pre_tool_ask(reason: &str) -> HookAction {
 /// `PostToolUse`: block with reason + context.
 #[must_use]
 pub fn exit_post_tool_block(reason: &str, context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse::new_post_tool_use_block(reason, &context);
     output(&resp);
     HookAction::Done
@@ -45,7 +45,7 @@ pub fn exit_post_tool_block(reason: &str, context: &str) -> HookAction {
 /// `PostToolUse`: context injection.
 #[must_use]
 pub fn exit_post_tool_context(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse {
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "PostToolUse".into(),
@@ -61,7 +61,7 @@ pub fn exit_post_tool_context(context: &str) -> HookAction {
 /// `UserPromptSubmit`: context injection via hookSpecificOutput.
 #[must_use]
 pub fn exit_prompt_context(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse::new_user_prompt_submit_context(&context);
     output(&resp);
     HookAction::Done
@@ -78,7 +78,7 @@ pub fn exit_prompt_submit_block(reason: &str) -> HookAction {
 /// `SessionStart`: context via systemMessage (no hookSpecificOutput).
 #[must_use]
 pub fn exit_session_start_context(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse {
         system_message: context,
         ..Default::default()
@@ -98,7 +98,7 @@ pub fn exit_session_start_full(
     reload_skills: bool,
     session_title: &str,
 ) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse {
         system_message: context,
         hook_specific_output: Some(HookSpecificOutput {
@@ -116,7 +116,7 @@ pub fn exit_session_start_full(
 /// Stop hooks don't support hookSpecificOutput — use `system_message` instead.
 #[must_use]
 pub fn exit_stop_context(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse {
         system_message: context,
         ..Default::default()
@@ -145,7 +145,7 @@ pub fn exit_notification_context(context: &str) -> HookAction {
 /// stall). Empty `seq` omits the field. SOURCE: changelog v2.1.141.
 #[must_use]
 pub fn exit_notification_with_sequence(context: &str, seq: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse {
         system_message: context,
         terminal_sequence: (!seq.is_empty()).then(|| seq.to_owned()),
@@ -164,7 +164,7 @@ pub fn exit_post_tool_trimmed(trimmed_output: &str, context: &str) -> HookAction
     } else {
         format!("{trimmed_output}\n\n{context}")
     };
-    let combined = crate::inject::caveman_inject(&combined);
+    let combined = crate::inject::compact_inject(&combined);
     let resp = HookResponse {
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "PostToolUse".into(),
@@ -180,7 +180,7 @@ pub fn exit_post_tool_trimmed(trimmed_output: &str, context: &str) -> HookAction
 /// `PostToolUseFailure`: context injection via systemMessage (no hookSpecificOutput).
 #[must_use]
 pub fn exit_post_tool_failure_context(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let resp = HookResponse {
         system_message: context,
         ..Default::default()

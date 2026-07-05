@@ -91,7 +91,7 @@ pub fn context_block(name: &str, kvs: &[(&str, &str)]) -> String {
 pub fn exit_approve_ctx(gate: &str) -> HookAction {
     let d = today_full();
     let context = context_block(gate, &[("status", "allow"), ("date", &d)]);
-    let context = crate::inject::caveman_inject(&context);
+    let context = crate::inject::compact_inject(&context);
     let resp = HookResponse::new_pre_tool_use_with_context(gate, &context);
     output(&resp);
     HookAction::Done
@@ -106,7 +106,7 @@ pub fn exit_block_ctx(gate: &str, reason: &str) -> HookAction {
         gate,
         &[("status", "block"), ("reason", reason), ("date", &d)],
     );
-    let context = crate::inject::caveman_inject(&context);
+    let context = crate::inject::compact_inject(&context);
     let resp = HookResponse {
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "PreToolUse".into(),

@@ -1,4 +1,4 @@
-// SOURCE: github.com/JuliusBrussee/caveman README (fetched 2026-07-06)
+// SOURCE: github.com/JuliusBrussee/compact README (fetched 2026-07-06)
 use super::Level;
 
 const fn is_sentinel(c: char) -> bool {

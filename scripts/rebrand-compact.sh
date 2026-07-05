@@ -6,8 +6,8 @@ cd "$(git rev-parse --show-toplevel)"
 TOON=crates/kavach-toon/src
 CLI=crates/kavach-cli/src
 
-[ -f "$TOON/caveman.rs" ] && rnr -f -q caveman compact "$TOON/caveman.rs" || true
-[ -d "$TOON/caveman" ] && { rnr -f -q caveman compact "$TOON"/caveman/*.rs || true; mv "$TOON/caveman" "$TOON/compact"; }
+[ -f "$TOON/caveman.rs" ] && rnr regex -f -s caveman compact "$TOON/caveman.rs" || true
+[ -d "$TOON/caveman" ] && { rnr regex -f -s caveman compact "$TOON"/caveman/*.rs || true; mv "$TOON/caveman" "$TOON/compact"; }
 [ -f crates/kavach-toon/tests/caveman_test.rs ] && mv crates/kavach-toon/tests/caveman_test.rs crates/kavach-toon/tests/compact_test.rs || true
 [ -f "$CLI/cmd/caveman.rs" ] && mv "$CLI/cmd/caveman.rs" "$CLI/cmd/compact.rs" || true
 

@@ -3,7 +3,7 @@ mod ask;
 pub(crate) mod bg;
 pub(crate) mod bulk;
 mod audit;
-mod caveman;
+mod compact;
 mod commands;
 mod context;
 pub(crate) mod goal;
@@ -69,12 +69,12 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             verify,
             vendor,
         } => gates::run(&gate_name, hook, verify, vendor.as_deref()),
-        Commands::Caveman {
+        Commands::Compact {
             level,
             verify,
             record,
             project,
-        } => caveman::run(&level, verify, record, project.as_deref()),
+        } => compact::run(&level, verify, record, project.as_deref()),
         Commands::Session { action } => session::run(&action),
         Commands::Rules { action } => rules::run(action),
         Commands::Db { action } => db::run(action),

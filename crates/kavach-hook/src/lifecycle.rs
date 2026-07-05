@@ -15,7 +15,7 @@ pub(crate) struct UserPromptSubmitOutput {
 /// Write `UserPromptSubmit` JSON to stdout.
 #[must_use]
 pub fn exit_user_prompt_submit(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     let out = UserPromptSubmitOutput {
         hook_event_name: "UserPromptSubmit".into(),
         additional_context: context,
@@ -35,7 +35,7 @@ pub fn exit_user_prompt_submit_silent() -> HookAction {
 /// `SessionEnd` with context.
 #[must_use]
 pub fn exit_session_end(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     output(&HookResponse::new_session_end_context(&context));
     HookAction::Done
 }
@@ -45,7 +45,7 @@ pub fn exit_session_end(context: &str) -> HookAction {
 /// `SubagentStart` with context.
 #[must_use]
 pub fn exit_subagent_start(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     output(&HookResponse::new_subagent_start_context(&context));
     HookAction::Done
 }
@@ -53,7 +53,7 @@ pub fn exit_subagent_start(context: &str) -> HookAction {
 /// `SubagentStop` with context.
 #[must_use]
 pub fn exit_subagent_stop(context: &str) -> HookAction {
-    let context = crate::inject::caveman_inject(context);
+    let context = crate::inject::compact_inject(context);
     output(&HookResponse::new_subagent_stop_context(&context));
     HookAction::Done
 }
