@@ -25,11 +25,11 @@ pub(crate) fn check_source(lc: &str, command: &str) -> Option<String> {
     }
     let env_file = detect_env_filename(lc);
     Some(format!(
-        "BLOCKED (`source {env_file} && {downstream}` PRINTS a secret value into context). \
-         Sourcing itself is fine — the leak is the print. NOT a hand-back. DO THE TASK: drop the \
-         printer; consume the value in-process (a runtime `.sh` that loads `.env` then runs the op, \
-         or a rust-script via `dotenvy` + `std::env::var`) and emit ONLY a pass/fail receipt — \
-         never the value. Run it yourself; do NOT hand back to the user."
+        "[SECRET_CONSUME] `source {env_file} && {downstream}` PRINTS a secret value into \
+         context — sourcing itself is fine, the leak is the print. NOT a hand-back. DO THE \
+         TASK: drop the printer; consume the value in-process (a runtime `.sh` that loads \
+         `.env` then runs the op, or a rust-script via `dotenvy` + `std::env::var`) and emit \
+         ONLY a pass/fail receipt — never the value. Run it yourself -> retry."
     ))
 }
 
