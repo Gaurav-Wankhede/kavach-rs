@@ -41,3 +41,27 @@ fn should_dedupe_and_sort() {
     assert_eq!(rels[0].target, "a");
     assert_eq!(rels[1].target, "b");
 }
+
+fn has_supersedes(body: &str, target: &str) -> bool {
+    extract_memory_entry_relationships(body)
+        .iter()
+        .any(|e| e.rel == "supersedes" && e.target == target)
+}
+
+#[test]
+fn fenced_frontmatter_yields_supersedes() {
+    let body = "---\nsupersedes: dioxus-0.7-websys-gap\n---\nbody\n";
+    assert!(has_supersedes(body, "dioxus-0.7-websys-gap"));
+}
+
+#[test]
+fn loose_leading_kv_yields_supersedes() {
+    let body = "supersedes: dioxus-0.7-websys-gap\n";
+    assert!(has_supersedes(body, "dioxus-0.7-websys-gap"));
+}
+
+#[test]
+fn nlu_prose_yields_supersedes() {
+    let body = "This supersedes dioxus-0.7-websys-gap; adopt use_route.\n";
+    assert!(has_supersedes(body, "dioxus-0.7-websys-gap"));
+}
