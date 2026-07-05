@@ -32,7 +32,7 @@ fn destructive_cli(command: &str) -> Option<Decision> {
         )
     };
     match hit.severity {
-        P0Block => Some(Decision::Deny(msg("BLOCKED"))),
+        P0Block => Some(Decision::Deny(msg("[DESTRUCTIVE_OP]"))),
         P1Confirm => Some(Decision::Ask(msg("CONFIRM"))),
         P2Warn => None,
     }
