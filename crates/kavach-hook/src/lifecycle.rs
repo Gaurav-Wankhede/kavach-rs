@@ -45,7 +45,7 @@ pub fn exit_session_end(context: &str) -> HookAction {
 /// `SubagentStart` with context.
 #[must_use]
 pub fn exit_subagent_start(context: &str) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     output(&HookResponse::new_subagent_start_context(&context));
     HookAction::Done
 }
