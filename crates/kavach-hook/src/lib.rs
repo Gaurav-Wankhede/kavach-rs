@@ -4,6 +4,7 @@ use serde::Serialize;
 // SOURCE: doc.rust-lang.org/edition-guide/rust-2018/path-changes.html — 2018+ module paths need no mod.rs
 pub mod cc21;
 pub mod context;
+pub mod inject;
 pub mod input;
 pub mod lifecycle;
 pub mod severity;
