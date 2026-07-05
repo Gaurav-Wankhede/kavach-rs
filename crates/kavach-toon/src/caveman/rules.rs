@@ -1,7 +1,7 @@
 // SOURCE: github.com/JuliusBrussee/caveman README (fetched 2026-07-06)
 use super::Level;
 
-fn is_sentinel(c: char) -> bool {
+const fn is_sentinel(c: char) -> bool {
     c == '\u{0}'
 }
 
