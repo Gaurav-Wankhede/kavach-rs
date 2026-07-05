@@ -115,6 +115,12 @@ pub(crate) enum Commands {
         /// After compressing, assert no preserved token was dropped; nonzero exit on failure.
         #[arg(long)]
         verify: bool,
+        /// Compress, verify, measure, and persist a metric row to the kavach DB.
+        #[arg(long)]
+        record: bool,
+        /// Project slug for the DB row (with --record).
+        #[arg(long)]
+        project: Option<String>,
     },
     /// Manage session lifecycle
     Session {
