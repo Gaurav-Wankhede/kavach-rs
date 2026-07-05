@@ -126,3 +126,42 @@ fn test_hook_response_roundtrip_legacy() {
     assert_eq!(parsed.decision, "approve");
     assert_eq!(parsed.additional_context, "context here");
 }
+
+#[test]
+fn test_new_block_appends_next_action_trailer() {
+    let resp = HookResponse::new_block("denied");
+    assert!(resp.reason.contains("[NEXT_ACTION]"));
+    assert!(resp.reason.starts_with("denied"));
+}
+
+#[test]
+fn test_new_block_is_idempotent_when_trailer_present() {
+    let reason = "denied\n[NEXT_ACTION] already composed";
+    let resp = HookResponse::new_block(reason);
+    assert_eq!(resp.reason.matches("[NEXT_ACTION]").count(), 1);
+}
+
+#[test]
+fn test_new_pre_tool_use_deny_appends_next_action_trailer() {
+    let resp = HookResponse::new_pre_tool_use_deny("blocked cmd");
+    let reason = &resp.hook_specific_output.unwrap().permission_decision_reason;
+    assert!(reason.contains("[NEXT_ACTION]"));
+}
+
+#[test]
+fn test_new_user_prompt_submit_block_appends_next_action_trailer() {
+    let resp = HookResponse::new_user_prompt_submit_block("prompt denied");
+    assert!(resp.reason.contains("[NEXT_ACTION]"));
+}
+
+#[test]
+fn test_new_stop_block_appends_next_action_trailer() {
+    let resp = HookResponse::new_stop_block("stop denied");
+    assert!(resp.reason.contains("[NEXT_ACTION]"));
+}
+
+#[test]
+fn test_new_permission_deny_appends_next_action_trailer() {
+    let resp = HookResponse::new_permission_deny("perm denied");
+    assert!(resp.reason.contains("[NEXT_ACTION]"));
+}
