@@ -3,7 +3,6 @@ mod ask;
 pub(crate) mod bg;
 pub(crate) mod bulk;
 mod audit;
-mod compact;
 mod commands;
 mod context;
 pub(crate) mod goal;
