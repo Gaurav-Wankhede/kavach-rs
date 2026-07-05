@@ -110,10 +110,10 @@ fn block_for_missing_research(session: &kavach_session::SessionState) -> String 
         }
     };
     format!(
-        "[RESEARCH_FIRST:P0] CITE A SOURCE THEN RETRY. This production write needs a \
-         source (URL / [RESEARCH] / SOURCE: marker) — No source -> no claim. Do this now: \
-         {tail} If this looks wrong, READ this guard's source and fix the real cause — \
-         never route around it."
+        "[RESEARCH_EVIDENCE] Add ONE line above the change: // SOURCE: <url-you-read> — one \
+         line satisfies BOTH this gate and the one-line comment ceiling (no conflict exists) \
+         -> RETRY this write. Alternatives: [RESEARCH] block in your reply, or finish the \
+         pending lookup. {tail}"
     )
 }
 /// True when the live research cache for this session reports `done`.
