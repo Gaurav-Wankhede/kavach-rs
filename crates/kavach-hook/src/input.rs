@@ -2,7 +2,7 @@
 use std::io::{self, BufRead};
 use kavach_types::HookInput;
 /// Read a hook input payload from stdin.
-/// # Errors: stdin read or JSON parse failure.
+/// # Errors
 pub fn read_hook_input() -> Result<HookInput, String> {
     let stdin = io::stdin();
     read_hook_input_from(stdin.lock())
