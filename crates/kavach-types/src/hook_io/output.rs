@@ -177,7 +177,7 @@ impl HookResponse {
     pub fn new_user_prompt_submit_block(reason: &str) -> Self {
         Self {
             decision: "block".into(),
-            reason: reason.into(),
+            reason: with_next_action(reason),
             hook_specific_output: Some(HookSpecificOutput {
                 hook_event_name: "UserPromptSubmit".into(),
                 ..Default::default()
