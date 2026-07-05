@@ -69,6 +69,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             verify,
             vendor,
         } => gates::run(&gate_name, hook, verify, vendor.as_deref()),
+        Commands::Caveman { level, verify } => caveman::run(&level, verify),
         Commands::Session { action } => session::run(&action),
         Commands::Rules { action } => rules::run(action),
         Commands::Db { action } => db::run(action),
