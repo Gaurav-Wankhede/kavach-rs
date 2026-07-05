@@ -35,10 +35,11 @@ pub(in crate::gates::pre_tool_search) fn check_stale_version_in_query(
                     && query_major < *installed_major
                 {
                     return Some(format!(
-                        "STALE_VERSION_BLOCKED: Query references \"{name_part} {query_major}\" \
-                             but {dep_name} {installed_major} is installed.\n\
-                             Read package.json/Cargo.toml for actual versions.\n\
-                             FIX: Replace \"{name_part} {query_major}\" with \"{name_part} {installed_major}\"."
+                        "[VERSION_CURRENCY] Query references \"{name_part} {query_major}\" \
+                             but {dep_name} {installed_major} is installed \
+                             -> read package.json/Cargo.toml for actual versions and replace \
+                             \"{name_part} {query_major}\" with \"{name_part} {installed_major}\" \
+                             -> retry."
                     ));
                 }
             }
