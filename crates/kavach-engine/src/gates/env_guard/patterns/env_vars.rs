@@ -103,8 +103,8 @@ pub(crate) fn check_python_environ(lc: &str) -> Option<String> {
 /// `/proc/self/environ` — Linux process environment dump.
 pub(crate) fn check_proc_environ(lc: &str) -> Option<String> {
     (lc.contains("/proc/self/environ") || lc.contains("/proc/1/environ")).then(|| {
-        "BLOCKED: `/proc/self/environ` exposes all process environment variables. \
-         Use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) to list names only."
+        "[SECRET_CONSUME] `/proc/self/environ` exposes all process environment variables \
+         -> use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) to list names only -> retry."
             .into()
     })
 }
