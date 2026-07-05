@@ -113,6 +113,23 @@ List active manifests for a project
 |---|---|---|
 | `--project` | Project slug whose open manifests to list |  |
 
+## `kavach caveman`
+
+Compress stdin text with the caveman injection compressor (debug/witness)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--level` | Compression level: lite \| full \| ultra (default full) | full |
+| `--verify` | After compressing, assert no preserved token was dropped; nonzero exit on failure |  |
+
+```
+EXAMPLES:
+  echo 'the gate is binding' | kavach caveman
+  echo 'see `file.rs:9` and https://x.io' | kavach caveman --level ultra --verify
+
+WHEN: prove the deployed binary compresses injection prose; verify preserved tokens survive.
+```
+
 ## `kavach commands`
 
 Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference
