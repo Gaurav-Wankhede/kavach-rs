@@ -33,7 +33,7 @@ fn depth_over_limit_blocked() {
 #[test]
 fn loc_in_warn_band_advises_not_blocks() {
     // 120 LOC is past the WARN trigger but under the HARD ceiling: per
-    // YAGNI/ponytail (README "never fewest tokens"), this is a SMELL — a P1
+    // YAGNI (README "never fewest tokens"), this is a SMELL — a P1
     // advisory to climb the ladder, NOT a P0 block on a possibly-cohesive unit.
     let content = "fn x() {}\n".repeat(WARN_LOC_NEW_FILE + 20);
     let v = detect("crates/foo/src/mid.rs", &content, "Write");
