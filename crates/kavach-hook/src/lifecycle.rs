@@ -53,7 +53,7 @@ pub fn exit_subagent_start(context: &str) -> HookAction {
 /// `SubagentStop` with context.
 #[must_use]
 pub fn exit_subagent_stop(context: &str) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     output(&HookResponse::new_subagent_stop_context(&context));
     HookAction::Done
 }
