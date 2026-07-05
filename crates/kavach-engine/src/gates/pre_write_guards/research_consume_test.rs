@@ -38,16 +38,16 @@ fn blocks_when_research_required_and_no_evidence() {
     let c = ctx("crates/foo/src/lib.rs", "fn handler() {}");
     let block = super::check(&c, &s).expect("must BLOCK the unsourced write");
     assert!(
-        block.contains("[RESEARCH_FIRST:P0]"),
-        "P0 block tag: {block}"
+        block.contains("[RESEARCH_EVIDENCE]"),
+        "action-imperative block tag: {block}"
     );
     assert!(
-        block.contains("CITE A SOURCE THEN RETRY"),
-        "action-imperative leading phrase: {block}"
+        block.contains("// SOURCE: <url-you-read>"),
+        "names the satisfaction mechanic: {block}"
     );
     assert!(
-        block.contains("No source -> no claim"),
-        "states the law: {block}"
+        block.contains("RETRY this write"),
+        "closes with the retry imperative: {block}"
     );
 }
 
