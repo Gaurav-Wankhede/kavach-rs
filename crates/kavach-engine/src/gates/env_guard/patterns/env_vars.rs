@@ -52,10 +52,10 @@ pub(crate) fn check_env_grep(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED: `env | grep PATTERN` exposes secret values. \
-         To check which variables are present, use: \
+        "[SECRET_CONSUME] `env | grep PATTERN` exposes secret values -> to check which \
+         variables are present, use: \
          `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) (reads names from file) or \
-         `env | grep -o '^[^=]*' | grep PATTERN` (filters names only from environment)."
+         `env | grep -o '^[^=]*' | grep PATTERN` (filters names only from environment) -> retry."
             .into(),
     )
 }
