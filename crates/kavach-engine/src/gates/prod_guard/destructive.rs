@@ -23,11 +23,10 @@ pub(crate) fn check_prod_destructive(command: &str) -> Option<String> {
         && !allow_destructive
     {
         return Some(
-            "BLOCKED: Production database destruction detected. \
-             DROP DATABASE/SCHEMA and TRUNCATE on non-local databases require \
-             manual execution with explicit user confirmation. \
-             FIX: 1) Verify this is NOT a production database. \
-             2) If intentional, run the command manually in a terminal."
+            "[DESTRUCTIVE_OP] Production database destruction detected — DROP DATABASE/SCHEMA \
+             and TRUNCATE on non-local databases require manual execution with explicit user \
+             confirmation -> verify this is NOT a production database, and if intentional, \
+             run the command manually in a terminal -> retry."
                 .to_owned(),
         );
     }
