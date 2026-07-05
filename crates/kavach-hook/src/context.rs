@@ -91,6 +91,8 @@ pub fn context_block(name: &str, kvs: &[(&str, &str)]) -> String {
 pub fn exit_approve_ctx(gate: &str) -> HookAction {
     let d = today_full();
     let context = context_block(gate, &[("status", "allow"), ("date", &d)]);
+    // SOURCE: crates/kavach-toon/src/caveman.rs (public compress() API, lossless-preserving)
+    let context = kavach_toon::caveman::compress(&context, kavach_toon::caveman::Level::Full);
     let resp = HookResponse::new_pre_tool_use_with_context(gate, &context);
     output(&resp);
     HookAction::Done
