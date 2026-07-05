@@ -7,6 +7,7 @@ publish = false
 [dependencies]
 kavach-types = { path = "../kavach-types" }
 kavach-session = { path = "../kavach-session" }
+kavach-toon = { workspace = true }
 itertools = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
