@@ -145,7 +145,7 @@ pub fn exit_notification_context(context: &str) -> HookAction {
 /// stall). Empty `seq` omits the field. SOURCE: changelog v2.1.141.
 #[must_use]
 pub fn exit_notification_with_sequence(context: &str, seq: &str) -> HookAction {
-    let context = kavach_toon::caveman::compress(context, kavach_toon::caveman::Level::Full);
+    let context = crate::inject::caveman_inject(context);
     let resp = HookResponse {
         system_message: context,
         terminal_sequence: (!seq.is_empty()).then(|| seq.to_owned()),
