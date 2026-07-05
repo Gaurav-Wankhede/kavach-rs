@@ -121,6 +121,8 @@ Compress stdin text with the caveman injection compressor (debug/witness)
 |---|---|---|
 | `--level` | Compression level: lite \| full \| ultra (default full) | full |
 | `--verify` | After compressing, assert no preserved token was dropped; nonzero exit on failure |  |
+| `--record` | Compress, verify, measure, and persist a metric row to the kavach DB |  |
+| `--project` | Project slug for the DB row (with --record) |  |
 
 ```
 EXAMPLES:
