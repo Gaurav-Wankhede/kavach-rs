@@ -164,7 +164,7 @@ pub fn exit_post_tool_trimmed(trimmed_output: &str, context: &str) -> HookAction
     } else {
         format!("{trimmed_output}\n\n{context}")
     };
-    let combined = kavach_toon::caveman::compress(&combined, kavach_toon::caveman::Level::Full);
+    let combined = crate::inject::caveman_inject(&combined);
     let resp = HookResponse {
         hook_specific_output: Some(HookSpecificOutput {
             hook_event_name: "PostToolUse".into(),
