@@ -2,10 +2,10 @@
 // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
 use kavach_toon::compact::{compress, Level};
 
-/// Compress `text` at Full level, fire-and-forget a rot-savings metric, return the text.
+/// Compress `text` at Ultra level, fire-and-forget a rot-savings metric, return the text.
 #[must_use]
 pub fn compact_inject(text: &str) -> String {
-    let out = compress(text, Level::Full);
+    let out = compress(text, Level::Ultra);
     record_metric(text, &out);
     out
 }
