@@ -34,11 +34,11 @@ pub(crate) fn check_echo(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED (`echo $VAR` would print the secret into context). NOT a hand-back. \
+        "[SECRET_CONSUME] `echo $VAR` would print the secret into context. NOT a hand-back. \
          If you need the value to DO the task: consume it INSIDE a runtime script (Rust first: \
          `std::env::var` / `dotenvy`) that runs the operation and prints ONLY a receipt — never \
-         the value. Reference the NAME in code, never expand it to stdout. Run it yourself; \
-         do NOT defer to the user. POSIX system vars are allowed."
+         the value. Reference the NAME in code, never expand it to stdout. Run it yourself. \
+         POSIX system vars are allowed -> retry."
             .into(),
     )
 }
