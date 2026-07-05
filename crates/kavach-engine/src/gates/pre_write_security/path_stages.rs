@@ -18,8 +18,8 @@ pub(super) fn empty_path(ctx: &WriteContext<'_>) -> Option<SecurityResult> {
 pub(super) fn system_path(ctx: &WriteContext<'_>) -> Option<SecurityResult> {
     kavach_config::is_blocked_write_path(ctx.file_path).then(|| {
         SecurityResult::Block(format!(
-            "BLOCKED: system path: {}. /etc /usr /bin /.ssh /.aws are protected. \
-             FIX: Write to project dir or ~/.local/bin/ for user binaries.",
+            "[PATH_POLICY] system path: {}. /etc /usr /bin /.ssh /.aws are protected \
+             -> write to project dir or ~/.local/bin/ for user binaries -> retry.",
             ctx.file_path
         ))
     })
