@@ -13,7 +13,7 @@ fn rel(rel: &str, target: &str, speculative: bool) -> ExtractedRelationship {
 #[test]
 fn unresolvable_speculative_dep_is_dropped() {
     let rels = vec![rel("depends_on", "row.body_blake3", true)];
-    let (kept, dropped) = partition_speculative_deps(rels, &["real-key".to_owned()]);
+    let (kept, dropped) = resolve_speculative_deps(rels, &["real-key".to_owned()]);
     assert!(kept.is_empty());
     assert_eq!(dropped, vec!["row.body_blake3".to_owned()]);
 }
@@ -22,7 +22,7 @@ fn unresolvable_speculative_dep_is_dropped() {
 #[test]
 fn resolvable_speculative_dep_passes_through() {
     let rels = vec![rel("depends_on", "real-key", true)];
-    let (kept, dropped) = partition_speculative_deps(rels, &["real-key".to_owned()]);
+    let (kept, dropped) = resolve_speculative_deps(rels, &["real-key".to_owned()]);
     assert_eq!(kept.len(), 1);
     assert!(dropped.is_empty());
 }
@@ -32,7 +32,7 @@ fn resolvable_speculative_dep_passes_through() {
 #[test]
 fn non_speculative_dep_passes_through_when_unresolvable() {
     let rels = vec![rel("depends_on", "ghost-target", false)];
-    let (kept, dropped) = partition_speculative_deps(rels, &[]);
+    let (kept, dropped) = resolve_speculative_deps(rels, &[]);
     assert_eq!(kept.len(), 1);
     assert!(dropped.is_empty());
 }
@@ -41,7 +41,7 @@ fn non_speculative_dep_passes_through_when_unresolvable() {
 #[test]
 fn qualified_target_resolves_against_bare_known_key() {
     let rels = vec![rel("depends_on", "proj/roadmap/real-key", true)];
-    let (kept, dropped) = partition_speculative_deps(rels, &["real-key".to_owned()]);
+    let (kept, dropped) = resolve_speculative_deps(rels, &["real-key".to_owned()]);
     assert_eq!(kept.len(), 1);
     assert!(dropped.is_empty());
 }
