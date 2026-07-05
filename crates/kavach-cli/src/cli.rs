@@ -104,24 +104,6 @@ pub(crate) enum Commands {
         #[arg(long)]
         vendor: Option<String>,
     },
-    /// Compress stdin text with the compact injection compressor (debug/witness).
-    #[command(
-        after_help = "EXAMPLES:\n  echo 'the gate is binding' | kavach compact\n  echo 'see `file.rs:9` and https://x.io' | kavach compact --level ultra --verify\n\nWHEN: prove the deployed binary compresses injection prose; verify preserved tokens survive."
-    )]
-    Compact {
-        /// Compression level: lite | full | ultra (default full).
-        #[arg(long, default_value = "full")]
-        level: String,
-        /// After compressing, assert no preserved token was dropped; nonzero exit on failure.
-        #[arg(long)]
-        verify: bool,
-        /// Compress, verify, measure, and persist a metric row to the kavach DB.
-        #[arg(long)]
-        record: bool,
-        /// Project slug for the DB row (with --record).
-        #[arg(long)]
-        project: Option<String>,
-    },
     /// Manage session lifecycle
     Session {
         #[command(subcommand)]
