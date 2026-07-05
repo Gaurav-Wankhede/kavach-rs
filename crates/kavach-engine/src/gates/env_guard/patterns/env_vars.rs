@@ -75,8 +75,8 @@ pub(crate) fn check_set_dump(lc: &str) -> Option<String> {
     });
     let hit = set_is_dump || lc == "declare" || lc == "declare -p" || lc.starts_with("declare ");
     hit.then(|| {
-        "BLOCKED: `set`/`declare` dumps all shell variables including secret values. \
-         Use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) to list names only."
+        "[SECRET_CONSUME] `set`/`declare` dumps all shell variables including secret values \
+         -> use `rg -o '^[A-Z][A-Z0-9_]*' .env | sort` (toolbelt: rg is 5-13x faster than awk) to list names only -> retry."
             .into()
     })
 }
