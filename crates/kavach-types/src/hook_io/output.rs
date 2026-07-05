@@ -190,7 +190,7 @@ impl HookResponse {
     pub fn new_stop_block(reason: &str) -> Self {
         Self {
             decision: "block".into(),
-            reason: reason.into(),
+            reason: with_next_action(reason),
             hook_specific_output: Some(HookSpecificOutput {
                 hook_event_name: "Stop".into(),
                 ..Default::default()
