@@ -48,10 +48,9 @@ pub(super) fn extract_nlu_rels(content: &str, out: &mut Vec<ExtractedRelationshi
             if let Some(m) = caps.name("key") {
                 let target = m.as_str().trim_end_matches(['.', ',', ';', ')']);
                 if is_plausible_key(target) {
-                    out.push(ExtractedRelationship {
-                        rel: (*rel).to_owned(),
-                        target: target.to_owned(),
-                    });
+                    let mut edge = ExtractedRelationship::new((*rel).to_owned(), target);
+                    edge.speculative = true;
+                    out.push(edge);
                 }
             }
         }
