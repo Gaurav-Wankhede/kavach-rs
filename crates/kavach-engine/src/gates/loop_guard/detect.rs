@@ -43,12 +43,10 @@ pub(crate) fn check_bash_loop(session: &SessionState, command: &str) -> Option<S
         return None;
     }
     Some(format!(
-        "[LOOP_DETECTED]\n\
-         Command executed {count}x in last {WINDOW_TURNS} turns: `{}`\n\
-         BLOCKED: Repeating the same command won't produce different results.\n\
-         FIX: 1) Diagnose WHY it fails, don't just retry.\n\
-         2) Try a different approach or tool.\n\
-         3) Use /clear if context is polluted with failed attempts.",
+        "[LOOP_LIMIT] Command executed {count}x in last {WINDOW_TURNS} turns: `{}` \
+         — repeating it won't produce different results \
+         -> diagnose WHY it fails (don't just retry), try a different approach or tool, \
+         or use /clear if context is polluted with failed attempts -> then retry.",
         truncate(command, 80)
     ))
 }
