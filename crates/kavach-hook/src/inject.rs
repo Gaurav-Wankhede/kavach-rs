@@ -1,4 +1,5 @@
 //! Single choke for gate injection: compress + fire-and-forget metric record.
+// SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
 use kavach_toon::compact::{compress, Level};
 
 /// Compress `text` at Full level, fire-and-forget a rot-savings metric, return the text.
