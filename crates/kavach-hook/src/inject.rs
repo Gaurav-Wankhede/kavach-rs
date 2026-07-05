@@ -33,7 +33,7 @@ fn record_metric(input: &str, output: &str) {
     };
     let sw = kavach_session::SpooledWrite::new("db.write".to_string(), params_json);
     if let Err(e) = kavach_session::enqueue_write_spool(&sw) {
-        tracing::warn!("caveman metric spool enqueue failed: {e}");
+        eprintln!("kavach: caveman metric spool enqueue failed: {e}");
     }
 }
 
