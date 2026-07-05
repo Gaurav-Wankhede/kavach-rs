@@ -10,6 +10,9 @@ pub fn read_hook_input() -> Result<HookInput, String> {
     read_hook_input_from(stdin.lock())
 }
 /// Read a hook input payload from an arbitrary reader.
+///
+/// # Errors
+/// Returns `Err` on read or JSON parse failure.
 pub fn read_hook_input_from<R: BufRead>(reader: R) -> Result<HookInput, String> {
     let mut buf = Vec::new();
     for line in reader.lines() {
