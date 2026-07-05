@@ -18,7 +18,8 @@ pub fn read_hook_input_from<R: BufRead>(reader: R) -> Result<HookInput, String> 
     let raw = buf.join("\n");
     parse_hook_input(&raw)
 }
-/// Parses raw hook input, scrubbing null fields. Errors if not a JSON object.
+/// Parses raw hook input, scrubbing null fields.
+/// # Errors
 pub fn parse_hook_input(raw: &str) -> Result<HookInput, String> {
     let mut value: serde_json::Value =
         serde_json::from_str(raw).map_err(|e| format!("JSON parse error: {e}"))?;
