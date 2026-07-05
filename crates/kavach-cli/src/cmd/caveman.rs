@@ -51,7 +51,9 @@ fn record_metrics(level_str: &str, input: &str, output: &str, project: Option<&s
     let tokens_in = input.split_whitespace().count();
     let tokens_out = output.split_whitespace().count();
     let delta_pct = if tokens_in > 0 {
-        ((tokens_out as f64 - tokens_in as f64) / tokens_in as f64 * 100.0).round() as i64
+        let tok_in_i = i64::try_from(tokens_in).unwrap_or(i64::MAX);
+        let tok_out_i = i64::try_from(tokens_out).unwrap_or(i64::MAX);
+        tok_out_i.saturating_sub(tok_in_i).saturating_mul(100) / tok_in_i
     } else {
         0
     };
