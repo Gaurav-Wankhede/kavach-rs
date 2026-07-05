@@ -2698,6 +2698,7 @@ dependencies = [
  "kavach-rule-storage",
  "kavach-session",
  "kavach-surreal",
+ "kavach-toon",
  "kavach-types",
  "kavach-web",
  "native-tls",

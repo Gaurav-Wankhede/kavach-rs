@@ -24,11 +24,9 @@ pub(super) fn run(level: &str, verify: bool) -> i32 {
     let output = caveman::compress(&input, level);
     println!("{output}");
 
-    if verify {
-        if let Err(e) = caveman::assert_lossless(&input, &output) {
-            eprintln!("kavach caveman: lossless check failed: {e}");
-            return 1;
-        }
+    if verify && let Err(e) = caveman::assert_lossless(&input, &output) {
+        eprintln!("kavach caveman: lossless check failed: {e}");
+        return 1;
     }
 
     0
