@@ -154,6 +154,29 @@ fn body_declares_dep(body: &str, dep: &str) -> bool {
                 .any(|tok| tok == dep)
         })
 }
+/// Bare tail of a dep key: strip up to and including the last `/`. Duplicated
+/// locally (not imported from `kavach-rpc`) to avoid a CLI -> rpc dep edge.
+fn bare_tail(key: &str) -> &str {
+    key.rsplit('/').next().unwrap_or(key)
+}
+/// Resolve-or-drop gate for NLU-harvested (speculative) dependency edges.
+/// Non-speculative edges pass through unchanged; a speculative edge is kept
+/// only if its target's bare tail matches a known `entry_key`'s bare tail.
+fn resolve_speculative_deps(
+    rels: Vec<kavach_engine::ExtractedRelationship>,
+    known_keys: &[String],
+) -> (Vec<kavach_engine::ExtractedRelationship>, Vec<String>) {
+    let mut kept = Vec::new();
+    let mut dropped = Vec::new();
+    for rel in rels {
+        if !rel.speculative || known_keys.iter().any(|k| bare_tail(k) == bare_tail(&rel.target)) {
+            kept.push(rel);
+        } else {
+            dropped.push(rel.target);
+        }
+    }
+    (kept, dropped)
+}
 #[expect(
     clippy::too_many_lines,
     reason = "single unified CLI command handler with inlined validation and upsert logic"
