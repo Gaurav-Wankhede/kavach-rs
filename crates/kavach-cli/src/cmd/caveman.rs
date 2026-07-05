@@ -15,7 +15,8 @@ pub(super) fn run(level: &str, verify: bool) -> i32 {
     };
 
     let mut input = String::new();
-    if let Err(e) = std::io::stdin().lock().read_to_string(&mut input) {
+    let read_result = std::io::stdin().lock().read_to_string(&mut input);
+    if let Err(e) = read_result {
         eprintln!("kavach caveman: failed to read stdin: {e}");
         return 2;
     }
