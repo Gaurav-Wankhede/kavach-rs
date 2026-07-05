@@ -69,8 +69,8 @@ pub fn check(file_path: &str, content: &str, arch_skill_invoked: bool) -> ArchGu
         .join(", ");
 
     ArchGuardOutcome::Block(format!(
-        "ARCH_BLOCK: Architectural patterns detected (scopes: {scope_list}).\n\
-         FIX: invoke /arch skill — research + report go to CHAT output.\n\
+        "[ARCH_RESEARCH] Architectural patterns detected (scopes: {scope_list}) \
+         -> invoke /arch skill OR rely on a prior arch decision row -> retry.\n\
          §COMMENTS LAW: do NOT add a `// ARCH:` code comment; the report is \
          the deliverable in chat, not a comment block in code."
     ))
