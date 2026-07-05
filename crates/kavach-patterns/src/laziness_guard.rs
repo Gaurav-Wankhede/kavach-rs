@@ -294,7 +294,7 @@ fn group_is_lazy_recommendation(opts: &[Opt]) -> bool {
     recommended_is_lazy && sibling_is_work
 }
 fn block_reason() -> String {
-    "[LAZINESS_BLOCK] This AskUserQuestion recommends the LOWER-EFFORT option \
+    "[LAZINESS_POLICY] This AskUserQuestion recommends the LOWER-EFFORT option \
      (a 'leave as-is / skip / later / defer' choice) over a do-the-work sibling. \
      That is LABOR dressed as a DIRECTION question — a role violation: the user \
      decides direction, YOU do all the labor (global CLAUDE.md §division_of_labor). \
