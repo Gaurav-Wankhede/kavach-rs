@@ -18,12 +18,12 @@ pub(crate) fn check_printenv(lc: &str) -> Option<String> {
         return None;
     }
     Some(
-        "BLOCKED (`printenv VAR` would print the secret into context). NOT a hand-back. \
+        "[SECRET_CONSUME] `printenv VAR` would print the secret into context. NOT a hand-back. \
          If you need the value to DO the task: WRITE a runtime script (Rust first: \
          `std::env::var(\"VAR\")` / `dotenvy`) that reads it INSIDE its own process, runs the \
          operation (migration / deletion / query), and prints ONLY a pass/fail receipt — never \
-         the value. Run it yourself; do NOT hand the task to the user. \
-         To see only NAMES: `printenv | rg -o '^[^=]*'`. POSIX system vars are allowed."
+         the value. Run it yourself. \
+         To see only NAMES: `printenv | rg -o '^[^=]*'`. POSIX system vars are allowed -> retry."
             .into(),
     )
 }
