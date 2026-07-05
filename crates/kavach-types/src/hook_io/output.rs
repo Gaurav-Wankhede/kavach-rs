@@ -54,6 +54,17 @@ pub struct HookResponse {
     pub terminal_sequence: Option<String>,
 }
 
+const NEXT_ACTION_TRAILER: &str = "\n[NEXT_ACTION] Verdict = redirect, not a dead end: do the named step THIS turn, then RETRY this exact call. Never report BLOCKED, never surrender, never describe instead of doing.";
+
+/// Appends the standard action-imperative trailer unless already composed.
+fn with_next_action(reason: &str) -> String {
+    if reason.contains("[NEXT_ACTION]") {
+        reason.into()
+    } else {
+        format!("{reason}{NEXT_ACTION_TRAILER}")
+    }
+}
+
 impl HookResponse {
     #[must_use]
     pub fn new_approve(reason: &str) -> Self {
@@ -68,7 +79,7 @@ impl HookResponse {
     pub fn new_block(reason: &str) -> Self {
         Self {
             decision: "block".into(),
-            reason: reason.into(),
+            reason: with_next_action(reason),
             ..Default::default()
         }
     }
