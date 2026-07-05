@@ -14,9 +14,9 @@ pub(in crate::gates::pre_tool_search) fn check_stale_year_in_query(
             && year < current_year
         {
             return Some(format!(
-                "STALE_YEAR_BLOCKED: Query contains year {year} but current year is {current_year}.\n\
-                         Training weights are stale — do NOT search for old versions.\n\
-                         FIX: Replace {year} with {current_year} in your search query."
+                "[VERSION_CURRENCY] Query contains year {year} but current year is {current_year} \
+                         — training weights are stale, do NOT search for old versions \
+                         -> replace {year} with {current_year} in your search query -> retry."
             ));
         }
     }
