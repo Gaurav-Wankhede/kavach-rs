@@ -1,5 +1,5 @@
 use super::{
-    CATEGORY_HELP, STRICT_CATEGORIES, mirror_depends_on_into_content, partition_speculative_deps,
+    CATEGORY_HELP, STRICT_CATEGORIES, mirror_depends_on_into_content, resolve_speculative_deps,
 };
 use kavach_engine::ExtractedRelationship;
 
