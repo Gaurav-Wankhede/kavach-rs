@@ -19,8 +19,8 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
         .filter(|v| v.severity == TsSeverity::P1Advisory)
         .collect();
     let mut msg = String::from(
-        "TS GUARD BLOCKED: Frontend production violations detected\n\n\
-         P0 VIOLATIONS (HARD BLOCK):\n",
+        "[TS_LAW] Frontend production violations detected\n\n\
+         P0 VIOLATIONS:\n",
     );
     for v in &p0 {
         writeln!(msg, "  {} — {}", v.pattern, v.fix).ok();
