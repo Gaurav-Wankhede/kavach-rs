@@ -132,25 +132,6 @@ EXAMPLES:
 WHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the live clap tree — never drifts.
 ```
 
-## `kavach compact`
-
-Compress stdin text with the compact injection compressor (debug/witness)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--level` | Compression level: lite \| full \| ultra (default full) | full |
-| `--verify` | After compressing, assert no preserved token was dropped; nonzero exit on failure |  |
-| `--record` | Compress, verify, measure, and persist a metric row to the kavach DB |  |
-| `--project` | Project slug for the DB row (with --record) |  |
-
-```
-EXAMPLES:
-  echo 'the gate is binding' | kavach compact
-  echo 'see `file.rs:9` and https://x.io' | kavach compact --level ultra --verify
-
-WHEN: prove the deployed binary compresses injection prose; verify preserved tokens survive.
-```
-
 ## `kavach context`
 
 Unified JSON snapshot: kanban counts, session, phase, loop state
