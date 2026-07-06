@@ -69,7 +69,7 @@ async fn loophole_event_is_tagged_family_loophole() {
 async fn empty_loophole_dimension_is_rejected() {
     let db = open_memory().await.expect("open in-memory db");
     assert!(
-        append_loophole_event(&db, "", "site", "sess", None)
+        append_loophole_event(&db, "", "site", "sess", None, 0)
             .await
             .is_err(),
         "an empty dimension must be refused, never a blank-gate row"
