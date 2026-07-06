@@ -4,7 +4,7 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
 
-## [0.2.0] — 2026-07-06
+## [26.7.0] — 2026-07-06
 
 Context-rot engineering release: injection compaction blended into every gate,
 action-imperative verdict language system-wide, and race-safe mistake-ledger
