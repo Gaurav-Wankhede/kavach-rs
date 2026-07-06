@@ -5,7 +5,7 @@ use std::fmt::Write as _;
 /// Build a P0 HARD BLOCK message for a named guard.
 pub(crate) fn build_block(guard: &str, violations: &[(&str, &str)]) -> String {
     let mut msg = format!(
-        "{guard} BLOCKED: Platform rule violations detected\n\nP0 VIOLATIONS (HARD BLOCK):\n"
+        "[{guard}_PLATFORM_POLICY] Platform rule violations detected\n\nP0 VIOLATIONS:\n"
     );
     for (code, reason) in violations {
         writeln!(msg, "  {code} — {reason}").ok();
