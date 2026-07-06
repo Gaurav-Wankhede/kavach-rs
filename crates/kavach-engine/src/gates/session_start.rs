@@ -12,6 +12,7 @@ mod lld;
 mod memory;
 mod patterns;
 pub(in crate::gates) mod reconcile;
+mod resume;
 mod stack_fit;
 mod state;
 #[cfg(test)]
