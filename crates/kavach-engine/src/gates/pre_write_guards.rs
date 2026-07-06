@@ -50,9 +50,9 @@ pub(crate) fn check(
         ) {
             return GuardResult {
                 block: Some(
-                    "[COMMENT_BLOAT:P0] TRIM THE COMMENT, MOVE RATIONALE TO A DECISION ROW. \
+                    "[COMMENT_BLOAT:P0] Trim the comment to land the write, and move the rationale to a decision row. \
                      This write adds a 6+-line prose comment block — keep comments concise. \
-                     If this looks wrong, READ this guard's source and fix the real cause — never route around it."
+                     If this looks wrong, read this guard's source and address the root cause rather than working around it."
                         .to_owned(),
                 ),
                 algo_advisory: None,
