@@ -2,7 +2,7 @@
 
 All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and Kavach adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
 
 ## [0.2.0] — 2026-07-06
 
