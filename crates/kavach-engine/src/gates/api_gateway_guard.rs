@@ -19,7 +19,7 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
         return None;
     }
 
-    let mut msg = String::from("API_GATEWAY_GUARD BLOCKED: Missing gateway layer\n\n");
+    let mut msg = String::from("[API_GATEWAY] missing gateway layer -> add the gateway (items below) -> retry.\n\n");
     for v in &p0 {
         writeln!(msg, "  file: {file_path}").ok();
         writeln!(msg, "  violation: {}", v.message).ok();
