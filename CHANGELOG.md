@@ -78,7 +78,7 @@ writes. SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-a
   `parse_hook_input`) moved to a `input.rs` leaf, bringing `lib.rs` under the
   file-size ceiling with re-exports preserving the public API.
 
-## [0.1.0] — 2026-06-03
+## [26.6.0] — 2026-06-03
 
 First public release: a self-improving development harness for Claude Code that
 enforces engineering discipline through lifecycle gates, persistent memory, and a
