@@ -1976,6 +1976,17 @@ Fetch + install the toolbelt's prebuilt binaries into the cargo bin dir
 
 List every toolbelt tool with its provider crate + upstream license
 
+## `kavach update`
+
+Self-update: clone latest source, build, and install over the running binary
+
+```
+EXAMPLES:
+  kavach update
+
+WHEN: pull the newest Kavach — clones + builds from source (fast, native), replaces ~/.local/bin/kavach.
+```
+
 ## `kavach verify`
 
 Verify a roadmap entry: cargo check + tests, then done→verified

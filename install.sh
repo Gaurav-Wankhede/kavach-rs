@@ -14,10 +14,12 @@ if ! command -v cargo >/dev/null 2>&1; then
   curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | sh -s -- -y
   source "$HOME/.cargo/env"
 fi
+# keep rustup current; the repo's rust-toolchain.toml pins the exact channel on build
+command -v rustup >/dev/null 2>&1 && rustup update >/dev/null 2>&1 || true
 
 if ! command -v surreal >/dev/null 2>&1; then
-  echo "kavach: installing SurrealDB ..."
-  curl -fsSL https://install.surrealdb.com | sh
+  echo "kavach: installing SurrealDB 3.1.4 ..."
+  curl -fsSL https://install.surrealdb.com | sh -s -- --version 3.1.4
 fi
 
 tmp=$(mktemp -d)
