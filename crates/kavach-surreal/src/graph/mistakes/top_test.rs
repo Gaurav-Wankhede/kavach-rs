@@ -157,9 +157,9 @@ async fn ranks_anti_patterns_by_recurrence() {
 #[tokio::test]
 async fn limit_truncates_to_top_n() {
     let db = open_memory().await.expect("open in-memory db");
-    seed(&db, "gate_a", "fix a").await.expect("seed a");
-    seed(&db, "gate_b", "fix b").await.expect("seed b");
-    seed(&db, "gate_c", "fix c").await.expect("seed c");
+    seed(&db, "gate_a", "fix a", 0).await.expect("seed a");
+    seed(&db, "gate_b", "fix b", 0).await.expect("seed b");
+    seed(&db, "gate_c", "fix c", 0).await.expect("seed c");
 
     let top = top_anti_patterns(&db, 2).await.expect("read anti-patterns");
     assert_eq!(top.len(), 2, "limit=2 must cap the result");
