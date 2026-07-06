@@ -188,48 +188,51 @@ Install these **before** running Kavach. The harness fails closed — if its mem
 ## 🚀 Quick Start
 
 <details open>
-<summary><strong>Download the CLI (prebuilt binary — recommended)</strong></summary>
+<summary><strong>One command — install from source (recommended)</strong></summary>
 
 <br>
 
-Grab the archive for your platform from the [latest release](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest):
-
-| Platform | Architecture | Download |
-|----------|--------------|----------|
-| Linux | x86_64 | [`kavach-linux-amd64.tar.gz`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-linux-amd64.tar.gz) |
-| Linux | aarch64 | [`kavach-linux-arm64.tar.gz`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-linux-arm64.tar.gz) |
-| macOS | x86_64 (Intel) | [`kavach-darwin-amd64.tar.gz`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-darwin-amd64.tar.gz) |
-| macOS | aarch64 (Apple Silicon) | [`kavach-darwin-arm64.tar.gz`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-darwin-arm64.tar.gz) |
-| Windows | x86_64 | [`kavach-windows-amd64.zip`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-windows-amd64.zip) |
-| Windows | aarch64 | [`kavach-windows-arm64.zip`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-windows-arm64.zip) |
-
-Verify the download against [`SHA256SUMS.txt`](https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/SHA256SUMS.txt) from the same release.
+Kavach installs by cloning + building from source, then deleting the clone — no release archives to download. The installer detects your OS + arch, bootstraps the prerequisites, builds the binary into `~/.local/bin`, provisions the Rust CLI **toolbelt** the gates enforce, and cleans up after itself.
 
 **Linux / macOS:**
 
 ```bash
-# Pick the asset for your platform (Apple Silicon example shown)
-curl -fsSL -o kavach.tar.gz \
-  https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-darwin-arm64.tar.gz
-tar -xzf kavach.tar.gz
-mkdir -p ~/.local/bin && mv kavach ~/.local/bin/kavach
-kavach --version
+curl -fsSL https://raw.githubusercontent.com/Wankhede-Brothers/kavach-rs/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-Invoke-WebRequest -Uri `
-  https://github.com/Wankhede-Brothers/kavach-rs/releases/latest/download/kavach-windows-amd64.zip `
-  -OutFile kavach.zip
-Expand-Archive kavach.zip -DestinationPath "$env:USERPROFILE\.local\bin" -Force
-& "$env:USERPROFILE\.local\bin\kavach.exe" --version
+irm https://raw.githubusercontent.com/Wankhede-Brothers/kavach-rs/main/install.ps1 | iex
+```
+
+What the installer does, in order:
+
+1. **Bootstraps prerequisites** — `git` (must be present), the **Rust toolchain** via `rustup` (the pinned channel from `rust-toolchain.toml` installs itself on build), and **SurrealDB 3.1.4** (hard-pinned on every platform).
+2. **Clones** the repo shallow into a temp dir and runs `cargo build --release`.
+3. **Installs** the `kavach` binary to `~/.local/bin` (override with `KAVACH_INSTALL_DIR`).
+4. **Provisions the enforced Rust toolbelt** (`rg`, `fd`, `bat`, `sd`, `xh`, `jaq`, …) via `kavach toolbelt install` — required, because Kavach's `pre-tool` gate **blocks the legacy POSIX equivalents** (`grep`/`find`/`cat`/`curl`/`sed`) on Linux, macOS, and Windows.
+5. **Deletes the clone** — nothing is left behind but the installed binary and its toolbelt.
+
+Your memory store lives in a per-OS data directory the binary resolves automatically: `~/Library/Application Support/SharedAI` (macOS), `%LOCALAPPDATA%\SharedAI` (Windows), `~/.local/share/shared-ai` (Linux).
+
+</details>
+
+<details>
+<summary><strong>Update — <code>kavach update</code></strong></summary>
+
+<br>
+
+Updating is a native subcommand (fast, no re-clone burden on you): it clones the latest source, rebuilds, and installs over the running binary.
+
+```bash
+kavach update
 ```
 
 </details>
 
 <details>
-<summary><strong>Build from source</strong></summary>
+<summary><strong>Build manually from source</strong></summary>
 
 <br>
 
@@ -244,6 +247,9 @@ cargo build --release
 
 # Symlink into PATH (Linux/macOS)
 ln -sf "$(pwd)/target/release/kavach" ~/.local/bin/kavach
+
+# Provision the enforced Rust toolbelt the gates require
+kavach toolbelt install
 
 kavach --version
 ```
