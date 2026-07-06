@@ -19,11 +19,11 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         return ControlFlow::Continue(());
     };
     drop(kavach_hook::exit_stop_block(&format!(
-        "[DISOBEDIENCE] (non-surrenderable) This turn {reason}. An imperative is a \
-         trigger to ACT, not to argue: when a lens fires, RUN the lens detector and \
+        "[DISOBEDIENCE] (required) This turn {reason}. An imperative names an action to take: \
+         when a lens fires, run the lens detector and \
          emit `Loopholes closed:` with file:line; when research-first fires, WebSearch \
-         and cite the URL; on doubt, spawn a subagent. Do the mandated action THIS \
-         turn, then stop. If this looks wrong, READ this gate's source and fix the real cause — never route around it."
+         and cite the URL; on doubt, spawn a subagent. Do the named action this \
+         turn, then stop. If this looks wrong, read this gate's source and address the root cause rather than working around it."
     )));
     ControlFlow::Break(())
 }
