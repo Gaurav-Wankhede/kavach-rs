@@ -42,12 +42,10 @@ pub(crate) fn check(
         return None;
     }
     Some(format!(
-        "RCA REQUIRED ({intent_type}/{intent_risk}): emit [RCA] block IN CHAT OUTPUT before \
-         this edit (NOT as a code comment — §COMMENTS LAW). \
-         Format: symptom · repro(file:line) · why1..why5(evidence) · root_cause · class · \
-         blast_radius · research(URL) · fix_strategy. \
-         The fix's non-obvious WHY gets at most 1 line in code; the full RCA stays in chat. \
-         SOURCE: CLAUDE.md §RCA + §COMMENTS."
+        "[RCA_FIRST] {intent_type}/{intent_risk} → emit [RCA] in CHAT (never a code comment): \
+         symptom · repro file:line · why×5 evidence · root_cause · class · blast_radius · \
+         research URL · fix_strategy → retry this edit. Fix cause ≠ symptom; the fix's \
+         non-obvious WHY gets ≤1 line in code. SOURCE: CLAUDE.md §RCA."
     ))
 }
 /// True when an active bulk sweep or break-glass bypass authorizes this edit.
