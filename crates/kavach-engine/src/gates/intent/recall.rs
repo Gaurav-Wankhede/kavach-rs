@@ -13,6 +13,10 @@
 /// must stay token-cheap. Mirrors `brain::DEFAULT_LIMIT` on the RPC side.
 const RECALL_LIMIT: usize = 5;
 
+#[cfg(test)]
+#[path = "recall_test.rs"]
+mod recall_test;
+
 /// Build the `[RECALL]` context block for `prompt`, or `""` when nothing
 /// relevant surfaces. Never errors — a failed lookup is silently empty.
 pub(super) fn recall_block(prompt: &str) -> String {
