@@ -57,6 +57,30 @@ fn ordinary_message_without_verdict_is_ignored() {
 }
 
 #[test]
+fn bare_verdict_without_citation_is_flagged() {
+    // Red: bare clean verdict with no escape hatch.
+    let msg = "the code is clean";
+    assert!(detect_shallow_verdict(msg).is_some());
+}
+
+#[test]
+fn verdict_with_file_line_citation_is_allowed() {
+    // Green: file:line citation satisfies the guard.
+    let msg = "clean — see foo.rs:42";
+    assert!(detect_shallow_verdict(msg).is_none());
+}
+
+#[test]
+fn verdict_with_uncertainty_qualifier_is_allowed() {
+    // Green: explicit uncertainty qualifier ("not verified") is an honest hedge.
+    let msg = "clean, but not verified";
+    assert!(detect_shallow_verdict(msg).is_none());
+    // Also test unverified variant.
+    let msg2 = "the cast is safe, unverified";
+    assert!(detect_shallow_verdict(msg2).is_none());
+}
+
+#[test]
 fn file_line_detection_requires_a_digit_after_colon() {
     // "antiprod.rs:" with no line number is NOT a citation.
     let msg = "The file antiprod.rs: handles it and everything is clean.";
