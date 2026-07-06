@@ -32,7 +32,7 @@ fn blocks_recommended_leave_as_is_over_rebuild() {
         ),
     ]);
     let r = detect_lazy_recommendation(&input).expect("must block lazy-recommended");
-    assert!(r.contains("[LAZINESS_BLOCK]"));
+    assert!(r.contains("[LAZINESS_POLICY]"));
     assert!(r.contains("division_of_labor") || r.contains("do all the labor"));
 }
 
