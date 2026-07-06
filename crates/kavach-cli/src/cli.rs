@@ -191,6 +191,9 @@ pub(crate) enum Commands {
         after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
     )]
     Doctor,
+    /// Self-update: clone latest source, build, and install over the running binary.
+    #[command(after_help = "EXAMPLES:\n  kavach update\n\nWHEN: pull the newest Kavach — clones + builds from source (fast, native), replaces ~/.local/bin/kavach.")]
+    Update,
     /// Unified zero-LLM code auditor: one command over all four lenses (yagni · self · worst-practice · security)
     #[command(
         after_help = "Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM."
