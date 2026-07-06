@@ -112,7 +112,7 @@ fn check_returns_block_message() {
     assert!(
         result
             .as_ref()
-            .is_some_and(|m| m.contains("BOUNTY_GNAP_BLOCK"))
+            .is_some_and(|m| m.contains("[GNAP_SAFETY]"))
     );
 }
 
