@@ -15,11 +15,7 @@ fn valid_row_all_categories() {
     let valid_categories = ["decision", "research", "pattern", "proposal", "roadmap", "app_spec"];
     for cat in &valid_categories {
         let result = validate_recalled_row("proj-a", "proj-a", cat);
-        assert_eq!(
-            result, ValidityCheck::Safe,
-            "category '{}' should be valid",
-            cat
-        );
+        assert_eq!(result, ValidityCheck::Safe, "category '{cat}' should be valid");
     }
 }
 
