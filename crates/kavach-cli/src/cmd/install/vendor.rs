@@ -24,6 +24,11 @@ const CODEX: &str = include_str!("../../../templates/harness/codex.config.toml")
 const ANTIGRAVITY: &str = include_str!("../../../templates/harness/antigravity.hooks.json");
 const PI: &str = include_str!("../../../templates/harness/pi.index.ts");
 
+/// Engineering-directives templates (shipped for cc/cursor/codex only).
+const CLAUDE_MD: &str = include_str!("../../../templates/harness/CLAUDE.md");
+const MDC: &str = include_str!("../../../templates/harness/kavach.mdc");
+const AGENTS: &str = include_str!("../../../templates/harness/AGENTS.md");
+
 impl Target {
     /// Parse a `--vendor` tag, case-insensitive. `None` for an unknown tag.
     pub(super) fn from_tag(tag: &str) -> Option<Self> {
