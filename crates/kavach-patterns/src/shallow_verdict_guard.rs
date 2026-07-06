@@ -75,6 +75,10 @@ pub fn detect_shallow_verdict(msg: &str) -> Option<String> {
     if cites_file_line(msg) || msg.contains("[RCA]") {
         return None;
     }
+    // Explicit uncertainty qualifier is an honest hedge → not shallow.
+    if lower.contains("not verified") || lower.contains("unverified") || lower.contains("unconfirmed") {
+        return None;
+    }
     Some(
         "SHALLOW VERDICT: a 'clean / wired / no-defect' conclusion was asserted \
          without leaf-depth evidence (no `file.rs:NN` citation, no [RCA] block). \
