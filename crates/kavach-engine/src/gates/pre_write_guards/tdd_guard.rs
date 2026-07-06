@@ -56,9 +56,9 @@ pub(super) fn check(
         )
     };
     Some(format!(
-        "[TDD:P0] WRITE THE TEST FIRST. Production code for `{stem}` has no observed-Red \
-         test-first. {red_hint}, THEN write the code. If this looks wrong, READ this \
-         guard's source and fix the real cause — never route around it."
+        "[TDD:P0] Write the failing test first to land this write. Production code for `{stem}` has no observed-Red \
+         test yet. {red_hint}, then write the code. If this looks wrong, read this \
+         guard's source and address the root cause rather than working around it."
     ))
 }
 /// True for any test file — the shared detector OR the `_test(s).rs` suffix the
