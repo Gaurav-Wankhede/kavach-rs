@@ -1,5 +1,5 @@
 //! Block-report formatting: CLEAR status when nothing missing, and the
-//! `[SIX_FILE_BLOCK]` header + per-prefix line when artifacts are missing.
+//! `[SIX_FILE_POLICY]` header + per-prefix line when artifacts are missing.
 use super::format_block;
 use kavach_types::{MissingPrefix, ProjectTier, WitnessResult};
 
