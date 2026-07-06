@@ -1,7 +1,7 @@
 //! The advisory block shown when a forbidden six-file markdown path is written —
 //! maps each legacy doc to its kavach-db–native row equivalent.
 
-/// Format the `[SIX_FILE_BLOCK]` advisory for a forbidden `path`.
+/// Format the `[SIX_FILE_POLICY]` advisory for a forbidden `path`.
 pub(super) fn format_block(path: &str) -> String {
     format!(
         "[SIX_FILE_POLICY] Forbidden path: {path}\n\n\
