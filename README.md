@@ -374,6 +374,14 @@ A multi-tier graph: global **concepts** (L0) link to project **entities** (L1), 
 
 A dedicated crate family (`kavach-rule-*`) parses, stores, and evaluates rule definitions — the declarative layer that drives skill keyword routing and gate advisories.
 
+### Injection Compaction
+
+Every model-facing gate injection flows through one chokepoint (`compact_inject`) that compresses conversational grammar at Ultra level while preserving code spans, fenced blocks, URLs, `file:line` tokens, `[BRACKET]` signals, and versions **byte-for-byte** — a fail-closed lossless check guards the preservation set. Fewer re-read tokens per turn directly reduces context rot ([Anthropic: effective context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)); each compaction also records its token savings to the DB fire-and-forget. There is no command to run — compaction is a default property of the gates.
+
+### Action-Imperative Verdicts
+
+A gate denial is a **redirect carrying the next action, never a dead end**. Every emitted verdict is shaped `[KEYWORD] what → do-this → retry` (e.g. `[TOOLBELT_POLICY]`, `[SECRET_CONSUME]`, `[RCA_FIRST]`), and every deny-shaped response appends a `[NEXT_ACTION]` trailer instructing the executor to do the named step and retry — never to report "BLOCKED" or surrender. Gate satisfaction mechanics are reachable from subagent contexts via typed DB rows (e.g. the arch gate auto-injects prior decisions from `arch.list_recent`), so fanned-out workers are never wedged on main-loop-only state.
+
 ### Autonomous Harness Loop
 
 Kavach picks the right *agentic workflow shape* for a task and drives it autonomously — no manual orchestration. A task is classified into one of six dynamic-workflow patterns (after Anthropic's [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)):
