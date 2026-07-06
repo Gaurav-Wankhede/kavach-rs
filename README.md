@@ -68,6 +68,8 @@ AI coding agents are powerful but **stateless between sessions** and easily slip
 <tr><td>Writes memory it never reads back</td><td><strong>Brain-OS auto-recall</strong> injects relevant memory into every prompt</td></tr>
 <tr><td>Claims "latest version" from stale weights</td><td><strong>Internet-first</strong> — installed pinned from the lockfile, latest fetched from the registry</td></tr>
 <tr><td>Fabricates a CLI subcommand/flag that doesn't exist</td><td><strong>No-fabrication recovery</strong> — a failed <code>kavach</code> call routes to <code>kavach commands --tree</code>/<code>--help</code>; a stale binary triggers <code>just install</code></td></tr>
+<tr><td>Context rots as verbose injections re-enter every turn</td><td><strong>Injection compaction</strong> — every gate injection is compressed at the emit chokepoint (grammar dropped, code/URLs/tokens preserved byte-for-byte)</td></tr>
+<tr><td>Reads a gate denial as "BLOCKED", surrenders, ships nothing</td><td><strong>Action-imperative verdicts</strong> — every denial reads <code>[KEYWORD] what → do-this → retry</code> plus a <code>[NEXT_ACTION]</code> trailer; a verdict is a redirect, never a dead end</td></tr>
 </table>
 </div>
 
