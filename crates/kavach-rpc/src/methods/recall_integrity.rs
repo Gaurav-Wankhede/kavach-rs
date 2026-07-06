@@ -1,6 +1,7 @@
 // SOURCE: OWASP ASI06 — read-side integrity check for recalled memory rows before injection.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ValidityCheck {
     Safe,
     ForeignProject,
@@ -14,12 +15,10 @@ pub fn validate_recalled_row(
     actual_project_slug: &str,
     category: &str,
 ) -> ValidityCheck {
+    const VALID_CATEGORIES: &[&str] = &["decision", "research", "pattern", "proposal", "roadmap", "app_spec"];
     if actual_project_slug != expected_project_slug {
         return ValidityCheck::ForeignProject;
     }
-
-    const VALID_CATEGORIES: &[&str] = &["decision", "research", "pattern", "proposal", "roadmap", "app_spec"];
-
     if VALID_CATEGORIES.contains(&category) {
         ValidityCheck::Safe
     } else {
