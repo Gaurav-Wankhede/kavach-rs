@@ -38,6 +38,8 @@ try {
   Write-Host "kavach: installed to $dest\kavach.exe"
   Write-Host "kavach: provisioning the Rust toolbelt (rg, fd, bat, sd, xh, ...) ..."
   try { & "$dest\kavach.exe" toolbelt install --yes } catch { Write-Host "kavach: toolbelt provisioning skipped — run 'kavach toolbelt install' manually" }
+  Write-Host "kavach: wiring hooks into your AI harness settings.json ..."
+  try { & "$dest\kavach.exe" install --vendor all } catch { Write-Host "kavach: hook wiring skipped — run 'kavach install --vendor all' manually" }
   if ($env:PATH -notlike "*$dest*") { Write-Host "kavach: add $dest to PATH" }
   & "$dest\kavach.exe" --version
   Write-Host "kavach: update later with ``kavach update`` (no re-clone needed by you)."
