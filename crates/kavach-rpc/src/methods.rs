@@ -18,6 +18,7 @@ pub mod nlm;
 pub mod nlm_serve;
 pub mod projects;
 pub mod rag;
+pub mod recall_integrity;
 pub mod roadmap;
 pub mod run;
 pub mod session;
