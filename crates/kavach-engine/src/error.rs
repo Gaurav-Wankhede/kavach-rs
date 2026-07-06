@@ -75,7 +75,7 @@ pub enum EngineError {
     )]
     Json(#[from] serde_json::Error),
 
-    #[error("gate blocked: {0}")]
+    #[error("gate verdict: {0}")]
     #[diagnostic(
         severity(Error),
         code(kavach::engine::blocked),
