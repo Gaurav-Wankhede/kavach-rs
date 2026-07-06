@@ -35,6 +35,8 @@ try {
   Copy-Item "$tmp\src\target\release\kavach.exe" "$dest\kavach.exe" -Force
   $datadir = "$env:LOCALAPPDATA\SharedAI"; Write-Host "kavach: memory store will live in $datadir (SurrealDB 3.1.4)"
   Write-Host "kavach: installed to $dest\kavach.exe"
+  Write-Host "kavach: provisioning the Rust toolbelt (rg, fd, bat, sd, xh, ...) ..."
+  try { & "$dest\kavach.exe" toolbelt install --yes } catch { Write-Host "kavach: toolbelt provisioning skipped — run 'kavach toolbelt install' manually" }
   if ($env:PATH -notlike "*$dest*") { Write-Host "kavach: add $dest to PATH" }
   & "$dest\kavach.exe" --version
   Write-Host "kavach: update later with ``kavach update`` (no re-clone needed by you)."
