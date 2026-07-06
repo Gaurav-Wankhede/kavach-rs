@@ -81,17 +81,27 @@ pub fn enqueue(write: &SpooledWrite) -> io::Result<()> {
 /// Returns `Err` only if the file exists but cannot be read or removed.
 pub fn drain() -> io::Result<Vec<SpooledWrite>> {
     let path = spool_path();
-    let content = match fs::read_to_string(&path) {
-        Ok(c) => c,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(e) => return Err(e),
-    };
-    fs::remove_file(&path)?;
+    let claim = claim_path(&path);
+    // Atomic rename claims the batch; a racing loser sees NotFound -> empty Vec.
+    if let Err(e) = fs::rename(&path, &claim) {
+        return if e.kind() == io::ErrorKind::NotFound {
+            Ok(Vec::new())
+        } else {
+            Err(e)
+        };
+    }
+    let content = fs::read_to_string(&claim)?;
+    fs::remove_file(&claim)?;
     Ok(content
         .lines()
         .filter(|l| !l.trim().is_empty())
         .filter_map(|l| serde_json::from_str::<SpooledWrite>(l).ok())
         .collect())
+}
+/// Unique claim-file path beside the spool (same dir, atomic rename).
+fn claim_path(spool: &Path) -> PathBuf {
+    let seq = DRAIN_CLAIM_SEQ.fetch_add(1, Ordering::Relaxed);
+    spool.with_extension(format!("claim.{}.{seq}", std::process::id()))
 }
 #[cfg(test)]
 #[path = "write_spool_test.rs"]
