@@ -29,9 +29,9 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
             let n = ctx.session.files_modified_this_turn.len();
             let project = ctx.session.project.clone();
             drop(kavach_hook::exit_stop_block(&format!(
-                "[KANBAN_STATUS_PENDING] (non-surrenderable: close-before-advance invariant)\n\
+                "[KANBAN_STATUS_PENDING] (required: close-before-advance invariant)\n\
                  You modified {n} file(s) this turn but card '{card}' is still open and \
-                 was NOT updated. The loop will NOT advance until the DB reflects reality.\n\
+                 was not updated. The loop advances once the DB reflects reality.\n\
                  CLOSE it:  kavach db status-update --project {project} --category roadmap \\\n\
                             --key {card} --status <done|verified>  (or in_progress if mid-work)\n\
                  OR, if it is genuinely un-buildable (missing credential / external \
