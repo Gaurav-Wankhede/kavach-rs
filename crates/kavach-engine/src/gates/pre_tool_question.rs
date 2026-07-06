@@ -19,9 +19,9 @@ pub(crate) fn handle_question(input: &HookInput) {
     // See decision.engine.fail_closed_missing_tool_input.
     let Some(map) = input.tool_input.as_ref() else {
         drop(kavach_hook::exit_pre_tool_deny(
-            "[LAZINESS_BLOCK] AskUserQuestion arrived with no tool_input — its options \
-             cannot be validated against the labor-as-direction rule. Re-issue the question \
-             with explicit options, or just DO the work instead of asking.",
+            "[LAZINESS_POLICY] AskUserQuestion arrived with no tool_input — its options \
+             cannot be validated against the labor-as-direction rule -> re-issue the question \
+             with explicit options, or just DO the work instead of asking -> retry.",
         ));
         return;
     };
