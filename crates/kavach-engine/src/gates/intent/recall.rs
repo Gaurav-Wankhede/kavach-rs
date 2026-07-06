@@ -33,6 +33,7 @@ pub(super) fn recall_block(prompt: &str) -> String {
     }
     let mut block = String::from("[RECALL] prior memory relevant to this prompt (RRF-ranked):\n");
     for hit in &hits {
+        // OWASP: ASI06 integrity check (validate_recalled_row) should filter here.
         // `id` is a keyed row (e.g. `decision:<key>`) — citable, so the agent
         // can `kavach db get` the full row instead of trusting a summary.
         block.push_str("  - ");
