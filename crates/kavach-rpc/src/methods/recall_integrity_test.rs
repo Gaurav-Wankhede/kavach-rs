@@ -1,4 +1,4 @@
-use super::recall_integrity::{validate_recalled_row, ValidityCheck};
+use crate::methods::recall_integrity::{validate_recalled_row, ValidityCheck};
 
 #[test]
 fn valid_row_matching_project_and_category() {
