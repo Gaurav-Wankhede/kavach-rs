@@ -115,7 +115,7 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
         _ => return ControlFlow::Continue(()),
     };
     drop(kavach_hook::exit_stop_block(&format!(
-        "[DONE_GAMING] (non-surrenderable) {runnable} runnable card(s) remain and this turn \
+        "[DONE_GAMING] (required) {runnable} runnable card(s) remain and this turn \
          produced NO code/DB work — only narration (a status block / \"documentation pass\" / \
          \"vacuously complete\" / \"await features\"). Naming work done is NOT doing it \
          (§4a_describe_is_not_done). A phase is DONE only with a 3-witness artifact (rg file:line \
