@@ -11,7 +11,7 @@ pub(crate) fn build_block(guard: &str, violations: &[(&str, &str)]) -> String {
         writeln!(msg, "  {code} — {reason}").ok();
     }
     msg.push_str(
-        "\nREQUIRED: Fix all P0 violations. Data must come from API. No hardcoded values.",
+        "\n-> fix all P0 violations (data must come from API, no hardcoded values) -> retry.",
     );
     msg
 }
