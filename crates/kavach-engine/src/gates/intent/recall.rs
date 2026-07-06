@@ -19,14 +19,12 @@ mod recall_test;
 
 /// Validate a hit id: category prefix must be in the valid set.
 pub(crate) fn keep_hit(id: &str) -> bool {
-    id.split_once(':')
-        .map(|(category, _)| {
-            matches!(
-                category,
-                "decision" | "research" | "pattern" | "proposal" | "roadmap" | "app_spec"
-            )
-        })
-        .unwrap_or(false)
+    id.split_once(':').is_some_and(|(category, _)| {
+        matches!(
+            category,
+            "decision" | "research" | "pattern" | "proposal" | "roadmap" | "app_spec"
+        )
+    })
 }
 
 /// Build the `[RECALL]` context block for `prompt`, or `""` when nothing
