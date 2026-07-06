@@ -112,3 +112,7 @@ async fn create_event(
     row.map(|r| r.id)
         .ok_or_else(|| Error::RecordNotFound(format!("{entity_type} create empty")))
 }
+
+#[cfg(test)]
+#[path = "append_test.rs"]
+mod append_test;
