@@ -38,6 +38,7 @@ pub(crate) mod team;
 mod think;
 mod todos;
 mod toolbelt;
+mod update;
 pub(crate) mod verify;
 pub(crate) mod verify_frontend;
 pub(crate) mod verify_frontend_detect;
