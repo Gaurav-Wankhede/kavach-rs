@@ -55,6 +55,19 @@ fn drain_removes_the_file_so_a_second_drain_is_empty() {
 }
 
 #[test]
+fn concurrent_drain_replays_each_line_exactly_once() {
+    isolate("race");
+    enqueue(&w("db.write")).expect("enqueue 1");
+    enqueue(&w("db.bandit_backfill_session")).expect("enqueue 2");
+    // Simulate two Stop gates racing: the first drainer wins the rename-claim
+    // and gets both lines; the second sees the file already moved -> empty.
+    let first = drain().expect("first drainer wins the claim");
+    let second = drain().expect("second drainer sees nothing to claim");
+    assert_eq!(first.len(), 2, "winner replays both lines: {first:?}");
+    assert!(second.is_empty(), "loser gets empty, never a duplicate");
+}
+
+#[test]
 fn corrupt_line_is_skipped_not_fatal() {
     isolate("corrupt");
     enqueue(&w("db.write")).expect("enqueue good");
