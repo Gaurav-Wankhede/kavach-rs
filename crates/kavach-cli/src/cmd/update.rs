@@ -7,7 +7,12 @@ const REPO_URL: &str = "https://github.com/Wankhede-Brothers/kavach-rs";
 
 /// Resolve the install destination: `KAVACH_INSTALL_DIR` override else `~/.local/bin/kavach`.
 fn install_dest() -> Result<PathBuf, String> {
-    if let Ok(dir) = std::env::var("KAVACH_INSTALL_DIR") {
+    install_dest_from(std::env::var("KAVACH_INSTALL_DIR").ok())
+}
+
+/// Pure resolver: `override_dir` wins else falls back to `install::install_dest()`.
+fn install_dest_from(override_dir: Option<String>) -> Result<PathBuf, String> {
+    if let Some(dir) = override_dir {
         return Ok(PathBuf::from(dir).join(install::binary_filename()));
     }
     install::install_dest().ok_or_else(|| "[UPDATE] FAIL: cannot resolve $HOME".to_owned())
