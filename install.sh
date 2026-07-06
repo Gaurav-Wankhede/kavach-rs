@@ -34,6 +34,12 @@ echo "kavach: building kavach-cli (release) ..."
 mkdir -p "$DEST"
 install -m 0755 "$tmp/src/target/release/kavach" "$DEST/kavach"
 
+case "$(uname -s)" in
+  Darwin) datadir="$HOME/Library/Application Support/SharedAI" ;;
+  Linux)  datadir="${XDG_DATA_HOME:-$HOME/.local/share}/shared-ai" ;;
+  *)      datadir="$HOME/.local/share/shared-ai" ;;
+esac
+echo "kavach: memory store will live in ${datadir} (SurrealDB 3.1.4)"
 echo "kavach: installed to ${DEST}/kavach"
 case ":$PATH:" in *":$DEST:"*) ;; *) echo "kavach: add ${DEST} to PATH -> export PATH=\"${DEST}:\$PATH\"" ;; esac
 "$DEST/kavach" --version || true
