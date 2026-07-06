@@ -70,6 +70,7 @@ pub async fn append_loophole_event(
     site: &str,
     session_id: &str,
     project_slug: Option<&str>,
+    turn: i32,
 ) -> Result<RecordId> {
     if dimension.is_empty() {
         return Err(Error::Migration(
@@ -83,25 +84,28 @@ pub async fn append_loophole_event(
         "project_slug": project_slug,
         "family": super::pattern::FAMILY_LOOPHOLE,
     });
-    create_event(db, "loophole_event", props).await
+    let name = event_key("lev", &[dimension, site], session_id, turn);
+    create_event(db, "loophole_event", &name, props).await
 }
 
-/// Shared append-only event create over the `entity` table. Both families flow
-/// through here so the row shape (ulid name, props, created_at) stays identical.
+/// Shared idempotent event upsert keyed by `name`, so a re-file converges.
 async fn create_event(
     db: &Surreal<Db>,
     entity_type: &str,
+    name: &str,
     props: serde_json::Value,
 ) -> Result<RecordId> {
-    let q = "CREATE entity SET \
+    let q = "UPSERT entity SET \
              entity_type = $etype, \
-             name = rand::ulid(), \
+             name = $name, \
              properties = $props, \
              created_at = time::now() \
+             WHERE entity_type = $etype AND name = $name \
              RETURN id";
     let mut resp = db
         .query(q)
         .bind(("etype", entity_type.to_owned()))
+        .bind(("name", name.to_owned()))
         .bind(("props", props))
         .await?;
     let row: Option<IdRow> = resp.take(0)?;
