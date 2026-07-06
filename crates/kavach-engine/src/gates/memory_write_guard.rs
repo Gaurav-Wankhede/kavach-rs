@@ -39,7 +39,8 @@ pub(crate) fn block_message(file_path: &str) -> String {
          CATEGORIES: decision, pattern, research, architecture, debug, config\n\
          \n\
          Use `kavach db write` to persist memories — MEMORY.md is session cache only.\n\
-         EXCEPTION: Only Claude Code auto-memory (system-initiated) may write MEMORY.md."
+         EXCEPTION: Only Claude Code auto-memory (system-initiated) may write MEMORY.md.\n\
+         -> retry with the db command."
     )
 }
 
