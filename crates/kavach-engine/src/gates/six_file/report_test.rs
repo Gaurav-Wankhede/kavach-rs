@@ -33,6 +33,6 @@ fn test_missing_report() {
         }],
     };
     let report = format_block(&result);
-    assert!(report.contains("[SIX_FILE_BLOCK]"));
+    assert!(report.contains("[SIX_FILE_POLICY]"));
     assert!(report.contains("✗ [1] PRD"));
 }
