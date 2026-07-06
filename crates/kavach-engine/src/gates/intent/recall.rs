@@ -17,6 +17,19 @@ const RECALL_LIMIT: usize = 5;
 #[path = "recall_test.rs"]
 mod recall_test;
 
+/// Validate a hit id: category prefix must be in the valid set.
+fn keep_hit(id: &str) -> bool {
+    if let Some(colon_idx) = id.find(':') {
+        let category = &id[..colon_idx];
+        matches!(
+            category,
+            "decision" | "research" | "pattern" | "proposal" | "roadmap" | "app_spec"
+        )
+    } else {
+        false
+    }
+}
+
 /// Build the `[RECALL]` context block for `prompt`, or `""` when nothing
 /// relevant surfaces. Never errors — a failed lookup is silently empty.
 pub(super) fn recall_block(prompt: &str) -> String {
