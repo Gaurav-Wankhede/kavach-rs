@@ -49,9 +49,9 @@ fn has_sql_keyword(haystack: &str, kw: &str) -> bool {
 /// point (psql, sourced runner) emits the same hard-block message.
 pub(crate) fn destructive_sql_reason(keyword: &str) -> String {
     format!(
-        "SQL_DELETE_BLOCKED: `{}` is an irreversible DB operation and is hard-blocked (P0). \
-         READ (SELECT), INSERT, UPDATE, and CREATE are allowed; DELETE / DROP / TRUNCATE are not. \
-         For an intended removal, write a reviewed `sqlx migrate` step so it is tracked and reversible.",
+        "[SQL_DESTRUCTIVE] `{}` is an irreversible DB operation (P0) \
+         -> READ (SELECT), INSERT, UPDATE, and CREATE are allowed; DELETE / DROP / TRUNCATE are not. \
+         For an intended removal, write a reviewed `sqlx migrate` step so it is tracked and reversible -> retry.",
         keyword.to_uppercase()
     )
 }
