@@ -119,7 +119,7 @@ async fn seed(
     gate: &str,
     fix: &str,
 ) -> Result<()> {
-    let ev = append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj")).await?;
+    let ev = append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj"), 0).await?;
     cluster_event_to_pattern(db, &ev, gate, fix).await?;
     Ok(())
 }
@@ -128,8 +128,10 @@ async fn seed(
 async fn ranks_anti_patterns_by_recurrence() {
     let db = open_memory().await.expect("open in-memory db");
     // Cluster A: 3 recurrences of the same behavioral mistake → hit_count 3.
-    for _ in 0..3 {
-        seed(&db, "gate_a", "do A instead")
+    // Distinct turns (0,1,2) keep each recurrence's event node distinct — a
+    // same-turn re-file would converge to one event (idempotency, see append.rs).
+    for turn in 0..3 {
+        seed_at_turn(&db, "gate_a", "do A instead", turn)
             .await
             .expect("seed cluster A");
     }
