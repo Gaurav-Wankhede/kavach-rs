@@ -20,7 +20,7 @@ pub(crate) fn is_memory_file(file_path: &str) -> bool {
 /// Generate the block message for memory file writes.
 pub(crate) fn block_message(file_path: &str) -> String {
     format!(
-        "MEMORY_DB_VIOLATION: Writing to `{file_path}` is BLOCKED.\n\
+        "[MEMORY_DB_POLICY] Writing to `{file_path}` bypasses the permanent store.\n\
          \n\
          kavach-db (SurrealDB) is the PERMANENT store — MEMORY.md is session cache only.\n\
          \n\
