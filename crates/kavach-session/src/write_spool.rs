@@ -13,9 +13,12 @@
 //! <https://users.rust-lang.org/t/correct-way-to-save-a-file-atomically-but-without-interferring-with-performance/89223>
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use serde::{Deserialize, Serialize};
 use crate::paths::state_dir;
+/// Per-process counter disambiguating same-process concurrent drain claims.
+static DRAIN_CLAIM_SEQ: AtomicU64 = AtomicU64::new(0);
 /// One deferred RPC write: the method name + its JSON params, enough to replay
 /// `kavach_rpc::client::call(method, params)` verbatim on drain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
