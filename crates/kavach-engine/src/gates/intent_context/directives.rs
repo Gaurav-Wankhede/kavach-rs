@@ -66,9 +66,8 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
     context.push_str("\n[ROOT_CAUSE_PROTOCOL] ");
     context.push_str(&dyn_directive(
         "intent.root-cause-protocol",
-        "Before fix-Write → emit [RCA]: symptom · repro file:line · why×5 evidence · \
-         root_cause · class · blast_radius · research URL · fix_strategy. Fix cause ≠ \
-         symptom. No [RCA] → gate denies.",
+        "Before fix-Write → emit [RCA]: symptom@file:line → why-chain→root_cause · \
+         class+blast · fix · cite:URL. Fix cause ≠ symptom. No [RCA] → gate denies.",
     ));
     context.push('\n');
 }
