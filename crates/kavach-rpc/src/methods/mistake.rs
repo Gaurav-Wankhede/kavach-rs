@@ -1,3 +1,4 @@
+// split: mistake/anti_pattern RPC tier (hit_count/record/purge), one cohesive tier
 // RPC methods for the mistake/anti_pattern tier: hit-count (read) and record
 // (append event + cluster to anti_pattern by content key). `record` runs INSIDE
 // the server process — the single RocksDB writer — so the append+cluster
