@@ -117,6 +117,7 @@ pub async fn record(state: &AppState, p: RecordParams) -> Result<RecordResult, E
         &p.banned_sample,
         &p.session_id,
         p.project.as_deref(),
+        p.turn,
     )
     .await
     .map_err(surreal_to_rpc)?;
