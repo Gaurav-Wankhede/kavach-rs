@@ -11,7 +11,7 @@ async fn seed(
     gate: &str,
     fix: &str,
 ) -> Result<()> {
-    let ev = append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj")).await?;
+    let ev = append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj"), 0).await?;
     cluster_event_to_pattern(db, &ev, gate, fix).await?;
     Ok(())
 }
