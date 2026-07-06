@@ -55,6 +55,7 @@ async fn loophole_event_is_tagged_family_loophole() {
         "src/x.py:12 — os.system",
         "sess",
         Some("proj"),
+        0,
     )
     .await
     .expect("append loophole");
