@@ -29,8 +29,9 @@ fn test_rca_protocol_injected_for_debug() {
     assert!(ctx.contains("ROOT_CAUSE_PROTOCOL"));
     assert!(ctx.contains("Fix cause"));
     assert!(ctx.contains("[RCA]"));
-    assert!(ctx.contains("blast_radius"));
-    assert!(ctx.contains("why×5"));
+    assert!(ctx.contains("class+blast"));
+    assert!(ctx.contains("why-chain"));
+    assert!(ctx.contains("symptom@file:line"));
 }
 
 #[test]
