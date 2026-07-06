@@ -136,7 +136,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
         return None;
     }
 
-    let mut msg = String::from("BOUNTY_OWASP_BLOCK:\n");
+    let mut msg = String::from("[OWASP_SAFETY]\n");
     for f in &critical {
         writeln!(
             &mut msg,
