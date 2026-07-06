@@ -76,53 +76,35 @@ pub(super) fn install(path: &Path, body: &str, dry_run: bool) -> std::io::Result
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn render_pins_absolute_binary() {
-        let out = render(
-            "kavach gates stop --hook",
-            Path::new("/usr/local/bin/kavach"),
-        );
-        assert_eq!(out, "/usr/local/bin/kavach gates stop --hook");
-    }
-
-    #[test]
-    fn create_then_idempotent_rerun() {
-        let dir = std::env::temp_dir().join(format!("kvinst-{}", std::process::id()));
-        let p = dir.join("cfg.json");
-        fs::remove_dir_all(&dir).ok();
-        assert_eq!(install(&p, "A", false).unwrap(), Outcome::Created);
-        // Re-run with identical body: no-op, no backup spawned.
-        assert_eq!(install(&p, "A", false).unwrap(), Outcome::Unchanged);
-        fs::remove_dir_all(&dir).ok();
-    }
-
-    #[test]
-    fn overwrite_backs_up_prior() {
-        let dir = std::env::temp_dir().join(format!("kvinst-ow-{}", std::process::id()));
-        let p = dir.join("cfg.json");
-        fs::remove_dir_all(&dir).ok();
-        install(&p, "OLD", false).unwrap();
-        assert_eq!(install(&p, "NEW", false).unwrap(), Outcome::Overwrote);
-        let bak = fs::read_to_string(dir.join("cfg.json.kavach.bak")).unwrap();
-        assert_eq!(bak, "OLD", "prior content must survive in the backup");
-        assert_eq!(fs::read_to_string(&p).unwrap(), "NEW");
-        fs::remove_dir_all(&dir).ok();
-    }
-
-    #[test]
-    fn dry_run_writes_nothing() {
-        let dir = std::env::temp_dir().join(format!("kvinst-dry-{}", std::process::id()));
-        let p = dir.join("cfg.json");
-        fs::remove_dir_all(&dir).ok();
-        assert!(matches!(
-            install(&p, "X", true).unwrap(),
-            Outcome::DryRun(_)
+/// Directives install-if-absent: existing hand-written doc is backed up, never clobbered.
+pub(super) fn install_directives_if_absent(
+    path: &Path,
+    body: &str,
+    dry_run: bool,
+) -> std::io::Result<String> {
+    if path.exists() {
+        if dry_run {
+            return Ok(format!("would keep existing {}", path.display()));
+        }
+        let mut bak = path.as_os_str().to_owned();
+        bak.push(".kavach.bak");
+        fs::copy(path, Path::new(&bak))?;
+        return Ok(format!(
+            "kavach: existing {} kept — Kavach directives saved to {}; merge if you want them",
+            path.display(),
+            Path::new(&bak).display()
         ));
-        assert!(!p.exists(), "dry-run must not create the file");
-        fs::remove_dir_all(&dir).ok();
     }
+    if dry_run {
+        return Ok(format!("would create {}", path.display()));
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(path, body)?;
+    Ok(format!("created {}", path.display()))
 }
+
+#[cfg(test)]
+#[path = "write_test.rs"]
+mod tests;
