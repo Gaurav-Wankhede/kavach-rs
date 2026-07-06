@@ -1,37 +1,38 @@
-#!/usr/bin/env bash
-# Kavach installer: detect OS+arch, download the matching release binary, install to ~/.local/bin.
+# Kavach source installer: clone, build from source, install to ~/.local/bin, delete the clone.
 set -euo pipefail
 
-REPO="Wankhede-Brothers/kavach-rs"
-BASE="https://github.com/${REPO}/releases/latest/download"
+REPO_URL="https://github.com/Wankhede-Brothers/kavach-rs"
 DEST="${KAVACH_INSTALL_DIR:-$HOME/.local/bin}"
 
-os=$(uname -s); arch=$(uname -m)
-case "$os" in
-  Darwin) plat=darwin ;;
-  Linux)  plat=linux ;;
-  *) echo "kavach: unsupported OS '$os' — use install.ps1 on Windows" >&2; exit 1 ;;
-esac
-case "$arch" in
-  x86_64|amd64)  cpu=amd64 ;;
-  arm64|aarch64) cpu=arm64 ;;
-  *) echo "kavach: unsupported arch '$arch'" >&2; exit 1 ;;
-esac
+if ! command -v git >/dev/null 2>&1; then
+  echo "kavach: git is required and was not found — install it first (Debian/Ubuntu: sudo apt install git; Fedora: sudo dnf install git; macOS: xcode-select --install)" >&2
+  exit 1
+fi
 
-asset="kavach-${plat}-${cpu}.tar.gz"
-url="${BASE}/${asset}"
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "kavach: installing Rust via rustup ..."
+  curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | sh -s -- -y
+  source "$HOME/.cargo/env"
+fi
+
+if ! command -v surreal >/dev/null 2>&1; then
+  echo "kavach: installing SurrealDB ..."
+  curl -fsSL https://install.surrealdb.com | sh
+fi
+
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-echo "kavach: downloading ${asset} …"
-if command -v curl >/dev/null 2>&1; then curl -fsSL -o "$tmp/k.tgz" "$url";
-elif command -v wget >/dev/null 2>&1; then wget -qO "$tmp/k.tgz" "$url";
-else echo "kavach: need curl or wget" >&2; exit 1; fi
+echo "kavach: cloning ${REPO_URL} ..."
+git clone --depth 1 "$REPO_URL" "$tmp/src"
 
-tar -xzf "$tmp/k.tgz" -C "$tmp"
+echo "kavach: building kavach-cli (release) ..."
+( cd "$tmp/src" && cargo build --release -p kavach-cli )
+
 mkdir -p "$DEST"
-install -m 0755 "$tmp/kavach" "$DEST/kavach"
+install -m 0755 "$tmp/src/target/release/kavach" "$DEST/kavach"
 
 echo "kavach: installed to ${DEST}/kavach"
-case ":$PATH:" in *":$DEST:"*) ;; *) echo "kavach: add ${DEST} to PATH → export PATH=\"${DEST}:\$PATH\"" ;; esac
+case ":$PATH:" in *":$DEST:"*) ;; *) echo "kavach: add ${DEST} to PATH -> export PATH=\"${DEST}:\$PATH\"" ;; esac
 "$DEST/kavach" --version || true
+echo "kavach: update later with \`kavach update\` (no re-clone needed by you)."
