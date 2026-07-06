@@ -57,10 +57,10 @@ pub fn detect(file_path: &str, content: &str, tool_name: &str) -> Vec<NanoFileVi
             severity: NanoSeverity::P0Block,
             pattern: "file exceeds hard ceiling",
             fix: format!(
-                "lines={loc} over hard ceiling {HARD_LOC_NEW_FILE}. This is a monolith, not a \
-                 smell. Climb the ladder FIRST: need to exist? reuse a module (`rg`/`fd`/`ast-grep`)? \
+                "lines={loc} over the hard ceiling {HARD_LOC_NEW_FILE}. Split this file to land the write. \
+                 Climb the ladder first: does it need to exist? reuse a module (`rg`/`fd`/`ast-grep`)? \
                  stdlib/dep? one line? Then split into a hub+leaf hierarchy (foo.rs + foo/bar.rs), \
-                 smallest reusable files, NO dup, NO mod.rs. Deliberate? mark `// kavach:intentional <reason>`."
+                 smallest reusable files, no dup, no mod.rs. Deliberate? mark `// kavach:intentional <reason>`."
             ),
         });
     } else if loc >= WARN_LOC_NEW_FILE && !is_loc_exempt(content) {
