@@ -131,7 +131,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
         return None;
     }
 
-    let mut msg = String::from("BOUNTY_CRYPTO_BLOCK:\n");
+    let mut msg = String::from("[CRYPTO_SAFETY]\n");
     for f in &findings {
         writeln!(
             &mut msg,
