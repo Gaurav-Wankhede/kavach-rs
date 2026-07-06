@@ -134,6 +134,13 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         session.memory_queried = true;
     }
 
+    // E-checkpoint: re-inject the EXACT card the last session was on (the
+    // pointer already persisted) so the model resumes it first, before the
+    // full [KANBAN] backlog view below. Fail-soft: omitted on empty/gone/done.
+    if let Some(resume_ctx) = super::resume::resume_context(session) {
+        context.push_str(&resume_ctx);
+    }
+
     // Live board status, read from the kavach DB at SessionStart — the same RPC
     // the Stop gate uses. The session must OPEN with the real board (counts + next
     // card), not a "run kavach db kanban yourself" reminder. Fail-soft on RPC
