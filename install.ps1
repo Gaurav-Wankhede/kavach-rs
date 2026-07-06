@@ -14,10 +14,12 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
   & "$env:TEMP\rustup-init.exe" -y
   $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
 }
+if (Get-Command rustup -ErrorAction SilentlyContinue) { rustup update 2>$null }
 
 if (-not (Get-Command surreal -ErrorAction SilentlyContinue)) {
   Write-Host "kavach: installing SurrealDB …"
   iwr https://windows.surrealdb.com -useb | iex
+  Write-Host "kavach: if a specific SurrealDB version is required, install surreal 3.1.4 manually from surrealdb.com/install"
 }
 
 $tmp = New-Item -ItemType Directory -Path (Join-Path $env:TEMP ([System.Guid]::NewGuid()))
