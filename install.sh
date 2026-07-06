@@ -38,6 +38,10 @@ install -m 0755 "$tmp/src/target/release/kavach" "$DEST/kavach"
 echo "kavach: provisioning the Rust toolbelt (rg, fd, bat, sd, xh, …) …"
 "$DEST/kavach" toolbelt install --yes 2>/dev/null || echo "kavach: toolbelt provisioning skipped — run \`kavach toolbelt install\` manually"
 
+# sync Kavach hooks into each harness settings.json so gates fire (idempotent, backed up)
+echo "kavach: wiring hooks into your AI harness settings.json …"
+"$DEST/kavach" install --vendor all 2>/dev/null || echo "kavach: hook wiring skipped — run \`kavach install --vendor all\` manually"
+
 case "$(uname -s)" in
   Darwin) datadir="$HOME/Library/Application Support/SharedAI" ;;
   Linux)  datadir="${XDG_DATA_HOME:-$HOME/.local/share}/shared-ai" ;;
