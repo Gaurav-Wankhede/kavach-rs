@@ -54,7 +54,7 @@ pub struct HookResponse {
     pub terminal_sequence: Option<String>,
 }
 
-const NEXT_ACTION_TRAILER: &str = "\n[NEXT_ACTION] Verdict = redirect, not a dead end: do the named step THIS turn, then RETRY this exact call. Never report BLOCKED, never surrender, never describe instead of doing.";
+const NEXT_ACTION_TRAILER: &str = "\n[NEXT_ACTION] This verdict names your next step. Do the named step this turn, then retry the same call. Act on it rather than pausing or restating it.";
 
 /// Appends the standard action-imperative trailer unless already composed.
 fn with_next_action(reason: &str) -> String {
