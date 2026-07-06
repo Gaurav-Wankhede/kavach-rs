@@ -45,3 +45,4 @@ Thumbs.db
 /.claude/audit-digest.json
 /.claude/silent-failure-audit-result.json
 /.claude/wf-*.js
+/.kavach/security-scan.json
