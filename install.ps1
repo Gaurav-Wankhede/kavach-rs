@@ -17,9 +17,10 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 if (Get-Command rustup -ErrorAction SilentlyContinue) { rustup update 2>$null }
 
 if (-not (Get-Command surreal -ErrorAction SilentlyContinue)) {
-  Write-Host "kavach: installing SurrealDB …"
-  iwr https://windows.surrealdb.com -useb | iex
-  Write-Host "kavach: if a specific SurrealDB version is required, install surreal 3.1.4 manually from surrealdb.com/install"
+  # pin SurrealDB to 3.1.4 via the direct release asset (the iex installer takes no version arg)
+  Write-Host "kavach: installing SurrealDB 3.1.4 …"
+  New-Item -ItemType Directory -Force -Path $dest | Out-Null
+  Invoke-WebRequest -Uri "https://github.com/surrealdb/surrealdb/releases/download/v3.1.4/surreal-v3.1.4.windows-amd64.exe" -OutFile "$dest\surreal.exe"
 }
 
 $tmp = New-Item -ItemType Directory -Path (Join-Path $env:TEMP ([System.Guid]::NewGuid()))
