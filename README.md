@@ -212,7 +212,8 @@ What the installer does, in order:
 2. **Clones** the repo shallow into a temp dir and runs `cargo build --release`.
 3. **Installs** the `kavach` binary to `~/.local/bin` (override with `KAVACH_INSTALL_DIR`).
 4. **Provisions the enforced Rust toolbelt** (`rg`, `fd`, `bat`, `sd`, `xh`, `jaq`, …) via `kavach toolbelt install` — required, because Kavach's `pre-tool` gate **blocks the legacy POSIX equivalents** (`grep`/`find`/`cat`/`curl`/`sed`) on Linux, macOS, and Windows.
-5. **Deletes the clone** — nothing is left behind but the installed binary and its toolbelt.
+5. **Wires the hooks** — merges Kavach's gate hooks into each AI harness's own `settings.json` (Claude Code, Cursor, Codex, …) via `kavach install --vendor all`; idempotent and backs up the originals, so the lifecycle gates actually fire.
+6. **Deletes the clone** — nothing is left behind but the installed binary and its toolbelt.
 
 Your memory store lives in a per-OS data directory the binary resolves automatically: `~/Library/Application Support/SharedAI` (macOS), `%LOCALAPPDATA%\SharedAI` (Windows), `~/.local/share/shared-ai` (Linux).
 
