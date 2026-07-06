@@ -1,5 +1,5 @@
 mod build;
-mod install;
+pub(crate) mod install;
 mod lock;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 use std::path::PathBuf;
