@@ -12,7 +12,7 @@ fn python_heredoc_writing_a_rust_source_is_denied() {
     let cmd = "python3 - <<'PY'\nopen('crates/kavach-surreal/src/write.rs','w').write(s)\nPY";
     match check(cmd) {
         Some(Decision::Deny(reason)) => {
-            assert!(reason.contains("write-bypass"), "deny reason: {reason}");
+            assert!(reason.contains("WRITE_BYPASS"), "deny reason: {reason}");
         }
         other => panic!(
             "expected Deny for a source heredoc, got {}",
