@@ -35,15 +35,18 @@ pub async fn cluster_event_to_pattern(
         correct_action,
     )
     .await?;
-    // SOURCE: surrealdb.com/docs/surrealql/statements/select — guard so a
-    // re-cluster of a keyed (converged) event does not double the edge.
+    // SOURCE: crate::error::is_missing_table_error — missing table = no edge yet.
     let existing_q = "SELECT id FROM instance_of WHERE in = $src AND out = $tgt LIMIT 1";
-    let mut existing_resp = db
+    let existing_resp = db
         .query(existing_q)
         .bind(("src", event_id.clone()))
         .bind(("tgt", pattern_id.clone()))
-        .await?;
-    let existing: Option<IdRow> = existing_resp.take(0)?;
+        .await;
+    let existing: Option<IdRow> = match existing_resp {
+        Ok(mut resp) => resp.take(0)?,
+        Err(e) if crate::error::is_missing_table_error(&e) => None,
+        Err(e) => return Err(e.into()),
+    };
     if existing.is_some() {
         return Ok(pattern_id);
     }
