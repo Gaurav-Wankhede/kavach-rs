@@ -138,7 +138,7 @@ pub fn scan(content: &str) -> Vec<BidiHit> {
 #[must_use]
 pub fn block_message(path: &str, hits: &[BidiHit]) -> String {
     let mut out = format!(
-        "BLOCKED: bidirectional/zero-width/tag-block Unicode in AI-config file: {path}\n\
+        "[BIDI_UNICODE] bidirectional/zero-width/tag-block Unicode in AI-config file: {path}\n\
          {} hit(s) detected (showing up to {MAX_HITS}):\n",
         hits.len()
     );
