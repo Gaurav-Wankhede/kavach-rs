@@ -43,9 +43,9 @@ pub(crate) fn check(
     }
     Some(format!(
         "[RCA_FIRST] {intent_type}/{intent_risk} → emit [RCA] in CHAT (never a code comment): \
-         symptom · repro file:line · why×5 evidence · root_cause · class · blast_radius · \
-         research URL · fix_strategy → retry this edit. Fix cause ≠ symptom; the fix's \
-         non-obvious WHY gets ≤1 line in code. SOURCE: CLAUDE.md §RCA."
+         symptom@file:line → why-chain→root_cause · class+blast · fix · cite:URL → retry \
+         this edit. Fix cause ≠ symptom; non-obvious WHY gets ≤1 line in code. \
+         SOURCE: CLAUDE.md §RCA."
     ))
 }
 /// True when an active bulk sweep or break-glass bypass authorizes this edit.
