@@ -18,7 +18,7 @@ fn simple_grep_gets_reminder() {
 fn recursive_grep_no_exclusions_blocks() {
     let r = check_grep_command(r#"grep -r "pattern" /home/project"#);
     assert!(r.is_some());
-    assert!(r.unwrap().contains("GREP_PERFORMANCE_BLOCK"));
+    assert!(r.unwrap().contains("GREP_PERFORMANCE_POLICY"));
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn recursive_grep_symbol_appends_origin_hint() {
     let r = check_grep_command(cmd);
     assert!(r.is_some());
     let msg = r.unwrap();
-    assert!(msg.contains("GREP_PERFORMANCE_BLOCK"));
+    assert!(msg.contains("GREP_PERFORMANCE_POLICY"));
     assert!(msg.contains("KAVACH_ORIGIN_HINT"));
     assert!(msg.contains("RoleQuery"));
 }
