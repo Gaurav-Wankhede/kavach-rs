@@ -1,3 +1,5 @@
+use super::keep_hit;
+
 #[test]
 fn test_keep_hit_filters_invalid_categories() {
     assert!(!keep_hit("hacked:evil"), "hacked prefix must be rejected");
