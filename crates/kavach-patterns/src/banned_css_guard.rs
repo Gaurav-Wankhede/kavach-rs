@@ -82,7 +82,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
     if out.is_empty() {
         return None;
     }
-    let mut msg = String::from("BOUNTY_BANNED_CSS_BLOCK:\n");
+    let mut msg = String::from("[BANNED_CSS_POLICY]\n");
     for f in &out {
         msg.push_str(f);
         msg.push('\n');
