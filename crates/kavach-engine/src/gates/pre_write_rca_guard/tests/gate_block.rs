@@ -66,7 +66,7 @@ fn blocks_implement_medium_without_rca() {
     );
     assert!(result.is_some());
     let reason = result.unwrap_or_default();
-    assert!(reason.contains("RCA REQUIRED"));
+    assert!(reason.contains("[RCA_FIRST]"));
     assert!(reason.contains("implement"));
     assert!(reason.contains("medium"));
 }
