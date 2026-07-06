@@ -31,12 +31,18 @@ fn pi_now_ships_and_dry_run_succeeds() {
 
 #[test]
 fn directives_path_per_vendor() {
-    assert_eq!(Target::ClaudeCode.rel_directives_path(), Some("CLAUDE.md"));
+    assert_eq!(
+        Target::ClaudeCode.rel_directives_path(),
+        Some(".claude/CLAUDE.md")
+    );
     assert_eq!(
         Target::Cursor.rel_directives_path(),
         Some(".cursor/rules/kavach.mdc")
     );
-    assert_eq!(Target::Codex.rel_directives_path(), Some("AGENTS.md"));
+    assert_eq!(
+        Target::Codex.rel_directives_path(),
+        Some(".codex/AGENTS.md")
+    );
     assert_eq!(Target::Antigravity.rel_directives_path(), None);
     assert_eq!(Target::Pi.rel_directives_path(), None);
 }
