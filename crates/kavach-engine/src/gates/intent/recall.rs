@@ -18,8 +18,7 @@ const RECALL_LIMIT: usize = 5;
 mod recall_test;
 
 /// Validate a hit id: category prefix must be in the valid set.
-#[cfg_attr(test, visibility::make(pub))]
-fn keep_hit(id: &str) -> bool {
+pub(crate) fn keep_hit(id: &str) -> bool {
     if let Some(colon_idx) = id.find(':') {
         let category = &id[..colon_idx];
         matches!(
