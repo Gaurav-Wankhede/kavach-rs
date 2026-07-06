@@ -1,4 +1,4 @@
-// Keyed-idempotent event: UPSERT by blake3(identity+session+turn) so a re-file converges.
+// split: keyed-idempotent event upsert (mistake+loophole), not a request handler
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
