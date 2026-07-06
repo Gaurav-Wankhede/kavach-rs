@@ -77,35 +77,5 @@ fn report_err(msg: &str) -> i32 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn resolve_all_expands_to_shipped() {
-        assert_eq!(resolve("all").unwrap().len(), Target::all().len());
-    }
-
-    #[test]
-    fn resolve_single_known() {
-        assert_eq!(resolve("cursor").unwrap(), vec![Target::Cursor]);
-        assert_eq!(resolve("CC").unwrap(), vec![Target::ClaudeCode]);
-    }
-
-    #[test]
-    fn resolve_unknown_is_error() {
-        assert!(resolve("bogus").is_err());
-    }
-
-    #[test]
-    fn pi_now_ships_and_dry_run_succeeds() {
-        // Pi's TS extension template now ships, so install_one resolves a template
-        // and the dry-run reports a DryRun outcome (no longer the unshipped error).
-        let bin = std::path::Path::new("/x/kavach");
-        let line = install_one(Target::Pi, bin, true).unwrap();
-        assert!(line.contains("[pi]"), "{line}");
-        assert!(
-            line.contains("index.ts"),
-            "Pi installs to the extension path: {line}"
-        );
-    }
-}
+#[path = "install_test.rs"]
+mod tests;
