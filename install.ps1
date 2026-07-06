@@ -33,6 +33,7 @@ try {
   Pop-Location
   New-Item -ItemType Directory -Force -Path $dest | Out-Null
   Copy-Item "$tmp\src\target\release\kavach.exe" "$dest\kavach.exe" -Force
+  $datadir = "$env:LOCALAPPDATA\SharedAI"; Write-Host "kavach: memory store will live in $datadir (SurrealDB 3.1.4)"
   Write-Host "kavach: installed to $dest\kavach.exe"
   if ($env:PATH -notlike "*$dest*") { Write-Host "kavach: add $dest to PATH" }
   & "$dest\kavach.exe" --version
