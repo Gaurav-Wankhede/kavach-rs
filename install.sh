@@ -34,6 +34,10 @@ echo "kavach: building kavach-cli (release) ..."
 mkdir -p "$DEST"
 install -m 0755 "$tmp/src/target/release/kavach" "$DEST/kavach"
 
+# provision the Rust toolbelt (rg/fd/bat/sd/xh/…) the gates enforce over legacy POSIX tools
+echo "kavach: provisioning the Rust toolbelt (rg, fd, bat, sd, xh, …) …"
+"$DEST/kavach" toolbelt install --yes 2>/dev/null || echo "kavach: toolbelt provisioning skipped — run \`kavach toolbelt install\` manually"
+
 case "$(uname -s)" in
   Darwin) datadir="$HOME/Library/Application Support/SharedAI" ;;
   Linux)  datadir="${XDG_DATA_HOME:-$HOME/.local/share}/shared-ai" ;;
