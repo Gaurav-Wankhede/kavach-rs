@@ -1,7 +1,7 @@
 // ARCH: see kavach db get --category decision --key arch.decision.fourteen_prefix_const_table
 //
 // `tier` groups missing prefixes by required tier; this hub formats the
-// `[SIX_FILE_BLOCK]` header, coverage summary, tier sections, and draft guide.
+// `[SIX_FILE_POLICY]` header, coverage summary, tier sections, and draft guide.
 mod tier;
 #[cfg(test)]
 #[path = "report_test.rs"]
