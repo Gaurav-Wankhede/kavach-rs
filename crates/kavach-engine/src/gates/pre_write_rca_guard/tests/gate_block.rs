@@ -111,6 +111,6 @@ fn blocked_message_uses_rca_first_vocabulary() {
     let result = check("Edit", "debug", "high", "", false, "src/lib.rs");
     let reason = result.unwrap_or_default();
     assert!(reason.contains("[RCA_FIRST]"));
-    assert!(reason.contains("why×5"));
+    assert!(reason.contains("why-chain→root_cause"));
     assert!(reason.contains("→ retry"));
 }
