@@ -103,9 +103,9 @@ impl Target {
     /// Path under `$HOME` for this tool's directives doc; `None` if it has none.
     pub(super) const fn rel_directives_path(self) -> Option<&'static str> {
         match self {
-            Self::ClaudeCode => Some("CLAUDE.md"),
+            Self::ClaudeCode => Some(".claude/CLAUDE.md"),
             Self::Cursor => Some(".cursor/rules/kavach.mdc"),
-            Self::Codex => Some("AGENTS.md"),
+            Self::Codex => Some(".codex/AGENTS.md"),
             Self::Antigravity | Self::Pi => None,
         }
     }
