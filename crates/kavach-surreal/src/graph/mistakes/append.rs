@@ -1,6 +1,4 @@
-// Append-only mistake_event creation. No read-modify-write. No prose-hash key.
-// Each event is unique; aggregation is via inbound instance_of edges on the
-// anti_pattern centroid (Bug 1 + Bug 3 dissolved).
+// Keyed-idempotent event: UPSERT by blake3(identity+session+turn) so a re-file converges.
 use crate::error::{Error, Result};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
@@ -9,6 +7,16 @@ use surrealdb_types::{RecordId, SurrealValue};
 #[derive(SurrealValue)]
 struct IdRow {
     id: RecordId,
+}
+
+/// Derives the stable, deterministic event name from its semantic identity.
+/// Same shape as `cluster::derive_pattern_name` — first 8 hex chars of blake3.
+fn event_key(prefix: &str, parts: &[&str], session_id: &str, turn: i32) -> String {
+    let joined = parts.join("|");
+    let hash = blake3::hash(format!("{joined}|{session_id}|{turn}").as_bytes());
+    let hex = hash.to_hex();
+    let short: String = hex.chars().take(8).collect();
+    format!("{prefix}.{short}")
 }
 
 /// Creates an append-only mistake event record in the database.
@@ -23,6 +31,7 @@ pub async fn append_mistake_event(
     banned_sample: &str,
     session_id: &str,
     project_slug: Option<&str>,
+    turn: i32,
 ) -> Result<RecordId> {
     if gate.is_empty() {
         return Err(Error::Migration(
@@ -37,7 +46,13 @@ pub async fn append_mistake_event(
         "project_slug": project_slug,
         "family": super::pattern::FAMILY_MISTAKE,
     });
-    create_event(db, "mistake_event", props).await
+    let name = event_key(
+        "mev",
+        &[gate, correct_action, banned_sample],
+        session_id,
+        turn,
+    );
+    create_event(db, "mistake_event", &name, props).await
 }
 
 /// Append-only loophole event — the umbrella's loophole half.
