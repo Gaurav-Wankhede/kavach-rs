@@ -14,7 +14,7 @@ pub(crate) fn routes() -> Router {
     assert!(result.is_some());
     let msg = result.unwrap_or_default();
     assert!(msg.contains("[API_GATEWAY] missing gateway layer"));
-    assert!(msg.contains("Missing gateway layer"));
+    assert!(msg.contains("retry"));
 }
 
 #[test]
