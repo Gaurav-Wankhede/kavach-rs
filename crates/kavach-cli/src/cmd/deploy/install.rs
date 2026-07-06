@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub(super) const BINARY_NAME: &str = "kavach";
-pub(super) const RELEASE_PROFILE: &str = "release";
+pub(crate) const BINARY_NAME: &str = "kavach";
+pub(crate) const RELEASE_PROFILE: &str = "release";
 
 /// Install a single binary file: fresh inode (remove-then-copy) + codesign on macOS.
-pub(super) fn install_binary(src: &Path, dst: &Path) -> Result<(), String> {
+pub(crate) fn install_binary(src: &Path, dst: &Path) -> Result<(), String> {
     let Some(parent) = dst.parent() else {
         return Err(format!("[DEPLOY] FAIL: {} has no parent", dst.display()));
     };
