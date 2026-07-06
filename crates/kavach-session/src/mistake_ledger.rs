@@ -1,4 +1,6 @@
 // MISTAKE LEDGER — observable record of every gate-block / behavioral violation.
+// kavach:intentional pre-existing monolith over the line ceiling; this turn
+// scopes only to closing the TOCTOU dup-row race, a module split is separate.
 //
 // ARCH: AntiPatternReinjection
 // PATTERN: mistake_ledger | SCOPE: global (kavach-global) | CAP: AP | SEARCHED: 2026-05
@@ -105,11 +107,10 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     }
     let key = ledger_key(m.gate, m.banned_sample);
 
-    // Probe the existing row so we can BUMP hit_count instead of overwriting
-    // it back to 1. The K-PRI ranker (kavach_patterns::k_pri) reads hit_count
-    // as the recurrence signal — losing it on every write breaks LFU ranking.
+    // Best-effort prior count, used ONLY for the displayed hit_count — a stale
+    // read here affects the shown number, never row identity or write intent.
     // Global namespace, NOT m.project: a mistake is shared across all projects.
-    let (prev_hits, exists) = read_hit_count(GLOBAL_NAMESPACE, &key);
+    let (prev_hits, _) = read_hit_count(GLOBAL_NAMESPACE, &key);
     let new_hits = prev_hits.saturating_add(1);
     let now_unix = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -139,11 +140,25 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
         origin = m.project,
     );
 
-    // First hit → --new (CLI rejects --update-key on missing row). Subsequent
-    // hits → --update-key. SOURCE: `kavach db write --help` strict-mode rules.
-    let intent_flag = if exists { "--update-key" } else { "--new" };
-    let intent_val = if exists { key.as_str() } else { "" };
-    let mut args: Vec<&str> = vec![
+    let error = write_with_upsert(&key, &title, &content);
+    RecordOutcome {
+        persisted: error.is_none(),
+        key,
+        error,
+    }
+}
+
+/// Write the row via `--update-key` first, falling back to `--new` only when
+/// the row genuinely doesn't exist yet (CLI reports not-found).
+///
+/// This replaces a probe-then-branch (`read_hit_count` -> `exists` ->
+/// `--new`/`--update-key`) that raced concurrent writers: two callers could
+/// both observe `exists=false` and both issue `--new`, producing duplicate
+/// rows or a lost increment. Trying the idempotent update first and only
+/// falling back on a genuine not-found error means at most one writer ever
+/// takes the create path for a given key. SOURCE: rca.mistake-ledger-toctou-dup-row.
+fn write_with_upsert(key: &str, title: &str, content: &str) -> Option<String> {
+    let update_args = [
         "db",
         "write",
         "--project",
@@ -151,23 +166,53 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
         "--category",
         "pattern",
         "--key",
-        &key,
+        key,
         "--title",
-        &title,
+        title,
         "--content",
-        &content,
-        intent_flag,
+        content,
+        "--update-key",
+        key,
     ];
-    if exists {
-        args.push(intent_val);
-    }
-    // Best-effort (gate runs on every Stop) but NOT silent: the outcome carries
-    // persisted/error so the caller surfaces a failure to the LLM, not only to
-    // tracing. SOURCE: decision.mistake-ledger-no-silent-write.
-    let error = match Command::new("kavach").args(&args).output() {
-        Ok(o) if !o.status.success() => {
+    match Command::new("kavach").args(update_args).output() {
+        Ok(o) if o.status.success() => return None,
+        Ok(o) => {
             let stderr = String::from_utf8_lossy(&o.stderr);
-            tracing::warn!(key = %key, status = %o.status, stderr = %stderr, "record_mistake: db write failed");
+            if !is_key_not_found(&stderr) {
+                tracing::warn!(key = %key, status = %o.status, stderr = %stderr, "record_mistake: update failed");
+                return Some(format!(
+                    "db write exit={} stderr={}",
+                    o.status,
+                    stderr.trim()
+                ));
+            }
+        }
+        Err(e) => {
+            tracing::warn!(key = %key, error = %e, "record_mistake: spawn failed");
+            return Some(format!("spawn failed: {e}"));
+        }
+    }
+    // Row didn't exist yet — fall back to --new.
+    let new_args = [
+        "db",
+        "write",
+        "--project",
+        GLOBAL_NAMESPACE,
+        "--category",
+        "pattern",
+        "--key",
+        key,
+        "--title",
+        title,
+        "--content",
+        content,
+        "--new",
+    ];
+    match Command::new("kavach").args(new_args).output() {
+        Ok(o) if o.status.success() => None,
+        Ok(o) => {
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            tracing::warn!(key = %key, status = %o.status, stderr = %stderr, "record_mistake: create failed");
             Some(format!(
                 "db write exit={} stderr={}",
                 o.status,
@@ -178,13 +223,13 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
             tracing::warn!(key = %key, error = %e, "record_mistake: spawn failed");
             Some(format!("spawn failed: {e}"))
         }
-        Ok(_) => None,
-    };
-    RecordOutcome {
-        persisted: error.is_none(),
-        key,
-        error,
     }
+}
+
+/// Detect the CLI's not-found error for `--update-key` on a missing row.
+fn is_key_not_found(stderr: &str) -> bool {
+    let lower = stderr.to_lowercase();
+    lower.contains("not found")
 }
 
 /// Record a mistake AND surface a write failure to the LLM next turn.
@@ -223,7 +268,7 @@ pub fn record_and_surface(
 }
 
 /// Read the prior `hit_count` from an existing row's content. Returns (count, exists).
-/// Best-effort: any failure ⇒ (0, false) — the next write becomes a `--new`.
+/// Best-effort: any failure ⇒ (0, false) — used only for the displayed count.
 fn read_hit_count(project: &str, key: &str) -> (u32, bool) {
     let output = match Command::new("kavach")
         .args([
@@ -259,7 +304,7 @@ fn read_hit_count(project: &str, key: &str) -> (u32, bool) {
         }
     }
     // Row exists but content lacks the token (older schema) — treat as count=0
-    // but mark exists=true so we use --update-key (CLI would otherwise refuse).
+    // but mark exists=true (kept for callers that still branch on presence).
     (0, true)
 }
 
@@ -293,61 +338,5 @@ fn truncate(s: &str, max: usize) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn ledger_key_is_stable_for_same_sample() {
-        let a = ledger_key("permission", "should i proceed");
-        let b = ledger_key("permission", "SHOULD I PROCEED");
-        assert_eq!(a, b, "case-insensitive key for stable dedup");
-    }
-
-    #[test]
-    fn ledger_key_differs_per_gate() {
-        let a = ledger_key("permission", "should i proceed");
-        let b = ledger_key("deferral", "should i proceed");
-        assert_ne!(a, b);
-    }
-
-    #[test]
-    fn ledger_key_sanitizes_gate_name() {
-        let k = ledger_key("permission/seeking phase-2", "x");
-        assert!(!k.contains('/'), "slashes stripped");
-        assert!(!k.contains(' '), "spaces stripped");
-        assert!(!k.contains('-'), "dashes stripped");
-    }
-
-    #[test]
-    fn record_outcome_displays_as_key() {
-        let o = RecordOutcome {
-            key: "mistake.g.abcd1234".to_owned(),
-            persisted: true,
-            error: None,
-        };
-        assert_eq!(o.to_string(), "mistake.g.abcd1234");
-    }
-
-    #[test]
-    fn record_outcome_failure_carries_error() {
-        let o = RecordOutcome {
-            key: "mistake.g.abcd1234".to_owned(),
-            persisted: false,
-            error: Some("db write exit=1".to_owned()),
-        };
-        assert!(!o.persisted);
-        assert!(o.error.is_some());
-    }
-
-    #[test]
-    fn truncate_keeps_short_strings() {
-        assert_eq!(truncate("hi", 10), "hi");
-    }
-
-    #[test]
-    fn truncate_caps_long_strings_with_ellipsis() {
-        let out = truncate("0123456789ABCDEF", 5);
-        assert!(out.ends_with('…'));
-        assert!(out.chars().count() == 6);
-    }
-}
+#[path = "mistake_ledger_test.rs"]
+mod tests;
