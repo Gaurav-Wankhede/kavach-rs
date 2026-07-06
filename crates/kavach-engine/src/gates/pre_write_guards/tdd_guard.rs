@@ -29,10 +29,10 @@ pub(super) fn check(
     // Inline tests are FORBIDDEN — tests live in a separate mapped file.
     if has_inline_test(ctx.content) {
         return Some(format!(
-            "[TDD:P0] MOVE THE TEST OUT, THEN WRITE THE CODE. `{stem}` carries an inline \
-             test — put it in a SEPARATE file (e.g. `{stem}/tests.rs` mapped via `#[path]`), \
-             never inside the production file. If this looks wrong, READ this guard's \
-             source and fix the real cause — never route around it."
+            "[TDD:P0] Move the test into its own file to land this write. `{stem}` carries an inline \
+             test — put it in a separate file (e.g. `{stem}/tests.rs` mapped via `#[path]`), \
+             not inside the production file. If this looks wrong, read this guard's \
+             source and address the root cause rather than working around it."
         ));
     }
     if is_relocation(ctx.content) {
