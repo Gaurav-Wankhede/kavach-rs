@@ -64,7 +64,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
     if findings.is_empty() {
         return None;
     }
-    let mut msg = String::from("BOUNTY_FRONTEND_SECURITY_BLOCK:\n");
+    let mut msg = String::from("[FRONTEND_SECURITY_SAFETY]\n");
     for f in &findings {
         msg.push_str(f);
         msg.push('\n');
