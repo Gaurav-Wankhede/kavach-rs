@@ -99,4 +99,24 @@ impl Target {
     pub(super) const fn is_toml(self) -> bool {
         matches!(self, Self::Codex)
     }
+
+    /// Path under `$HOME` for this tool's directives doc; `None` if it has none.
+    pub(super) const fn rel_directives_path(self) -> Option<&'static str> {
+        match self {
+            Self::ClaudeCode => Some("CLAUDE.md"),
+            Self::Cursor => Some(".cursor/rules/kavach.mdc"),
+            Self::Codex => Some("AGENTS.md"),
+            Self::Antigravity | Self::Pi => None,
+        }
+    }
+
+    /// The embedded directives template body, paired with `rel_directives_path`.
+    pub(super) const fn directives_template(self) -> Option<&'static str> {
+        match self {
+            Self::ClaudeCode => Some(CLAUDE_MD),
+            Self::Cursor => Some(MDC),
+            Self::Codex => Some(AGENTS),
+            Self::Antigravity | Self::Pi => None,
+        }
+    }
 }
