@@ -74,7 +74,7 @@ fn verify_runs(dst: &Path) -> Result<(), String> {
 }
 
 /// Platform binary filename: `kavach.exe` on Windows, `kavach` elsewhere.
-pub(super) fn binary_filename() -> String {
+pub(crate) fn binary_filename() -> String {
     if cfg!(windows) {
         format!("{BINARY_NAME}.exe")
     } else {
