@@ -136,7 +136,7 @@ fn source_dotenv_then_printer_message_points_to_runtime_consume() {
         "expected receipt-only guidance in: {msg}"
     );
     assert!(
-        msg.contains("Sourcing itself is fine"),
+        msg.contains("sourcing itself is fine"),
         "expected source-is-allowed framing in: {msg}"
     );
 }
