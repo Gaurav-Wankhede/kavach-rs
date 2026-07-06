@@ -36,6 +36,7 @@ async fn mistake_event_is_tagged_family_mistake() {
         "banned",
         "sess",
         Some("proj"),
+        0,
     )
     .await
     .expect("append mistake");
