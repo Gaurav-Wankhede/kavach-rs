@@ -30,7 +30,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         }
         if is_destructive_command(command) {
             drop(kavach_hook::exit_permission_request_deny(&format!(
-                "DENIED: destructive command blocked: `{command}`"
+                "[DESTRUCTIVE_OP] `{command}` -> use a targeted, reviewed alternative -> retry."
             )));
             return Ok(());
         }
