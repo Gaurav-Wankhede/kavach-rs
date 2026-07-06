@@ -71,7 +71,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
     if issues.is_empty() {
         return None;
     }
-    let mut msg = format!("BOUNTY_COMPLEXITY_BLOCK: {file_path}\n");
+    let mut msg = format!("[COMPLEXITY_LIMIT] {file_path}\n");
     for i in &issues {
         use std::fmt::Write;
         let _ = writeln!(msg, "  {i}").ok();
