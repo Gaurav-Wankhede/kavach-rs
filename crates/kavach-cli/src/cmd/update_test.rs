@@ -1,5 +1,5 @@
 //! Tests for the pure self-update path helpers (no network/process spawn).
-use super::{built_binary_path, install_dest};
+use super::{built_binary_path, install_dest_from};
 use std::path::PathBuf;
 
 #[test]
@@ -10,10 +10,7 @@ fn built_binary_path_joins_target_release_kavach() {
 }
 
 #[test]
-fn install_dest_honors_kavach_install_dir_override() {
-    // SAFETY: single-threaded test process; no concurrent env mutation.
-    unsafe { std::env::set_var("KAVACH_INSTALL_DIR", "/tmp/kavach-test-dest") };
-    let got = install_dest();
-    unsafe { std::env::remove_var("KAVACH_INSTALL_DIR") };
+fn install_dest_from_honors_override() {
+    let got = install_dest_from(Some("/tmp/kavach-test-dest".to_owned()));
     assert_eq!(got, Ok(PathBuf::from("/tmp/kavach-test-dest/kavach")));
 }
