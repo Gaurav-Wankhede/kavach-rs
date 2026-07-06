@@ -77,17 +77,17 @@ pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // and does not consult PROOF_TOKENS. SOURCE: decision.done-gaming-vocab-dynamic.
     if vocab.has_handback_phrase(&lc) {
         drop(kavach_hook::exit_stop_block(
-            "[NO_HANDBACK] (non-surrenderable) This stop pushes work to the operator \
+            "[NO_HANDBACK] (required) This stop hands work to the operator \
              (\"Owner — run …\" / \"owner must free\" / \"no agent action can\") or spins a \
-             \"Holding\" turn. FORBIDDEN: you hold the shell, so YOU do the action. \
+             \"Holding\" turn. You hold the shell, so do the action yourself. \
              If a real resource limit blocks you (disk full, missing tool, locked file): \
-             (1) RECLAIM/REPAIR it yourself in-process — free your own regenerable build \
+             (1) reclaim or repair it yourself in-process — free your own regenerable build \
              scratch (`cargo clean`, delete idle `target/`, prune `~/.cache`/`/tmp`), \
              install the tool, break the stale lock; (2) if it is genuinely \
              secret/credential-bound, run the op via a runtime script (env in-process, \
-             receipt out, value never in context); (3) then COMPLETE the blocked write and \
-             resume. STATE a hard limit ONCE as a fact, then KEEP WORKING — never order the \
-             operator to run it, never repeat it, never hold. Only the user's `Esc` stops the loop.",
+             receipt out, value never in context); (3) then complete the blocked write and \
+             resume. State a hard limit once as a fact, then keep working — rather than order the \
+             operator to run it, repeat it, or hold. Only the user's `Esc` stops the loop.",
         ));
         return ControlFlow::Break(());
     }
