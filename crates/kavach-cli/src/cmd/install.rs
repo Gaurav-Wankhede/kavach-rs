@@ -35,10 +35,18 @@ fn install_one(t: Target, binary: &std::path::Path, dry_run: bool) -> Result<Str
     let path = std::path::Path::new(&home).join(t.rel_config_path());
     let body = write::render(tpl, binary);
     let _ = t.is_toml(); // reserved: TOML append-merge lands with Codex parity work
-    match write::install(&path, &body, dry_run) {
-        Ok(outcome) => Ok(format!("[{}] {} -> {outcome:?}", t.name(), path.display())),
-        Err(e) => Err(format!("{}: write {}: {e}", t.name(), path.display())),
+    let mut line = match write::install(&path, &body, dry_run) {
+        Ok(outcome) => format!("[{}] {} -> {outcome:?}", t.name(), path.display()),
+        Err(e) => return Err(format!("{}: write {}: {e}", t.name(), path.display())),
+    };
+    if let (Some(rel), Some(dtpl)) = (t.rel_directives_path(), t.directives_template()) {
+        let dpath = std::path::Path::new(&home).join(rel);
+        match write::install_directives_if_absent(&dpath, dtpl, dry_run) {
+            Ok(msg) => line.push_str(&format!(" | {msg}")),
+            Err(e) => return Err(format!("{}: directives {}: {e}", t.name(), dpath.display())),
+        }
     }
+    Ok(line)
 }
 
 /// `kavach install` entry. `vendor` is the `--vendor` tag; `dry_run` previews.
