@@ -20,12 +20,12 @@ pub(in crate::gates::pre_tool_bash) fn check_unscoped_test_run(cmd: &str) -> Opt
         return None;
     }
     Some(
-        "UNSCOPED_TEST_BLOCKED: `cargo test`/`cargo nextest run` without `-p <crate>` \
-         runs the FULL workspace (10-20 min), blocking all other operations.\n\
-         FIX: Scope to the crate you modified:\n\
+        "[TEST_SCOPE_POLICY] `cargo test`/`cargo nextest run` without `-p <crate>` \
+         runs the FULL workspace (10-20 min), blocking all other operations \
+         -> scope to the crate you modified:\n\
          cargo nextest run -p <crate-name>\n\
          Or use -E filterset: cargo nextest run -E 'test(my_test)'\n\
-         Only use --workspace for final pre-merge verification."
+         Only use --workspace for final pre-merge verification -> retry."
             .to_owned(),
     )
 }
