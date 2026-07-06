@@ -129,4 +129,5 @@ knowledge graph.
 - Destructive shell operations (`rm -rf`, etc.) blocked or asked at the
   `PreToolUse` gate; fail-closed on uncertainty.
 
-[0.1.0]: https://github.com/Wankhede-Brothers/kavach-rs/releases/tag/v0.1.0
+[26.7.0]: https://github.com/Wankhede-Brothers/kavach-rs/releases/tag/26.7.0
+[26.6.0]: https://github.com/Wankhede-Brothers/kavach-rs/releases/tag/26.6.0
