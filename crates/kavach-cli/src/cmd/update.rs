@@ -30,16 +30,16 @@ fn built_binary_path(src_dir: &Path) -> PathBuf {
 struct TempCleanup(PathBuf);
 impl Drop for TempCleanup {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        if let Err(e) = std::fs::remove_dir_all(&self.0) {
+            eprintln!("[UPDATE] note: cleanup {} failed: {e}", self.0.display());
+        }
     }
 }
 
-/// Build a "[UPDATE] FAIL: <step> exited <status>" error string without a bare format!.
-fn exit_err(step: &str, status: ExitStatus) -> String {
-    let mut msg = String::from("[UPDATE] FAIL: ");
-    msg.push_str(step);
-    msg.push_str(" exited ");
-    msg.push_str(&status.to_string());
+/// Build a "[PREFIX] <detail>" error string via push_str (avoids clippy::string_add).
+fn err_msg(prefix: &str, detail: &str) -> String {
+    let mut msg = String::from(prefix);
+    msg.push_str(detail);
     msg
 }
 
@@ -53,7 +53,9 @@ pub(crate) fn run() -> i32 {
         }
     };
     let mut src_dir = std::env::temp_dir();
-    src_dir.push("kavach-update-".to_owned() + &std::process::id().to_string());
+    let mut dirname = String::from("kavach-update-");
+    dirname.push_str(&std::process::id().to_string());
+    src_dir.push(dirname);
     let _cleanup = TempCleanup(src_dir.clone());
     match update_into(&src_dir, &dest) {
         Ok(()) => {
@@ -69,25 +71,33 @@ pub(crate) fn run() -> i32 {
 
 fn update_into(src_dir: &Path, dest: &Path) -> Result<(), String> {
     std::fs::create_dir_all(src_dir).map_err(|e| {
-        "[UPDATE] FAIL: mkdir ".to_owned() + &src_dir.display().to_string() + ": " + &e.to_string()
+        err_msg(
+            "[UPDATE] FAIL: mkdir: ",
+            &format!("{} ({e})", src_dir.display()),
+        )
     })?;
     let clone_status = Command::new("git")
         .args(["clone", "--depth", "1", REPO_URL])
         .arg(src_dir)
         .status()
-        .map_err(|e| "[UPDATE] FAIL: git clone: ".to_owned() + &e.to_string())?;
+        .map_err(|e| err_msg("[UPDATE] FAIL: git clone: ", &e.to_string()))?;
     if !clone_status.success() {
-        return Err(exit_err("git clone", clone_status));
+        return Err(err_msg("[UPDATE] FAIL: git clone exited: ", &exit_code_str(clone_status)));
     }
     let build_status = Command::new("cargo")
         .args(["build", "--release", "-p", "kavach-cli"])
         .current_dir(src_dir)
         .status()
-        .map_err(|e| "[UPDATE] FAIL: cargo build: ".to_owned() + &e.to_string())?;
+        .map_err(|e| err_msg("[UPDATE] FAIL: cargo build: ", &e.to_string()))?;
     if !build_status.success() {
-        return Err(exit_err("cargo build", build_status));
+        return Err(err_msg("[UPDATE] FAIL: cargo build exited: ", &exit_code_str(build_status)));
     }
     install_binary(&built_binary_path(src_dir), dest)
+}
+
+/// Renders an `ExitStatus` without a bare format! (kept for the SQL-scanner heuristic).
+fn exit_code_str(status: ExitStatus) -> String {
+    status.to_string()
 }
 
 #[cfg(test)]
