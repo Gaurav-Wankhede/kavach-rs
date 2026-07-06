@@ -35,6 +35,18 @@ pub async fn cluster_event_to_pattern(
         correct_action,
     )
     .await?;
+    // SOURCE: surrealdb.com/docs/surrealql/statements/select — guard so a
+    // re-cluster of a keyed (converged) event does not double the edge.
+    let existing_q = "SELECT id FROM instance_of WHERE in = $src AND out = $tgt LIMIT 1";
+    let mut existing_resp = db
+        .query(existing_q)
+        .bind(("src", event_id.clone()))
+        .bind(("tgt", pattern_id.clone()))
+        .await?;
+    let existing: Option<IdRow> = existing_resp.take(0)?;
+    if existing.is_some() {
+        return Ok(pattern_id);
+    }
     let q = "RELATE $src->instance_of->$tgt SET weight = 1.0 RETURN id";
     let mut resp = db
         .query(q)
