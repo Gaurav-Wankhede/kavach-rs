@@ -37,13 +37,13 @@ pub async fn cluster_event_to_pattern(
     .await?;
     // SOURCE: crate::error::is_missing_table_error — missing table = no edge yet.
     let existing_q = "SELECT id FROM instance_of WHERE in = $src AND out = $tgt LIMIT 1";
-    let existing_resp = db
+    let mut existing_resp = db
         .query(existing_q)
         .bind(("src", event_id.clone()))
         .bind(("tgt", pattern_id.clone()))
-        .await;
-    let existing: Option<IdRow> = match existing_resp {
-        Ok(mut resp) => resp.take(0)?,
+        .await?;
+    let existing: Option<IdRow> = match existing_resp.take(0) {
+        Ok(r) => r,
         Err(e) if crate::error::is_missing_table_error(&e) => None,
         Err(e) => return Err(e.into()),
     };
