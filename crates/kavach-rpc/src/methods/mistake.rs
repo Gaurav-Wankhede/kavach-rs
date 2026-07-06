@@ -64,6 +64,7 @@ pub struct RecordParams {
     pub correct_action: String,
     pub session_id: String,
     pub project: Option<String>,
+    pub turn: i32,
 }
 
 impl RecordParams {
@@ -77,6 +78,7 @@ impl RecordParams {
         correct_action: String,
         session_id: String,
         project: Option<String>,
+        turn: i32,
     ) -> Self {
         Self {
             gate,
@@ -84,6 +86,7 @@ impl RecordParams {
             correct_action,
             session_id,
             project,
+            turn,
         }
     }
 }
