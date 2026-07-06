@@ -414,7 +414,7 @@ kavach-rs/
 │   ├── kavach-advisor/      # advisory client + types
 │   ├── kavach-dtree/        # decision-tree primitives (intent classification)
 │   ├── kavach-ope/          # order-preserving primitives
-│   ├── kavach-toon/         # token-efficient serialization
+│   ├── kavach-toon/         # token-efficient serialization + injection compaction (compact: Lite/Full/Ultra)
 │   ├── kavach-web/          # server-rendered web UI (Axum + maud, `kavach web`)
 │   └── kavach-rule-*/       # rule ast · parser · engine · generator · storage
 └── (skills are loaded from ~/.claude/skills at runtime)
