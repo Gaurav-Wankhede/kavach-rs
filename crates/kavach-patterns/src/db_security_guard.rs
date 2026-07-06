@@ -131,7 +131,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
     if blocks.is_empty() {
         return None;
     }
-    let mut msg = String::from("BOUNTY_DB_SECURITY_BLOCK:\n");
+    let mut msg = String::from("[DB_SECURITY_SAFETY]\n");
     for f in &blocks {
         msg.push_str(f);
         msg.push('\n');
