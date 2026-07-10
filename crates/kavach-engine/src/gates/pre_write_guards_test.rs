@@ -79,7 +79,7 @@ fn tdd_missing_test_advises_but_does_not_block() {
     input.tool_name = "Write".into();
     input.tool_input = Some(HashMap::from([
         ("file_path".into(), serde_json::json!("crates/foo/src/widget.rs")),
-        ("content".into(), serde_json::json!("pub fn build() {}\n")),
+        ("content".into(), serde_json::json!("pub fn build() -> i32 { 42 }\n")),
     ]));
     let ctx = WriteContext::extract(&input);
     let session = kavach_session::SessionState::default();
