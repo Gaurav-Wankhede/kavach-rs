@@ -142,7 +142,7 @@ const ROWS: &[(usize, bool, Severity, &str, &str)] = {
             true,
             P1Advisory,
             "Arc<Mutex<T>> overuse",
-            "Consider RwLock for multiple readers, AtomicU64 for simple counters, or plain Arc for immutable data",
+            "Consider RwLock for multiple readers, AtomicU64 for simple counters, or plain Arc for immutable data. Use parking_lot::Mutex for fast synchronous locks, or tokio::sync::Mutex if holding across an await.",
         ),
         (
             83,
@@ -163,7 +163,7 @@ const ROWS: &[(usize, bool, Severity, &str, &str)] = {
             true,
             P1Advisory,
             "fighting the borrow checker (nested shared lock)",
-            "Redesign the data structure: store an index, ID, or key instead of nesting shared locks like Arc<Mutex<HashMap<...>>>",
+            "Redesign the data structure: store an index, ID, or key instead of nesting locks. If a concurrent map is required, use DashMap from the dashmap crate to avoid locking the entire collection.",
         ),
     ]
 };
