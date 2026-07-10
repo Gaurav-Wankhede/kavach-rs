@@ -19,7 +19,7 @@ fn p0_panic() {
 fn clean_allows() {
     let v = detect(
         "src/lib.rs",
-        "fn add(a: i32, b: i32) -> Result<i32, Error> { Ok(a + b) }",
+        "fn add(a: i32, name: &str) -> Result<i32, Error> { Ok(a) }",
     );
     assert!(v.is_empty());
 }
