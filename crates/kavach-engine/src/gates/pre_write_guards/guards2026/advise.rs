@@ -42,9 +42,6 @@ pub(super) fn dioxus_axum(ctx: &WriteContext<'_>, acc: &mut Acc) {
 /// API-management + design-patterns advisories (run between `async_sync` and `db_ops`).
 pub(super) fn api_mgmt_design(ctx: &WriteContext<'_>, acc: &mut Acc) {
     let p1 = &mut acc.p1_advisories;
-    for v in kavach_patterns::api_management_guard::detect(ctx.file_path, ctx.content) {
-        p1.push(format!("[API_MGMT_P1] {}: {}", v.pattern, v.fix));
-    }
     for v in kavach_patterns::design_patterns_guard::detect(ctx.file_path, ctx.content) {
         p1.push(format!("[DESIGN_P1] {}: {}", v.pattern, v.fix));
     }

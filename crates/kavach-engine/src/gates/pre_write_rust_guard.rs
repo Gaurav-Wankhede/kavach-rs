@@ -11,4 +11,3 @@ mod block;
 mod tests;
 pub(crate) use advisory::{format_advisory, format_lint_advisory};
 pub(crate) use block::check;
-pub(crate) use advisory::format_advisory;

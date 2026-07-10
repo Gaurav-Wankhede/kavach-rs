@@ -12,14 +12,14 @@ pub(super) fn lang(ctx: &WriteContext<'_>, acc: &mut Acc) {
     // unwrap/todo are quality issues, not security vulnerabilities.
     if ctx.is_rust
         && !ctx.is_test
-        && let Some(msg) = super::super::pre_write_rust_guard::check(ctx.file_path, ctx.content)
+        && let Some(msg) = super::super::pre_write_rust_guard::format_advisory(ctx.file_path, ctx.content)
     {
-        acc.p1_advisories.push(format!("[RUST_GUARD_P1] {msg}"));
+        acc.p1_advisories.push(msg);
     }
     // TypeScript production guard — P1 (quality advisory)
     if ctx.is_frontend && !ctx.is_test {
-        if let Some(msg) = super::super::pre_write_ts_guard::check(ctx.file_path, ctx.content) {
-            acc.p1_advisories.push(format!("[TS_GUARD_P1] {msg}"));
+        if let Some(msg) = super::super::pre_write_ts_guard::format_advisory(ctx.file_path, ctx.content) {
+            acc.p1_advisories.push(msg);
         }
         if let Some(msg) =
             super::super::pre_write_ts_guard::check_component_oversized(ctx.file_path, ctx.content)

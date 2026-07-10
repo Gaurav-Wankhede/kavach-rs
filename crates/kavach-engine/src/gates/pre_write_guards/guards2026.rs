@@ -24,6 +24,9 @@ pub(super) fn check(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
         return Some(b);
     }
     advise::api_mgmt_design(ctx, acc);
+    if let Some(b) = severity::api_management(ctx, acc) {
+        return Some(b);
+    }
     if let Some(b) = severity::database_ops(ctx, acc) {
         return Some(b);
     }

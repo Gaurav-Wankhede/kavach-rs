@@ -95,3 +95,21 @@ pub(super) fn webhook(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     }
     None
 }
+
+/// api-management — `P0Block` hard-blocks; P1/P2 advise.
+pub(super) fn api_management(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
+    use kavach_patterns::api_management_guard::ApiSeverity::{P0Block, P1Advisory, P2Warning};
+    for v in &kavach_patterns::api_management_guard::detect(ctx.file_path, ctx.content) {
+        match v.severity {
+            P0Block => return Some(format!("[API_MGMT_P0/{}] {}", v.pattern, v.fix)),
+            P1Advisory => acc
+                .p1_advisories
+                .push(format!("[API_MGMT_P1] {}: {}", v.pattern, v.fix)),
+            P2Warning => acc
+                .p1_advisories
+                .push(format!("[API_MGMT_P2] {}: {}", v.pattern, v.fix)),
+            _ => {}
+        }
+    }
+    None
+}
