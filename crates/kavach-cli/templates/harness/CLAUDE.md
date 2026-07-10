@@ -79,6 +79,16 @@ Before fix-Write → `[RCA]`: symptom@file:line → why-chain→root_cause · cl
 
 Risk-bearing change → `Loopholes closed:` — each lens fixed at `file:line`, filed as task, or N/A + proof. Floor lenses: concurrency · failure · malformed · authz · replay · boundary. Add per diff: SSRF · injection · path-traversal · DoS · overflow · info-leak · crypto-misuse · supply-chain · privesc.
 
+## Production secure system imperatives — run before shipping
+
+Before shipping any production changes, ensure all 6 security layers are verified:
+- **Rate limiting** → Validate that rate limiting appropriate to each endpoint type is configured (stricter limits on auth routes, moderate on public, looser on authenticated actions). Verify thresholds are configurable and use IP/account limits with exponential backoff on auth routes.
+- **Input Validation** → Ensure all inputs are validated against strict schemas (type, length, format) rather than just sanitized or escaped.
+- **Secrets** → Scan the codebase for hardcoded API keys, tokens, or credentials. Use environment variables and ensure no sensitive data is committed to git or exposed to the frontend.
+- **Dependency vulnerabilities** → Audit all project dependencies for known vulnerabilities, verify severity, and upgrade/replace affected packages.
+- **Error handling & information leakage** → Review all error returns; ensure stack traces, database errors, or file paths are logged server-side and never returned to the client.
+- **File upload safety** → Validate uploaded file contents, sizes, and MIME types. Ensure uploads are stored outside the web root or in isolated storage, and can never be executed.
+
 ## RLAIHF — clean reward signal, never gamed
 
 Live loop: human signal = accept/correct/re-prompt; AI signal = gate verdicts + mistake ledger + 3-witness outcome. Feed it honestly.

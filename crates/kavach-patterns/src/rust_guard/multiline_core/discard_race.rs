@@ -123,6 +123,48 @@ const ROWS: &[(usize, bool, Severity, &str, &str)] = {
             "anonymous let _ = discards a call or live binding",
             "`let _ = call()` swallows a Result/#[must_use]; `let _ = (a, b)` discards live values. ACT on it (`?`/match/if), or for a genuine unit/guard use `drop(x)` — never `let _ =` of a fallible call or live binding",
         ),
+        (
+            80,
+            true,
+            P1Advisory,
+            "String parameter by-value",
+            "Use &str for read-only access, or impl Into<String> for constructor parameters",
+        ),
+        (
+            81,
+            true,
+            P1Advisory,
+            "C-style index loop",
+            "Use iterator methods like .filter(), .map(), or .sum() instead of manual index loops",
+        ),
+        (
+            82,
+            true,
+            P1Advisory,
+            "Arc<Mutex<T>> overuse",
+            "Consider RwLock for multiple readers, AtomicU64 for simple counters, or plain Arc for immutable data",
+        ),
+        (
+            83,
+            true,
+            P1Advisory,
+            "primitive obsession",
+            "Use the New Type pattern (e.g. struct Age(u32);) to wrap primitives and enforce compile-time safety",
+        ),
+        (
+            84,
+            true,
+            P1Advisory,
+            "String concatenation with +",
+            "Use the format!() macro instead of the + operator to cleanly combine strings without manual borrow juggling",
+        ),
+        (
+            85,
+            true,
+            P1Advisory,
+            "fighting the borrow checker (nested shared lock)",
+            "Redesign the data structure: store an index, ID, or key instead of nesting shared locks like Arc<Mutex<HashMap<...>>>",
+        ),
     ]
 };
 

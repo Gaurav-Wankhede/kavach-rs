@@ -299,6 +299,23 @@ fn build_status_code_patterns() -> Vec<Regex> {
     ]
 }
 
+fn build_video_wrong_vs_right_patterns() -> Vec<Regex> {
+    vec![
+        // 80 P1: String as function parameter instead of &str or impl Into<String>
+        mk(r"fn\s+\w+\s*\([^)]*:\s*String\s*[,)]"),
+        // 81 P1: C-style loops like for i in 0..len instead of iterators
+        mk(r"for\s+\w+\s+in\s+\d+\.\.\w+"),
+        // 82 P1: Overusing Arc<Mutex<T>> when no lock or different lock is needed
+        mk(r"Arc\s*<\s*Mutex\s*<"),
+        // 83 P1: Primitive obsession: consecutive identical primitives in fn declaration
+        mk(r"fn\s+\w+\s*\([^)]*:\s*(?:u32|i32|u64|i64|usize)\s*,[^)]*:\s*(?:u32|i32|u64|i64|usize)\s*[,)]"),
+        // 84 P1: String concatenation with +
+        mk(r#"\w+\s*\+\s*&\w+|\w+\s*\+\s*""#),
+        // 85 P1: Fighting the borrow checker: complex nested shared structures
+        mk(r"Arc\s*<\s*Mutex\s*<\s*(?:HashMap|Vec|HashSet|BTreeMap)\s*<"),
+    ]
+}
+
 fn build() -> Vec<Regex> {
     let mc = r"\s*\(";
     let mut patterns = Vec::new();
@@ -312,6 +329,7 @@ fn build() -> Vec<Regex> {
     patterns.extend(build_crate_canon_patterns());
     patterns.extend(build_extension_canon_patterns());
     patterns.extend(build_status_code_patterns());
+    patterns.extend(build_video_wrong_vs_right_patterns());
     patterns
 }
 
