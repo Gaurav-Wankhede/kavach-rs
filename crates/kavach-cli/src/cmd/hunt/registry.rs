@@ -45,13 +45,18 @@ fn owasp(path: &str, content: &str) -> Vec<Finding> {
 }
 
 fn rust(path: &str, content: &str) -> Vec<Finding> {
+    use kavach_patterns::rust_guard::RustSeverity as S;
     rust_guard::detect(path, content)
         .into_iter()
         .map(|v| Finding {
             detector: "rust",
             file: path.to_owned(),
             line: v.line,
-            severity: Severity::Advisory,
+            severity: match v.severity {
+                S::P0Block => Severity::Block,
+                S::P2Warning => Severity::Warn,
+                _ => Severity::Advisory,
+            },
             category: v.pattern.clone(),
             snippet: v.pattern,
             fix: v.fix,

@@ -44,16 +44,16 @@ pub(super) fn check(ctx: &WriteContext<'_>) -> Option<String> {
         return Some(msg);
     }
     // Rust production guard — P0 (unwrap, panic, todo, etc.)
-    if ctx.is_rust {
-        if let Some(msg) = super::super::pre_write_rust_guard::check(ctx.file_path, ctx.content) {
-            return Some(msg);
-        }
+    if ctx.is_rust
+        && let Some(msg) = super::super::pre_write_rust_guard::check(ctx.file_path, ctx.content)
+    {
+        return Some(msg);
     }
     // TypeScript production guard — P0 (as any, hardcoded URLs, mock data, XSS)
-    if ctx.is_frontend {
-        if let Some(msg) = super::super::pre_write_ts_guard::check(ctx.file_path, ctx.content) {
-            return Some(msg);
-        }
+    if ctx.is_frontend
+        && let Some(msg) = super::super::pre_write_ts_guard::check(ctx.file_path, ctx.content)
+    {
+        return Some(msg);
     }
     None
 }
