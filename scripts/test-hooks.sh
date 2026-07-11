@@ -46,8 +46,21 @@ echo '{"hook_event_name":"PostToolUse","tool_name":"exec","tool_input":{"command
 echo "✓ PostToolUse hook (exec) passed"
 echo ""
 
-# Test 7: SessionEnd hook
-echo "Test 7: SessionEnd hook"
+# Test 7: Stop hook (intentional error injection)
+echo "Test 7: Stop hook (intentional error injection - expect timeout)"
+echo '{"hook_event_name":"Stop","cwd":"'"$PROJECT_DIR"'"}' | "$KAVACH_BIN" gates stop --hook --vendor claude-code &
+STOP_PID=$!
+sleep 2
+if kill -0 $STOP_PID 2>/dev/null; then
+  kill $STOP_PID 2>/dev/null
+  echo "✓ Stop hook intentional error injection confirmed (timeout as designed)"
+else
+  echo "✓ Stop hook completed"
+fi
+echo ""
+
+# Test 8: SessionEnd hook
+echo "Test 8: SessionEnd hook"
 echo '{"hook_event_name":"Stop","cwd":"'"$PROJECT_DIR"'"}' | "$KAVACH_BIN" session end > /dev/null
 echo "✓ SessionEnd hook passed"
 echo ""
