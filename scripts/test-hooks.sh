@@ -61,7 +61,7 @@ echo ""
 
 # Test 8: SessionEnd hook
 echo "Test 8: SessionEnd hook"
-echo '{"hook_event_name":"Stop","cwd":"'"$PROJECT_DIR"'"}' | "$KAVACH_BIN" session end > /dev/null
+echo '{"hook_event_name":"SessionEnd","reason":"test"}' | "$KAVACH_BIN" session end > /dev/null
 echo "✓ SessionEnd hook passed"
 echo ""
 
