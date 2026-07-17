@@ -1238,7 +1238,7 @@ Run a gate hook (called by Claude Code / Cursor hooks)
 | `<gate_name>` | Gate name (pre-write, post-write, pre-tool, post-tool, intent, stop, session-start, six-file-intent, pre-implementation, post-implementation, …) |  |
 | `--hook` | Read JSON input from stdin (hook mode) |  |
 | `--verify` | Verify a prompt against a gate without hook mode (dry-run) |  |
-| `--vendor` | Force the harness dialect (claude-code\|cursor\|codex). Omit to auto-detect from the payload (falls back to `$KAVACH_HARNESS`, then Claude Code). Lets one hook command serve all three IDEs |  |
+| `--vendor` | Force the harness dialect (claude-code\|cursor\|codex\|antigravity\|pi\|kimi). Omit to auto-detect from the payload (falls back to `$KAVACH_HARNESS`, then Claude Code). Lets one hook command serve every harness |  |
 
 ```
 EXAMPLES:

@@ -1,4 +1,4 @@
-//! `kavach install --vendor <cc|cursor|codex|gemini|pi|all>` — make a native tool
+//! `kavach install --vendor <cc|cursor|codex|gemini|pi|kimi|all>` — make a native tool
 //! load Kavach via ITS OWN official hook config. Reads the embedded template,
 //! pins the absolute binary path, writes safely (backup + idempotent + dry-run).
 //! SOURCE: decision.kavach-universal-subscription-substrate · roadmap
@@ -17,7 +17,7 @@ fn resolve(tag: &str) -> Result<Vec<Target>, String> {
         return Ok(Target::all().to_vec());
     }
     Target::from_tag(tag).map(|t| vec![t]).ok_or_else(|| {
-        format!("unknown --vendor '{tag}' (expected: cc|cursor|codex|gemini|pi|all)")
+        format!("unknown --vendor '{tag}' (expected: cc|cursor|codex|gemini|pi|kimi|all)")
     })
 }
 
@@ -27,7 +27,7 @@ fn self_binary() -> std::io::Result<std::path::PathBuf> {
 }
 
 /// Install one target. Returns the human report line, or an error string when
-/// HOME is unset or the write fails. All five vendors ship a template (a future
+/// HOME is unset or the write fails. All six vendors ship a template (a future
 /// not-yet-built target would reintroduce an `Option` on `Target::template`).
 fn install_one(t: Target, binary: &std::path::Path, dry_run: bool) -> Result<String, String> {
     let tpl = t.template();

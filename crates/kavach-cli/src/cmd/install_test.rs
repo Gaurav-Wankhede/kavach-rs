@@ -30,6 +30,15 @@ fn pi_now_ships_and_dry_run_succeeds() {
 }
 
 #[test]
+fn kimi_dry_run_reports_both_hooks_and_directives() {
+    let bin = std::path::Path::new("/x/kavach");
+    let line = install_one(Target::Kimi, bin, true).unwrap();
+    assert!(line.contains("[kimi]"), "{line}");
+    assert!(line.contains("config.toml"), "{line}");
+    assert!(line.contains("AGENTS.md"), "{line}");
+}
+
+#[test]
 fn directives_path_per_vendor() {
     assert_eq!(
         Target::ClaudeCode.rel_directives_path(),
@@ -45,6 +54,10 @@ fn directives_path_per_vendor() {
     );
     assert_eq!(Target::Antigravity.rel_directives_path(), None);
     assert_eq!(Target::Pi.rel_directives_path(), None);
+    assert_eq!(
+        Target::Kimi.rel_directives_path(),
+        Some(".kimi-code/AGENTS.md")
+    );
 }
 
 #[test]

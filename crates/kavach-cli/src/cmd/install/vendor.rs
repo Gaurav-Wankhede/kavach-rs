@@ -14,6 +14,8 @@ pub(super) enum Target {
     /// Antigravity throughout (user directive); `gemini` is only a `from_tag` alias.
     Antigravity,
     Pi,
+    /// Kimi Code CLI — TOML `[[hooks]]` config; AGENTS.md as its system prompt.
+    Kimi,
 }
 
 /// The embedded template body per tool, baked into the binary at compile time so
@@ -23,11 +25,13 @@ const CURSOR: &str = include_str!("../../../templates/harness/cursor.hooks.json"
 const CODEX: &str = include_str!("../../../templates/harness/codex.config.toml");
 const ANTIGRAVITY: &str = include_str!("../../../templates/harness/antigravity.hooks.json");
 const PI: &str = include_str!("../../../templates/harness/pi.index.ts");
+const KIMI: &str = include_str!("../../../templates/harness/kimi.config.toml");
 
-/// Engineering-directives templates (shipped for cc/cursor/codex only).
+/// Engineering-directives templates (shipped for cc/cursor/codex/kimi only).
 const CLAUDE_MD: &str = include_str!("../../../templates/harness/CLAUDE.md");
 const MDC: &str = include_str!("../../../templates/harness/kavach.mdc");
 const AGENTS: &str = include_str!("../../../templates/harness/AGENTS.md");
+const KIMI_AGENTS: &str = include_str!("../../../templates/harness/kimi.AGENTS.md");
 
 impl Target {
     /// Parse a `--vendor` tag, case-insensitive. `None` for an unknown tag.
@@ -38,11 +42,12 @@ impl Target {
             "codex" => Some(Self::Codex),
             "antigravity" | "agy" | "gemini" => Some(Self::Antigravity),
             "pi" => Some(Self::Pi),
+            "kimi" | "kimi-code" | "kimicode" => Some(Self::Kimi),
             _ => None,
         }
     }
 
-    /// Every target installed by `--vendor all`. All five ship a template now
+    /// Every target installed by `--vendor all`. All six ship a template now
     /// (Pi's is a TypeScript extension shim), so `all` installs the full set.
     pub(super) const fn all() -> &'static [Self] {
         &[
@@ -51,6 +56,7 @@ impl Target {
             Self::Codex,
             Self::Antigravity,
             Self::Pi,
+            Self::Kimi,
         ]
     }
 
@@ -62,6 +68,7 @@ impl Target {
             Self::Codex => "codex",
             Self::Antigravity => "antigravity",
             Self::Pi => "pi",
+            Self::Kimi => "kimi",
         }
     }
 
@@ -76,6 +83,7 @@ impl Target {
             // Antigravity (agy) — shared hooks path per antigravity-cli CHANGELOG v1.0.8.
             Self::Antigravity => ".gemini/config/hooks.json",
             Self::Pi => ".pi/agent/extensions/kavach/index.ts",
+            Self::Kimi => ".kimi-code/config.toml",
         }
     }
 
@@ -92,12 +100,15 @@ impl Target {
             // Pi: TypeScript extension shim (not JSON/TOML config) at the auto-
             // discovery path; shells to the kavach binary with --vendor pi.
             Self::Pi => PI,
+            // Kimi: TOML [[hooks]] array (event/matcher/command/timeout only —
+            // extra fields break Kimi's config loading).
+            Self::Kimi => KIMI,
         }
     }
 
     /// True when this tool's config is TOML (append-merge) rather than JSON.
     pub(super) const fn is_toml(self) -> bool {
-        matches!(self, Self::Codex)
+        matches!(self, Self::Codex | Self::Kimi)
     }
 
     /// Path under `$HOME` for this tool's directives doc; `None` if it has none.
@@ -107,6 +118,8 @@ impl Target {
             Self::Cursor => Some(".cursor/rules/kavach.mdc"),
             Self::Codex => Some(".codex/AGENTS.md"),
             Self::Antigravity | Self::Pi => None,
+            // Kimi Code reads AGENTS.md as its system prompt.
+            Self::Kimi => Some(".kimi-code/AGENTS.md"),
         }
     }
 
@@ -117,6 +130,7 @@ impl Target {
             Self::Cursor => Some(MDC),
             Self::Codex => Some(AGENTS),
             Self::Antigravity | Self::Pi => None,
+            Self::Kimi => Some(KIMI_AGENTS),
         }
     }
 }

@@ -2,7 +2,7 @@
 // and output rendering. The ONLY place in the tree that knows a non-Claude-Code
 // harness exists; the engine/gates/DB stay vendor-blind (decision.multi-harness-native-edges).
 //! Native edges for the harnesses kavach runs inside — Claude Code, Cursor,
-//! Codex, Antigravity, Pi.
+//! Codex, Antigravity, Pi, Kimi Code.
 //!
 //! Each harness spawns the same kavach binary and pipes JSON over stdin/stdout,
 //! but in its OWN dialect. This module is the anti-corruption layer: it detects
@@ -18,6 +18,7 @@ use kavach_types::{HookInput, HookResponse};
 pub mod antigravity;
 pub mod codex;
 pub mod cursor;
+pub mod kimi;
 pub mod pi;
 #[cfg(test)]
 #[path = "vendor_test.rs"]
@@ -46,6 +47,10 @@ pub enum Vendor {
     /// NOTHING to allow (block via the JSON body, NOT an exit code). `agent_end` is
     /// Pi's Stop-equivalent. Extension at `~/.pi/agent/extensions/kavach/index.ts`.
     Pi,
+    /// Kimi Code CLI — Claude-Code-compatible wire dialect (same `PascalCase`
+    /// events, snake_case stdin JSON); blocks via exit code 2. Config is a TOML
+    /// `[[hooks]]` array at `~/.kimi-code/config.toml`.
+    Kimi,
 }
 /// The env var that force-selects a vendor, overriding payload auto-detect.
 pub const VENDOR_ENV: &str = "KAVACH_HARNESS";
@@ -105,6 +110,7 @@ impl Vendor {
             "codex" => Some(Self::Codex),
             "antigravity" | "agy" | "gemini" => Some(Self::Antigravity),
             "pi" => Some(Self::Pi),
+            "kimi" | "kimi-code" | "kimicode" => Some(Self::Kimi),
             _ => None,
         }
     }
@@ -205,6 +211,7 @@ impl Vendor {
             Self::Codex => codex::lower(raw_payload),
             Self::Antigravity => antigravity::lower(raw_payload),
             Self::Pi => pi::lower(raw_payload),
+            Self::Kimi => kimi::lower(raw_payload),
         }
     }
     /// Render a canonical [`HookResponse`] verdict into this vendor's native
@@ -232,27 +239,28 @@ impl Vendor {
             Self::Codex => codex::render(resp),
             Self::Antigravity => antigravity::render(resp),
             Self::Pi => pi::render(resp),
+            Self::Kimi => kimi::render(resp),
         }
     }
     /// The process exit code this vendor expects to signal a hard block. Claude
     /// Code, Cursor, Antigravity, and Pi signal via the JSON body (exit 0 — Pi
     /// blocks with `{"block":true}`, Antigravity with `{"decision":"deny"}`, not
-    /// an exit code); Codex blocks with exit 2.
+    /// an exit code); Codex and Kimi block with exit 2.
     #[must_use]
     pub const fn block_exit_code(self) -> i32 {
         match self {
             Self::ClaudeCode | Self::Cursor | Self::Antigravity | Self::Pi => 0,
-            Self::Codex => 2,
+            Self::Codex | Self::Kimi => 2,
         }
     }
     /// The live upstream hook-contract schema source for this vendor, so Kavach
     /// can reference the CURRENT contract from the internet rather than a frozen
     /// in-binary assumption. Claude Code and Cursor publish a machine-readable
-    /// JSON Schema (diffable by a drift-watcher); Codex and Antigravity publish
-    /// only a prose contract page as of Jun 2026.
+    /// JSON Schema (diffable by a drift-watcher); Codex, Antigravity, and Kimi
+    /// publish only a prose contract page as of Jul 2026.
     ///
     /// URLs are 2-source corroborated. SOURCES: schemastore.org · cursor.com ·
-    /// developers.openai.com/codex · antigravity.google.
+    /// developers.openai.com/codex · antigravity.google · kimi.com/code/docs.
     #[must_use]
     pub const fn schema_url(self) -> SchemaSource {
         match self {
@@ -273,19 +281,23 @@ impl Vendor {
             Self::Pi => SchemaSource::Prose {
                 url: "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md",
             },
+            Self::Kimi => SchemaSource::Prose {
+                url: "https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html",
+            },
         }
     }
     /// Every vendor in detection order — the canonical roster a `--all` schema
     /// listing iterates. Kept in sync with [`Self`]'s variants by exhaustiveness:
     /// adding a variant forces this array (and `schema_url`) to be updated.
     #[must_use]
-    pub const fn all() -> [Self; 5] {
+    pub const fn all() -> [Self; 6] {
         [
             Self::ClaudeCode,
             Self::Cursor,
             Self::Codex,
             Self::Antigravity,
             Self::Pi,
+            Self::Kimi,
         ]
     }
     /// Stable lowercase name for reports and `--vendor` round-trips. Defined here
@@ -299,6 +311,7 @@ impl Vendor {
             Self::Codex => "codex",
             Self::Pi => "pi",
             Self::Antigravity => "antigravity",
+            Self::Kimi => "kimi",
         }
     }
 }

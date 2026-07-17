@@ -55,7 +55,7 @@ teammate-idle, task-completed, six-file-intent, pre-implementation, post-impleme
         return into_exit_code(io_err);
     }
     let usage = format!(
-        "usage: echo '{{}}' | kavach gates {gate_name} --hook [--vendor cursor|claude-code|codex]"
+        "usage: echo '{{}}' | kavach gates {gate_name} --hook [--vendor cursor|claude-code|codex|antigravity|pi|kimi]"
     );
     if let Err(io_err) = print_or_exit(&usage) {
         return into_exit_code(io_err);

@@ -1,0 +1,51 @@
+# Kavach native hooks for Kimi Code.
+# Merge into ~/.kimi-code/config.toml. Kimi mirrors Claude Code's hook contract
+# (same PascalCase event names, snake_case stdin JSON), so the SAME kavach binary
+# serves it with --vendor kimi. Kimi blocks a turn when the hook exits with code
+# 2 (stderr is the reason) — kavach's native edge returns exactly that on a gate
+# block; any other non-zero exit fails OPEN. Only `event`, `matcher`, `command`,
+# and `timeout` are allowed per [[hooks]] entry — extra fields break config
+# loading. `matcher` is a regex (tool name for PreToolUse/PostToolUse).
+# SOURCE: https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html
+
+[[hooks]]
+event = "SessionStart"
+command = "kavach gates session-start --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "UserPromptSubmit"
+command = "kavach gates intent --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PreToolUse"
+matcher = "Write|Edit|NotebookEdit"
+command = "kavach gates pre-write --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PreToolUse"
+command = "kavach gates pre-tool --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PostToolUse"
+matcher = "Write|Edit|NotebookEdit"
+command = "kavach gates post-write --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PostToolUse"
+command = "kavach gates post-tool --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "Notification"
+command = "kavach gates notification --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "Stop"
+command = "kavach gates stop --hook --vendor kimi"
+timeout = 30

@@ -47,7 +47,7 @@ fn resolve(vendor: Option<&str>, all: bool) -> Result<Vec<Vendor>, String> {
         _ if all => Ok(Vendor::all().to_vec()),
         None => Ok(Vendor::all().to_vec()),
         Some(tag) => Vendor::from_tag(tag).map(|v| vec![v]).ok_or_else(|| {
-            format!("unknown --vendor '{tag}' (expected: cc|cursor|codex|antigravity|gemini)")
+            format!("unknown --vendor '{tag}' (expected: cc|cursor|codex|antigravity|gemini|pi|kimi)")
         }),
     }
 }
