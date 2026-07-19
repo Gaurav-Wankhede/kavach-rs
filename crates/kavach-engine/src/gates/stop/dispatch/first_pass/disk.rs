@@ -27,10 +27,8 @@ fn free_bytes_on_db_volume() -> Option<u64> {
         if probe.exists() {
             return fs2::available_space(probe).ok();
         }
-        match probe.parent() {
-            Some(parent) => probe = parent,
-            None => return None,
-        }
+        let parent = probe.parent()?;
+        probe = parent;
     }
 }
 /// The ACT-driven self-heal directive for a disk-caused source-down. Imperative

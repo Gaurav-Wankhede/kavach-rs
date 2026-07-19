@@ -131,7 +131,8 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             category,
             key,
             status,
-        } => status_update::run(&project, &category, &key, &status),
+            verify_cmd,
+        } => status_update::run(&project, &category, &key, &status, verify_cmd.as_deref()),
         DbAction::PopulateGraph => populate_graph::run(),
         DbAction::BackfillRelationships { project, dry_run } => {
             backfill_relationships::run(project.as_deref(), dry_run)

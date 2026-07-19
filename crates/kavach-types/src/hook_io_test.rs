@@ -96,6 +96,35 @@ fn test_hook_input_prompt_fallback() {
 }
 
 #[test]
+fn test_get_string_falls_back_to_top_level_file_path() {
+    let input: HookInput = serde_json::from_str(
+        r#"{"hook_event_name":"PreToolUse","tool_name":"Write","file_path":"src/lib.rs","content":"x"}"#
+    ).unwrap();
+    // file_path maps to the top-level HookInput field.
+    assert_eq!(input.get_string("file_path"), "src/lib.rs");
+    // content is unknown to HookInput and lands in #[serde(flatten)] extra.
+    assert_eq!(input.get_string("content"), "x");
+}
+
+#[test]
+fn test_get_string_uses_tool_input_when_present() {
+    let input: HookInput = serde_json::from_str(
+        r#"{"tool_input":{"file_path":"a.rs","content":"b"},"file_path":"ignored.rs"}"#
+    ).unwrap();
+    assert_eq!(input.get_string("file_path"), "a.rs");
+    assert_eq!(input.get_string("content"), "b");
+}
+
+#[test]
+fn test_get_string_resolves_vendor_aliases() {
+    let input: HookInput = serde_json::from_str(
+        r#"{"tool_input":{"path":"src/lib.rs","contents":"code"}}"#
+    ).unwrap();
+    assert_eq!(input.get_string("file_path"), "src/lib.rs");
+    assert_eq!(input.get_string("content"), "code");
+}
+
+#[test]
 fn test_hook_response_approve() {
     let resp = HookResponse::new_approve("ok");
     let json = serde_json::to_string(&resp).unwrap();

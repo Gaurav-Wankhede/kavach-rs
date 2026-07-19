@@ -113,7 +113,7 @@ pub(crate) fn auto_verify_done_cards(project_slug: &str) -> AutoVerify {
     let card_root = done
         .iter()
         .find_map(|(_, content)| witness_root_from_card(content));
-    match run_workspace_witnesses(card_root.as_deref()) {
+    match run_workspace_witnesses(card_root.as_deref(), None) {
         WitnessRun::Passed => {
             let mut promoted = 0_usize;
             let mut rpc_error = false;

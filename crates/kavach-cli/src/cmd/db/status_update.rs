@@ -10,7 +10,13 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
     clippy::too_many_lines,
     reason = "RPC-first with fallback to direct DB requires nested match arms and error handling"
 )]
-pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -> i32 {
+pub(super) fn run(
+    project_slug: &str,
+    category: &str,
+    key: &str,
+    status: &str,
+    verify_cmd: Option<&str>,
+) -> i32 {
     if MemoryStatus::from_str(status).is_err() {
         let msg = format!(
             "error: invalid status '{status}'. Valid: {}",
@@ -34,7 +40,7 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -
         // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
         // absent here; the WITNESS_ROOT env override + CWD discovery still apply
         // inside the gate. A cross-repo card relies on its env/CWD here.
-        match kavach_engine::verify_status_promotion(category, status, "") {
+        match kavach_engine::verify_status_promotion(category, status, "", verify_cmd) {
             StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {}
             StatusGateVerdict::RefusedWitnessFailed => {
                 let msg = format!(
@@ -51,8 +57,9 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, status: &str) -
             StatusGateVerdict::RefusedUnprovable => {
                 let msg = format!(
                     "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
-                     here (no Rust workspace and no KAVACH_VERIFY_CMD). Set KAVACH_VERIFY_CMD to a \
-                     command that proves the work, or KAVACH_VERIFY_BYPASS=1 for an operator override."
+                     here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). Pass \
+                     --verify-cmd '<command>' to prove the work, set KAVACH_VERIFY_CMD, or use \
+                     KAVACH_VERIFY_BYPASS=1 for an operator override."
                 );
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);

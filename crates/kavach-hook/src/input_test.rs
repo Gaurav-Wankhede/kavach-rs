@@ -88,7 +88,7 @@ fn sequence_input_with_nulls_is_handled() {
 #[test]
 fn empty_sequence_errors() {
     // Empty array should error
-    let json = r#"[]"#;
+    let json = r"[]";
     let err = parse_hook_input(json).unwrap_err();
     assert!(err.contains("empty array"));
 }

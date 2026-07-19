@@ -46,11 +46,6 @@ command = "kavach gates notification --hook --vendor kimi"
 timeout = 30
 
 [[hooks]]
-event = "PermissionRequest"
-command = "kavach gates permission-request --hook --vendor kimi"
-timeout = 30
-
-[[hooks]]
 event = "PreToolUse"
 matcher = "Write"
 command = "kavach gates pre-implementation --hook --vendor kimi"
@@ -59,6 +54,11 @@ timeout = 30
 [[hooks]]
 event = "PreCompact"
 command = "kavach gates pre-compact --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PostCompact"
+command = "kavach gates post-compact --hook --vendor kimi"
 timeout = 30
 
 [[hooks]]
@@ -84,4 +84,9 @@ timeout = 30
 [[hooks]]
 event = "Stop"
 command = "kavach gates stop --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "StopFailure"
+command = "kavach gates stop-failure --hook --vendor kimi"
 timeout = 30

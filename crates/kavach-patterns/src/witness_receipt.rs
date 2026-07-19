@@ -80,7 +80,10 @@ pub fn validate(
     if r.session_id.is_empty() || session_now.is_empty() || r.session_id != session_now {
         return Err(ReceiptError::SessionMismatch);
     }
-    if r.git_head.is_empty() || r.git_head != head_now {
+    // For git-backed projects both sides read HEAD; for non-git projects both
+    // sides read an empty string. Allow the empty/empty pair so non-git projects
+    // (Astro/TS/Node) can still bind a receipt to session+timestamp.
+    if !head_now.is_empty() && (r.git_head.is_empty() || r.git_head != head_now) {
         return Err(ReceiptError::HeadMismatch);
     }
     // Stale (too old) OR future-dated (now < ts) — both refuse.

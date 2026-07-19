@@ -15,7 +15,7 @@ use crate::store::StoredRule;
 /// Returns [`StorageError`] if the rule cannot be serialized or written to disk.
 pub fn write_rule(dir: &Path, rule: &StoredRule) -> Result<PathBuf> {
     fs::create_dir_all(dir)?;
-    let file_name = format!("{}.toon", &rule.definition.metadata.name);
+    let file_name = format!("{}.toon", rule.definition.metadata.name);
     let final_path = dir.join(&file_name);
     let tmp_path = dir.join(format!(".{file_name}.tmp"));
     let content = serialize_to_skill(rule);

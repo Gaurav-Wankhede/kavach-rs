@@ -137,11 +137,77 @@ impl HookInput {
         if key == "prompt" && !self.prompt.is_empty() {
             return &self.prompt;
         }
+        // 1. Canonical shape: nested under tool_input.
+        if let Some(v) = self.tool_input_string(key) {
+            return v;
+        }
+        // 2. Top-level struct field fallback (e.g., flat file_path on some vendors).
+        if let Some(v) = self.top_level_string(key) {
+            return v;
+        }
+        // 3. Fields captured by #[serde(flatten)] extra when a vendor sends them flat.
+        if let Some(v) = self.extra_string(key) {
+            return v;
+        }
+        // 4. Vendor aliases: path -> file_path, contents -> content.
+        if let Some(alias) = vendor_alias(key) {
+            if let Some(v) = self.tool_input_string(alias) {
+                return v;
+            }
+            if let Some(v) = self.extra_string(alias) {
+                return v;
+            }
+        }
+        ""
+    }
+
+    fn tool_input_string(&self, key: &str) -> Option<&str> {
         self.tool_input
             .as_ref()
             .and_then(|m| m.get(key))
             .and_then(|v| v.as_str())
-            .unwrap_or("")
+            .filter(|s| !s.is_empty())
+    }
+
+    fn extra_string(&self, key: &str) -> Option<&str> {
+        self.extra
+            .get(key)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+    }
+
+    fn top_level_string(&self, key: &str) -> Option<&str> {
+        let s = match key {
+            "file_path" => &self.file_path,
+            "session_id" => &self.session_id,
+            "transcript_path" => &self.transcript_path,
+            "cwd" => &self.cwd,
+            "permission_mode" => &self.permission_mode,
+            "hook_event_name" => &self.hook_event_name,
+            "tool_name" => &self.tool_name,
+            "tool_use_id" => &self.tool_use_id,
+            "message" => &self.message,
+            "notification_type" => &self.notification_type,
+            "title" => &self.title,
+            "agent_id" => &self.agent_id,
+            "agent_type" => &self.agent_type,
+            "source" => &self.source,
+            "model" => &self.model,
+            "reason" => &self.reason,
+            "trigger" => &self.trigger,
+            "custom_instructions" => &self.custom_instructions,
+            "name" => &self.name,
+            "worktree_path" => &self.worktree_path,
+            "teammate_name" => &self.teammate_name,
+            "team_name" => &self.team_name,
+            "task_id" => &self.task_id,
+            "task_subject" => &self.task_subject,
+            "task_description" => &self.task_description,
+            "error" => &self.error,
+            "compact_summary" => &self.compact_summary,
+            _ => return None,
+        };
+        if s.is_empty() { None } else { Some(s) }
     }
 
     #[must_use]
@@ -157,5 +223,13 @@ impl HookInput {
             return e.level.clone();
         }
         std::env::var("CLAUDE_EFFORT").unwrap_or_default()
+    }
+}
+
+fn vendor_alias(key: &str) -> Option<&'static str> {
+    match key {
+        "file_path" => Some("path"),
+        "content" => Some("contents"),
+        _ => None,
     }
 }

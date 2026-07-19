@@ -63,7 +63,7 @@ fn harness_tag_is_kebab_case() {
 fn defaults_fill_loop_limits_when_absent() {
     let yaml = "goal_id: g\nintent: i\noracle:\n  type: predicate\n  check: 'file exists'\n";
     let g = GoalLoopYaml::from_yaml(yaml).expect("parse with defaulted loop_limits");
-    assert_eq!(g.loop_limits.max_attempts, 5);
+    assert_eq!(g.loop_limits.max_attempts, 3);
     assert_eq!(g.loop_limits.on_max_attempts, OnMaxAttempts::Escalate);
 }
 

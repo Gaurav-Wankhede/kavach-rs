@@ -53,5 +53,5 @@ pub(super) fn extract_ai_verdict(_message: &str) -> Option<bool> {
     }
     // No card content in this RLAIF path → no per-card WITNESS_ROOT hint; the env
     // override + CWD discovery still apply inside run_workspace_witnesses.
-    verdict_from_witness(run_workspace_witnesses(None))
+    verdict_from_witness(run_workspace_witnesses(None, None))
 }

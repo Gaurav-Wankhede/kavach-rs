@@ -5,11 +5,14 @@ use crate::cmd::goal::compile::{compile_to_workflow, to_workflow_js};
 use crate::cmd::goal::loop_yaml::{GoalLoopYaml, Harness};
 
 pub(super) fn sample() -> GoalLoopYaml {
-    GoalLoopYaml::test_exit_code(
+    let mut g = GoalLoopYaml::test_exit_code(
         "goal-paseto-introspect",
         "Wire paseto.rs -> introspect",
         "cargo nextest run -p kavach-rpc introspect",
-    )
+    );
+    // Tests below prove fan-out shape; keep diagnostics explicitly enabled.
+    g.loop_limits.parallel_diagnostics = 3;
+    g
 }
 
 pub(super) fn with_harness(h: Harness) -> GoalLoopYaml {

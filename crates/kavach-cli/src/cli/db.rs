@@ -358,7 +358,7 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
     },
     /// Update the strict status of a memory entry (`todo|in_progress|done|verified`)
     #[command(
-        after_help = "EXAMPLES:\n  kavach db status-update --project P --category roadmap --key K --status in_progress\n  kavach db status-update --project P --category roadmap --key K --status done\n\nWHEN: Claim card (todo→in_progress), finish work (→done), then run `kavach verify` (→verified)."
+        after_help = "EXAMPLES:\n  kavach db status-update --project P --category roadmap --key K --status in_progress\n  kavach db status-update --project P --category roadmap --key K --status done\n  kavach db status-update --project P --category roadmap --key K --status done --verify-cmd 'bun run build'\n\nWHEN: Claim card (todo→in_progress), finish work (→done), then run `kavach verify` (→verified)."
     )]
     StatusUpdate {
         /// Project slug
@@ -372,6 +372,10 @@ WHEN: Session start and after every card close — prefer over stop-hook pipes."
         /// New status: planned, todo, `in_progress`, done, verified
         #[arg(long)]
         status: String,
+        /// Non-Rust witness command to run for a roadmap `done`/`verified` promotion.
+        /// Overrides `KAVACH_VERIFY_CMD` for this call. Example: `bun run build`.
+        #[arg(long)]
+        verify_cmd: Option<String>,
     },
     /// Populate the knowledge graph from existing relational data
     #[command(

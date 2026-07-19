@@ -52,7 +52,7 @@ fn truncate_keeps_short_strings() {
 fn truncate_caps_long_strings_with_ellipsis() {
     let out = truncate("0123456789ABCDEF", 5);
     assert!(out.ends_with('…'));
-    assert!(out.chars().count() == 6);
+    assert_eq!(out.chars().count(), 6);
 }
 
 /// Pins the TOCTOU-fix invariant: the write-intent decision is made by the

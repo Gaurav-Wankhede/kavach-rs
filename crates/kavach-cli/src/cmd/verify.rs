@@ -93,20 +93,10 @@ async fn run_async(
         }
     };
 
-    // Pre-condition: entry must be in 'done' status to be eligible for verify.
-    if entry.entry_status_str() != "done" {
-        let msg = format!(
-            "error: entry '{key}' has status '{}', expected 'done'. \
-             Mark it done first: kavach db status-update --status done",
-            entry.entry_status_str()
-        );
-        if let Err(io_err) = ewrite_or_exit(&msg) {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    }
-
     if external_verified {
+        // EXTERNAL_VERIFIED is the non-Rust escape hatch: the work was proven by
+        // an external build/test (e.g. `bun run build`). Accept any prior status
+        // (todo/in_progress/done) and move the card straight to verified.
         let Some(proof_text) = proof.filter(|p| !p.trim().is_empty()) else {
             if let Err(io_err) = ewrite_or_exit(
                 "error: --external-verified requires a non-empty --proof (deploy URL / commit / test receipt)",
@@ -137,6 +127,19 @@ async fn run_async(
             return 1;
         }
         return finalize_verified(&db, &project_id, key).await;
+    }
+
+    // Cargo verify path: the standard contract is done → verified.
+    if entry.entry_status_str() != "done" {
+        let msg = format!(
+            "error: entry '{key}' has status '{}', expected 'done'. \
+             Mark it done first: kavach db status-update --status done",
+            entry.entry_status_str()
+        );
+        if let Err(io_err) = ewrite_or_exit(&msg) {
+            return into_exit_code(io_err);
+        }
+        return 1;
     }
 
     let head = format!("[VERIFY] roadmap entry: {key}");

@@ -40,9 +40,9 @@ impl fmt::Debug for LoopLimits {
 impl Default for LoopLimits {
     fn default() -> Self {
         Self {
-            max_attempts: 5,
-            budget_floor: 50_000,
-            parallel_diagnostics: 3,
+            max_attempts: 3,
+            budget_floor: 10_000,
+            parallel_diagnostics: 0,
             on_max_attempts: OnMaxAttempts::Escalate,
         }
     }

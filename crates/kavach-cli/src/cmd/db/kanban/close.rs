@@ -11,7 +11,7 @@ pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
         None
     } else {
         use kavach_engine::StatusGateVerdict;
-        match kavach_engine::verify_status_promotion("roadmap", "verified", "") {
+        match kavach_engine::verify_status_promotion("roadmap", "verified", "", None) {
             StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {
                 super::super::rpc_client::mint_receipt()
             }

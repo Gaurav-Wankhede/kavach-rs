@@ -13,7 +13,9 @@ pub mod vendor;
 pub use severity::GateSeverity;
 pub use vendor::{SchemaSource, Vendor};
 // Re-export input functions at crate root for backwards compatibility
-pub use input::{parse_hook_input, read_hook_input, read_hook_input_from};
+pub use input::{
+    parse_hook_input, parse_hook_input_from_value, read_hook_input, read_hook_input_from,
+};
 #[cfg(test)]
 #[path = "lib_test.rs"]
 mod tests;

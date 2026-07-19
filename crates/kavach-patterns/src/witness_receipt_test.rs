@@ -58,3 +58,18 @@ fn future_dated_receipt_is_refused() {
     let r = rcpt(true, "deadbeef", 2_000_000, "sess-1");
     assert!(validate(&r, "deadbeef", 1_000_000, "sess-1").is_err());
 }
+
+#[test]
+fn empty_git_head_allowed_when_daemon_also_has_no_head() {
+    // Non-git projects have no HEAD; both sides read "". Session+timestamp
+    // binding still applies.
+    let r = rcpt(true, "", 1_000_000, "sess-1");
+    assert!(validate(&r, "", 1_000_000, "sess-1").is_ok());
+}
+
+#[test]
+fn empty_git_head_refused_when_daemon_has_a_head() {
+    // A receipt minted outside a git repo must not promote a git-backed project.
+    let r = rcpt(true, "", 1_000_000, "sess-1");
+    assert!(validate(&r, "deadbeef", 1_000_000, "sess-1").is_err());
+}

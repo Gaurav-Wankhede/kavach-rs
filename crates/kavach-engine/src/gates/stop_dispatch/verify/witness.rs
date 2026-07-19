@@ -65,8 +65,12 @@ pub(crate) fn witness_root_from_card(content: &str) -> Option<String> {
     })
 }
 /// Run the build+test witnesses ONCE. Workspace precedence, most-specific first:
-/// per-card `card_root` hint → `WITNESS_ROOT` env → CWD → `KAVACH_VERIFY_CMD` → Unprovable.
-pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
+/// per-card `card_root` hint → `WITNESS_ROOT` env → CWD → `--verify-cmd` arg →
+/// `KAVACH_VERIFY_CMD` env → Unprovable.
+pub(crate) fn run_workspace_witnesses(
+    card_root: Option<&str>,
+    verify_cmd: Option<&str>,
+) -> WitnessRun {
     // 1. Per-card hint wins — the card declares the repo its code lives in.
     if let Some(root) = card_root
         && let Some(ws) = discover_rust_workspace(std::path::Path::new(root))
@@ -79,19 +83,26 @@ pub(crate) fn run_workspace_witnesses(card_root: Option<&str>) -> WitnessRun {
     {
         return run_cargo_witnesses(&ws);
     }
-    // 3. Dispatch CWD (root or monorepo subdir).
+    // 3. Per-call non-Rust witness command (CLI --verify-cmd) overrides auto-
+    // discovery so an explicit command (e.g. `bun run build`) runs even when the
+    // dispatch CWD happens to contain a Cargo.toml.
+    if let Some(cmd) = verify_cmd.filter(|s| !s.is_empty()) {
+        return run_shell_witness(cmd);
+    }
+    // 4. Dispatch CWD (root or monorepo subdir).
     let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
     if let Some(ws) = discover_rust_workspace(&cwd) {
         return run_cargo_witnesses(&ws);
     }
-    // 4. Non-Rust escape hatch, else unprovable.
-    verify_command_env().map_or(
-        WitnessRun::Unprovable,
-        |cmd| match std::process::Command::new("sh").args(["-c", &cmd]).status() {
-            Ok(status) if status.success() => WitnessRun::Passed,
-            Ok(_) | Err(_) => WitnessRun::Failed,
-        },
-    )
+    // 5. Non-Rust escape hatch env var, else unprovable.
+    verify_command_env().map_or(WitnessRun::Unprovable, |cmd| run_shell_witness(&cmd))
+}
+
+fn run_shell_witness(cmd: &str) -> WitnessRun {
+    match std::process::Command::new("sh").args(["-c", cmd]).status() {
+        Ok(status) if status.success() => WitnessRun::Passed,
+        Ok(_) | Err(_) => WitnessRun::Failed,
+    }
 }
 /// Agent-facing failure report: the failing witness command + the tail of its
 /// captured compiler output. Pure/testable. SOURCE: rca.opaque-witness — a bare
