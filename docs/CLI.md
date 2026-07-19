@@ -1131,11 +1131,13 @@ Update the strict status of a memory entry (`todo|in_progress|done|verified`)
 | `--category` | Category (decision, research, roadmap, pattern, app_spec) |  |
 | `--key` | Entry key |  |
 | `--status` | New status: planned, todo, `in_progress`, done, verified |  |
+| `--verify-cmd` | Non-Rust witness command to run for a roadmap `done`/`verified` promotion. Overrides `KAVACH_VERIFY_CMD` for this call. Example: `bun run build` |  |
 
 ```
 EXAMPLES:
   kavach db status-update --project P --category roadmap --key K --status in_progress
   kavach db status-update --project P --category roadmap --key K --status done
+  kavach db status-update --project P --category roadmap --key K --status done --verify-cmd 'bun run build'
 
 WHEN: Claim card (todo→in_progress), finish work (→done), then run `kavach verify` (→verified).
 ```
