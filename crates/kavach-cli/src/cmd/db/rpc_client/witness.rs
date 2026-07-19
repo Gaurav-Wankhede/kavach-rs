@@ -1,5 +1,5 @@
 pub(crate) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt> {
-    let head = git_head()?;
+    let head = git_head();
     let session_id = {
         let s = kavach_session::get_or_create_session().session_id;
         if s.is_empty() { "cli".to_owned() } else { s }
@@ -12,15 +12,17 @@ pub(crate) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt
     ))
 }
 
-fn git_head() -> Option<String> {
+fn git_head() -> String {
     let out = std::process::Command::new("git")
         .args(["rev-parse", "HEAD"])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
+        .output();
+    match out {
+        Ok(out) if out.status.success() => {
+            String::from_utf8(out.stdout).map_or(String::new(), |s| {
+                let t = s.trim();
+                if t.is_empty() { String::new() } else { t.to_owned() }
+            })
+        }
+        _ => String::new(),
     }
-    let s = String::from_utf8(out.stdout).ok()?;
-    let t = s.trim();
-    (!t.is_empty()).then(|| t.to_owned())
 }
