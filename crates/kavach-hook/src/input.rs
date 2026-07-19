@@ -19,12 +19,42 @@ pub fn read_hook_input_from<R: BufRead>(reader: R) -> Result<HookInput, String> 
     parse_hook_input(&raw)
 }
 /// Parses raw hook input, scrubbing null fields.
+/// 
 /// # Errors
+/// Returns `Err` when the payload is not valid JSON or not a JSON object/array.
+/// 
+/// # Panics
+/// This function does not panic. It handles JSON parsing errors gracefully.
 pub fn parse_hook_input(raw: &str) -> Result<HookInput, String> {
     let mut value: serde_json::Value =
         serde_json::from_str(raw).map_err(|e| format!("JSON parse error: {e}"))?;
+    
+    // Handle sequence input by extracting the first object if present
+    if value.is_array() {
+        let Some(arr) = value.as_array() else {
+            return Err("JSON parse error: array check failed".to_owned());
+        };
+        if arr.is_empty() {
+            return Err("JSON parse error: empty array provided".to_owned());
+        }
+        // Use the first element if it's an object
+        if let Some(first) = arr.first() {
+            if first.is_object() {
+                value = first.clone();
+            } else {
+                return Err(format!("JSON parse error: array first element is not an object, got {first}"));
+            }
+        } else {
+            return Err("JSON parse error: array has no first element".to_owned());
+        }
+    }
+    
     if let Some(obj) = value.as_object_mut() {
         obj.retain(|_, v| !v.is_null());
     }
     serde_json::from_value(value).map_err(|e| format!("JSON parse error: {e}"))
 }
+
+#[cfg(test)]
+#[path = "input_test.rs"]
+mod tests;

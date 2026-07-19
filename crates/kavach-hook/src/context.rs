@@ -162,3 +162,7 @@ pub fn exit_session_end_ctx(kvs: &[(&str, &str)]) -> HookAction {
     let context = context_block("SESSION_END", &all_kvs);
     crate::exit_session_end(&context)
 }
+
+#[cfg(test)]
+#[path = "context_test.rs"]
+mod tests;

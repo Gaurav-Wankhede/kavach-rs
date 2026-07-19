@@ -46,6 +46,42 @@ command = "kavach gates notification --hook --vendor kimi"
 timeout = 30
 
 [[hooks]]
+event = "PermissionRequest"
+command = "kavach gates permission-request --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PreToolUse"
+matcher = "Write"
+command = "kavach gates pre-implementation --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PreCompact"
+command = "kavach gates pre-compact --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "PostToolUseFailure"
+command = "kavach gates post-tool-failure --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "SubagentStart"
+command = "kavach gates subagent-start --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "SubagentStop"
+command = "kavach gates subagent-stop --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
+event = "SessionEnd"
+command = "kavach gates session-end --hook --vendor kimi"
+timeout = 30
+
+[[hooks]]
 event = "Stop"
 command = "kavach gates stop --hook --vendor kimi"
 timeout = 30
