@@ -8,7 +8,7 @@ use kavach_types::HookInput;
 
 use super::super::intent_context::{
     append_agent_dispatch, append_db_query_required, append_diagram_first, append_forbidden,
-    append_memory_db, append_root_cause_protocol, append_verify_existing,
+    append_memory_db, append_migration_law, append_root_cause_protocol, append_verify_existing,
 };
 use super::phase::append_phase_and_rir;
 
@@ -36,6 +36,7 @@ pub(super) fn append_context_blocks(
     append_memory_db(context, intent_type);
     append_verify_existing(context, intent_type);
     append_root_cause_protocol(context, intent_type);
+    append_migration_law(context, intent_type, prompt);
     append_agent_dispatch(context, intent_type, prompt, &session.research_topic);
     append_diagram_first(context, intent_type, prompt);
     append_db_query_required(context, prompt);

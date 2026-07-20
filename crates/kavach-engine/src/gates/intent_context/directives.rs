@@ -22,7 +22,10 @@ use crate::gates::directive_cache::dyn_directive;
 const FANOUT_LAW_FALLBACK: &str = "FAN OUT to the cheap executor tier (claude-haiku-4-5): \
     spawn this agent for ALL read AND write labor. You are the orchestrator — DECIDE, delegate, \
     and VERIFY the returned work; do NOT read or edit yourself. Reserve your frontier tokens for \
-    the decision, never the labor. SOURCE: anthropic.com/engineering/multi-agent-research-system.";
+    the decision, never the labor. MIGRATION RULE: when porting/migrating files whose source \
+    language is the same (e.g. TypeScript → TypeScript), FIRST copy the source file with cp, THEN \
+    apply only the minimal framework-specific edits; NEVER rewrite from scratch. SOURCE: \
+    anthropic.com/engineering/multi-agent-research-system.";
 
 /// Append the `[FANOUT_LAW]` directive after a dispatched agent, so the orchestrator
 /// always delegates the labor to the cheap tier. Skill-only routes never call this.
@@ -68,6 +71,36 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
         "intent.root-cause-protocol",
         "Before fix-Write → emit [RCA]: symptom@file:line → why-chain→root_cause · \
          class+blast · fix · cite:URL. Fix cause ≠ symptom. No [RCA] → gate denies.",
+    ));
+    context.push('\n');
+}
+
+/// Append migration/porting law for implement/refactor intents when the prompt
+/// signals a framework migration. Directs the agent to copy source files and
+/// make only minimal edits, avoiding context-rot rewrites.
+pub(crate) fn append_migration_law(context: &mut String, intent_type: &str, prompt: &str) {
+    if intent_type != "implement" && intent_type != "refactor" && intent_type != "general" {
+        return;
+    }
+    let lower = prompt.to_lowercase();
+    let is_migration = lower.contains("migrat")
+        || lower.contains("port ")
+        || lower.contains("porting")
+        || lower.contains("rewrite")
+        || lower.contains("astro")
+        || lower.contains("next.js")
+        || lower.contains("from next")
+        || lower.contains("to astro");
+    if !is_migration {
+        return;
+    }
+    context.push_str("\n[MIGRATION_LAW] ");
+    context.push_str(&dyn_directive(
+        "intent.migration-law",
+        "Same-language migration: copy the source file with cp FIRST, then apply ONLY the \
+         minimal framework-specific edits (route signature, env access, response shape). \
+         NEVER rewrite the file from scratch. Preserve original logic, variable names, and \
+         comments unless the target framework forces a change.",
     ));
     context.push('\n');
 }

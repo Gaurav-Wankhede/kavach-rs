@@ -1,5 +1,7 @@
 //! Directive-builder tests: forbidden, RCA protocol, agent dispatch, research topic.
-use crate::gates::intent_context::directives::{append_forbidden, append_root_cause_protocol};
+use crate::gates::intent_context::directives::{
+    append_forbidden, append_migration_law, append_root_cause_protocol,
+};
 use crate::gates::intent_context::research::extract_research_topic;
 
 #[test]
@@ -52,5 +54,28 @@ fn test_rca_protocol_skipped_for_general() {
 fn test_rca_protocol_skipped_for_memory() {
     let mut ctx = String::new();
     append_root_cause_protocol(&mut ctx, "memory");
+    assert!(ctx.is_empty());
+}
+
+#[test]
+fn test_migration_law_injected_for_astro_migration() {
+    let mut ctx = String::new();
+    append_migration_law(&mut ctx, "implement", "migrate Next.js API routes to Astro");
+    assert!(ctx.contains("MIGRATION_LAW"));
+    assert!(ctx.contains("copy the source file with cp FIRST"));
+    assert!(ctx.contains("NEVER rewrite the file from scratch"));
+}
+
+#[test]
+fn test_migration_law_skipped_for_non_migration() {
+    let mut ctx = String::new();
+    append_migration_law(&mut ctx, "implement", "add a new login feature");
+    assert!(ctx.is_empty());
+}
+
+#[test]
+fn test_migration_law_skipped_for_memory_intent() {
+    let mut ctx = String::new();
+    append_migration_law(&mut ctx, "memory", "migrate Next.js to Astro");
     assert!(ctx.is_empty());
 }

@@ -94,6 +94,10 @@ fn dispatch_to_an_agent_carries_the_fanout_law() {
             ctx.contains("claude-haiku-4-5"),
             "{intent}: the fan-out law must name the cheap executor tier"
         );
+        assert!(
+            ctx.contains("FIRST copy the source file with cp"),
+            "{intent}: the fan-out law must include the migration copy-first rule"
+        );
     }
 }
 
