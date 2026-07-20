@@ -107,8 +107,8 @@ fn platform(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String> {
     if let Some(msg) = super::pre_write_response_guard::check(ctx.file_path, ctx.content) {
         acc.p1_advisories.push(format!("[RESPONSE_P1] {msg}"));
     }
-    if let Some(block) = nanofile::microservice(ctx) {
-        return Some(block);
+    if let Some(msg) = nanofile::microservice(ctx) {
+        acc.p1_advisories.push(msg);
     }
     if let Some(msg) = super::pre_write_infra_guard::check(ctx.file_path, ctx.content) {
         acc.p1_advisories.push(format!("[INFRA_P1] {msg}"));

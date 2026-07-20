@@ -30,9 +30,9 @@ pub(super) fn nano_file(ctx: &WriteContext<'_>, acc: &mut Acc) -> Option<String>
     None
 }
 
-/// Microservice guard — promoted to P0 BLOCK per CLAUDE.md "max 100 lines" rule.
-/// On an Edit, suppression comments (`// hub:` / `// split:`) in the fragment are
-/// merged into the full file so you can add them despite the edit being blocked.
+/// Microservice guard — P1 ADVISORY. The 100-line guidance steers splitting but no
+/// longer hard-blocks, because the rewrite loop it triggered burned more tokens than
+/// the split saved. Suppression comments (`// hub:` / `// split:`) still apply.
 pub(super) fn microservice(ctx: &WriteContext<'_>) -> Option<String> {
     if ctx.is_test {
         return None;
@@ -60,7 +60,7 @@ pub(super) fn microservice(ctx: &WriteContext<'_>) -> Option<String> {
     };
     super::super::pre_write_microservice_guard::check(ctx.file_path, ms_content).map(|msg| {
         format!(
-            "[MICROSERVICE_P0] {msg}\n\nSplit file before writing. Add `// split:` comment to suppress if intentional."
+            "[MICROSERVICE_P1] {msg}\n\nConsider splitting; add `// split:` or `// hub:` comment if intentional."
         )
     })
 }
