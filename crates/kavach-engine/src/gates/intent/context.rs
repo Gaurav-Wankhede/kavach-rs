@@ -252,19 +252,14 @@ fn render_live_kanban(
         .ok();
         return false; // still "not observed": never blocks the session
     };
-    context.push_str(
-        "\n[KANBAN] read live from the kavach DB this turn — do NOT re-query to confirm.",
-    );
+    context.push_str("\n[KANBAN] live · do NOT re-query.");
     write!(
         context,
-        "\nproject: {project} · runnable: {runnable} · blocked: {blocked} · cyclic: {cyclic}"
+        " project: {project} · runnable: {runnable} · blocked: {blocked} · cyclic: {cyclic}"
     )
     .ok();
     if runnable == 0 {
-        context.push_str(
-            "\nstatus: no runnable roadmap card. The work queue (roadmap+todo/in_progress) is \
-             drained. Do NOT invent work; if the user gave no task, await direction.",
-        );
+        context.push_str("\nstatus: drained — await direction.");
     } else if ranked.is_empty() {
         // Ranked read empty (daemon warming, or empty-prompt with no board): fall
         // back to the single next card by priority — never lose the "start here".
@@ -276,10 +271,7 @@ fn render_live_kanban(
             .ok();
         }
     } else {
-        context.push_str(
-            "\nrelevance-ranked runnable cards (top, by match to this turn's task — claim the \
-             most relevant and START it):",
-        );
+        context.push_str("\nrunnable (most relevant first):");
         for (key, title, status) in ranked {
             write!(context, "\n  · [{key}] {title} [{status}]").ok();
         }
@@ -403,7 +395,7 @@ mod tests {
         let observed = super::render_live_kanban(&mut ctx, "kavach-rs", Some((2, 0, 0)), &ranked);
         assert!(observed, "a successful read is observed");
         assert!(
-            ctx.contains("relevance-ranked"),
+            ctx.contains("runnable (most relevant first)"),
             "relevance header present: {ctx}"
         );
         assert!(

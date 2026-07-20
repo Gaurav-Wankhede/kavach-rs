@@ -57,8 +57,9 @@ pub(super) fn run(
             StatusGateVerdict::RefusedUnprovable => {
                 let msg = format!(
                     "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
-                     here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). Pass \
-                     --verify-cmd '<command>' to prove the work, set KAVACH_VERIFY_CMD, or use \
+                     here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). For \
+                     non-Rust projects pass `--verify-cmd '<command>'` (e.g. \
+                     `cd frontend-astro && bun run build`), set KAVACH_VERIFY_CMD, or use \
                      KAVACH_VERIFY_BYPASS=1 for an operator override."
                 );
                 if let Err(io_err) = ewrite_or_exit(&msg) {

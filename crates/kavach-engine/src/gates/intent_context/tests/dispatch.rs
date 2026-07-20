@@ -98,6 +98,10 @@ fn dispatch_to_an_agent_carries_the_fanout_law() {
             ctx.contains("FIRST copy the source file with cp"),
             "{intent}: the fan-out law must include the migration copy-first rule"
         );
+        assert!(
+            ctx.contains("framework/language-specific edits"),
+            "{intent}: the fan-out law must cover cross-language migrations"
+        );
     }
 }
 

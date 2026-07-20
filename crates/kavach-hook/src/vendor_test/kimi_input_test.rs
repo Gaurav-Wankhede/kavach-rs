@@ -215,3 +215,43 @@ fn kimi_trigger_content_part_array_is_flattened() {
     let input = kimi::lower(p).expect("kimi lowers trigger array");
     assert_eq!(input.trigger, "manual");
 }
+
+#[test]
+fn kimi_custom_instructions_string_array_is_flattened() {
+    // Kimi may also send text-bearing fields as plain string[] rather than
+    // ContentPart[]; these must not fail deserialization with
+    // "invalid type: sequence, expected a string".
+    let p = r#"{
+        "session_id":"s1",
+        "hook_event_name":"UserPromptSubmit",
+        "prompt":"hi",
+        "custom_instructions":["be concise","obey user"]
+    }"#;
+    let input = kimi::lower(p).expect("kimi lowers string array custom_instructions");
+    assert_eq!(input.custom_instructions, "be concise obey user");
+}
+
+#[test]
+fn kimi_trigger_string_array_is_flattened() {
+    let p = r#"{
+        "session_id":"s1",
+        "hook_event_name":"UserPromptSubmit",
+        "prompt":"hi",
+        "trigger":["manual","user"]
+    }"#;
+    let input = kimi::lower(p).expect("kimi lowers string array trigger");
+    assert_eq!(input.trigger, "manual user");
+}
+
+#[test]
+fn kimi_background_tasks_array_is_preserved() {
+    // Legitimate list fields must survive flattening unchanged.
+    let p = r#"{
+        "session_id":"s1",
+        "hook_event_name":"UserPromptSubmit",
+        "prompt":"hi",
+        "background_tasks":[{"id":"t1"}]
+    }"#;
+    let input = kimi::lower(p).expect("kimi preserves background_tasks array");
+    assert_eq!(input.background_tasks.len(), 1);
+}

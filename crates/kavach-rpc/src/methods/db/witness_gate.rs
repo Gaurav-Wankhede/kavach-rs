@@ -34,9 +34,11 @@ fn decide(
     }
     let Some(r) = receipt else {
         return Some(format!(
-            "REFUSED: [{category}] -> {status} needs a witness receipt. Run the workspace \
-             witness (cargo check+clippy+nextest) and resubmit with the receipt — a \
-             completion claim must be backed by a passing build, not self-report."
+            "REFUSED: [{category}] -> {status} needs a witness receipt. For a Rust workspace, \
+             run cargo check+clippy+nextest. For a non-Rust project, pass \
+             `--verify-cmd '<command>'` (or set KAVACH_VERIFY_CMD) with a passing build/test \
+             command, then resubmit. A completion claim must be backed by a passing build, \
+             not self-report."
         ));
     };
     match validate(r, head_now, now_ms, session_now) {

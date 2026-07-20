@@ -17,7 +17,7 @@ pub(in crate::gates) fn practice_delta_block(prompt: &str) -> Option<String> {
     } else {
         vec![prompt.to_owned()]
     };
-    let params = serde_json::json!({ "focus": focus, "limit": 6 });
+    let params = serde_json::json!({ "focus": focus, "limit": 3 });
     let res: kavach_rpc::methods::db::PracticeRenderResult =
         kavach_rpc::client::call("db.practice_render", Some(params)).ok()?;
     let mermaid = res.mermaid?;
@@ -25,9 +25,7 @@ pub(in crate::gates) fn practice_delta_block(prompt: &str) -> Option<String> {
         return None;
     }
     Some(format!(
-        "\n[PRACTICE_DELTA] mistakes THIS codebase already retired (left) and the \
-         research-backed fix that replaced each (right) — do NOT reintroduce a \
-         left-side practice; apply the right-side fix by default:\n\
+        "\n[PRACTICE_DELTA] retired mistakes (left) vs current fix (right):\n\
          ```mermaid\n{}\n```",
         mermaid.trim_end()
     ))

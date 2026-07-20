@@ -67,6 +67,14 @@ fn test_migration_law_injected_for_astro_migration() {
 }
 
 #[test]
+fn test_migration_law_injected_for_cross_language_port() {
+    let mut ctx = String::new();
+    append_migration_law(&mut ctx, "implement", "port the Python Flask backend to Rust Axum");
+    assert!(ctx.contains("MIGRATION_LAW"));
+    assert!(ctx.contains("framework/language-specific edits"));
+}
+
+#[test]
 fn test_migration_law_skipped_for_non_migration() {
     let mut ctx = String::new();
     append_migration_law(&mut ctx, "implement", "add a new login feature");

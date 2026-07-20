@@ -31,12 +31,8 @@ pub(in crate::gates) fn decision_map_block(project_slug: &str, prompt: &str) -> 
         return None;
     }
     Some(format!(
-        "\n[DECISION_MAP] this project's decision architecture (settled choices are \
-         hard constraints — do NOT contradict a VERIFIED decision; `-.retires.->` \
-         means the target was replaced, do not reintroduce it):\n\
-         ```mermaid\n{}\n```\n\
-         apply: build consistent with these edges; if your change requires breaking \
-         one, FILE a superseding decision row first.",
+        "\n[DECISION_MAP] settled decisions (`-.retires.->` = replaced):\n\
+         ```mermaid\n{}\n```",
         mermaid.trim_end()
     ))
 }

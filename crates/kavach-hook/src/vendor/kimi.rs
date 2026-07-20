@@ -155,18 +155,43 @@ fn is_content_part_array(v: &serde_json::Value) -> bool {
     })
 }
 
-/// Recursively flatten ContentPart[] arrays into plain strings.
+/// True if `v` is an array of plain strings.
+fn is_string_array(v: &serde_json::Value) -> bool {
+    v.as_array()
+        .is_some_and(|arr| arr.iter().all(|part| part.is_string()))
+}
+
+/// Extract text from a plain string array, joining elements with a single space.
+fn flatten_string_array(parts: &[serde_json::Value]) -> String {
+    parts
+        .iter()
+        .filter_map(|part| part.as_str().map(str::to_owned))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Recursively flatten message-bearing arrays into plain strings.
+/// Handles both Kimi `ContentPart[]` arrays and plain `string[]` arrays.
 /// Operates on object values and on nested `tool_input` objects.
+/// Legitimate list fields (`background_tasks`, `session_crons`) are left intact.
 fn flatten_content_part_fields(obj: &mut serde_json::Map<String, serde_json::Value>) {
-    for v in obj.values_mut() {
-        if is_content_part_array(v) {
-            let flat = v
-                .as_array()
-                .map(|parts| flatten_content_parts(parts))
-                .unwrap_or_default();
-            *v = serde_json::Value::String(flat);
-        } else if let Some(nested) = v.as_object_mut() {
-            flatten_content_part_fields(nested);
+    const SKIP_KEYS: &[&str] = &["background_tasks", "session_crons"];
+    for (k, v) in obj.iter_mut() {
+        if SKIP_KEYS.contains(&k.as_str()) {
+            continue;
+        }
+        let flat = if is_content_part_array(v) {
+            v.as_array().map(|parts| flatten_content_parts(parts))
+        } else if is_string_array(v) {
+            v.as_array().map(|parts| flatten_string_array(parts))
+        } else {
+            if let Some(nested) = v.as_object_mut() {
+                flatten_content_part_fields(nested);
+            }
+            None
+        };
+        if let Some(text) = flat {
+            *v = serde_json::Value::String(text);
         }
     }
 }

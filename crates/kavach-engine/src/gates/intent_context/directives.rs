@@ -17,14 +17,11 @@ pub(crate) fn append_forbidden(context: &mut String, forbidden: &[String]) {
 use crate::gates::directive_cache::dyn_directive;
 
 /// Compiled fan-out law fallback — mirrors gate_config `*/harness.fanout_law`.
-/// Names the cheap executor tier so a dispatched agent is always a fan-out target,
-/// never work the frontier orchestrator does itself. SOURCE: decision.harness.fanout-to-cheap-tier.
-const FANOUT_LAW_FALLBACK: &str = "FAN OUT to the cheap executor tier (claude-haiku-4-5): \
-    spawn this agent for ALL read AND write labor. You are the orchestrator — DECIDE, delegate, \
-    and VERIFY the returned work; do NOT read or edit yourself. Reserve your frontier tokens for \
-    the decision, never the labor. MIGRATION RULE: when porting/migrating files whose source \
-    language is the same (e.g. TypeScript → TypeScript), FIRST copy the source file with cp, THEN \
-    apply only the minimal framework-specific edits; NEVER rewrite from scratch. SOURCE: \
+/// Keeps the migration copy-first rule inline so a dispatched agent never rewrites
+/// a port from scratch. SOURCE: decision.harness.fanout-to-cheap-tier.
+const FANOUT_LAW_FALLBACK: &str = "If you dispatch an agent, use the cheap tier \
+    (claude-haiku-4-5). MIGRATION RULE: FIRST copy the source file with cp, THEN apply only the \
+    minimal framework/language-specific edits; NEVER rewrite from scratch. SOURCE: \
     anthropic.com/engineering/multi-agent-research-system.";
 
 /// Append the `[FANOUT_LAW]` directive after a dispatched agent, so the orchestrator
@@ -69,15 +66,15 @@ pub(crate) fn append_root_cause_protocol(context: &mut String, intent_type: &str
     context.push_str("\n[ROOT_CAUSE_PROTOCOL] ");
     context.push_str(&dyn_directive(
         "intent.root-cause-protocol",
-        "Before fix-Write → emit [RCA]: symptom@file:line → why-chain→root_cause · \
-         class+blast · fix · cite:URL. Fix cause ≠ symptom. No [RCA] → gate denies.",
+        "Before fix-Write emit [RCA]: symptom@file:line → why-chain→root_cause · \
+         class+blast · fix · cite:URL. Fix cause ≠ symptom.",
     ));
     context.push('\n');
 }
 
 /// Append migration/porting law for implement/refactor intents when the prompt
-/// signals a framework migration. Directs the agent to copy source files and
-/// make only minimal edits, avoiding context-rot rewrites.
+/// signals a framework or language migration. Directs the agent to copy source
+/// files first and make only minimal edits, avoiding context-rot rewrites.
 pub(crate) fn append_migration_law(context: &mut String, intent_type: &str, prompt: &str) {
     if intent_type != "implement" && intent_type != "refactor" && intent_type != "general" {
         return;
@@ -86,21 +83,23 @@ pub(crate) fn append_migration_law(context: &mut String, intent_type: &str, prom
     let is_migration = lower.contains("migrat")
         || lower.contains("port ")
         || lower.contains("porting")
+        || lower.contains("convert")
+        || lower.contains("conversion")
+        || lower.contains("translate")
         || lower.contains("rewrite")
-        || lower.contains("astro")
-        || lower.contains("next.js")
-        || lower.contains("from next")
-        || lower.contains("to astro");
+        || lower.contains("upgrade to")
+        || lower.contains("move to")
+        || lower.contains("switch to");
     if !is_migration {
         return;
     }
     context.push_str("\n[MIGRATION_LAW] ");
     context.push_str(&dyn_directive(
         "intent.migration-law",
-        "Same-language migration: copy the source file with cp FIRST, then apply ONLY the \
-         minimal framework-specific edits (route signature, env access, response shape). \
-         NEVER rewrite the file from scratch. Preserve original logic, variable names, and \
-         comments unless the target framework forces a change.",
+        "Migration / port / conversion: copy the source file with cp FIRST, then apply ONLY \
+         the minimal framework/language-specific edits needed to make it run in the target \
+         stack. NEVER rewrite the file from scratch. Preserve original logic, algorithms, \
+         variable names, and comments unless the target framework or language forces a change.",
     ));
     context.push('\n');
 }
@@ -120,11 +119,8 @@ fn has_diagram_keyword(prompt: &str) -> bool {
         || lower.contains("hld")
 }
 
-/// Append the diagram-first standing law for plan/design/implement intents: a
-/// turn that proposes architecture or an LLD must emit a temp HTML+Mermaid view
-/// (Mermaid ESM import + mermaid.run, NO SRI) and surface it to the user BEFORE deciding, so the
-/// structure is reviewable before any code. Advisory tier (steers, never blocks).
-/// SOURCE: decision.harness.sdlc-nano-agents-global · diagram-first law.
+/// Append the diagram-first standing law for plan/design/implement intents.
+/// Advisory tier (steers, never blocks). SOURCE: decision.harness.sdlc-nano-agents-global.
 pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str, prompt: &str) {
     let intent_matches = intent_type == "implement"
         || intent_type == "refactor"
@@ -138,19 +134,9 @@ pub(crate) fn append_diagram_first(context: &mut String, intent_type: &str, prom
     context.push_str("\n[DIAGRAM_FIRST] ");
     context.push_str(&dyn_directive(
         "intent.diagram-first",
-        "When this turn proposes architecture or a low-level design, FIRST write a \
-         temp HTML file with a Mermaid diagram (LLD: every component + typed edge + \
-         node→file:symbol map) and open it for the user, BEFORE ExitPlanMode / before \
-         deciding. Spawn the architect-lld agent to emit the Mermaid. Load Mermaid via \
-         ESM `import()` (jsdelivr .esm.min.mjs with an unpkg fallback), call \
-         `mermaid.initialize({startOnLoad:false, securityLevel:'loose'})` then \
-         `await mermaid.run()`, and show a visible warning if every CDN is blocked — \
-         NO SRI integrity= tag (a guessed/stale hash makes the browser refuse the \
-         script and the diagram silently renders as raw text). VALIDATE the Mermaid \
-         syntax BEFORE surfacing it: run `just mermaid-check <file>` (mmdc parses every \
-         block; exit 1 on a syntax error) and only open the HTML once it passes — never \
-         hand the user a diagram that renders as raw text. The diagram is the \
-         review surface — the user decides from it, not from prose.",
+        "If this turn proposes architecture or an LLD, FIRST emit a temp HTML file with a \
+         validated Mermaid diagram and open it for the user BEFORE deciding. Use ESM import, \
+         no SRI, and run `just mermaid-check <file>` first.",
     ));
     context.push('\n');
 }

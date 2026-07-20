@@ -99,11 +99,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // any dependency named in the prompt, so a query can never drift to stale weights.
     context.push_str(&version_pin::version_pin_block(prompt));
     if let Some(topic) = research_pending {
-        let pending = format!(
-            "\n[RESEARCH:PENDING] topic={topic} — internet-first lookup dispatched. \
-             Findings arrive in the turn cache; the pre-write gate BLOCKS edits until \
-             you cite a source URL or [RESEARCH] block.\n"
-        );
+        let pending = format!("\n[RESEARCH:PENDING] topic={topic}. Cite a source URL or [RESEARCH] block before editing.\n");
         context.push_str(&pending);
     }
     context.push_str(&harness_block);

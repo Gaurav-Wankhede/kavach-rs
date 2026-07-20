@@ -10,17 +10,12 @@
 use crate::gates::directive_cache::dyn_directive;
 
 /// Literal served when the cache has no `pattern-dag.legend` row yet.
-const LEGEND_FALLBACK: &str = "`-.retires.->` means the source pattern replaced \
-    the target — use the current one, not the retired; `(fresh)` marks a pattern \
-    adopted but not yet soaked, so prefer a verified sibling when one exists";
+const LEGEND_FALLBACK: &str = "`-.retires.->` = source replaced target; `(fresh)` = not yet soaked";
 
 /// Literal served when the cache has no `pattern-dag.stability` row yet. The
 /// version-scheme rule is tech-stack-agnostic: the breaking-change axis is read
 /// off the version itself (0.x ⇒ MINOR bump breaks; 1.x+ ⇒ MAJOR bump breaks).
-const STABILITY_FALLBACK: &str = "version-scheme stability: for a 0.x dependency a \
-    MINOR bump (0.7→0.8) is BREAKING; for 1.x+ only a MAJOR bump breaks — when a \
-    superseding pattern names a newer version, adopt it only after confirming the \
-    bump's stability on that axis";
+const STABILITY_FALLBACK: &str = "0.x ⇒ MINOR bump breaks; 1.x+ ⇒ MAJOR bump breaks";
 
 /// Build the `[PATTERN_DAG]` block for `project_slug`, focused on the pattern
 /// keys most relevant to `prompt` (via Brain-OS) so only the touched
@@ -47,7 +42,7 @@ pub(in crate::gates) fn pattern_dag_block(project_slug: &str, prompt: &str) -> O
     let legend = dyn_directive("pattern-dag.legend", LEGEND_FALLBACK);
     let stability = dyn_directive("pattern-dag.stability", STABILITY_FALLBACK);
     Some(format!(
-        "\n[PATTERN_DAG] research-refreshed pattern layer for this project ({legend}):\n\
+        "\n[PATTERN_DAG] patterns ({legend}):\n\
          ```mermaid\n{}\n```\n{stability}",
         mermaid.trim_end()
     ))
@@ -99,7 +94,7 @@ mod tests {
                 // Both directive-cached strands surface (literal fallback in
                 // unit context, since no RPC server ⇒ cache absent).
                 assert!(b.contains("`-.retires.->`"), "legend present: {b}");
-                assert!(b.contains("version-scheme stability"), "stability: {b}");
+                assert!(b.contains("MINOR bump breaks"), "stability: {b}");
             }
         }
     }
