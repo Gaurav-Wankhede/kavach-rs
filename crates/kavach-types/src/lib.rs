@@ -3,7 +3,7 @@
 pub mod gate_config;
 pub use gate_config::{GateValueDto, gate_enabled, gate_patterns, gate_text, gate_threshold};
 
-pub mod priority;
+pub mod six_file;pub use six_file::{ArtifactValidator, AutoDraftSource, FOURTEEN_PREFIXES, MissingPrefix, MissingReason,ProjectTier, RequiredPrefix, SpecCategory, SpikeMode, WitnessResult,};pub mod priority;
 pub use priority::Priority;
 
 pub mod effort_input;

@@ -1,4 +1,4 @@
-//! Gate dispatch entry point. `run_gate` matches a gate name against the three
+//! Gate dispatch entry point. `run_gate` matches a gate name against the two
 //! gate families (core write/tool, lifecycle) in turn, returning
 //! `UnknownGate` only when no family claims it.
 mod core_gates;

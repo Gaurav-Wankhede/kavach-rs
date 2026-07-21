@@ -88,7 +88,7 @@ pub(crate) enum Commands {
         after_help = "EXAMPLES:\n  kavach gates stop --help          # gate purpose (no stdin)\n  echo '{\"hook_event_name\":\"Stop\",\"cwd\":\".\"}' | kavach gates stop --hook --vendor cursor\n\nWHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`."
     )]
     Gates {
-        /// Gate name (pre-write, post-write, pre-tool, post-tool, intent, stop, session-start, six-file-intent, pre-implementation, post-implementation, …)
+        /// Gate name (pre-write, post-write, pre-tool, post-tool, intent, stop, session-start, …)
         gate_name: String,
         /// Read JSON input from stdin (hook mode)
         #[arg(long)]
@@ -245,11 +245,6 @@ pub(crate) enum Commands {
     Phase {
         #[command(subcommand)]
         action: PhaseAction,
-    },
-    /// Manage specification artifacts (six-file context, auto-draft)
-    Spec {
-        #[command(subcommand)]
-        action: SpecAction,
     },
     /// Manage autonomous execution loop (harness engineering)
     #[command(after_help = "See: kavach loop --help")]
