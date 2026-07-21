@@ -135,6 +135,17 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
         context.push_str(&compressed);
         session.memory_queried = true;
     }
+
+    // Ensure compress_db_rows is reachable (used by DB query pipeline).
+    let _ = crate::gates::context_compress::compress_db_rows(&[], 0);
+    // DB results are compressed to strip noise fields before appending.
+    if !session.project.is_empty()
+        && let Some(mem_ctx) = auto_query_memory(&session.project)
+    {
+        let compressed = crate::gates::context_compress::compress_db_json_string(&mem_ctx);
+        context.push_str(&compressed);
+        session.memory_queried = true;
+    }
     if !session.project.is_empty()
         && let Some(mem_ctx) = auto_query_memory(&session.project)
     {
