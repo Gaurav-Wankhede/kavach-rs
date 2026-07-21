@@ -84,7 +84,7 @@ pub(super) fn run(
     // daemon's RPC-boundary gate accepts the promotion (it re-validates HEAD+freshness).
     let receipt = super::rpc_client::mint_receipt();
     // RPC-first: try daemon, fall back to direct DB on unavailable
-    match super::rpc_client::status_update(project_slug, category, key, status, receipt) {
+    match super::rpc_client::status_update(project_slug, category, key, status, Some(receipt)) {
         Ok(result) if result.success => {
             let msg = format!("status applied: [{category}] {key} -> {status} (via rpc)");
             if let Err(io_err) = print_or_exit(&msg) {
