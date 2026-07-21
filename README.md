@@ -373,6 +373,10 @@ A SurrealDB store holds durable state across sessions, scoped per project:
 
 All access is RPC-routed through the in-process `kavach-rpc` layer to the SurrealDB server — **no crate opens the database directly**, preserving the single-writer invariant.
 
+### Knowledge Graph
+
+All access is RPC-routed through the in-process `kavach-rpc` layer to the SurrealDB server — **no crate opens the database directly**, preserving the single-writer invariant.
+
 All access is RPC-routed through the in-process `kavach-rpc` layer to the SurrealDB server — **no crate opens the database directly**, preserving the single-writer invariant.
 
 ### Knowledge Graph
