@@ -54,6 +54,6 @@ pub(super) fn dm_truncate(label: &str) -> String {
         out.push(ch);
         used = next;
     }
-    out.push_str("…");
+    out.push('\u{2026}');
     out
 }
