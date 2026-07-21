@@ -104,7 +104,7 @@ fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
     let Ok(rel) = path.strip_prefix(base) else {
         return None;
     };
-    let rel_str = match rel.to_str() {
+    let rel_str = rel.to_str().map(|s| s.replace('\\', "/"))?;
         Some(s) => s.replace('\\', "/"),
         None => return None,
     };
