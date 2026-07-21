@@ -23,9 +23,6 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
             output.push_str(&section.header);
             output.push_str(&section.content);
             used = used.saturating_add(needed).saturating_add(section.header.len());
-            output.push_str(&section.header);
-            output.push_str(&section.content);
-            used += needed + section.header.len();
         }
     }
     for (section, score) in &scored {
@@ -35,7 +32,7 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
             let truncated = truncate_to_budget(&section.content, remaining);
             output.push_str(&section.header);
             output.push_str(&truncated);
-            used += truncated.len() + section.header.len();
+            used = used.saturating_add(truncated.len()).saturating_add(section.header.len());
         }
     }
     for (section, score) in &scored {
@@ -45,11 +42,12 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
             let truncated = truncate_to_budget(&section.content, remaining);
             output.push_str(&section.header);
             output.push_str(&truncated);
-            used += truncated.len() + section.header.len();
+            used = used.saturating_add(truncated.len()).saturating_add(section.header.len());
         }
     }
     if used < context.len() {
-        output.push_str(&format!("\n[COMPRESSED] {}B -> {}B ({} tokens saved)\n", context.len(), used, (context.len() - used) / CHARS_PER_TOKEN));
+        let saved = context.len().saturating_sub(used) / CHARS_PER_TOKEN;
+        writeln!(output, "\n[COMPRESSED] {}B -> {}B ({saved} tokens saved)", context.len(), used).unwrap();
     }
     output
 }
@@ -151,6 +149,6 @@ pub(crate) fn compress_db_json_string(json_str: &str) -> String {
 }
 
 pub(crate) fn compress_db_rows(rows: &[serde_json::Value], max_rows: usize) -> Vec<serde_json::Value> {
-    let capped = if rows.len() > max_rows { &rows[..max_rows] } else { rows };
-    capped.iter().map(|r| compress_db_json(r)).collect()
+    let capped = rows.get(..max_rows).unwrap_or(rows);
+    capped.iter().map(compress_db_json).collect()
 }
