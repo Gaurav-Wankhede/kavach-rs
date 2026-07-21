@@ -158,7 +158,7 @@ fn is_content_part_array(v: &serde_json::Value) -> bool {
 /// True if `v` is an array of plain strings.
 fn is_string_array(v: &serde_json::Value) -> bool {
     v.as_array()
-        .is_some_and(|arr| arr.iter().all(|part| part.is_string()))
+        .is_some_and(|arr| arr.iter().all(serde_json::Value::is_string))
 }
 
 /// Extract text from a plain string array, joining elements with a single space.
