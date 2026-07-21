@@ -72,16 +72,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         loop_guard::record_tool_call(&mut session, &input.tool_name, &tool_input_json);
         session.save().ok();
     }
-    let tool_input_json = input.tool_input.as_ref().map(|ti| ti.to_string()).unwrap_or_default();
-    {
-        let mut session = kavach_session::get_or_create_session();
-        if let Some(block_reason) = loop_guard::check_tool_loop(&session, &input.tool_name, &tool_input_json) {
-            super::turn_relay::exit_pre_tool_deny(&block_reason);
-            return Ok(());
-        }
-        loop_guard::record_tool_call(&mut session, &input.tool_name, &tool_input_json);
-        session.save().ok();
-    }
 
     let carries_shell_command = input.tool_name != "Bash"
         && input.tool_input.as_ref().is_some_and(|ti| {
