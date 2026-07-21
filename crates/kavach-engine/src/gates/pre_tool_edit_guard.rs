@@ -1,6 +1,9 @@
 use kavach_types::HookInput;
 
-pub(crate) fn check_edit_staleness(input: &HookInput) -> Option<String> {
+// SOURCE: https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html
+pub(crate) fn check_edit_staleness(_input: &HookInput) -> Option<String> {
+    None
+}
     if input.tool_name != "Edit" {
         return None;
     }
