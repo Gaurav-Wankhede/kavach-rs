@@ -104,7 +104,8 @@ fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
     let Ok(rel) = path.strip_prefix(base) else {
         return None;
     };
-    let rel_str = match rel.to_str() {
+// SOURCE: https://rust.code-maven.com/automatically-fixing-issues-in-rust
+    let rel_str = rel.to_str()?.replace('\\', "/");
         Some(s) => s.replace('\\', "/"),
         None => return None,
     };
