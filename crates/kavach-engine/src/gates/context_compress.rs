@@ -116,3 +116,38 @@ pub(crate) fn compress_hook_context(context: &str) -> String {
     let deduped = deduplicate_lines(context);
     compress(&deduped, None)
 }
+
+// SOURCE: kavach decision.context-rot-surrealdb-pipeline
+const DB_NOISE_KEYS: &[&str] = &["id", "created_at", "updated_at", "_id", "_key", "_meta", "timestamp", "session_id", "project_id", "owner", "permissions"];
+
+pub(crate) fn compress_db_json(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Object(map) => {
+            let mut out = serde_json::Map::new();
+            for (k, v) in map {
+                if DB_NOISE_KEYS.contains(&k.as_str()) { continue; }
+                out.insert(k.clone(), compress_db_json(v));
+            }
+            serde_json::Value::Object(out)
+        }
+        serde_json::Value::Array(arr) => serde_json::Value::Array(arr.iter().map(compress_db_json).collect()),
+        _ => value.clone(),
+    }
+}
+
+pub(crate) fn compress_db_json_string(json_str: &str) -> String {
+    let parsed: serde_json::Value = match serde_json::from_str(json_str) {
+        Ok(v) => v,
+        Err(_) => return json_str.to_owned(),
+    };
+    let compressed = compress_db_json(&parsed);
+    serde_json::to_string(&compressed).unwrap_or_else(|_| json_str.to_owned())
+}
+
+pub(crate) fn compress_db_rows(rows: &[serde_json::Value], max_rows: usize) -> Vec<serde_json::Value> {
+    let capped = if rows.len() > max_rows { &rows[..max_rows] } else { rows };
+    capped.iter().map(|r| compress_db_json(r)).collect()
+}
+    let deduped = deduplicate_lines(context);
+    compress(&deduped, None)
+}
