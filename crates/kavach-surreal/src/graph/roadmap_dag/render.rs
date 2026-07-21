@@ -79,7 +79,7 @@ impl RoadmapDag {
         let mut out = String::from("graph TD\n");
         for n in &kept {
             let id = dm_sanitize(&n.id);
-            let label = dm_escape(&n.title);
+            let label = dm_truncate(&n.title);
             let st = n.entry_status.to_uppercase();
             let cls = status_class(&n.entry_status);
             out.push_str("  ");
