@@ -78,7 +78,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         return Ok(());
     }
 
-    let carries_shell_command = input.tool_name != "Bash""Bash""Bash""Bash"
+    let carries_shell_command = input.tool_name != "Bash"
         && input.tool_input.as_ref().is_some_and(|ti| {
             ti.get("command")
                 .and_then(|v| v.as_str())
