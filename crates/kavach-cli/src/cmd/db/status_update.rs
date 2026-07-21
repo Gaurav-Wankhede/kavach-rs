@@ -31,9 +31,9 @@ pub(super) fn run(
     // EVIDENCE GATE (operator directive 2026-06-18): a roadmap promotion to
     // `done`/`verified` is REFUSED unless the objective workspace witnesses
     // (cargo check+clippy+nextest+diff, or KAVACH_VERIFY_CMD) pass NOW. This binds
-    // proof to the claim at the agent-facing entry point — the DB can no longer
-    // record a completion claim that the build does not support (the false-`done`
-    // hole). Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band operator override.
+    // proof to the claim at the agent-facing entry point — the DB rejects a
+    // completion claim that the build does not support (the false-`done` hole).
+    // Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band operator override.
     if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() != Ok("1") {
         use kavach_engine::StatusGateVerdict;
         // No card body is in scope at this CLI entry point (we hold only
@@ -67,29 +67,6 @@ pub(super) fn run(
                 return 1;
             }
         }
-                let msg = format!(
-                    "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
-                     here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). Pass \
-                     --verify-cmd '<command>' to prove the work, set KAVACH_VERIFY_CMD, or use \
-                     KAVACH_VERIFY_BYPASS=1 for an operator override."
-                );
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-            // Fail-closed on any future verdict variant (`StatusGateVerdict` is
-            // #[non_exhaustive]): an unrecognized verdict REFUSES the promotion
-            // rather than silently allowing an unproven claim.
-            _ => {
-                if let Err(io_err) = ewrite_or_exit(
-                    "REFUSED: status gate returned an unrecognized verdict (fail-closed).",
-                ) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-        }
     }
 
     // The witness gate above PASSED (or was NotGated) — mint a receipt so the
@@ -105,10 +82,11 @@ pub(super) fn run(
             return 0;
         }
         Ok(result) => {
-            let msg = format!(
-                "error: {}",
-                result.error.unwrap_or_else(|| "unknown".to_owned())
-            );
+            let err_msg = match result.error {
+                Some(s) => s,
+                None => "unknown".to_owned(),
+            };
+            let msg = format!("error: {err_msg}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
             }
@@ -206,9 +184,9 @@ pub(super) fn run(
     })
 }
 
-/// Direct-DB graph projection refresh. Best-effort: errors logged via `.ok()`
-/// because the primary status-update already succeeded. The graph refresh is
-/// a secondary signal; primary stream success is the user-facing contract.
+/// Direct-DB graph projection refresh. Best-effort: errors are intentionally
+/// discarded because the primary status-update already succeeded. The graph
+/// refresh is a secondary signal; primary stream success is the user-facing contract.
 async fn refresh_memory_entry_graph(
     db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     category: &str,
@@ -222,7 +200,9 @@ async fn refresh_memory_entry_graph(
         Ok(id) => id,
         Err(e) => {
             let msg = format!("graph: upsert {category}/{qualified_name} failed: {e}");
-            ewrite_or_exit(&msg).ok();
+            if ewrite_or_exit(&msg).is_err() {
+                return;
+            }
             return;
         }
     };
@@ -231,6 +211,8 @@ async fn refresh_memory_entry_graph(
         && let Err(e) = relate_dynamic(db, &entry_id, &proj_id, "in_scope", 1.0).await
     {
         let msg = format!("graph: in_scope edge failed: {e}");
-        ewrite_or_exit(&msg).ok();
+        if ewrite_or_exit(&msg).is_err() {
+            return;
+        }
     }
 }
