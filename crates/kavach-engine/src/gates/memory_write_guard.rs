@@ -16,7 +16,7 @@ pub(crate) fn is_memory_file(file_path: &str) -> bool {
     if file_path.ends_with("MEMORY.md") || file_path.ends_with("/memory.md") {
         return true;
     }
-    if file_path.contains("/memory/") && (file_path.ends_with(".md") || file_path.ends_with(".txt")) {
+    if file_path.contains("/memory/") && (std::path::Path::new(file_path).extension().is_some_and(|ext| ext.eq_ignore_ascii_case("md")) || std::path::Path::new(file_path).extension().is_some_and(|ext| ext.eq_ignore_ascii_case("txt"))) {
         return true;
     }
     false
