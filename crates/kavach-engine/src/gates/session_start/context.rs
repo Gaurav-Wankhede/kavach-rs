@@ -127,6 +127,14 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     let budget = resolve_section_budget(&session.project);
 
     // Auto memory query: inject project context from kavach-db
+    // DB results are compressed to strip noise fields before appending.
+    if !session.project.is_empty()
+        && let Some(mem_ctx) = auto_query_memory(&session.project)
+    {
+        let compressed = crate::gates::context_compress::compress_db_json_string(&mem_ctx);
+        context.push_str(&compressed);
+        session.memory_queried = true;
+    }
     if !session.project.is_empty()
         && let Some(mem_ctx) = auto_query_memory(&session.project)
     {
