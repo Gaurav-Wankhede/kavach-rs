@@ -3,6 +3,8 @@
 // SOURCE: https://docs.rs/strum/0.28 — MemoryStatus uses strum EnumString + EnumIter.
 use kavach_types::MemoryStatus;
 use std::str::FromStr as _;
+use kavach_engine::StatusGateVerdict;
+use std::str::FromStr as _;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
