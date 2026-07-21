@@ -1,4 +1,4 @@
-use super::format::{dm_escape, dm_sanitize, status_class, status_rank};
+use super::format::{dm_escape, dm_sanitize, dm_truncate, status_class, status_rank};
 use super::model::{DagNode, RoadmapDag, TopoOrder};
 
 impl RoadmapDag {
