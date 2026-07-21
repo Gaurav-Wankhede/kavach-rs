@@ -61,7 +61,7 @@ pub(crate) fn check(
             };
         }
     }
-    // Internet-first is a P0 LAW: a research-required production write with no cited
+    // Internet-first is a P1 ADVISORY: a research-required production write with no cited
     // source is BLOCKED at write time (fail-closed). Runs FIRST — no source, no claim,
     // no other guard even evaluated. The gate still drives the lookup so the agent can
     // cite + retry immediately. Carve-outs (test/non-code/local-analysis/bypass) inside.
