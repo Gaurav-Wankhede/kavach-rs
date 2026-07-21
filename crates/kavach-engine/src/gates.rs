@@ -55,7 +55,7 @@ pub mod post_tool_task;
 pub mod post_write;
 pub mod post_write_checks;
 pub mod pre_compact;
-pub mod pre_tool;
+pub mod pre_tool;pub(crate) mod pre_tool_edit_guard;
 pub(crate) mod pre_tool_agent;
 pub mod pre_tool_bash;
 pub(crate) mod pre_tool_question;

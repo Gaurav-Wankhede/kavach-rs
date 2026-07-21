@@ -2,7 +2,7 @@ use kavach_types::HookInput;
 
 use crate::error::EngineError;
 use crate::gates::{
-    loop_guard, pre_tool_agent, pre_tool_bash, pre_tool_question, pre_tool_read,
+    loop_guard, pre_tool_agent, pre_tool_bash, pre_tool_edit_guard, pre_tool_question, pre_tool_read,
     pre_tool_search, pre_tool_skill, pre_tool_task, rule_eval,
 };
 
@@ -73,7 +73,12 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         session.save().ok();
     }
 
-    let carries_shell_command = input.tool_name != "Bash"
+    if let Some(deny) = pre_tool_edit_guard::check_edit_staleness(input) {
+        super::turn_relay::exit_pre_tool_deny(&deny);
+        return Ok(());
+    }
+
+    let carries_shell_command = input.tool_name != "Bash""Bash"
         && input.tool_input.as_ref().is_some_and(|ti| {
             ti.get("command")
                 .and_then(|v| v.as_str())
