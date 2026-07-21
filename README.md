@@ -68,7 +68,10 @@ AI coding agents are powerful but **stateless between sessions** and easily slip
 <tr><td>Writes memory it never reads back</td><td><strong>Brain-OS auto-recall</strong> injects relevant memory into every prompt</td></tr>
 <tr><td>Claims "latest version" from stale weights</td><td><strong>Internet-first</strong> — installed pinned from the lockfile, latest fetched from the registry</td></tr>
 <tr><td>Fabricates a CLI subcommand/flag that doesn't exist</td><td><strong>No-fabrication recovery</strong> — a failed <code>kavach</code> call routes to <code>kavach commands --tree</code>/<code>--help</code>; a stale binary triggers <code>just install</code></td></tr>
-<tr><td>Context rots as verbose injections re-enter every turn</td><td><strong>Injection compaction</strong> — every gate injection is compressed at the emit chokepoint (grammar dropped, code/URLs/tokens preserved byte-for-byte)</td></tr>
+<tr><td>Context rots as verbose injections re-enter every turn</td><td><strong>Injection compaction</strong> — every gate injection is compressed at the emit chokepoint (grammar dropped, code/URLs/tokens preserved byte-for-byte); SurrealDB→LLM pipeline compressed at source</td></tr>
+<tr><td>Context rots as DB query results inflate every prompt</td><td><strong>DB-output compression</strong> — <code>compress_db_json_string</code> + <code>compress_db_rows</code> compact Brain-OS memory before it reaches the LLM</td></tr>
+<tr><td>Repeats the same failed tool call in a loop</td><td><strong>Anti-loop guard</strong> — <code>pre_tool.rs</code> detects repeated identical calls and forces root-cause analysis before retry</td></tr>
+<tr><td><code>old_string not found</code> → retries with stale content</td><td><strong>Edit staleness guard</strong> — <code>pre_tool_edit_guard.rs</code> blocks stale edits and demands a re-read</td></tr>
 <tr><td>Reads a gate denial as "BLOCKED", surrenders, ships nothing</td><td><strong>Action-imperative verdicts</strong> — every denial reads <code>[KEYWORD] what → do-this → retry</code> plus a <code>[NEXT_ACTION]</code> trailer; a verdict is a redirect, never a dead end</td></tr>
 </table>
 </div>
