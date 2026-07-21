@@ -104,7 +104,7 @@ fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
     let Ok(rel) = path.strip_prefix(base) else {
         return None;
     };
-    let rel_str = rel.to_str().map(|s| s.replace('\\', "/"))?;
+    let rel_str = match rel.to_str() {
         Some(s) => s.replace('\\', "/"),
         None => return None,
     };
@@ -112,7 +112,7 @@ fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
         .parent()
         .and_then(|p| p.to_str())
         .map_or_else(String::new, |s| s.replace('\\', "/"));
-    let name = path.file_stem().and_then(|s| s.to_str()).map(|n| n.to_owned())?;
+    let name = match path.file_stem().and_then(|s| s.to_str()) {
         Some(n) => n.to_owned(),
         None => return None,
     };

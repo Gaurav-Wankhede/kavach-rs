@@ -21,7 +21,8 @@ pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
             }
         }
     };
-    match super::super::rpc_client::kanban_close(project_slug, key, receipt) {
+// SOURCE: https://rust-lang.github.io/rustc/lints/listing/allowed-by-default.html
+    match super::super::rpc_client::kanban_close(project_slug, key, Some(receipt)) {
         Ok(result) if result.success => {
             let ok = format!(
                 "closed [roadmap] {} (via rpc daemon)",
