@@ -8,7 +8,7 @@ const CHARS_PER_TOKEN: usize = 4;
 
 pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
     let max = max_tokens.unwrap_or(DEFAULT_MAX_TOKENS);
-    let max_chars = max * CHARS_PER_TOKEN;
+    let max_chars = max.saturating_mul(CHARS_PER_TOKEN);
     if context.len() <= max_chars {
         return context.to_owned();
     }
