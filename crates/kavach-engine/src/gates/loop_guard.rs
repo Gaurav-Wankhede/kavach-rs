@@ -14,5 +14,5 @@ mod inspection;
 #[cfg(test)]
 #[path = "loop_guard_test.rs"]
 mod tests;
-pub(crate) use detect::check_bash_loop;
+pub(crate) use detect::{check_bash_loop, check_tool_loop, record_tool_call};
 pub(crate) use history::record_command;
