@@ -179,7 +179,11 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: OversizedAction,
     },
-    /// Build and query the Tailwind Plus component index
+    /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
+    #[command(
+        after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
+    )]
+    Doctor,
     TailwindPlus {
         #[command(subcommand)]
         action: TailwindPlusAction,
