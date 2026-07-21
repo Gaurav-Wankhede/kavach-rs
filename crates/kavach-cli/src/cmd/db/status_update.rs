@@ -3,8 +3,6 @@
 // SOURCE: https://docs.rs/strum/0.28 — MemoryStatus uses strum EnumString + EnumIter.
 use kavach_types::MemoryStatus;
 use std::str::FromStr as _;
-use kavach_engine::StatusGateVerdict;
-use std::str::FromStr as _;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
@@ -33,38 +31,52 @@ pub(super) fn run(
     // EVIDENCE GATE (operator directive 2026-06-18): a roadmap promotion to
     // `done`/`verified` is REFUSED unless the objective workspace witnesses
     // (cargo check+clippy+nextest+diff, or KAVACH_VERIFY_CMD) pass NOW. This binds
-    // proof to the claim at the agent-facing entry point so the DB rejects an
-    // unproven completion claim (the false-`done` hole).
-use kavach_engine::StatusGateVerdict;
-    // No card body is in scope at this CLI entry point (we hold only
-    // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
-    // absent here; the WITNESS_ROOT env override + CWD discovery still apply
-    // inside the gate. A cross-repo card relies on its env/CWD here.
-    match kavach_engine::verify_status_promotion(category, status, "", verify_cmd) {
-        StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {}
-        StatusGateVerdict::RefusedWitnessFailed => {
-            let msg = format!(
-                "REFUSED: cannot promote [{category}] {key} -> {status}: workspace witnesses \
-                 FAILED (build/clippy/nextest/diff). Fix the implementation until it builds \
-                 and tests pass, then retry. (evidence-over-inference: a `{status}` claim must \
-                 be backed by a passing build, not self-report.)"
-            );
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
+    // proof to the claim at the agent-facing entry point — the DB can no longer
+    // record a completion claim that the build does not support (the false-`done`
+    // hole). Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band operator override.
+    if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() != Ok("1") {
+        use kavach_engine::StatusGateVerdict;
+        // No card body is in scope at this CLI entry point (we hold only
+        // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
+        // absent here; the WITNESS_ROOT env override + CWD discovery still apply
+        // inside the gate. A cross-repo card relies on its env/CWD here.
+        match kavach_engine::verify_status_promotion(category, status, "", verify_cmd) {
+            StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {}
+            StatusGateVerdict::RefusedWitnessFailed => {
+                let msg = format!(
+                    "REFUSED: cannot promote [{category}] {key} -> {status}: workspace witnesses \
+                     FAILED (build/clippy/nextest/diff). Fix the implementation until it builds \
+                     and tests pass, then retry. (evidence-over-inference: a `{status}` claim must \
+                     be backed by a passing build, not self-report.)"
+                );
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
             }
-            return 1;
-        }
-        StatusGateVerdict::RefusedUnprovable => {
-            let msg = format!(
-                "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
-                 here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). For \
-                 non-Rust projects pass `--verify-cmd '<command>'` (e.g. \
-                 `cd frontend-astro && bun run build`) or set KAVACH_VERIFY_CMD."
-            );
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
+            StatusGateVerdict::RefusedUnprovable => {
+                let msg = format!(
+                    "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
+                     here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). Pass \
+                     --verify-cmd '<command>' to prove the work, set KAVACH_VERIFY_CMD, or use \
+                     KAVACH_VERIFY_BYPASS=1 for an operator override."
+                );
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
             }
-            return 1;
+            // Fail-closed on any future verdict variant (`StatusGateVerdict` is
+            // #[non_exhaustive]): an unrecognized verdict REFUSES the promotion
+            // rather than silently allowing an unproven claim.
+            _ => {
+                if let Err(io_err) = ewrite_or_exit(
+                    "REFUSED: status gate returned an unrecognized verdict (fail-closed).",
+                ) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
         }
     }
 
@@ -72,7 +84,6 @@ use kavach_engine::StatusGateVerdict;
     // daemon's RPC-boundary gate accepts the promotion (it re-validates HEAD+freshness).
     let receipt = super::rpc_client::mint_receipt();
     // RPC-first: try daemon, fall back to direct DB on unavailable
-// SOURCE: https://rust-lang.github.io/rustc/lints/listing/allowed-by-default.html
     match super::rpc_client::status_update(project_slug, category, key, status, Some(receipt)) {
         Ok(result) if result.success => {
             let msg = format!("status applied: [{category}] {key} -> {status} (via rpc)");
