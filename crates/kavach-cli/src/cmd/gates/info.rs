@@ -43,7 +43,7 @@ pub(super) fn print_gate_info(gate_name: &str) -> i32 {
             let avail = "available: pre-write, post-write, pre-tool, post-tool, intent, \
 subagent-start, subagent-stop, session-start, session-end, pre-compact, stop, \
 post-tool-failure, permission, permission-request, notification, message-display, \
-teammate-idle, task-completed, six-file-intent, pre-implementation, post-implementation";
+teammate-idle, task-completed,";
             if let Err(io_err) = ewrite_or_exit(avail) {
                 return into_exit_code(io_err);
             }

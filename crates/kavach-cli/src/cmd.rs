@@ -30,7 +30,6 @@ mod schema;
 mod security;
 mod servers;
 mod session;
-mod spec;
 mod status;
 mod tailwind_plus;
 mod tasks;
@@ -142,7 +141,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         }
         Commands::Pipeline { action } => pipeline::run(action),
         Commands::Security { action } => security::run(action),
-        Commands::Spec { action } => spec::run(action),
         Commands::Tasks { action } => tasks::run(action),
         Commands::Todos { action } => todos::run(action),
         Commands::Context {

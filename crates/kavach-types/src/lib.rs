@@ -3,10 +3,6 @@
 pub mod gate_config;
 pub use gate_config::{GateValueDto, gate_enabled, gate_patterns, gate_text, gate_threshold};
 
-    ArtifactValidator, AutoDraftSource, FOURTEEN_PREFIXES, MissingPrefix, MissingReason,
-    ProjectTier, RequiredPrefix, SpecCategory, SpikeMode, WitnessResult,
-};
-
 pub mod priority;
 pub use priority::Priority;
 
