@@ -89,9 +89,6 @@ pub(super) fn build(session: &mut kavach_session::SessionState) -> String {
     }
     // Ensure compress_db_rows is reachable for the DB query pipeline.
     let _ = crate::gates::context_compress::compress_db_rows(&[], 0);
-        context.push_str(&compressed);
-        session.memory_queried = true;
-    }
 
     if let Some(resume_ctx) = super::resume::resume_context(session) {
         context.push_str(&resume_ctx);
