@@ -51,9 +51,6 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
             eprintln!("compress: write failed: {e}");
         }
     }
-        let saved = context.len().saturating_sub(used) / CHARS_PER_TOKEN;
-        writeln!(output, "\n[COMPRESSED] {}B -> {}B ({saved} tokens saved)", context.len(), used).unwrap();
-    }
     output
 }
 
