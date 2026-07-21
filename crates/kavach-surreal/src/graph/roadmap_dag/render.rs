@@ -180,7 +180,7 @@ impl RoadmapDag {
             out.push_str("  ");
             out.push_str(&dm_sanitize(&n.id));
             out.push_str("[\"");
-            out.push_str(&dm_escape(&n.title));
+            out.push_str(&dm_truncate(&n.title));
             out.push_str(trust);
             out.push_str("\"]:::");
             out.push_str(status_class(&n.entry_status));
