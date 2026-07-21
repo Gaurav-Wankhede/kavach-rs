@@ -46,7 +46,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let enforcement = super::pre_write_enforcement::check(&ctx, input, &mut session);
 
     // Stage 3: Language guards (P0 blocks)
-    let guard_result = super::pre_write_guards::check(&ctx, input, &session);
+    let guard_result = super::pre_write_guards::check(&ctx, input, &mut session);
     if let Some(block) = guard_result.block {
         drop(kavach_hook::exit_pre_tool_deny(&block));
         return Ok(());

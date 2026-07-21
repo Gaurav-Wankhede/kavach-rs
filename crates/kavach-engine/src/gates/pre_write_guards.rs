@@ -31,7 +31,7 @@ use kavach_types::HookInput;
 pub(crate) fn check(
     ctx: &WriteContext<'_>,
     input: &HookInput,
-    session: &kavach_session::SessionState,
+    session: &mut kavach_session::SessionState,
 ) -> GuardResult {
     let mut acc = Acc::default();
     let mut runner = kavach_chain::Runner::new(&session.session_id);
