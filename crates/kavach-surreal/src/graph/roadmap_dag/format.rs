@@ -1,17 +1,22 @@
 pub(super) fn status_rank(status: &str) -> u8 {
-    match status {
-        "verified" => 0,
-        "active" | "done" => 1,
-        "todo" => 2,
-        _ => 3,
+    if status == "verified" {
+        0
+    } else if status == "active" || status == "done" {
+        1
+    } else if status == "todo" {
+        2
+    } else {
+        3
     }
 }
 
 pub(super) fn status_class(status: &str) -> &'static str {
-    match status {
-        "verified" | "active" | "done" => "done",
-        "todo" => "open",
-        _ => "draft",
+    if status == "verified" || status == "active" || status == "done" {
+        "done"
+    } else if status == "todo" {
+        "open"
+    } else {
+        "draft"
     }
 }
 
@@ -51,6 +56,4 @@ pub(super) fn dm_truncate(label: &str) -> String {
     }
     out.push_str("…");
     out
-}
-    label.replace('"', "&quot;").replace(['\n', '\r'], " ")
 }
