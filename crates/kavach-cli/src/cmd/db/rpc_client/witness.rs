@@ -8,11 +8,7 @@ pub(crate) fn mint_receipt() -> kavach_patterns::witness_receipt::Receipt {
     let ts_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
-    kavach_patterns::witness_receipt::Receipt::new(
-        true, head, ts_ms, session_id,
-    )
-        true, head, ts_ms, session_id,
-    )
+    Some(kavach_patterns::witness_receipt::Receipt::new(
         true, head, ts_ms, session_id,
     ))
 }
