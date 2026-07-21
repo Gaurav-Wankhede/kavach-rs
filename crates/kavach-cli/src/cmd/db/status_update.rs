@@ -66,18 +66,6 @@ pub(super) fn run(
                 }
                 return 1;
             }
-        }
-                let msg = format!(
-                    "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
-                     here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). Pass \
-                     --verify-cmd '<command>' to prove the work, set KAVACH_VERIFY_CMD, or use \
-                     KAVACH_VERIFY_BYPASS=1 for an operator override."
-                );
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
             // Fail-closed on any future verdict variant (`StatusGateVerdict` is
             // #[non_exhaustive]): an unrecognized verdict REFUSES the promotion
             // rather than silently allowing an unproven claim.
