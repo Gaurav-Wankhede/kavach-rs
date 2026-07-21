@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-const DEFAULT_MAX_TOKENS: usize = 1_200;const HARD_CAP_TOKENS: usize = 2_000;
+const DEFAULT_MAX_TOKENS: usize = 1_200;#[expect(dead_code)]const HARD_CAP_TOKENS: usize = 2_000;
 const CHARS_PER_TOKEN: usize = 4;
 
 pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
