@@ -4,6 +4,30 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
 
+## [26.7.1] — 2026-07-21
+
+Context-rot hardening release: six-file system retired, SurrealDB→LLM pipeline compressed, global anti-loop enforcement, and session-start injection diet.
+
+### Added
+
+- **SurrealDB→LLM context compression** — `kavach-surreal::context_compress` module with `compress_db_json_string()` and `compress_db_rows()`: every Brain-OS memory row and DB query result bound for agent context is compacted (dedup keys, drop nulls, collapse arrays, trim whitespace) before injection. Kills the primary context-rot vector from verbose DB payloads.
+- **Pre-compact / post-compact gates** — lifecycle hooks that compress context before it reaches any PreGate (pre-write, pre-tool, intent) and after PostToolUse, ensuring the LLM never sees uncompressed DB output.
+- **Global anti-loop rule** — `pre_tool.rs` tracks the last N tool calls per session; a repeated identical command (same tool + same arguments) triggers `[LOOP_DETECTED]` → forces a root-cause check (`kavach doctor` / `kavach audit`) before the tool is allowed to fire again. Prevents the "same edit retry" death spiral.
+- **Edit staleness guard** — `pre_tool_edit_guard.rs` intercepts `Edit` tool calls where `old_string` no longer matches the on-disk file (detected via `READ_HASH_MISMATCH`), emits `[EDIT_STALE] Re-read file → retry with current content`, and blocks the edit. Eliminates the `old_string not found` loop class.
+- **`dm_truncate()`** — Mermaid diagram labels in roadmap DAG output are truncated to 60 characters, preventing oversized Mermaid blocks from inflating context.
+
+### Changed
+
+- **Six-file context system retired** — the `app_spec` memory table and all six-file-context injection code removed from `kavach-engine` and `kavach-surreal`. The six-file skill (`six-file-context` under `~/.claude/skills/`) is no longer loaded at runtime. Projects previously using six-file context now rely on Brain-OS `auto_query_memory()` + compressed DB rows.
+- **Research gate severity: P0 → P1** — missing research evidence now emits an advisory (`[RESEARCH:PENDING]`) instead of a hard block, allowing the agent to proceed while surfacing the citation gap. The advisory still demands a `// SOURCE: <url>` line on the next write.
+- **AUTONOMY_CONTRACT compressed 77%** — `crates/kavach-engine/src/gates/session_start/context.rs` line 14: the ~1,200-byte multi-line session-start contract is now a single 280-byte imperative line. Same semantics, fewer tokens injected every session start.
+- **Context Compression Engine default: Ultra** — all gate injections now flow through `compact_inject` at Ultra level (grammar stripped, code/URLs/file:line preserved byte-for-byte) as a default property, not an opt-in.
+
+### Fixed
+
+- **Loop-on-denial bug** — when a gate denial (e.g., `[RESEARCH_EVIDENCE]`) was triggered, the executor previously re-ran the same tool call verbatim instead of acting on the verdict's `[NEXT_ACTION]` trailer. The anti-loop guard now detects this pattern and forces a corrective action before retry.
+- **Context rot from SurrealDB interactions** — DB query results (kanban cards, decisions, patterns) were injected raw into LLM context, consuming 400–2,000 tokens per query. Now compressed at the source before gate injection.
+
 ## [26.7.0] — 2026-07-06
 
 Context-rot engineering release: injection compaction blended into every gate,
