@@ -78,6 +78,7 @@ impl Default for SessionState {
             subagent_action_pending: false,
             subagent_action_turn: 0,
             recent_commands: Vec::new(),
+            recent_tool_calls: Vec::new(),
             test_files_pending: Vec::new(),
             test_nudge_count: 0,
             case_facts: Vec::new(),
