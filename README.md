@@ -369,7 +369,9 @@ A SurrealDB store holds durable state across sessions, scoped per project:
 - **research** — findings from web searches, cached
 - **patterns** — gate false-positive fixes, learned over time
 - **roadmap** — kanban-style task tracking (the kanban is a status lens over this)
-- **app_spec** — six-file project context
+- **app_spec** — project application specifications (retired in 26.7.1; use Brain-OS auto_query_memory + compressed DB rows)
+
+All access is RPC-routed through the in-process `kavach-rpc` layer to the SurrealDB server — **no crate opens the database directly**, preserving the single-writer invariant.
 
 All access is RPC-routed through the in-process `kavach-rpc` layer to the SurrealDB server — **no crate opens the database directly**, preserving the single-writer invariant.
 
