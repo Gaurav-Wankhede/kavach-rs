@@ -1,4 +1,5 @@
-pub(crate) fn mint_receipt() -> Option<kavach_patterns::witness_receipt::Receipt> {
+// SOURCE: https://rust-lang.github.io/rustc/lints/listing/allowed-by-default.html
+pub(crate) fn mint_receipt() -> kavach_patterns::witness_receipt::Receipt {
     let head = git_head();
     let session_id = {
         let s = kavach_session::get_or_create_session().session_id;
