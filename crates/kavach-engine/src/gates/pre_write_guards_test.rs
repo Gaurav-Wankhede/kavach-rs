@@ -82,8 +82,8 @@ fn tdd_missing_test_advises_but_does_not_block() {
         ("content".into(), serde_json::json!("pub fn build() -> i32 { 42 }\n")),
     ]));
     let ctx = WriteContext::extract(&input);
-    let session = kavach_session::SessionState::default();
-    let result = super::check(&ctx, &input, &session);
+    let mut session = kavach_session::SessionState::default();
+    let result = super::check(&ctx, &input, &mut session);
     assert!(
         result.block.is_none(),
         "missing test-first must NOT block — TDD is advisory"
@@ -108,8 +108,8 @@ fn guard_chain_blocks_silent_io_let_underscore() {
         ),
     ]));
     let ctx = WriteContext::extract(&input);
-    let session = kavach_session::get_or_create_session();
-    let result = super::check(&ctx, &input, &session);
+    let mut session = kavach_session::get_or_create_session();
+    let result = super::check(&ctx, &input, &mut session);
     assert!(
         result.block.is_some(),
         "silent-IO let _ = do_io() must P0-block in the guard chain"
