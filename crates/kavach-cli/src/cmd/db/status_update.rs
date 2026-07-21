@@ -33,7 +33,7 @@ pub(super) fn run(
     // (cargo check+clippy+nextest+diff, or KAVACH_VERIFY_CMD) pass NOW. This binds
     // proof to the claim at the agent-facing entry point so the DB rejects an
     // unproven completion claim (the false-`done` hole).
-    use kavach_engine::StatusGateVerdict;
+use kavach_engine::StatusGateVerdict;
     // No card body is in scope at this CLI entry point (we hold only
     // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
     // absent here; the WITNESS_ROOT env override + CWD discovery still apply
