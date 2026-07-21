@@ -148,6 +148,3 @@ pub(crate) fn compress_db_rows(rows: &[serde_json::Value], max_rows: usize) -> V
     let capped = if rows.len() > max_rows { &rows[..max_rows] } else { rows };
     capped.iter().map(|r| compress_db_json(r)).collect()
 }
-    let deduped = deduplicate_lines(context);
-    compress(&deduped, None)
-}
