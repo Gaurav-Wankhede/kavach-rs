@@ -42,7 +42,6 @@ with open(sys.argv[1], "r") as f:
     lines = f.readlines()
 
 with open(sys.argv[1], "w") as f:
-    skip = False
     for line in lines:
         if "pub mod six_file;" in line:
             continue
@@ -57,22 +56,18 @@ import sys
 with open(sys.argv[1], "r") as f:
     content = f.read()
 
-# Remove six-file gate match arms
 content = content.replace(
-        "six-file-intent" => {
+        """six-file-intent" => {
             "Six-file context: classify user intent against app_spec / roadmap scope"
-        },
-    "", 1)
+        },""", "")
 content = content.replace(
-        "pre-implementation" => {
+        """pre-implementation" => {
             "Six-file context: block IMPLEMENT until unit spec + dependencies are loaded"
-        },
-    "", 1)
+        },""", "")
 content = content.replace(
-        "post-implementation" => {
+        """post-implementation" => {
             "Six-file context: verify implementation against unit spec before marking done"
-        },
-    "", 1)
+        },""", "")
 content = content.replace(" six-file-intent, pre-implementation, post-implementation", "")
 
 with open(sys.argv[1], "w") as f:
@@ -90,8 +85,6 @@ with open(sys.argv[1], "w") as f:
         if "mod spec;" in line and "cli/spec.rs" not in line:
             continue
         if "pub(crate) use spec::SpecAction;" in line:
-            continue
-        if "Spec {" in line and "action: SpecAction" in lines[lines.index(line)+1] if lines.index(line)+1 < len(lines) else False:
             continue
         f.write(line)
 ' crates/kavach-cli/src/cli.rs

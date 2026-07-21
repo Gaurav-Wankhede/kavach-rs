@@ -115,4 +115,3 @@ pub mod worktree_remove;
 #[cfg(test)]
 pub(crate) mod duplicate_function_guard;
 pub(crate) mod research_guard;
-pub mod six_file;
