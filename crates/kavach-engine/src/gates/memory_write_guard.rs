@@ -8,7 +8,19 @@
 /// Returns false for agent-memory paths — subagents write structured
 /// per-agent memory under ~/.claude/agent-memory/<name>/ and those
 /// writes are intentional, not kavach-db bypass attempts.
+// SOURCE: kavach decision.memory-write-guard-path-fix
 pub(crate) fn is_memory_file(file_path: &str) -> bool {
+    if file_path.contains("agent-memory/") {
+        return false;
+    }
+    if file_path.ends_with("MEMORY.md") || file_path.ends_with("/memory.md") {
+        return true;
+    }
+    if file_path.contains("/memory/") && (file_path.ends_with(".md") || file_path.ends_with(".txt")) {
+        return true;
+    }
+    false
+}
     if file_path.contains("agent-memory/") {
         return false;
     }
