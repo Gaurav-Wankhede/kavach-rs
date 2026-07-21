@@ -23,7 +23,7 @@ pub(crate) use phase::PhaseAction;
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
-pub(crate) use tailwind_plus::TailwindPlusAction;
+pub(crate) use tasks::TasksAction;
 pub(crate) use tasks::TasksAction;
 pub(crate) use todos::TodosAction;
 // PipelineAction is defined inline in this file (initializer→subagent pipeline).
