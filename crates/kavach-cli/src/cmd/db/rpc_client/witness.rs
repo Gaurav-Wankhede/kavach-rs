@@ -10,7 +10,7 @@ pub(crate) fn mint_receipt() -> kavach_patterns::witness_receipt::Receipt {
         .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
     kavach_patterns::witness_receipt::Receipt::new(
         true, head, ts_ms, session_id,
-    ))
+    )
 }
 
 fn git_head() -> String {
