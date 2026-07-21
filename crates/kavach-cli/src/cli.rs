@@ -13,7 +13,6 @@ mod rules;
 mod security;
 mod session;
 mod tasks;
-mod tasks;
 mod todos;
 
 pub(crate) use db::DbAction;
@@ -23,7 +22,6 @@ pub(crate) use phase::PhaseAction;
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
-pub(crate) use tasks::TasksAction;
 pub(crate) use tasks::TasksAction;
 pub(crate) use todos::TodosAction;
 // PipelineAction is defined inline in this file (initializer→subagent pipeline).
@@ -178,15 +176,6 @@ pub(crate) enum Commands {
     Oversized {
         #[command(subcommand)]
         action: OversizedAction,
-    },
-    /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
-    #[command(
-        after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
-    )]
-    Doctor,
-    TailwindPlus {
-        #[command(subcommand)]
-        action: TailwindPlusAction,
     },
     /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
     #[command(
