@@ -90,7 +90,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Loophole { action } => dispatch_loophole(action),
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),
-        Commands::TailwindPlus { action } => tailwind_plus::run(action),
+        Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Update => update::run(),
         Commands::Audit {
