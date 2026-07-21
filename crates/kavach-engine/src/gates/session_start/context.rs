@@ -11,12 +11,7 @@ use super::stack_fit::stack_fit_context;
 
 const OPTIONAL_SECTION_BUDGET: usize = 1_200;
 
-const AUTONOMY_CONTRACT: &str = "[AUTONOMY_CONTRACT] Act→show→state. ORCHESTRATOR: DECIDE then FAN OUT read/write to cheap tier; verify returns. Same-turn: claim→fan out→3-witness→close. Loophole check before done. Research first (tabula rasa). No option menus, no 'over to you', no in_progress left behind.\n";"[AUTONOMY_CONTRACT] Act→show→state. ORCHESTRATOR: DECIDE then FAN OUT read/write to cheap tier; verify returns. Same-turn: claim→fan out→3-witness→close. Loophole check before done. Research first (tabula rasa). No option menus, no 'over to you', no in_progress left behind.\n";"[AUTONOMY_CONTRACT]\n\
-    Act, don't narrate: execute -> show output -> state result. You are the ORCHESTRATOR — DECIDE, then FAN OUT every read AND write task to the cheap executor tier; reserve your own tokens for the decision, never the labor. Verify the returned work; never hand the loop back to the user.\n\
-    Same-turn loop: claim card -> FAN OUT to a cheap-tier worker (Agent) or /workflow for the implement+verify labor -> 3-witness what it returns (artifact exists -> diff landed -> build passes) -> close, in ONE turn. You orchestrate and verify; the worker reads/edits/runs. Naming the next card commits you to FANNING IT OUT this turn.\n\
-    Loophole self-interrogation BEFORE any done/verified claim: ask \"how would a hostile/concurrent/malformed/crashed actor break this?\" and answer with file:line evidence, not optimism.\n\
-    Research before code (tabula rasa): WebSearch/read the source first; do not generate from training weights.\n\
-    Never end a turn with an option menu, \"over to you\", or a card left in_progress. Continue while runnable work exists.\n";
+const AUTONOMY_CONTRACT: &str = "[AUTONOMY_CONTRACT] Act→show→state. ORCHESTRATOR: DECIDE then FAN OUT read/write to cheap tier; verify returns. Same-turn: claim→fan out→3-witness→close. Loophole check before done. Research first (tabula rasa). No option menus, no 'over to you', no in_progress left behind.\n";
 
 fn truncate_section(s: &str, max: usize) -> String {
     if s.len() <= max {
