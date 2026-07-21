@@ -93,6 +93,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Update => update::run(),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
+        Commands::Update => update::run(),
+        Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Update => update::run(),
         Commands::Audit {
