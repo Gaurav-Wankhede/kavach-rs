@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt::Write;
 
 const DEFAULT_MAX_TOKENS: usize = 1_200;
 #[expect(dead_code, reason = "hard cap for future use")]
