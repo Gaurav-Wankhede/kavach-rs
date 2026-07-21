@@ -113,7 +113,8 @@ fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
         .parent()
         .and_then(|p| p.to_str())
         .map_or_else(String::new, |s| s.replace('\\', "/"));
-    let name = match path.file_stem().and_then(|s| s.to_str()) {
+// SOURCE: https://rust.code-maven.com/automatically-fixing-issues-in-rust
+    let name = path.file_stem().and_then(|s| s.to_str()).map(|n| n.to_owned())?;
         Some(n) => n.to_owned(),
         None => return None,
     };
