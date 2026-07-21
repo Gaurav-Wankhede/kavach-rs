@@ -12,7 +12,7 @@ pub(super) fn print_gate_info(gate_name: &str) -> i32 {
         "subagent-start" => "Subagent lifecycle start + budget injection",
         "subagent-stop" => "Subagent lifecycle stop + output tracking",
         "session-start" => {
-            "Session initialization: kanban inject, mistake patterns, six-file context"
+            "Session initialization: kanban inject, mistake patterns"
         }
         "session-end" => "Session end lifecycle hook + memory flush",
         "pre-compact" => "Pre-compact lifecycle hook — preserve state before context trim",
@@ -26,15 +26,6 @@ pub(super) fn print_gate_info(gate_name: &str) -> i32 {
         "message-display" => "MessageDisplay pass-through transform hook (CC 2.1.152)",
         "teammate-idle" => "Teammate idle detection and task reassignment",
         "task-completed" => "Task completion verification and memory sync",
-        "six-file-intent" => {
-            "Six-file context: classify user intent against app_spec / roadmap scope"
-        }
-        "pre-implementation" => {
-            "Six-file context: block IMPLEMENT until unit spec + dependencies are loaded"
-        }
-        "post-implementation" => {
-            "Six-file context: verify implementation against unit spec before marking done"
-        }
         other => {
             let msg = format!("unknown gate: {other}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
@@ -43,7 +34,7 @@ pub(super) fn print_gate_info(gate_name: &str) -> i32 {
             let avail = "available: pre-write, post-write, pre-tool, post-tool, intent, \
 subagent-start, subagent-stop, session-start, session-end, pre-compact, stop, \
 post-tool-failure, permission, permission-request, notification, message-display, \
-teammate-idle, task-completed,";
+teammate-idle, task-completed";
             if let Err(io_err) = ewrite_or_exit(avail) {
                 return into_exit_code(io_err);
             }
