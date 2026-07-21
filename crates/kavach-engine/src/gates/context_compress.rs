@@ -19,7 +19,10 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
     for (section, score) in &scored {
         if *score >= 90 {
             let needed = section.content.len();
-            if used + needed > max_chars { break; }
+            if used.saturating_add(needed) > max_chars { break; }
+            output.push_str(&section.header);
+            output.push_str(&section.content);
+            used = used.saturating_add(needed).saturating_add(section.header.len());
             output.push_str(&section.header);
             output.push_str(&section.content);
             used += needed + section.header.len();
