@@ -5,18 +5,7 @@ use crate::gates::{
     loop_guard, pre_tool_agent, pre_tool_bash, pre_tool_question, pre_tool_read,
     pre_tool_search, pre_tool_skill, pre_tool_task, rule_eval,
 };
-    pre_tool_agent, pre_tool_bash, pre_tool_question, pre_tool_read, pre_tool_search,
-    pre_tool_skill, pre_tool_task, rule_eval,
-};
 
-/// Rate-limited per-turn quality nudge for the generic tool-allow path.
-///
-/// Returns `Some(advisory)` at most once per `reinforce_every_n` turn window
-/// (reusing the purpose-built `needs_reinforcement`/`mark_reinforcement_done`
-/// turn-window limiter) so it can NEVER spam: ≤1 fire per turn, and only on the
-/// Nth-turn boundary. Returns `None` on every other call. The nudge restates the
-/// same-turn autonomy contract as a soft advisory — no block, no control-flow
-/// change. SOURCE: gate-severity policy §default-advisory + §no-spam budget.
 fn perturn_nudge(session: &mut kavach_session::SessionState) -> Option<String> {
     if !session.needs_reinforcement() {
         return None;
@@ -31,7 +20,6 @@ fn perturn_nudge(session: &mut kavach_session::SessionState) -> Option<String> {
     ))
 }
 
-/// Helper to format rule context and apply nudge if needed.
 fn apply_rule_context_and_nudge(
     rule_results: &[kavach_rule_engine::RuleResult],
     session: &mut kavach_session::SessionState,
@@ -45,11 +33,8 @@ fn apply_rule_context_and_nudge(
     if ctx.is_empty() { None } else { Some(ctx) }
 }
 
-/// Handle default tool in default arm: check rule engine output and enforce blocks.
 fn handle_unmatched_tool(input: &HookInput, mut session: kavach_session::SessionState) {
     let rule_results = rule_eval::evaluate_rules(input);
-
-    // Check if any rule produced a Block action. If so, fail-closed: deny.
     let worst = kavach_rule_engine::RuleEngine::worst_action(&rule_results);
     if worst == kavach_rule_engine::RuleAction::Block {
         let reason = rule_eval::results_to_context(&rule_results);
@@ -60,7 +45,6 @@ fn handle_unmatched_tool(input: &HookInput, mut session: kavach_session::Session
         };
         super::turn_relay::exit_pre_tool_deny(&deny_reason);
     } else {
-        // Warn and Allow/other: both allow relay, with optional context/nudge.
         let mut ctx = apply_rule_context_and_nudge(&rule_results, &mut session);
         if let Some(fan) = super::fanout_advisory::nudge(&mut session, &input.tool_name) {
             ctx = Some(match ctx {
@@ -72,15 +56,19 @@ fn handle_unmatched_tool(input: &HookInput, mut session: kavach_session::Session
     }
 }
 
-/// Pre-tool umbrella gate: bash blocklist + read validation + subagent budget.
-/// Runs before any tool use (except Write/Edit which go through pre-write).
 #[expect(clippy::too_many_lines, reason = "single linear gate-dispatch chain")]
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
-    // MCP / shell-proxy tools that carry a raw `command` must run the destructive
-    // blocklist too — else `rm -rf /` through an MCP tool (tool_name="MCP: …")
-    // falls into the `_` allow arm and bypasses the Bash guard entirely.
-    // The `command` field is the security-critical signal, not the tool name.
-    // SOURCE: loophole audit (cursor-edge), runtime-proven via beforeMCPExecution.
+    let tool_input_json = input.tool_input.as_ref().map(|ti| ti.to_string()).unwrap_or_default();
+    {
+        let mut session = kavach_session::get_or_create_session();
+        if let Some(block_reason) = loop_guard::check_tool_loop(&session, &input.tool_name, &tool_input_json) {
+            super::turn_relay::exit_pre_tool_deny(&block_reason);
+            return Ok(());
+        }
+        loop_guard::record_tool_call(&mut session, &input.tool_name, &tool_input_json);
+        session.save().ok();
+    }
+
     let carries_shell_command = input.tool_name != "Bash"
         && input.tool_input.as_ref().is_some_and(|ti| {
             ti.get("command")
@@ -128,15 +116,10 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         _ => {
             let mut session = kavach_session::get_or_create_session();
             let cfg = kavach_config::load_gates_config();
-            // Block Agent tool when research required but not done (with read-only carve-out).
-            // See decision.engine.agent_research_requirement.
             let intent_is_local_analysis = matches!(
                 session.intent_type.as_str(),
                 "audit" | "analyze" | "explain" | "read" | "review" | "explore"
             );
-            // CARVE-OUT 2: read_only agents (research-director, Explore, code-reviewer,
-            // spec-author, context-curator) CAN be spawned to PERFORM the research.
-            // Blocking them creates a deadlock where research can't be done.
             let agent_is_read_only = input.tool_name == "Agent" && {
                 let agent_type = input
                     .tool_input
@@ -169,7 +152,6 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&reason));
                 return Ok(());
             }
-            // Advisory: remind model about pending research — fire once per intent window.
             if cfg.research.enabled
                 && !session.research_done
                 && !session.research_topic.is_empty()
