@@ -102,6 +102,8 @@ fn is_component_file(path: &Path) -> bool {
 // SOURCE: https://github.com/rust-lang/rust-clippy/issues/17386
 #[expect(clippy::question_mark, reason = "false positive: suggested ? doesn't compile in this context")]
 fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
+#[expect(clippy::question_mark, reason = "false positive: suggested ? doesn't compile in this context")]
+fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
 fn build_record(base: &Path, path: &Path) -> Option<serde_json::Value> {
     let Ok(rel) = path.strip_prefix(base) else {
         return None;
