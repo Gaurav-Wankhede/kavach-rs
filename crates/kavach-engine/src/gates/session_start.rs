@@ -51,6 +51,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         gui::ensure_gui_up();
     }
     let context = context::build(&mut session);
+    let compressed = super::context_compress::compress_hook_context(&context);
     super::event_log::log_session(
         &session.session_id,
         "session_start",
@@ -58,7 +59,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         &session.project,
     );
     drop(kavach_hook::exit_session_start_full(
-        &context,
+        &compressed,
         true,
         &state::session_title(&session),
     ));

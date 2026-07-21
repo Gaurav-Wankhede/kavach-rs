@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-const DEFAULT_MAX_TOKENS: usize = 2_000;
+const DEFAULT_MAX_TOKENS: usize = 1_200;const HARD_CAP_TOKENS: usize = 2_000;
 const CHARS_PER_TOKEN: usize = 4;
 
 pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
@@ -35,7 +35,7 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
     for (section, score) in &scored {
         if *score >= 40 && *score < 70 {
             let remaining = max_chars.saturating_sub(used);
-            if remaining < 100 { break; }
+            if remaining < 200 { break; }
             let truncated = truncate_to_budget(&section.content, remaining);
             output.push_str(&section.header);
             output.push_str(&truncated);

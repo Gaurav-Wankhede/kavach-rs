@@ -7,7 +7,7 @@ pub(crate) mod attention_guard;
 pub(crate) mod bandit;
 pub(crate) mod bulk_event;
 pub(crate) mod completion_guard;
-pub mod config_change;
+pub mod config_change;pub mod context_compress;
 pub mod cwd_changed;
 pub(crate) mod directive_cache;
 pub(crate) mod duplicate_tool_guard;
