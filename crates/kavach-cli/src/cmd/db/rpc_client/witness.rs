@@ -12,6 +12,8 @@ pub(crate) fn mint_receipt() -> kavach_patterns::witness_receipt::Receipt {
         true, head, ts_ms, session_id,
     )
         true, head, ts_ms, session_id,
+    )
+        true, head, ts_ms, session_id,
     ))
 }
 
