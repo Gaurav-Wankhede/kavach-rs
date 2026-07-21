@@ -2,6 +2,9 @@ use kavach_types::HookInput;
 
 use crate::error::EngineError;
 use crate::gates::{
+    loop_guard, pre_tool_agent, pre_tool_bash, pre_tool_question, pre_tool_read,
+    pre_tool_search, pre_tool_skill, pre_tool_task, rule_eval,
+};
     pre_tool_agent, pre_tool_bash, pre_tool_question, pre_tool_read, pre_tool_search,
     pre_tool_skill, pre_tool_task, rule_eval,
 };
