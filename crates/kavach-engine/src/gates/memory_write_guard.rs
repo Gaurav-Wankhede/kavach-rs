@@ -21,13 +21,6 @@ pub(crate) fn is_memory_file(file_path: &str) -> bool {
     }
     false
 }
-    if file_path.contains("agent-memory/") {
-        return false;
-    }
-    file_path.contains("/memory/")
-        || file_path.ends_with("MEMORY.md")
-        || file_path.ends_with("/memory.md")
-}
 
 /// Generate the block message for memory file writes.
 pub(crate) fn block_message(file_path: &str) -> String {
