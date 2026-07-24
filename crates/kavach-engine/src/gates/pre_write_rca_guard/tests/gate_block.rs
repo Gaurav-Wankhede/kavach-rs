@@ -108,7 +108,9 @@ fn blocks_empty_message_when_session_flag_false() {
 
 #[test]
 fn blocked_message_uses_rca_first_vocabulary() {
-    let result = check("Edit", "debug", "high", "", false, "src/lib.rs");
+    let result = temp_env::with_var(BYPASS_ENV, None::<&str>, || {
+        check("Edit", "debug", "high", "", false, "src/lib.rs")
+    });
     let reason = result.unwrap_or_default();
     assert!(reason.contains("[RCA_FIRST]"));
     assert!(reason.contains("why-chain→root_cause"));
