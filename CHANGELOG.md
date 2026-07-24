@@ -6,7 +6,7 @@ and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the
 
 ## [26.7.1] — 2026-07-21
 
-Context-rot hardening release: six-file system retired, SurrealDB→LLM pipeline compressed, global anti-loop enforcement, and session-start injection diet.
+Context-rot hardening release: six-file gate code fully removed, SurrealDB→LLM pipeline compressed, global anti-loop enforcement, and session-start injection diet.
 
 ### Added
 
@@ -18,7 +18,7 @@ Context-rot hardening release: six-file system retired, SurrealDB→LLM pipeline
 
 ### Changed
 
-- **Six-file context system retired** — the `app_spec` memory table and all six-file-context injection code removed from `kavach-engine` and `kavach-surreal`. The six-file skill (`six-file-context` under `~/.claude/skills/`) is no longer loaded at runtime. Projects previously using six-file context now rely on Brain-OS `auto_query_memory()` + compressed DB rows.
+- **Six-file gate code fully removed** — the orphaned `gates/six_file/` directory (23 files) and `gate_runner/six_file_gates.rs` dispatcher deleted. `kavach-types::six_file` renamed to `spec_types` (preserving `ProjectTier`, `FOURTEEN_PREFIXES`, `SpecCategory`, `AutoDraftSource` for CLI). The six-file skill is no longer referenced. Projects now rely on Brain-OS `auto_query_memory()` + compressed DB rows + SurrealDB graph traversal.
 - **Research gate severity: P0 → P1** — missing research evidence now emits an advisory (`[RESEARCH:PENDING]`) instead of a hard block, allowing the agent to proceed while surfacing the citation gap. The advisory still demands a `// SOURCE: <url>` line on the next write.
 - **AUTONOMY_CONTRACT compressed 77%** — `crates/kavach-engine/src/gates/session_start/context.rs` line 14: the ~1,200-byte multi-line session-start contract is now a single 280-byte imperative line. Same semantics, fewer tokens injected every session start.
 - **Context Compression Engine default: Ultra** — all gate injections now flow through `compact_inject` at Ultra level (grammar stripped, code/URLs/file:line preserved byte-for-byte) as a default property, not an opt-in.
