@@ -57,7 +57,7 @@ fn build_rules() -> Vec<DbRule> {
 }
 
 fn build_set_re() -> String {
-    ["(?i)\\bSET\\s+app\\.", "(?!.*LOCAL)"].concat()
+    "(?i)\\bSET\\s+app\\.".to_owned()
 }
 fn build_update_re() -> String {
     // Match UPDATE...SET — we'll check for missing WHERE in check()
@@ -113,6 +113,9 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
                 continue;
             }
             if r.cat == "SELECT_NO_LIMIT" && (ll.contains("limit") || ll.contains("take(")) {
+                continue;
+            }
+            if r.cat == "SET_WITHOUT_LOCAL" && ll.contains("local") {
                 continue;
             }
             let entry = format!("  L{}: {} — {}", i.saturating_add(1), r.cat, r.fix);
