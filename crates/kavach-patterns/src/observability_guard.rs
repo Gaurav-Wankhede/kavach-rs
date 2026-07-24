@@ -41,14 +41,14 @@ pub struct ObsViolation {
     pub fix: &'static str,
 }
 
-pub(crate) static PATTERNS: LazyLock<Vec<Option<Regex>>> = LazyLock::new(|| {
+pub(crate) static PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
     vec![
-        Regex::new(r"(?s)(?:pub\s+)?async\s+fn\s+\w+\s*\([^)]*(?:State|Path|Json|Query|Extension)[^)]*\)[^{]*\{").ok(),
-        Regex::new(r#"tracing::(?:error|warn)!\s*\(\s*"[^"]*"\s*\)"#).ok(),
-        Regex::new(r#"(?:counter|histogram|gauge)!\s*\(\s*"[^"]*\{[^}]*\}"#).ok(),
-        Regex::new(r"(?s)\b(?:for|while)\b[^{]{0,200}\{[^}]{0,400}?tracing::(?:info|debug|trace)!").ok(),
-        Regex::new(r"\b(?:println|eprintln|dbg)!\s*\(").ok(),
-        Regex::new(r"\.map_err\(\|_\|\s*[^)]+\)").ok(),
+        Regex::new(r"(?s)(?:pub\s+)?async\s+fn\s+\w+\s*\([^)]*(?:State|Path|Json|Query|Extension)[^)]*\)[^{]*\{").expect("static regex"),
+        Regex::new(r#"tracing::(?:error|warn)!\s*\(\s*"[^"]*"\s*\)"#).expect("static regex"),
+        Regex::new(r#"(?:counter|histogram|gauge)!\s*\(\s*"[^"]*\{[^}]*\}"#).expect("static regex"),
+        Regex::new(r"(?s)\b(?:for|while)\b[^{]{0,200}\{[^}]{0,400}?tracing::(?:info|debug|trace)!").expect("static regex"),
+        Regex::new(r"\b(?:println|eprintln|dbg)!\s*\(").expect("static regex"),
+        Regex::new(r"\.map_err\(\|_\|\s*[^)]+\)").expect("static regex"),
     ]
 });
 
@@ -85,7 +85,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<ObsViolation> {
         content.contains("#[tracing::instrument") || content.contains("info_span!");
     if PATTERNS
         .first()
-        .is_some_and(|opt| opt.as_ref().is_some_and(|p| p.is_match(content)))
+        .is_some_and(|re| re.is_match(content))
         && !has_instrument
     {
         v.push(ObsViolation { severity: ObsSeverity::P1Advisory,
@@ -94,7 +94,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<ObsViolation> {
     }
     if PATTERNS
         .get(1)
-        .is_some_and(|opt| opt.as_ref().is_some_and(|p| p.is_match(content)))
+        .is_some_and(|re| re.is_match(content))
     {
         v.push(ObsViolation { severity: ObsSeverity::P2Warning,
             pattern: "tracing-no-structured-fields",
@@ -102,7 +102,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<ObsViolation> {
     }
     if PATTERNS
         .get(2)
-        .is_some_and(|opt| opt.as_ref().is_some_and(|p| p.is_match(content)))
+        .is_some_and(|re| re.is_match(content))
     {
         v.push(ObsViolation { severity: ObsSeverity::P1Advisory,
             pattern: "metric-high-cardinality",
@@ -110,7 +110,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<ObsViolation> {
     }
     if PATTERNS
         .get(3)
-        .is_some_and(|opt| opt.as_ref().is_some_and(|p| p.is_match(content)))
+        .is_some_and(|re| re.is_match(content))
     {
         v.push(ObsViolation { severity: ObsSeverity::P1Advisory,
             pattern: "tracing-in-hot-loop",
@@ -118,7 +118,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<ObsViolation> {
     }
     if PATTERNS
         .get(4)
-        .is_some_and(|opt| opt.as_ref().is_some_and(|p| p.is_match(content)))
+        .is_some_and(|re| re.is_match(content))
     {
         v.push(ObsViolation { severity: ObsSeverity::P2Warning,
             pattern: "println-in-prod",
@@ -126,7 +126,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<ObsViolation> {
     }
     if PATTERNS
         .get(5)
-        .is_some_and(|opt| opt.as_ref().is_some_and(|p| p.is_match(content)))
+        .is_some_and(|re| re.is_match(content))
     {
         v.push(ObsViolation { severity: ObsSeverity::P1Advisory,
             pattern: "map-err-loses-context",

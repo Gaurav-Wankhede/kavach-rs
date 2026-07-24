@@ -38,21 +38,32 @@ pub async fn relate_concepts(
     if from_name.is_empty() || to_name.is_empty() {
         return Err(Error::Migration("concept names cannot be empty".into()));
     }
-    let q = format!(
-        "BEGIN TRANSACTION; \
-         LET $src = (UPSERT entity SET entity_type = 'concept', name = $from_name, \
-             updated_at = time::now() WHERE entity_type = 'concept' AND name = $from_name \
-             RETURN id)[0].id; \
-         LET $tgt = (UPSERT entity SET entity_type = 'concept', name = $to_name, \
-             updated_at = time::now() WHERE entity_type = 'concept' AND name = $to_name \
-             RETURN id)[0].id; \
-         RELATE $src->{edge}->$tgt SET weight = 1.0; \
-         COMMIT TRANSACTION;"
-    );
-    db.query(q)
+    let src_q = "UPSERT entity SET entity_type = 'concept', name = $from_name, \
+                 updated_at = time::now() WHERE entity_type = 'concept' AND name = $from_name \
+                 RETURN id";
+    let tgt_q = "UPSERT entity SET entity_type = 'concept', name = $to_name, \
+                 updated_at = time::now() WHERE entity_type = 'concept' AND name = $to_name \
+                 RETURN id";
+    let src_row: Option<serde_json::Value> = db
+        .query(src_q)
         .bind(("from_name", from_name.to_owned()))
+        .await?
+        .take(0)?;
+    let src_id = src_row
+        .and_then(|v| v.get("id").cloned())
+        .ok_or_else(|| Error::Migration(format!("concept '{from_name}' not found after upsert")))?;
+    let tgt_row: Option<serde_json::Value> = db
+        .query(tgt_q)
         .bind(("to_name", to_name.to_owned()))
         .await?
-        .check()?;
+        .take(0)?;
+    let tgt_id = tgt_row
+        .and_then(|v| v.get("id").cloned())
+        .ok_or_else(|| Error::Migration(format!("concept '{to_name}' not found after upsert")))?;
+    let relate_q = format!("RELATE $src->{edge}->$tgt SET weight = 1.0");
+    db.query(relate_q)
+        .bind(("src", src_id))
+        .bind(("tgt", tgt_id))
+        .await?;
     Ok(())
 }

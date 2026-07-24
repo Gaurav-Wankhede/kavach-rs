@@ -84,9 +84,9 @@ fn parse_sections(context: &str) -> Vec<Section> {
 fn score_section(section: &Section) -> u8 {
     let h = section.header.to_ascii_lowercase();
     if h.contains("[autonomy_contract]") || h.contains("[memory_guard]") || h.contains("[reconcile]") || h.contains("[case_facts") { return 100; }
-    if h.contains("[kanban]") || h.contains("[intent]") || h.contains("[session_start]") || h.contains("[pre_compact]") || h.contains("[post_compact]") { return 80; }
+    if h.contains("[kanban]") || h.contains("[intent]") || h.contains("[session_start]") || h.contains("[pre_compact]") || h.contains("[post_compact]") || h.contains("[temporal_awareness]") || h.contains("[memory_db]") { return 80; }
     if h.contains("[practice_delta]") || h.contains("[decision_map]") || h.contains("[pattern_dag]") || h.contains("[carry_forward]") || h.contains("[research:") { return 60; }
-    if h.contains("[hot_patterns]") || h.contains("[mistake_ledger]") || h.contains("[learned_policy]") || h.contains("[flow]") || h.contains("[stack_fit]") || h.contains("[kavach_lld]") || h.contains("[zero_grep_tools]") { return 30; }
+    if h.contains("[hot_patterns]") || h.contains("[mistake_ledger]") || h.contains("[learned_policy]") || h.contains("[flow]") || h.contains("[stack_fit]") || h.contains("[lld]") || h.contains("[zero_grep_tools]") { return 30; }
     50
 }
 

@@ -1,0 +1,65 @@
+Founder of Kavach | AI Solution Architect & Software Developer | Rust, GenAI
+
+
+Building AI-powered development tools that enforce engineering discipline and make agents self-improving.
+
+
+What I'm Building:
+
+
+Kavach – A self-improving development harness for AI coding agents, written entirely in Rust. A single binary that hooks into every lifecycle event of Claude Code, Codex, and Cursor — enforcing discipline through gates, maintaining persistent cross-session memory (Brain-OS), and learning from every mistake via a knowledge graph. Runs 20 specialized Rust crates with zero unsafe code. Uses SurrealDB (local server at 127.0.0.1:7710) for durable state with RocksDB on-disk storage. Implements action-imperative verdicts — every gate denial carries the exact next step, never a dead end. Open source, MIT licensed.
+
+
+Key capabilities:
+• Lifecycle gates that block anti-patterns (permission-seeking, skipped research, half-finished work, fabricated commands)
+• Brain-OS: vectorless, explainable memory retrieval with BM25 full-text search and Reciprocal Rank Fusion
+• Autonomous harness loop: classifies tasks into 6 workflow patterns (fan-out-synthesize, worker-critic, loop-until-done, etc.)
+• 3-witness verify: blocks completion until artifact exists, diff landed, and build passes
+• Context engineering: three-level injection compaction (Lite/Full/Ultra) that strips grammar while preserving code spans byte-for-byte
+• Self-healing pipeline: captures CI failures as cards, auto-fixes, and merge-gates the repair
+• Cross-IDE support: one binary, one shared memory bank, three harnesses — vendor-aware payload lowering and native dialect rendering
+• RLAIHF loop: off-policy evaluation and reward-hacking audit for gate policies
+
+
+AegisIDE – An AI-enhanced development environment with persistent memory, reinforcement learning, and autonomous decision-making. Features an 8-schema memory system that retains context across sessions and learns from past errors. Evolving into a cross-IDE desktop application.
+
+
+Core Expertise:
+
+
+AI & Machine Learning: Generative AI, NLP, Computer Vision, Agentic AI workflows, Context Engineering, Reinforcement Learning
+
+Backend Development: Rust (Axum, SurrealDB, RocksDB), RPC architectures, Systems Programming
+
+DevOps: Docker, GitHub Actions, Cloud Deployment (Vercel, Shuttle)
+
+
+What I Offer:
+
+
+Custom AI solutions and automation workflows
+
+AI-powered development tools and IDE integrations
+
+Technical consultation and architecture design
+
+Code reviews and optimization strategies
+
+
+Beyond Code:
+
+
+Creator of TECHVERSE YouTube channel, breaking down complex AI concepts into practical tutorials for developers and learners at every level. My journey through intensive examination preparation taught me to synthesize vast knowledge systems into actionable frameworks — a skill that now powers my approach to building scalable AI architectures.
+
+
+Let's collaborate on building intelligent systems that solve real-world problems.
+
+
+Portfolio: https://gaurav-wankhede.vercel.app
+
+GitHub: https://github.com/Gaurav-Wankhede
+
+YouTube: https://youtube.com/@GauravWankhede-TECHVERSE
+
+
+#ArtificialIntelligence #Rust #Kavach #OpenSource #MachineLearning #ContextEngineering #AgenticAI

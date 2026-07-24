@@ -42,9 +42,10 @@ pub async fn search_concepts_fts(
         return Ok(Vec::new());
     }
     let limit = clamp_limit(limit);
-    let q = "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
-             WHERE entity_type = 'concept' AND properties.description @@ $q \
-             LIMIT $limit";
+    let q = "SELECT id, entity_type, name, properties, content_hash, project, \
+             search::score(0) AS sc FROM entity \
+             WHERE entity_type = 'concept' AND properties.description @0@ $q \
+             ORDER BY sc DESC LIMIT $limit";
     let mut resp = db
         .query(q)
         .bind(("q", query.to_owned()))
