@@ -27,8 +27,9 @@ fn destructive_cli(command: &str) -> Option<Decision> {
     let hit = kavach_patterns::destructive_cli_guard::inspect(command)?;
     let msg = |verb: &str| {
         format!(
-            "{verb} [{:?}/{}]: {} — canonical: `{}`",
-            hit.category, hit.pattern, hit.fix, hit.canonical
+            "{verb} [{:?}/{}]: {} — canonical: `{}`\n\
+             NEXT ACTION: {}",
+            hit.category, hit.pattern, hit.fix, hit.canonical, hit.fix
         )
     };
     match hit.severity {
@@ -52,8 +53,10 @@ fn bypass_advisories(command: &str) -> Option<Decision> {
         if targets_tracked_source(command) {
             return Some(Decision::Deny(
                 "[WRITE_BYPASS] Writing a tracked SOURCE file via Bash bypasses the pre-write \
-                 research / anti-pattern gate -> use the Write or Edit tool so the gate can \
-                 mediate the change, not python/sed/redirects -> retry."
+                 research / anti-pattern gate.\n\
+                 NEXT ACTION: Use the Write or Edit tool so the gate can mediate the change.\n\
+                 For targeted edits: `sg` to find the function, then `sd` to replace.\n\
+                 For full rewrites: use the Write tool directly."
                     .to_owned(),
             ));
         }
@@ -90,14 +93,18 @@ fn bulk_op_advisory(command: &str) -> Option<Decision> {
 /// psql hard-block + sqlx-migrate RCA advisory.
 fn db_blocks(command: &str) -> Option<Decision> {
     if let Some(reason) = check_psql_blocked(command) {
-        return Some(Decision::Deny(reason));
+        return Some(Decision::Deny(format!(
+            "{reason}\n\
+             NEXT ACTION: Use `kavach db query-raw --query 'SELECT ...'` instead of psql."
+        )));
     }
     // `sqlx migrate run` against a shared DB requires an [RCA] this turn.
     // Override KAVACH_LOCAL_DB=1 for tests.
     let session = kavach_session::get_or_create_session();
     if let Some(reason) = check_sqlx_migrate_requires_rca(command, session.rca_satisfied()) {
         return Some(Decision::Allow(Some(format!(
-            "[ADVISORY:sqlx-migrate-rca] {reason}"
+            "[ADVISORY:sqlx-migrate-rca] {reason}\n\
+             NEXT ACTION: Run `kavach heal capture --incident <name>` to record the RCA, then retry."
         ))));
     }
     None
