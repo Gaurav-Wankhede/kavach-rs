@@ -39,7 +39,7 @@ fn edit_populates_effective_content_with_full_file_body() {
     std::fs::remove_dir(&dir).ok();
 }
 
-// The catch-22 fix: an Edit that ADDS the //kavach:nano-file-exempt marker as a
+// The catch-22 fix: an Edit that ADDS an exempt marker as a
 // new first line must surface that marker in the post-edit body — else you could
 // never add it to an already-oversize file (the edit adding it would be blocked
 // because the marker isn't present yet). SOURCE: mistake.edit-effective-content-*.

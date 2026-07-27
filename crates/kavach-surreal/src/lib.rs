@@ -1,6 +1,6 @@
 // hub: crate root — module declarations + public re-export surface only, no logic.
 // A re-export hub aggregates the crate's public API; it cannot decompose without a
-// mod.rs (which the nano-file rule forbids), so it carries the hub exemption.
+// mod.rs (which the legacy layout used), so it carries the hub exemption.
 // SOURCE: https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#result_large_err
 // Reason: surrealdb::Error is enum-driven and large by design; boxing the entire
 // `Result<T, Error>` chain would touch every public API. Pre-existing latent lints

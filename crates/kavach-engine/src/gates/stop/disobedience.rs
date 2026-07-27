@@ -4,11 +4,8 @@
 use core::ops::ControlFlow;
 use super::shared::StopCtx;
 /// Refuses the stop when this turn's message argued an imperative away (dismissal
-/// vocab + imperative marker + no obey-proof). Bypass: `KAVACH_DISOBEY_BYPASS=1`.
+/// vocab + imperative marker + no obey-proof).
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if std::env::var_os("KAVACH_DISOBEY_BYPASS").is_some() {
-        return ControlFlow::Continue(());
-    }
     let msg = ctx.input.last_assistant_message.trim();
     // Floor + graph overlay: the compiled DISMISSAL/MARKER/OBEYED lists are the
     // fail-soft floor; the project's gate.disobedience_vocab DB row ADDS phrases on

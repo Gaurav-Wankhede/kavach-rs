@@ -1,7 +1,4 @@
-// kavach:nano-file-exempt — RPC registration hub: a flat linear aggregator of
-// register_async_method calls. It cannot decompose into a hub+leaf tree (the
-// RpcModule is built in one pass); each verb is one ~6-line stanza.
-// split: intentional - RpcModule construction wiring all method namespaces
+// RPC registration hub: a flat linear aggregator of register_async_method calls.
 use crate::error::{internal, invalid_params};
 use crate::methods::{
     brain, bridge, bulk, change, citation, concept, db, db_harness, decisions, events,

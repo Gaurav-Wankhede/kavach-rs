@@ -102,9 +102,8 @@ pub async fn write(ctx: &AppState, params: WriteParams) -> Result<WriteResult, E
         });
     }
 
-    if std::env::var_os("KAVACH_EXEC_PROMPT_BYPASS").is_none()
-        && let Some(reason) =
-            exec_prompt_gate::blocked(&params.category, is_new, params.exec_prompt.as_deref())
+    if let Some(reason) =
+        exec_prompt_gate::blocked(&params.category, is_new, params.exec_prompt.as_deref())
     {
         return Ok(WriteResult {
             success: false,

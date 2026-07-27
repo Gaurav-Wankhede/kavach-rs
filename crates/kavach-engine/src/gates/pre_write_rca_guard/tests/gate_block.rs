@@ -1,6 +1,6 @@
 //! `check` block-path tests: gated intents/risks without an RCA must block, and
-//! the negative cases of the bypass/bulk-sweep escapes.
-use super::super::bypass::{BULK_SWEEP_ENV, BYPASS_ENV};
+//! the negative case of the bulk-sweep escape.
+use super::super::bypass::BULK_SWEEP_ENV;
 use super::super::check;
 
 #[test]
@@ -28,21 +28,6 @@ fn bulk_sweep_env_empty_string_does_not_activate() {
     assert!(
         result.is_some(),
         "empty BULK_SWEEP_ENV must not authorize — gate must still demand RCA"
-    );
-}
-
-#[test]
-fn bypass_env_var_other_values_dont_activate() {
-    let result_zero = temp_env::with_var(BYPASS_ENV, Some("0"), || {
-        check("Edit", "implement", "medium", "", false, "src/lib.rs")
-    });
-    let result_true = temp_env::with_var(BYPASS_ENV, Some("true"), || {
-        check("Edit", "implement", "medium", "", false, "src/lib.rs")
-    });
-    assert!(result_zero.is_some(), "value '0' must not bypass");
-    assert!(
-        result_true.is_some(),
-        "value 'true' must not bypass — only literal '1'"
     );
 }
 
@@ -108,9 +93,7 @@ fn blocks_empty_message_when_session_flag_false() {
 
 #[test]
 fn blocked_message_uses_rca_first_vocabulary() {
-    let result = temp_env::with_var(BYPASS_ENV, None::<&str>, || {
-        check("Edit", "debug", "high", "", false, "src/lib.rs")
-    });
+    let result = check("Edit", "debug", "high", "", false, "src/lib.rs");
     let reason = result.unwrap_or_default();
     assert!(reason.contains("[RCA_FIRST]"));
     assert!(reason.contains("why-chain→root_cause"));

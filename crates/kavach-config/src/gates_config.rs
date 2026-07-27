@@ -6,6 +6,7 @@ use std::collections::HashMap;
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct GatesConfig {
     #[serde(rename = "$schema", default)]
     pub schema: String,
@@ -39,6 +40,7 @@ pub struct GatesConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ModelRouteConfig {
     #[serde(default)]
     pub autoswitch: bool,
@@ -49,6 +51,7 @@ pub struct ModelRouteConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ReadConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -67,6 +70,7 @@ pub struct ReadConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct BashConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -83,6 +87,7 @@ pub struct BashConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct WriteConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -99,6 +104,7 @@ pub struct WriteConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct EnforcerConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -113,6 +119,7 @@ pub struct EnforcerConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct IntentConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -127,6 +134,7 @@ pub struct IntentConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ResearchConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -145,6 +153,7 @@ pub struct ResearchConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ContextConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -161,6 +170,7 @@ pub struct ContextConfig {
     reason = "cross-crate literal DTO; non_exhaustive => E0639"
 )]
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct QualityConfig {
     #[serde(default)]
     pub enabled: bool,

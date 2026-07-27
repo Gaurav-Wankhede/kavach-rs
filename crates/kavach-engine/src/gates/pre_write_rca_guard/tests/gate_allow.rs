@@ -1,6 +1,6 @@
 //! `check` allow-path tests: RCA present, session flag, exempt paths, low risk,
-//! non-gated intents/tools, and the bypass/bulk-sweep env escapes.
-use super::super::bypass::{BULK_SWEEP_ENV, BYPASS_ENV};
+//! non-gated intents/tools, and the bulk-sweep env escape.
+use super::super::bypass::BULK_SWEEP_ENV;
 use super::super::check;
 
 #[test]
@@ -95,14 +95,6 @@ fn allows_non_implement_intent() {
 fn allows_non_edit_tool() {
     assert!(check("Read", "debug", "high", "no rca", false, "src/lib.rs").is_none());
     assert!(check("Bash", "debug", "high", "no rca", false, "src/lib.rs").is_none());
-}
-
-#[test]
-fn bypass_env_var_allows_when_set() {
-    let result = temp_env::with_var(BYPASS_ENV, Some("1"), || {
-        check("Edit", "implement", "medium", "", false, "src/lib.rs")
-    });
-    assert!(result.is_none(), "bypass should allow even without [RCA]");
 }
 
 #[test]

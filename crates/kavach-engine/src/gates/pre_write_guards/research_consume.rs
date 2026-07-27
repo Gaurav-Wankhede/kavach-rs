@@ -46,9 +46,6 @@ pub(super) fn check(
     ctx: &WriteContext<'_>,
     session: &mut kavach_session::SessionState,
 ) -> Option<String> {
-    if std::env::var_os("KAVACH_RESEARCH_BYPASS").is_some() {
-        return None;
-    }
     if ctx.is_test || !ctx.is_code {
         return None;
     }

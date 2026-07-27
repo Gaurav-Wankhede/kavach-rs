@@ -47,6 +47,24 @@ pub async fn edit(Query(q): Query<EditQ>) -> Html<String> {
 
 /// `POST /entries/save` — persist title/content via `db.write` (update mode).
 pub async fn save(Form(f): Form<SaveForm>) -> Html<String> {
+    // Server-side validation: required fields within limits.
+    if f.project.is_empty() || f.project.len() > 256 {
+        return Html("Invalid project.".to_string());
+    }
+    if f.category.is_empty() || !["roadmap", "decision"].contains(&f.category.as_str()) {
+        return Html("Invalid category.".to_string());
+    }
+    if f.key.is_empty() || f.key.len() > 128 {
+        return Html("Invalid key.".to_string());
+    }
+    if f.title.is_empty() || f.title.len() > 512 {
+        return Html("Invalid title.".to_string());
+    }
+    // Content can be empty (explicit erase) but cap at 1MB.
+    if f.content.len() > 1_000_000 {
+        return Html("Content too large (max 1MB).".to_string());
+    }
+
     let params = json!({
         "project": f.project, "category": f.category, "key": f.key,
         "title": f.title, "content": f.content, "new": false, "update_key": f.key,
@@ -60,6 +78,20 @@ pub async fn save(Form(f): Form<SaveForm>) -> Html<String> {
 
 /// `POST /entries/status` — change a card's status via `db.status_update`.
 pub async fn status(Form(f): Form<StatusForm>) -> Html<String> {
+    // Server-side validation.
+    if f.project.is_empty() || f.project.len() > 256 {
+        return Html("Invalid project.".to_string());
+    }
+    if f.category.is_empty() || !["roadmap", "decision"].contains(&f.category.as_str()) {
+        return Html("Invalid category.".to_string());
+    }
+    if f.key.is_empty() || f.key.len() > 128 {
+        return Html("Invalid key.".to_string());
+    }
+    if f.status.is_empty() || f.status.len() > 32 {
+        return Html("Invalid status.".to_string());
+    }
+
     let params = json!({
         "project": f.project, "category": f.category, "key": f.key, "status": f.status,
     });

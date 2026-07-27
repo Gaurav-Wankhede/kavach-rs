@@ -165,6 +165,7 @@ fn is_blocked(entry: &TaskListEntry, status_by_id: &HashMap<&str, &str>) -> bool
 fn read_open_entries(root: &std::path::Path) -> Vec<TaskListEntry> {
     let mut out = Vec::new();
     let Ok(scopes) = std::fs::read_dir(root) else {
+        tracing::warn!(root = %root.display(), "tasklist: cannot read tasklist root");
         return out;
     };
     for scope in scopes.flatten() {
@@ -196,7 +197,13 @@ fn collect_dir(dir: &std::path::Path, out: &mut Vec<TaskListEntry>) {
 /// read or parse error so a single malformed file cannot abort the census.
 fn parse_entry(path: &std::path::Path) -> Option<TaskListEntry> {
     let bytes = std::fs::read(path).ok()?;
-    let raw: RawTaskListEntry = serde_json::from_slice(&bytes).ok()?;
+    let raw: RawTaskListEntry = match serde_json::from_slice(&bytes) {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!(path = %path.display(), error = %e, "tasklist: skipping malformed entry");
+            return None;
+        }
+    };
     Some(raw.into())
 }
 

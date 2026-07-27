@@ -10,14 +10,14 @@ use kavach_rpc::methods::roadmap::{
 };
 use kavach_rpc::state::AppState;
 
-fn dispatch_params(project_slug: &str) -> Result<NextOpenTaskParams, ()> {
+fn dispatch_params(project_slug: &str) -> Result<NextOpenTaskParams, String> {
     serde_json::from_value(serde_json::json!({
         "project": project_slug,
         "lane": std::env::var("KAVACH_LANE")
             .ok()
             .filter(|lane| !lane.is_empty()),
     }))
-    .map_err(|_| ())
+    .map_err(|e| format!("dispatch_params deserialization failed: {e}"))
 }
 
 fn task_to_json(task: &NextTaskResult) -> serde_json::Value {
@@ -30,26 +30,26 @@ fn task_to_json(task: &NextTaskResult) -> serde_json::Value {
     })
 }
 
-async fn open_state() -> Result<AppState, ()> {
+async fn open_state() -> Result<AppState, String> {
     let db = kavach_surreal::open_default_resilient()
         .await
-        .map_err(|_| ())?;
+        .map_err(|e| format!("SurrealDB open failed: {e}"))?;
     Ok(AppState::new(db))
 }
 
 /// Same selectors as [`super::rpc_next`], via embedded `SurrealDB`.
-pub(super) fn next(method: &str, project_slug: &str) -> Result<Option<serde_json::Value>, ()> {
-    let rt = tokio::runtime::Runtime::new().map_err(|_| ())?;
+pub(super) fn next(method: &str, project_slug: &str) -> Result<Option<serde_json::Value>, String> {
+    let rt = tokio::runtime::Runtime::new().map_err(|e| format!("runtime build failed: {e}"))?;
     rt.block_on(async {
         let state = open_state().await?;
         let params = dispatch_params(project_slug)?;
         let task = match method {
-            "roadmap.next_open_task" => next_open_task(&state, params).await.map_err(|_| ())?,
-            "roadmap.next_open_hunt" => next_open_hunt(&state, params).await.map_err(|_| ())?,
+            "roadmap.next_open_task" => next_open_task(&state, params).await.map_err(|e| format!("next_open_task failed: {e}"))?,
+            "roadmap.next_open_hunt" => next_open_hunt(&state, params).await.map_err(|e| format!("next_open_hunt failed: {e}"))?,
             "roadmap.promote_next_backlog" => {
-                promote_next_backlog(&state, params).await.map_err(|_| ())?
+                promote_next_backlog(&state, params).await.map_err(|e| format!("promote_next_backlog failed: {e}"))?
             }
-            _ => return Err(()),
+            _ => return Err(format!("unknown dispatch method: {method}")),
         };
         Ok(task.as_ref().map(task_to_json))
     })
@@ -78,18 +78,18 @@ pub(super) fn renew_my_leases() -> usize {
 }
 
 /// Direct census when RPC transport is down. `(runnable, blocked, cyclic)`.
-pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, ()> {
-    let rt = tokio::runtime::Runtime::new().map_err(|_| ())?;
+pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, String> {
+    let rt = tokio::runtime::Runtime::new().map_err(|e| format!("runtime build failed: {e}"))?;
     rt.block_on(async {
         let state = open_state().await?;
         let params = dispatch_params(project_slug)?;
-        let census = open_set_census(&state, params).await.map_err(|_| ())?;
+        let census = open_set_census(&state, params).await.map_err(|e| format!("census failed: {e}"))?;
         // Dispatch-reachable (roadmap-only) counts, matching `parse_census` on the
         // RPC path — never the TaskList-inflated totals, which would trap the loop.
         Ok(Some((
-            u64::try_from(census.roadmap_runnable).map_err(|_| ())?,
-            u64::try_from(census.roadmap_blocked).map_err(|_| ())?,
-            u64::try_from(census.roadmap_cyclic).map_err(|_| ())?,
+            u64::try_from(census.roadmap_runnable).map_err(|e| format!("roadmap_runnable conversion failed: {e}"))?,
+            u64::try_from(census.roadmap_blocked).map_err(|e| format!("roadmap_blocked conversion failed: {e}"))?,
+            u64::try_from(census.roadmap_cyclic).map_err(|e| format!("roadmap_cyclic conversion failed: {e}"))?,
         )))
     })
 }

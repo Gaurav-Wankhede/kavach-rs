@@ -1,5 +1,5 @@
-//! kavach:nano-file-exempt single clap `Subcommand` enum — the `db` command
-//! surface. One enum = one cohesive CLI contract; splitting variants across
+//! Single clap `Subcommand` enum — the `db` command surface.
+//! One enum = one cohesive CLI contract; splitting variants across
 //! files fragments the command definition with no reuse gain (clap derive
 //! needs them in one enum). Variant handlers live in `cmd/db/*` (already split).
 use clap::Subcommand;

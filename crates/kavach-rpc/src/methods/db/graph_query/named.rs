@@ -21,8 +21,7 @@ pub(super) async fn graph_query_named(
                 reason = "capacity estimation, operands bounded"
             )]
             let mut msg = String::with_capacity(etype.len() + n.len() + 26);
-            #[expect(clippy::expect_used, reason = "write to String never fails")]
-            write!(msg, "entity not found: {etype}/{n}").expect("write to String never fails");
+            let _ = write!(msg, "entity not found: {etype}/{n}").ok();
             return Ok(GraphQueryResult {
                 success: false,
                 lines: vec![],
@@ -51,21 +50,18 @@ pub(super) async fn graph_query_named(
         reason = "capacity estimation, operands bounded"
     )]
     let mut header = String::with_capacity(etype.len() + n.len() + 20);
-    #[expect(clippy::expect_used, reason = "write to String never fails")]
-    write!(header, "[{etype}] {n} (id={entity_id:?})").expect("write to String never fails");
+    let _ = write!(header, "[{etype}] {n} (id={entity_id:?})").ok();
     lines.push(header);
     if rows.is_empty() {
         lines.push("  (no edges)".to_owned());
     } else {
         for r in &rows {
             let mut line = String::with_capacity(64);
-            #[expect(clippy::expect_used, reason = "write to String never fails")]
-            write!(
+            let _ = write!(
                 line,
                 "  ──{}──► [{}] {}",
                 r.rel_type, r.target.entity_type, r.target.name
-            )
-            .expect("write to String never fails");
+            ).ok();
             lines.push(line);
         }
     }

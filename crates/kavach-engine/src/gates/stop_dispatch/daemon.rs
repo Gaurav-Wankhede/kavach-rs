@@ -67,10 +67,18 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
         if dbg {
             eprintln!("[rpc_next] spawn unavailable — trying direct `SurrealDB`");
         }
-        return direct::next(method, project_slug);
+        return direct::next(method, project_slug).map_err(|e| {
+            if dbg {
+                eprintln!("[rpc_next] direct::next error: {e}");
+            }
+        });
     }
-    for attempt in 0..20 {
-        std::thread::sleep(std::time::Duration::from_millis(500));
+    for attempt in 0..10 {
+        #[expect(
+            clippy::arithmetic_side_effects,
+            reason = "attempt is bounded 0..10, overflow impossible"
+        )]
+        std::thread::sleep(std::time::Duration::from_millis(250 * (attempt + 1)));
         match kavach_rpc::client::call::<_, serde_json::Value>(method, Some(params.clone())) {
             Ok(v) => {
                 if dbg {
@@ -85,7 +93,11 @@ pub(super) fn rpc_next(method: &str, project_slug: &str) -> Result<Option<serde_
     if dbg {
         eprintln!("[rpc_next] {method}: RPC exhausted — trying direct SurrealDB");
     }
-    direct::next(method, project_slug)
+    direct::next(method, project_slug).map_err(|e| {
+        if dbg {
+            eprintln!("[rpc_next] direct::next error: {e}");
+        }
+    })
 }
 
 /// RPC-ONLY census: a single bounded `kavach_rpc::client::call` (`UnixStream`
@@ -156,7 +168,10 @@ fn parse_census(v: &serde_json::Value) -> Option<(u64, u64, u64)> {
 pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, ()> {
     let params = serde_json::json!({ "project": project_slug });
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
-        .map_or_else(|_| direct::census(project_slug), |v| Ok(parse_census(&v)))
+        .map_or_else(
+            |_| direct::census(project_slug).map_err(|_| ()),
+            |v| Ok(parse_census(&v)),
+        )
 }
 
 #[cfg(test)]

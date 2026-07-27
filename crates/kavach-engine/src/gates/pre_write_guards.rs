@@ -82,7 +82,7 @@ pub(crate) fn check(
         })
         .or_else(|| {
             quality::presentation(ctx, &mut acc); // P1 css/ux/complexity
-            nanofile::nano_file(ctx, &mut acc) // P0/P1 nano-file
+            None
         })
         .or_else(|| {
             advisories::collect(ctx, &mut acc); // P2 algo/secrecy/alloc/a11y

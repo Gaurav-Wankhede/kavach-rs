@@ -32,7 +32,6 @@ mod servers;
 mod session;
 mod status;
 mod tasks;
-mod tasks;
 pub(crate) mod team;
 mod think;
 mod todos;
@@ -197,7 +196,7 @@ fn dispatch_origin(
     code
 }
 
-/// Dispatch `verify` — extracted to keep `dispatch` under the nano-file ceiling.
+/// Dispatch `verify` — extracted to keep `dispatch` readable.
 fn dispatch_verify(command: Commands) -> i32 {
     let Commands::Verify {
         project,
@@ -219,7 +218,7 @@ fn dispatch_verify(command: Commands) -> i32 {
 }
 
 /// Dispatch the `loophole` subcommands (sweep / loop / cron) — extracted from
-/// `dispatch` to keep that router under the 100-line nano-file ceiling.
+/// `dispatch` to keep that router readable.
 fn dispatch_loophole(action: crate::cli::LoopholeAction) -> i32 {
     use crate::cli::LoopholeAction;
     match action {

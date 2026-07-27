@@ -15,8 +15,7 @@
 //! Any one condition false → does NOT fire. Census `None` (RPC outage) →
 //! fail-OPEN (never wedge on an unobservable board). NEG-arm: narration that
 //! ACCOMPANIES real proof (`git diff --stat` / `cargo check` / an `rg` `file:line`
-//! / a `claim`/`status-update`) never fires. Escape: `KAVACH_DONE_GAMING_BYPASS=1`
-//! for a genuine doc-only deliverable turn (logged via the block being skipped).
+//! / a `claim`/`status-update`) never fires.
 use core::ops::ControlFlow;
 use std::path::Path;
 use kavach_patterns::stop_vocab::DoneGamingVocab;
@@ -63,8 +62,8 @@ fn has_gaming_language(vocab: &DoneGamingVocab, lc: &str, raw: &str) -> bool {
 }
 /// The block verdict (`Break`) when the three-condition AND holds; else `Continue`.
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    // Re-entrant stop (hook already active) and explicit bypass: never fire.
-    if ctx.input.stop_hook_active || std::env::var("KAVACH_DONE_GAMING_BYPASS").is_ok() {
+    // Re-entrant stop (hook already active): never fire.
+    if ctx.input.stop_hook_active {
         return ControlFlow::Continue(());
     }
     let raw = ctx.input.last_assistant_message.trim();

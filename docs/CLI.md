@@ -1853,19 +1853,6 @@ Resume a previous session
 
 Validate current session
 
-## `kavach spec`
-
-Manage specification artifacts (auto-draft)
-
-## `kavach spec auto-draft`
-
-Auto-draft a missing spec artifact
-
-| Flag | Description | Default |
-|---|---|---|
-| `<prefix>` | Prefix to draft (e.g. spec.prd, arch.api) |  |
-| `--project` | Project slug |  |
-
 ## `kavach status`
 
 Show session status, build identity, and enforcement flags
@@ -1876,14 +1863,6 @@ EXAMPLES:
 
 WHEN: session-start sanity check; confirms project slug and pending gates.
 ```
-
-## `kavach tailwind-plus`
-
-Build and query the Tailwind Plus component index
-
-## `kavach tailwind-plus index`
-
-Walk ~/.claude/tailwind-plus/, extract keywords, write index.json
 
 ## `kavach tasks`
 

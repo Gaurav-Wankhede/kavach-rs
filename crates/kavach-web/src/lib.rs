@@ -15,6 +15,7 @@ use std::path::PathBuf;
 
 use axum::Router;
 use axum::routing::{get, post};
+use axum::extract::DefaultBodyLimit;
 use tower_http::services::ServeDir;
 
 /// Default loopback port for the web UI. Unprivileged (>1024) so it binds
@@ -53,6 +54,7 @@ pub fn router() -> Router {
         .route("/entries/status", post(pages::editor::status))
         .route("/events", get(sse::events))
         .nest_service("/static", ServeDir::new(static_dir))
+        .layer(DefaultBodyLimit::max(2_000_000))
 }
 
 /// Resolve the static asset directory shipped alongside the crate.

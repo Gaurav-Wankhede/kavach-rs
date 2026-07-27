@@ -71,8 +71,7 @@ fn is_excluded(path: &str) -> bool {
         || path.contains("/tests/")
 }
 
-/// Intentional-ceiling markers shared with the nano-file PreWrite guard: a file
-/// the guard lets pass for a NAMED reason must not be re-flagged here.
+/// Intentional-ceiling markers: a file with a NAMED reason must not be re-flagged.
 const EXEMPT_MARKERS: [&str; 2] = ["// split:", "kavach:intentional"];
 
 pub(super) fn has_exempt_marker(path: &str) -> bool {

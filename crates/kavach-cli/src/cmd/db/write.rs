@@ -1,5 +1,5 @@
 // split: intentional — single CLI command handler with helper async fns
-//! kavach:nano-file-exempt one cohesive `kavach db write` command handler —
+//! One cohesive `kavach db write` command handler —
 //! validation + strict-mode dedup + atomic upsert + edge projection are a
 //! single transaction-shaped flow; splitting fragments the handler with no
 //! reuse gain. Pure helpers (similarity, protected-closure) already factored.

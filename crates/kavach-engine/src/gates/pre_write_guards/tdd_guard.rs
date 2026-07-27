@@ -1,22 +1,25 @@
 //! TDD pre-write gate: block production code unless its test came first (Red).
 //! Fast-path = the unit's test was touched earlier this turn, or the write
-//! carries an in-file `#[test]`. Escape: `KAVACH_TDD_BYPASS=1`.
+//! carries an in-file `#[test]`.
 use crate::gates::pre_write_context::WriteContext;
 /// `Some(reason)` blocks the write when production code lacks a test-first signal.
 pub(super) fn check(
     ctx: &WriteContext<'_>,
     session: &kavach_session::SessionState,
 ) -> Option<String> {
-    if std::env::var_os("KAVACH_TDD_BYPASS").is_some() {
-        return None;
-    }
     if !ctx.is_code || is_test_path(ctx.file_path) {
         return None;
     }
     // A comment/doc-only change (the written/edited text is all comments+blanks)
     // carries no executable code → exempt, so the comment sweep needs no per-file
     // test. Uses ctx.content (the changed text), not the whole post-edit file.
-    let current = std::fs::read_to_string(ctx.file_path).unwrap_or_default();
+    let current = match std::fs::read_to_string(ctx.file_path) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("[tdd_guard] failed to read {}: {e}", ctx.file_path);
+            String::new()
+        }
+    };
     if is_comment_only(ctx.content) || is_comment_only_added(ctx.content, &current) {
         return None;
     }

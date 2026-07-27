@@ -1,5 +1,5 @@
-//! `has_exempt_marker` honors the same intentional-ceiling markers as the live
-//! nano-file PreWrite guard, so a file the guard lets pass is not re-flagged here.
+//! `has_exempt_marker` honors intentional-ceiling markers so flagged files are
+//! not re-flagged by the oversized scan.
 use super::has_exempt_marker;
 use std::fs;
 
@@ -20,8 +20,8 @@ fn split_marker_is_exempt() {
 
 #[test]
 fn intentional_marker_is_exempt() {
-    // The marker the nano-file guard added (kavach:intentional) must also exempt
-    // a file from the oversized scan — the two gates stay consistent.
+    // The marker (kavach:intentional) must also exempt
+    // a file from the oversized scan — consistent behavior.
     let p = write_tmp(
         "intentional",
         "// kavach:intentional one exhaustive match\nfn x() {}\n",

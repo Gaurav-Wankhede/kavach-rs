@@ -33,8 +33,7 @@ pub(super) fn run(
     // (cargo check+clippy+nextest+diff, or KAVACH_VERIFY_CMD) pass NOW. This binds
     // proof to the claim at the agent-facing entry point — the DB rejects a
     // completion claim that the build does not support (the false-`done` hole).
-    // Set KAVACH_VERIFY_BYPASS=1 ONLY for an out-of-band operator override.
-    if std::env::var("KAVACH_VERIFY_BYPASS").as_deref() != Ok("1") {
+    {
         use kavach_engine::StatusGateVerdict;
         // No card body is in scope at this CLI entry point (we hold only
         // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
@@ -58,8 +57,7 @@ pub(super) fn run(
                 let msg = format!(
                     "REFUSED: cannot promote [{category}] {key} -> {status}: work is UNPROVABLE \
                      here (no Rust workspace and no --verify-cmd/KAVACH_VERIFY_CMD). Pass \
-                     --verify-cmd '<command>' to prove the work, set KAVACH_VERIFY_CMD, or use \
-                     KAVACH_VERIFY_BYPASS=1 for an operator override."
+                     --verify-cmd '<command>' to prove the work or set KAVACH_VERIFY_CMD."
                 );
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
@@ -82,10 +80,7 @@ pub(super) fn run(
             return 0;
         }
         Ok(result) => {
-            let err_msg = match result.error {
-                Some(s) => s,
-                None => "unknown".to_owned(),
-            };
+            let err_msg = result.error.unwrap_or_else(|| "unknown".to_owned());
             let msg = format!("error: {err_msg}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
@@ -212,7 +207,6 @@ async fn refresh_memory_entry_graph(
     {
         let msg = format!("graph: in_scope edge failed: {e}");
         if ewrite_or_exit(&msg).is_err() {
-            return;
         }
     }
 }

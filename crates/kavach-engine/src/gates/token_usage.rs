@@ -15,13 +15,31 @@ pub(super) fn extract_latest_token_usage(transcript_path: &str) -> Option<i32> {
         return None;
     }
     let path = std::path::Path::new(transcript_path);
-    let len = std::fs::metadata(path).ok()?.len();
+    let len = match std::fs::metadata(path) {
+        Ok(m) => m.len(),
+        Err(e) => {
+            eprintln!("[token_usage] cannot stat {}: {e}", path.display());
+            return None;
+        }
+    };
     let window: u64 = 64 * 1024;
     let offset = len.saturating_sub(window);
-    let mut file = std::fs::File::open(path).ok()?;
-    file.seek(SeekFrom::Start(offset)).ok()?;
+    let mut file = match std::fs::File::open(path) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("[token_usage] cannot open {}: {e}", path.display());
+            return None;
+        }
+    };
+    if file.seek(SeekFrom::Start(offset)).is_err() {
+        eprintln!("[token_usage] seek failed for {}", path.display());
+        return None;
+    }
     let mut buf = String::new();
-    file.take(window).read_to_string(&mut buf).ok()?;
+    if file.take(window).read_to_string(&mut buf).is_err() {
+        eprintln!("[token_usage] read failed for {}", path.display());
+        return None;
+    }
 
     let mut latest: Option<i32> = None;
     for line in buf.lines() {

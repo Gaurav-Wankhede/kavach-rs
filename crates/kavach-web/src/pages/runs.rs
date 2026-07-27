@@ -153,6 +153,10 @@ pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
 
 /// `POST /runs/cancel` — cancel a run by ID.
 pub async fn cancel(Form(form): Form<CancelForm>) -> Html<String> {
+    if form.id.is_empty() || form.id.len() > 64 {
+        return Html("Invalid run ID.".to_string());
+    }
+
     let result = match cancel_run(&form.id).await {
         Ok(resp) => {
             if resp.success {
@@ -169,10 +173,22 @@ pub async fn cancel(Form(form): Form<CancelForm>) -> Html<String> {
 
 /// `POST /runs/spawn` — spawn a new process run.
 pub async fn spawn(Form(form): Form<SpawnForm>) -> Html<String> {
+    // Server-side validation: required fields must be present and within limits.
+    if form.project.is_empty() || form.project.len() > 256 {
+        return Html("Invalid project identifier.".to_string());
+    }
+    if form.entry_key.is_empty() || form.entry_key.len() > 128 {
+        return Html("Invalid entry key.".to_string());
+    }
+    if form.command.is_empty() || form.command.len() > 512 {
+        return Html("Invalid command.".to_string());
+    }
+
     let args: Vec<String> = form
         .args
         .split([' ', ','])
         .filter(|s| !s.is_empty())
+        .take(32) // Limit to 32 args max
         .map(|s| s.to_owned())
         .collect();
 

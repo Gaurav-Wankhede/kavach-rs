@@ -9,12 +9,12 @@ mod transcript;
 mod tests;
 pub(in crate::gates) use detect::has_rca_block;
 pub(in crate::gates) use transcript::scan_transcript_for_rca;
-use bypass::{BYPASS_ENV, active_bulk_sweep, bypass_active};
+use bypass::active_bulk_sweep;
 use rules::{REQUIRES_RCA, is_rca_exempt_path, risk_requires_rca};
 /// Returns `Some(reason)` when the gate should block, `None` when allow.
 /// SOURCE: pattern matches existing `pre_write_*_guard.rs` return convention.
 /// `session_rca_present` carries persistent multi-turn signal from session state.
-/// Gate passes when EITHER session flag OR current message has `[RCA]` OR bypass env set OR exempt path.
+/// Gate passes when EITHER session flag OR current message has `[RCA]` OR active bulk sweep OR exempt path.
 pub(crate) fn check(
     tool_name: &str,
     intent_type: &str,
@@ -48,13 +48,13 @@ pub(crate) fn check(
          SOURCE: CLAUDE.md §RCA."
     ))
 }
-/// True when an active bulk sweep or break-glass bypass authorizes this edit.
-/// Both emit a structured stderr audit line (the hook engine's log channel).
+/// True when an active bulk sweep authorizes this edit.
+/// Emits a structured stderr audit line (the hook engine's log channel).
 #[expect(
     clippy::print_stderr,
     reason = "hook engine has no tracing dep; stderr is the hook log channel"
 )]
-fn bypass_allows(tool_name: &str, intent_type: &str, intent_risk: &str, file_path: &str) -> bool {
+fn bypass_allows(tool_name: &str, _intent_type: &str, _intent_risk: &str, file_path: &str) -> bool {
     // Bulk-mode: a manifest signed at sweep boundary (kavach bulk start, with
     // explicit user approval) carries the shared RCA + scope_glob + fix_strategy.
     // Per-Edit we skip the RCA demand; post-write emits bulk_apply tagged with
@@ -62,13 +62,6 @@ fn bypass_allows(tool_name: &str, intent_type: &str, intent_risk: &str, file_pat
     if let Some(sweep_id) = active_bulk_sweep() {
         eprintln!(
             "[KAVACH_BULK] sweep={sweep_id} authorizes edit (tool={tool_name}, file={file_path})"
-        );
-        return true;
-    }
-    // Break-glass: caller is expected to log the bypass via post-tool audit hook.
-    if bypass_active() {
-        eprintln!(
-            "[KAVACH_AUDIT] RCA gate bypassed via {BYPASS_ENV}=1 (intent={intent_type}, risk={intent_risk}, tool={tool_name})"
         );
         return true;
     }

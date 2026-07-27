@@ -12,8 +12,8 @@ struct DbRule {
     fix: &'static str,
 }
 
-fn mk(pat: &str, sev: &'static str, cat: &'static str, fix: &'static str) -> DbRule {
-    DbRule { re: Regex::new(pat).expect("static regex"), sev, cat, fix }
+fn mk(pat: &str, sev: &'static str, cat: &'static str, fix: &'static str) -> Option<DbRule> {
+    Regex::new(pat).ok().map(|re| DbRule { re, sev, cat, fix })
 }
 
 fn build_rules() -> Vec<DbRule> {
@@ -54,6 +54,9 @@ fn build_rules() -> Vec<DbRule> {
             "Never concat SQL strings. Use parameterized queries.",
         ),
     ]
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 fn build_set_re() -> String {

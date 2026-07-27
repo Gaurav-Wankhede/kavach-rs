@@ -37,27 +37,20 @@ fn format_entity_line(e: &kavach_surreal::Entity) -> String {
         || "-".to_owned(),
         |id| {
             let mut s = String::with_capacity(32);
-            #[expect(clippy::expect_used, reason = "write to String never fails")]
-            write!(s, "{id:?}").expect("write to String never fails");
+            let _ = write!(s, "{id:?}").ok();
             s
         },
     );
     let mut line = String::with_capacity(128);
     match &e.properties {
         Some(serde_json::Value::String(s)) if !s.is_empty() => {
-            #[expect(clippy::expect_used, reason = "write to String never fails")]
-            write!(line, "[{}] {} (id={}) {}", e.entity_type, e.name, id_str, s)
-                .expect("write to String never fails");
+            let _ = write!(line, "[{}] {} (id={}) {}", e.entity_type, e.name, id_str, s).ok();
         }
         Some(p) => {
-            #[expect(clippy::expect_used, reason = "write to String never fails")]
-            write!(line, "[{}] {} (id={}) {}", e.entity_type, e.name, id_str, p)
-                .expect("write to String never fails");
+            let _ = write!(line, "[{}] {} (id={}) {}", e.entity_type, e.name, id_str, p).ok();
         }
         None => {
-            #[expect(clippy::expect_used, reason = "write to String never fails")]
-            write!(line, "[{}] {} (id={})", e.entity_type, e.name, id_str)
-                .expect("write to String never fails");
+            let _ = write!(line, "[{}] {} (id={})", e.entity_type, e.name, id_str).ok();
         }
     }
     line

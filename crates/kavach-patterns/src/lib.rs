@@ -80,7 +80,6 @@ pub mod finops_guard;
 pub mod irreversible_guard;
 pub mod laziness_guard;
 pub mod migration_safety_guard;
-pub mod nano_file_guard;
 pub mod observability_guard;
 pub mod pii_data_guard;
 pub mod production_patterns;

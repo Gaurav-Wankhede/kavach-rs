@@ -76,7 +76,7 @@ fn ensure_surreal() -> Result<bool, String> {
     if kicked {
         return Ok(true);
     }
-    let home = std::env::var("HOME").map_err(|_| "HOME unset".to_owned())?;
+    let home = std::env::var("HOME").map_err(|e| format!("HOME unset: {e}"))?;
     let plist = format!("{home}/Library/LaunchAgents/{SURREAL_LABEL}.plist");
     if !std::path::Path::new(&plist).exists() {
         return Err(format!(
