@@ -1,5 +1,4 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
-mod ask;
 pub(crate) mod bulk;
 mod audit;
 mod commands;
@@ -67,7 +66,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             crate::cli::HealAction::Ingest { project } => heal::ingest::run(&project),
         },
         Commands::Loophole { action } => dispatch_loophole(action),
-        Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Audit {
             path,

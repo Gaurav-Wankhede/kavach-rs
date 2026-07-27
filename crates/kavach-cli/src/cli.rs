@@ -134,14 +134,6 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: LoopholeAction,
     },
-    /// Ask the advisor (Haiku executor + Opus advisor)
-    Ask {
-        /// Prompt to send to the advisor
-        prompt: String,
-        /// Maximum advisor consultations (default 3)
-        #[arg(long, default_value_t = 3)]
-        max_uses: u8,
-    },
     /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
     #[command(
         after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
