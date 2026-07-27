@@ -16,7 +16,7 @@ mod todos;
 
 pub(crate) use db::DbAction;
 pub(crate) use harness_loop::LoopAction;
-pub(crate) use oversized::{OversizedAction, OversizedFormat};
+pub(crate) use oversized::OversizedFormat;
 pub(crate) use phase::PhaseAction;
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
@@ -155,11 +155,6 @@ pub(crate) enum Commands {
         /// Maximum advisor consultations (default 3)
         #[arg(long, default_value_t = 3)]
         max_uses: u8,
-    },
-    /// Scan for oversized files and circular dependency clusters
-    Oversized {
-        #[command(subcommand)]
-        action: OversizedAction,
     },
     /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
     #[command(
@@ -533,6 +528,18 @@ pub(crate) enum LintAction {
         /// Project root to scan (default: walk up from cwd to a manifest).
         #[arg(long)]
         path: Option<String>,
+    },
+    /// Scan a directory for files whose code-LOC exceeds the threshold.
+    Scan {
+        /// Directory to scan (default: workspace root / current dir).
+        #[arg(long, default_value = ".")]
+        dir: String,
+        /// Code-LOC threshold (files above this are flagged).
+        #[arg(long, default_value_t = 500)]
+        threshold: u32,
+        /// Output format: text or json.
+        #[arg(long, value_enum, default_value_t = OversizedFormat::Text)]
+        format: OversizedFormat,
     },
 }
 

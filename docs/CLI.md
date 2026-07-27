@@ -1381,6 +1381,16 @@ Detect the stack(s) here and install the strict-rules manifest for each
 | `--path` | Project root to operate on (default: walk up from cwd to a manifest) |  |
 | `--dry-run` | Report what would be written without touching any file |  |
 
+## `kavach lint scan`
+
+Scan a directory for files whose code-LOC exceeds the threshold
+
+| Flag | Description | Default |
+|---|---|---|
+| `--dir` | Directory to scan (default: workspace root / current dir) | . |
+| `--threshold` | Code-LOC threshold (files above this are flagged) | 500 |
+| `--format` | Output format: text or json | text |
+
 ## `kavach loop`
 
 Manage autonomous execution loop (harness engineering)
@@ -1540,20 +1550,6 @@ EXAMPLES:
 
 USE THIS INSTEAD OF grep/rg to find where a symbol lives — zero LLM tokens. Role-query fields are all optional; a value_regex alone resolves an arbitrarily-named var.
 ```
-
-## `kavach oversized`
-
-Scan for oversized files and circular dependency clusters
-
-## `kavach oversized scan`
-
-Scan a directory for files whose code-LOC exceeds the threshold. Uses `tokei` to count code lines (excludes comments + blanks)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--dir` | Root directory to scan (defaults to current working directory) | . |
-| `--threshold` | Code-LOC threshold. Files at or below this are silent. 3-tier hierarchy: <=100 OK, >100 P1 advise, >200 P0 block, >500 urgent | 100 |
-| `--format` | Output format | text |
 
 ## `kavach phase`
 

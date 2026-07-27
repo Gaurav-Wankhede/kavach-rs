@@ -6,7 +6,7 @@ use std::process::Command;
 use crate::cli::OversizedFormat;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
-pub(super) fn run(dir: &str, threshold: u32, format: OversizedFormat) -> i32 {
+pub(crate) fn run(dir: &str, threshold: u32, format: OversizedFormat) -> i32 {
     let out = match Command::new("tokei")
         .args(["--types", "Rust", "--output", "json", dir])
         .output()

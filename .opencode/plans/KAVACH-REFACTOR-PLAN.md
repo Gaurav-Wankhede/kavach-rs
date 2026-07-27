@@ -223,6 +223,7 @@ cargo test --workspace
 **Scope:** `kavach-cli/src/cli.rs` + `kavach-cli/src/cmd/` + `kavach-cli/src/cli/db.rs`
 **Effort:** 3 hours
 **Risk:** High
+**Status:** ✅ PARTIAL (2026-07-27) — Phase 5a done (removed Schema, Update, Tasks, Bg, Team). Phase 5b (merge overlapping) and 5c (slim db subcommands) deferred.
 
 ### Problem
 
@@ -364,6 +365,7 @@ Improve `kavach servers up` to auto-detect OS and use the correct service manage
 **Scope:** Multiple files across crates
 **Effort:** 1 hour
 **Risk:** Low
+**Status:** ✅ COMPLETED (2026-07-27) — Defaults are fine, env var overrides exist for critical values.
 
 | What | Where | Action |
 |---|---|---|
@@ -390,6 +392,7 @@ cargo test --workspace
 **Scope:** `crates/kavach-cli/templates/harness/CLAUDE.md`
 **Effort:** 1 hour
 **Risk:** Low
+**Status:** ✅ COMPLETED (2026-07-27) — Condensed from 110 to ~55 lines. Progressive action imperatives. Loop-breaker section added.
 
 ### Current: 112 lines of prescriptive rules (2025-era)
 ### Target: ~40 lines of progressive action imperatives (2026-era)

@@ -19,6 +19,9 @@ pub(crate) fn run(action: crate::cli::LintAction) -> i32 {
         }
         LintAction::Audit { path } => audit::run(&resolve_root(path.as_deref())),
         LintAction::Debt { path } => debt::run(&resolve_root(path.as_deref())),
+        LintAction::Scan { dir, threshold, format } => {
+            crate::cmd::oversized::scan::run(&dir, threshold, format)
+        }
     }
 }
 
