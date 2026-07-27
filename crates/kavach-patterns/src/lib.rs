@@ -24,7 +24,7 @@ pub mod ts_guard;
 pub(crate) mod ts_patterns;
 
 pub use checks::{
-    classify_intent, is_blocked, is_code_file, is_infra_file, is_large_file, is_sensitive,
+    classify_intent, is_code_file, is_infra_file, is_large_file, is_sensitive,
     is_valid_agent, sanitize_path, validate_identifier,
 };
 pub use config::{AntiProdLevel, AntiProdResult, Config, load, reload};

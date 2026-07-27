@@ -31,7 +31,7 @@ pub(super) fn config_blocklists(command: &str) -> Option<Decision> {
     }
 
     // --- Dangerous patterns with safe alternatives: progressive action ---
-    if kavach_patterns::is_blocked(command) {
+    if kavach_config::is_blocked_command(command) {
         return Some(Decision::Allow(Some(format!(
             "[ADVISORY:dangerous-pattern] `{command}` matches a dangerous pattern (shutdown, \
              reboot, halt, chown -R on system dirs, dd to device, mkfs, parted, fork bombs). \
