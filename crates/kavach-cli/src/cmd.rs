@@ -1,6 +1,5 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod ask;
-pub(crate) mod bg;
 pub(crate) mod bulk;
 mod audit;
 mod commands;
@@ -26,17 +25,13 @@ mod phase;
 mod phase_registry;
 pub(crate) mod pipeline;
 mod rules;
-mod schema;
 mod security;
 mod servers;
 mod session;
 mod status;
-mod tasks;
-pub(crate) mod team;
 mod think;
 mod todos;
 mod toolbelt;
-mod update;
 pub(crate) mod verify;
 pub(crate) mod verify_frontend;
 pub(crate) mod verify_frontend_detect;
@@ -71,7 +66,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Rules { action } => rules::run(action),
         Commands::Db { action } => db::run(action),
         Commands::Install { vendor, dry_run } => install::run(&vendor, dry_run),
-        Commands::Schema { vendor, all } => schema::run(vendor.as_deref(), all),
         Commands::Heal { action } => match action {
             crate::cli::HealAction::Capture {
                 project,
@@ -90,7 +84,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Ask { prompt, max_uses } => ask::run(&prompt, max_uses),
         Commands::Oversized { action } => oversized::run(action),
         Commands::Doctor => doctor::run(&doctor_workspace_root()),
-        Commands::Update => update::run(),
         Commands::Audit {
             path,
             lens,
@@ -139,7 +132,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         }
         Commands::Pipeline { action } => pipeline::run(action),
         Commands::Security { action } => security::run(action),
-        Commands::Tasks { action } => tasks::run(action),
         Commands::Todos { action } => todos::run(action),
         Commands::Context {
             project,
@@ -149,9 +141,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         } => context::run(&project, limit, status.as_deref(), key.as_deref()),
         Commands::Mistake(args) => mistake::run(args),
         Commands::Bulk(args) => bulk::run(args),
-        Commands::Bg(args) => bg::run(args),
         Commands::Goal(args) => goal::run(args),
-        Commands::Team(args) => team::run(args),
         Commands::Think {
             project,
             query,

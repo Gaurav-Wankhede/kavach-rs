@@ -30,44 +30,6 @@ Unified zero-LLM code auditor: one command over all four lenses (yagni · self �
 Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM.
 ```
 
-## `kavach bg`
-
-Bg-mode: declare a CC 2.1.152+ /bg background-session intent keyed to a roadmap unit. SOURCE: roadmap.unit.kavach-bg-session · code.claude.com/docs/en/changelog 2.1.152
-
-```
-EXAMPLES:
-  kavach bg start --project P --task roadmap.unit.foo [--isolation none|worktree]
-  kavach bg status --project P
-  kavach bg stop --project P --task roadmap.unit.foo
-```
-
-## `kavach bg start`
-
-Declare a background-session intent. Prints `/bg <task>` for the agent to paste into a CC session — kavach records the bg row in kavach-db so subsequent turns can detect "bg in flight" and yield (stop-gate already short-circuits on `input.background_tasks`)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--task` | Roadmap key the bg session will work on (e.g. roadmap.unit.<x>) |  |
-| `--isolation` | Worktree isolation: "none" (default — shared FS), "worktree" (separate copy). SOURCE: code.claude.com/docs/en/changelog 2.1.152 `worktree.bgIsolation` | none |
-
-## `kavach bg status`
-
-List active bg sessions for a project
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug whose in-flight bg rows to list |  |
-
-## `kavach bg stop`
-
-Clear a bg-session row (after task completion or manual abort)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--task` | Roadmap key to clear (must match `bg start --task`) |  |
-
 ## `kavach bulk`
 
 Bulk-mode: one [RCA] binds N edits in a mechanical sweep. SOURCE: roadmap.unit.kavach-bulk-mode
@@ -1723,23 +1685,6 @@ Show a specific rule/skill
 |---|---|---|
 | `<name>` | Rule/skill name |  |
 
-## `kavach schema`
-
-Print a vendor's LIVE upstream hook-contract schema source so an operator or agent can fetch + diff the current contract (realtime drift awareness)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--vendor` | Which tool: cc \| cursor \| codex \| antigravity (agy) \| gemini (alias). Omit with `--all` to list every vendor |  |
-| `--all` | List the schema source for every vendor |  |
-
-```
-EXAMPLES:
-  kavach schema --all
-  kavach schema --vendor cursor
-
-WHEN: a native tool may have changed its hook format — reference the live schema URL instead of a frozen assumption.
-```
-
 ## `kavach security`
 
 DeepSec-style security scanner: regex pre-filter → LLM deep analysis → report
@@ -1864,50 +1809,6 @@ EXAMPLES:
 WHEN: session-start sanity check; confirms project slug and pending gates.
 ```
 
-## `kavach tasks`
-
-Audit Claude Code's `TaskCreate` JSON store (user-global by design) and infer which project each task likely belongs to. Workaround for cross-project task-list pollution — see roadmap.unit.task-injection-project-scope
-
-## `kavach tasks audit`
-
-Audit Claude Code `TaskCreate` JSON store and infer per-task project holdership. Reads ~/.claude/tasks/<user>/<id>.json files and prints a table mapping each task to its likely project via keyword matching
-
-| Flag | Description | Default |
-|---|---|---|
-| `--user` | Override the Claude Code user dir under ~/.claude/tasks/ (auto-detected if omitted) |  |
-
-## `kavach team`
-
-Team-mode: DAG-aware parallel auto-dispatch of CC Team agents over the roadmap. Independent tasks fan out; blocked tasks wait for prerequisites. SOURCE: roadmap.unit.dag-parallel-dispatch
-
-```
-EXAMPLES:
-  kavach team dispatch --project nicole-carpenter --dry-run
-  kavach team dispatch --project P --max-parallel 4 --spawner cc-teams
-
-WHEN: Multi-unit parallel implementation with explicit depends_on edges.
-```
-
-## `kavach team claim-batch`
-
-Atomically batch-claim the ready wavefront for one session (all-or-nothing over `lease.acquire_set`): no two sessions double-claim the same cards
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug whose roadmap DAG to schedule |  |
-| `--session-id` | Session id that will hold the leases |  |
-
-## `kavach team dispatch`
-
-Resolve the roadmap DAG and dispatch the ready wavefront in parallel
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug whose roadmap DAG to schedule |  |
-| `--max-parallel` | Concurrency cap (clamped to [1,16]); default = min(16, cores-2) |  |
-| `--dry-run` | Print the topological wavefront only; spawn nothing |  |
-| `--spawner` | Spawn backend: cc-teams (default) \| workflow | cc-teams |
-
 ## `kavach think`
 
 Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus. Emits cited, RRF-ranked hits as JSON; auto-files a research card when the corpus is thin for the query (gap-analysis closes the self-improving loop). SOURCE: roadmap.unit.harness.brain-os.g2-think-mode
@@ -1956,17 +1857,6 @@ Fetch + install the toolbelt's prebuilt binaries into the cargo bin dir
 ## `kavach toolbelt list`
 
 List every toolbelt tool with its provider crate + upstream license
-
-## `kavach update`
-
-Self-update: clone latest source, build, and install over the running binary
-
-```
-EXAMPLES:
-  kavach update
-
-WHEN: pull the newest Kavach — clones + builds from source (fast, native), replaces ~/.local/bin/kavach.
-```
 
 ## `kavach verify`
 

@@ -12,7 +12,6 @@ mod phase;
 mod rules;
 mod security;
 mod session;
-mod tasks;
 mod todos;
 
 pub(crate) use db::DbAction;
@@ -22,7 +21,6 @@ pub(crate) use phase::PhaseAction;
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
-pub(crate) use tasks::TasksAction;
 pub(crate) use todos::TodosAction;
 // PipelineAction is defined inline in this file (initializer→subagent pipeline).
 
@@ -150,20 +148,6 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: LoopholeAction,
     },
-    /// Print a vendor's LIVE upstream hook-contract schema source so an operator
-    /// or agent can fetch + diff the current contract (realtime drift awareness).
-    #[command(
-        after_help = "EXAMPLES:\n  kavach schema --all\n  kavach schema --vendor cursor\n\nWHEN: a native tool may have changed its hook format — reference the live schema URL instead of a frozen assumption."
-    )]
-    Schema {
-        /// Which tool: cc | cursor | codex | antigravity (agy) | gemini (alias).
-        /// Omit with `--all` to list every vendor.
-        #[arg(long)]
-        vendor: Option<String>,
-        /// List the schema source for every vendor.
-        #[arg(long)]
-        all: bool,
-    },
     /// Ask the advisor (Haiku executor + Opus advisor)
     Ask {
         /// Prompt to send to the advisor
@@ -182,9 +166,6 @@ pub(crate) enum Commands {
         after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
     )]
     Doctor,
-    /// Self-update: clone latest source, build, and install over the running binary.
-    #[command(after_help = "EXAMPLES:\n  kavach update\n\nWHEN: pull the newest Kavach — clones + builds from source (fast, native), replaces ~/.local/bin/kavach.")]
-    Update,
     /// Unified zero-LLM code auditor: one command over all four lenses (yagni · self · worst-practice · security)
     #[command(
         after_help = "Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM."
@@ -311,13 +292,6 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[command(subcommand)]
         action: TodosAction,
     },
-    /// Audit Claude Code's `TaskCreate` JSON store (user-global by design) and infer
-    /// which project each task likely belongs to. Workaround for cross-project
-    /// task-list pollution — see roadmap.unit.task-injection-project-scope.
-    Tasks {
-        #[command(subcommand)]
-        action: TasksAction,
-    },
     /// Unified JSON snapshot: kanban counts, session, phase, loop state.
     #[command(
         long_about = "Emits one JSON object for agent harness startup: project slug, \
@@ -347,13 +321,6 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
     /// Goal-mode: declare a condition for CC 2.1.139+ /goal cross-turn loops.
     /// SOURCE: roadmap.unit.kavach-goal-bridge.
     Goal(crate::cmd::goal::GoalArgs),
-    /// Bg-mode: declare a CC 2.1.152+ /bg background-session intent keyed to a roadmap unit.
-    /// SOURCE: roadmap.unit.kavach-bg-session · code.claude.com/docs/en/changelog 2.1.152.
-    Bg(crate::cmd::bg::BgArgs),
-    /// Team-mode: DAG-aware parallel auto-dispatch of CC Team agents over the
-    /// roadmap. Independent tasks fan out; blocked tasks wait for prerequisites.
-    /// SOURCE: roadmap.unit.dag-parallel-dispatch.
-    Team(crate::cmd::team::TeamArgs),
     /// Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus.
     /// Emits cited, RRF-ranked hits as JSON; auto-files a research card when the
     /// corpus is thin for the query (gap-analysis closes the self-improving loop).
