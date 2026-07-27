@@ -4,6 +4,7 @@
 /// - "~" ending (rm -rf ~): block only bare ~, not ~/Downloads
 /// - " sh"/" bash" ending: block pipe-to-shell, not | sha256sum
 /// - Others: standard substring match
+#[must_use]
 pub fn blocked_pattern_match(cmd: &str, pattern: &str) -> bool {
     let Some(pos) = cmd.find(pattern) else {
         return false;
@@ -31,6 +32,7 @@ pub fn blocked_pattern_match(cmd: &str, pattern: &str) -> bool {
 }
 
 /// Check if position falls inside a quoted string (single or double).
+#[must_use]
 pub fn is_inside_quotes(s: &str, pos: usize) -> bool {
     let (mut sq, mut dq, mut i) = (false, false, 0);
     let b = s.as_bytes();
