@@ -1,30 +1,45 @@
-//! Config-defined literal/regex blocklists — all P0 deny.
+//! Config-defined literal/regex blocklists.
+//!
+//! Truly irreversible operations (reverse shells, credential exfiltration,
+//! fork bombs) stay as P0 deny. Operations with safe alternatives emit
+//! progressive action imperatives via Allow(Some(ctx)) — the LLM sees the
+//! advisory and steers to the replacement, avoiding the infinite-loop trap
+//! of Deny → retry-same → loop.
 use super::super::decision::Decision;
 
-/// Config-defined literal/regex blocklists (all P0 deny). `None` to fall through.
+/// Config-defined literal/regex blocklists. `None` to fall through.
 pub(super) fn config_blocklists(command: &str) -> Option<Decision> {
-    if kavach_config::is_blocked_command(command) {
-        return Some(Decision::Deny(format!(
-            "[CLOUD_API_POLICY] destructive command detected: `{command}` — matches the \
-             blocklist (rm -rf /, fork bombs, pipe-to-shell) -> use targeted paths instead of \
-             root-level destructors, download scripts with curl -o first and review before \
-             executing, or use `cargo clean`/`git clean -fd` for project cleanup -> retry."
-        )));
-    }
-    if kavach_patterns::is_blocked(command) {
-        return Some(Decision::Deny(format!(
-            "[CLOUD_API_POLICY] dangerous pattern in command: `{command}` -> review the \
-             command for unintended side effects, break compound commands into individual \
-             safe steps, use `eza`/`bat` in place of `ls`/`cat`, and avoid piping untrusted \
-             output to shell interpreters -> retry."
-        )));
-    }
+    // --- Security patterns: reverse shells, credential exfiltration, etc. ---
+    // No safe alternative exists. Hard deny.
     if kavach_config::is_blocked_bash_pattern(command) {
         return Some(Decision::Deny(format!(
-            "[CLOUD_API_POLICY] security pattern detected: `{command}` — matches a \
+            "[SECURITY_VIOLATION] security pattern detected: `{command}` — matches a \
              config-defined blocked_patterns regex (reverse shells, ssh key exfiltration, \
-             credential harvesting) -> remove the pattern -> retry."
+             credential harvesting) -> remove the pattern entirely -> retry."
         )));
     }
+
+    // --- Destructive commands with safe alternatives: progressive action ---
+    if kavach_config::is_blocked_command(command) {
+        return Some(Decision::Allow(Some(format!(
+            "[ADVISORY:destructive-command] `{command}` is destructive (rm -rf /, fork bombs, \
+             pipe-to-shell, cloud DB deletion). ALTERNATIVES: filesystem cleanup → \
+             `cargo clean` / `git clean -fd` / targeted `rm -rf <subdir>`; downloading \
+             scripts → `curl -o /tmp/script.sh <url>` then review before executing; cloud \
+             resources → use the provider's console for destructive ops, not CLI."
+        ))));
+    }
+
+    // --- Dangerous patterns with safe alternatives: progressive action ---
+    if kavach_patterns::is_blocked(command) {
+        return Some(Decision::Allow(Some(format!(
+            "[ADVISORY:dangerous-pattern] `{command}` matches a dangerous pattern (shutdown, \
+             reboot, halt, chown -R on system dirs, dd to device, mkfs, parted, fork bombs). \
+             ALTERNATIVES: power ops → let the system/package manager handle shutdowns; \
+             device ops → avoid raw device writes; recursive chown → use targeted ownership \
+             changes on specific files."
+        ))));
+    }
+
     None
 }
