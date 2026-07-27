@@ -4,8 +4,9 @@
 //! the subscription native agent does the fix.
 //! SOURCE: decision.heal.self-healing-pipeline-architecture · roadmap heal.unit.proactive-bughunt.
 
-use super::capture_incident;
+use super::{capture_incident, doctor_check::run_doctor};
 use crate::cmd::io_safe::{IoExit, into_exit_code, print_or_exit};
+use std::path::Path;
 use std::process::Command;
 
 /// One non-AI gate: a deterministic detector whose non-zero exit is a defect.
@@ -16,8 +17,14 @@ struct Gate {
     incident: &'static str,
     /// Human summary for the card title.
     summary: &'static str,
-    /// Program + args to run (the gate command).
+    /// Program + args to run (the gate command). Empty = inline detector.
     argv: &'static [&'static str],
+}
+
+impl Gate {
+    fn is_inline(&self) -> bool {
+        self.argv.is_empty()
+    }
 }
 
 /// The proactive gate set — the cheap, deterministic detectors that catch the
@@ -46,6 +53,11 @@ const GATES: &[Gate] = &[
         summary: "proactive sweep: cargo machete found unused dependencies",
         argv: &["cargo", "machete"],
     },
+    Gate {
+        incident: "sweep-doctor",
+        summary: "proactive sweep: kavach self-audit (doctor) found findings",
+        argv: &[], // inline detector
+    },
 ];
 
 /// `kavach heal sweep` entry. Runs every gate; for each failure, captures a card.
@@ -67,17 +79,19 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
     let mut captured = 0_u32;
     let mut skipped = 0_u32;
     for gate in GATES {
-        match run_gate(gate) {
+        let outcome = if gate.is_inline() {
+            run_inline_gate(gate)
+        } else {
+            run_gate(gate)
+        };
+        match outcome {
             GateOutcome::Pass => {}
             GateOutcome::Fail(output) => {
-                // diff_base HEAD~1: a sweep runs on the working tree, so the most
-                // useful "what changed" is the last commit's delta.
                 let code =
                     capture_incident(project, gate.incident, gate.summary, &output, "HEAD~1");
                 if code == 0 {
                     captured = captured.saturating_add(1);
                 } else {
-                    // The capture write failed (daemon/db) — surface, don't swallow.
                     print_or_exit(&format!(
                         "[heal sweep] WARN: gate '{}' failed but card write returned {code}",
                         gate.incident
@@ -93,6 +107,30 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
     print_or_exit(&format!(
         "[heal sweep] done: {captured} card(s) captured, {skipped} gate(s) skipped"
     ))
+}
+
+/// Run an inline gate (no external command).
+fn run_inline_gate(gate: &Gate) -> GateOutcome {
+    if gate.incident == "sweep-doctor" {
+        let findings = run_doctor(Path::new("."));
+        if findings.is_empty() {
+            GateOutcome::Pass
+        } else {
+            let mut output = String::new();
+            for f in &findings {
+                output.push_str(&format!(
+                    "[{}] {}:{} — {}\n",
+                    f.class.label(),
+                    f.file,
+                    f.line,
+                    f.hint
+                ));
+            }
+            GateOutcome::Fail(output)
+        }
+    } else {
+        GateOutcome::Pass
+    }
 }
 
 /// Result of running one gate.

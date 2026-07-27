@@ -5,6 +5,7 @@
 //! SOURCE: decision.heal.self-healing-pipeline-architecture.
 
 mod capture;
+mod doctor_check;
 pub(crate) mod ingest;
 pub(crate) mod merge_gate;
 pub(crate) mod sweep;
