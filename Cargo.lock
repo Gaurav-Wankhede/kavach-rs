@@ -2792,6 +2792,7 @@ version = "0.1.0"
 dependencies = [
  "aho-corasick",
  "dirs",
+ "kavach-config",
  "kavach-types",
  "regex",
  "serde",

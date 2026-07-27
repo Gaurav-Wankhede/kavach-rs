@@ -50,6 +50,7 @@ Kavach-rs currently over-engineers **context** (massive CLAUDE.md, nano-file rul
 
 **Scope:** Single file, zero risk
 **Effort:** 5 minutes
+**Status:** ✅ COMPLETED (2026-07-27)
 
 ### What
 
@@ -77,6 +78,7 @@ cargo test --workspace
 **Scope:** `kavach-patterns` crate + engine wiring + CLAUDE.md
 **Effort:** 30 minutes
 **Risk:** Low
+**Status:** ✅ COMPLETED (2026-07-27)
 
 ### Rationale
 
