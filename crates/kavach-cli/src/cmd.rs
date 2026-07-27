@@ -8,7 +8,6 @@ pub(crate) mod goal;
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
 pub(crate) mod db;
 pub(crate) mod deploy;
-mod doctor;
 mod hunt;
 mod origin;
 mod gates;
@@ -66,7 +65,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             crate::cli::HealAction::Ingest { project } => heal::ingest::run(&project),
         },
         Commands::Loophole { action } => dispatch_loophole(action),
-        Commands::Doctor => doctor::run(&doctor_workspace_root()),
         Commands::Audit {
             path,
             lens,

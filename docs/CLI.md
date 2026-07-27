@@ -1176,14 +1176,6 @@ EXAMPLES:
 WHEN: After engine/cli changes; restarts RPC daemon on success.
 ```
 
-## `kavach doctor`
-
-Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
-
-```
-Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line.
-```
-
 ## `kavach gates`
 
 Run a gate hook (called by Claude Code / Cursor hooks)

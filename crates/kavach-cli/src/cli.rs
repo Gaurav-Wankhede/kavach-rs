@@ -134,11 +134,6 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: LoopholeAction,
     },
-    /// Self-audit kavach's OWN source for silent-failure / unproven-DELETE patterns (read-only)
-    #[command(
-        after_help = "Scans kavach-engine/session/rpc/surreal. Exit 1 if findings. Add `// doctor:ok` to silence a reviewed benign line."
-    )]
-    Doctor,
     /// Unified zero-LLM code auditor: one command over all four lenses (yagni · self · worst-practice · security)
     #[command(
         after_help = "Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM."
