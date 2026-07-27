@@ -1381,6 +1381,38 @@ Detect the stack(s) here and install the strict-rules manifest for each
 | `--path` | Project root to operate on (default: walk up from cwd to a manifest) |  |
 | `--dry-run` | Report what would be written without touching any file |  |
 
+## `kavach lint rules`
+
+Skill registry: list, check, generate, show rules
+
+## `kavach lint rules check`
+
+Check rules against a file
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | File path to check |  |
+
+## `kavach lint rules generate`
+
+Generate rules from detected patterns
+
+| Flag | Description | Default |
+|---|---|---|
+| `<dir>` | Directory to scan |  |
+
+## `kavach lint rules list`
+
+List all loaded rules/skills
+
+## `kavach lint rules show`
+
+Show a specific rule/skill
+
+| Flag | Description | Default |
+|---|---|---|
+| `<name>` | Rule/skill name |  |
+
 ## `kavach lint scan`
 
 Scan a directory for files whose code-LOC exceeds the threshold
@@ -1649,38 +1681,6 @@ Show counts of {todo, `in_progress`, done, verified, blocked, deferred} for a pr
 |---|---|---|
 | `--project` | Project slug |  |
 
-## `kavach rules`
-
-Manage rules and skills
-
-## `kavach rules check`
-
-Check rules against a file
-
-| Flag | Description | Default |
-|---|---|---|
-| `<path>` | File path to check |  |
-
-## `kavach rules generate`
-
-Generate rules from detected patterns
-
-| Flag | Description | Default |
-|---|---|---|
-| `<dir>` | Directory to scan |  |
-
-## `kavach rules list`
-
-List all loaded rules/skills
-
-## `kavach rules show`
-
-Show a specific rule/skill
-
-| Flag | Description | Default |
-|---|---|---|
-| `<name>` | Rule/skill name |  |
-
 ## `kavach security`
 
 DeepSec-style security scanner: regex pre-filter → LLM deep analysis → report
@@ -1749,6 +1749,22 @@ Report up/down for the `SurrealDB` store + web UI
 | Flag | Description | Default |
 |---|---|---|
 | `--port` | Web UI port to probe. Default 7777 | 7777 |
+
+## `kavach servers ui`
+
+Launch the HTMX dashboard on <http://127.0.0.1>:<port>
+
+| Flag | Description | Default |
+|---|---|---|
+| `--port` | TCP port to bind on loopback (default 7777, unprivileged) | 7777 |
+
+```
+EXAMPLES:
+  kavach servers ui              # serve on :7777
+  kavach servers ui --port 8080
+
+WHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser.
+```
 
 ## `kavach servers up`
 
@@ -1882,19 +1898,3 @@ Strict TS/frontend gate: detect biome/eslint/tsc, auto-fix safe rewrites, fail o
 | `--path` | Project root (must contain biome.json / eslint.config.* / tsconfig.json) |  |
 | `--skip-tests` | Skip the test runner step (still runs auto-fix + strict lint + tsc) |  |
 | `--prefer` | Tool preference when multiple configs are present: auto \| biome \| eslint | auto |
-
-## `kavach web`
-
-Launch the HTMX web UI (server-rendered) on <http://127.0.0.1>:<port>
-
-| Flag | Description | Default |
-|---|---|---|
-| `--port` | TCP port to bind on loopback (default 7777, unprivileged) | 7777 |
-
-```
-EXAMPLES:
-  kavach web              # serve on :7777
-  kavach web --port 8080
-
-WHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the surreal server; run `kavach servers up` first if pages show the offline panel.
-```

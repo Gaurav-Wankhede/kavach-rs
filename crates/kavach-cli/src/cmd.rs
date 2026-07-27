@@ -43,18 +43,6 @@ use crate::cli::Commands;
 pub(crate) fn dispatch(command: Commands) -> i32 {
     match command {
         Commands::Status => status::run(),
-        Commands::Web { port } => {
-            servers::ensure_db_up();
-            match kavach_web::serve(port) {
-                Ok(()) => 0,
-                Err(e) => {
-                    if let Err(io_err) = io_safe::ewrite_or_exit(&format!("kavach web: {e}")) {
-                        return io_safe::into_exit_code(io_err);
-                    }
-                    1
-                }
-            }
-        }
         Commands::Servers { action } => servers::run(&action),
         Commands::Gates {
             gate_name,
@@ -63,7 +51,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             vendor,
         } => gates::run(&gate_name, hook, verify, vendor.as_deref()),
         Commands::Session { action } => session::run(&action),
-        Commands::Rules { action } => rules::run(action),
         Commands::Db { action } => db::run(action),
         Commands::Install { vendor, dry_run } => install::run(&vendor, dry_run),
         Commands::Heal { action } => match action {

@@ -22,6 +22,7 @@ pub(crate) fn run(action: crate::cli::LintAction) -> i32 {
         LintAction::Scan { dir, threshold, format } => {
             crate::cmd::oversized::scan::run(&dir, threshold, format)
         }
+        LintAction::Rules { action } => crate::cmd::rules::run(action),
     }
 }
 

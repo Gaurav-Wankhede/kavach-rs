@@ -62,15 +62,6 @@ pub(crate) enum Commands {
         after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates."
     )]
     Status,
-    /// Launch the HTMX web UI (server-rendered) on <http://127.0.0.1>:<port>.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach web              # serve on :7777\n  kavach web --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser. Reads via the surreal server; run `kavach servers up` first if pages show the offline panel."
-    )]
-    Web {
-        /// TCP port to bind on loopback (default 7777, unprivileged).
-        #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
-        port: u16,
-    },
     /// Start/stop/inspect the background servers (`SurrealDB` store + web UI).
     #[command(
         after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel."
@@ -102,11 +93,6 @@ pub(crate) enum Commands {
     Session {
         #[command(subcommand)]
         action: SessionAction,
-    },
-    /// Manage rules and skills
-    Rules {
-        #[command(subcommand)]
-        action: RulesAction,
     },
     /// Manage the SurrealDB-backed memory store (projects, kanban, decisions, graph).
     #[command(
@@ -382,6 +368,15 @@ pub(crate) enum ServersAction {
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
     },
+    /// Launch the HTMX dashboard on <http://127.0.0.1>:<port>.
+    #[command(
+        after_help = "EXAMPLES:\n  kavach servers ui              # serve on :7777\n  kavach servers ui --port 8080\n\nWHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser."
+    )]
+    Ui {
+        /// TCP port to bind on loopback (default 7777, unprivileged).
+        #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
+        port: u16,
+    },
 }
 
 #[derive(Subcommand)]
@@ -540,6 +535,11 @@ pub(crate) enum LintAction {
         /// Output format: text or json.
         #[arg(long, value_enum, default_value_t = OversizedFormat::Text)]
         format: OversizedFormat,
+    },
+    /// Skill registry: list, check, generate, show rules.
+    Rules {
+        #[command(subcommand)]
+        action: RulesAction,
     },
 }
 

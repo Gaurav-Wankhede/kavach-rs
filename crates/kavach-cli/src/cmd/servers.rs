@@ -42,6 +42,18 @@ pub(crate) fn run(action: &ServersAction) -> i32 {
         ServersAction::Up { port } => up(port),
         ServersAction::Down { port } => down(port),
         ServersAction::Status { port } => status(port),
+        ServersAction::Ui { port } => {
+            ensure_db_up();
+            match kavach_web::serve(port) {
+                Ok(()) => 0,
+                Err(e) => {
+                    if let Err(io_err) = ewrite_or_exit(&format!("kavach web: {e}")) {
+                        return into_exit_code(io_err);
+                    }
+                    1
+                }
+            }
+        }
     }
 }
 
