@@ -6,6 +6,7 @@
 
 use super::{capture_incident, doctor_check::run_doctor};
 use crate::cmd::io_safe::{IoExit, into_exit_code, print_or_exit};
+use std::fmt::Write as _;
 use std::path::Path;
 use std::process::Command;
 
@@ -22,7 +23,7 @@ struct Gate {
 }
 
 impl Gate {
-    fn is_inline(&self) -> bool {
+    const fn is_inline(&self) -> bool {
         self.argv.is_empty()
     }
 }
@@ -118,13 +119,15 @@ fn run_inline_gate(gate: &Gate) -> GateOutcome {
         } else {
             let mut output = String::new();
             for f in &findings {
-                output.push_str(&format!(
-                    "[{}] {}:{} — {}\n",
+                writeln!(
+                    output,
+                    "[{}] {}:{} — {}",
                     f.class.label(),
                     f.file,
                     f.line,
                     f.hint
-                ));
+                )
+                .ok();
             }
             GateOutcome::Fail(output)
         }
