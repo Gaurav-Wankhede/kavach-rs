@@ -41,6 +41,20 @@ pub(crate) fn exit_pre_tool_allow_relay(session: &mut SessionState, ctx: Option<
     drop(kavach_hook::exit_pre_tool_allow(merged.as_deref()));
 }
 
+/// `PreToolUse` rewrite exit — transparent tool input rewrite.
+pub(crate) fn exit_pre_tool_rewrite_relay(
+    session: &mut SessionState,
+    updated_input: std::collections::HashMap<String, serde_json::Value>,
+    ctx: Option<&str>,
+) {
+    let merged = merge_relay(session, ctx.map(str::to_owned), RelayFlush::AdvisoriesOnly);
+    drop(kavach_hook::exit_pre_tool_rewrite(
+        "rtk rewrite",
+        updated_input,
+        merged.as_deref(),
+    ));
+}
+
 /// `PreToolUse` deny exit — enforce block action from rule engine.
 pub(crate) fn exit_pre_tool_deny(reason: &str) {
     drop(kavach_hook::exit_pre_tool_deny(reason));

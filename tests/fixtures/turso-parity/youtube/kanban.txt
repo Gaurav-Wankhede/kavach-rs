@@ -1,0 +1,7 @@
+[KANBAN DAG] 16 node(s), 10 edge(s)
+TIER 0 — ready now
+  [missing] youtube/roadmap/implement-2-1 — (unresolved — cross-project or missing)  ✓READY
+  [missing] youtube/roadmap/implement-2-2 — (unresolved — cross-project or missing)  ✓READY
+  [missing] youtube/roadmap/implement-2-3 — (unresolved — cross-project or missing)  ✓READY
+  [missing] youtube/roadmap/plan-1-1 — (unresolved — cross-project or missing)  ✓READY
+  [missing] youtube/roadmap/plan-1-2 — (unresolved — cross-project or missing)  ✓READY

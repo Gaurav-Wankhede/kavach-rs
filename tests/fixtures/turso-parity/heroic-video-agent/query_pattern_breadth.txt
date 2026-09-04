@@ -1,0 +1,5 @@
+[pattern] pattern.optional-field-propagation — Optional-field change must propagate to ALL consumers (status: todo, access: 0)
+[pattern] lint-keyframe-blind — Lint was blind to keyframe tracks + non-diagram/card scenes (off-screen false-clean) (status: todo, access: 0)
+[pattern] shot-granularity-is-slideshow — 17 shots / 120s = 7s per shot = slideshow by construction (status: todo, access: 0)
+[pattern] fp-video-content-array-mockdata — MOCK_DATA false-positive: video-content literal arrays are not frontend mock data (status: todo, access: 0)
+[pattern] pattern.write-bypass-fp-on-db-write — write-bypass gate false-positives on kavach db write content containing file-path substrings (status: todo, access: 0)

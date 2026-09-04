@@ -1,6 +1,7 @@
 // SOURCE: github.com/JuliusBrussee/compact README (fetched 2026-07-06)
 mod preserve;
 mod rules;
+pub mod tabular;
 mod verify;
 
 use thiserror::Error;

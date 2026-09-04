@@ -117,88 +117,6 @@ EXAMPLES:
 WHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks.
 ```
 
-## `kavach db archive`
-
-Archive events with no graph anchors to active roadmap (relevance-based, audit-preserving)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--floor-days` | Floor age in days — events younger than this are never archived | 30 |
-| `--dry-run` | Dry-run: report what would be archived without modifying state |  |
-
-```
-EXAMPLES:
-  kavach db archive --floor-days 30 --dry-run
-  kavach db archive --floor-days 30
-
-WHEN: Relevance-archive anchor-less events while preserving audit trail.
-```
-
-## `kavach db backfill-relationships`
-
-Backfill typed inter-entry edges (`depends_on/blocks/supersedes/references/mentions`) by re-extracting frontmatter + wikilinks from every existing memory row. Safe to re-run; UPSERT-based
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Optional project slug filter (default: all projects) |  |
-| `--dry-run` | Print planned edges without writing |  |
-
-```
-EXAMPLES:
-  kavach db backfill-relationships --project P --dry-run
-  kavach db backfill-relationships
-
-WHEN: Rebuild typed inter-entry edges from frontmatter + wikilinks. Safe to re-run.
-```
-
-## `kavach db bridge-concepts-for`
-
-List every concept that any L1 entity in this project bridges to
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-
-```
-EXAMPLES:
-  kavach db bridge-concepts-for --project P
-
-WHEN: List every concept this project's entities bridge to.
-```
-
-## `kavach db bridge-create`
-
-Bridge a project-scoped L1 entity to a global L0 concept
-
-| Flag | Description | Default |
-|---|---|---|
-| `--src-table` | Source table (roadmap \| decision \| research \| pattern \| `app_spec`) |  |
-| `--src-key` | Source `entry_key` |  |
-| `--edge` | Bridge edge (implements \| discusses \| `references_concept` \| violates) |  |
-| `--concept` | Target concept name |  |
-
-```
-EXAMPLES:
-  kavach db bridge-create --src-table decision --src-key foo --edge references_concept --concept paseto_v4
-
-WHEN: Link a project-scoped L1 row to a global L0 concept.
-```
-
-## `kavach db bridge-projects-for`
-
-List every project (via L1 entity) that bridges to this concept
-
-| Flag | Description | Default |
-|---|---|---|
-| `--concept` | Concept name |  |
-
-```
-EXAMPLES:
-  kavach db bridge-projects-for --concept paseto_v4
-
-WHEN: List every project that bridges to a given concept.
-```
-
 ## `kavach db citation-add`
 
 Add or refresh a citation (official-docs context) keyed by (project, entry-key)
@@ -218,38 +136,6 @@ EXAMPLES:
 WHEN: Pin an official-docs citation to a (project, entry-key).
 ```
 
-## `kavach db citation-get`
-
-Fetch one citation (bumps `access_count`)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--entry-key` | Entry key |  |
-
-```
-EXAMPLES:
-  kavach db citation-get --project P --entry-key surreal
-
-WHEN: Fetch one citation (bumps its access_count).
-```
-
-## `kavach db citation-link`
-
-Merge a node into a citation via a `->cite->` edge (`table:key` ids)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--node` | Source node record id (`decision:foo`, `entity:bar`) |  |
-| `--citation` | Target citation record id (`citation:baz`) |  |
-
-```
-EXAMPLES:
-  kavach db citation-link --node decision:foo --citation citation:surreal
-
-WHEN: Attach a graph node to a citation via a ->cite-> edge.
-```
-
 ## `kavach db citation-list`
 
 List every citation for a project (newest-updated first)
@@ -263,37 +149,6 @@ EXAMPLES:
   kavach db citation-list --project P
 
 WHEN: List a project's citations, newest-updated first.
-```
-
-## `kavach db citation-refresh`
-
-Flow RLAIF reward along a citation's `cite` edges (bumps edge weight)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--citation` | Citation record id (`citation:baz`) |  |
-| `--delta` | Reward delta (negative = penalty) | 1 |
-
-```
-EXAMPLES:
-  kavach db citation-refresh --citation citation:surreal --delta 1.0
-
-WHEN: Flow RLAIF reward along a citation's cite edges.
-```
-
-## `kavach db citation-traverse`
-
-List the nodes that cite a citation (single `<-cite` walk)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--citation` | Citation record id (`citation:baz`) |  |
-
-```
-EXAMPLES:
-  kavach db citation-traverse --citation citation:surreal
-
-WHEN: List every node that cites a given citation.
 ```
 
 ## `kavach db concept-add`
@@ -315,37 +170,6 @@ EXAMPLES:
 WHEN: Add/update a global L0 concept node in the cross-project graph.
 ```
 
-## `kavach db concept-delete`
-
-Remove a single concept row by canonical name
-
-| Flag | Description | Default |
-|---|---|---|
-| `--name` | Concept name (`snake_case`) |  |
-
-```
-EXAMPLES:
-  kavach db concept-delete --name paseto_v4
-
-WHEN: Remove one concept row by canonical name.
-```
-
-## `kavach db concept-delete-prefix`
-
-Bulk-purge concept rows by name prefix (requires --confirm)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--prefix` | Name prefix (e.g. "keyword:" to purge harvest noise) |  |
-| `--confirm` | Required to actually run the bulk purge |  |
-
-```
-EXAMPLES:
-  kavach db concept-delete-prefix --prefix keyword: --confirm
-
-WHEN: Bulk-purge harvest-noise concept rows by name prefix.
-```
-
 ## `kavach db concept-link`
 
 RELATE two concepts via an ontology edge
@@ -361,21 +185,6 @@ EXAMPLES:
   kavach db concept-link --from paseto_v4 --edge alternative_to --to jwt
 
 WHEN: Relate two concepts via an ontology edge.
-```
-
-## `kavach db concept-list`
-
-List every concept
-
-| Flag | Description | Default |
-|---|---|---|
-| `--limit` | Max results | 50 |
-
-```
-EXAMPLES:
-  kavach db concept-list --limit 50
-
-WHEN: Enumerate every concept node.
 ```
 
 ## `kavach db concept-search`
@@ -415,26 +224,6 @@ EXAMPLES:
 WHEN: Granular removal of one row or a whole category. Prefer over wipe-project.
 ```
 
-## `kavach db delete-prefix`
-
-Bulk-purge records in a category whose key starts with a prefix (requires --confirm). E.g. clear every `heal.incident.loophole-*` roadmap card in one pass
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--category` | Category (decision, research, roadmap, pattern, app_spec) |  |
-| `--prefix` | Key prefix to match (e.g. "heal.incident.loophole-") |  |
-| `--confirm` | Confirm the bulk purge (skipped under --dry-run) |  |
-| `--dry-run` | Dry-run: count what would be deleted without deleting |  |
-
-```
-EXAMPLES:
-  kavach db delete-prefix --project P --category roadmap --prefix heal.incident.loophole- --dry-run
-  kavach db delete-prefix --project P --category roadmap --prefix heal.incident.loophole- --confirm
-
-WHEN: Bulk-purge a key-prefix family (e.g. stale heal-incident cards) in one pass.
-```
-
 ## `kavach db event`
 
 Append an event to the log
@@ -449,103 +238,6 @@ EXAMPLES:
   kavach db event --type file_write --payload '{"path":"x.rs"}'
 
 WHEN: Append an audit event to the log (usually hook-driven).
-```
-
-## `kavach db expire`
-
-Archive expired memory entries
-
-```
-EXAMPLES:
-  kavach db expire
-
-WHEN: Archive memory rows whose TTL has elapsed.
-```
-
-## `kavach db find-part`
-
-Find part matching an absolute path
-
-| Flag | Description | Default |
-|---|---|---|
-| `--path` | Absolute file or directory path |  |
-
-```
-EXAMPLES:
-  kavach db find-part --path /abs/path/to/backend/x.rs
-
-WHEN: Resolve which registered sub-part owns an absolute path.
-```
-
-## `kavach db find-project`
-
-Find project matching an absolute path
-
-| Flag | Description | Default |
-|---|---|---|
-| `--path` | Absolute file or directory path |  |
-
-```
-EXAMPLES:
-  kavach db find-project --path /abs/path/to/file.rs
-
-WHEN: Resolve which registered project owns an absolute path.
-```
-
-## `kavach db flow-add`
-
-Store an implementation-flow DAG (structured JSON ingest, render-on-read)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug the flow belongs to |  |
-| `--key` | Flow key, unique per project (e.g. `auth-flow`) |  |
-| `--title` | Display title |  |
-| `--steps-json` | Path to JSON `{steps:[...],edges:[...]}` (reads stdin if omitted) |  |
-| `--mermaid` | Optional raw Mermaid source cached for round-trip |  |
-
-```
-EXAMPLES:
-  kavach db flow-add --project P --key build-flow --title 'Build Flow' --steps-json steps.json
-  echo '{"steps":[{"id":"a","label":"compile"},{"id":"b","label":"test"}],"edges":[{"from":"a","to":"b"}]}' | kavach db flow-add --project P --key ci --title CI
-
-The DAG renders back to a Mermaid `flowchart TD` via `kavach db flow-show`; project flows are injected into session-start context as [FLOW] Mermaid for implementation-order awareness.
-
-WHEN: Capture how an implementation HAS to be ordered, so future sessions recall the plan as a graph.
-```
-
-## `kavach db flow-show`
-
-Render a stored implementation-flow DAG as Mermaid (default) or JSON
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--key` | Flow key |  |
-| `--format` | Output format: `mermaid` (default) or `json` | mermaid |
-
-```
-EXAMPLES:
-  kavach db flow-show --project P --key build-flow           # Mermaid flowchart TD
-  kavach db flow-show --project P --key build-flow --format json
-
-WHEN: Recall the intended implementation order; paste the Mermaid into any renderer to view the graph.
-```
-
-## `kavach db gate-config-delete`
-
-Delete a gate-config override, reverting to the compiled default
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug (`*` for the global row) |  |
-| `--gate-key` | Gate-config key |  |
-
-```
-EXAMPLES:
-  kavach db gate-config-delete --project P --gate-key dup.block
-
-WHEN: Revert a gate override back to its compiled default.
 ```
 
 ## `kavach db gate-config-get`
@@ -563,22 +255,6 @@ EXAMPLES:
   kavach db gate-config-get --project '*' --gate-key dup.block   # global
 
 WHEN: Resolve a gate override (project then global), or confirm the miss.
-```
-
-## `kavach db gate-config-list`
-
-List every gate-config override for a project (`*` for the globals)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-
-```
-EXAMPLES:
-  kavach db gate-config-list --project P
-  kavach db gate-config-list --project '*'    # globals
-
-WHEN: See every gate override for a project (or the global row).
 ```
 
 ## `kavach db gate-config-set`
@@ -614,47 +290,14 @@ Fetch a single memory entry by key
 | `--key` | Entry key |  |
 | `--full` | Show all metadata (tags, ttl, source, timestamps) |  |
 | `--snippet` | Return the SHORT snippet body (single-key get returns FULL content by default — naming one exact key is a depth request) |  |
+| `--field` | Return only the specified field (e.g. content, title, status, exec_prompt) |  |
+| `--compact` | Compress content using native compression engine to save LLM context budget |  |
 
 ```
 EXAMPLES:
   kavach db get --project P --category roadmap --key roadmap.unit.foo --full
 
 WHEN: Before implementing — always `--full` for roadmap units.
-```
-
-## `kavach db graph-query`
-
-Query the knowledge graph — list entities and their edges
-
-| Flag | Description | Default |
-|---|---|---|
-| `--entity-type` | Filter by entity type (skill, rule, gate, project, file, memory, session, `event_type`) |  |
-| `--name` | Show edges for a specific entity name |  |
-| `--limit` | Max entities to show (default: 20) | 20 |
-
-```
-EXAMPLES:
-  kavach db graph-query --entity-type concept --limit 20
-  kavach db graph-query --name paseto_v4
-
-WHEN: Inspect graph entities and their edges by type or name.
-```
-
-## `kavach db infer-deps`
-
-Infer `depends_on` edges from card-key sequence tokens (tier backfill)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--apply` | Write the inferred edges (default is a dry run that only prints them) |  |
-
-```
-EXAMPLES:
-  kavach db infer-deps --project kavach-rs            # dry run — review proposed edges
-  kavach db infer-deps --project kavach-rs --apply    # write the edges
-
-WHEN: The DAG tier view collapses every card into TIER 0 because no card declares prerequisites.
 ```
 
 ## `kavach db kanban`
@@ -697,80 +340,22 @@ EXAMPLES:
 WHEN: Mark a roadmap card verified once `kavach verify` has passed.
 ```
 
-## `kavach db lane-set`
+## `kavach db migrate`
 
-Pin a roadmap card to a dispatch LANE (or clear it back to unlaned). A session running `KAVACH_LANE=<name>` dispatches its own lane first, then the unlaned backlog, never a foreign lane. Refuses if the row is absent (no implicit insert). Roadmap only
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--key` | Entry key (must already exist) |  |
-| `--lane` | Lane name to pin the card to. Mutually exclusive with --clear |  |
-| `--clear` | Clear the lane (back to the unlaned general backlog). Mutually exclusive with --lane |  |
-
-```
-EXAMPLES:
-  kavach db lane-set --project P --key K --lane backend
-  kavach db lane-set --project P --key K --clear
-
-WHEN: Shard a roadmap card to a named dispatch lane (or return it to the general backlog).
-```
-
-## `kavach db list-parts`
-
-List parts for a project
+SurrealDB → embedded Turso migration (PRD_SURREALDB_TO_TURSO_MIGRATION Phase 4)
 
 | Flag | Description | Default |
 |---|---|---|
-| `--project` | Project slug |  |
+| `--verb` | Which migrate step: `export` (dump live SurrealDB), `import` (build DB from NDJSON), or `verify` | import |
+| `--from` | NDJSON export path (source of truth for import/verify) |  |
+| `--to` | Target libSQL database path (or output NDJSON for export) |  |
 
 ```
 EXAMPLES:
-  kavach db list-parts --project my-app
+  kavach db migrate --verb import --from dump.ndjson --to ~/.kavach/kavach.db
+  kavach db migrate --verb verify --from dump.ndjson --to ~/.kavach/kavach.db
 
-WHEN: Enumerate the registered sub-parts of one project.
-```
-
-## `kavach db list-projects`
-
-List all registered projects
-
-```
-EXAMPLES:
-  kavach db list-projects
-
-WHEN: See every registered project slug + root path.
-```
-
-## `kavach db mistake-hit-count`
-
-Count inbound `instance_of` edges on an `anti_pattern` (mistake recurrence)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--name` | Anti-pattern canonical name (e.g. `anti.self_imposed_limit.abc12345`) |  |
-
-```
-EXAMPLES:
-  kavach db mistake-hit-count --name anti.self_imposed_limit.abc12345
-
-WHEN: See how many times an anti-pattern has recurred (inbound instance_of edges).
-```
-
-## `kavach db mistake-purge`
-
-Purge an `anti_pattern` cluster + its `mistake_event`s by the gate that recorded them — removes a stale `correct_action` from `PRACTICE_DELTA` (requires `--confirm`)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--gate` | Gate whose `anti_pattern` cluster(s) to delete (e.g. `capture_finding_unpersisted`) |  |
-| `--confirm` | Confirm the destructive purge |  |
-
-```
-EXAMPLES:
-  kavach db mistake-purge --gate capture_finding_unpersisted --confirm
-
-WHEN: Remove a stale anti-pattern cluster recorded by a gate (clears it from PRACTICE_DELTA).
+WHEN: One-time migration. Export via `kavach db query-raw` per table; import validates dangling edges + counts before reporting success.
 ```
 
 ## `kavach db next-prompt`
@@ -784,136 +369,8 @@ Print the top-priority todo card's exec_prompt to stdout (pipe to an executor mo
 ```
 EXAMPLES:
   kavach db next-prompt --project P
-  kavach db next-prompt --project P | <executor-model>
 
-WHEN: Serve the top-priority todo card's exec_prompt to a cheaper executor model.
-```
-
-## `kavach db ope-audit`
-
-Reward-hacking audit: SOFT held-out value vs HARD witness value drift + C2 floor. Read-only inspection of the Layer-P5 promotion gate
-
-| Flag | Description | Default |
-|---|---|---|
-| `--limit` | Max bandit rows to load (newest first) | 500 |
-| `--drift-tolerance` | Drift slack before SOFT-vs-HARD divergence counts as hacking | 0.05 |
-
-```
-EXAMPLES:
-  kavach db ope-audit --limit 500 --drift-tolerance 0.05
-
-WHEN: Reward-hacking audit — SOFT vs HARD value drift on the Layer-P5 promotion gate.
-```
-
-## `kavach db ope-evaluate`
-
-Off-policy-evaluate a candidate policy against logged bandit rows (LCB + coverage). Read-only inspection of the Layer-B RL gate
-
-| Flag | Description | Default |
-|---|---|---|
-| `--allow` | Candidate P(Allow) |  |
-| `--ask` | Candidate P(Ask) |  |
-| `--block` | Candidate P(Block) |  |
-| `--limit` | Max bandit rows to load (newest first) | 500 |
-| `--z` | z-score for the lower confidence bound (1.96 ≈ 95%) | 1.96 |
-| `--min-coverage-ratio` | Coverage floor in [0,1]; below it the estimate is flagged untrustworthy | 0.2 |
-
-```
-EXAMPLES:
-  kavach db ope-evaluate --allow 0.7 --ask 0.2 --block 0.1 --limit 500
-
-WHEN: Off-policy-evaluate a candidate Allow/Ask/Block policy against logged bandit rows.
-```
-
-## `kavach db pg-drift`
-
-Detect likely missing FKs — columns named `<table>_id` with no declared FK
-
-| Flag | Description | Default |
-|---|---|---|
-| `--dsn` | Postgres DSN |  |
-
-```
-EXAMPLES:
-  kavach db pg-drift --dsn postgres://localhost/mydb
-
-WHEN: Detect `<table>_id` columns missing a declared FK.
-```
-
-## `kavach db pg-er`
-
-Emit ER diagram in Mermaid format from the live schema
-
-| Flag | Description | Default |
-|---|---|---|
-| `--dsn` | Postgres DSN |  |
-
-```
-EXAMPLES:
-  kavach db pg-er --dsn postgres://localhost/mydb
-
-WHEN: Emit a Mermaid ER diagram from the live schema.
-```
-
-## `kavach db pg-introspect`
-
-Introspect a local `PostgreSQL` database — list tables, columns, FKs
-
-| Flag | Description | Default |
-|---|---|---|
-| `--dsn` | Postgres DSN (e.g. <postgres://localhost/mydb>) |  |
-
-```
-EXAMPLES:
-  kavach db pg-introspect --dsn postgres://localhost/mydb
-
-WHEN: List a live Postgres schema's tables, columns, and FKs.
-```
-
-## `kavach db pg-isolation`
-
-Find isolated tables (zero incoming + outgoing FK edges)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--dsn` | Postgres DSN |  |
-
-```
-EXAMPLES:
-  kavach db pg-isolation --dsn postgres://localhost/mydb
-
-WHEN: Find tables with no FK edges (often a modeling smell).
-```
-
-## `kavach db populate-graph`
-
-Populate the knowledge graph from existing relational data
-
-```
-EXAMPLES:
-  kavach db populate-graph
-
-WHEN: One-time/after-import build of the knowledge graph from relational rows.
-```
-
-## `kavach db priority-set`
-
-Set or clear the priority of an existing entry without touching title/content. Surgical rerank verb for human-in-loop focus shifts. Refuses if the row does not exist (no implicit insert). Lower number = higher rank, like nice(1)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--category` | Category (roadmap or decision — only these carry priority) |  |
-| `--key` | Entry key (must already exist) |  |
-| `--priority` | New priority (lower = higher rank). Mutually exclusive with --clear |  |
-| `--clear` | Clear the priority (back to NONE, FIFO tail). Mutually exclusive with --priority |  |
-
-```
-EXAMPLES:
-  kavach db priority-set --project P --category roadmap --key K --priority 1
-  kavach db priority-set --project P --category roadmap --key K --clear
-
-WHEN: Re-rank the backlog by hand without touching a card's title or content.
+WHEN: Get the exec_prompt for the top runnable card — feed to a cheaper model.
 ```
 
 ## `kavach db query`
@@ -926,6 +383,8 @@ Query memory entries for a project
 | `--category` | Category (decision, research, roadmap, pattern, app_spec) |  |
 | `--all` | Include DONE items (filtered out by default for roadmap) |  |
 | `--depth` | Per-row content depth: a char count (e.g. `--depth 400`) or `all` for the whole body. Omitted prints titles only (breadth). `KAVACH_NO_TRUNCATE=1` forces `all` everywhere |  |
+| `--field` | Return only the specified field per row (e.g. key, title, status) |  |
+| `--compact` | Compress content using native compression engine to save LLM context budget |  |
 
 ```
 EXAMPLES:
@@ -967,75 +426,6 @@ EXAMPLES:
 WHEN: First-time onboarding of a repo so kavach can bind sessions to it.
 ```
 
-## `kavach db register-part`
-
-Register a sub-part within a project
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Parent project slug |  |
-| `--name` | Part name (e.g. "backend", "frontend") |  |
-| `--path` | Absolute path to part root |  |
-| `--type` | Part type (backend, frontend, database, mobile, infra, docs, shared, other) |  |
-
-```
-EXAMPLES:
-  kavach db register-part --project my-app --name backend --path /abs/backend --type backend
-
-WHEN: A monorepo has distinct parts (backend/frontend/infra) you want scoped separately.
-```
-
-## `kavach db rotate`
-
-Delete events older than N days (TIME-BASED — transitional, prefer `archive`)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--days` | Number of days to retain |  |
-
-```
-EXAMPLES:
-  kavach db rotate --days 30
-
-WHEN: Drop events older than N days. Prefer `archive` (relevance-based) over this.
-```
-
-## `kavach db run-record`
-
-Record a harness execution run row (status lifecycle start)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--entry-key` | Roadmap entry key this run executes |  |
-| `--branch` | Git branch the run targets |  |
-| `--status` | Initial status (e.g. `running`) |  |
-| `--pid` | OS process id, when known |  |
-
-```
-EXAMPLES:
-  kavach db run-record --project P --entry-key roadmap.unit.foo --status running --pid 12345
-
-WHEN: Open a harness-execution run row at start of a dispatched task.
-```
-
-## `kavach db run-update-status`
-
-Update a run row's terminal status + exit code
-
-| Flag | Description | Default |
-|---|---|---|
-| `--id` | Run row id |  |
-| `--status` | New status (e.g. `done`, `failed`) |  |
-| `--exit-code` | Process exit code, when terminal |  |
-
-```
-EXAMPLES:
-  kavach db run-update-status --id run:abc --status done --exit-code 0
-
-WHEN: Close a run row with its terminal status + exit code.
-```
-
 ## `kavach db search`
 
 Search with metadata filters (`entry_status`, since, contains) SOURCE: <https://docs.rs/clap/latest/clap>/_derive/_tutorial/index.html
@@ -1057,23 +447,6 @@ EXAMPLES:
 WHEN: Narrow a category by status/recency/substring instead of listing everything.
 ```
 
-## `kavach db set-parent`
-
-Set (or clear) a project's parent, building the hierarchy
-
-| Flag | Description | Default |
-|---|---|---|
-| `--child` | Child project slug |  |
-| `--parent` | Parent project slug; omit to detach to top-level |  |
-
-```
-EXAMPLES:
-  kavach db set-parent --child sub-app --parent mono
-  kavach db set-parent --child sub-app          # detach to top-level
-
-WHEN: Build or unbuild the project hierarchy.
-```
-
 ## `kavach db status-update`
 
 Update the strict status of a memory entry (`todo|in_progress|done|verified`)
@@ -1093,28 +466,6 @@ EXAMPLES:
   kavach db status-update --project P --category roadmap --key K --status done --verify-cmd 'bun run build'
 
 WHEN: Claim card (todo→in_progress), finish work (→done), then run `kavach verify` (→verified).
-```
-
-## `kavach db sync`
-
-Sync session state to database
-
-```
-EXAMPLES:
-  kavach db sync
-
-WHEN: Flush in-memory session state to the store after a batch of changes.
-```
-
-## `kavach db tree`
-
-Render the project hierarchy as an indented tree
-
-```
-EXAMPLES:
-  kavach db tree
-
-WHEN: View the whole project hierarchy as an indented tree.
 ```
 
 ## `kavach db wipe-project`
@@ -1663,6 +1014,37 @@ Show counts of {todo, `in_progress`, done, verified, blocked, deferred} for a pr
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
+
+## `kavach redact`
+
+Redact environment files key-preserving or mask secrets from file/stdin
+
+| Flag | Description | Default |
+|---|---|---|
+| `<file>` | Path to file to redact, or '-' for stdin (defaults to stdin if omitted) |  |
+
+```
+EXAMPLES:
+  kavach redact .env
+  cat output.log | kavach redact -
+
+WHEN: sanitize files or command output before LLM consumption.
+```
+
+## `kavach retrieve`
+
+Retrieve full uncompressed payload from disk CCR cache by hash
+
+| Flag | Description | Default |
+|---|---|---|
+| `<hash>` | Hash or prefix of the cached CCR blob |  |
+
+```
+EXAMPLES:
+  kavach retrieve <hash>
+
+WHEN: inspect full tool output or payload that was cached to save LLM context budget.
+```
 
 ## `kavach security`
 

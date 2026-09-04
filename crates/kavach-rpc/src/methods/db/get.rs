@@ -35,6 +35,14 @@ pub struct GetEntry {
     pub status: String,
     pub content: Option<String>,
     pub access_count: i64,
+    #[serde(default)]
+    pub exec_prompt: Option<String>,
+    #[serde(default)]
+    pub priority: Option<i64>,
+    #[serde(default)]
+    pub lane: Option<String>,
+    #[serde(default)]
+    pub tags: Option<Vec<String>>,
 }
 
 /// # Errors
@@ -61,6 +69,10 @@ pub async fn get(ctx: &AppState, params: GetParams) -> Result<GetResult, ErrorOb
                     },
                     content: include_content.then(|| e.content.clone()),
                     access_count: e.access_count.unwrap_or_default(),
+                    exec_prompt: e.exec_prompt.clone(),
+                    priority: e.priority,
+                    lane: e.lane.clone(),
+                    tags: e.tags.clone(),
                 }),
             })
         }

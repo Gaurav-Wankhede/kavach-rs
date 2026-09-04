@@ -34,7 +34,45 @@ impl From<io::Error> for IoExit {
     }
 }
 
+/// Check whether current process is serving an LLM agent vs a direct human terminal.
+#[must_use]
+pub(crate) fn is_agent_consumer() -> bool {
+    if std::env::var("KAVACH_RAW").is_ok() {
+        return false;
+    }
+    if std::env::var("KAVACH_COMPACT").is_ok()
+        || std::env::var("CLAUDE_CODE_MAX_OUTPUT_TOKENS").is_ok()
+        || std::env::var("ANTIGRAVITY_AGENT").is_ok()
+        || std::env::var("CURSOR_AGENT").is_ok()
+    {
+        return true;
+    }
+    !io::stdout().is_terminal()
+        && std::env::var("CARGO").is_err()
+        && std::env::var("CARGO_MANIFEST_DIR").is_err()
+}
+
+pub(crate) fn print_raw_or_exit(line: &str) -> Result<(), IoExit> {
+    let mut h = io::stdout().lock();
+    h.write_all(line.as_bytes())?;
+    h.write_all(b"\n")?;
+    Ok(())
+}
+
 pub(crate) fn print_or_exit(line: &str) -> Result<(), IoExit> {
+    if is_agent_consumer() {
+        let sanitized = kavach_engine::gates::secret_redactor::sanitize_output(line, None);
+        let compacted = if sanitized.trim_start().starts_with('[') && sanitized.trim_end().ends_with(']') {
+            kavach_toon::compact::tabular::compact_tabular(&sanitized, 20).unwrap_or(sanitized)
+        } else {
+            sanitized
+        };
+        let (processed, _) = kavach_engine::ccr::process_ccr(&compacted);
+        let mut h = io::stdout().lock();
+        h.write_all(processed.as_bytes())?;
+        h.write_all(b"\n")?;
+        return Ok(());
+    }
     let mut h = io::stdout().lock();
     h.write_all(line.as_bytes())?;
     h.write_all(b"\n")?;

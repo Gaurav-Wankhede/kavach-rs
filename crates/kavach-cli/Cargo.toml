@@ -12,6 +12,7 @@ path = "src/main.rs"
 kavach-types = { path = "../kavach-types" }
 kavach-hook = { path = "../kavach-hook" }
 kavach-engine = { path = "../kavach-engine" }
+kavach-toon = { path = "../kavach-toon" }
 kavach-session = { path = "../kavach-session" }
 kavach-config = { path = "../kavach-config" }
 kavach-rule-engine = { path = "../kavach-rule-engine" }
@@ -22,6 +23,7 @@ kavach-rpc = { path = "../kavach-rpc" }
 kavach-web = { path = "../kavach-web" }
 kavach-patterns = { path = "../kavach-patterns" }
 regex = { workspace = true }
+chrono = { workspace = true }
 surrealdb = { workspace = true }
 surrealdb-types = { workspace = true }
 kavach-advisor = { path = "../kavach-advisor" }

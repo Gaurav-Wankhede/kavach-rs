@@ -9,6 +9,11 @@ pub(super) enum Decision {
     Ask(String),
     /// Allow, optionally with advisory context (None = silent allow).
     Allow(Option<String>),
+    /// Rewrite command transparently (e.g. via RTK) with optional advisory context.
+    Rewrite {
+        command: String,
+        context: Option<String>,
+    },
 }
 
 impl Decision {
@@ -18,7 +23,7 @@ impl Decision {
         match self {
             Self::Deny(_) => GateAction::Block,
             Self::Ask(_) => GateAction::Ask,
-            Self::Allow(_) => GateAction::Allow,
+            Self::Allow(_) | Self::Rewrite { .. } => GateAction::Allow,
         }
     }
 
@@ -29,6 +34,15 @@ impl Decision {
             Self::Ask(reason) => drop(kavach_hook::exit_pre_tool_ask(&reason)),
             Self::Allow(ctx) => {
                 crate::gates::turn_relay::exit_pre_tool_allow_relay(session, ctx.as_deref());
+            }
+            Self::Rewrite { command, context } => {
+                let mut updated = std::collections::HashMap::new();
+                updated.insert("command".to_owned(), serde_json::Value::String(command));
+                crate::gates::turn_relay::exit_pre_tool_rewrite_relay(
+                    session,
+                    updated,
+                    context.as_deref(),
+                );
             }
         }
     }
@@ -48,6 +62,14 @@ mod tests {
         assert_eq!(Decision::Allow(None).action(), GateAction::Allow);
         assert_eq!(
             Decision::Allow(Some("ctx".into())).action(),
+            GateAction::Allow
+        );
+        assert_eq!(
+            Decision::Rewrite {
+                command: "rtk cargo test".into(),
+                context: None,
+            }
+            .action(),
             GateAction::Allow
         );
     }

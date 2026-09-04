@@ -1,17 +1,28 @@
 //! General anti-patterns for all languages.
+use std::sync::OnceLock;
+
 use crate::config::{AntiProdLevel, AntiProdResult};
 use crate::file_types::{
     is_dockerfile, is_marker_inside_string, is_non_config_file, is_shell_file,
 };
 use regex::Regex;
 
+/// Fallback for an out-of-range static-table index: never matches. The tables
+/// are compile-time constants, so this path is unreachable in practice; the
+/// debug_assert fires in tests instead of panicking in production.
+static NEVER_MATCH: OnceLock<Regex> = OnceLock::new();
+
 #[inline]
-#[expect(
-    clippy::indexing_slicing,
-    reason = "index is a constant literal bounded by regex array size"
-)]
-fn idx(r: &[Regex], i: usize) -> &Regex {
-    &r[i]
+fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
+    match r.get(i) {
+        Some(re) => re,
+        None => {
+            debug_assert!(false, "regex table index {i} out of range");
+            r.first().unwrap_or(NEVER_MATCH.get_or_init(|| {
+                Regex::new("$^").expect("trivial regex compiles")
+            }))
+        }
+    }
 }
 
 #[inline]
@@ -59,7 +70,7 @@ pub(super) fn detect_general_patterns(
 ) {
     let has_bare_marker = content
         .lines()
-        .any(|line| idx(r, 1).is_match(line) && !is_marker_inside_string(line));
+        .any(|line| idx_or_skip(r, 1).is_match(line) && !is_marker_inside_string(line));
     if has_bare_marker {
         add(
             res,
@@ -71,8 +82,7 @@ pub(super) fn detect_general_patterns(
     }
     if is_non_config_file(fp) {
         ck(
-            res,
-            idx(r, 2),
+            res,            idx_or_skip(r, 2),
             content,
             AntiProdLevel::P1ProdLeak,
             "PROD_LEAK",
@@ -81,8 +91,7 @@ pub(super) fn detect_general_patterns(
         );
     }
     ck(
-        res,
-        idx(r, 51),
+        res,        idx_or_skip(r, 51),
         content,
         AntiProdLevel::P0MockData,
         "STUB_501",
@@ -90,8 +99,7 @@ pub(super) fn detect_general_patterns(
         "Implement handler NOW — no 501 stubs.",
     );
     ck(
-        res,
-        idx(r, 42),
+        res,        idx_or_skip(r, 42),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -100,8 +108,7 @@ pub(super) fn detect_general_patterns(
     );
     if is_dockerfile(fp) || is_shell_file(fp) {
         ck(
-            res,
-            idx(r, 43),
+            res,            idx_or_skip(r, 43),
             content,
             AntiProdLevel::P1ProdLeak,
             "PROD_LEAK",

@@ -1,15 +1,26 @@
 //! Type safety and linting suppression anti-patterns.
+use std::sync::OnceLock;
+
 use crate::config::{AntiProdLevel, AntiProdResult};
 use crate::file_types::{is_frontend_file, is_go_file, is_java_file, is_python_file, is_rust_file};
 use regex::Regex;
 
+/// Fallback for an out-of-range static-table index: never matches. The tables
+/// are compile-time constants, so this path is unreachable in practice; the
+/// debug_assert fires in tests instead of panicking in production.
+static NEVER_MATCH: OnceLock<Regex> = OnceLock::new();
+
 #[inline]
-#[expect(
-    clippy::indexing_slicing,
-    reason = "index is a constant literal bounded by regex array size"
-)]
-fn idx(r: &[Regex], i: usize) -> &Regex {
-    &r[i]
+fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
+    match r.get(i) {
+        Some(re) => re,
+        None => {
+            debug_assert!(false, "regex table index {i} out of range");
+            r.first().unwrap_or(NEVER_MATCH.get_or_init(|| {
+                Regex::new("$^").expect("trivial regex compiles")
+            }))
+        }
+    }
 }
 
 #[inline]
@@ -41,8 +52,7 @@ pub(super) fn detect_type_safety(
 ) {
     if is_frontend_file(fp) {
         ck(
-            res,
-            idx(r, 7),
+            res,            idx_or_skip(r, 7),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -50,8 +60,7 @@ pub(super) fn detect_type_safety(
             "Type narrow.",
         );
         ck(
-            res,
-            idx(r, 8),
+            res,            idx_or_skip(r, 8),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -59,8 +68,7 @@ pub(super) fn detect_type_safety(
             "Fix type.",
         );
         ck(
-            res,
-            idx(r, 9),
+            res,            idx_or_skip(r, 9),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -68,8 +76,7 @@ pub(super) fn detect_type_safety(
             "Fix lint.",
         );
         ck(
-            res,
-            idx(r, 10),
+            res,            idx_or_skip(r, 10),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -79,8 +86,7 @@ pub(super) fn detect_type_safety(
     }
     if is_go_file(fp) {
         ck(
-            res,
-            idx(r, 31),
+            res,            idx_or_skip(r, 31),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -90,8 +96,7 @@ pub(super) fn detect_type_safety(
     }
     if is_python_file(fp) {
         ck(
-            res,
-            idx(r, 36),
+            res,            idx_or_skip(r, 36),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -101,8 +106,7 @@ pub(super) fn detect_type_safety(
     }
     if is_java_file(fp) {
         ck(
-            res,
-            idx(r, 40),
+            res,            idx_or_skip(r, 40),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -112,8 +116,7 @@ pub(super) fn detect_type_safety(
     }
     if is_rust_file(fp) {
         ck(
-            res,
-            idx(r, 23),
+            res,            idx_or_skip(r, 23),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -121,8 +124,7 @@ pub(super) fn detect_type_safety(
             "Remove dead.",
         );
         ck(
-            res,
-            idx(r, 24),
+            res,            idx_or_skip(r, 24),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",
@@ -130,8 +132,7 @@ pub(super) fn detect_type_safety(
             "Use or remove.",
         );
         ck(
-            res,
-            idx(r, 25),
+            res,            idx_or_skip(r, 25),
             content,
             AntiProdLevel::P3TypeLoose,
             "TYPE_LOOSE",

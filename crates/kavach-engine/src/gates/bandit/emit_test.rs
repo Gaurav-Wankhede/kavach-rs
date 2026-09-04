@@ -2,7 +2,6 @@
 //! `db.bandit_row` RPC will persist, without standing up a daemon.
 #![allow(
     clippy::expect_used,
-    clippy::unwrap_used,
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 use super::*;

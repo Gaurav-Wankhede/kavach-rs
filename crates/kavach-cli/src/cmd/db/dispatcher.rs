@@ -2,29 +2,33 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    archive, backfill_relationships, bridge, citation, concept, delete, delete_prefix, event,
-    expire, find, flow, gate_config, get, graph_query, infer_deps, kanban, lane, list,
-    mistake_hits, mistake_purge, next_prompt, ope, pg, populate_graph, priority, query, query_raw,
-    register, register_part, rotate, run_rec, search, status_update, sync, tree, wipe_project,
-    write,
+    citation, concept, delete, event, get, kanban, migrate, next_prompt, query,
+    query_raw, register, search, status_update, wipe_project, write,
 };
 use crate::cli::DbAction;
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "single match DbAction dispatch table with one arm per CLI verb"
+)]
 pub(crate) fn run(action: DbAction) -> i32 {
     match action {
         DbAction::Register { slug, path, stack } => register::run(&slug, &path, stack.as_deref()),
-        DbAction::RegisterPart {
-            project,
-            name,
-            path,
-            part_type,
-        } => register_part::run(&project, &name, &path, &part_type),
         DbAction::Query {
             project,
             category,
             all,
             depth,
-        } => query::run(&project, category.as_deref(), all, depth.as_deref()),
+            field,
+            compact,
+        } => query::run(
+            &project,
+            category.as_deref(),
+            all,
+            depth.as_deref(),
+            field.as_deref(),
+            compact,
+        ),
         DbAction::Search {
             project,
             category,
@@ -63,47 +67,40 @@ pub(crate) fn run(action: DbAction) -> i32 {
             exec_prompt: exec_prompt.as_deref(),
             depends_on: &depends_on,
         }),
-        DbAction::PrioritySet {
-            project,
-            category,
-            key,
-            priority: new_priority,
-            clear,
-        } => priority::run(&project, &category, &key, new_priority, clear),
-        DbAction::Sync => sync::run(),
-        DbAction::FindProject { path } => find::run_project(&path),
-        DbAction::FindPart { path } => find::run_part(&path),
-        DbAction::ListProjects => list::run_projects(),
-        DbAction::SetParent { child, parent } => tree::set_parent(&child, parent.as_deref()),
-        DbAction::Tree => tree::render(),
-        DbAction::ListParts { project } => list::run_parts(&project),
-        DbAction::Expire => expire::run(),
         DbAction::Get {
             project,
             category,
             key,
             full,
             snippet,
-        } => get::run(&project, &category, &key, full, snippet),
+            field,
+            compact,
+        } => get::run(
+            &project,
+            &category,
+            &key,
+            full,
+            snippet,
+            field.as_deref(),
+            compact,
+        ),
         DbAction::Event {
             event_type,
             payload,
         } => event::run(&event_type, payload.as_deref()),
-        action => dispatch_remaining(action),
-    }
-}
-
-#[expect(
-    clippy::too_many_lines,
-    reason = "cohesive single `match DbAction` routing table — one arm per CLI verb; splitting fragments the dispatch surface with no reuse gain"
-)]
-fn dispatch_remaining(action: DbAction) -> i32 {
-    match action {
-        DbAction::Rotate { days } => rotate::run(days),
-        DbAction::Archive {
-            floor_days,
+        DbAction::Delete {
+            project,
+            category,
+            key,
+            all,
+            confirm,
             dry_run,
-        } => archive::run(floor_days, dry_run),
+        } => delete::run(&project, &category, key.as_deref(), all, confirm, dry_run),
+        DbAction::WipeProject {
+            project,
+            confirm,
+            dry_run,
+        } => wipe_project::run(&project, confirm, dry_run),
         DbAction::Kanban {
             project,
             limit,
@@ -133,39 +130,6 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             status,
             verify_cmd,
         } => status_update::run(&project, &category, &key, &status, verify_cmd.as_deref()),
-        DbAction::PopulateGraph => populate_graph::run(),
-        DbAction::BackfillRelationships { project, dry_run } => {
-            backfill_relationships::run(project.as_deref(), dry_run)
-        }
-        DbAction::GraphQuery {
-            entity_type,
-            name,
-            limit,
-        } => graph_query::run(entity_type.as_deref(), name.as_deref(), limit),
-        DbAction::PgIntrospect { dsn } => pg::run_introspect(&dsn),
-        DbAction::PgIsolation { dsn } => pg::run_isolation(&dsn),
-        DbAction::PgEr { dsn } => pg::run_er(&dsn),
-        DbAction::PgDrift { dsn } => pg::run_drift(&dsn),
-        DbAction::Delete {
-            project,
-            category,
-            key,
-            all,
-            confirm,
-            dry_run,
-        } => delete::run(&project, &category, key.as_deref(), all, confirm, dry_run),
-        DbAction::DeletePrefix {
-            project,
-            category,
-            prefix,
-            confirm,
-            dry_run,
-        } => delete_prefix::run(&project, &category, &prefix, confirm, dry_run),
-        DbAction::WipeProject {
-            project,
-            confirm,
-            dry_run,
-        } => wipe_project::run(&project, confirm, dry_run),
         DbAction::ConceptAdd {
             name,
             display,
@@ -175,11 +139,6 @@ fn dispatch_remaining(action: DbAction) -> i32 {
         } => concept::add(&name, &display, &desc, tags.as_deref(), sources.as_deref()),
         DbAction::ConceptLink { from, edge, to } => concept::link(&from, &edge, &to),
         DbAction::ConceptSearch { query, limit } => concept::search(&query, limit),
-        DbAction::ConceptList { limit } => concept::list(limit),
-        DbAction::ConceptDelete { name } => concept::delete(&name),
-        DbAction::ConceptDeletePrefix { prefix, confirm } => {
-            concept::delete_by_prefix(&prefix, confirm)
-        }
         DbAction::CitationAdd {
             project,
             entry_key,
@@ -187,96 +146,8 @@ fn dispatch_remaining(action: DbAction) -> i32 {
             slug,
             url,
         } => citation::add(&project, &entry_key, &name, &slug, &url),
-        DbAction::CitationGet { project, entry_key } => citation::get(&project, &entry_key),
         DbAction::CitationList { project } => citation::list(&project),
-        DbAction::CitationLink { node, citation } => citation::link(&node, &citation),
-        DbAction::CitationTraverse { citation } => citation::traverse(&citation),
-        DbAction::CitationRefresh { citation, delta } => citation::refresh(&citation, delta),
-        gc @ (DbAction::GateConfigGet { .. }
-        | DbAction::GateConfigSet { .. }
-        | DbAction::GateConfigDelete { .. }
-        | DbAction::GateConfigList { .. }) => dispatch_gate_config(gc),
-        DbAction::BridgeCreate {
-            src_table,
-            src_key,
-            edge,
-            concept,
-        } => bridge::create(&src_table, &src_key, &edge, &concept),
-        DbAction::BridgeConceptsFor { project } => bridge::concepts_for(&project),
-        DbAction::BridgeProjectsFor { concept } => bridge::projects_for(&concept),
-        DbAction::MistakeHitCount { name } => mistake_hits::run(&name),
-        DbAction::OpeEvaluate {
-            allow,
-            ask,
-            block,
-            limit,
-            z,
-            min_coverage_ratio,
-        } => ope::run_evaluate(allow, ask, block, limit, z, min_coverage_ratio),
-        DbAction::OpeAudit {
-            limit,
-            drift_tolerance,
-        } => ope::run_audit(limit, drift_tolerance),
-        DbAction::RunRecord {
-            project,
-            entry_key,
-            branch,
-            status,
-            pid,
-        } => run_rec::run_record(&project, &entry_key, branch.as_deref(), &status, pid),
-        DbAction::RunUpdateStatus {
-            id,
-            status,
-            exit_code,
-        } => run_rec::run_update_status(&id, &status, exit_code),
-        DbAction::MistakePurge { gate, confirm } => mistake_purge::run(&gate, confirm),
-        DbAction::QueryRaw { query } => query_raw::run(&query),
-        flow_action @ (DbAction::FlowAdd { .. } | DbAction::FlowShow { .. }) => {
-            dispatch_flow(flow_action)
-        }
-        DbAction::InferDeps { project, apply } => infer_deps::run(&project, apply),
-        DbAction::NextPrompt { project } => next_prompt::run(&project),
-        DbAction::LaneSet {
-            project,
-            key,
-            lane: new_lane,
-            clear,
-        } => lane::run(&project, &key, new_lane, clear),
-        _ => 1, // SAFETY: dispatch_remaining only called with remaining actions
-    }
-}
-
-/// Implementation-flow DAG verbs (`flow-add` / `flow-show`), split out so
-/// `dispatch_remaining` stays within the per-fn line budget.
-fn dispatch_flow(action: DbAction) -> i32 {
-    match action {
-        DbAction::FlowAdd {
-            project,
-            key,
-            title,
-            steps_json,
-            mermaid,
-        } => flow::add(
-            &project,
-            &key,
-            &title,
-            steps_json.as_deref(),
-            mermaid.as_deref(),
-        ),
-        DbAction::FlowShow {
-            project,
-            key,
-            format,
-        } => flow::show(&project, &key, &format),
-        _ => 1, // SAFETY: dispatch_flow only called with Flow* actions
-    }
-}
-
-/// Route the four `gate-config` verbs. Split out of `dispatch_remaining` to keep
-/// that match under the per-fn line cap; only ever called with `GateConfig*`.
-fn dispatch_gate_config(action: DbAction) -> i32 {
-    match action {
-        DbAction::GateConfigGet { project, gate_key } => gate_config::get(&project, &gate_key),
+        DbAction::GateConfigGet { project, gate_key } => super::gate_config::get(&project, &gate_key),
         DbAction::GateConfigSet {
             project,
             gate_key,
@@ -285,11 +156,9 @@ fn dispatch_gate_config(action: DbAction) -> i32 {
             boolean,
             list,
             text,
-        } => gate_config::set(&project, &gate_key, &kind, num, boolean, list, text),
-        DbAction::GateConfigDelete { project, gate_key } => {
-            gate_config::delete(&project, &gate_key)
-        }
-        DbAction::GateConfigList { project } => gate_config::list(&project),
-        _ => 1, // SAFETY: only called with GateConfig* actions
+        } => super::gate_config::set(&project, &gate_key, &kind, num, boolean, list, text),
+        DbAction::QueryRaw { query } => query_raw::run(&query),
+        DbAction::NextPrompt { project } => next_prompt::run(&project),
+        DbAction::Migrate { verb, from, to } => migrate::run(&verb, &from, &to),
     }
 }

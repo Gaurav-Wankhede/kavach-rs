@@ -1,0 +1,5 @@
+[decision] decision.ats-law-3.8b — ATS LAW (Rule 3.8b): researched Aug 2026, encoded in AGENTS.md + jobs agent (status: verified)
+[pattern] pattern.ironwill-solo-fullstack — Iron Will International: Solo Full-Stack Engineer, Nov 2025 – Present (corrected) (status: verified)
+[pattern] pattern.tubeforge-stack-truth — TubeForge stack: COMPLETELY Rust engine + React SPA frontend, HTMX is legacy (status: verified)
+[decision] job.grandmotorcars.fullstack-dev — Grand Motorcars — Full-Stack Developer (AI-First): applied Aug 2026 (status: verified)
+[decision] job.parallel.mts-backend-api — Parallel — MTS Back-end & API: applied Aug 2026 (status: verified)

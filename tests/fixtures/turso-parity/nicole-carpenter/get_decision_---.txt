@@ -1,0 +1,5 @@
+error: unexpected argument '---' found
+
+Usage: kavach db get --project <PROJECT> --category <CATEGORY> --key <KEY>
+
+For more information, try '--help'.

@@ -1,0 +1,172 @@
+[KANBAN DAG] 818 node(s), 195 edge(s)
+TIER 0 — ready now
+  [missing] - — (unresolved — cross-project or missing)  ✓READY
+  [missing] 1 — (unresolved — cross-project or missing)  ✓READY
+  [missing] 2 — (unresolved — cross-project or missing)  ✓READY
+  [missing] 2026-07-02 — (unresolved — cross-project or missing)  ✓READY
+  [missing] 3 — (unresolved — cross-project or missing)  ✓READY
+  [missing] ACTUALLY — (unresolved — cross-project or missing)  ✓READY
+  [missing] AppState — (unresolved — cross-project or missing)  ✓READY
+  [missing] CORRECTED — (unresolved — cross-project or missing)  ✓READY
+  [missing] DenyAllPdp — (unresolved — cross-project or missing)  ✓READY
+  [missing] Migration — (unresolved — cross-project or missing)  ✓READY
+  [missing] NEW — (unresolved — cross-project or missing)  ✓READY
+  [missing] NO — (unresolved — cross-project or missing)  ✓READY
+  [missing] PdpXxx — (unresolved — cross-project or missing)  ✓READY
+  [missing] PolicyDecisionPoint — (unresolved — cross-project or missing)  ✓READY
+  [missing] REAL — (unresolved — cross-project or missing)  ✓READY
+  [missing] ROOT — (unresolved — cross-project or missing)  ✓READY
+  [missing] Spec — (unresolved — cross-project or missing)  ✓READY
+  [missing] THEN — (unresolved — cross-project or missing)  ✓READY
+  [missing] TOUCHED — (unresolved — cross-project or missing)  ✓READY
+  [missing] a — (unresolved — cross-project or missing)  ✓READY
+  [missing] all — (unresolved — cross-project or missing)  ✓READY
+  [missing] and — (unresolved — cross-project or missing)  ✓READY
+  [missing] app — (unresolved — cross-project or missing)  ✓READY
+  [missing] at — (unresolved — cross-project or missing)  ✓READY
+  [missing] attempt — (unresolved — cross-project or missing)  ✓READY
+  [missing] author — (unresolved — cross-project or missing)  ✓READY
+  [missing] billing — (unresolved — cross-project or missing)  ✓READY
+  [missing] by — (unresolved — cross-project or missing)  ✓READY
+  [missing] call — (unresolved — cross-project or missing)  ✓READY
+  [missing] caught — (unresolved — cross-project or missing)  ✓READY
+  [missing] charge.rs — (unresolved — cross-project or missing)  ✓READY
+  [missing] client — (unresolved — cross-project or missing)  ✓READY
+  [missing] clones — (unresolved — cross-project or missing)  ✓READY
+  [missing] constructs — (unresolved — cross-project or missing)  ✓READY
+  [missing] decision.gate.tdd-gates-microfile-relocation-2026-06-30 — (unresolved — cross-project or missing)  ✓READY
+  [missing] decision.security.payment-billing-wallet-pdp-port-reverted-p0-2026-07-02 — (unresolved — cross-project or missing)  ✓READY
+  [missing] first — (unresolved — cross-project or missing)  ✓READY
+  [missing] for — (unresolved — cross-project or missing)  ✓READY
+  [missing] full — (unresolved — cross-project or missing)  ✓READY
+  [missing] handler — (unresolved — cross-project or missing)  ✓READY
+  [missing] handlers — (unresolved — cross-project or missing)  ✓READY
+  [missing] hardcoded — (unresolved — cross-project or missing)  ✓READY
+  [missing] have — (unresolved — cross-project or missing)  ✓READY
+  [missing] injected — (unresolved — cross-project or missing)  ✓READY
+  [missing] into — (unresolved — cross-project or missing)  ✓READY
+  [missing] ironcore-internal-service — (unresolved — cross-project or missing)  ✓READY
+  [missing] it — (unresolved — cross-project or missing)  ✓READY
+  [missing] its — (unresolved — cross-project or missing)  ✓READY
+  [missing] kavach-rs/tdd-gate-new-module-fix — (unresolved — cross-project or missing)  ✓READY
+  [missing] located — (unresolved — cross-project or missing)  ✓READY
+  [missing] needs — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/decision/soundbak.1739-lead-relay-design-spec — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/2026-05-28 — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/EACH — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/FIRST — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/LIVE — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/PDP-port — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/STEP — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/additions — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/cards — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/content — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/core-auth — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/decision.gate.tdd-gates-microfile-relocation-2026-06-30 — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/description — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/fields — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/fix — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/ground-truth — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/install — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/kavach-rs — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/migs — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/on-disk — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/owner — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/owner-provisioned — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/platform — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/postgis-extension-and-missions-geom-column — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/prop — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/read-cutover — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/reading — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.data.classified-description-read-cutover-to-scylla — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.data.crm-notes-sweep-scylla-wire — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.data.feedback-sweep-scylla-upsert-wire — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.data.jlm-classified-description-untracked-pg-scylla-dup — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.data.scylla-session-state-wiring — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.harness.witness-gate-cross-repo-root — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.lint.workspace-clippy-debt-pass-by-value-docs — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.ops.migration-ledger-322-reconcile — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.schema.jlm-index-survivor-rename-mig266 — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.security.payment-billing-wallet-pdp-port — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.security.soundbak-media-token-verify-serve — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.soundbak-social-service-microfile-compliance — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/roadmap.unit.workspace.clippy-debt-zero — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/row.body_blake3 — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/scylla-eval-trial-alpha-connect — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/slice-1a — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/step — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/top-level — (unresolved — cross-project or missing)  ✓READY
+  [missing] nicole-carpenter/roadmap/zero — (unresolved — cross-project or missing)  ✓READY
+  [missing] not — (unresolved — cross-project or missing)  ✓READY
+  [missing] once — (unresolved — cross-project or missing)  ✓READY
+  [missing] payment-service/core-payment — (unresolved — cross-project or missing)  ✓READY
+  [missing] payout-failure — (unresolved — cross-project or missing)  ✓READY
+  [missing] primitives — (unresolved — cross-project or missing)  ✓READY
+  [missing] processing — (unresolved — cross-project or missing)  ✓READY
+  [missing] production — (unresolved — cross-project or missing)  ✓READY
+  [missing] properly — (unresolved — cross-project or missing)  ✓READY
+  [missing] rainfire-missions-service — (unresolved — cross-project or missing)  ✓READY
+  [missing] ready — (unresolved — cross-project or missing)  ✓READY
+  [missing] real — (unresolved — cross-project or missing)  ✓READY
+  [missing] regression — (unresolved — cross-project or missing)  ✓READY
+  [missing] remain — (unresolved — cross-project or missing)  ✓READY
+  [missing] reverted — (unresolved — cross-project or missing)  ✓READY
+  [todo] roadmap.unit.bug.datetime-rfc3339-workspace-class-sweep — P2 CLASS-SWEEP: workspace-wide rg for #[derive(Serialize)] DTOs with bare OffsetDateTime lacking rfc3339 — retire the time-crate deserialize-fail class (3rd recurrence)  ✓READY
+  [todo] roadmap.unit.bug.deals-silent-drop-publish-window — Deals: FE ApiDeal silently drops BE is_published/starts_at/expires_at (publish window invisible)  ✓READY
+  [todo] roadmap.unit.bug.idempotency-confirm-handler-status-guard — P2 IDEMPOTENCY(hardening): payment confirm handler lacks in-handler status guard — add defense-in-depth transition check  ✓READY
+  [todo] roadmap.unit.bug.idempotency-contact-insert-dedup — P3 IDEMPOTENCY: contact_seller inserts fresh-UUID row per retry — dedup listing_contacts on (listing_id,user/session,window)  ✓READY
+  [todo] roadmap.unit.bug.idempotency-expiration-handler-verify-and-guard — P2 IDEMPOTENCY(verify-first): expiration expire/delete handlers — DO double-alarm fires two POSTs; prove or add the status-transition guard  ✓READY
+  [todo] roadmap.unit.bug.jlm-twelve-star-ticket-price-i64-i32-overflow — JLM twelve_star_meetup: ticket_price_cents i64(FE) vs i32(BE) latent overflow  ✓READY
+  [todo] roadmap.unit.data.crm-notes-sweep-scylla-wire — P1: wire CRM note body sweep to Scylla — author body_sweep (UPSERT_NOTE_BODY) + connect session + spawn; rows stamp pending but nothing drains them  ✓READY
+  [todo] roadmap.unit.data.dto-scan-followup-open-gaps — DTO-SCAN FOLLOWUP: 4 not-verified areas the migration scan flagged (governance dto/requests, WDR devotional, rainfire event_data, rainfire_crm dup)  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-ad-creative-copy — DTO-MIGRATE: AdCreative headline/description/cta_text -> Scylla; ids/enums stay PG (bids stay PG financial)  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-bdf-support-message-body — DTO-MIGRATE: BDF SupportMessageRow.body_markdown -> Scylla (reuse support-content-scylla crate)  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-business-directory-review-body — DTO-MIGRATE: ReviewEntity body/improvement_suggestion/feedback -> Scylla; id/business_id/rating stay PG  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-commerce-return-reason — DTO-MIGRATE: commerce return reason -> Scylla (narrow content split; refund/clawback amounts STAY PG financial)  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-comms-messages-body-generic-thread — DTO-MIGRATE: core_comms comms_messages.body -> Scylla (generic email/in-app thread system, separate from partner-comms)  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-crm-activity-description — DTO-MIGRATE: CRM Activity.description -> Scylla; ids/enums/ip/ua metadata stay PG  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-crm-thread-message-content — DTO-MIGRATE: CRM thread Message.content + attachments -> Scylla; thread_id/sender metadata stay PG  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-promotion-deal-description-CROSSCRATE-DUP — DTO-MIGRATE+DEDUP: Promotion vs DealEntity cross-crate DUP — reconcile then migrate description/terms -> Scylla  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-soundbak-postdto-content — DTO-MIGRATE: PostDto content/quote_text -> Scylla; keep id/author_id metadata in PG  ✓READY
+  [todo] roadmap.unit.data.migrate-dto-soundbak-story-reply-content — DTO-MIGRATE: StoryReply content -> Scylla; id/highlight_id/sender_id + media pointer stay PG  ✓READY
+  [todo] roadmap.unit.data.prayer-room-comments-off-contract-neon-only — DATA-MIGRATION: complete prayer_room_comments body Postgres->Scylla (self-documented OFF-CONTRACT)  ✓READY
+  [todo] roadmap.unit.data.profile-reviews-stuck-outbox-no-sweep — P1 DATA-MIGRATION: profile_reviews stuck-outbox — rows stamped pending_scylla_write but NO sweep ships bodies to Scylla  ✓READY
+  [todo] roadmap.unit.data.stage2-no-sweep-cluster-audit — DATA-MIGRATION: audit STAGE-2 no-sweep cluster (mission_updates/live_messages/live_prayers + confirm promotions/devotionals write-path)  ✓READY
+  [todo] roadmap.unit.data.wdr-devotional-comments-scylla-target-unconfirmed — DATA-MIGRATION: author missing Scylla target for devotional_comments (staged-for-drop, no Scylla body table located = data-loss risk)  ✓READY
+  [todo] roadmap.unit.frontend.dead-components-triage-research-then-wire — UMBRELLA: triage 21 built-but-never-instantiated Dioxus components — research-then-wire or documented retirement (NEVER blind delete)  ✓READY
+  [todo] roadmap.unit.frontend.wire-directory-nearby — Wire FE caller for orphan GET /api/jacobs-ladder-marketing/business-directory/nearby or retire  ✓READY
+  [todo] roadmap.unit.frontend.wire-directory-review-respond — Wire FE caller for orphan POST .../business-directory/{id}/reviews/{review_id}/respond or retire  ✓READY
+  [todo] roadmap.unit.frontend.wire-directory-reviews-distribution — Wire FE caller for orphan GET .../business-directory/{id}/reviews/distribution or retire  ✓READY
+  [todo] roadmap.unit.frontend.wire-rainfire-affiliate-code-check — Wire FE caller for orphan GET /api/rainfire-missions/partner/affiliate-code/check or retire  ✓READY
+  [todo] roadmap.unit.frontend.wire-rainfire-missions-by-code — Wire FE caller for orphan GET /api/rainfire-missions/missions/by-code/{code} or retire  ✓READY
+  [todo] roadmap.unit.frontend.wire-rainfire-missions-featured — Wire FE caller for orphan GET /api/rainfire-missions/missions/featured or retire  ✓READY
+  [todo] roadmap.unit.frontend.wire-rainfire-missions-nearby — Wire FE caller for orphan GET /api/rainfire-missions/missions/nearby or retire  ✓READY
+  [missing] roadmap.unit.gate.owner-greenlights-jacobs-ladder-marketing — (unresolved — cross-project or missing)  ✓READY
+  [missing] roadmap.unit.gate.owner-greenlights-money-paths — (unresolved — cross-project or missing)  ✓READY
+  [missing] roadmap.unit.gate.owner-revives-gated-infra — (unresolved — cross-project or missing)  ✓READY
+  [missing] roadmap.unit.harness.witness-gate-cross-repo-root — (unresolved — cross-project or missing)  ✓READY
+  [missing] roadmap.unit.platform.soundbak.dms.e2e — (unresolved — cross-project or missing)  ✓READY
+  [missing] route-local — (unresolved — cross-project or missing)  ✓READY
+  [missing] state — (unresolved — cross-project or missing)  ✓READY
+  [missing] step — (unresolved — cross-project or missing)  ✓READY
+  [missing] still — (unresolved — cross-project or missing)  ✓READY
+  [missing] that — (unresolved — cross-project or missing)  ✓READY
+  [missing] the — (unresolved — cross-project or missing)  ✓READY
+  [missing] their — (unresolved — cross-project or missing)  ✓READY
+  [missing] this — (unresolved — cross-project or missing)  ✓READY
+  [missing] thread — (unresolved — cross-project or missing)  ✓READY
+  [missing] to — (unresolved — cross-project or missing)  ✓READY
+  [missing] trigger_partner_payout — (unresolved — cross-project or missing)  ✓READY
+  [missing] unlike — (unresolved — cross-project or missing)  ✓READY
+  [missing] via — (unresolved — cross-project or missing)  ✓READY
+  [missing] webhook — (unresolved — cross-project or missing)  ✓READY
+  [missing] which — (unresolved — cross-project or missing)  ✓READY
+  [missing] wire — (unresolved — cross-project or missing)  ✓READY
+  [missing] wired — (unresolved — cross-project or missing)  ✓READY
+  [missing] with — (unresolved — cross-project or missing)  ✓READY
+  [missing] wrappers — (unresolved — cross-project or missing)  ✓READY
+TIER 1
+  [todo] roadmap.unit.bug.ads-analytics-subdtos-field-mismatch — Ads analytics deserialize-fail — 3 sub-DTOs (AdTypeStat/BudgetPacing/GeoBreakdown) have different field sets FE vs BE revenue.rs  ⏳WAITING  ⤷ depends-on: nicole-carpenter/roadmap/fields
+  [todo] roadmap.unit.bug.dashboard-missing-x-request-platform-header-400 — Dashboard x-request-platform: header infra COMPLETE + fail-safe (required platform prop); pages are UNMOUNTED — remaining work is routing/mounting MetricsPage+AuditPage  ⏳WAITING  ⤷ depends-on: nicole-carpenter/roadmap/platform, nicole-carpenter/roadmap/prop
+TIER 2
+  [todo] roadmap.unit.data.classified-description-drop-pg-column-final — PHASE-5 drop PG description column (owner-run live mig; PG becomes id+bridge only)  ⏳WAITING  ⤷ depends-on: nicole-carpenter/roadmap/description, nicole-carpenter/roadmap/read-cutover, nicole-carpenter/roadmap/roadmap.unit.data.classified-description-read-cutover-to-scylla, roadmap.unit.data.classified-description-read-cutover-to-scylla

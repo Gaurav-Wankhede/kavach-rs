@@ -91,6 +91,19 @@ Before shipping any production changes, ensure all 6 security layers are verifie
 - **Error handling & information leakage** → Review all error returns; ensure stack traces, database errors, or file paths are logged server-side and never returned to the client.
 - **File upload safety** → Validate uploaded file contents, sizes, and MIME types. Ensure uploads are stored outside the web root or in isolated storage, and can never be executed.
 
+## Product Planning Templates — PM systems
+
+When the task is product planning (PRD, user stories, prioritization), use these structures verbatim. SOURCE: pmprompt.com/prompts (amazon-style-prd-template, user-story-generator, rice-prioritization-helper).
+
+### Amazon-Style PRD
+For any feature/product PRD: (1) Working Backwards Press Release — headline, sub-headline, problem, solution, customer quotes, getting-started steps; (2) Customer Problem Statement — detailed problem, current limitations, customer impact; (3) Success Metrics — customer experience, business metrics, long-term indicators; (4) Requirements — functional, technical, UX; (5) FAQ — anticipated questions, key decisions, tradeoffs; (6) Launch Checklist — readiness criteria, launch phases, monitoring plan.
+
+### User Story Generator
+For any feature breakdown: (1) User Story — "As a [user], I want [action], So that [benefit]"; (2) Acceptance Criteria — Given/When/Then; (3) Edge Cases; (4) Technical Considerations; (5) Design Notes.
+
+### RICE Prioritization
+For any feature-priority decision: score each feature on Reach (monthly users), Impact (0.25/0.5/1/2/3), Confidence (0-100%), Effort (person-months). RICE score = Reach × Impact × Confidence / Effort. Rank descending.
+
 ## RLAIHF — clean reward signal, never gamed
 
 Live loop: human signal = accept/correct/re-prompt; AI signal = gate verdicts + mistake ledger + 3-witness outcome. Feed it honestly.

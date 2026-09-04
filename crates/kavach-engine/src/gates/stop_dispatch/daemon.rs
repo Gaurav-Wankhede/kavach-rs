@@ -169,7 +169,7 @@ pub(super) fn rpc_open_census(project_slug: &str) -> Result<Option<(u64, u64, u6
     let params = serde_json::json!({ "project": project_slug });
     kavach_rpc::client::call::<_, serde_json::Value>("roadmap.open_set_census", Some(params))
         .map_or_else(
-            |_| direct::census(project_slug).map_err(|_| ()),
+            |_rpc_err| direct::census(project_slug).map_err(|_direct_err| ()),
             |v| Ok(parse_census(&v)),
         )
 }

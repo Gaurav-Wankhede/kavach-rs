@@ -1,3 +1,6 @@
+mod field;
+
+use field::{FieldEntryView, extract_field};
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
 /// A single-key get is a DEPTH request → full content by default; `--snippet`
@@ -11,15 +14,53 @@ pub(crate) const fn want_full_content(full: bool, snippet: bool) -> bool {
     clippy::too_many_lines,
     reason = "multi-stage fallback from RPC to direct DB access with error handling"
 )]
-pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool, snippet: bool) -> i32 {
+pub(super) fn run(
+    project_slug: &str,
+    category: &str,
+    key: &str,
+    full: bool,
+    snippet: bool,
+    field: Option<&str>,
+    compact: bool,
+) -> i32 {
+    let fetch_content = want_full_content(full, snippet)
+        || field.is_some_and(|f| f.eq_ignore_ascii_case("content"));
     match super::rpc_client::get(
         project_slug,
         category,
         key,
-        want_full_content(full, snippet),
+        fetch_content,
     ) {
         Ok(result) if result.found => {
             if let Some(entry) = result.entry {
+                if let Some(f) = field {
+                    let view = FieldEntryView {
+                        key: &entry.key,
+                        category: &entry.category,
+                        title: &entry.title,
+                        status: &entry.status,
+                        content: entry.content.as_deref(),
+                        access_count: entry.access_count,
+                        exec_prompt: entry.exec_prompt.as_deref(),
+                        priority: entry.priority,
+                        lane: entry.lane.as_deref(),
+                        tags: entry.tags.as_deref(),
+                    };
+                    match extract_field(&view, f, compact) {
+                        Ok(val) => {
+                            if let Err(io_err) = print_or_exit(&val) {
+                                return into_exit_code(io_err);
+                            }
+                            return 0;
+                        }
+                        Err(err_msg) => {
+                            if let Err(io_err) = ewrite_or_exit(&format!("error: {err_msg}")) {
+                                return into_exit_code(io_err);
+                            }
+                            return 1;
+                        }
+                    }
+                }
                 let head = format!(
                     "[{}] {} — {} (status: {})",
                     entry.category, entry.key, entry.title, entry.status
@@ -28,7 +69,12 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool, sni
                     return into_exit_code(io_err);
                 }
                 if let Some(content) = entry.content {
-                    let body = format!("---\n{content}");
+                    let final_content = if compact {
+                        kavach_toon::compact::compress(&content, kavach_toon::compact::Level::Lite)
+                    } else {
+                        content
+                    };
+                    let body = format!("---\n{final_content}");
                     if let Err(io_err) = print_or_exit(&body) {
                         return into_exit_code(io_err);
                     }
@@ -107,6 +153,34 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool, sni
 
         match kavach_surreal::get_by_key(&db, category, &project_id, key).await {
             Ok(Some(entry)) => {
+                if let Some(f) = field {
+                    let view = FieldEntryView {
+                        key: &entry.entry_key,
+                        category: entry.category_str(),
+                        title: &entry.title,
+                        status: entry.entry_status_str(),
+                        content: Some(&entry.content),
+                        access_count: entry.access_count.unwrap_or(0),
+                        exec_prompt: entry.exec_prompt.as_deref(),
+                        priority: entry.priority,
+                        lane: entry.lane.as_deref(),
+                        tags: entry.tags.as_deref(),
+                    };
+                    match extract_field(&view, f, compact) {
+                        Ok(val) => {
+                            if let Err(io_err) = print_or_exit(&val) {
+                                return into_exit_code(io_err);
+                            }
+                            return 0;
+                        }
+                        Err(err_msg) => {
+                            if let Err(io_err) = ewrite_or_exit(&format!("error: {err_msg}")) {
+                                return into_exit_code(io_err);
+                            }
+                            return 1;
+                        }
+                    }
+                }
                 let head = format!(
                     "[{}] {} — {}",
                     entry.category_str(),
@@ -143,7 +217,12 @@ pub(super) fn run(project_slug: &str, category: &str, key: &str, full: bool, sni
                     if let Err(io_err) = print_or_exit("---") {
                         return into_exit_code(io_err);
                     }
-                    if let Err(io_err) = print_or_exit(&entry.content) {
+                    let final_content = if compact {
+                        kavach_toon::compact::compress(&entry.content, kavach_toon::compact::Level::Lite)
+                    } else {
+                        entry.content
+                    };
+                    if let Err(io_err) = print_or_exit(&final_content) {
                         return into_exit_code(io_err);
                     }
                 }

@@ -320,6 +320,22 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         #[command(subcommand)]
         action: LintAction,
     },
+    /// Retrieve full uncompressed payload from disk CCR cache by hash.
+    #[command(
+        after_help = "EXAMPLES:\n  kavach retrieve <hash>\n\nWHEN: inspect full tool output or payload that was cached to save LLM context budget."
+    )]
+    Retrieve {
+        /// Hash or prefix of the cached CCR blob.
+        hash: String,
+    },
+    /// Redact environment files key-preserving or mask secrets from file/stdin.
+    #[command(
+        after_help = "EXAMPLES:\n  kavach redact .env\n  cat output.log | kavach redact -\n\nWHEN: sanitize files or command output before LLM consumption."
+    )]
+    Redact {
+        /// Path to file to redact, or '-' for stdin (defaults to stdin if omitted).
+        file: Option<String>,
+    },
     /// Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference.
     #[command(
         name = "commands",

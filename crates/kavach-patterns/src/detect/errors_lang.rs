@@ -1,16 +1,27 @@
 //! Language-specific error handling anti-patterns.
+use std::sync::OnceLock;
+
 use crate::config::{AntiProdLevel, AntiProdResult};
 use crate::file_types::{is_go_file, is_rust_file};
 use crate::regex_patterns::fbase;
 use regex::Regex;
 
+/// Fallback for an out-of-range static-table index: never matches. The tables
+/// are compile-time constants, so this path is unreachable in practice; the
+/// debug_assert fires in tests instead of panicking in production.
+static NEVER_MATCH: OnceLock<Regex> = OnceLock::new();
+
 #[inline]
-#[expect(
-    clippy::indexing_slicing,
-    reason = "index is a constant literal bounded by regex array size"
-)]
-fn idx(r: &[Regex], i: usize) -> &Regex {
-    &r[i]
+fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
+    match r.get(i) {
+        Some(re) => re,
+        None => {
+            debug_assert!(false, "regex table index {i} out of range");
+            r.first().unwrap_or(NEVER_MATCH.get_or_init(|| {
+                Regex::new("$^").expect("trivial regex compiles")
+            }))
+        }
+    }
 }
 
 #[inline]
@@ -59,7 +70,7 @@ pub(super) fn detect_rust_errors(
     if !is_rust_file(fp) {
         return;
     }
-    if idx(r, 16).is_match(content) && crate::file_types::is_handler_file(fp) {
+    if idx_or_skip(r, 16).is_match(content) && crate::file_types::is_handler_file(fp) {
         add(
             res,
             AntiProdLevel::P2ErrorBlind,
@@ -69,15 +80,14 @@ pub(super) fn detect_rust_errors(
         );
     }
     ck(
-        res,
-        idx(r, 26),
+        res,        idx_or_skip(r, 26),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
         "expect-generic",
         "Rich message.",
     );
-    if idx(r, 27).find_iter(content).count() > 10 {
+    if idx_or_skip(r, 27).find_iter(content).count() > 10 {
         add(
             res,
             AntiProdLevel::P2ErrorBlind,
@@ -98,7 +108,7 @@ pub(super) fn detect_go_errors(
     if !is_go_file(fp) {
         return;
     }
-    if idx(r, 29).is_match(content) && fbase(fp) != "main.go" {
+    if idx_or_skip(r, 29).is_match(content) && fbase(fp) != "main.go" {
         add(
             res,
             AntiProdLevel::P2ErrorBlind,
@@ -108,8 +118,7 @@ pub(super) fn detect_go_errors(
         );
     }
     ck(
-        res,
-        idx(r, 30),
+        res,        idx_or_skip(r, 30),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -121,8 +130,7 @@ pub(super) fn detect_go_errors(
 /// Detect Python error handling issues.
 pub(super) fn detect_python_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,
-        idx(r, 34),
+        res,        idx_or_skip(r, 34),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -130,8 +138,7 @@ pub(super) fn detect_python_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], c
         "Handle explicitly.",
     );
     ck(
-        res,
-        idx(r, 35),
+        res,        idx_or_skip(r, 35),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -143,8 +150,7 @@ pub(super) fn detect_python_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], c
 /// Detect Java error handling issues.
 pub(super) fn detect_java_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,
-        idx(r, 39),
+        res,        idx_or_skip(r, 39),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -162,8 +168,7 @@ pub(super) fn detect_docker_errors(
 ) {
     if crate::file_types::is_dockerfile(fp) {
         ck(
-            res,
-            idx(r, 44),
+            res,            idx_or_skip(r, 44),
             content,
             AntiProdLevel::P2ErrorBlind,
             "ERROR_BLIND",

@@ -1,0 +1,49 @@
+[decision] auto.rca.9.53c981bf — auto-extracted RCA block (turn 9) (status: todo, access: 0)
+    symptom: `wrangler secret put PROBE_TARGETS` → "Required Worker name missing."
+repro: ran from Backend/ (the instruction I gave said `cd Backend && wrangler secret put`).
+why1: wrangler resolves the target Worker's name from a wrangler.jsonc in the CURRENT directory.
+why2: Backend/ has NO wrangler.jsonc (it's a Rust workspace root, not a Worker dir).
+why3: the probe's wrangler.jsonc — which DOES declare "name":"ironcore-egress-probe" — lives in Backend/deploy/_egress-probe/, not Backend/.
+why4: so wrangler, run from Backend/, finds no config → no name → errors.
+why5: my Step-2 instruction was wrong — I said `cd Backend`, should have said `cd Backend/deploy/_egress-probe`.
+root_cause: command run in the wrong directory (my instruction error), not a config defect.
+class: operator/instruction error (wrong CWD for a config-relative CLI).
+blast_radius: this one command; no code, no committed artifact affected.
+research: wrangler resolves config + name from CWD's wrangler.jsonc — https://developers.cloudflare.com/workers/wrangler/commands/#secret
+fix_strategy: run the command from the probe dir (where the named wrangler.jsonc is), OR pass --name explicitly.
+```
+
+[decision] decision.ops.irongate-dedicated-db-cutover-2026-06-23 — IronGate dedicated iwi_irongate DB: code reads IRONGATE_NEON_DATABASE_URL + schema reset+migrated clean + LOCAL -pooler boot PROVEN /health 200 with ZERO cleanup errors. Remaining live: rebuild image + set IRONGATE_NEON_DATABASE_URL secret + recycle container (status: todo, access: 0)
+    IronGate dedicated-DB cutover — LOCAL PROOF COMPLETE 2026-06-23. The shared-ledger version-1 collision is RESOLVED by giving IronGate its own Neon database (iwi_irongate, distinct from iwi_backend on the same ep-orange-glade endpoint).
+
+DONE + VERIFIED:
+1. CODE: irongate/src/main.rs reads IRONGATE_NEON_DATABASE_URL (fallback NEON_DATABASE_URL). cargo check -p irongate-auth exit 0.
+2. SCHEMA: sqlx database reset against iwi_irongate (DIRECT endpoint) dropped the stale partial schema + applied migrations 1+2 clean (irongate_schema + jacobs_ladder_marketing_slug_full_form). iwi_irongate now has the full GNAP schema incl. pending_registrations + grant_state enum.
+3. LOCAL BOOT PROOF: docker run the deployed image with IRONGATE_NEON_DATABASE_URL=<iwi_irongate -pooler> + RUST_ENV=production -> Server listening + DB connected + /health 200 {status ok} AND ZERO cleanup-task errors (no pending_registrations / grant_state errors — the drift that crash-looped every prior boot is GONE). First fully-clean IronGate boot.
+
+REMAINING (live cutover — owner/build steps):
+A. REBUILD + REDEPLOY the irongate image: the live container runs image 3803dca6 (OLD code reading DATABASE_URL). The new code reads IRONGATE_NEON_DATABASE_URL. Need: cd Backend/deploy/irongate and wrangler deploy (rebuilds linux/amd64 image with the new main.rs).
+B. SET the Cloudflare secret: wrangler secret put IRONGATE_NEON_DATABASE_URL with the iwi_irongate -pooler URL (live Worker currently only has DATABASE_URL pointing at the shared backend DB). Owner-supplied (value never in agent context).
+C. RECYCLE the container (wrangler containers delete instance) so a fresh instance cold-starts with the new image + secret, then smoke-verify /health 200.
+
+ENV NUANCE: irongate/.env value for IRONGATE_NEON_DATABASE_URL is dotenvy-parseable but NOT bash-source-parseable; extracted via exact-key line parse. The app uses dotenvy so it is fine at runtime.
+
+SEPARATION CONFIRMED: iwi_irongate (GNAP auth) vs iwi_backend (business data) — same Neon endpoint, distinct database names, distinct _sqlx_migrations ledgers. backend-IronGate interaction stays HTTP/GNAP (POST /authorize, /introspect, /service-token/mint over cloudflared), never shared tables.
+
+SOURCE: sqlx database reset run 2026-06-23 (iwi_irongate, migrations 1+2 applied); local -pooler boot log /health 200 + zero cleanup errors; decision.ops.irongate-shared-ledger-version-collision-2026-06-23; decision.arch.neon-database-url-rename-2026-06-23.
+[decision] decision.ops.irongate-cf-container-envvars-secret-forward-2026-06-23 — IronGate CF container 503: Worker secrets NOT auto-injected into Container env — must forward via envVars PLAIN property reading module-level import{env}from cloudflare:workers (NOT this.env). Fixed in index.ts (deploy e5c6300d); image proven clean locally. VERIFY via dashboard container log — wrangler tail shows only shim, not container stdout (status: todo, access: 0)
+    DEPENDS_ON: backend/decision/fresh
+IronGate CF container secret-injection fix (2026-06-23). ROOT CAUSE (research-confirmed, official docs): Worker secrets set via wrangler secret put are NOT auto-injected into a Cloudflare Container's process env. They MUST be forwarded via the envVars property on the Container class, read from the MODULE-LEVEL env imported from cloudflare:workers — NOT this.env (which does not carry them). SOURCE (verbatim): https://developers.cloudflare.com/containers/examples/env-vars-and-secrets/ — example: import { env } from "cloudflare:workers"; export class C extends Container { envVars = { WORKER_SECRET: env.WORKER_SECRET }; }.
+
+EVIDENCE CHAIN this session:
+1. Boot-fatal reporter added to irongate/src/main.rs (run()->main() wrapper printlns IRONGATE_BOOT_FATAL to stdout on any boot Err). This surfaced the live error in the CF DASHBOARD container log: IRONGATE_NEON_DATABASE_URL (or NEON_DATABASE_URL) must be set.
+2. FIRST envVars attempt (WRONG): a get envVars() getter reading this.env[k]. Did NOT work — this.env does not carry Worker secrets on a Container DO; envVars came out empty; live container still logged the DATABASE_URL boot-fatal.
+3. CORRECTED per verbatim docs: import { env } from cloudflare:workers + envVars = buildEnvVars() (PLAIN property computed from the module-level env), forwarding all ~30 IronGate env vars.
+
+PROVEN: the container IMAGE itself is correct — image b563c003 boots CLEAN locally (validate_production_env passes, Server listening 0.0.0.0:9090, port bound) with the exact forwarded env set via docker -e. The only gap was Worker-secret -> container-env forwarding.
+
+TOOLING BOUNDARY: wrangler tail shows ONLY the Worker SHIM events (wallTime/cpuTime + the shim container_unavailable catch). It does NOT surface the Rust CONTAINER stdout. The IRONGATE_BOOT_FATAL line is readable ONLY in the Cloudflare DASHBOARD container-logs view (Workers and Pages -> irongate -> the container -> Logs). To confirm the envVars fix worked, read the dashboard container log for deploy e5c6300d: expect either NO IRONGATE_BOOT_FATAL + Server listening (fixed) or a NEW boot-fatal (next gap).
+
+VERIFY: dashboard container log for e5c6300d. If clean -> /health 200 after fresh provision. If still IRONGATE_NEON_DATABASE_URL must be set -> the module env import is not resolving the secret (check compatibility_date supports the cloudflare:workers env global; current=2026-05-01).
+
+SOURCE: official CF Containers env-vars-and-secrets docs (verbatim code); main.rs boot-fatal reporter; local b563c003 clean boot; decision.ops.irongate-dedicated-db-cutover-2026-06-23.

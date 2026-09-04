@@ -7,6 +7,7 @@
     reason = "kavach-engine is the Claude Code hook engine; no tracing dep by design, stderr IS the hook log channel surfaced to the harness"
 )]
 
+pub mod ccr;
 pub mod error;
 pub mod gate_runner;
 pub mod gates;

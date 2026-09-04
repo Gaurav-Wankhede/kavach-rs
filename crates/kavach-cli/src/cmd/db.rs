@@ -4,44 +4,22 @@
 // This change adds only `pub(crate) mod write;` so `cli::db` can reference
 // `write::CATEGORY_HELP` — the category single-source-of-truth
 // (rca.kavach-db-write-category-enum-inconsistent).
-mod archive;
-mod backfill_relationships;
-mod bridge;
 mod citation;
 mod concept;
 mod delete;
-mod delete_prefix;
 mod dispatcher;
 mod event;
-mod exec_prompt_advice;
-mod expire;
-mod find;
-mod flow;
 mod gate_config;
 mod get;
-mod graph_query;
-mod infer_deps;
 mod kanban;
-mod lane;
-mod list;
-mod mistake_hits;
-mod mistake_purge;
+mod migrate;
 mod next_prompt;
-mod ope;
-mod pg;
-mod populate_graph;
-mod priority;
 mod query;
 mod query_raw;
 mod register;
-mod register_part;
-mod rotate;
 mod rpc_client;
-mod run_rec;
 mod search;
 mod status_update;
-mod sync;
-mod tree;
 mod wipe_project;
 pub(crate) mod write;
 

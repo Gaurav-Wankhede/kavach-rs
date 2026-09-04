@@ -38,10 +38,10 @@ fn bash_write_to_a_generated_artifact_is_allowed_with_advisory() {
         Some(Decision::Allow(Some(ctx))) => {
             assert!(ctx.contains("write-bypass"), "advisory ctx: {ctx}");
         }
-        // A bare allow (None) is also acceptable — the point is it is NOT a deny.
         Some(Decision::Allow(None)) | None => {}
         Some(Decision::Deny(_)) => panic!("a config write must not be denied"),
         Some(Decision::Ask(_)) => panic!("a config write must not ask"),
+        Some(Decision::Rewrite { .. }) => panic!("a config write must not rewrite"),
     }
 }
 
@@ -86,6 +86,7 @@ fn verdict_name(d: Option<&Decision>) -> &'static str {
         Some(Decision::Deny(_)) => "Deny",
         Some(Decision::Ask(_)) => "Ask",
         Some(Decision::Allow(_)) => "Allow",
+        Some(Decision::Rewrite { .. }) => "Rewrite",
         None => "None",
     }
 }

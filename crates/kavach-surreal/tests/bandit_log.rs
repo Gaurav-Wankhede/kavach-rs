@@ -6,7 +6,7 @@
 //! addressing must not silently double-count training signal.
 #![allow(
     clippy::expect_used,
-    clippy::unwrap_used,
+    clippy::unwrap_in_result,
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 

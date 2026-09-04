@@ -51,9 +51,18 @@ If you retry the same operation 3 times and get the same error:
 
 Before fix-Write → `[RCA]`: symptom@file:line → root cause → fix → cite:URL. No `[RCA]` → gate denies.
 
-## Production secure — run before shipping
+## Product Planning Templates — PM systems
 
-Rate limits · Input validation · No secrets in code · Dependency audit · No info leakage · Safe file uploads. All 6 layers verified.
+When the task is product planning (PRD, user stories, prioritization), use these structures verbatim. SOURCE: pmprompt.com/prompts (amazon-style-prd-template, user-story-generator, rice-prioritization-helper).
+
+### Amazon-Style PRD
+For any feature/product PRD: (1) Working Backwards Press Release — headline, sub-headline, problem, solution, customer quotes, getting-started steps; (2) Customer Problem Statement — detailed problem, current limitations, customer impact; (3) Success Metrics — customer experience, business metrics, long-term indicators; (4) Requirements — functional, technical, UX; (5) FAQ — anticipated questions, key decisions, tradeoffs; (6) Launch Checklist — readiness criteria, launch phases, monitoring plan.
+
+### User Story Generator
+For any feature breakdown: (1) User Story — "As a [user], I want [action], So that [benefit]"; (2) Acceptance Criteria — Given/When/Then; (3) Edge Cases; (4) Technical Considerations; (5) Design Notes.
+
+### RICE Prioritization
+For any feature-priority decision: score each feature on Reach (monthly users), Impact (0.25/0.5/1/2/3), Confidence (0-100%), Effort (person-months). RICE score = Reach × Impact × Confidence / Effort. Rank descending.
 
 ## RLAIHF
 

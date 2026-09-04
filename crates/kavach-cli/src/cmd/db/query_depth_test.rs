@@ -94,3 +94,41 @@ fn chars_zero_keeps_nothing_but_marks_truncation() {
         "depth 0 on a non-empty body marks a cut: {out}"
     );
 }
+
+#[test]
+fn format_query_entry_field_extraction() {
+    use super::{QueryEntryView, format_query_entry};
+
+    let view = QueryEntryView {
+        category: "roadmap",
+        key: "task.1",
+        title: "My Task",
+        status: "todo",
+        access_count: 5,
+        content: Some("Content text"),
+    };
+
+    let res = format_query_entry(&view, Depth::None, Some("key"), false).unwrap();
+    assert_eq!(res, vec!["task.1"]);
+
+    let res_title = format_query_entry(&view, Depth::None, Some("title"), false).unwrap();
+    assert_eq!(res_title, vec!["My Task"]);
+}
+
+#[test]
+fn format_query_entry_compact_content() {
+    use super::{QueryEntryView, format_query_entry};
+
+    let view = QueryEntryView {
+        category: "roadmap",
+        key: "task.1",
+        title: "My Task",
+        status: "todo",
+        access_count: 5,
+        content: Some("Please kindly note that we just need tests."),
+    };
+
+    let res = format_query_entry(&view, Depth::All, Some("content"), true).unwrap();
+    assert!(!res[0].contains("kindly"));
+}
+

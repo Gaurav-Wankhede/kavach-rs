@@ -4,7 +4,7 @@ use kavach_types::HookInput;
 
 use crate::gates::{post_tool_bash, result_trim};
 
-/// Check if tool output should be trimmed to save context budget.
+/// Check if tool output should be trimmed or sanitized to save context budget and prevent leaks.
 pub(super) fn check_trim(input: &HookInput) -> Option<String> {
     let response_text = input
         .tool_response
@@ -15,11 +15,25 @@ pub(super) fn check_trim(input: &HookInput) -> Option<String> {
     if response_text.is_empty() {
         return None;
     }
-    match input.tool_name.as_str() {
-        "Bash" => result_trim::trim_bash_output(response_text),
-        "Glob" => result_trim::trim_glob_output(response_text),
-        _ => None,
+
+    let file_path = input.get_string("file_path");
+    let file_hint = if file_path.is_empty() { None } else { Some(file_path) };
+    let sanitized = crate::gates::secret_redactor::sanitize_output(response_text, file_hint);
+    let secrets_redacted = sanitized != response_text;
+
+    // Check CCR caching for oversized payloads (>6KB).
+    let (ccr_processed, cached_hash) = crate::ccr::process_ccr(&sanitized);
+    if cached_hash.is_some() {
+        return Some(ccr_processed);
     }
+
+    let trimmed = match input.tool_name.as_str() {
+        "Bash" => result_trim::trim_bash_output(&sanitized),
+        "Glob" => result_trim::trim_glob_output(&sanitized),
+        _ => None,
+    };
+
+    trimmed.or_else(|| secrets_redacted.then_some(sanitized))
 }
 
 /// Minimal state tracking when trimming short-circuits normal handler flow.

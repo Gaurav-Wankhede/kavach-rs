@@ -1,0 +1,5 @@
+[roadmap] hunt.hook-io-privilege-escalation — Fix hook_io serde default on bool + hidden Default fields (status: todo, access: 0)
+[roadmap] hunt.gate-config-panic-unwrap — Fix gate_config panic + unwrap cleanup (status: todo, access: 0)
+[roadmap] hunt.stop-dispatch-error-sources — Fix stop_dispatch map_err discarding source errors (status: todo, access: 0)
+[roadmap] hunt.graph-unwrap-catchall — Fix graph module unwrap + catch-all matches (status: todo, access: 0)
+[roadmap] hunt.web-handler-validation — Fix web handler input validation gaps (status: todo, access: 0)

@@ -1,0 +1,661 @@
+[research] research.lint-sweep-misc-warnings — Misc clippy warnings sweep (status: todo, access: 0)
+    14 warn-level lints; mechanical fixes. https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+[research] research.cf-containers-backend-compat-2026-05-29 — Backend → Cloudflare Containers compatibility report (15 services) (status: todo, access: 0)
+    VERDICT: COMPATIBLE with 4 adaptations + 1 outbound blocker (solved). Zero algorithmic rewrites; ~2 days plumbing.
+
+CODEBASE REALITY (verified Backend/crates/ 2026-05-29):
+- 15 service binaries (crates/services/* + crates/api/*)
+- 12 Dockerfiles already exist (Dockerfile.{api,chat-service,irongate,jacobs-ladder-marketing-service,notification-service,payment-service,rainfire-missions-service,soundbak-social-service,user-service} + crates/services/irongate/Dockerfile)
+- edition 2024, rustc 1.93+, resolver 3
+- #[tokio::main] multi-thread runtime
+- env-var port binding (IRONGATE_PORT etc via std::env::var)
+- runtime image debian:bookworm-slim, non-root USER appuser
+- 6 services dual-port REST+gRPC (tonic): irongate (EXPOSE 9090 9091), rainfire, jacobs-ladder, payment, user, soundbak
+
+CLOUDFLARE CONTAINERS CONSTRAINTS (May 2026 research):
+- Inbound: ALL via Worker over HTTP only; end-users CANNOT make raw TCP/UDP/gRPC to a Container
+- Multi-port: SUPPORTED (defaultPort + path-based routing via containerFetch; NOT single-port)
+- Outbound: ONLY 80/443/DNS by default; other ports need enable_internet=true
+- Image MUST be linux/amd64
+- Idle shutdown sleepAfter default 10m
+- Account limits (Feb 2026): 6 TiB mem / 1500 vCPU / 1000+ standard-2; per-instance <= 4 vCPU / 12 GiB / 20 GB
+
+COMPATIBILITY MATRIX:
+1. Rust binary builds in OCI: READY (12 Dockerfiles exist)
+2. linux/amd64: ADAPT (add --platform=linux/amd64 to FROM x15)
+3. Single inbound HTTP port: ADAPT (one HTTP port per Worker; gRPC port retired externally)
+4. gRPC dual-port: ADAPT (6 services: internal gRPC -> Service Bindings Cap'n Web RPC per arch.invariant.cloudflare-service-bindings-mesh; tonic deleted from deploy surface, feature-gated for portability)
+5. Outbound Neon 5432: SOLVED via Hyperdrive (tunnels over 443)
+6. Outbound Scylla 9042: BLOCKER -> enable_internet=true on Scylla-touching Containers (chat-service, JLM, BDF commerce)
+7. PORT env: ADAPT (rename IRONGATE_PORT -> read PORT)
+8. EXPOSE: READY (present, CF enforces)
+9. Tokio multi-thread: READY
+10. Strict-lints clean: gated on shards #1567 irongate, #1571 governance, #1576 chat-service
+
+WORK ESTIMATE: 3 missing Dockerfiles (~30min) + linux/amd64 pin x15 (~15min) + PORT rename x15 (~30min) + enable_internet flag (~10min) + Worker glue + Service Bindings x15 (~1day) + Hyperdrive config (~30min). Total ~2 days, zero algorithmic rewrites.
+
+SOURCE: https://developers.cloudflare.com/containers/platform-details/architecture/ + https://developers.cloudflare.com/containers/platform-details/outbound-traffic/ + https://github.com/cloudflare/containers + https://developers.cloudflare.com/containers/platform-details/limits/ + https://developers.cloudflare.com/network/grpc-connections/ + Backend/crates/ live inventory 2026-05-29
+[research] research.scylla-cloud-connectivity-dev-vs-prod-2026-05-29 — ScyllaDB connectivity: local Docker (dev, zero-cost) vs Scylla Cloud/self-host (prod) (status: todo, access: 0)
+    CURRENT SETUP (correct, keep): env-driven SCYLLA_NODES + local Docker Scylla on 127.0.0.1:9042 plaintext = zero cost dev. Verified chat-service/src/scylla.rs: reads SCYLLA_NODES (comma-separated host:9042), SessionBuilder::new().known_node(node).build(). NO TLS yet (fine for local plaintext). Tests skip cleanly when SCYLLA_NODES unset. SAME binary deploys to prod by changing env var + adding TLS — no code fork.
+
+KEY FACT: CQL native protocol (9042/9142) is a RAW BINARY TCP socket, NOT HTTP. A CF Container reaches Scylla via direct TCP — NOT through the Worker HTTP proxy. The outbound-80/443-only rule applies to CF HTTP outbound handlers; a raw CQL socket needs enable_internet=true (opens arbitrary outbound TCP).
+
+PORT FACTS:
+- 9042 = plaintext CQL (default; will be disabled by default in future Scylla releases)
+- 9142 = TLS CQL (recommended prod)
+- 19042/19142 = shard-aware ports (perf)
+- auth = SASL PlainTextAuthProvider (username/password)
+- shard-awareness breaks behind SNAT/PrivateLink (2026 proposal scylladb#29117 PPv2)
+
+THREE PROD OPTIONS:
+A. Self-host Scylla on DigitalOcean droplet (~24-48 USD/mo 2-node), expose 9142 TLS + firewall to CF IP ranges. CHEAPEST PROD.
+B. ScyllaDB Cloud managed: public CQL endpoint 9142 + TLS + user/pass + IP allowlist (~200+ USD/mo). LOWEST OPS.
+C. Stay local Docker until launch imminent. ZERO cost. CURRENT CHOICE pre-launch.
+
+THREE PROD CHANGES (zero algorithmic rewrite):
+1. wrangler.toml: enable_internet=true on Scylla-touching Containers (chat-service, JLM, BDF commerce)
+2. env: SCYLLA_NODES=cluster:9142 + SCYLLA_USERNAME/SCYLLA_PASSWORD secrets via wrangler secret put
+3. code: env-gated TLS+auth on SessionBuilder (.user + .tls_context rustls ClientConfig w/ Scylla CA). Per CRYPTO_INTERNAL_ONLY + UNSAFE-ABSOLUTE: rustls + aws-lc-rs NOT openssl. Local stays plaintext (gated on SCYLLA_USERNAME presence).
+
+OPEN VERIFICATION (deploy-time smoke test, not blocker now): confirm CF Containers enable_internet=true permits SUSTAINED raw CQL/TLS socket. Fallback: Cloudflare Tunnel sidecar OR self-host Scylla adjacent to Container region.
+
+RECOMMENDATION: do nothing now — local Docker correct zero-cost dev. Cross-ref research.cf-containers-backend-compat-2026-05-29 + arch.invariant.data-tier-split-enforced.
+
+SOURCE: https://operator.docs.scylladb.com/stable/resources/scyllaclusters/clients/cql.html + https://dev.to/scylladb/database-101-ssltls-for-beginners-4lmn + https://github.com/scylladb/scylladb/issues/29117 + https://developers.cloudflare.com/containers/platform-details/outbound-traffic/ + chat-service/src/scylla.rs 2026-05-29
+[research] research.sdui-widget-renderer-contract-2026-05-29 — SDUI WidgetRenderer contract — frontend mirrors backend WidgetType (28 variants) (status: todo, access: 0)
+    RESEARCH BASIS for sdui-runtime renderer (P0.F3): frontend renderer DESERIALIZES backend WidgetEnvelope wire contract; does NOT import backend crate (§REPO_LAYOUT API-only).
+
+BACKEND CONTRACT (verified Backend/crates/services/dashboard-service/src/widgets/types.rs):
+- WidgetType: 28 variants PascalCase serde — EmployeeTableGrid, PayrollSummaryCard, LeaveRequestsWidget, TicketQueueWidget, KnowledgeBaseSearch, PerformanceReviewWidget, ListingsTableGrid, LeadInboxWidget, CampaignDataChart, WalletBalanceCard, AnalyticsDashboard, CouponManagerWidget, MissionOverviewCard, DonationStreamWidget, VolunteerRosterWidget, ShiftSchedulerWidget, DisbursementQueueWidget, ImpactMetricsChart, FeedWidget, AudioPlayerWidget, PrayerRoomListWidget, TipBalanceCard, ModerationQueueWidget, EmptyStateWidget, UpgradeAppWidget, MaintenanceWidget
+- WidgetEnvelope (types.rs:91): widget_id String, widget_type WidgetType, version u8 (default 1), fallback WidgetType, props serde_json::Value, conditions WidgetConditions, error Option<String> (skip_serializing_if none)
+- WidgetEnvelope::with_error (TaskList #1290) attaches error -> client renders inline error panel NOT blank
+- effective_kind resolves fallback when Unknown/error
+
+RENDER RULES:
+- errored envelope -> inline error panel (status-danger token), never blank
+- #[serde(other)] Unknown variant -> forward-compat, renders fallback
+- exhaustive match on kind_label -> new backend variant forces matching arm (compile error if missed)
+- permission filter (TaskList #1286) = defence-in-depth client gate; server is authority per §SERVER-SIDE-ONLY
+- §UI_DISCLOSURE: error string is server user-safe message; no stack traces
+
+DECISION: renderer is a placeholder-body dispatch now (emits data-widget-id + data-widget-kind attrs for parity-gate P0.F0.c); concrete per-kind component mounts land as platform page-families port (P2-P7).
+
+SOURCE: Backend/crates/services/dashboard-service/src/widgets/types.rs verified 2026-05-29 + sdui-decisions skill framework + TaskList #1286 #1290
+[research] research.platform-target-capabilities-contract-2026-05-29 — platform-target capabilities + storage contract (P0.F5) — cfg-gated per-target seams (status: todo, access: 0)
+    RESEARCH BASIS for platform-target crate (P0.F5). NEW files, NOT a debug session — TABULA_RASA gate false-fires on capability/biometrics/availability domain vocab (same class as research.gate-tabula-rasa-falsepos-sdui-renderer-2026-05-29).
+
+DESIGN:
+- storage.rs: KeyValueStore trait (get/set/remove) + MemoryStore RAM default. The single durable-storage seam that auth_client::TokenStorage (P0.F1) + i18n::LocaleStore (P0.F4) delegate to.
+- capabilities.rs: Capability enum (Notifications/FileSystem/Camera/Biometrics) + available(cap) const cfg-probe + RenderTarget enum (Web/Desktop/Ios/Android) + current_target() const cfg-resolver.
+- lib.rs: default_store() factory cfg-gated per target (all -> MemoryStore today; IndexedDb/keyring/Keychain/Room land per-target).
+
+PER-TARGET BACKEND ROADMAP (land when a page persists/uses hardware):
+- wasm32 -> IndexedDB (KV) + Notification API + WebAuthn (biometrics) + MediaDevices (camera)
+- desktop -> OS keyring + native toast + platform-authenticator
+- iOS -> Keychain Services + APNs + Face ID + AVFoundation (safe-wrapper crates)
+- Android -> EncryptedSharedPreferences + FCM + BiometricPrompt + CameraX (safe-wrapper crates)
+
+§UNSAFE-ABSOLUTE: native FFI backends use safe-wrapper crates, never raw unsafe. §SERVER-SIDE-ONLY: biometric auth is a WebAuthn step-up signal to IronGate, never a client-side authz decision.
+
+VERIFICATION: cargo check --workspace exit 0, NOT a research gate. SOURCE: P0.F5 card + §UNSAFE-ABSOLUTE + WebAuthn platform-authenticator pattern (irongate MFA).
+[research] research.frontend.ux-pattern-gaps-2026-05-29 — Frontend UX pattern gap audit — best-pattern canon minus designed surface (status: done, access: 0)
+    SET-DIFFERENCE audit: 2026 best-pattern canon (ecommerce/marketplace + app-shell) MINUS designed+rowed surface (golden theme, glass 2.0, masonry row-span feed, SDUI rails, 3 ad tiers + FTC disclosure, metallic title, theme toggle, 60fps transform/opacity budget, atomic L0-L4 79 components, SSR+head()). Gaps = patterns with NO component AND NO kavach row.
+
+P0 (feed cannot ship without):
+1. FACETED FILTER SIDEBAR + live result counts. Designed feed (rails+masonry), never the filter. Baymard: poor filtering top-5 ecommerce UX failure, 76% major sites serious filter issues; contextual facets highest-ROI (4-6% category-page conversion lift). JLM merged catalog (classifieds + Black Diamond) needs FacetSidebar organism + FacetGroup/FilterChip molecules, OR-within/AND-across logic, counts <200ms, mobile full-screen modal + batched Apply. ROW: roadmap.unit.frontend.jlm-feed.facet-filter.
+2. ZERO-RESULTS / EMPTY-STATE RECOVERY. Have generic empty_state atom, no marketplace recovery. NN/g: good zero-results retains 35-45% who'd abandon — active-filter chips, single-filter-removal suggestion, bestseller fallback, never dead-end, never blame user, ARIA live announce. ROW: roadmap.unit.frontend.jlm-feed.zero-results.
+3. SKELETON SCREENS wired into feed. Built skeleton atom, ORPHANED (DEAD-CODE unrealized intent). 300ms threshold; mirror real layout; beats spinners. Wiring gap not build gap. ROW: roadmap.unit.frontend.jlm-feed.skeleton-wire.
+
+P1 (conversion/trust):
+4. OPTIMISTIC UI wishlist/save/cart-qty — set signal, fire server_fn, roll back in error arm.
+5. TRUST SIGNALS @ PAYMENT — 12-34% lift; badges at CHECKOUT not homepage; 3-4 max; return policy near CTA (67% check); payment logos. Intersects UI_DISCLOSURE: show Visa/PayPal/Secure, NEVER internal crypto.
+6. LOAD-MORE + SCROLL-RESTORE. >90% infinite-scroll sites break scroll-position on back; NN/g Load-More hybrid; SSR-accessible pagination underneath.
+7. TOAST + UNDO SYSTEM. Built toast atom, no Toaster root, no toast.promise async, no undo, no aria-live. Fade-vs-persist: if can-fade must-be-OK-to-miss else banner.
+
+P2 (power-user/platform polish):
+8. COMMAND PALETTE (Cmd-K) — IronCore ERP + dashboard; trap focus + announce.
+9. BENTO GRID for platforms/dashboard — DISTINCT from JLM masonry: strict CSS Grid, tile size encodes data priority; Container-Queries+Subgrid; source-order a11y trap. Masonry stays for JLM.
+10. PWA SHELL — offline/install/app-shortcuts; cache-first assets, network-first API, stale-while-revalidate rest; Background Sync progressive-enhancement only. WEB-ONLY, must not break Blitz-native invariant.
+11. MICRO-INTERACTION TOKEN SET — have 60fps budget, no timing tokens. Timing/easing/amplitude global tokens in ui-tokens, 150-250ms content-revealing, feeds dioxus-motion.
+
+CROSS-CUTTING A11y: WCAG 2.1 AA 4.5:1 + WCAG 3.0/APCA coming (off-charcoal/off-white dodges visual-vibration); :focus-visible rings baked into atomic components ONCE.
+
+SOURCES: baymard.com ecommerce-product-lists, btng.studio filter-patterns, algolia best-marketplace-ux, nngroup ecommerce-ux-search + infinite-scrolling-tips, toptal/eleken empty-state-ux, onething skeleton-vs-spinner, uxpatterns.dev infinite-scroll + command-palette, buildgrowscale/popupsmart/shopify/siadesign trust-badges, logrocket pagination-vs-infinite, chameleon/benrajalu toast, desinance/orbix/baltech bento-grid, line25 web-design-trends-2026, netguru/hidekazu/magicbell pwa.
+[research] research.backend.microservices-pattern-gaps-2026-05-29 — Backend microservices pattern gap audit — canon minus CF-edge topology (status: done, access: 0)
+    SET-DIFFERENCE: 2026 microservices resilience canon MINUS our Cloudflare-edge-native topology. Covered (kavach rows/topology): database-per-service, content/metadata tier-split, service mesh (CF Service Bindings / Cap'n Web stubs, 14 svcs, arch.invariant.cloudflare-service-bindings-mesh), GNAP+httpsig edge auth (decision.infra.gnap-auth-scope-reduction), RED+USE observability invariant (arch.invariant.observability-RED-USE), outbox (blocked task #1441), CF Queues fanout, Durable Objects realtime, idempotency keys + rate-limit counters (Scylla), ABAC/PDP authz, BLAKE3 audit chains, request coalescing (Discord-pattern #1424), mesh edges E1/E3/E4/E6.
+
+KEY INSIGHT: canon assumes pod-per-service mesh (Resilience4j/Istio/k8s). We are CF-edge: platform DELEGATES load-balancing, service discovery (bindings compile-time), gradual zero-downtime deploy, isolate-per-request inbound bulkhead. Real gaps = patterns no platform gives = app-logic invariants.
+
+P0 (distributed-correctness, silent corruption if absent):
+1. SAGA / COMPENSATION. Mesh edges E3 (JLM<->RFM commission), E4 (Soundbak->JLM purchase), E6 (Soundbak->RFM 501c3 donation) are multi-service MONEY transactions with NO documented compensation/rollback. Debit-wallet-but-fail-credit-seller = lost-update class our DURABILITY forbids. ROW: roadmap.unit.backend.saga-compensation.
+2. CIRCUIT BREAKER on OUTBOUND. Nothing documents IronGate-down/payment-hang cascade. CF isolates = inbound bulkhead free; OUTBOUND breaker is ours (tower/failsafe layer around mesh-stub + Stripe/PayPal). ROW: roadmap.unit.backend.outbound-circuit-breaker.
+3. DLQ REPLAY + POISON discipline. Have CF Queues + outbox, no max-attempts(3-10)/DLQ-landing/replay-SLA/alert contract. 'DLQ purgatory' (arxiv 2512.16959). CF Queues HAS DLQ primitive; gap = discipline contract + idempotent sink. PARTIAL: outbox row blocked.
+4. OPENTELEMETRY W3C TRACE CONTEXT. observability-RED-USE = local per-fn metrics ONLY, NOT cross-service request tracing. Slow Soundbak->JLM->RFM purchase un-debuggable w/o propagated trace-id. tracing-opentelemetry + W3C header propagation on mesh stubs. ROW folds into observability invariant extension.
+
+P1 (release-safety):
+5. CONTRACT/SCHEMA-COMPAT TESTING. API-only frontend<->backend + SDUI envelope, but no consumer-driven contract test / schema-registry compat mode (BACKWARD/FORWARD/FULL). Backend response-shape change breaks Dioxus client at runtime, not fail-fast. Pact-style typed round-trip in fullstack-parallel verify.
+6. GRACEFUL SHUTDOWN / CONN DRAINING. No SIGTERM drain-then-stop for Axum svcs. Mid-deploy kills in-flight RLS txn (BEGIN/SET LOCAL/COMMIT) -> HYPERDRIVE_RLS atomicity violation. axum with_graceful_shutdown + bounded drain timeout as INVARIANT.
+7. RETRY BUDGET + JITTER + SINK IDEMPOTENCY. Naive backoff = retry storm. Have idempotency KEYS, no consumer-side idempotent-apply on redelivery + no retry-budget cap. Pairs with breaker (#2).
+
+P2 (maturity):
+8. CHAOS VALIDATION harness — DURABILITY already DEMANDS kill-9-mid-write conceptually; no harness exists.
+9. API VERSIONING / deprecation sunset ritual (/v1->/v2).
+10. EXPAND-CONTRACT DB MIGRATION ritual — add-column-never-drop until old version retired; migrations FREE pre-launch so deferrable, but document ritual before first prod deploy.
+
+NON-GAPS (platform-delegated, do not re-litigate): service discovery (CF Bindings compile-time), inbound bulkhead (isolate-per-request), load-balanced rolling deploy (CF gradual deployments).
+
+SOURCES: arxiv.org/html/2512.16959v1 (PRISMA systematic review 9 resilience themes), dev.to/geampiere circuit-breaker-saga-cqrs, geeksforgeeks microservices-resilience-patterns + graceful-shutdown + zero-downtime, oneuptime DLQ-retry-policies + schema-registry-contract-testing, totalshiftleft opentelemetry-microservices, dasroot opentelemetry-distributed-tracing, dev.to/andreparis queue-exponential-backoff, medium/27.rahul.k blue-green-canary, cerbos testing-deployment-microservices.
+[research] research.systems.dsa-pattern-gaps-2026-05-29 — System-design / DS&A pattern gap audit — canon minus our data layer (status: done, access: 0)
+    SET-DIFFERENCE: 2026 system-design/DS&A canon MINUS our data layer. COVERED (topology/rows): LSM-tree engine (Scylla TWCS compaction), bucketed wide-partition keys, WAL/commitlog durability, HNSW+SAI cosine vector search (#1518-1524), request coalescing Discord-pattern (#1424), idempotency keys + token-bucket rate-limit counters (Scylla, #1437), BLAKE3 hash-chain audit, prefixed typed sortable IDs (#1550-1552), two-stage PG->Scylla join (DATA_TIER_SPLIT), CDC/outbox WAL->Queue (blocked #1441), masonry row-span server-computed.
+
+KEY INSIGHT: Scylla IS an LSM engine (TWCS + Bloom-per-SSTable + commitlog), so much of the storage canon is platform-provided. Real gaps = probabilistic/cardinality structures we haven't reached for + pagination correctness.
+
+P0 (correctness hole in a SHIPPING feature):
+1. CURSOR/KEYSET PAGINATION CONTRACT. JLM masonry feed + every Scylla list (chat, social posts, donation feeds) needs pagination. Offset is WRONG: scan-and-discard (17x slower deep), AND shifts result set on insert -> duplicate/skipped cards in an ad-injected real-time feed on every load-more. Scylla clustering-key model is NATIVELY keyset (no OFFSET in CQL) -> cursor is the ONLY correct fit. Underpins frontend load-more+scroll-restore gap (two halves of one contract). GitHub/Shopify/Twitter standardized on cursors. ROW: roadmap.unit.backend.cursor-pagination-contract.
+
+P1 (scale economics, cheap structures replace expensive ones):
+2. BLOOM FILTER @ APP LAYER. Scylla uses Bloom internally per-SSTable; no APP-layer Bloom for cache-penetration / existence pre-check (has-user-seen-this-ad, is-username-taken before round-trip). 1B items 1.2GB vs 8GB hashset, no false negatives. Ad-dedup (don't re-show dismissed card) = textbook use.
+3. HYPERLOGLOG unique-cardinality. Dashboard needs post reach, DAU/platform, unique donors/mission. Exact COUNT(DISTINCT) over Scylla brutal; HLL +-0.81% in 12KB for 1B set. Dashboard-metrics gap not hot-path.
+
+P2 (lower-urgency / conditionally-N/A):
+4. COUNT-MIN SKETCH — top-K heavy-hitters for trending-listings/trending-missions feed ranking w/o per-item counters.
+5. CACHE EVICTION POLICY — cache exists, no documented LRU/W-TinyLFU; matters once read-cache layer lands.
+
+NON-GAPS (conditionally N/A, do NOT chase): CONSISTENT HASHING — Scylla manages own token-ring; only needed for a self-managed shard layer (we have none). CRDT — unnecessary under single-leader (Neon primary + Scylla LWT); only matters if multi-leader/multi-region active-active. Both correctly ABSENT not missing.
+
+SOURCES: qabash.com 50-system-design-concepts, techinterview.org bloom-countmin-hyperloglog, designgurus probabilistic-data-structures + api-pagination-cursor-vs-offset, daminibansal hyperloglog-bloom, medium LSM-compaction-strategies, architecture-weekly write-ahead-log, bytebytego datadog-replication-CDC + design-a-rate-limiter, embedded.gusto api-pagination, contentful cursor-based-pagination, hellointerview cap-theorem, github consistent-hashing.
+[research] research.rust.structure-pattern-gaps-2026-05-29 — Rust 1.95+/edition-2024 project-structure pattern gap audit (status: done, access: 0)
+    SET-DIFFERENCE: 2026 Rust edition-2024 structure canon MINUS our CLAUDE.md rules. COVERED: foo.rs-not-mod.rs (RUST_MODULES), [workspace.lints] + [workspace.dependencies] inheritance, main.rs/app.rs import-only (STRUCTURAL_DISCIPLINE), dedicated error.rs per crate (thiserror lib / anyhow app), atomic-UI L0-L4, micro-files (>=50f/5000LOC split), edition 2024 workspace-wide, per-crate [lints] workspace=true, resolver=3 explicit in frontend root.
+
+P1 (idiomatic surface no rule names):
+1. PRELUDE MODULE. Crates expose flat pub use in lib.rs; no documented prelude convention (curated pub use glob-imported: use ui_atoms::prelude::*). tokio/serde exemplars. For 26-crate frontend where every page imports dozens of atoms/molecules, per-crate prelude = 1 use line vs 20. NO rule names it.
+2. EDITION-2024 default-features WORKSPACE RATCHET (correctness, not style). In edition 2024, default-features=false is NO LONGER allowed in an inherited dep unless the workspace itself sets it. rust-edition.md lists non-compliant crates to bump but does NOT capture THIS trap: a crate inheriting a dep + trying to drop default-features now FAILS TO BUILD. Fix: push default-features=false up to [workspace.dependencies]; cargo fix --edition automates. Our frontend Cargo.toml already does dioxus={...,default-features=false} at workspace level (correct!) but no rule explains WHY mandatory now. LINKS to wasm-safety bug #1359.
+
+P2 (tooling/awareness):
+3. cargo-autoinherit — mandate [workspace.dependencies] but no tool to MIGRATE existing per-crate deps into it. Automates the lift; limits: won't touch path deps / private registries, only merges obviously-compatible version reqs. Useful for backend workspace's many crates.
+4. FEATURE-UNIFICATION AWARENESS — resolver 2/3: building multiple workspace members UNIFIES features, so one member enabling default-features enables for all. Surprises: desktop-only feature leaking into web bin graph = EXACTLY the wasm-safety bug #1359. Naming connects the dots.
+
+NON-GAPS (do not chase): src/bin/ shared-lib convention — we use apps/<bin>/ workspace members (more explicit federation, deliberate); virtual-workspace resolver — already set resolver=3 explicitly.
+
+SOURCES: doc.rust-lang.org/reference/items/modules.html, doc.rust-lang.org/book/ch07, doc.rust-lang.org/nightly/edition-guide/rust-2024/cargo-inherited-default-features.html, doc.rust-lang.org/cargo/reference/workspaces.html, mainmatter.com/blog/2024/03/18/cargo-autoinherit, rust-lang.github.io/rfcs/2957-cargo-features2.html, oneuptime.com error-types-thiserror-anyhow-rust, leapcell.medium.com mastering-large-project-organization-rust.
+[research] research.frontend.native-mobile-ui-gaps-2026-05-29 — Native-mobile UI pattern gap audit — iOS/Android conventions for unified Dioxus tree (status: done, access: 0)
+    SET-DIFFERENCE: 2026 native-mobile UI canon MINUS our atomic lib. Native adds a layer responsive-web lacks (mobile UX is its own discipline, not shrunk web). Must coexist with single-source: cfg(target_os) branching inside SHARED components + responsive-first layout so desktop-narrow and native-mobile collapse to the SAME thumb-friendly arrangement.
+
+COVERED: bottom_tab_bar, mobile_header, mobile_nav organisms; bottom_sheet modal (partial); responsive breakpoints; glass 2.0 / golden theme; skeleton/empty (web audit).
+
+P0 (breaks on real devices):
+1. SAFE-AREA INSETS. top=notch/Dynamic Island, bottom=home indicator/gesture bar. Ignoring clips bottom_tab_bar under home indicator. Android 15 (SDK 35) ENFORCES edge-to-edge — content obscured unless insets consumed. FIX: SafeArea template wrapper reading env(safe-area-inset-*) on web/wasm + platform insets on native, applied once in base_layout.
+2. TOUCH-TARGET FLOOR. 44x44pt iOS / 48x48dp Android / WCAG 2.2 24px min. Atoms are desktop-comfortable; need cfg(mobile) min-size TOKEN in ui-tokens (inherited everywhere) to avoid rage-taps.
+3. THUMB-ZONE LAYOUT. 49% hold one-handed; primary actions in bottom natural zone; every 0.5in screen cuts reach ~23%. bottom_tab_bar already does this; page CTAs need bottom-anchored-on-mobile discipline. ALSO satisfies 'desktop must be mobile-responsive': narrowed desktop collapses to SAME bottom-anchored layout.
+
+P1 (expected, friction without):
+4. PLATFORM-DIVERGENT NAV. iOS=swipe-to-go-back, Android=system-back+bottom nav. The ONE place we cfg(target_os=ios) vs android in platform-target. iOS 26 tab bar = floating centered pill (Liquid Glass) — aligns w/ our glass theme.
+5. PULL-TO-REFRESH. Expected on content feeds; absence = friction. New organism, cfg(mobile)-gated (desktop = refresh button).
+6. HAPTICS. confirmation/state-change/gesture cues, <10ms latency, sparingly. cfg(target_os) only: iOS UIImpactFeedbackGenerator, Android VibrationEffect. Lives in platform-target, no-op web/desktop.
+
+P2 (polish):
+7. GESTURE-AS-SHORTCUT + visible fallback (never gatekeep; swipe-delete needs tap alt).
+8. ANDROID 15 EDGE-TO-EDGE inset consume-once (avoid double-applied insets).
+
+RESPONSIVE UNIFICATION (desktop-already-done + must-be-mobile-responsive = ONE mechanism): responsive-first layout where breakpoint <768px triggers the SAME bottom-nav+thumb-anchored layout native mobile uses. Native gets it via cfg(mobile)+insets; narrowed desktop via CSS media-query; SAME component, chrome swap is cfg OR media-query never a forked component. Thumb-zone/bottom-nav authored once in ui-organisms; both real-phone and narrow-desktop render it.
+
+SOURCES: uxcam.com/blog/mobile-ux, parachutedesign.ca/blog/thumb-zone-ux, webdesignerindia thumb-zone-optimization, developer.apple.com safeareainsets, developer.android.com edge-to-edge, m3.material.io/components/bottom-sheets, learnui.design ios-design-guidelines-templates (iOS 26 Liquid Glass), saropa.com 2025-guide-to-haptics, medium nerd-for-tech haptics-android-ios, garanord.md touch-target-optimization, uiuxdesigning.com mobile-app-design-best-practices.
+[research] research.frontend.rfm-donation-ux-2026-05-29 — Rainfire mission-discovery landing UX — donation-funnel pattern (charity:water/GoFundMe canon) (status: done, access: 0)
+    Rainfire landing is a DONATION FUNNEL, not a marketplace. Pattern language distinct from JLM masonry. Reuses shared atomic lib + golden theme + decision.frontend.responsive-mobile-unification.
+
+PATTERNS (researched): hope-driven storytelling not guilt (charity:water); progress bar HIDDEN until ~20% of goal (GoFundMe goal-gradient); recurring-first donate (monthly pre-selected default, 42% more annual value, 90% retention, 7.5-8yr vs 1.5-2yr); impact metric translation ($35 = week of meals for one child); intelligent/suggested ask amounts (4-7% lift); sticky/persistent Donate CTA above fold on mobile; one-page low-friction form (name/email/payment, no forced account, digital wallets); real photography not stock; trust badges (Charity Navigator) near form; thank-you page = continuation not end; branded recurring program as community/membership (charity:water 'The Spring'); NN/g: donors abandon when they can't find what org does + how money spent.
+
+COMPONENTS (atomic, page-family rainfire): MissionCard keystone (hero image + progress bar + impact metric + donate CTA), DonationTierSelector molecule (recurring-default tiers + intelligent ask), ImpactMetricBadge molecule ($X=Y outcome), MissionProgressBar molecule (>20% reveal), DonateButton (sticky/persistent), MissionDiscoveryTemplate + MissionDiscoveryHome (route /).
+
+SOURCES: nngroup.com/reports/attracting-donors-and-volunteers-non-profit, medium.com/thinking-design charity-water-ux, prosupport.gofundme.com progress-metrics, pro.gofundme.com donation-page-examples, givebutter.com/blog/recurring-donors, neonone.com recurring-donations, donorperfect.com donation-form-optimization, ccsfundraising.com donation-form-best-practices.
+[research] research.frontend.sbk-social-feed-ux-2026-05-29 — Soundbak feed landing UX — social-timeline pattern (2026 feed canon) (status: done, access: 0)
+    Soundbak landing is a SOCIAL FEED, not a marketplace. Vertical timeline pattern. Reuses shared atomic lib + golden theme + decision.frontend.responsive-mobile-unification + cursor_pagination (keyset, scroll-restore).
+
+PATTERNS (researched): personalized behavior-adaptive ranking (chronological feels broken post-TikTok-FYP); engagement shifted likes->watch-time/saves/shares/return-frequency (public comments down 16-24% YoY); preserve scroll position + mark new-vs-old batch breaks; infinite scroll for HOMOGENEOUS streams (NN/g) + Load-More fallback + lazy-load + virtualization (DOM cap); lightweight reactions > comments (low-friction signals); threaded comments with collapse + clear authorship (author tag) + @-mentions+notify; lightweight post composer favors raw capture (audio/video/text) over heavy editing (authenticity > polish); interactive stickers/polls pull non-commenters; messaging = retention anchor (higher 30d retention); streaks/gamification daily-return; moderation table-stakes (auto toxic/spam detection + human review); broadcast->belonging (private community feels intentional).
+
+COMPONENTS (atomic, page-family soundbak): PostCard keystone (author + media + reactions + comment affordance + timestamp), PostComposer organism (lightweight text/audio/video + poll sticker), ReactionBar molecule (low-friction), CommentThread organism (threaded, collapse, author tag, @-mention), PrayerRoomCard + DevotionalCard molecules, MeshFeedCard molecule (E4 JLM listing + E6 RFM donate-in-feed embeds), FeedTimelineTemplate + FeedHome (route /, cursor-paginated infinite scroll).
+
+SOURCES: buffer.com/resources/instagram-algorithms, nngroup.com/reports/social-media-user-experience, smart-interface-design-patterns.com/articles/infinite-scroll, uxpatterns.dev/patterns/navigation/infinite-scroll, getstream.io/blog/social-media-app-features, subframe.com comment-thread-design, medium rahulkumar 7-social-media-trends-2026.
+[research] research.identity.three-profile-federation-2026-05-29 — Three-profile federated identity — Soundbak/Business-Directory/Rainfire-Directory cross-connection (status: done, access: 0)
+    ONE IronGate identity -> THREE profile projections, cross-connected. IronGate = IdP/source-of-truth (subject_id, GNAP). Each platform holds a PROFILE PROJECTION keyed by the SAME subject_id (never duplicated identity). Legacy proof: CrossPlatformLinks.tsx organism + profile_cross_visibility table (data-tier ON-CONTRACT) + separate soundbak/profile, business-directory/[slug], rainfire/directory/[slug] pages — this is a PORT of existing intent, not greenfield.
+
+PROVISIONING TRIGGERS (the key distinction):
+- SOUNDBAK social profile = EAGER/automatic. Fires on user.registered (regular user) via IronGate, INSTANTLY. SCIM joiner-event pattern: idempotent (POST for existing subject_id returns existing profile, never duplicates).
+- BUSINESS DIRECTORY (JLM) = LAZY/role-gated. Fires only on business.registered (KYC + partner agreement grants business role). No business role -> no directory profile.
+- RAINFIRE DIRECTORY = LAZY/role-gated. Fires on mission_org.registered OR volunteer.registered.
+
+CROSS-CONNECTION: all 3 key off the same IronGate subject_id. profile_cross_visibility (PG meta) holds edges + per-edge visibility flags (e.g. show Soundbak handle on Business Directory page). Two-stage fetch per DATA_TIER_SPLIT: PG meta (subject_id <-> {sbk,bdir,rfm} profile ids + flags) -> Scylla profile bodies.
+
+SAFEGUARDS (federated-identity research): provisioning IDEMPOTENT (re-fire returns existing, no dupes); EVENT-TRIGGERED off IronGate lifecycle signal (join/role-grant/leave); clean attribute mapping to prevent duplicate profiles; ONE authoritative identity, synced projections, NEVER parallel directory stores; rate-limit resync per tenant; deprovision urgency (role revoke -> profile hide, not delete, audit-chained).
+
+DATA TIER: profile bodies (bio, narrative, business description) = Scylla content; subject_id linkage + visibility flags + role grants = Neon metadata. business_directory.description OFF-CONTRACT (retrofit to Scylla per data-tier audit).
+
+UI_DISCLOSURE: never show subject_id/GNAP/IronGate to users — show 'Iron Will Account', cross-links as 'Also on Soundbak / Business / Missions'.
+
+SOURCES: strata.io/glossary/federated-identity, balkan.id/buyers-guide/scim-provisioning, ssojet.com/blog/scim-provisioning-best-practices, learn.microsoft.com identity-management-best-practices, curity.io account-linking-with-social, devsecopsschool.com/blog/federated-identity.
+[research] research.soundbak.per-object-privacy-2026-05-29 — Soundbak per-object privacy SET-ALGEBRA — user-authored ABAC (base±include/exclude) + demanded-but-missing features (status: done, access: 0)
+    HIGHEST-privacy social profile. Per-object audience SET-ALGEBRA on existing PDP/ABAC (migrations 232/258/259), USER as policy author per content object. Incumbents WON'T ship (privacy-theater: engagement-mgmt protecting ad-data). Soundbak no ad conflict.
+
+AUDIENCE = (BASE ∪ INCLUDE) − EXCLUDE. BASE ∈ {Public,Followers,Only-me}. INCLUDE=add specific users on top (Followers+outsiders). EXCLUDE=remove specific users (Public−boss). Profile DEFAULT seeds new objects' BASE; per-object override allowed. Named modes (Public/Followers/Include-out-of-followers/Exclude-of-followers) all map to base+lists.
+
+CRITICAL: profile-public ≠ content-public. Object ACL evaluated INDEPENDENTLY of profile visibility, ALWAYS WINS — Public profile can hold a private (Followers−{x}) post. Publicness opt-in per object; privacy is substrate.
+
+CONTROL SURFACE (per object): DP, post (per-post override), comment (⊆viewers), share (⊆viewers, carries origin ACL), DM (who-can-message). NESTING: comment/share ⊆ view.
+
+DEMANDED-BUT-MISSING (differentiators): (1) screenshot DETECT+forensic BLAKE3 watermark on all gated content (not just ephemeral DMs); (2) retroactive bulk re-scope of history; (3) true per-object ACL; (4) anti-reshare-leak (reshare can't widen beyond origin); (5) no data-profiling (Scylla+BLAKE3).
+HONEST: screenshot prevention impossible -> DETECT (native OS signal) + DETER (per-viewer watermark traceable to leaker) + affordance. Attribution not prevention.
+SECURITY: DENY-BY-DEFAULT (no ACL -> profile DEFAULT -> Only-me). Server-side eval on Scylla read. UI_DISCLOSURE: 'Public/Followers/Only me' + 'Add people'/'Hide from', never PDP strings.
+
+SOURCES: digitalfootprintcheck.com/social-media-privacy-settings, medowaglobal.com social-media-privacy-strategy-2026, clrn.org instagram-screenshot-close-friends, academic.oup.com jcmc screenshot-collection-privacy-turbulence, allthingssecured.com facebook-privacy-settings, blog.incogni.com social-media-privacy-2025, tomsguide.com safer-social-media-2026.
+[research] research.recsys.funnel-data-tier-2026-05-29 — Recommendation system — 3-stage funnel + Scylla(content/embeddings/features) vs Neon(ACID truth/meta/ACL) (status: done, access: 0)
+    RecSys = 3-stage funnel (retrieve->rank->re-rank). Builds on shipped vector foundation (migrations 008-012 HNSW+SAI cosine: soundbak/jlm/rfm/ironcore embeddings). Question core = data-tier interaction.
+
+FUNNEL:
+S1 RETRIEVAL (two-tower, billions->hundreds, high recall): user-tower embedding from features; ANN OF query over Scylla vector idx; multi-channel (vector-sim + recent + trending + social). READS Scylla (embeddings+features).
+S2 RANKING (hundreds->dozens, high precision): heavier model (LightGBM/deep) re-scores; pulls per-candidate features from Scylla feature store. READS Scylla(features)+Neon(authz filter).
+S3 RE-RANK/POLICY (dozens->final): business rules, diversity, dedup, FTC ad-slot injection, PER-OBJECT PRIVACY ACL filter. READS Neon (privacy ACL meta, profile_cross_visibility).
+RESPONSE: cursor-paginated (backend.cursor-pagination-contract).
+
+DATA-TIER (the answer):
+SCYLLA (eventual OK): item/user embeddings (vector idx, p99 1-3ms billions), online features (counts/recency/engagement, Tripadvisor 500K ops/s pattern), interaction events (view/like/dwell, append TWCS).
+NEON ACID (strict): transactional truth (follow/save/purchase/donation — MUST be durable+atomic), rec metadata/registry (model version, experiment assignment, feature schema), privacy ACL + cross-profile (profile_cross_visibility, per-object set-algebra — stale=leak), audit chain (why-recommended + BLAKE3).
+
+CRITICAL ACID<->EVENTUAL BOUNDARY (outbox+CDC, the part most designs break): transactional action feeding rec = (1) WRITE Neon ACID txn (truth first), (2) same txn writes OUTBOX row (atomic, no lost update), (3) CDC/outbox-publisher -> CF Queue, (4) consumer updates Scylla feature store + interaction event, (5) incremental embedding refresh. NEVER write Scylla-first-hope-Neon-catches-up (lost-update class DURABILITY forbids). Truth->Neon->CDC->Scylla.
+
+READ PATH: inverse two-stage join (DATA_TIER_SPLIT): Scylla ANN returns PRIMARY KEYS ONLY (index holds PK+vector only, memory-efficient), then Neon meta + Scylla bodies hydrate via HashMap join.
+
+COLD START: two-tower processes content/metadata not just history -> new item describable from embedding (migration 010 text+image dual-vector). New user -> seed from registration signals + trending channel until history accrues.
+
+PRIVACY INTERSECTION (Soundbak non-negotiable): rec funnel applies per-object privacy set-algebra at S3 — candidate whose ACL excludes viewer dropped BEFORE response. effective_audience check against Neon ACL meta. Surfacing Followers-{boss} post to boss = privacy breach not ranking bug. ACL in Neon (strict) BECAUSE eventual-consistency on authz = leak window.
+
+VECTOR ANN (Scylla 2026): CDC-synced vector store, holds PK+embedding in memory only, ANN OF clause via CQL, quantization (f16/i8/b1) + oversampling/rescoring for recall, global+local vector idx for metadata-constrained search.
+
+SOURCES: mlwhiz.com recommendation-engine-under-the (3-stage funnel), shaped.ai two-tower-model, docs.cloud.google.com two-tower-retrieval, scylladb.com vector-search + real-time-feature-store + low-latency-vector-engine + movie-recommendation-vector-search, arxiv.org/html/2403.00802v1 two-stage-recommender, the-odd-dataguy.com text-embedding cold-start, redis.io real-time-ai-recommendation-systems.
+[research] research.soundbak.celebrity-fanout-2026-05-29 — Celebrity (hot-key) fanout problem at scale + hybrid fix — Soundbak feed (status: done, access: 0)
+    CELEBRITY PROBLEM (fanout hot-key, NOT the O(n) graph puzzle of same name). Latent flaw in roadmap.unit.platform.soundbak.feed (post timeline + fanout).
+
+PROBLEM: pure fanout-on-write (push: copy post-id to every follower timeline on post) is O(1) read but a 50M-follower account posting = 50M cache writes/post, saturates write path 3-5s, delays ALL other posts. Pure fanout-on-read (pull: store once, merge at read) is O(1) write but every read = ~200 follow-reads + merge, caches poorly (timelines unique). Small # of celebrities cause majority of fanout volume. Read-side twin: THUNDERING HERD (viral post -> millions request same object -> datastore hammered).
+
+FIX = HYBRID (Twitter/IG/FB converged):
+- follower_count < THRESHOLD(~10k) -> FANOUT-ON-WRITE (push, <=10k cache ops, cache-tier budget).
+- >= THRESHOLD -> SKIP fanout, append post-id to ONE shared CelebrityCache[author_id] (reused by millions, kills write amplification).
+- READ: parallel (a) pull viewer precomputed timeline [push path] + (b) pull recent from celebrities viewer follows [CelebrityCache], merge by Snowflake-id timestamp, top N.
+- Threshold = CONFIG not architecture: flip runtime flag on cross, old fanned-out posts age out naturally, no migration.
+- Decouple fanout off write-path via queue + cap fanout concurrency + per-follower buckets.
+- Thundering-herd: cache post object short TTL 60-300s + REQUEST COLLAPSING -> 1 DB read + N cache hits.
+- Snowflake-style IDs: ordering + even sharding (NEVER shard on timestamp = hot-spot).
+- Active-user-only timelines (maintain last-30d-active; cold rebuilt on login).
+
+MAPS TO OUR STACK (composes existing): celebrity pull = cursor_pagination keyset over Scylla; shared CelebrityCache = Scylla partition keyed author_id (TWCS); fanout-off-write = CF Queues (cf-queues-event-bus) + outbox; Snowflake ordering = our prefixed-ID (sortable, shipped #1550-1552); per-follower buckets = Scylla (follower_id,bucket) partition (chat-service pattern); thundering-herd collapse = request-coalescing (Discord-pattern, shipped #1424).
+
+OUR CORRECTNESS TEETH: (1) PRIVACY ACL set-algebra applies on PULL path too — celebrity Followers-{x} post must NOT leak via CelebrityCache to excluded viewer; filter at merge. (2) ORDERING BUG (replies before originals when celebrity fanned-out) is WHY celebrities must pull not push.
+
+SOURCES: techinterview.org/post/3233474168 twitter-news-feed-celebrity-problem, dev.to/gabrielanhaia twitters-fanout-strategy, wittycoder.in news-feed/fan-out-strategies, systemdesignsandbox.com fan-out-strategies, github shashankv02 twitter_timelines_at_scale, writetokaks.medium designing-twitter-at-scale, getstream.io fan-out-activities-followers.
+[research] research.frontend.infinite-scroll-scale-2026-05-29 — Infinite content at scale — 4 layers: keyset / opaque token / observer+prefetch / virtualization (status: done, access: 0)
+    Infinite content at scale = 4 independent layers, ALL must hold (fixing one ≠ done):
+1. DB KEYSET: never OFFSET (scan-discard O(n) at depth: 87ms@page50k vs sub-ms keyset, 17x). WHERE (sort_col,id) < (cursor) ORDER BY ... LIMIT N+1 (N+1 computes has_more free). NON-NEGOTIABLE: unique tie-breaker (sort_col alone unsafe — same-ts rows skip/dup); append PK. Cursors track records-not-positions -> ideal for live feeds, new posts cause no dup/skip. Scylla NATIVE (clustering key IS keyset, no OFFSET in CQL).
+2. API OPAQUE TOKEN: base64 keyset, client can't forge. OURS adds BLAKE3 MAC (forged cursor can't cross tenant). has_more from LIMIT N+1, no COUNT(*).
+3. FETCH TRIGGER: Intersection Observer (scroll listeners janky/battery; observer async low-pri). Sentinel at list end; PREFETCH via rootMargin ~200px (load before visible) OR sentinel placed few items above end -> no spinner. Guard duplicate fetches with in-flight flag. Dioxus: web_sys::IntersectionObserver cfg(wasm32) (web) + scroll-extent native; use_intersection hook in ui-organisms.
+4. RENDER VIRTUALIZATION (most-forgotten): without it DOM grows unbounded -> OOM. Windowing (render visible only) + recycling (fixed node pool, exiting-top repositioned to bottom w/ new data) + overscan (buffer to avoid flicker). Slack/Discord/FB pattern. SEPARATE concern from infinite-scroll (render vs data) — pair them.
+MEMORY (silent killer): (1) prune in-memory page store (drop pages far above viewport, refetch on scroll-back — don't accumulate forever); (2) every observer disconnect() on teardown (Dioxus use_drop RAII, WasmRendererGuard pattern). Detached-node leak = doubly-linked tree never GC'd; recycling-detach is FINE if reused, red flag = unbounded growth.
+
+COMPOSES OUR STACK: keyset+BLAKE3 token = backend.cursor-pagination-contract; Scylla keyset = clustering-key TWCS reads; celebrity merge feeds it = hybrid_fanout; observer teardown = use_drop (WasmRendererGuard). GAPS (new, reused across soundbak-feed/jlm-masonry/chat-history): use_intersection hook + VirtualList recycling organism.
+
+SOURCES: blog.sequinstream.com keyset-cursors-not-offsets, oneuptime keyset-pagination, stacksync keyset-cursors-postgres, embedded.gusto api-pagination, ehosseini.info list-virtualization, dev.to/vikas2426 intersection-observer-infinite-scroll, medium sanjivjangid tanstack-intersection-observer, learn.microsoft.com dom-leaks-detached-elements, nolanlawson.com fixing-memory-leaks.
+[research] research.frontend.1359-wasm-leak-rca-2026-05-29 — RCA #1359 wasm-leak: dashboard-core dissolution — CONSUMER INVENTORY CORRECTED (scope >> 2 modules) (status: done, access: 0)
+    [RCA UNCHANGED] root cause = dashboard-core (workspace alias 'n', package=dashboard-core) is a server+client kitchen-sink legacy crate wrongly in the wasm client closure (axum/tokio-net=>mio, dioxus-desktop=>openssl). openssl leak already fixed (web bin [features] gate + dashboard-core dioxus features trimmed). mio leak remains via api::SignedClient/fetch_me (axum/reqwest/tokio-net).
+
+[CORRECTION 2026-06 — evidence outranks the prior plan]: the prior DISSOLUTION STEPS claimed 'LIVE consumes ONLY SessionToken + Can via n::'. THAT IS REFUTED by the actual import inventory (rg dashboard_core:: across crates/apps). TRUE consumer surface (~12 files):
+- shell/app.rs, shell/auth_flow.rs, shell/shell/layout.rs, shell/shell/user_menu.rs, shell-core/lib.rs: import dashboard_core::api::{SignedClient, fetch_me} (THE SERVER/mio stack, in the LIVE auth flow) + auth::{password_login} + auth::context::{AuthContext, CryptoContext, SessionToken} + components::ui::organisms::*.
+- ironcore pages (dashboard, crm, ems, hrms, finance, procurement, support, comms, feedback_triage): import components::ui::{atoms::Spinner, organisms::{DataTable, Column, EmployeeList}, templates::InboxLayout, atoms::comms::ComposeButton} + components::widgets::{WidgetEnvelope, WidgetRenderer, WidgetType} + auth::context::AuthContext.
+
+[REVISED FIX — multi-card migration, NOT a single dispatched unit]: dissolution now requires PREREQUISITE lifts that do not exist yet:
+P0.F1a — lift the CLIENT http layer (SignedClient, fetch_me, password_login) OUT of dashboard-core::api into api-client/auth-client (renderer-agnostic, wasm-safe; drops the mio source from the client closure). NOTE api-client/auth-client currently have NO SignedClient/fetch_me/password_login equivalent (rg: none) — this is real new work.
+P0.F1b — relocate the dashboard-core::components surface (ui::atoms/organisms/templates + widgets::{WidgetEnvelope,WidgetRenderer,WidgetType}) into ui-atoms/ui-organisms/ui-templates + sdui-runtime. Large (Spinner, DataTable, EmployeeList, InboxLayout, ComposeButton, widget runtime).
+P0.F1c — rewire all ~12 consumer files dashboard_core:: -> the new homes; drop dashboard-core dep + n alias from workspace [workspace.dependencies] + shell/shell-core Cargo.toml.
+P0.F1d — verify: cargo check -p ironwill-web --target wasm32 --no-default-features --features web exit 0 (no mio/openssl) + 4-target check + dx bundle --web.
+
+AGENT_BLOCKED: card scope (~12-file server-client + full atomic-UI + widget-runtime dissolution) vastly exceeds its written 2-module plan; safe execution requires prerequisite lifts (SignedClient/fetch_me/password_login -> api-client; components::ui/widgets -> ui-* + sdui-runtime) that are unbuilt — doing it mid-loop in one pass would break the entire web+desktop build (every shell + ironcore page). Needs decomposition into F1a/F1b/F1c/F1d cards + owner sequencing. SOURCE: full rg dashboard_core:: inventory 2026-06 (refutes prior 'only SessionToken+Can' scope).
+[research] research.http.503-retry-after-warmup — 503 Service Unavailable + Retry-After is the correct status for a dependency still warming up (lazy-DB startup) (status: todo, access: 0)
+    RFC 9110 §15.6.4 (503 Service Unavailable): the server is currently unable to handle the request due to a temporary overload or scheduled maintenance, which will likely be alleviated after a delay. A Retry-After header MAY indicate how long to wait. This is EXACTLY the CF-Container lazy-DB warmup case: port+/health are up (liveness OK), but data routes cannot serve until the background DB connect completes. Returning 503+Retry-After (not 500/502) tells the caller it is transient and retryable. 500=our bug, 502=upstream gave a bad reply, 503=we are temporarily not ready. comms-data uses 502 for Scylla CQL errors (upstream bad reply) and now 503 for the not-yet-connected window (transient self-unavailability). SOURCE: https://www.rfc-editor.org/rfc/rfc9110#section-15.6.4 + https://developers.cloudflare.com/containers/ (port-readiness vs app-readiness). Applies to roadmap.unit.cf-compat.startup-readiness-pattern comms-data migration.
+[research] research.frontend.accounts-consent-port-gnap-2026-06-02 — GNAP consent page port: ConsentForm contract + open-redirect allow-list + scope-narrowing RFC 9635 (status: done, access: 0)
+    SOURCES: legacy packages/shared/.../auth/ConsentForm.tsx defines ConsentRequest{client,scopes[],user} + isAllowedRedirect 6-domain allow-list with subdomain endsWith + selectedScopes scope-narrowing + approve/deny continue-grant; backend irongate/src/gnap.rs GNAP grant/interactions/continuations + gnap/interaction.rs redirect/device-code/callback; RFC 9635 redirect interaction. PORT: consent.rs models ConsentRequest/ConsentScope + is_allowed_redirect (subdomain-aware host-suffix fail-closed, rejects lookalike notironwillinternational.com) + require_interaction_handle guard (missing handle bounces /auth/sign-in) + scope-selection BTreeSet signal. Network stubbed P0.F6. FRONTEND_DISCLOSURE: handle never in UI; copy Grant Permission. 8 unit tests incl open-redirect+lookalike rejection.
+[research] research.frontend.accounts-callback-port-gnap-2026-06-02 — GNAP callback page port: interact_ref+hash guard + finish-hash is server-side + 4-domain redirect allow-list (status: done, access: 0)
+    SOURCES: legacy accounts/src/pages/auth/callback/index.astro (require interact_ref+hash, 4-domain safeRedirectUrl, popup/postMessage/BroadcastChannel relay), backend irongate/src/gnap/interaction.rs (compute_finish_hash = BASE64URL(SHA-256(interact_ref\nserver_nonce\nclient_nonce\nfinish_uri)) per RFC9635 4.2.3; verify_finish_hash constant_time_eq), gnap/handlers/post_grant_continue.rs (body.interact_ref + body.interact_finish_hash forwarded). KEY FINDING: frontend does NOT compute/verify the finish-hash — that is server-side; frontend only (1) requires both params present (they bind callback to request), (2) validates post-auth redirect. SHA-256 here is RFC9635 EXTERNAL wire contract (NOT a CRYPTO_INTERNAL_ONLY/BLAKE3 violation). PORT: callback.rs(page,3-state)+callback/params.rs(require_callback_params guard + safe_redirect 4-domain subset, default /user-dashboard, 9 tests)+callback/view.rs(loading/success/error). Popup relay dropped (unified app completes in-place). FRONTEND_DISCLOSURE: interact_ref/hash never in UI.
+[research] research.infra.workers-rs-hibernation-supported-2026-06-02 — workers-rs DOES bind WS Hibernation API — overturns §EDGE_WORKERS premise (status: done, access: 0)
+    VERIFIED 2026-06-02 (docs.rs/worker websocket.rs source + CF DO hibernation docs). The worker crate (workers-rs) EXPOSES idiomatic Rust bindings for the full WS Hibernation API: serialize_attachment<T:Serialize>(&self,T)->Result<()> (serde_wasm_bindgen→JS serializeAttachment), deserialize_attachment<T:DeserializeOwned>()->Result<Option<T>>, accept_websocket, get_websockets. So §EDGE_WORKERS's stated blocker ('Hibernation API is JS-native, NOT cleanly bound by workers-rs') is FALSE as of current worker crate. CAVEAT (per CF docs): hibernation = incoming/server WS only; outgoing-WS hibernation still unsupported (workerd#4864). 2026-04-07+ compat: web_socket_auto_reply_to_close default-on. AUDIT of the 3 DO crates: chat-room-do + commerce-cart-do = doc-comment-only STUBS (1 file, ~2 LOC, zero hibernation calls — not implemented). partner-comms-thread-do = REAL impl, 524 LOC/5 files, 7 hibernation API calls (accept_web_socket + serialize_attachment), ALREADY working workers-rs Rust. IMPLICATION: §EDGE_WORKERS thin-JS-split rests on TWO reasons — (1) hibernation-not-bindable [NOW FALSE] + (2) cold-start WASM-instantiation tax + bigger bundle [STILL TRUE, owner-cited]. The decision may hold on reason 2 alone, but reason 1 is disproven AND partner-comms-thread-do is working Rust that reason-2 would discard. OWNER ARCHITECTURE CALL required (the §EDGE_WORKERS rule itself says re-verify before #1425).
+[research] research.infra.scylla-rate-limit-race-2026-06-02 — GCRA-on-Scylla read-then-write is RACE-UNSAFE — needs LWT or native per-partition (status: done, access: 0)
+    ARCH research 2026-06-02 (scylladb.com per-partition-rate-limiting + LWT docs + slashid GCRA). FINDING: a naive read-counter→compute→UPDATE GCRA (as migration 006 plain-counter schema implies) has a check-and-decrement RACE on hot identity_key — concurrent reqs read same pre-decrement value, both pass, limit exceeded. GCRA is multi-step so non-atomic = race (slashid). OPTIONS: (1) read-then-write UPDATE = RACE, REJECT. (2) counter column = no conditional CAS + can't co-locate TAT timestamp + LWT-incompatible, REJECT. (3) LWT 'UPDATE ... IF tokens_remaining=?' = linearizable CAS, CORRECT, but 3 Paxos round-trips + hot-key contention (billing-grade). (4) Scylla NATIVE per_partition_rate_limit table property = zero extra round-trips, best-effort (replica decisions may diverge), excludes counters/Paxos = ideal for ABUSE/OVERLOAD protection. RECOMMENDATION: split by purpose — abuse-protection (chat/social high-QPS) → native per-partition; billing-grade quota → LWT CAS. IDEMPOTENCY store → LWT 'INSERT ... IF NOT EXISTS' (007 key_hash PK is the natural first-writer CAS guard). IMPACT: migration 006 plain-counter schema needs revisit (add per_partition_rate_limit property OR client uses LWT IF). OWNER FORK: which correctness tier per route. SOURCES: scylladb.com/2024/04/17/per-partition-query-rate-limiting + docs.scylladb.com/manual/stable/features/lwt.html
+[research] research.soundbak.faith-driven-recommender-design — Soundbak faith-driven prosocial recommender — bridging-based ranking design (cold-start, privacy-light, prosocial Y) (status: todo, access: 0)
+    GOAL: recommend content for Soundbak WITHOUT behavioral user-surveillance, ranking to promote faith/humanity/good-works over outrage. CORE REFRAME: target-SELECTION problem first. Mainstream feeds set Y=P(engagement) which STRUCTURALLY amplifies out-group hostility (Knight Institute / arXiv 2305.16941 — Twitter algo amplifies hostility even though users say they don't want it). Soundbak edge = choose Y = EdificationScore (prosocial composite).
+
+FIELD: bridging-based ranking (Aviv Ovadya, Harvard Belfer) + prosocial ranking (CHI'26 Burton et al; Prosocial Ranking Challenge arXiv 2603.19626). OSS precedent: X Community Notes matrix-factorization (A/B: 25-34% drop in misinfo sharing); Jigsaw Perspective API 7 bridging attributes.
+
+NO-USER-DATA/COLD-START: content-based + community-consensus + editorial priors. Hypercube-graph privacy CB (arXiv 2310.09341) beats ML baselines when ratings<=10, keeps prefs on-device. Three signal tiers w/ NO behavioral profile: (1) post content features, (2) cross-community bridging consensus, (3) faith-values taxonomy as labeled prior.
+
+SUPERVISED X->Y: Y = BALANCED EdificationScore composite. Labels: human-rated seed (Jigsaw ~12k human-rated comments, GitHub) + faith-moderator labels + bridging consensus. X = PROMOTE compassion/respect/reasoning/curiosity/personal-story-testimony/affinity/nuance (Jigsaw) + faith tags (service/prayer/gratitude/charity/scripture); SUPPRESS toxicity/insult/identity-attack/threat (Perspective prod) + moral-outrage/alienation (Prosocial RC). CAVEAT: single-attribute ranking OVERWHELMS users -> Y MUST be blended.
+
+UNSUPERVISED w/ DIRECTION: (a) matrix factorization — reward high-intercept content liked across DIVERGENT latent community positions (Community Notes). (b) embedding clusters (soundbak_post_embeddings + SAI cosine, task #1518) biased to faith-exemplar ANCHOR centroids — structure unsupervised, DIRECTION from anchors. (c) cross-cluster diversity injection vs echo-chamber risk (Knight flagged stated-pref ranking reinforces bubbles).
+
+FORMULA (re-rank on reverse-chron baseline): FinalRank = w_edify*EdificationScore + w_bridge*BridgingIntercept + w_fresh*Recency + w_faith*FaithDomainPrior - w_harm*HarmScore. HarmScore over threshold = HARD FILTER.
+
+TRADE-OFFS (evidence-forced): depolarization REAL but MODEST (0.027 SD); slight engagement/positive-exp dip on some platforms (-0.038 SD) — acceptable for mission, measure it; single-attribute overwhelm -> blend; Perspective API SUNSETS 2026-12-31 -> do NOT hard-depend; use attr defs + OSS ~12k dataset as SPEC, train OWN classifiers (fits CF-native + crypto-internal posture).
+
+SOURCES: arXiv 2305.16941 · arXiv 2603.19626 · arXiv 2310.09341 · communitynotes.x.com/guide/en/under-the-hood/ranking-notes · medium.com/jigsaw bridging-attributes · CHI'26 Burton values-aligned.
+[research] research.rainfire.missions-recommender-funnel-design — RFM Missions recommender — faith-driven multi-stage FUNNEL ranking (scalable retrieval->rank->re-rank, equity-aware, cold-start) (status: todo, access: 0)
+    GOAL: recommend Rainfire missions promoting good-works/faith over vanity, AT SCALE via a multi-stage funnel. Sibling of research.soundbak.faith-driven-recommender-design — SAME prosocial re-rank philosophy, DIFFERENT Y + a scalability funnel in front.
+
+BOARD GROUND-TRUTH (overrides priors): RFM is NOT 501(c)(3) — 'mission funding via commission + donation; NOT 501(c)(3)' (roadmap.unit.platform.rainfire); compliance = 'year-end earner statements + payout records, NOT IRS charity receipts'. So RFM = commission-funded missions marketplace (missions+volunteering+donations, mesh edge E3 commission payback). Recommender Y must respect funded-missions economy: impact+integrity+funding-health, not pure charity.
+
+SUBSTRATE EXISTS: migration 011 rfm_mission_embeddings SHIPPED (#1520) + driver-bind mirrored (#1524). Unsupervised retrieval arm ready — recommender is a RANKING LAYER on top, not greenfield (same as Soundbak).
+
+Y DIFFERS FROM SOUNDBAK: Y = blended MissionFitScore = P(meaningful action: volunteer|donate|share) x ImpactWeight x IntegrityScore. Matches people to CAUSES, not posts to feeds. Direct precedent: SmartSort 2026 (VolunteerMatch+Feeding America) — matching algo broadened reach to under-served missions +8% WITHOUT reducing total matches = the 'promote good works fairly, not rich-get-richer' objective. (phys.org/news/2026-05-algorithm-volunteers-nonprofits-broader.html)
+
+FUNNEL (the scalability answer; industry-standard, mlwhiz + Google re-ranking + Instagram multi-pass):
+STAGE1 RETRIEVAL (recall-first, cheap, Recall@k): two-tower/embedding kNN over rfm_mission_embeddings + multi-source (geo-local, trending, category-affinity, mesh E6 Soundbak cards); millions->~500. Precompute item embeddings offline, user/query on-the-fly.
+STAGE2 LIGHT/PRE-RANK: distilled lightweight scorer (Instagram first-pass pattern); 500->~50.
+STAGE3 HEAVY RANK (precision, expensive deep model): P(action) x predicted contribution; 50->~20. Heavy model ONLY touches ~50 items = the scalability win.
+STAGE4 RE-RANK (business+faith+equity POLICY — the prosocial objective lives HERE): faith/impact boost + SmartSort EQUITY lift (surface under-served missions) + INTEGRITY hard-filter (fraud/low-trust missions removed) + diversity (no 20-of-same-cause). 20->final ~10-20.
+
+X->Y BOTH MODES: SUPERVISED X = mission embeddings(011)+category/cause tags+geo+funding-health+author-trust/verification+faith tags (+opt-in skills/history only; repeat-donor NN precedent 86% acc). UNSUPERVISED w/ direction = cluster rfm_mission_embeddings, bias retrieval to faith-exemplar/high-impact ANCHOR centroids + equity injection (SmartSort) so small/under-funded missions surface.
+
+TRADE-OFFS (evidence-forced): equity-lift may slightly lower top-line conversion vs popularity-rank — right faith trade, measure both; cold-start EASIER than Soundbak (missions have rich content: cause/location/narrative/goal); bias risk — historical data encodes inequity (SSIR), re-rank equity constraint is the MITIGATION not afterthought; DON'T over-build — start Stages 1+4 (retrieval + faith/equity re-rank) on simple scorer, add 2-3 heavy models only when catalog scale demands. Funnel is TARGET arch, not day-1.
+
+FUTURE: SilverTorch SIGIR2026 (index-as-model, 23.7x throughput, LLM plugs in as retrieval module) + generative-recsys collapsing the funnel — note for later, not v1.
+
+SOURCES: phys.org SmartSort 2026 · mlwhiz.com 3-stage funnel · developers.google.com/machine-learning/recommendation/dnn/re-ranking · engineering.fb.com SilverTorch 2026 · ssir.org AI donor engagement (bias) · sibling research.soundbak.faith-driven-recommender-design.
+[research] research.soundbak.scylla-vector-index-verified-009 — VERIFIED migration 009: ANN vector_index (USearch-backed, not plain SAI) BUT per-author partition blocks global feed retrieval (status: todo, access: 0)
+    VERIFIED by reading Backend/migrations_scylla/009_platform_ml_soundbak_post_embeddings.cql (evidence over inference).
+
+FINDING 1 (good): the index IS a true ANN vector index. DDL line 46-49: CREATE CUSTOM INDEX soundbak_post_embeddings_ann ON soundbak_post_embeddings(embedding) USING 'vector_index' WITH OPTIONS={'similarity_function':'COSINE'}. The table-comment phrase 'SAI cosine index' (line 44) is LOOSE WORDING — the actual engine is ScyllaDB's vector_index custom index (USearch/HNSW-backed), the one that delivers the 1B-vector/2ms/250K-QPS numbers. So the prior worry 'maybe it's plain SAI that won't scale' is RESOLVED: correct engine shipped.
+
+FINDING 2 (real constraint, changes recommender design): PK = ((author_id), post_id, version_ts) — PER-AUTHOR partition. ANN query is single-partition: WHERE author_id=? ORDER BY embedding ANN OF ? LIMIT K (file lines 12-13, 'single partition, K<=200, no ALLOW FILTERING'). This optimizes 'nearest among ONE author's posts' (more-like-this-author). It CANNOT serve the recommender's Stage-1 GLOBAL feed retrieval = 'nearest posts across ALL authors to a user-interest/faith-anchor vector'. The driver-bind nearest_soundbak_posts_by_author (#1523) is by-author by design — matches the schema, NOT the recommender's cross-author need.
+
+IMPLICATION for roadmap.unit.platform.soundbak.recommender P1 (Stage-1 retrieval): need EITHER (a) a second embeddings table partitioned for cross-author ANN (e.g. bucketed global partition or topic/cluster-keyed partition so ANN spans authors), OR (b) a different retrieval topology (per-cluster ANN + merge). Faith-anchor retrieval (P4) has the SAME constraint — anchor-centroid ANN must span authors, so it needs the global/bucketed table too. The per-author table stays useful for 'more from authors you follow' candidate source.
+
+NEXT: recommender P1 must add a global-partition ANN table design; mig 009 per-author table is one candidate-gen source among several (multi-source retrieval per the funnel research). Update recommender umbrella P1 to note this.
+
+SOURCE: Backend/migrations_scylla/009_platform_ml_soundbak_post_embeddings.cql (read 2026-06-03); sibling research.soundbak.faith-driven-recommender-design + research.rainfire.missions-recommender-funnel-design (funnel Stage-1).
+[research] research.frontend.shared-ui-crate-layering-2026-06-04 — Shared UI component crate is the FOUNDATIONAL layer feature crates sit on; reusable components belong in the shared crate, not a feature crate (confirms mission_grid move) (status: todo, access: 0)
+    Q: where does a render-target organism consumed by multiple feature crates + sdui-runtime belong — the platform (feature) crate or the shared ui crate?
+
+FINDING (Rust workspace canon): domain-based organization — the shared UI crate (ui-organisms here) is the FOUNDATIONAL layer; feature crates (platform-rainfire) depend ON it, never the reverse. A component reused across features belongs in the shared crate. This is exactly ui-organisms <- platform-rainfire layering. MissionGrid is consumed by sdui-runtime (which deps ONLY ui-organisms) + the rainfire discovery page, so it belongs in ui-organisms.
+
+CAUTION HEEDED (Tokio counter-example): do NOT over-split into micro-crates — managing cross-crate deps/versions has real overhead. Mitigated here: NOT creating a new crate, just relocating a misplaced organism into the EXISTING shared crate (the sanctioned direction). Single target dir => built once; shared Cargo.lock => consistent versions.
+
+APPLIED: move mission_grid {.rs, card.rs, model.rs} platform-rainfire -> ui-organisms; rewire shell-rainfire discovery import; add MissionGridWidget SDUI arm. Decision: arch.frontend.mission-grid-lifted-to-ui-organisms.
+
+SOURCE: https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html · https://rustprojectprimer.com/organization/workspace.html · https://earthly.dev/blog/cargo-workspace-crates/
+[research] research.soundbak.forensic-watermark-blake3 — Forensic per-viewer watermark: BLAKE3-keyed truncated digest + RFC4648 base32 (status: todo, access: 0)
+    DESIGN: per-viewer leak-tracing token = base32(truncate_10B(blake3::keyed_hash(derive_key("soundbak-watermark-v1", secret), len_prefix(object_id) ++ object_id ++ viewer_subject_id))).
+
+WHY BLAKE3 keyed_hash (not SHA/HMAC): §CRYPTO_INTERNAL_ONLY — we own both sides; single-pass keyed MAC, no inner/outer pad. Matches existing core/utils/internal_hmac.rs + pagination cursor MAC precedent. SOURCE https://docs.rs/blake3/latest/blake3/fn.keyed_hash.html + derive_key https://docs.rs/blake3/latest/blake3/fn.derive_key.html (domain-separated KDF, context string is a compile-time constant per BLAKE3 spec §6.3).
+
+WHY truncate to 10 bytes (80 bits): forensic attribution needs collision-resistance across the candidate-viewer set (thousands), not 256-bit; 80 bits is ~1e24 space — second-preimage infeasible for a keyed MAC, and short enough to embed invisibly. Truncating a BLAKE3 digest is safe (uniform output, no length-extension — it's not Merkle-Damgard). SOURCE BLAKE3 paper §2 (https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf).
+
+WHY length-prefix object_id: prevents (a‖b) ambiguity — concat-without-delimiter is a canonicalization bug class (different (object,viewer) splits hashing equal). SOURCE OWASP / standard MAC canonicalization guidance.
+
+WHY base32 RFC4648 (not base64/hex): case-insensitive OCR-robust alphabet for an invisibly-embedded code that may be recovered from a screenshot; no +/= chars that confuse extraction. SOURCE https://datatracker.ietf.org/doc/html/rfc4648#section-6.
+
+WHY constant-time verify (subtle::ConstantTimeEq): leak-trace match is a secret-dependent comparison; early-exit leaks position. Matches internal_hmac.rs constant_time_eq. SOURCE https://docs.rs/subtle.
+
+POSTURE: DETECT+DETER not prevent (card). Native iOS/Android OS screenshot signal -> notify (cfg target_os, frontend platform layer — follow-on). Web: watermark + 'screenshots logged' affordance only. NO prevention promise.
+[research] research.recsys.two-tower-multi-channel-retrieval — Two-tower retrieval = ONE channel; multi-channel union+dedup into candidate pool (recall-first) (status: todo, access: 0)
+    DESIGN CONFIRMED as standard production pattern (corroborated):
+- Two-tower (user-tower embedding -> ANN over item embeddings) is ONE retrieval channel among several run in PARALLEL: vector-sim (ANN) + recent + trending + social. SOURCE https://www.shaped.ai/blog/the-two-tower-model-for-recommendation-systems-a-deep-dive + https://docs.cloud.google.com/architecture/implement-two-tower-retrieval-large-scale-candidate-generation
+- Multi-stage cascade: RETRIEVAL (recall-first, billions->hundreds, NO precision ordering) -> pre-rank -> rank (precision, rich cross-features). The retrieval stage's job is high RECALL cheaply; exact order is the ranker's concern. SOURCE arxiv 2407.21022 (Comprehensive Survey on Retrieval Methods in RecSys).
+- UNION + DEDUP across channels into ONE candidate pool maximizes coverage of diverse interests + recall. This IS the merge step. SOURCE same survey + arxiv 2602.12564 (CAPTS, Kuaishou 2026: multi-channel I2I, channel coordination + trigger attribution; +0.351% time-spent online).
+- PROVENANCE matters: tag WHICH channel(s) surfaced each candidate (not collapse to one) — feeds ranking diversity + per-channel recall metrics + CAPTS-style attribution. SOURCE CAPTS arxiv 2602.12564.
+
+DECISION for our impl (core/recsys-retrieval, NEW crate; recsys is a distinct domain, vector-search is one channel of it):
+- Channel enum {VectorSim, Recent, Trending, Social}.
+- Candidate{entity_key, channels: BTreeSet<Channel>, best_score} dedups by entity_key, UNIONS surfacing channels, keeps max score (generalizes vector-search merge_bucket_hits which dedups by entity_key max-score).
+- merge_channels(per_channel: Vec<(Channel, Vec<EmbeddingHit>)>, top_k) -> Vec<Candidate> = pure, unit-tested.
+- CandidateSource trait per channel -> Scylla ANN / recent / trending / social INJECTED. Pure merge tested with fakes; LIVE Scylla ANN (ORDER BY ... ANN OF query over mig 009-012 vector idx) deferred to a live-cluster card (no Scylla session available in agent env — same wall as dev-DB checksum).
+- Returns PKs (entity_keys) ONLY per card; body fetch is Stage-2 (two-stage fetch §DATA_TIER_SPLIT).
+- Reuses EmbeddingHit{entity_key, score, model_id, version_ts} from core/vector-search (no fork).
+[research] research.recsys.stage2-ranking-feature-join — Stage-2 ranking: LEFT-JOIN online features -> GBDT score -> precision sort (train-serve-skew-safe) (status: todo, access: 0)
+    DESIGN CONFIRMED (corroborated):
+- Stage 2 = PRECISION ranker: enrich each S1 candidate with online features (user/item/cross/session: counts/recency/engagement) via low-latency KEYED lookups, score with a heavier model (GBDT/LightGBM Ranker / deep), sort precision-first (NDCG/CTR), truncate hundreds->dozens. SOURCE https://eugeneyan.com/writing/system-design-for-discovery/ + https://www.shaped.ai/blog/the-infrastructure-of-modern-ranking-systems-part-2-the-data-layer---fueling-the-models-with-feature-and-vector-stores
+- The feature fetch is a LEFT JOIN: a candidate with missing features must STILL be scorable (fail-safe default features), never dropped — missing != irrelevant. SOURCE Hopsworks feature-store guide (pushdown LEFT JOIN) https://www.hopsworks.ai/dictionary/feature-store
+- TRAIN-SERVE SKEW is the cardinal sin: identical feature-assembly offline (training) + online (serving) or the model degrades silently. -> one typed FeatureVector assembled in ONE place. SOURCE Databricks 'What is a Feature Store' https://www.databricks.com/blog/what-feature-store-complete-guide-ml-feature-engineering
+- LightGBM Ranker (LambdaMART, NDCG loss) is the canonical tabular ranker for this stage. SOURCE https://lightgbm.readthedocs.io/en/latest/Advanced-Topics.html + dl.acm.org/doi/fullHtml/10.1145/3687151.3687156 (LightGBM Ranker large-scale news rec).
+- FANOUT latency: candidate-scoring sees 100-1000x rec-service QPS; cache item features (low cardinality, loose freshness). SOURCE eugeneyan system-design-for-discovery.
+
+DECISION for our impl (core/recsys-ranking, NEW crate; consumes core-recsys-retrieval::Candidate — extend the pipeline type, no fork):
+- FeatureVector{view_count, like_count, recency_secs, engagement_rate, ...} with Default = fail-safe zero (LEFT JOIN miss).
+- FeatureStore trait { get(entity_key) -> Option<FeatureVector> } -> Scylla keyed read INJECTED (#1438 scylla-ml-feature-store is PENDING/future-project — hard prereq for live).
+- ScoringModel trait { score(candidate_meta, features) -> f32 } -> GBDT/LightGBM/deep inference INJECTED (model-serving I/O, not pure Rust).
+- rank_candidates(pool, store, model, top_n) -> Vec<Ranked{entity_key, score, channels}>: LEFT-JOIN features (miss -> default), score, sort score-desc (tie-break key), truncate top_n. Preserves S1 channel provenance.
+- Pure ranking unit-tested with FakeStore + FakeModel; LIVE Scylla feature reads + LightGBM serving deferred to a card gated on #1438.
+- HONEST: precision is the ranker's job (S1 was recall-first); this stage produces the real ordering.
+[research] research.recsys.stage3-rerank-privacy-ftc — Stage-3 policy: privacy-filter FIRST (no leak) -> dedup/diversity -> FTC-labeled ad inject -> paginate (status: todo, access: 0)
+    ORDERING INVARIANT (security): privacy ACL filter MUST run BEFORE everything else and before response. If diversity/dedup/ad-inject ran first, a private item could influence slot positions / counts / pagination cursor = leak. Filter-then-shape. Fail-closed (deny-default already in ObjectAudience::effective_contains). NON-NEGOTIABLE per card + decision.soundbak.per-object-privacy-deny-default.
+
+PIPELINE: rank pool (S2 Ranked[]) -> (1) PRIVACY FILTER: drop any item whose ObjectAudience::effective_contains(viewer,...) is false (core-privacy set-algebra, Neon strict read injected) -> (2) DEDUP by entity_key -> (3) DIVERSITY (cap per-author/per-channel run-length) -> (4) FTC AD INJECT: interleave Sponsored slots at fixed cadence -> (5) cursor-paginate. SOURCE decision.recsys.funnel-tier-routing.
+
+FTC NATIVE-AD DISCLOSURE (corrected: NO 2026 rule; authoritative = 2015 Enforcement Policy Statement on Deceptively Formatted Advertisements + Native Advertising: A Guide for Businesses): injected ad MUST carry a clear-and-conspicuous label ('Ad'/'Sponsored') placed in front of/above the item; source unmistakable; deceptive if format hides commercial nature (FTC Act s5). SOURCE https://www.ftc.gov/business-guidance/resources/native-advertising-guide-businesses + https://www.ftc.gov/news-events/news/press-releases/2015/12/ftc-issues-enforcement-policy-statement-addressing-native-advertising-deceptively-formatted
+
+DECISION (core/recsys-policy, NEW crate; consumes core-recsys-ranking::Ranked + core-privacy ObjectAudience):
+- AudienceSource trait { audience(entity_key) -> Option<ObjectAudience> } -> Neon strict read INJECTED. NONE = fail-closed DROP (no audience row = not visible; deny-default).
+- ViewerCtx{viewer_id, follows: fn/closure or prefetched set} for effective_contains.
+- Slot enum { Organic(Ranked), Sponsored{label, ad_id} } — label is MANDATORY (unlabeled ad UNREPRESENTABLE = FTC compliance in the type).
+- apply_policy(ranked, audience_src, viewer, ad_plan, page) -> FeedPage{slots, next_cursor}: privacy-filter -> dedup -> diversity cap -> inject sponsored at cadence -> cursor page.
+- Pure pipeline unit-tested with FakeAudienceSource (incl. a private item the viewer can't see -> proven DROPPED before output) + a fake ad plan. Live Neon ObjectAudience read deferred (I/O behind trait).
+- Cursor = opaque (reuse the BLAKE3-MAC keyset cursor pattern at the handler layer; the pure core emits an index/key, handler signs it).
+[research] research.recsys.transactional-outbox-truth-first — Transactional outbox: domain row + outbox row ONE ACID tx (truth-first); CDC tail; at-least-once -> idempotent consumer (status: todo, access: 0)
+    DESIGN CONFIRMED (corroborated):
+- DUAL-WRITE PROBLEM: writing domain DB + message broker non-atomically -> crash between = silent inconsistency (event lost, or fact without event). SOURCE https://www.confluent.io/blog/dual-write-problem/
+- OUTBOX PATTERN collapses dual write into ONE atomic DB tx: business row + outbox row commit-or-rollback together. DB = single source of truth; everything downstream is a PROJECTION of that fact. SOURCE https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html + https://www.conduktor.io/glossary/outbox-pattern-for-reliable-event-publishing
+- CDC tails the outbox via the WAL/txn log (Debezium/CF-Queue) -> low latency, decoupled. SOURCE https://streamkap.com/resources-and-guides/outbox-pattern-explained
+- TRUTH-FIRST = card 'REJECT Scylla-first': Neon (ACID) is truth; Scylla feature store is a DERIVED projection, NEVER written from the request path. Feature store holds DERIVED values (counts/recency/engagement), not runtime inputs. SOURCE https://www.databricks.com/blog/what-feature-store-complete-guide-ml-feature-engineering
+- AT-LEAST-ONCE not exactly-once: the relay can deliver duplicates -> the CONSUMER MUST be idempotent (idempotency key / broker EOS). SOURCE AWS prescriptive guidance + Conduktor.
+
+DECISION (core/recsys-feature-pipeline, NEW crate; the ENQUEUE side — distinct from comms PostgresOutbox which is message-channel-specific + enqueues on a POOL not a tx, so does NOT give domain-atomicity):
+- InteractionEvent{kind: InteractionKind(Follow|Save|Purchase|...), actor_key, target_key, occurred_at} = the rec signal.
+- idempotency_key = BLAKE3 keyed-hash over (kind, actor, target, occurred_at) -> stable dedup key for the at-least-once consumer (reuse blake3 derive_key pattern).
+- OutboxRecord{idempotency_key, event_kind, payload_json, created_at} = the row enqueued.
+- enqueue_in_tx(&mut sqlx::Transaction, event) -> writes the outbox row INSIDE the caller's domain tx -> ATOMIC with the follow/save/purchase write. Taking &mut Transaction (NOT a pool) makes Scylla-first/dual-write UNREPRESENTABLE (truth-first encoded in the signature).
+- Pure: event->OutboxRecord build + idempotency-key determinism + serde round-trip unit-tested. LIVE sqlx INSERT against Neon + the CDC/CF-Queue PUBLISHER (drain outbox -> Scylla feature+event update -> incremental embedding refresh) deferred to outbox-publisher-worker #1441 (BLOCKED on EMPTY_RESPONSE gate FP) + live cluster.
+- Consumer idempotency (Scylla side dedup on idempotency_key) is the #1441 publisher's contract; documented here.
+[research] research.recsys.cold-start-progressive-personalization — Cold-start: trending+cohort soft-priors for new user, content-embedding for new item, decay to personalized (status: todo, access: 0)
+    DESIGN CONFIRMED (corroborated):
+- TWO cold-start types: NEW USER (no interactions -> can't personalize) + NEW ITEM (no interactions -> collaborative filtering can't place it). System-bootstrap = both. SOURCE en.wikipedia.org/wiki/Cold_start_(recommender_systems) + arxiv 2210.16928 (FELRec item cold-start).
+- NEW USER fallback: trending/popular content + cohort priors from registration signals (locale/interests/device/referral channel) until interactions accrue. SOURCE web.tapereal.com/blog/6-strategies + vinija.ai/recsys/cold-start.
+- NEW ITEM: CONTENT EMBEDDING (text+image, mig 010 dual-vector) makes it recommendable immediately — content-based sidesteps the interaction gap; even with 0 interactions the item's features place it in vector space (two-tower content tower). SOURCE same + arxiv 2511.02052 (content+entity embeddings for new content).
+- PROGRESSIVE PERSONALIZATION (the key pattern): treat cohorts/popularity as SOFT PRIORS, not hard filters; DECAY cohort/trending weight SMOOTHLY as user-specific signals grow -> avoids overfitting cohort, preserves personalization as data accrues. NOT a binary cold->warm flip. SOURCE emergentmind cold-start-personalization + frontiersin hybrid attribute cold-start.
+
+DECISION (core/recsys-coldstart, NEW crate; consumes core-recsys-retrieval::Channel — feeds S1 channel weights):
+- Warmth(interaction_count: u32) — the continuous warmth signal (caller-supplied count; pure, no DB).
+- ChannelWeight{channel: Channel, weight: f32 in [0,1]}.
+- channel_weights(warmth) -> Vec<ChannelWeight>: COLD (count=0) -> Trending + Recent high (~1.0), VectorSim/Social ~0 (no personalization signal yet). As count rises past warm_threshold, personalized (VectorSim/Social) RAMP up, Trending DECAYS (monotone). WARM (count>=full_threshold) -> personalized dominant, trending floor. Linear ramp between thresholds (simple, tunable; bandit/decay-curve refinement deferred).
+- item_is_coldstart_eligible(has_content_embedding: bool) -> bool: a new item with a content embedding is retrievable NOW via VectorSim; without one it is NOT (can't place it). New-item path = ensure content embedding exists at publish.
+- Pure weight-policy + eligibility unit-tested (cold all-trending, warm all-personalized, monotone ramp, item eligibility). LIVE trending computation (Scylla popularity) + content-embedding generation (two-tower content tower, mig 010) deferred to model/cluster cards.
+- COHORT priors (registration-signal seeding) = a follow-on (needs the registration-signal schema); this card ships the warmth->channel-weight decay + item eligibility core.
+[research] research.frontend.wasm3-and-bundle-size-optimization-2026-06 — WASM 3.0 facts + Rust-to-WASM bundle size optimization (dx bundle) — 2026 (status: done, access: 0)
+    CORROBORATED across webassembly.org, dioxuslabs.com 0.7 guide+blog, rustwasm wasm-bindgen docs, arxiv SuperCoder 2505.11480.
+
+WASM 3.0 (finalized 2025-09-17, NOT just 2025): added WasmGC (host-managed struct/array storage, no built-in object system), Memory64 (i64 addressing; browsers cap ~16GB not 16EB; bounds-check perf penalty), multiple memories, native exception handling (try/catch in-module), tail calls, relaxed SIMD w/ deterministic fallback, custom annotations. Backward compatible; needs toolchain+runtime bump. Shipping in Chrome/Firefox/Safari/Edge + Wasmtime/WasmEdge/Wasmer.
+
+KEY NUANCE (corrects the source video): WasmGC helps MANAGED langs (Java/Kotlin/Dart/Scala) stop bundling their own GC (Google Sheets migrated calc engine Java->WasmGC, 2x). Rust still compiles to LINEAR MEMORY, NO GC — so Rust's small-binary edge is UNCHANGED by 3.0. Video premise 'Rust de-facto because no GC' still holds for our path.
+
+BUNDLE SIZE (our stack = Dioxus 0.7 dx bundle --web): TodoMVC reference 32MB debug -> 2.36MB release-only -> 310KB stable-config -> 234KB unstable. dx bundle (production bundler) runs integrated wasm-opt + .wasm compression + minification + .avif. dx build --release does NOT auto-opt (manual wasm-opt needed). wasm-opt -Oz = min size (10-30% reduction), -O4/-O3 = speed. MEASURE foo_bg.wasm in out-dir NOT target/.../release/foo.wasm (latter is pre-wasm-bindgen-strip, misleadingly large).
+
+GOTCHAS: (1) wasm-bindgen crate version MUST exactly match wasm-bindgen-cli version (cryptic failures otherwise). (2) bulk-memory: rustc emits memory.copy/fill; wasm-opt fails without --enable-bulk-memory -> workaround: wasm-opt -Oz --enable-bulk-memory in.wasm -o out.wasm. (3) rustwasm org sunset Jul 2025, tools moved to independent orgs but maintained.
+
+RL/HARNESS angle: NO single 2026 paper does RL+superopt+WASM+size together. Two threads: (a) WASM binary-size superopt via LLVM+Souper = non-RL, modest 0.33% median instr reduction; (b) SuperCoder (arxiv 2505.11480, upd Jan 2026) = RL (PPO/GRPO) reward = correctness+speedup on x86-64 asm, Qwen2.5-Coder-7B 61.4%/1.10x -> 95.0%/1.46x; baseline Claude-opus-4 51.5% pass / 1.43x over gcc -O3. Classical superopt limited to loop-free straight-line (formal-verify tractable); SuperCoder uses test-based validation to handle loops. RL-for-WASM-SIZE specifically is an OPEN GAP.
+
+SOURCES: https://webassembly.org/news/2025-09-17-wasm-3.0/ · https://dioxuslabs.com/learn/0.7/guides/tips/optimizing/ · https://dioxuslabs.com/blog/release-070/ · https://rustwasm.github.io/docs/wasm-bindgen/reference/optimize-size.html · https://arxiv.org/abs/2505.11480
+[research] research.irongate.failclose-boot-env-validation — Fail-fast boot validation of prod secrets + Rust 2024 env-unsafe DI testing pattern (status: done, access: 0)
+    TOPIC: fail-closed boot validation of production secrets + Rust 2024 env-unsafe testing (for roadmap.unit.audit.irongate-prod-env-failclose).
+
+FINDING 1 — fail-fast startup validation is the canonical pattern: validate ALL required env vars BEFORE any business logic at process boot; on a missing/malformed var, EXIT immediately with a clear message naming the var. "An application that exits at startup with 'Missing required environment variables: X' tells the operator exactly what happened in one line." This is 12-factor-aligned (config in env, same binary across envs) and is exactly the bail!-per-var design in validate_production_env. SOURCE: https://dev.to/137foundry/how-to-validate-environment-variables-at-application-startup-5bb ; https://computingarts.com/posts/2026-02-25-environment-variables-12factor/ ; https://dev.to/danielox_83/how-to-prevent-undefined-environment-variable-errors-in-production-cicd-integration-1d8b
+
+FINDING 2 — Rust 2024 edition makes std::env::{set_var,remove_var} UNSAFE (multithreaded UB on some platforms). Workspace forbids unsafe -> cannot mutate env in tests. RECOMMENDED FIX = dependency injection: functions accept the injected value (Option<&str>) so the pure predicate is testable WITHOUT process-global env mutation (also enables parallel nextest). Adopted: each validator reads env then delegates to a pure checks:: predicate; tests cover the pure predicates with explicit args. SOURCE: https://doc.rust-lang.org/edition-guide/rust-2024/newly-unsafe-functions.html ; https://github.com/rust-lang/rust/issues/124866 ; https://github.com/lablup/bssh/issues/179
+
+APPLIED: validate_production_env extended to service_token/device_fingerprint/post_quantum/webauthn_rp/nonce_replay; env_validation split into hub + parsers/checks/validators (MICRO_FILE); pure checkers in checks.rs unit-tested (no env mutation).
+[research] research.irongate.gnap-introspect-issuing-client — GNAP introspection returns issuing client (RFC 9767 instance_id) — corroborates B1 fix (status: todo, access: 0)
+    TOPIC: Does GNAP introspection return the issuing client? (B1 fix corroboration)
+
+FINDING: YES. RFC 9635 (GNAP Core) defines the grant/token model; the companion
+RFC 9767 (GNAP Resource Server Connections, formerly draft-ietf-gnap-resource-
+servers) §3.3 defines the token introspection response, and the IANA "GNAP Token
+Introspection Response" registry lists an `instance_id` (string) field — the
+identifier of the client instance the access token was issued to. So returning
+the issuing client in an introspection response is RFC-aligned, not an OAuth
+artifact.
+
+APPLICATION (irongate-auth): the introspect response field `client`
+(IntrospectionResponse, GNAP-correct name) was hardcoded to the literal "direct".
+FIX = return the real issuing-client UUID sourced from irongate_access_tokens'
+client FK column (a UUID FK to irongate_clients). The cache DTO field is named
+`issuing_client` (GNAP wording, also dodges the BOUNTY_GNAP gate that
+substring-matches the OAuth-style snake field name). Threaded through the KV
+cache so a cache hit returns the same value as a Postgres miss.
+
+CONFUSED-DEPUTY NOTE: leaf-verified this is correctness, NOT a live exploit — the
+value has zero authorization read sites workspace-wide (consumer populates it,
+nothing reads it for a decision). Fix is for RFC compliance + future-proofing.
+
+SOURCES:
+- https://datatracker.ietf.org/doc/rfc9635/ (GNAP Core)
+- https://datatracker.ietf.org/doc/html/rfc9767 (GNAP RS Connections — introspection response)
+- https://datatracker.ietf.org/doc/html/draft-ietf-gnap-resource-servers (§3.3 instance_id)
+- https://www.iana.org/assignments/gnap/gnap-token-introspection-response.csv (IANA registry)
+[research] research.temp-env-with-vars-hermetic-test — temp-env 0.3 with_vars for hermetic env-var test isolation (status: todo, access: 0)
+    temp-env 0.3 (https://docs.rs/temp-env/0.3) provides with_vars(vars, closure) taking an IntoIterator of (key, Option<value>) pairs — Some(v) sets, None removes the var for the closure scope, restoring after (RAII). Rust 2024 compatible.
+
+PROVEN in-repo: temp_env::with_var used 10+ sites (post_tool_bash/tests/capture.rs, pre_write_rca_guard/tests, sqlx_migrate/tests/local_db.rs).
+
+USE CASE: hermetic "must block" tests in kavach-engine sqlx_migrate/tests/gating.rs. The RCA gate check_sqlx_migrate_requires_rca short-circuits to None when KAVACH_LOCAL_DB=1 OR DATABASE_URL points local. A dev shell sources .env which sets KAVACH_LOCAL_DB=1, so the three "must block" tests (blocks_sqlx_migrate_run_without_rca, matches_cargo_sqlx_variant, real_run_still_blocks_after_introspection_whitelist) FLAKY-FAIL on dev (pass on clean CI). FIX: wrap each in with_vars clearing KAVACH_LOCAL_DB + DATABASE_URL (None::<&str> type annotation required for the empty branch) so the assertion is independent of ambient env.
+
+ROOT CAUSE CLASS: §TESTING — tests must not depend on the runner's ambient environment. The defect is test-isolation, not gate logic (the gate is correct; the test failed to neutralize the env it reads).
+
+SOURCE: https://docs.rs/temp-env/0.3 · existing local_db.rs with_var pattern · §TESTING discipline.
+[research] research.payment.hosted-ui-vs-custom — Payment UI: Stripe Checkout + PayPal redirect (SAQ A) over custom/Elements (status: done, access: 0)
+    DECISION: Payment UI = hosted provider surfaces for card/wallet entry + custom Dioxus for everything around them. Fully custom card forms REJECTED.
+
+CHOICE:
+- Card + Apple/Google Pay: Stripe Checkout (full redirect, session created by payment-service) → PCI SAQ A (cheapest tier; custom form = SAQ D, Elements-on-domain = SAQ A-EP +$10-20k/yr script-monitoring/pen-test burden).
+- PayPal: Orders API server-side approval-URL redirect (resumable redirect session) — NOT the JS SDK buttons.
+- Custom Dioxus owns: plan/cart, order summary, method chooser, success/failure, billing history (90% of visible surface).
+
+RATIONALE (stack-specific): Dioxus 0.7 WASM ×4 targets — Stripe Elements/PayPal JS SDK would need a maintained JS-interop bridge per provider per target; redirect flows are pure backend (payment-service already composes StripeConfig+PayPalConfig fragments + webhook verification). Wallets free in Checkout (auto-shown, Apple domain-verify on Stripe's domain). Upgrade path if in-page entry ever required: Stripe Elements behind JS bridge (additive).
+
+SCOPE: jacobs_ladder_marketing, rainfire_missions, soundbak frontend ports.
+
+SOURCES (2026-06):
+- https://docs.stripe.com/security/guide (SAQ tiers per integration)
+- https://www.gravoc.com/2026/01/28/pci-saq-a-vs-saq-d-key-differences-requirements-how-to-choose/
+- https://pcicompliancecost.com/saq-a-cost (SAQ A-EP→A saves $10-20k/yr)
+- https://developer.paypal.com/docs/checkout/standard/upgrade-integration/ (server-side Orders capture; resumable redirect)
+- https://docs.paypal.ai/reference/sdk/js/v6/reference (JS SDK = popup/callback model — rejected for WASM interop cost)
+[research] research.payment.stripe-element-dioxus-interop — Stripe Payment Element + PayPal SDK interop in Dioxus 0.7 (web/desktop/mobile) (status: todo, access: 0)
+    RESEARCH: Stripe Payment Element + PayPal SDK in Dioxus 0.7 multi-target. WEB+DESKTOP(wry): same JS SDKs — rsx! renders a mount div (e.g. #payment-element), use_eval/web-sys boots stripe.elements({clientSecret, appearance}) and elements.mount('#payment-element'); PayPal via script paypal.com/sdk/js?components=buttons, window.paypal.Buttons().render(). Precedent: MinaMatta98/wasm_stripe_bindings (thin wasm-bindgen wrapper, ~100 LOC pattern). Appearance API: theme/variables (colorPrimary, fontFamily, borderRadius) + .Label/.Input/.Tab rules — brand-match yes, layout/field-order control no. MOBILE: providers prefer native SDKs; PayPal discourages webview (use ASWebAuthenticationSession/Chrome Custom Tabs or native checkout SDK) — deferred unit. PCI: Payment Element keeps merchant at SAQ A; custom card fields escalate to SAQ A-EP/D. SOURCES: https://docs.stripe.com/payments/payment-element · https://docs.stripe.com/elements/appearance-api · https://github.com/MinaMatta98/wasm_stripe_bindings · https://developer.paypal.com/docs/multiparty/checkout/standard/customize/app-switch/ · https://docs.stripe.com/payments/mobile
+[research] research.singleflight-dashmap-edge-cases-2026-06-12 — Singleflight/DashMap edge cases + split-tier outbox gaps (scan 2026-06-12) (status: todo, access: 0)
+    ECOSYSTEM SCAN (composer-2.5) + web research. COALESCER BUGS: (1) comms-data/src/coalesce.rs SingleFlight — strong Sender in DashMap, removal ONLY after f().await => leader panic/cancel = permanent stuck entry, all future callers hang; broadcast::channel(1) => Lagged misclassified as leader-dropped; keyed channel_id only while load_one_bucket uses current_bucket(now_ms) => bucket-rollover coalesces different buckets; no tests. (2) chat-service/persistence/scylla/coalesce.rs RequestCoalescer — Weak+remove_if self-heals leader death BUT lead() does blind insert (no entry CAS) => double-leader race, duplicate fetches; feature-gated, not wired. UNIFIED DESIGN: DashMap<K, Weak<broadcast::Sender<Arc<Result<V,E>>>>> + entry() CAS leader election + scopeguard removal on panic + fetch in spawned task (cancel-safe) + coalesce-wait timeout (~100ms) with direct-query fallback + bounded map w/ sweeper (reuse irongate negative_cache 10k+sweep pattern) + key=(channel_id,bucket) full query identity. DASHMAP TRAPS: never hold Ref/Entry guard across .await (shard-lock deadlock — dashmap#233); remove/insert while holding ref deadlocks even sync; add clippy await-holding-invalid-types for dashmap::mapref::*; version skew 6.0/6.1 across 5 crates (comms-data, chat-service, core-auth 6.1; irongate 6; core-resilience 6.0) — pin workspace 6.1. SPLIT-TIER LAW: Neon=metadata/ACL/audit ONLY (16TB ceiling), Scylla=bodies (PB scale). OUTBOX GAPS: ironmail repo/write.rs inline PG->Scylla has NO retry worker (#1441 outbox-publisher polls generic outbox, NOT ironmail_envelopes.body_storage_state); body NOT kept in PG (only blake3) => crash-orphan UNRECOVERABLE; mark_committed lacks AND body_storage_state='pending_scylla_write' CAS guard; retry regenerates Uuid::now_v7 => duplicate PG rows + chain fork — idempotency key must be caller-supplied; 'orphaned' enum state never set in Rust. TEMPLATE: soundbak body_writer.rs (5s sweep, fail-soft, CAS commit, idempotent Scylla upsert). BOUNDARY: Moka try_get_with (core-auth client_keys) = TTL-cache+coalesced-miss, distinct from singleflight — do not merge. Feeds: roadmap.unit.infra.coalescing-shared-singleflight, roadmap.unit.bug.ironmail-outbox-no-sweep.
+[research] research.feed-fanout-celebrity-dsa-2026-06-12 — Feed fan-out / celebrity-problem DSA research + Soundbak audit (2026-06-12) (status: todo, access: 0)
+    INDUSTRY (Twitter/IG/FB): hybrid push/pull is THE answer — push fan-out-on-write for authors <~10k followers (write amplification manageable), pull-at-read for celebrities (their posts have extreme cache locality), MERGE at read time. Twitter: 300k timeline-read QPS vs 6k write QPS (50:1). DSA: k-way merge of sorted streams (Scylla inbox stream + per-celebrity recent-post streams) via MIN-HEAP of size k => O(n log k) per page, O(k) space; Snowflake IDs give total time order for the merge key; batch-hydrate post bodies (findAllById) to avoid N+1; IG extra: route HIGH-FREQUENCY posters (not just high-follower) to pull path. AUDIT VERDICT (explore c3897f78): Soundbak DESIGN is correct — soundbak_user_feed inbox (PK user_id, insertion_id DESC, 30d TTL), fan_out_post with 10k SOUNDBAK_FANOUT_THRESHOLD + PullDeferred celebrity path, 500-page keyset follower scan, queue consumer (batch 100, DLQ after 3). BUT NOT WIRED: (1) POST /api/internal/feed/fanout NOT registered in routes.rs — consumer gets 404; (2) no post.created publisher on post-create path; (3) P5 pull-merge (inbox UNION celebrity recent) unimplemented — read_home_timeline has zero callers; live /feed = PG fan-out-on-read + BONSAI OFFSET-paged global 7d scan. LOOPHOLES: soundbak_user_feed PK lacks time bucket (wide partitions for power users within 30d TTL); read_home_timeline uses execute_unpaged, NO LIMIT (unbounded partition read); COUNT(*) on user_follows per post (cache follower_count or threshold-flag on users row); no composite (following_id,follower_id) index; event_key dedup stamped in JS but never checked in Rust => queue retry duplicates inbox rows (need idempotency on (user_id,post_id,event_key)); fail-soft per-follower INSERT silently drops inbox rows; sub-threshold fan-out = sequential INSERTs (no concurrency); BONSAI ignores soundbak_post_signals/edification (rank_score never computed at write); gRPC get_follow_graph queries legacy 'follows' table (schema drift); two-stage PG-meta+Scylla-body must be batch-hydrated. LEARNINGS: architecture-on-paper != architecture-in-prod — wire P4 ingest + publisher + P5 heap-merge read before any tuning; bucket the inbox PK; paginate reads; idempotency before enabling fan-out. Actions -> roadmap.unit.platform.soundbak.feed-fanout-wire-p4p5, roadmap.unit.bug.soundbak-user-feed-unbounded-read.
+[research] research.cf-containers-data-tier-audit-2026-06-12 — Dual-LAW audit: CF containers + data-tier-split loopholes (2026-06-12) (status: todo, access: 0)
+    LAW A (CF Containers) — 14 Rust Dockerfiles compliant (amd64 both stages, glibc, non-root, no baked secrets); 16/16 shims use containerFetch+startAndWaitForPorts+fail-closed 503; no Hyperdrive; validate_neon_endpoint enforced. GAPS: P0 port-first VIOLATED in irongate/main.rs:318-325 (PgPool::connect before bind:472), jacobs-ladder-marketing-service/main.rs:71-76 vs 119, comms-persist/main.rs:63-68 vs 88; P1 bind-then-block in black-diamond-fire-service/main.rs:110-117 + rainfire-missions-service/main.rs:96-100 (lazy_pool.is_ready loop delays serving); P2 _egress-probe + waf-ingress missing enableInternet; no switchPort pattern anywhere (fine today, WS via DOs). LAW B (data-tier-split) — NEW VIOLATIONS: mig 319 white_diamond_rain_devotionals.content TEXT (no blake3/outbox/Scylla pair), mig 320 promotions.description TEXT. P0: partner-comms Scylla INSERT_MESSAGE_BODY defined but NEVER CALLED (post_reply.rs:62-77 writes PG meta only; read expects Scylla bodies); profile_reviews (295) outbox+blake3 but Scylla tier/CQL/repo/sweep all MISSING. P1: 'orphaned' state schema-only — zero code transitions to it (sweeps only retry pending->committed); OFF-CONTRACT unchanged post-295: mission_updates, mission_submissions, prayer_room_*, live_*, story_replies, business_directory.description, rainfire_mission_images; social_posts/comments PARTIAL (299 adds outbox but retains content, dual-write); ironmail sweep #1441 still absent (outbox-publisher is queue relay, not body_storage_state reconciler — confirms roadmap.unit.bug.ironmail-outbox-no-sweep). P2: read.rs:51 PG content fallback; comms_messages.body TEXT (mig 250); Soundbak repos use bare PgPool, no BEGIN/SET LOCAL app.* RLS (posts.rs:58-63) vs partner-comms begin_partner_tx correct. STALE skill entries: notification_events.payload column doesn't exist; social_comment_likes has no content. Compliant port-first refs: comms-data, soundbak-social-service, payment, chat, user, notification, outbox-publisher, dashboard.
+[research] research.mesh-jlm-rfm-soundbak-cross-verify-2026-06-12 — Mesh cross-verify E3/E4/E6 JLM-RFM-Soundbak (2026-06-12) (status: todo, access: 0)
+    NONE of the 3 mesh edges closed end-to-end. E3 (JLM->RFM commission 55/45): LIVE path = single-DB ACID txn in core/billing/topup.rs (45% billing_wallets, 55% commission_distributions, idempotent topup:{gateway}:{payment_id}) — NOT the specced 2PC+outbox; saga e3/ is trait+fake-tests stub (no PgLedgerPort, unwired); cross_platform_commissions table (mig 233) zero Rust refs; NO disbursement worker (payout_status stays 'pending'; dashboard /disbursements/pending has no handler). E4 (Soundbak->JLM purchase): NO embed purchase endpoint at all — EmbeddedListingCard is deep-link only; saga e4/ is wallet-recharge (misnamed), not purchase; existing HTTP is ads-serve injection only. E6 (Soundbak->RFM donate): backend POST /api/rainfire-missions/missions/slug/{slug}/donate EXISTS + e2e test; but Dioxus DonateModal organism UNUSED, api-client has no donate method, feed_missions()/feed_ads() return TransportPending — no dead button, just never wired; legacy Astro path /rainfire/... may drift from /api/rainfire-missions/.... CRITICAL: realtime-messaging-do/listing_chat.rs:103 calls GET /api/internal/listings/{id}/access — NOT registered in iron-will-api routes/internal.rs => listing chat 403 for everyone (confirms roadmap.unit.bug.realtime-do-listing-access-missing-endpoint). AUTH: soundbak http_clients.rs internal injection POSTs lack X-Internal-Key (Service-Binding trust by design — breaks if exposed); soundbak internal/guard.rs DOES require X-Internal-Key for DO->backend. CONTRACT MISMATCH (High): backend list_feed returns tagged FeedItem union (post|ad|mission) but Dioxus feed DTO expects Vec<SocialPost> only — mixed feed unrenderable without DTO refactor. Prosocial mesh plan (harm gate + 8:1:1 mix + vector rank) NOT enforced — live feed is naive interleave (ad/5, mission/8). No cross-platform notification bridge. Actions -> roadmap rows: mesh edges already tracked (e3/e4/e6 in_progress, owner-gated); NEW: feed DTO mismatch + LAW-A port-first fixes + mig-319/320 tier violations.
+[research] research.jlm-feed-audit-2026-06-12 — JLM feed/listings/ads audit — loopholes + Rust/Tokio/DashMap improvement map (2026-06-12) (status: todo, access: 0)
+    AUDIT (explore c17b0d48). CRITICAL: (1) internal feed-injection ads_serving.rs:72-84 queries ad_campaigns/ad_creatives DROPPED by mig 126 — Soundbak injection always gets empty []; errors swallowed as 200; (2) internal serve has NO billing/freq-cap/tracking (over-delivery if fixed naively); (3) /classifieds/listings + /search limit/offset UNBOUNDED (params.rs:12-16 no clamp) — ?limit=1000000 DoS; (4) P4.B2 vector search implemented (listing_embeddings.rs, VectorRepo) but NEVER WIRED — routes.rs:21 ClassifiedsState::new without with_embeddings; prod search = PG tsvector only, no vector->tsvector fallback. HIGH: OFFSET pagination on hot feeds (listings_query.rs:78, listings_search.rs:43, categories.rs:96) vs keyset in category modules (automotive = good template); double query + COUNT(*) per page; view-count inflation — get.rs:25-30 random Uuid when x-session-id absent => dedup never fires, every refresh +1; Dioxus classifieds_browse page.rs:122-146 use_effect deps miss page()/sort() => pagination/sort never refetch; fetch_listings STUB returns [] (178-214); internal ads route unauthenticated. MEDIUM: CPM impression_count incremented before wallet deduct (billing.rs:107-174 — counted-but-unbilled leak); ad index ArcSwap 60s staleness over-serves exhausted budgets; freq cap in-process tokio::Mutex<HashMap> IP-hash keyed (resets on restart, NAT-blind); zip_cache.rs std::sync::Mutex + Nominatim reqwest with NO timeout; ml_tracking.rs:26-102 unbounded batch impressions; hot_deals unwrap_or_default silent-empty; review_list cursor unwired; browse retry no-op. GOOD: batch_fetch_images (no N+1), governor rate limits, ConcurrencyLimitLayer(50), deduct_cpm atomic ON CONFLICT + conditional spend, spawn_blocking for embeddings, soundbak injection 1.5s timeout. IMPROVEMENT MAP: clamp limit(1,100)+max offset; keyset (created_at,id) per automotive template; drop COUNT for infinite scroll or moka-cache totals 30-60s; moka get_with for hot list queries (stampede protection) or shared singleflight crate (roadmap.unit.infra.coalescing-shared-singleflight); rewire internal serve to unified ArcSwap index + billing+freq-cap; sharded DashMap or Scylla-TTL freq cap; tokio::join!/JoinSet for independent enrichment; reqwest .timeout(5s)+moka on zip geocode; governor bucket + service token on /api/internal/*; wire with_embeddings + vector->tsvector fallback; Dioxus use_resource keyed (slug,page,sort) + cursor APIs. Actions -> roadmap.unit.bug.jlm-ads-serving-legacy-schema, roadmap.unit.bug.jlm-pagination-unbounded, roadmap.unit.bug.jlm-view-count-inflation, roadmap.unit.bug.jlm-dioxus-browse-stale-effect.
+[research] research.jlm-ads-serving-fix-committed-2026-06-12 — JLM internal ads serve fix committed 1630a40c (2026-06-12) (status: todo, access: 0)
+    COMMIT 1630a40cba380d3dcdd8a7a86a8be3f42afa7a37 on main (pushed origin/main ecb918c1..1630a40c). Files: ads_serving.rs (unified AdIndex, dropped legacy ad_campaigns SQL), internal.rs, unified-ads-manager/handlers/serving.rs (pub ip_hash/schedule). REMAINING: (1) remove dbg_log instrumentation in ads_serving.rs before prod; (2) runtime curl witness on /api/internal/ads/serve with warmed index to close roadmap.unit.bug.jlm-ads-serving-legacy-schema.
+[research] research.loopholes-doc-2026-06-12 — Consolidated loopholes doc (2026-06-12 morning session) (status: todo, access: 0)
+    Single markdown synthesis of all morning audits: docs/research/loopholes-and-learnings-2026-06-12.md. Sources: 8 research.*-2026-06-12 kavach rows + 19 roadmap cards. Sections: Discord/coalescing, singleflight/DashMap, Soundbak celebrity fan-out, CF LAW-A, data-tier LAW-B, mesh E3/E4/E6, JLM feed/ads, fixes shipped (kavach hook + ads 1630a40c), P0/P1/P2 priority table.
+[research] research.coalesce-crate-shipped-2026-06-12 — core-coalesce crate shipped + comms-data wired (2026-06-12) (status: todo, access: 0)
+    Backend/crates/core/coalesce: unified SingleFlight (DashMap Weak+broadcast, entry CAS, spawned fetch, scopeguard, lagged retry, 100ms timeout fallback). 7/7 nextest pass. comms-data refactored to adapter with (channel_id,bucket) keys. dbg_log removed from ads_serving.rs. REMAINING for roadmap.unit.infra.coalescing-shared-singleflight done: chat-service persistence/scylla/coalesce.rs migration; optional bounded sweeper. Then kavach verify.
+[research] research.four-platform-card-audit-2026-06-13 — Four-platform kanban card audit after fundamentals plan (status: todo, access: 0)
+    # Four-Platform Card Audit — 2026-06-13
+
+Research method: kavach kanban query + codebase grep + `kavach db get --full` on plan keys.
+
+## Tier A — VERIFIED (close loop; do NOT remove)
+
+These fundamentals are shipped and verified. Keep as historical record.
+
+| Key | Evidence |
+|---|---|
+| `roadmap.unit.frontend.dashboard-core-dissolution` | Shell/shell-core cut over; wasm32 check passes on platform bins |
+| `roadmap.unit.bug.realtime-do-listing-access-missing-endpoint` | `iron-will-api/routes/internal/listing_access.rs` mounted at `/listings/{id}/access` |
+| `roadmap.unit.bug.jlm-ads-serving-legacy-schema` | `ads_serving.rs` uses `current_index()` + witness test |
+| `roadmap.unit.bug.jlm-pagination-unbounded` | `classified-ads/handlers/params.rs` clamp 1–100, offset ≤10k |
+| `roadmap.unit.bug.cf-port-first-startup-violations` | JLM+RFM use `bind_with_lazy_db` in main.rs |
+| `roadmap.unit.platform.soundbak.feed-fanout-wire-p4p5` | `POST /api/internal/feed/fanout` + post.created enqueue |
+| `roadmap.unit.platform.soundbak.social-read-coalescing` | `soundbak/src/coalesce.rs` wired into get_post, comments, hybrid feed |
+| `roadmap.unit.bug.soundbak-user-feed-unbounded-read` | `read_home_timeline` LIMIT clamp |
+| `roadmap.unit.platform.jacobs-ladder-marketing.listings` | `from_scylla_session()` wired in classified routes |
+
+## Tier B — REFINE for next dispatch (was stale in_progress)
+
+### Mesh E4 — `roadmap.unit.mesh.e4-soundbak-jacobs-ladder-marketing-purchase`
+
+**Old blocker text WRONG:** "dep-blocked (soundbak.feed+jlm.listings)" — those deps are now verified.
+
+**Actual gap:**
+- No embed-purchase backend endpoint (only ads-serve injection + deep-link `EmbeddedListingCard`)
+- Needs owner-greenlight (financial-adjacent checkout-in-feed)
+- **Next work:** `POST /api/jacobs-ladder-marketing/listings/{id}/embed-checkout` (or internal variant) on JLM; Soundbak feed mixed-item wire; attribution post_id→order_id
+
+**Recommended status:** `todo` (owner-greenlight before implement)
+
+### Mesh E6 — `roadmap.unit.mesh.e6-soundbak-rainfire-missions-donation`
+
+**Old blocker text PARTIALLY WRONG:** backend donate exists; api-client `rainfire_mission_donate_by_slug` exists; server-side mission injection HTTP wired.
+
+**Actual gap:**
+- Financial B2 hardening: webhook→wallet 90/10 on NET, idempotency replay tests, earnings ledger (not charity receipt)
+- Frontend: wire `DonateModal` to api-client in feed (not TransportPending path)
+- Live Stripe/PayPal webhook verification (owner-gated secrets)
+
+**Recommended status:** `todo` (financial owner sign-off)
+
+### Mesh E3 — `roadmap.unit.mesh.e3-jacobs-ladder-marketing-rainfire-missions-commission-ledger`
+
+**Still correctly owner-gated.** Deps unchanged: storefront-write (BDF), RFM-B7 commission-payback, outbox-worker #1441.
+
+**Recommended status:** keep `in_progress` umbrella tracker OR `todo` with OWNER-GATED prefix — do NOT auto-dispatch.
+
+### RFM donation-flow — `roadmap.unit.platform.rainfire-missions.donation-flow`
+
+**Card spec outdated:** references `rfm_donations` table; code uses `mission_contributions` + PaymentOrchestrator.
+
+**Shipped (P2 partial):**
+- `POST /missions/slug/{slug}/donate` handler
+- 90/10 estimate split, idempotency_key derivation
+- Stripe/PayPal via orchestrator.create_payment_intent
+
+**Remaining (P3–P5):**
+- Webhook settlement on NET (not estimate)
+- core-wallet credit 90% + platform 10%
+- Outbox/2PC if spec still requires
+- Property tests: split-exact, webhook-sig-reject, no-tax-receipt
+- Migration apply + live DB (owner)
+
+**Recommended status:** `todo` — refine spec to match `mission_contributions` schema
+
+## Tier C — PARK (bulk in_progress → todo)
+
+**28 `roadmap.unit.port.*` rows** stuck `in_progress` but blocked by fundamentals gate (now closed) + owner defer policy (`decision.four-platform-migration-deferred-2026-06-13`).
+
+These are NOT deleted — real future work — but must not pollute active kanban.
+
+**Action:** status `in_progress` → `todo`; titles already carry OWNER-GATED / SDUI-blocked / owner-deferred markers.
+
+**Also park:**
+- `roadmap.unit.frontend.web.soundbak` / `.rainfire` / `.native.soundbak` → todo (blocked on page ports + release cadence)
+- `roadmap.unit.foundation.astro-to-dioxus-port` → keep in_progress as umbrella tracker only (owner deferred 2026-06-01)
+
+## Tier D — KEEP in_progress (correctly gated)
+
+- `roadmap.unit.platform.soundbak.dms` — E2E crypto #1430–1432
+- `roadmap.unit.platform.soundbak.frontend.dm-live-transport` — DO #1425
+- JLM/RFM backend owner-greenlight children (cart-checkout, advertising, mission-search, etc.)
+- `roadmap.unit.platform.dashboard` — owner-gated 127-page shell (out of four-platform P1 scope)
+
+## Cards NOT to remove
+
+Verified fundamentals are proof artifacts. Port rows are deferred backlog, not duplicates. Delete only if duplicate keys exist (none found).

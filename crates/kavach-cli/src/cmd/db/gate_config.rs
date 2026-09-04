@@ -1,8 +1,8 @@
-//! `kavach db gate-config {get,set,delete,list}` — operator door to the dynamic
+//! `kavach db gate-config {get,set}` — operator door to the dynamic
 //! gate-config overlay over the live RPC daemon. Lets a value be retuned per
 //! project at runtime without a rebuild; absence falls through to the gate's
 //! compiled default (fail-closed).
-use crate::cmd::db::rpc_client;
+use super::rpc_client;
 use kavach_rpc::methods::db::GateValueDto;
 
 /// Resolve and print one override, or report the miss (caller uses its default).
@@ -60,34 +60,6 @@ pub(super) fn set(
             0
         }
         Err(e) => emit_err(&format!("gate-config set: {e}")),
-    }
-}
-
-/// Remove an override; the gate reverts to its compiled default. Idempotent.
-pub(super) fn delete(project: &str, gate_key: &str) -> i32 {
-    match rpc_client::gate_config_delete(project, gate_key) {
-        Ok(_) => {
-            println!("ok — override removed for {project}/{gate_key}");
-            0
-        }
-        Err(e) => emit_err(&format!("gate-config delete: {e}")),
-    }
-}
-
-/// List every override for a project.
-pub(super) fn list(project: &str) -> i32 {
-    match rpc_client::gate_config_list(project) {
-        Ok(rows) if rows.is_empty() => {
-            println!("(no overrides for {project} — all gates use compiled defaults)");
-            0
-        }
-        Ok(rows) => {
-            for r in rows {
-                println!("{}\t{}\t{}", r.project, r.gate_key, r.kind);
-            }
-            0
-        }
-        Err(e) => emit_err(&format!("gate-config list: {e}")),
     }
 }
 

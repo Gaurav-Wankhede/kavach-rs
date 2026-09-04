@@ -92,6 +92,7 @@ pub(crate) mod result_trim;
 pub(crate) mod router;
 pub mod rule_eval;
 pub(crate) mod rules_manifest;
+pub mod secret_redactor;
 pub mod session_end;
 pub mod session_start;
 pub(crate) mod sql_destructive;

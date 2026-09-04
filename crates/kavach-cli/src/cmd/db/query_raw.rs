@@ -1,4 +1,4 @@
-use crate::cmd::db::rpc_client;
+use super::rpc_client;
 use crate::cmd::io_safe::{err_exit, into_exit_code, print_or_exit};
 
 /// Run a read-only `SurrealQL` query and print the JSON result. The read-only

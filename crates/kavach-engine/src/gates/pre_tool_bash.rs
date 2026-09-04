@@ -9,6 +9,7 @@ mod blocklist;
 mod decision;
 mod dispatch;
 mod quote;
+mod rtk_rewrite;
 mod test_tracker;
 mod write_bypass;
 

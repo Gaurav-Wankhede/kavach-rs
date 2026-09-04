@@ -145,6 +145,11 @@ doc_markdown = "allow"
 blanket_clippy_restriction_lints = "deny"
 
 unwrap_used = "deny"
+# expect_used/panic stay DENY, not forbid: std's assert!/assert_eq! macros
+# expand with internal #[allow(clippy::expect_used)]/#[allow(clippy::panic)],
+# and E0453 rejects any allow beneath a forbid — a workspace forbid breaks
+# every test using assert macros (verified empirically, 2026-08-26). deny
+# still hard-errors on real violations in our own source.
 expect_used = "deny"
 panic = "deny"
 # deny (not forbid): clap's #[derive(Parser/Subcommand/Args)] expands to a
@@ -185,6 +190,10 @@ allow_attributes = "deny"
 # audit, kavach-rs.
 let_underscore_must_use = "deny"
 let_underscore_future = "deny"
+let_underscore_lock = "deny"
+map_err_ignore = "deny"
+mut_mut = "deny"
+match_wild_err_arm = "deny"
 multiple_unsafe_ops_per_block = "deny"
 undocumented_unsafe_blocks = "deny"
 ref_as_ptr = "deny"

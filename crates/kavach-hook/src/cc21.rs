@@ -22,6 +22,23 @@ pub fn exit_pre_tool_allow(context: Option<&str>) -> HookAction {
     HookAction::Done
 }
 
+/// `PreToolUse`: rewrite tool input with optional context via hookSpecificOutput.
+#[must_use]
+pub fn exit_pre_tool_rewrite<S: std::hash::BuildHasher>(
+    reason: &str,
+    updated_input: std::collections::HashMap<String, serde_json::Value, S>,
+    context: Option<&str>,
+) -> HookAction {
+    let compressed = context.map(crate::inject::compact_inject);
+    let resp = HookResponse::new_pre_tool_use_rewrite(
+        reason,
+        updated_input.into_iter().collect(),
+        compressed.as_deref(),
+    );
+    output(&resp);
+    HookAction::Done
+}
+
 /// `PreToolUse`: ask user for explicit approval via hookSpecificOutput.
 ///
 /// Emits `permissionDecision: "ask"` — Claude Code prompts the user with

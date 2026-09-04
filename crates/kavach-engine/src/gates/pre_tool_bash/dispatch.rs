@@ -6,6 +6,7 @@ use super::advisory_ctx;
 use super::blocklist;
 use super::decision::Decision;
 use super::quote::is_kavach_cli;
+use super::rtk_rewrite;
 use crate::error::EngineError;
 use crate::gates::bandit::{emit, shadow};
 use kavach_patterns::bandit_log::BanditContext;
@@ -29,7 +30,17 @@ pub(crate) fn handle_bash(input: &HookInput) -> Result<(), EngineError> {
         return Ok(());
     }
 
-    let decision = blocklist::check(command).unwrap_or_else(|| advisory_ctx::run(command));
+    let raw_decision = blocklist::check(command).unwrap_or_else(|| advisory_ctx::run(command));
+    let decision = match raw_decision {
+        Decision::Allow(ctx) => match rtk_rewrite::check_rewrite(command) {
+            Some(rewritten) => Decision::Rewrite {
+                command: rewritten,
+                context: ctx,
+            },
+            None => Decision::Allow(ctx),
+        },
+        other => other,
+    };
     log_bandit_decision(command, &decision);
     record_canary_shadow(command, &decision);
     let mut session = kavach_session::get_or_create_session();

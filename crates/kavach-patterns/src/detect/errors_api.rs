@@ -1,15 +1,26 @@
 //! API client-specific error and implementation patterns.
+use std::sync::OnceLock;
+
 use crate::config::{AntiProdLevel, AntiProdResult};
 use crate::file_types::is_api_client_file;
 use regex::Regex;
 
+/// Fallback for an out-of-range static-table index: never matches. The tables
+/// are compile-time constants, so this path is unreachable in practice; the
+/// debug_assert fires in tests instead of panicking in production.
+static NEVER_MATCH: OnceLock<Regex> = OnceLock::new();
+
 #[inline]
-#[expect(
-    clippy::indexing_slicing,
-    reason = "index is a constant literal bounded by regex array size"
-)]
-fn idx(r: &[Regex], i: usize) -> &Regex {
-    &r[i]
+fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
+    match r.get(i) {
+        Some(re) => re,
+        None => {
+            debug_assert!(false, "regex table index {i} out of range");
+            r.first().unwrap_or(NEVER_MATCH.get_or_init(|| {
+                Regex::new("ARGVOUT_TOP").unwrap()
+            }))
+        }
+    }
 }
 
 #[inline]
@@ -59,15 +70,14 @@ pub(super) fn detect_api_client_errors(
         return;
     }
     ck(
-        res,
-        idx(r, 59),
+        res,        idx_or_skip(r, 59),
         content,
         AntiProdLevel::P1ProdLeak,
         "API_DRIFT",
         "NOT_IMPLEMENTED comment",
         "Backend may be implemented — verify route exists and remove stale comment.",
     );
-    if idx(r, 60).is_match(content) && !content.contains("localhost") {
+    if idx_or_skip(r, 60).is_match(content) && !content.contains("localhost") {
         add(
             res,
             AntiProdLevel::P1ProdLeak,
@@ -77,8 +87,7 @@ pub(super) fn detect_api_client_errors(
         );
     }
     ck(
-        res,
-        idx(r, 61),
+        res,        idx_or_skip(r, 61),
         content,
         AntiProdLevel::P1ProdLeak,
         "EMPTY_FETCH",

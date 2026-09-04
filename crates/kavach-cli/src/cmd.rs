@@ -22,6 +22,8 @@ mod oversized;
 mod phase;
 mod phase_registry;
 pub(crate) mod pipeline;
+mod redact;
+mod retrieve;
 mod rules;
 mod security;
 mod servers;
@@ -130,6 +132,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         } => think::run(&project, &query, limit),
         Commands::Toolbelt { action } => toolbelt::run(action),
         Commands::Lint { action } => lint::run(action),
+        Commands::Retrieve { hash } => retrieve::run(&hash),
+        Commands::Redact { file } => redact::run(file.as_deref()),
         Commands::CommandTree { tree, markdown } => commands::run(tree, markdown),
     }
 }
