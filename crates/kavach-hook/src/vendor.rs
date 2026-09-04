@@ -19,6 +19,7 @@ pub mod antigravity;
 pub mod codex;
 pub mod cursor;
 pub mod kimi;
+pub mod opencode;
 pub mod pi;
 #[cfg(test)]
 #[path = "vendor_test.rs"]
@@ -51,6 +52,8 @@ pub enum Vendor {
     /// events, snake_case stdin JSON); blocks via exit code 2. Config is a TOML
     /// `[[hooks]]` array at `~/.kimi-code/config.toml`.
     Kimi,
+    /// OpenCode agent CLI — plugin lifecycle hooks via JSON-stdin/JSON-stdout.
+    OpenCode,
 }
 /// The env var that force-selects a vendor, overriding payload auto-detect.
 pub const VENDOR_ENV: &str = "KAVACH_HARNESS";
@@ -111,6 +114,7 @@ impl Vendor {
             "antigravity" | "agy" | "gemini" => Some(Self::Antigravity),
             "pi" => Some(Self::Pi),
             "kimi" | "kimi-code" | "kimicode" => Some(Self::Kimi),
+            "opencode" => Some(Self::OpenCode),
             _ => None,
         }
     }
@@ -212,6 +216,7 @@ impl Vendor {
             Self::Antigravity => antigravity::lower(raw_payload),
             Self::Pi => pi::lower(raw_payload),
             Self::Kimi => kimi::lower(raw_payload),
+            Self::OpenCode => opencode::lower(raw_payload),
         }
     }
     /// Render a canonical [`HookResponse`] verdict into this vendor's native
@@ -240,6 +245,7 @@ impl Vendor {
             Self::Antigravity => antigravity::render(resp),
             Self::Pi => pi::render(resp),
             Self::Kimi => kimi::render(resp),
+            Self::OpenCode => opencode::render(resp),
         }
     }
     /// The process exit code this vendor expects to signal a hard block. Claude
@@ -249,7 +255,7 @@ impl Vendor {
     #[must_use]
     pub const fn block_exit_code(self) -> i32 {
         match self {
-            Self::ClaudeCode | Self::Cursor | Self::Antigravity | Self::Pi => 0,
+            Self::ClaudeCode | Self::Cursor | Self::Antigravity | Self::Pi | Self::OpenCode => 0,
             Self::Codex | Self::Kimi => 2,
         }
     }
@@ -284,13 +290,16 @@ impl Vendor {
             Self::Kimi => SchemaSource::Prose {
                 url: "https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html",
             },
+            Self::OpenCode => SchemaSource::Prose {
+                url: "https://github.com/opencode-ai/opencode",
+            },
         }
     }
     /// Every vendor in detection order — the canonical roster a `--all` schema
     /// listing iterates. Kept in sync with [`Self`]'s variants by exhaustiveness:
     /// adding a variant forces this array (and `schema_url`) to be updated.
     #[must_use]
-    pub const fn all() -> [Self; 6] {
+    pub const fn all() -> [Self; 7] {
         [
             Self::ClaudeCode,
             Self::Cursor,
@@ -298,6 +307,7 @@ impl Vendor {
             Self::Antigravity,
             Self::Pi,
             Self::Kimi,
+            Self::OpenCode,
         ]
     }
     /// Stable lowercase name for reports and `--vendor` round-trips. Defined here
@@ -312,6 +322,7 @@ impl Vendor {
             Self::Pi => "pi",
             Self::Antigravity => "antigravity",
             Self::Kimi => "kimi",
+            Self::OpenCode => "opencode",
         }
     }
 }

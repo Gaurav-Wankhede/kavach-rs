@@ -53,6 +53,8 @@ fn every_referenced_gate_name_is_one_the_cli_serves() {
         "cursor.hooks.json",
         "codex.config.toml",
         "claude.settings.json",
+        "antigravity.hooks.json",
+        "opencode.json",
     ] {
         let body = read(file);
         for chunk in body.split("kavach gates ").skip(1) {
@@ -69,12 +71,22 @@ fn every_referenced_gate_name_is_one_the_cli_serves() {
 }
 
 #[test]
-fn cursor_and_claude_configs_are_valid_json() {
-    for file in ["cursor.hooks.json", "claude.settings.json"] {
+fn cursor_claude_and_antigravity_configs_are_valid_json() {
+    for file in [
+        "cursor.hooks.json",
+        "claude.settings.json",
+        "antigravity.hooks.json",
+    ] {
         let v: serde_json::Value =
             serde_json::from_str(&read(file)).unwrap_or_else(|e| panic!("{file} not JSON: {e}"));
         assert!(v.get("hooks").is_some(), "{file} must have a hooks object");
     }
+    let opencode_val: serde_json::Value = serde_json::from_str(&read("opencode.json"))
+        .unwrap_or_else(|e| panic!("opencode.json not JSON: {e}"));
+    assert!(
+        opencode_val.get("plugins").is_some(),
+        "opencode.json must have a plugins object"
+    );
 }
 
 #[test]

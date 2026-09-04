@@ -11,6 +11,7 @@ mod dispatch;
 mod quote;
 mod rtk_rewrite;
 mod test_tracker;
+pub(crate) mod toolbelt_rewrite;
 mod write_bypass;
 
 pub(crate) use dispatch::handle_bash;

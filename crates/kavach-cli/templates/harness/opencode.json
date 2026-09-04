@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+  "plugins": [
+    {
+      "name": "kavach",
+      "command": "kavach gates pre-tool --hook --vendor opencode",
+      "events": [
+        "tool.execute.before",
+        "tool.execute.after",
+        "agent.prompt.before",
+        "agent.stop",
+        "session.start"
+      ]
+    }
+  ]
+}

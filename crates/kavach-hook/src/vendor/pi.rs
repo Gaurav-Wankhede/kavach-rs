@@ -41,6 +41,8 @@ struct PiDecision {
     block: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    updated_input: Option<std::collections::HashMap<String, serde_json::Value>>,
 }
 
 /// True when this verdict denies/asks. Mirrors the cross-vendor block test: a
@@ -86,11 +88,20 @@ fn message(resp: &HookResponse) -> String {
 pub fn render(resp: &HookResponse) -> String {
     let denied = is_denied(resp);
     let msg = message(resp);
+    let updated = if denied {
+        None
+    } else {
+        resp.hook_specific_output
+            .as_ref()
+            .and_then(|h| h.updated_input.clone())
+            .or_else(|| resp.tool_input.clone())
+    };
     let out = PiDecision {
         block: denied,
         // Carry the reason on a block (the agent-visible deny / AUTO_CONTINUE text);
         // drop it on allow so the object is exactly `{}`.
         reason: (denied && !msg.is_empty()).then_some(msg),
+        updated_input: updated,
     };
     serde_json::to_string(&out).unwrap_or_else(|_| fail_closed())
 }

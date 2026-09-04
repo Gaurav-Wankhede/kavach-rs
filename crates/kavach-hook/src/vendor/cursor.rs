@@ -129,10 +129,27 @@ fn render_pre_tool(resp: &HookResponse) -> String {
     // Allow-path relay is model-readable via `agent_message` only — do NOT mirror
     // it into `user_message` (Cursor shows user_message to the human).
     let user = if blocked { agent.clone() } else { None };
+    let (updated, command) = if blocked {
+        (None, None)
+    } else {
+        let u = resp
+            .hook_specific_output
+            .as_ref()
+            .and_then(|h| h.updated_input.clone())
+            .or_else(|| resp.tool_input.clone());
+        let cmd = u
+            .as_ref()
+            .and_then(|m| m.get("command"))
+            .and_then(|v| v.as_str())
+            .map(str::to_owned);
+        (u, cmd)
+    };
     let out = CursorPreToolResponse {
         permission: if blocked { "deny" } else { "allow" },
         user_message: user,
         agent_message: agent,
+        updated_input: updated,
+        command,
     };
     serde_json::to_string(&out).unwrap_or_else(|_| fail_open())
 }
@@ -234,6 +251,10 @@ struct CursorPreToolResponse {
     user_message: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     agent_message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    updated_input: Option<std::collections::HashMap<String, serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    command: Option<String>,
 }
 
 /// `beforeSubmitPrompt` output: `{continue, user_message}` ONLY. No `permission`,

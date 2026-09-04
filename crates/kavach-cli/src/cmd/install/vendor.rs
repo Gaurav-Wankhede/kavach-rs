@@ -16,6 +16,8 @@ pub(super) enum Target {
     Pi,
     /// Kimi Code CLI — TOML `[[hooks]]` config; AGENTS.md as its system prompt.
     Kimi,
+    /// OpenCode agent CLI — plugin configuration in ~/.config/opencode/opencode.json.
+    OpenCode,
 }
 
 /// The embedded template body per tool, baked into the binary at compile time so
@@ -26,6 +28,7 @@ const CODEX: &str = include_str!("../../../templates/harness/codex.config.toml")
 const ANTIGRAVITY: &str = include_str!("../../../templates/harness/antigravity.hooks.json");
 const PI: &str = include_str!("../../../templates/harness/pi.index.ts");
 const KIMI: &str = include_str!("../../../templates/harness/kimi.config.toml");
+const OPENCODE: &str = include_str!("../../../templates/harness/opencode.json");
 
 /// Engineering-directives templates (shipped for cc/cursor/codex/kimi only).
 const CLAUDE_MD: &str = include_str!("../../../templates/harness/CLAUDE.md");
@@ -43,12 +46,13 @@ impl Target {
             "antigravity" | "agy" | "gemini" => Some(Self::Antigravity),
             "pi" => Some(Self::Pi),
             "kimi" | "kimi-code" | "kimicode" => Some(Self::Kimi),
+            "opencode" => Some(Self::OpenCode),
             _ => None,
         }
     }
 
-    /// Every target installed by `--vendor all`. All six ship a template now
-    /// (Pi's is a TypeScript extension shim), so `all` installs the full set.
+    /// Every target installed by `--vendor all`. All seven ship a template now,
+    /// so `all` installs the full set.
     pub(super) const fn all() -> &'static [Self] {
         &[
             Self::ClaudeCode,
@@ -57,6 +61,7 @@ impl Target {
             Self::Antigravity,
             Self::Pi,
             Self::Kimi,
+            Self::OpenCode,
         ]
     }
 
@@ -69,12 +74,13 @@ impl Target {
             Self::Antigravity => "antigravity",
             Self::Pi => "pi",
             Self::Kimi => "kimi",
+            Self::OpenCode => "opencode",
         }
     }
 
     /// Path under `$HOME` where this tool reads its OFFICIAL hook config.
     /// SOURCES: code.claude.com/docs/settings · cursor.com/docs/hooks ·
-    /// developers.openai.com/codex · ai.google.dev · github.com/earendil-works/pi.
+    /// developers.openai.com/codex · ai.google.dev · github.com/earendil-works/pi · github.com/opencode-ai.
     pub(super) const fn rel_config_path(self) -> &'static str {
         match self {
             Self::ClaudeCode => ".claude/settings.json",
@@ -84,6 +90,7 @@ impl Target {
             Self::Antigravity => ".gemini/config/hooks.json",
             Self::Pi => ".pi/agent/extensions/kavach/index.ts",
             Self::Kimi => ".kimi-code/config.toml",
+            Self::OpenCode => ".config/opencode/opencode.json",
         }
     }
 
@@ -103,6 +110,7 @@ impl Target {
             // Kimi: TOML [[hooks]] array (event/matcher/command/timeout only —
             // extra fields break Kimi's config loading).
             Self::Kimi => KIMI,
+            Self::OpenCode => OPENCODE,
         }
     }
 
@@ -117,7 +125,7 @@ impl Target {
             Self::ClaudeCode => Some(".claude/CLAUDE.md"),
             Self::Cursor => Some(".cursor/rules/kavach.mdc"),
             Self::Codex => Some(".codex/AGENTS.md"),
-            Self::Antigravity | Self::Pi => None,
+            Self::Antigravity | Self::Pi | Self::OpenCode => None,
             // Kimi Code reads AGENTS.md as its system prompt.
             Self::Kimi => Some(".kimi-code/AGENTS.md"),
         }
@@ -129,7 +137,7 @@ impl Target {
             Self::ClaudeCode => Some(CLAUDE_MD),
             Self::Cursor => Some(MDC),
             Self::Codex => Some(AGENTS),
-            Self::Antigravity | Self::Pi => None,
+            Self::Antigravity | Self::Pi | Self::OpenCode => None,
             Self::Kimi => Some(KIMI_AGENTS),
         }
     }
