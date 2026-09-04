@@ -49,11 +49,11 @@ pub async fn delete(
 
     if dry_run {
         let report = if let Some(ref key) = params.key {
-            kavach_surreal::preview_delete_by_key(&ctx.db, &params.project, &params.category, key)
+            kavach_db::preview_delete_by_key(&ctx.db, &params.project, &params.category, key)
                 .await
                 .map_err(|e| internal(e.to_string()))?
         } else {
-            kavach_surreal::preview_delete_category(&ctx.db, &params.project, &params.category)
+            kavach_db::preview_delete_category(&ctx.db, &params.project, &params.category)
                 .await
                 .map_err(|e| internal(e.to_string()))?
         };
@@ -77,11 +77,11 @@ pub async fn delete(
     }
 
     let report = if let Some(ref key) = params.key {
-        kavach_surreal::delete_by_key(&ctx.db, &params.project, &params.category, key)
+        kavach_db::delete_by_key(&ctx.db, &params.project, &params.category, key)
             .await
             .map_err(|e| internal(e.to_string()))?
     } else {
-        kavach_surreal::delete_category(&ctx.db, &params.project, &params.category)
+        kavach_db::delete_category(&ctx.db, &params.project, &params.category)
             .await
             .map_err(|e| internal(e.to_string()))?
     };
@@ -105,7 +105,7 @@ async fn delete_prefix(
     dry_run: bool,
 ) -> Result<DeleteResult, ErrorObjectOwned> {
     if dry_run {
-        let report = kavach_surreal::preview_delete_by_key_prefix(
+        let report = kavach_db::preview_delete_by_key_prefix(
             &ctx.db,
             &params.project,
             &params.category,
@@ -132,7 +132,7 @@ async fn delete_prefix(
     }
 
     let report =
-        kavach_surreal::delete_by_key_prefix(&ctx.db, &params.project, &params.category, prefix)
+        kavach_db::delete_by_key_prefix(&ctx.db, &params.project, &params.category, prefix)
             .await
             .map_err(|e| internal(e.to_string()))?;
     Ok(DeleteResult {

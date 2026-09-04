@@ -5,7 +5,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     GateConfigEntry, GateConfigKind, GateConfigValue, gate_config_delete, gate_config_list,
     gate_config_resolve, gate_config_set_with_kind,
 };

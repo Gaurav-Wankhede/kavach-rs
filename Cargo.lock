@@ -2959,6 +2959,7 @@ dependencies = [
  "fs2",
  "kavach-advisor",
  "kavach-config",
+ "kavach-db",
  "kavach-engine",
  "kavach-hook",
  "kavach-patterns",
@@ -2967,7 +2968,6 @@ dependencies = [
  "kavach-rule-generator",
  "kavach-rule-storage",
  "kavach-session",
- "kavach-surreal",
  "kavach-toon",
  "kavach-types",
  "kavach-web",
@@ -2999,6 +2999,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "kavach-db"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "bon",
+ "chrono",
+ "dirs",
+ "fastembed",
+ "itertools 0.13.0",
+ "kavach-types",
+ "libsql",
+ "proptest",
+ "rustix 1.1.4",
+ "serde",
+ "serde_json",
+ "surrealdb",
+ "surrealdb-types",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "kavach-dtree"
 version = "0.1.0"
 dependencies = [
@@ -3017,6 +3040,7 @@ dependencies = [
  "kavach-advisor",
  "kavach-chain",
  "kavach-config",
+ "kavach-db",
  "kavach-hook",
  "kavach-ope",
  "kavach-patterns",
@@ -3024,7 +3048,6 @@ dependencies = [
  "kavach-rule-engine",
  "kavach-rule-storage",
  "kavach-session",
- "kavach-surreal",
  "kavach-types",
  "memchr",
  "miette",
@@ -3081,9 +3104,9 @@ dependencies = [
  "chrono",
  "dirs",
  "jsonrpsee",
+ "kavach-db",
  "kavach-ope",
  "kavach-patterns",
- "kavach-surreal",
  "kavach-types",
  "serde",
  "serde_json",
@@ -3157,34 +3180,11 @@ dependencies = [
  "chrono",
  "fs2",
  "kavach-config",
+ "kavach-db",
  "kavach-rpc",
- "kavach-surreal",
  "serde",
  "serde_json",
  "tracing",
-]
-
-[[package]]
-name = "kavach-surreal"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "bon",
- "chrono",
- "dirs",
- "fastembed",
- "itertools 0.13.0",
- "kavach-types",
- "libsql",
- "proptest",
- "rustix 1.1.4",
- "serde",
- "serde_json",
- "surrealdb",
- "surrealdb-types",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
 ]
 
 [[package]]

@@ -19,7 +19,7 @@ kavach-rule-engine = { path = "../kavach-rule-engine" }
 kavach-rule-storage = { path = "../kavach-rule-storage" }
 kavach-rpc = { path = "../kavach-rpc" }
 kavach-advisor = { path = "../kavach-advisor" }
-kavach-surreal = { path = "../kavach-surreal" }
+kavach-db = { path = "../kavach-db" }
 miette = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

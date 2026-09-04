@@ -4,7 +4,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
-use kavach_surreal::bulk_manifest::{ConformanceField, bump_conformance};
+use kavach_db::bulk_manifest::{ConformanceField, bump_conformance};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

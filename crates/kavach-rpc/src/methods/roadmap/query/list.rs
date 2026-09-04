@@ -24,7 +24,7 @@ pub async fn list_titles(
         Some(c) if !c.is_empty() => c,
         Some(_) | None => TABLE_ROADMAP,
     };
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -33,7 +33,7 @@ pub async fn list_titles(
     let Some(project_id) = project.id else {
         return Ok(Vec::new());
     };
-    let entries = kavach_surreal::list_by_project(&state.db, category, &project_id)
+    let entries = kavach_db::list_by_project(&state.db, category, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
     let mut rows: Vec<TitleRow> = entries
@@ -55,7 +55,7 @@ pub async fn list_done_cards(
     state: &AppState,
     params: NextOpenTaskParams,
 ) -> Result<Vec<NextTaskResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -64,7 +64,7 @@ pub async fn list_done_cards(
     let Some(project_id) = project.id else {
         return Ok(Vec::new());
     };
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
     let done = entries
@@ -92,7 +92,7 @@ pub async fn list_in_progress_cards(
     state: &AppState,
     params: NextOpenTaskParams,
 ) -> Result<Vec<InProgressCardRow>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -101,7 +101,7 @@ pub async fn list_in_progress_cards(
     let Some(project_id) = project.id else {
         return Ok(Vec::new());
     };
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
     let in_progress = entries

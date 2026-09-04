@@ -7,7 +7,7 @@
 //! it so the caller can emit a `[DAG_CYCLE]` allow-stop NAMING them, instead of
 //! an invisible stall. Pure over the entry slice — no DB, no I/O.
 use super::super::readiness::parse_declared_deps;
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 use std::collections::HashMap;
 /// DFS visit colour for back-edge cycle detection.
 #[derive(Clone, Copy, PartialEq, Eq)]

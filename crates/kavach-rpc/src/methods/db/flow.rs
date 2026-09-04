@@ -5,7 +5,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     FlowDag, FlowEdgeInput, FlowSpec, FlowStepInput, graph_fetch_flow, graph_list_flows,
     graph_upsert_flow,
 };
@@ -204,7 +204,7 @@ pub async fn decision_render(
     state: &AppState,
     p: DecisionRenderParams,
 ) -> Result<DecisionRenderResult, ErrorObjectOwned> {
-    let dag = kavach_surreal::roadmap_dag_fetch(&state.db, &p.project_slug)
+    let dag = kavach_db::roadmap_dag_fetch(&state.db, &p.project_slug)
         .await
         .map_err(surreal_to_rpc)?;
     let cap = p.max_nodes.unwrap_or(DECISION_MAP_DEFAULT_CAP);
@@ -265,13 +265,13 @@ pub async fn practice_render(
     } else {
         cap.saturating_mul(PRACTICE_DELTA_FOCUS_POOL_FACTOR)
     };
-    let ranked = kavach_surreal::graph_top_anti_patterns(&state.db, pool)
+    let ranked = kavach_db::graph_top_anti_patterns(&state.db, pool)
         .await
         .map_err(surreal_to_rpc)?;
-    let mut focused = kavach_surreal::graph_practice_delta_focus_filter(ranked, &p.focus);
+    let mut focused = kavach_db::graph_practice_delta_focus_filter(ranked, &p.focus);
     focused.truncate(cap);
     Ok(PracticeRenderResult {
-        mermaid: kavach_surreal::practice_delta_mermaid(&focused),
+        mermaid: kavach_db::practice_delta_mermaid(&focused),
     })
 }
 
@@ -307,11 +307,11 @@ pub async fn stack_render(
     state: &AppState,
     p: StackRenderParams,
 ) -> Result<StackRenderResult, ErrorObjectOwned> {
-    let invariants = kavach_surreal::stack_invariants(&state.db, &p.project_slug)
+    let invariants = kavach_db::stack_invariants(&state.db, &p.project_slug)
         .await
         .map_err(surreal_to_rpc)?;
     Ok(StackRenderResult {
-        mermaid: kavach_surreal::stack_fit_mermaid(&invariants),
+        mermaid: kavach_db::stack_fit_mermaid(&invariants),
     })
 }
 
@@ -357,7 +357,7 @@ pub async fn pattern_render(
     state: &AppState,
     p: PatternRenderParams,
 ) -> Result<PatternRenderResult, ErrorObjectOwned> {
-    let dag = kavach_surreal::roadmap_dag_fetch(&state.db, &p.project_slug)
+    let dag = kavach_db::roadmap_dag_fetch(&state.db, &p.project_slug)
         .await
         .map_err(surreal_to_rpc)?;
     let cap = p.max_nodes.unwrap_or(PATTERN_DAG_DEFAULT_CAP);
@@ -398,7 +398,7 @@ pub async fn retired_patterns(
     state: &AppState,
     p: RetiredPatternsParams,
 ) -> Result<Vec<RetiredPattern>, ErrorObjectOwned> {
-    let dag = kavach_surreal::roadmap_dag_fetch(&state.db, &p.project_slug)
+    let dag = kavach_db::roadmap_dag_fetch(&state.db, &p.project_slug)
         .await
         .map_err(surreal_to_rpc)?;
     Ok(dag

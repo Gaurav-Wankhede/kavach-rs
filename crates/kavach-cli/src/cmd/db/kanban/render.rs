@@ -19,7 +19,7 @@ pub(in crate::cmd::db) struct KanbanFilters<'a> {
     pub format: Option<&'a str>,
 }
 
-fn matches_filters(e: &kavach_surreal::MemoryEntry, f: &KanbanFilters<'_>) -> bool {
+fn matches_filters(e: &kavach_db::MemoryEntry, f: &KanbanFilters<'_>) -> bool {
     f.status.is_none_or(|s| e.entry_status_str() == s)
         && f.key.is_none_or(|k| e.entry_key.contains(k))
         && f.lane.is_none_or(|l| e.lane.as_deref() == Some(l))
@@ -27,11 +27,11 @@ fn matches_filters(e: &kavach_surreal::MemoryEntry, f: &KanbanFilters<'_>) -> bo
 
 pub(in crate::cmd::db) fn render_kanban(
     project_slug: &str,
-    roadmap: &[kavach_surreal::MemoryEntry],
+    roadmap: &[kavach_db::MemoryEntry],
     limit: usize,
     f: &KanbanFilters<'_>,
 ) -> i32 {
-    let mut open: Vec<&kavach_surreal::MemoryEntry> = roadmap
+    let mut open: Vec<&kavach_db::MemoryEntry> = roadmap
         .iter()
         .filter(|e| is_open_status(e.entry_status_str()))
         .filter(|e| matches_filters(e, f))
@@ -40,7 +40,7 @@ pub(in crate::cmd::db) fn render_kanban(
     // Optional [VERIFIED] lens: terminal rows are normally off the board.
     // The `status` filter does not apply (it targets open lanes); the `key` and
     // `lane` filters still do.
-    let verified: Vec<&kavach_surreal::MemoryEntry> = if f.include_verified {
+    let verified: Vec<&kavach_db::MemoryEntry> = if f.include_verified {
         roadmap
             .iter()
             .filter(|e| e.entry_status_str() == VERIFIED_STATUS)
@@ -67,8 +67,8 @@ pub(in crate::cmd::db) fn render_kanban(
         open.into_iter().take(limit).collect()
     };
     let (hunt, roadmap_items): (
-        Vec<&kavach_surreal::MemoryEntry>,
-        Vec<&kavach_surreal::MemoryEntry>,
+        Vec<&kavach_db::MemoryEntry>,
+        Vec<&kavach_db::MemoryEntry>,
     ) = displayed
         .iter()
         .copied()
@@ -76,11 +76,11 @@ pub(in crate::cmd::db) fn render_kanban(
     render_json(&displayed, &roadmap_items, &hunt, total, limit)
 }
 
-fn render_empty_json(roadmap: &[kavach_surreal::MemoryEntry]) -> i32 {
+fn render_empty_json(roadmap: &[kavach_db::MemoryEntry]) -> i32 {
     let counts = count_non_open(
         roadmap
             .iter()
-            .map(kavach_surreal::MemoryEntry::entry_status_str),
+            .map(kavach_db::MemoryEntry::entry_status_str),
     );
     let line = format!(
         r#"{{"items":[],"total":0,"displayed":0,"has_more":false,"verified":{},"unparseable":{}}}"#,
@@ -92,7 +92,7 @@ fn render_empty_json(roadmap: &[kavach_surreal::MemoryEntry]) -> i32 {
     }
 }
 
-fn entry_json(e: &kavach_surreal::MemoryEntry) -> String {
+fn entry_json(e: &kavach_db::MemoryEntry) -> String {
     format!(
         r#"{{"key":"{}","status":"{}","title":"{}"}}"#,
         e.entry_key.replace('"', r#"\""#),
@@ -102,9 +102,9 @@ fn entry_json(e: &kavach_surreal::MemoryEntry) -> String {
 }
 
 fn render_json(
-    displayed: &[&kavach_surreal::MemoryEntry],
-    roadmap_items: &[&kavach_surreal::MemoryEntry],
-    hunt: &[&kavach_surreal::MemoryEntry],
+    displayed: &[&kavach_db::MemoryEntry],
+    roadmap_items: &[&kavach_db::MemoryEntry],
+    hunt: &[&kavach_db::MemoryEntry],
     total: usize,
     limit: usize,
 ) -> i32 {

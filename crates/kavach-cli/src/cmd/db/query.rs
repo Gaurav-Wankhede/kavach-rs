@@ -105,7 +105,7 @@ pub(super) fn run(
     field: Option<&str>,
     compact: bool,
 ) -> i32 {
-    use kavach_surreal::turso::entries::EntryStore;
+    use kavach_db::turso::entries::EntryStore;
     use super::kanban::is_done_title;
     let depth = resolve_depth(
         depth_flag,

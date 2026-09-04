@@ -4,7 +4,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     AlgoDecision, AlgoUpsertParams, ArchDecision, ArchUpsertParams, algo_list_recent, algo_upsert,
     arch_list_recent, arch_upsert,
 };
@@ -29,7 +29,7 @@ pub async fn algo_list(
     params: ListParams,
 ) -> Result<Vec<AlgoDecision>, ErrorObjectOwned> {
     let limit = params.limit.unwrap_or(5);
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -93,7 +93,7 @@ pub async fn arch_upsert_rpc(
     state: &AppState,
     params: ArchUpsertRpcParams,
 ) -> Result<Option<UpsertResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -129,7 +129,7 @@ pub async fn algo_upsert_rpc(
     state: &AppState,
     params: AlgoUpsertRpcParams,
 ) -> Result<Option<UpsertResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -165,7 +165,7 @@ pub async fn arch_list(
     params: ListParams,
 ) -> Result<Vec<ArchDecision>, ErrorObjectOwned> {
     let limit = params.limit.unwrap_or(5);
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {

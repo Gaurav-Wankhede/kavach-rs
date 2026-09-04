@@ -49,7 +49,7 @@ pub async fn bandit_backfill_session(
     ctx: &AppState,
     params: BanditBackfillParams,
 ) -> Result<BanditBackfillResult, ErrorObjectOwned> {
-    let rows = match kavach_surreal::list_unrewarded_bandit_rows_for_session(
+    let rows = match kavach_db::list_unrewarded_bandit_rows_for_session(
         &ctx.db,
         &params.session,
         params.limit,
@@ -90,7 +90,7 @@ async fn write_reward(ctx: &AppState, payload: &str, verified_clean: bool) -> bo
     let Some(tag) = grade::reward_tag_for_row(payload, verified_clean) else {
         return false;
     };
-    kavach_surreal::update_bandit_reward(&ctx.db, payload, tag)
+    kavach_db::update_bandit_reward(&ctx.db, payload, tag)
         .await
         .is_ok()
 }

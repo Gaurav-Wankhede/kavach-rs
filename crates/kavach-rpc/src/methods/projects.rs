@@ -3,7 +3,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::Project;
+use kavach_db::Project;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -21,7 +21,7 @@ pub async fn ancestry(
     state: &AppState,
     params: AncestryParams,
 ) -> Result<Vec<Project>, ErrorObjectOwned> {
-    let Some(proj) = kavach_surreal::project_get_by_slug(&state.db, &params.slug)
+    let Some(proj) = kavach_db::project_get_by_slug(&state.db, &params.slug)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -30,7 +30,7 @@ pub async fn ancestry(
     let Some(id) = proj.id.clone() else {
         return Ok(Vec::new());
     };
-    kavach_surreal::project_get_ancestry(&state.db, &id)
+    kavach_db::project_get_ancestry(&state.db, &id)
         .await
         .map_err(surreal_to_rpc)
 }
@@ -56,7 +56,7 @@ pub async fn find_by_path(
     state: &AppState,
     params: FindByPathParams,
 ) -> Result<Option<Project>, ErrorObjectOwned> {
-    kavach_surreal::project_find_by_path(&state.db, &params.path)
+    kavach_db::project_find_by_path(&state.db, &params.path)
         .await
         .map_err(surreal_to_rpc)
 }
@@ -70,7 +70,7 @@ pub async fn get_by_slug(
     state: &AppState,
     params: GetBySlugParams,
 ) -> Result<Option<Project>, ErrorObjectOwned> {
-    kavach_surreal::project_get_by_slug(&state.db, &params.slug)
+    kavach_db::project_get_by_slug(&state.db, &params.slug)
         .await
         .map_err(surreal_to_rpc)
 }

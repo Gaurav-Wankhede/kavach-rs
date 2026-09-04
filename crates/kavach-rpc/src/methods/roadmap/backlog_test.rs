@@ -2,7 +2,7 @@ use crate::methods::roadmap::readiness::{
     deps_satisfied, is_needs_decomposition, is_runnable_status, is_umbrella,
 };
 
-fn entry_titled(key: &str, title: &str, status: &str) -> kavach_surreal::MemoryEntry {
+fn entry_titled(key: &str, title: &str, status: &str) -> kavach_db::MemoryEntry {
     let mut e = entry(key, status, "");
     e.title = title.into();
     e
@@ -11,7 +11,7 @@ fn entry_titled(key: &str, title: &str, status: &str) -> kavach_surreal::MemoryE
 /// Backlog tier excludes umbrellas / needs-decomposition cards — mirrors the
 /// primary selectors. Owner-gating abolished (2026-06-20): a `GATE:` card is NOT
 /// excluded; it is ordinary runnable work the agent claims and builds.
-fn backlog_pick(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {
+fn backlog_pick(entries: &[kavach_db::MemoryEntry]) -> Option<&kavach_db::MemoryEntry> {
     entries.iter().find(|e| {
         is_runnable_status(e.entry_status_str())
             && deps_satisfied(e, entries)
@@ -58,8 +58,8 @@ fn backlog_skips_umbrella_but_takes_gate_or_real() {
     assert_eq!(picked.entry_key, "g");
 }
 
-fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {
-    kavach_surreal::MemoryEntry {
+fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
+    kavach_db::MemoryEntry {
         id: None,
         project: surrealdb_types::RecordId::new("project", "t"),
         category: Some("roadmap".into()),
@@ -85,8 +85,8 @@ fn entry_with_priority(
     key: &str,
     status: &str,
     priority: Option<i64>,
-) -> kavach_surreal::MemoryEntry {
-    kavach_surreal::MemoryEntry {
+) -> kavach_db::MemoryEntry {
+    kavach_db::MemoryEntry {
         id: None,
         project: surrealdb_types::RecordId::new("project", "t"),
         category: Some("roadmap".into()),
@@ -108,7 +108,7 @@ fn entry_with_priority(
     }
 }
 
-fn pick_first(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {
+fn pick_first(entries: &[kavach_db::MemoryEntry]) -> Option<&kavach_db::MemoryEntry> {
     entries
         .iter()
         .find(|e| is_runnable_status(e.entry_status_str()) && deps_satisfied(e, entries))

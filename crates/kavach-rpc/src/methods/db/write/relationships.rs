@@ -16,7 +16,7 @@ pub(super) async fn project_relationships(ctx: &AppState, params: &WriteParams, 
         return;
     }
     if let Err(e) =
-        kavach_surreal::upsert_relationships(&ctx.db, qname, &params.relationships).await
+        kavach_db::upsert_relationships(&ctx.db, qname, &params.relationships).await
     {
         tracing::warn!("db.write: relationship projection failed for {qname}: {e}");
     }

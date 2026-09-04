@@ -2,7 +2,7 @@
 //! BLOCKED markers from prereq status, cycle is surfaced (not placed on a tier),
 //! and the mermaid emit is a well-formed `flowchart TD`.
 use super::{render_mermaid, render_tiered_text, tiers};
-use kavach_surreal::{DagEdge, DagNode, RoadmapDag};
+use kavach_db::{DagEdge, DagNode, RoadmapDag};
 
 fn node(key: &str, status: &str) -> DagNode {
     DagNode {
@@ -34,8 +34,8 @@ fn chain() -> RoadmapDag {
 fn tiers_follow_dependency_depth() {
     let d = chain();
     let order = match d.toposort_or_cycle() {
-        kavach_surreal::graph::roadmap_dag::TopoOrder::Ordered(o) => o,
-        kavach_surreal::graph::roadmap_dag::TopoOrder::Cycle(_) => panic!("chain is acyclic"),
+        kavach_db::graph::roadmap_dag::TopoOrder::Ordered(o) => o,
+        kavach_db::graph::roadmap_dag::TopoOrder::Cycle(_) => panic!("chain is acyclic"),
     };
     let depth = tiers(&order, &d.edges);
     assert_eq!(depth.get("p/roadmap/a"), Some(&0), "root is tier 0");
@@ -98,7 +98,7 @@ fn mermaid_emits_flowchart_with_edges() {
 #[test]
 fn builds_dag_from_roadmap_rows_via_declared_deps() {
     use super::dag_from_roadmap;
-    use kavach_surreal::MemoryEntry;
+    use kavach_db::MemoryEntry;
     let row = |key: &str, content: &str| MemoryEntry {
         id: None,
         project: surrealdb_types::RecordId::new("project", "p"),

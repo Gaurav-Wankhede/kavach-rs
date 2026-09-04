@@ -30,7 +30,7 @@ pub async fn expire(
     ctx: &AppState,
     _params: ExpireParams,
 ) -> Result<ExpireResult, ErrorObjectOwned> {
-    let report = kavach_surreal::expire_stale(&ctx.db)
+    let report = kavach_db::expire_stale(&ctx.db)
         .await
         .map_err(|e| internal(e.to_string()))?;
     Ok(ExpireResult {

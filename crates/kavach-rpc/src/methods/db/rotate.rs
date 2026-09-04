@@ -32,7 +32,7 @@ pub async fn rotate(
     if params.days <= 0 {
         return Err(invalid_params("days must be positive"));
     }
-    let rotated = kavach_surreal::rotate_events(&ctx.db, params.days)
+    let rotated = kavach_db::rotate_events(&ctx.db, params.days)
         .await
         .map_err(|e| internal(e.to_string()))?;
     Ok(RotateResult {

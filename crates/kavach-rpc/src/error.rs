@@ -1,5 +1,5 @@
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::Error as SurrealError;
+use kavach_db::Error as SurrealError;
 
 pub const CODE_INVALID_PARAMS: i32 = -32602;
 pub const CODE_INTERNAL: i32 = -32603;

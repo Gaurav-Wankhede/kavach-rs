@@ -9,8 +9,8 @@
 // awareness signal (cheap to inject, names READY/BLOCKED/CYCLE inline).
 use std::collections::HashMap;
 use std::fmt::Write as _;
-use kavach_surreal::graph::roadmap_dag::TopoOrder;
-use kavach_surreal::{DagEdge, DagNode, MemoryEntry, RoadmapDag};
+use kavach_db::graph::roadmap_dag::TopoOrder;
+use kavach_db::{DagEdge, DagNode, MemoryEntry, RoadmapDag};
 use crate::cmd::io_safe::{into_exit_code, print_or_exit};
 /// Build a `RoadmapDag` from the roadmap ROWS (`list_by_project`) — the same
 /// source the flat board and the scheduler read — instead of the entity-graph

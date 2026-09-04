@@ -66,7 +66,7 @@ pub async fn ope_audit(
     ctx: &AppState,
     params: OpeAuditParams,
 ) -> Result<OpeAuditResult, ErrorObjectOwned> {
-    let raw = match kavach_surreal::list_bandit_rows(&ctx.db, params.limit).await {
+    let raw = match kavach_db::list_bandit_rows(&ctx.db, params.limit).await {
         Ok(rows) => rows,
         Err(e) => return Ok(load_failed(e.to_string())),
     };

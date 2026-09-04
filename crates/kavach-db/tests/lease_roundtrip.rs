@@ -13,8 +13,8 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_surreal::lease::{AcquireOutcome, acquire, heartbeat, status, unlock};
-use kavach_surreal::open_memory;
+use kavach_db::lease::{AcquireOutcome, acquire, heartbeat, status, unlock};
+use kavach_db::open_memory;
 
 const TABLE: &str = "lease";
 const KEY: &str = "session-occupancy:proj-x";
@@ -120,7 +120,7 @@ async fn concurrent_acquire_yields_exactly_one_winner() {
 /// CAS on `update_status_cas` matches only when the row is still `todo`.
 #[tokio::test]
 async fn status_cas_transitions_only_from_expected() {
-    use kavach_surreal::update_status_cas;
+    use kavach_db::update_status_cas;
     use surrealdb_types::RecordId;
     let db = open_memory().await.expect("memory db");
     // A roadmap row in `todo`, owned by a concrete project record.
@@ -150,7 +150,7 @@ async fn status_cas_transitions_only_from_expected() {
 /// sessions racing to verify the same `done` card yield exactly one winner.
 #[tokio::test]
 async fn verify_cas_yields_one_winner_from_done() {
-    use kavach_surreal::update_status_cas;
+    use kavach_db::update_status_cas;
     use surrealdb_types::RecordId;
     let db = open_memory().await.expect("memory db");
     let pid = RecordId::new("project", "p2");

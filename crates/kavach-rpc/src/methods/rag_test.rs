@@ -3,7 +3,7 @@ use super::{TreeGetParams, TreeUpsertParams, tree_get, tree_upsert};
 use crate::state::AppState;
 
 async fn state() -> AppState {
-    let db = kavach_surreal::open_memory().await.expect("mem db");
+    let db = kavach_db::open_memory().await.expect("mem db");
     AppState::new(db)
 }
 

@@ -16,7 +16,7 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_surreal::{apply_schema, open_memory, upsert_entry_full};
+use kavach_db::{apply_schema, open_memory, upsert_entry_full};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb_types::RecordId;

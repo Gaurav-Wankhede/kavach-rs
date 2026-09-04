@@ -1,5 +1,5 @@
 use super::{lane_matches, pick_in_lane};
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 
 fn card(key: &str, status: &str, lane: Option<&str>) -> MemoryEntry {
     MemoryEntry {

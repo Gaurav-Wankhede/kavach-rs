@@ -53,7 +53,7 @@ pub fn is_in_cycle<S: BuildHasher>(start: &str, by_key: &HashMap<&str, Vec<Strin
 /// Index every entry's declared deps once, keyed by `entry_key`, for repeated
 /// [`is_in_cycle`] queries over the same pool.
 #[must_use]
-pub fn dep_index(pool: &[kavach_surreal::MemoryEntry]) -> HashMap<&str, Vec<String>> {
+pub fn dep_index(pool: &[kavach_db::MemoryEntry]) -> HashMap<&str, Vec<String>> {
     pool.iter()
         .map(|e| (e.entry_key.as_str(), parse_declared_deps(&e.content)))
         .collect()

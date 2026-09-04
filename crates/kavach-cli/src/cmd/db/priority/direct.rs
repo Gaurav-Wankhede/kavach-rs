@@ -23,10 +23,10 @@ pub(super) fn run_direct(
                 return super::write_err(&format!("error: open SurrealDB: {e}"));
             }
         };
-        if let Err(e) = kavach_surreal::apply_schema(&db).await {
+        if let Err(e) = kavach_db::apply_schema(&db).await {
             return super::write_err(&format!("error: schema apply: {e}"));
         }
-        let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+        let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
             Ok(Some(p)) => p,
             Ok(None) => {
                 return super::write_err(&format!("error: project not found: {project_slug}"));
@@ -42,7 +42,7 @@ pub(super) fn run_direct(
             return 1;
         };
         let priority = effective.map(Priority::new);
-        match kavach_surreal::set_priority(&db, category, &project_id, key, priority).await {
+        match kavach_db::set_priority(&db, category, &project_id, key, priority).await {
             Ok(_id) => super::print_pretty(category, key, effective, false),
             Err(e) => super::write_err(&format!("error: {e}")),
         }

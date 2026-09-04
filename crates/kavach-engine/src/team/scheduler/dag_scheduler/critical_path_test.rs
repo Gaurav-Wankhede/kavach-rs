@@ -1,5 +1,5 @@
 use super::{critical_path_lengths, prioritize_by_critical_path};
-use kavach_surreal::graph::roadmap_dag::{DagEdge, DagNode, RoadmapDag};
+use kavach_db::graph::roadmap_dag::{DagEdge, DagNode, RoadmapDag};
 
 fn node(id: &str) -> DagNode {
     DagNode {

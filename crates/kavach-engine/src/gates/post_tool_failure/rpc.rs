@@ -18,7 +18,7 @@ pub(super) fn self_evolve_block(error: &str, tool_name: &str, failure_type: &str
          \x20   --title \"<imperative rewrite of block message>\" \\\n\
          \x20   --content \"fix_strategy: <strategy>\\ndsa_rationale: <why this algorithm>\"\n\
          reason: Unrecognised error — storing fix enables autonomous resolution next occurrence.\n",
-        tokens = kavach_surreal::gate_pattern_tokenize(error),
+        tokens = kavach_db::gate_pattern_tokenize(error),
     )
 }
 
@@ -55,7 +55,7 @@ pub(super) fn find_autonomous_via_rpc(
     project_slug: &str,
     error_text: &str,
     tool_name: &str,
-) -> Option<kavach_surreal::GatePattern> {
+) -> Option<kavach_db::GatePattern> {
     if project_slug.is_empty() {
         return None;
     }
@@ -72,7 +72,7 @@ pub(super) fn find_autonomous_via_rpc(
 pub(super) fn upsert_via_rpc(
     project_slug: &str,
     error_text: &str,
-    pat: &kavach_surreal::GatePattern,
+    pat: &kavach_db::GatePattern,
     tool_name: &str,
 ) {
     let params = serde_json::json!({

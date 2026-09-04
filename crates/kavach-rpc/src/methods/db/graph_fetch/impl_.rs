@@ -11,7 +11,7 @@ pub(super) async fn graph_fetch_impl(
     params: GraphFetchParams,
 ) -> Result<GraphFetchResult, ErrorObjectOwned> {
     let etype = params.entity_type.as_deref();
-    let entities = kavach_surreal::graph_list_entities(&ctx.db, etype)
+    let entities = kavach_db::graph_list_entities(&ctx.db, etype)
         .await
         .map_err(|e| internal(e.to_string()))?;
     let total = entities.len();
@@ -31,7 +31,7 @@ pub(super) async fn graph_fetch_impl(
         node_ids.push(rid);
     }
 
-    let edges = kavach_surreal::graph_list_edges_among(&ctx.db, &node_ids)
+    let edges = kavach_db::graph_list_edges_among(&ctx.db, &node_ids)
         .await
         .map_err(|e| internal(e.to_string()))?
         .into_iter()

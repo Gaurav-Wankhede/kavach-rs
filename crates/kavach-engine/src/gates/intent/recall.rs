@@ -37,7 +37,7 @@ pub(super) fn recall_block(prompt: &str) -> String {
     let params = serde_json::json!({ "query": trimmed, "limit": RECALL_LIMIT });
     // Go through the RPC server (single-writer invariant): the gate never opens
     // the DB directly. A daemon blip is non-fatal — recall is best-effort.
-    let hits: Vec<kavach_surreal::BrainHit> =
+    let hits: Vec<kavach_db::BrainHit> =
         match kavach_rpc::client::call("brain.think", Some(params)) {
             Ok(h) => h,
             Err(_) => return String::new(),
@@ -65,7 +65,7 @@ pub(super) fn recall_block(prompt: &str) -> String {
 /// Gather citation source ids for the recalled hits via `citation.for_nodes`.
 /// Fail-soft: any miss (no citations, daemon blip) yields `None` so recall is
 /// unperturbed. Closes the C7/C9 citation-recall path (was built, never wired).
-fn cited_sources(hits: &[kavach_surreal::BrainHit]) -> Option<String> {
+fn cited_sources(hits: &[kavach_db::BrainHit]) -> Option<String> {
     let nodes: Vec<&str> = hits.iter().map(|h| h.id.as_str()).collect();
     let params = serde_json::json!({ "nodes": nodes });
     let res: serde_json::Value =

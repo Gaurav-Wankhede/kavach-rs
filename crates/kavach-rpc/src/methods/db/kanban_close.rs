@@ -46,7 +46,7 @@ pub async fn kanban_close(
     }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =
-        kavach_surreal::update_status(&ctx.db, ROADMAP_TABLE, &pid, &params.key, STATUS_VERIFIED)
+        kavach_db::update_status(&ctx.db, ROADMAP_TABLE, &pid, &params.key, STATUS_VERIFIED)
             .await;
 
     match result {

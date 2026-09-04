@@ -3,7 +3,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{NlmHit, nlm_query_docs, nlm_upsert_doc};
+use kavach_db::{NlmHit, nlm_query_docs, nlm_upsert_doc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -10,7 +10,7 @@ pub(super) fn split_csv(s: Option<&str>) -> Vec<String> {
     })
 }
 
-pub(super) fn emit_concept_rows(rows: &[kavach_surreal::Entity]) -> i32 {
+pub(super) fn emit_concept_rows(rows: &[kavach_db::Entity]) -> i32 {
     if rows.is_empty() {
         return match print_or_exit("no concepts found") {
             Ok(()) => 0,

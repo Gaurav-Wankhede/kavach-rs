@@ -18,11 +18,11 @@ pub(super) fn run(project: &str, query: &str, limit: usize) -> i32 {
 }
 
 async fn run_async(project_slug: &str, query: &str, limit: usize) -> i32 {
-    let db = match kavach_surreal::open_default_resilient().await {
+    let db = match kavach_db::open_default_resilient().await {
         Ok(d) => d,
         Err(e) => return emit(&format!(r#"{{"error":"db: {e}"}}"#)),
     };
-    let hits = match kavach_surreal::search_corpus(&db, query, limit).await {
+    let hits = match kavach_db::search_corpus(&db, query, limit).await {
         Ok(h) => h,
         Err(e) => return emit(&format!(r#"{{"error":"{e}"}}"#)),
     };
@@ -37,7 +37,7 @@ async fn run_async(project_slug: &str, query: &str, limit: usize) -> i32 {
 /// File the unanswered query as a `research` card so the gap is tracked work.
 /// A missing project is non-fatal: we still report the hits, just unfiled.
 async fn file_gap(db: &Surreal<Any>, project_slug: &str, query: &str) -> bool {
-    let Ok(Some(project)) = kavach_surreal::project_get_by_slug(db, project_slug).await else {
+    let Ok(Some(project)) = kavach_db::project_get_by_slug(db, project_slug).await else {
         return false;
     };
     let Some(project_id) = project.id else {
@@ -51,7 +51,7 @@ async fn file_gap(db: &Surreal<Any>, project_slug: &str, query: &str) -> bool {
         .take(59)
         .collect();
     let key = format!("research.gap.{digest}");
-    kavach_surreal::upsert_entry_full()
+    kavach_db::upsert_entry_full()
         .db(db)
         .category("research")
         .project_id(&project_id)
@@ -69,7 +69,7 @@ async fn file_gap(db: &Surreal<Any>, project_slug: &str, query: &str) -> bool {
         .is_ok()
 }
 
-fn payload(query: &str, hits: &[kavach_surreal::BrainHit], filed: bool) -> String {
+fn payload(query: &str, hits: &[kavach_db::BrainHit], filed: bool) -> String {
     let items: Vec<String> = hits
         .iter()
         .map(|h| {

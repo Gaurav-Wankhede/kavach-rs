@@ -1,4 +1,6 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use kavach_db::key_str::project_key_str;
+use kavach_db::turso::entries::EntryStore;
 
 pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
     // RPC-first: route through the daemon so the CLI never opens a competing
@@ -49,43 +51,38 @@ pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
     };
 
     runtime.block_on(async {
-        // Resilient open: closes the daemon-restart TOCTOU
-        // (`rca.db-event-daemon-restart-race`). A mid-restart daemon may hold
-        // the RocksDB lock between our socket check and this open; retry the
-        // lock-acquiring action itself (bounded) instead of trusting the
-        // socket proxy. A genuine stale lock still surfaces after exhaustion.
-        let db = match super::rpc_client::open_direct_resilient().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: open SurrealDB: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
                 return 1;
             }
         };
-        if let Err(e) = kavach_surreal::apply_schema(&db).await {
-            let msg = format!("error: schema apply: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
         let session_db = kavach_session::get_or_create_session();
-        let project_id = if session_db.work_dir.is_empty() {
-            None
+        let project_slug = if session_db.work_dir.is_empty() {
+            "default".to_string()
         } else {
-            match kavach_surreal::project_find_by_path(&db, &session_db.work_dir).await {
-                Ok(Some(p)) => p.id,
-                Ok(None) => None,
-                Err(e) => {
-                    eprintln!("event: project lookup failed (continuing without project): {e}");
-                    None
+            // Try to find project by path in Turso
+            match store.list_all().await {
+                Ok(entries) => {
+                    let mut found = None;
+                    for e in entries {
+                        let slug = project_key_str(&e.project);
+                        if slug == session_db.work_dir {
+                            found = Some(slug);
+                            break;
+                        }
+                    }
+                    found.unwrap_or_else(|| "default".to_string())
                 }
+                Err(_) => "default".to_string(),
             }
         };
-        match kavach_surreal::append_event(&db, event_type, "kavach-cli", project_id, payload).await
-        {
+        match store.append_event(&project_slug, event_type, payload.unwrap_or("")).await {
             Ok(id) => {
                 let msg = format!("event {event_type} logged (id={id:?})");
                 if let Err(io_err) = print_or_exit(&msg) {

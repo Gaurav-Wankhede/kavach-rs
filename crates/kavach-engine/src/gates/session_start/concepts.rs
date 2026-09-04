@@ -2,7 +2,7 @@
 use std::collections::HashSet;
 use std::fmt::Write as _;
 
-use kavach_surreal::BridgeHit;
+use kavach_db::BridgeHit;
 
 /// Max distinct concepts injected at session start (token discipline).
 const CONCEPT_TOP_K: usize = 5;

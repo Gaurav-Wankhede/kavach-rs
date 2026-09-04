@@ -6,7 +6,7 @@ use super::util::{ROADMAP_TABLE, or_str, resolve_project_id};
 use crate::error::internal;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 
 mod types;
 
@@ -21,7 +21,7 @@ const ACCESS_COUNT_DEFAULT: i64 = 0;
 pub async fn query(ctx: &AppState, params: QueryParams) -> Result<QueryResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let table = or_str(params.category.as_deref(), ROADMAP_TABLE);
-    let entries: Vec<MemoryEntry> = kavach_surreal::read::list_by_project(&ctx.db, table, &pid)
+    let entries: Vec<MemoryEntry> = kavach_db::read::list_by_project(&ctx.db, table, &pid)
         .await
         .map_err(|e| internal(e.to_string()))?;
 

@@ -2,7 +2,7 @@
 //! scripted spawners used across the plan/dispatch/multitick test modules.
 use std::cell::RefCell;
 
-use kavach_surreal::graph::roadmap_dag::{DagEdge, DagNode};
+use kavach_db::graph::roadmap_dag::{DagEdge, DagNode};
 
 use super::super::{DagScheduler, Spawner, SpawnerKind};
 use crate::error::EngineError;

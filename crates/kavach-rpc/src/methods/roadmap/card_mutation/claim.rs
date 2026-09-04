@@ -2,7 +2,7 @@ use super::super::types::{ClaimCardParams, ClaimCardResult};
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::lease::AcquireOutcome;
+use kavach_db::lease::AcquireOutcome;
 
 const TABLE_ROADMAP: &str = "roadmap";
 
@@ -12,7 +12,7 @@ pub async fn claim_card(
     state: &AppState,
     params: ClaimCardParams,
 ) -> Result<ClaimCardResult, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -27,7 +27,7 @@ pub async fn claim_card(
     // in_progress, each believing it owned the card. With the CAS, SurrealDB
     // evaluates `entry_status = 'todo'` at write time, so exactly ONE racer
     // matches; the loser gets 0 rows updated and `claimed: false`.
-    let updated = kavach_surreal::update_status_cas(
+    let updated = kavach_db::update_status_cas(
         &state.db,
         TABLE_ROADMAP,
         &project_id,
@@ -43,7 +43,7 @@ pub async fn claim_card(
     // CAS missed: either the key is absent or another session already moved it
     // off `todo`. Report the actual current status so the caller can distinguish
     // "already claimed" from "gone".
-    let current = kavach_surreal::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
+    let current = kavach_db::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
         .map_err(surreal_to_rpc)?;
     let current_status = current
@@ -72,7 +72,7 @@ async fn claim_won(
         // Legacy status-only claim: no holder, no lease (pre-lease behaviour).
         return Ok(claimed(params.key, None));
     };
-    match kavach_surreal::lease::acquire(&state.db, TABLE_ROADMAP, &params.key, session_id)
+    match kavach_db::lease::acquire(&state.db, TABLE_ROADMAP, &params.key, session_id)
         .await
         .map_err(surreal_to_rpc)?
     {
@@ -95,7 +95,7 @@ async fn roll_back_to_todo(
     project_id: &surrealdb_types::RecordId,
     key: &str,
 ) -> Result<(), ErrorObjectOwned> {
-    if let Err(e) = kavach_surreal::update_status_cas(
+    if let Err(e) = kavach_db::update_status_cas(
         &state.db,
         TABLE_ROADMAP,
         project_id,

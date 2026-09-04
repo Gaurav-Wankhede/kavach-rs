@@ -16,7 +16,7 @@ pub(super) async fn resolve_project_id(
     db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
     slug: &str,
 ) -> Result<surrealdb_types::RecordId, ErrorObjectOwned> {
-    let project = kavach_surreal::project_get_by_slug(db, slug)
+    let project = kavach_db::project_get_by_slug(db, slug)
         .await
         .map_err(|e| internal(e.to_string()))?;
     match project {

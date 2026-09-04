@@ -177,7 +177,7 @@ pub(crate) fn detect_project() -> String {
 
     // Try kavach-rpc lookup first (authoritative source via SurrealDB)
     let params = serde_json::json!({"path": cwd_str.as_ref()});
-    if let Ok(project) = kavach_rpc::client::call::<_, kavach_surreal::Project>(
+    if let Ok(project) = kavach_rpc::client::call::<_, kavach_db::Project>(
         "projects.find_by_path",
         Some(params),
     ) {

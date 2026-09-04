@@ -2,7 +2,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     BridgeHit, ProjectHit, graph_bridge_to_concept, graph_concepts_for_project,
     graph_projects_for_concept,
 };

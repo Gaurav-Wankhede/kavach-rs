@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-use kavach_surreal::turso::TursoStore;
-use kavach_surreal::turso::migrate::{
+use kavach_db::turso::TursoStore;
+use kavach_db::turso::migrate::{
     ImportOpts, NormalizedRecord, SourceCounts, export_from_surreal, import_records, read_ndjson,
     validate_store,
 };
@@ -38,7 +38,7 @@ pub(crate) fn run(
 async fn export_cmd(out_path: &str) -> i32 {
     let dest = if out_path.is_empty() { "kavach_export.ndjson" } else { out_path };
     println!("connecting to SurrealDB...");
-    let db = match kavach_surreal::open_default_resilient().await {
+    let db = match kavach_db::open_default_resilient().await {
         Ok(d) => d,
         Err(e) => {
             eprintln!("error: cannot connect to SurrealDB: {e}");
@@ -93,8 +93,8 @@ async fn import_cmd(from: &str, to: &str, overwrite: bool) -> i32 {
     let mut seen_edges = std::collections::HashSet::new();
     for rec in &records {
         if let NormalizedRecord::Edge(ed) = rec {
-            let src_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.from_id);
-            let dst_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.to_id);
+            let src_ep = kavach_db::turso::migrate::export::normalize_endpoint(&ed.from_id);
+            let dst_ep = kavach_db::turso::migrate::export::normalize_endpoint(&ed.to_id);
             if seen_edges.insert((src_ep, ed.rel_type.clone(), dst_ep)) {
                 counts.edge = counts.edge.saturating_add(1);
             }
@@ -171,8 +171,8 @@ async fn verify_cmd(from: &str, to: &str) -> i32 {
     let mut seen_edges = std::collections::HashSet::new();
     for rec in &records {
         if let NormalizedRecord::Edge(ed) = rec {
-            let src_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.from_id);
-            let dst_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.to_id);
+            let src_ep = kavach_db::turso::migrate::export::normalize_endpoint(&ed.from_id);
+            let dst_ep = kavach_db::turso::migrate::export::normalize_endpoint(&ed.to_id);
             if seen_edges.insert((src_ep, ed.rel_type.clone(), dst_ep)) {
                 counts.edge = counts.edge.saturating_add(1);
             }

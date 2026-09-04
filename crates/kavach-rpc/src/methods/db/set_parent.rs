@@ -29,7 +29,7 @@ pub async fn set_parent(
     ctx: &AppState,
     params: SetParentParams,
 ) -> Result<SetParentResult, ErrorObjectOwned> {
-    kavach_surreal::project_set_parent(&ctx.db, &params.child, params.parent.as_deref())
+    kavach_db::project_set_parent(&ctx.db, &params.child, params.parent.as_deref())
         .await
         .map_err(|e| internal(e.to_string()))?;
     let message = params.parent.map_or_else(

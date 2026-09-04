@@ -197,6 +197,84 @@ pub trait EntryStore {
         category: &str,
         key: &str,
     ) -> impl Future<Output = TursoResult<u64>> + Send;
+
+    /// Register or update a project in the projects table.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    fn register_project(
+        &self,
+        slug: &str,
+        path: &str,
+        tags: Option<&str>,
+    ) -> impl Future<Output = TursoResult<()>> + Send;
+
+    /// Add or update a citation for a project/entry_key.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    fn upsert_citation(
+        &self,
+        project: &str,
+        entry_key: &str,
+        name: &str,
+        slug: &str,
+        url: &str,
+    ) -> impl Future<Output = TursoResult<()>> + Send;
+
+    /// List all citations for a project, newest-updated first.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    fn list_citations(&self, project: &str) -> impl Future<Output = TursoResult<Vec<CitationRow>>> + Send;
+
+    /// Get a gate config override.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    fn gate_config_get(
+        &self,
+        project: &str,
+        gate_key: &str,
+    ) -> impl Future<Output = TursoResult<Option<GateConfigRow>>> + Send;
+
+    /// Set a gate config override.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    fn gate_config_set(
+        &self,
+        project: &str,
+        gate_key: &str,
+        kind: &str,
+        num: Option<f64>,
+        boolean: Option<bool>,
+        list: Option<&str>,
+        text: Option<&str>,
+    ) -> impl Future<Output = TursoResult<()>> + Send;
+}
+
+/// A citation row for CLI display.
+#[derive(Debug, Clone)]
+pub struct CitationRow {
+    pub entry_key: String,
+    pub name: String,
+    pub slug: String,
+    pub url: String,
+    pub updated_at: String,
+}
+
+/// A gate config row for CLI display.
+#[derive(Debug, Clone)]
+pub struct GateConfigRow {
+    pub project: String,
+    pub gate_key: String,
+    pub kind: String,
+    pub value_num: Option<f64>,
+    pub value_bool: Option<bool>,
+    pub value_list: Option<String>,
+    pub value_text: Option<String>,
+    pub updated_at: String,
 }
 
 impl EntryStore for TursoStore {
@@ -489,6 +567,127 @@ impl EntryStore for TursoStore {
             .await
             .map_err(map_err)?;
         Ok(n)
+    }
+
+    async fn register_project(
+        &self,
+        slug: &str,
+        path: &str,
+        tags: Option<&str>,
+    ) -> TursoResult<()> {
+        let tags_json = tags.unwrap_or("[]");
+        self.conn
+            .execute(
+                "INSERT INTO projects (slug, path, tags) VALUES (?1, ?2, ?3)
+                 ON CONFLICT(slug) DO UPDATE SET path=excluded.path, tags=excluded.tags",
+                libsql::params![slug, path, tags_json],
+            )
+            .await
+            .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn upsert_citation(
+        &self,
+        project: &str,
+        entry_key: &str,
+        name: &str,
+        slug: &str,
+        url: &str,
+    ) -> TursoResult<()> {
+        let now = super::now_rfc3339();
+        let now2 = now.clone();
+        self.conn
+            .execute(
+                "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                 ON CONFLICT(project, entry_key) DO UPDATE SET
+                   name=excluded.name, slug=excluded.slug, url=excluded.url, updated_at=excluded.updated_at",
+                libsql::params![project, entry_key, name, slug, url, now, now2],
+            )
+            .await
+            .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn list_citations(&self, project: &str) -> TursoResult<Vec<CitationRow>> {
+        let mut rows = self
+            .conn
+            .query(
+                "SELECT entry_key, name, slug, url, updated_at FROM citations WHERE project = ?1 ORDER BY updated_at DESC",
+                libsql::params![project],
+            )
+            .await
+            .map_err(map_err)?;
+        let mut out = Vec::new();
+        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+            out.push(CitationRow {
+                entry_key: row.get::<String>(0).map_err(map_err)?,
+                name: row.get::<String>(1).map_err(map_err)?,
+                slug: row.get::<String>(2).map_err(map_err)?,
+                url: row.get::<String>(3).map_err(map_err)?,
+                updated_at: row.get::<String>(4).map_err(map_err)?,
+            });
+        }
+        Ok(out)
+    }
+
+    async fn gate_config_get(
+        &self,
+        project: &str,
+        gate_key: &str,
+    ) -> TursoResult<Option<GateConfigRow>> {
+        let mut rows = self
+            .conn
+            .query(
+                "SELECT project, gate_key, kind, value_num, value_bool, value_list, value_text, updated_at
+                 FROM gate_config WHERE project = ?1 AND gate_key = ?2",
+                libsql::params![project, gate_key],
+            )
+            .await
+            .map_err(map_err)?;
+        if let Some(row) = rows.next().await.map_err(TursoError::from)? {
+            let value_num: Option<f64> = row.get(3).map_err(map_err).ok().flatten();
+            let value_bool: Option<bool> = row.get::<Option<i64>>(4).map_err(map_err).ok().flatten().map(|v| v != 0);
+            Ok(Some(GateConfigRow {
+                project: row.get::<String>(0).map_err(map_err)?,
+                gate_key: row.get::<String>(1).map_err(map_err)?,
+                kind: row.get::<String>(2).map_err(map_err)?,
+                value_num,
+                value_bool,
+                value_list: row.get::<Option<String>>(5).map_err(map_err).ok().flatten(),
+                value_text: row.get::<Option<String>>(6).map_err(map_err).ok().flatten(),
+                updated_at: row.get::<String>(7).map_err(map_err)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    async fn gate_config_set(
+        &self,
+        project: &str,
+        gate_key: &str,
+        kind: &str,
+        num: Option<f64>,
+        boolean: Option<bool>,
+        list: Option<&str>,
+        text: Option<&str>,
+    ) -> TursoResult<()> {
+        let now = super::now_rfc3339();
+        let value_bool = boolean.map(|b| if b { 1i64 } else { 0i64 });
+        self.conn
+            .execute(
+                "INSERT INTO gate_config (project, gate_key, kind, value_num, value_bool, value_list, value_text, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                 ON CONFLICT(project, gate_key) DO UPDATE SET
+                   kind=excluded.kind, value_num=excluded.value_num, value_bool=excluded.value_bool,
+                   value_list=excluded.value_list, value_text=excluded.value_text, updated_at=excluded.updated_at",
+                libsql::params![project, gate_key, kind, num, value_bool, list, text, now],
+            )
+            .await
+            .map_err(map_err)?;
+        Ok(())
     }
 }
 

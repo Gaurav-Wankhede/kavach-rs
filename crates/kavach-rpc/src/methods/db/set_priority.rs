@@ -34,7 +34,7 @@ pub async fn set_priority(
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let priority = params.priority.map(Priority::new);
     let result =
-        kavach_surreal::set_priority(&ctx.db, &params.category, &pid, &params.key, priority).await;
+        kavach_db::set_priority(&ctx.db, &params.category, &pid, &params.key, priority).await;
     match result {
         Ok(id) => Ok(SetPriorityResult {
             success: true,

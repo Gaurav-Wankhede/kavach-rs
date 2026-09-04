@@ -42,7 +42,7 @@ pub(in crate::gates::rag_router) fn search_via_brain(
 
 fn brain_think_search(query: &str, limit: usize) -> Vec<(u32, String)> {
     let params = serde_json::json!({ "query": query, "limit": limit.max(1) });
-    let result: Result<Vec<kavach_surreal::BrainHit>, _> =
+    let result: Result<Vec<kavach_db::BrainHit>, _> =
         kavach_rpc::client::call("brain.think", Some(params));
     let Ok(hits) = result else {
         return Vec::new();

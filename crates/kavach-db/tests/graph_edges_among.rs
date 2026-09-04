@@ -13,14 +13,14 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_surreal::{
-    graph_list_edges_among, graph_relate_dynamic, graph_upsert_entity, open_memory,
+use kavach_db::{
+    apply_schema, graph_list_edges_among, graph_relate_dynamic, graph_upsert_entity, open_memory,
 };
 
 #[tokio::test]
 async fn list_edges_among_keeps_intra_set_drops_boundary() {
     let db = open_memory().await.expect("memory db");
-    kavach_surreal::apply_schema(&db).await.expect("schema");
+    apply_schema(&db).await.expect("schema");
 
     // Three concepts in the visible set; one extra outside it.
     let a = graph_upsert_entity(&db, "concept", "alpha")
@@ -76,7 +76,7 @@ async fn list_edges_among_keeps_intra_set_drops_boundary() {
 async fn list_edges_among_short_sets_yield_nothing() {
     // < 2 nodes can have no internal edge; the fn must short-circuit, not query.
     let db = open_memory().await.expect("memory db");
-    kavach_surreal::apply_schema(&db).await.expect("schema");
+    apply_schema(&db).await.expect("schema");
     let lone = graph_upsert_entity(&db, "concept", "solo")
         .await
         .expect("solo");

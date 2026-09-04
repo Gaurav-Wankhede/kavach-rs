@@ -1,7 +1,7 @@
 //! Pure status/dependency predicates for the ready-set computation.
 use std::collections::HashSet;
 
-use kavach_surreal::graph::roadmap_dag::RoadmapDag;
+use kavach_db::graph::roadmap_dag::RoadmapDag;
 
 /// A roadmap status the scheduler may dispatch. Parsed through the typed
 /// `MemoryStatus` boundary; a non-canonical value fail-closes to non-runnable.

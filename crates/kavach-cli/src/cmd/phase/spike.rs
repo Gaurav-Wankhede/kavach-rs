@@ -32,17 +32,17 @@ pub(crate) fn handle_spike_start(project: &str, hours: u32, reason: &str) -> i32
         }
     };
     let result: Result<(), String> = runtime.block_on(async {
-        let db = kavach_surreal::open_default_resilient()
+        let db = kavach_db::open_default_resilient()
             .await
             .map_err(|e| format!("open db: {e}"))?;
-        let project_rec = kavach_surreal::projects::get_by_slug(&db, project)
+        let project_rec = kavach_db::projects::get_by_slug(&db, project)
             .await
             .map_err(|e| format!("get project: {e}"))?
             .ok_or_else(|| format!("project not found: {project}"))?;
         let pid = project_rec
             .id
             .ok_or_else(|| "project missing id".to_owned())?;
-        kavach_surreal::write::upsert_entry_full()
+        kavach_db::write::upsert_entry_full()
             .db(&db)
             .category("decision")
             .project_id(&pid)
@@ -85,10 +85,10 @@ pub(crate) fn handle_spike_end(project: &str) -> i32 {
         }
     };
     let result: Result<(), String> = runtime.block_on(async {
-        let db = kavach_surreal::open_default_resilient()
+        let db = kavach_db::open_default_resilient()
             .await
             .map_err(|e| format!("open db: {e}"))?;
-        let project_rec = kavach_surreal::projects::get_by_slug(&db, project)
+        let project_rec = kavach_db::projects::get_by_slug(&db, project)
             .await
             .map_err(|e| format!("get project: {e}"))?
             .ok_or_else(|| format!("project not found: {project}"))?;
@@ -99,7 +99,7 @@ pub(crate) fn handle_spike_end(project: &str) -> i32 {
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| i64::try_from(d.as_secs()).map_or(i64::MAX, |v| v));
         let content = format!("expires_at_unix_s={now}\nreason=spike-ended");
-        kavach_surreal::write::upsert_entry_full()
+        kavach_db::write::upsert_entry_full()
             .db(&db)
             .category("decision")
             .project_id(&pid)

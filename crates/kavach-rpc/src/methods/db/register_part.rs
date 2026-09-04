@@ -40,7 +40,7 @@ pub async fn register_part(
         )));
     }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
-    let id = kavach_surreal::part_upsert(
+    let id = kavach_db::part_upsert(
         &ctx.db,
         &pid,
         &params.name,

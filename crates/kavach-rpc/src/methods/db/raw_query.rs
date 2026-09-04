@@ -1,12 +1,12 @@
 //! `db.raw_query` RPC method — run an operator-supplied read-only `SurrealQL` query.
 //!
-//! `SELECT`/`INFO` only; the read-only guard lives in `kavach_surreal::graph_raw_select`
+//! `SELECT`/`INFO` only; the read-only guard lives in `kavach_db::graph_raw_select`
 //! (`SurrealDB` 3.x has no native readonly tx). SOURCE: decision.raw-select-cli.
 
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::graph_raw_select;
+use kavach_db::graph_raw_select;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

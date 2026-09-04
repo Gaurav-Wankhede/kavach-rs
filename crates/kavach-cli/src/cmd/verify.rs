@@ -39,7 +39,7 @@ async fn run_async(
     external_verified: bool,
     proof: Option<&str>,
 ) -> i32 {
-    let db = match kavach_surreal::open_default().await {
+    let db = match kavach_db::open_default().await {
         Ok(d) => d,
         Err(e) => {
             let msg = format!("error: open SurrealDB: {e}");
@@ -49,7 +49,7 @@ async fn run_async(
             return 1;
         }
     };
-    let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+    let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
         Ok(Some(p)) => p,
         Ok(None) => {
             let msg = format!("error: project not found: {project_slug}");
@@ -75,7 +75,7 @@ async fn run_async(
         }
         return 1;
     };
-    let entry = match kavach_surreal::get_by_key(&db, "roadmap", &project_id, key).await {
+    let entry = match kavach_db::get_by_key(&db, "roadmap", &project_id, key).await {
         Ok(Some(e)) => e,
         Ok(None) => {
             let msg = format!("error: entry not found: {key}");
@@ -107,7 +107,7 @@ async fn run_async(
         };
         let stamped = format!("{}\n\n[EXTERNAL_VERIFIED] {proof_text}", entry.content);
         let qname = format!("{project_slug}/roadmap/{key}");
-        let written = kavach_surreal::upsert_entry_full()
+        let written = kavach_db::upsert_entry_full()
             .db(&db)
             .category("roadmap")
             .project_id(&project_id)
@@ -194,7 +194,7 @@ async fn finalize_verified(
     project_id: &surrealdb_types::RecordId,
     key: &str,
 ) -> i32 {
-    if let Err(e) = kavach_surreal::update_status(db, "roadmap", project_id, key, "verified").await
+    if let Err(e) = kavach_db::update_status(db, "roadmap", project_id, key, "verified").await
     {
         let msg = format!("error: status transition failed: {e}");
         return ewrite_or_exit(&msg).map_or_else(into_exit_code, |()| 1);

@@ -32,14 +32,14 @@ pub async fn append(
 ) -> Result<Option<AppendResult>, ErrorObjectOwned> {
     let project_id = match params.project.as_deref() {
         Some(slug) if !slug.is_empty() => {
-            let proj = kavach_surreal::project_get_by_slug(&state.db, slug)
+            let proj = kavach_db::project_get_by_slug(&state.db, slug)
                 .await
                 .map_err(surreal_to_rpc)?;
             proj.and_then(|p| p.id)
         }
         Some(_) | None => None,
     };
-    let id = kavach_surreal::append_event(
+    let id = kavach_db::append_event(
         &state.db,
         &params.event_type,
         &params.source,

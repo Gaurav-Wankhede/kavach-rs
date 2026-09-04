@@ -3,6 +3,7 @@
 // table). Pure status/key helpers live here; the close path and the render path
 // are leaves (close.rs, render.rs) to keep each file ≤100 LOC.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
+use kavach_db::turso::entries::EntryStore;
 mod close;
 mod dag_render;
 mod render;
@@ -83,43 +84,18 @@ pub(super) fn run(
     runtime.block_on(run_async(project_slug, limit, &filters))
 }
 async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>) -> i32 {
-    // Resilient open — closes the daemon-restart TOCTOU
-    // (`rca.db-event-daemon-restart-race`): retry the lock-acquiring open
-    // (bounded) instead of trusting the socket proxy.
-    let db = match super::rpc_client::open_direct_resilient().await {
-        Ok(d) => d,
+    // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+    let store = match super::rpc_client::open_turso_resilient().await {
+        Ok(s) => s,
         Err(e) => {
-            let msg = format!("error: open SurrealDB: {e}");
+            let msg = format!("error: open kavach.db: {e}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
             }
             return 1;
         }
     };
-    let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
-        Ok(Some(p)) => p,
-        Ok(None) => {
-            let msg = format!("error: project not found: {project_slug}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-        Err(e) => {
-            let msg = format!("error: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-    };
-    let Some(project_id) = project.id else {
-        if let Err(io_err) = ewrite_or_exit("error: project has no id") {
-            return into_exit_code(io_err);
-        }
-        return 1;
-    };
-    let roadmap = match kavach_surreal::list_by_project(&db, "roadmap", &project_id).await {
+    let roadmap = match store.list_by_category(project_slug, "roadmap").await {
         Ok(rows) => rows,
         Err(e) => {
             let msg = format!("error: {e}");

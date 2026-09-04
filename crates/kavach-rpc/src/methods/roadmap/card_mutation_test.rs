@@ -107,8 +107,8 @@ fn verify_card_only_promotes_a_done_card() {
 #[test]
 fn done_card_satisfies_a_dependent_and_is_promotable() {
     use crate::methods::roadmap::readiness::{dep_key_satisfied, is_runnable_status};
-    fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {
-        kavach_surreal::MemoryEntry {
+    fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
+        kavach_db::MemoryEntry {
             id: None,
             project: surrealdb_types::RecordId::new("project", "t"),
             category: Some("roadmap".into()),

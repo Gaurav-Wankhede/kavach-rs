@@ -4,7 +4,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     GatePattern, GatePatternUpsertParams, gate_pattern_find_autonomous, gate_pattern_list_hot,
     gate_pattern_upsert,
 };
@@ -57,7 +57,7 @@ pub async fn list_hot(
     params: ListHotParams,
 ) -> Result<Vec<GatePattern>, ErrorObjectOwned> {
     let limit = params.limit.unwrap_or(5);
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -80,7 +80,7 @@ pub async fn find_autonomous(
     state: &AppState,
     params: FindParams,
 ) -> Result<Option<GatePattern>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -103,7 +103,7 @@ pub async fn upsert(
     state: &AppState,
     params: UpsertRpcParams,
 ) -> Result<Option<UpsertResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {

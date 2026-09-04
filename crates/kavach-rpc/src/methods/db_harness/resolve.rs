@@ -9,7 +9,7 @@ use surrealdb_types::RecordId;
 /// # Errors
 /// Returns an RPC `ErrorObjectOwned` when the project is absent or has no id.
 pub(super) async fn project_id(state: &AppState, slug: &str) -> Result<RecordId, ErrorObjectOwned> {
-    let project = kavach_surreal::project_get_by_slug(&state.db, slug)
+    let project = kavach_db::project_get_by_slug(&state.db, slug)
         .await
         .map_err(|e| internal(e.to_string()))?;
     match project {

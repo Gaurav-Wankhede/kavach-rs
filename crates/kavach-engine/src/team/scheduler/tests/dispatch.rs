@@ -4,7 +4,7 @@ use std::cell::RefCell;
 
 use super::super::TeamDispatchError;
 use super::common::{CountSpawner, ScriptSpawner, node, scheduler};
-use kavach_surreal::graph::roadmap_dag::RoadmapDag;
+use kavach_db::graph::roadmap_dag::RoadmapDag;
 
 #[test]
 fn dispatch_spawns_only_the_batch() {

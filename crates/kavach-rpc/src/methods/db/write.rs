@@ -132,7 +132,7 @@ pub async fn write(ctx: &AppState, params: WriteParams) -> Result<WriteResult, E
     let qname = format!("{}/{}/{}", params.project, params.category, params.key);
     let refs: Vec<String> = Vec::new();
     let priority = params.priority.map(Priority::new);
-    let result = kavach_surreal::upsert_entry_full()
+    let result = kavach_db::upsert_entry_full()
         .db(&ctx.db)
         .category(&params.category)
         .project_id(&pid)

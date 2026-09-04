@@ -5,7 +5,7 @@
 //! independent tasks dispatch concurrently; a task blocked on another stays
 //! out of the ready-set until its prerequisite reaches `done`/`verified`.
 //!
-//! The DAG store ([`kavach_surreal::graph::roadmap_dag`]) and its cycle guard
+//! The DAG store ([`kavach_db::graph::roadmap_dag`]) and its cycle guard
 //! ([`RoadmapDag::toposort_or_cycle`]) already exist; this layer is the
 //! parallel scheduler over them.
 

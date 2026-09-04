@@ -3,7 +3,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     Entity, graph_delete_concept, graph_delete_concepts_by_prefix, graph_list_concepts,
     graph_relate_concepts, graph_search_concepts_fts, graph_upsert_concept,
 };

@@ -4,7 +4,7 @@ use crate::error::surreal_to_rpc;
 use crate::methods::bulk::get::GetResult;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::bulk_manifest::list_active;
+use kavach_db::bulk_manifest::list_active;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

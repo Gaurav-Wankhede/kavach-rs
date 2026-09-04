@@ -44,7 +44,7 @@ pub async fn list_projects(
     ctx: &AppState,
     _params: ListProjectsParams,
 ) -> Result<ListProjectsResult, ErrorObjectOwned> {
-    let projects = kavach_surreal::projects_list_all(&ctx.db)
+    let projects = kavach_db::projects_list_all(&ctx.db)
         .await
         .map_err(|e| internal(e.to_string()))?
         .into_iter()

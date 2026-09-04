@@ -12,7 +12,7 @@ publish = false
 # DB coordinator must be a single process, but need not be a second binary.
 
 [dependencies]
-kavach-surreal = { path = "../kavach-surreal" }
+kavach-db = { path = "../kavach-db" }
 kavach-patterns = { path = "../kavach-patterns" }
 kavach-ope = { path = "../kavach-ope" }
 kavach-types = { path = "../kavach-types" }

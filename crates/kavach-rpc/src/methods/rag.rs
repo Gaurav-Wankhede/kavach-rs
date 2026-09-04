@@ -4,7 +4,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     RagTreeLabel, RagTreeRefreshable, RagTreeRow, rag_tree_get, rag_tree_list,
     rag_tree_list_refreshable, rag_tree_upsert_with_dir,
 };

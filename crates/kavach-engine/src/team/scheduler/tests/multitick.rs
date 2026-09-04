@@ -1,7 +1,7 @@
 //! Multi-tick dispatch dynamics: dependency-ordered chains, cap=1 serialization,
 //! and active-teammate free-slot accounting.
 use super::common::{ScriptSpawner, dep, node, scheduler};
-use kavach_surreal::graph::roadmap_dag::RoadmapDag;
+use kavach_db::graph::roadmap_dag::RoadmapDag;
 
 #[test]
 fn multi_tick_chain_dispatches_in_dependency_order() {

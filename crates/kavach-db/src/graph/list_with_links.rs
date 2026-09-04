@@ -4,7 +4,7 @@
 // symptom:    The Roadmap / Kanban / Decisions tabs render flat category rows
 //             with zero awareness of cross-category links in the graph.
 // repro:      crates/kavach-app/src/pages/{roadmap,kanban,decisions}.rs:35
-//             all end with kavach_surreal::list_by_project(...) — flat SELECT,
+//             all end with kavach_db::list_by_project(...) — flat SELECT,
 //             no graph traversal.
 // why5:       Dashboard treats one SurrealDB as if it were 4 isolated DBs.
 //             The SurrealDB value-prop (multi-model joins in one query) is

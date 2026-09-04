@@ -9,11 +9,11 @@
 //! caller's literal — the gate is never worse than its hardcoded text.
 //!
 //! This is the substrate every static→dynamic directive conversion rides on. It
-//! reuses `kavach_surreal::citation` freshness primitives (`FRESHNESS_WINDOW_SECS`,
+//! reuses `kavach_db::citation` freshness primitives (`FRESHNESS_WINDOW_SECS`,
 //! `freshness`, `mark_if_stale`) rather than redefining the window — §DEDUP.
 //! SOURCE: decision.gate-dynamic-imperatives-research-cached.
 
-use kavach_surreal::citation::{Citation, Freshness, freshness, mark_if_stale};
+use kavach_db::citation::{Citation, Freshness, freshness, mark_if_stale};
 
 /// Project under which directive rows live. Directives are cross-project harness
 /// doctrine, so they share one well-known project namespace.
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn window_is_citation_canon() {
         assert_eq!(
-            kavach_surreal::citation::FRESHNESS_WINDOW_SECS,
+            kavach_db::citation::FRESHNESS_WINDOW_SECS,
             24 * 60 * 60
         );
     }

@@ -105,6 +105,29 @@ pub(crate) const SCHEMA_DDL: &[&str] = &[
     "CREATE TABLE IF NOT EXISTS projects (slug TEXT PRIMARY KEY, path TEXT UNIQUE, tags TEXT NOT NULL DEFAULT '[]')",
     "CREATE TABLE IF NOT EXISTS parts (project TEXT NOT NULL, part TEXT NOT NULL, path TEXT, PRIMARY KEY (project, part))",
     "CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, project TEXT NOT NULL, kind TEXT NOT NULL, payload TEXT, created_at TEXT NOT NULL)",
+    // Citations table for official-docs context (Phase 6).
+    "CREATE TABLE IF NOT EXISTS citations (
+              project       TEXT NOT NULL,
+              entry_key     TEXT NOT NULL,
+              name          TEXT NOT NULL,
+              slug          TEXT NOT NULL,
+              url           TEXT NOT NULL,
+              created_at    TEXT NOT NULL,
+              updated_at    TEXT NOT NULL,
+              PRIMARY KEY (project, entry_key)
+            )",
+    // Gate config overrides (Phase 6).
+    "CREATE TABLE IF NOT EXISTS gate_config (
+              project       TEXT NOT NULL,
+              gate_key      TEXT NOT NULL,
+              kind          TEXT NOT NULL,
+              value_num     REAL,
+              value_bool    INTEGER,
+              value_list    TEXT,
+              value_text    TEXT,
+              updated_at    TEXT NOT NULL,
+              PRIMARY KEY (project, gate_key)
+            )",
     // BM25 corpus (Phase 2).
     "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(entry_key UNINDEXED, project UNINDEXED, category UNINDEXED, title, content, tokenize='porter unicode61')",
 ];

@@ -1,10 +1,10 @@
 use super::{bare_dep_key, dep_key_satisfied, is_dep_key_shaped, parse_declared_deps};
 
-fn entry(key: &str, status: &str) -> kavach_surreal::MemoryEntry {
-    // Mirror kavach_surreal::dual_write tests' `with_status` literal: only the
+fn entry(key: &str, status: &str) -> kavach_db::MemoryEntry {
+    // Mirror kavach_db::dual_write tests' `with_status` literal: only the
     // two fields the resolver reads (entry_key, entry_status) carry meaning;
     // the rest take their empty/None form.
-    kavach_surreal::MemoryEntry {
+    kavach_db::MemoryEntry {
         id: None,
         project: surrealdb_types::RecordId::new("project", "t"),
         category: Some("roadmap".into()),

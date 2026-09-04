@@ -1,5 +1,5 @@
 // SPEC: docs/architecture/session-occupancy-lease.md §CLI surface
-// RPC verbs over kavach_surreal::lease primitive (acquire/heartbeat/unlock/status).
+// RPC verbs over kavach_db::lease primitive (acquire/heartbeat/unlock/status).
 // jsonrpsee 0.24 — https://docs.rs/jsonrpsee/0.24
 mod acquire;
 mod acquire_set;

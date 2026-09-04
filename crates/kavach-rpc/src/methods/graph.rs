@@ -6,7 +6,7 @@
 use crate::error::{invalid_params, surreal_to_rpc};
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{
+use kavach_db::{
     Entity, RelatedRow, graph_find_entity, graph_get_related, graph_relate_dynamic,
     graph_upsert_entity,
 };

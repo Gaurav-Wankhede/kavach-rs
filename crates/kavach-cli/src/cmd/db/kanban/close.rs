@@ -59,7 +59,7 @@ async fn close_direct(project_slug: &str, key: &str) -> i32 {
         Ok(d) => d,
         Err(e) => return write_err(&format!("error: open SurrealDB: {e}")),
     };
-    let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+    let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
         Ok(Some(p)) => p,
         Ok(None) => return write_err(&format!("error: project not found: {project_slug}")),
         Err(e) => return write_err(&format!("error: {e}")),
@@ -70,13 +70,13 @@ async fn close_direct(project_slug: &str, key: &str) -> i32 {
     let Some(project_id) = project.id else {
         return write_err("error: project has no id");
     };
-    let entry = match kavach_surreal::get_by_key(&db, "roadmap", &project_id, key).await {
+    let entry = match kavach_db::get_by_key(&db, "roadmap", &project_id, key).await {
         Ok(Some(e)) => e,
         Ok(None) => return write_err(&format!("error: no roadmap entry with key: {key}")),
         Err(e) => return write_err(&format!("error: {e}")),
     };
     if let Err(e) =
-        kavach_surreal::update_status(&db, "roadmap", &project_id, key, "verified").await
+        kavach_db::update_status(&db, "roadmap", &project_id, key, "verified").await
     {
         return write_err(&format!("error: {e}"));
     }

@@ -2,6 +2,7 @@ mod field;
 
 use field::{FieldEntryView, extract_field};
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use kavach_db::turso::entries::EntryStore;
 
 /// A single-key get is a DEPTH request → full content by default; `--snippet`
 /// opts back into the short body, but `--full` always wins (it implies content).
@@ -111,14 +112,11 @@ pub(super) fn run(
     };
 
     runtime.block_on(async {
-        // Resilient open — closes the daemon-restart TOCTOU
-        // (`rca.db-event-daemon-restart-race`): retry the lock-acquiring open
-        // (bounded) instead of trusting the socket proxy; a genuine stale
-        // lock still surfaces after the backoff exhausts.
-        let db = match super::rpc_client::open_direct_resilient().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: open SurrealDB: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
@@ -126,45 +124,22 @@ pub(super) fn run(
             }
         };
 
-        let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
-            Ok(Some(p)) => p,
-            Ok(None) => {
-                let msg = format!("error: project not found: {project_slug}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-            Err(e) => {
-                let msg = format!("error: {e}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-        };
-
-        let Some(project_id) = project.id else {
-            if let Err(io_err) = ewrite_or_exit("error: project missing id") {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        };
-
-        match kavach_surreal::get_by_key(&db, category, &project_id, key).await {
+        match store.get_by_key(project_slug, category, key).await {
             Ok(Some(entry)) => {
+                let cat_str = entry.category.as_deref().unwrap_or("unknown");
+                let status_str = entry.entry_status.as_deref().unwrap_or("todo");
                 if let Some(f) = field {
                     let view = FieldEntryView {
                         key: &entry.entry_key,
-                        category: entry.category_str(),
+                        category: cat_str,
                         title: &entry.title,
-                        status: entry.entry_status_str(),
+                        status: status_str,
                         content: Some(&entry.content),
                         access_count: entry.access_count.unwrap_or(0),
                         exec_prompt: entry.exec_prompt.as_deref(),
                         priority: entry.priority,
                         lane: entry.lane.as_deref(),
-                        tags: entry.tags.as_deref(),
+                        tags: entry.tags.as_deref().map(|v| &v[..]),
                     };
                     match extract_field(&view, f, compact) {
                         Ok(val) => {
@@ -183,17 +158,15 @@ pub(super) fn run(
                 }
                 let head = format!(
                     "[{}] {} — {}",
-                    entry.category_str(),
-                    entry.entry_key,
-                    entry.title
+                    cat_str, entry.entry_key, entry.title
                 );
                 if let Err(io_err) = print_or_exit(&head) {
                     return into_exit_code(io_err);
                 }
                 let status_line = format!(
                     "status: {} | entry_status: {} | access: {}",
-                    entry.status_str(),
-                    entry.entry_status_str(),
+                    entry.status.as_deref().unwrap_or("todo"),
+                    status_str,
                     entry.access_count.unwrap_or(0)
                 );
                 if let Err(io_err) = print_or_exit(&status_line) {

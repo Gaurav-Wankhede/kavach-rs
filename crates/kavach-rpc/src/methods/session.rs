@@ -40,7 +40,7 @@ pub async fn get(
     state: &AppState,
     params: SessionGetParams,
 ) -> Result<Option<SessionGetResult>, ErrorObjectOwned> {
-    let row = kavach_surreal::session_get_by_id(&state.db, &params.session_id)
+    let row = kavach_db::session_get_by_id(&state.db, &params.session_id)
         .await
         .map_err(surreal_to_rpc)?;
     Ok(row.map(|r| SessionGetResult {
@@ -60,7 +60,7 @@ pub async fn upsert(
     state: &AppState,
     params: SessionUpsertParams,
 ) -> Result<bool, ErrorObjectOwned> {
-    kavach_surreal::session_upsert(
+    kavach_db::session_upsert(
         &state.db,
         &params.session_id,
         &params.workdir,

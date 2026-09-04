@@ -1,7 +1,7 @@
 use crate::error::{internal, invalid_params, surreal_to_rpc};
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{RunRecord, run_get, run_insert, run_list_by_project, run_update_status};
+use kavach_db::{RunRecord, run_get, run_insert, run_list_by_project, run_update_status};
 use serde::{Deserialize, Serialize};
 use std::process::{Command, Stdio};
 use surrealdb_types::RecordId;
@@ -118,7 +118,7 @@ pub struct SuccessResult {
 /// methods' `resolve_project_id`. Use this for the `project` field;
 /// `parse_record_id` stays for run-id strings (`run:…`) returned by `run.list`.
 async fn resolve_project(state: &AppState, slug: &str) -> Result<RecordId, ErrorObjectOwned> {
-    let project = kavach_surreal::project_get_by_slug(&state.db, slug)
+    let project = kavach_db::project_get_by_slug(&state.db, slug)
         .await
         .map_err(surreal_to_rpc)?;
     project

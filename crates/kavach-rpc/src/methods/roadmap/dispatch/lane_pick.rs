@@ -5,7 +5,7 @@
 //! pass 1, so pass 2 is a no-op and the behavior is the pre-lane single loop.
 use super::super::readiness::{deps_satisfied, is_runnable_status, is_umbrella};
 use super::super::types::NextTaskResult;
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 /// `true` iff `entry`'s lane is the session's lane. With no session lane
 /// (`want == None`) every card matches.
 pub(super) fn lane_matches(entry: &MemoryEntry, want: Option<&str>) -> bool {

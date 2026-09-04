@@ -49,7 +49,7 @@ pub(crate) fn upsert_roadmap_card(project: &str, key: &str, title: &str, content
     })
 }
 
-pub(crate) fn validate_project_workdir(project: &kavach_surreal::Project) -> Result<(), i32> {
+pub(crate) fn validate_project_workdir(project: &kavach_db::Project) -> Result<(), i32> {
     match &project.workdir {
         Some(workdir) if std::path::Path::new(workdir).is_dir() => Ok(()),
         Some(workdir) => {

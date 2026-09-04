@@ -215,18 +215,18 @@ pub(super) fn concept_delete_by_prefix(prefix: &str, confirm: bool) -> Result<i6
 pub(super) fn concept_search(
     query: &str,
     limit: usize,
-) -> Result<Vec<kavach_surreal::Entity>, String> {
+) -> Result<Vec<kavach_db::Entity>, String> {
     let params = kavach_rpc::methods::concept::SearchParams {
         query: query.to_owned(),
         limit: Some(limit),
     };
-    call::<_, Vec<kavach_surreal::Entity>>("concept.search", Some(params)).map_err(format_err)
+    call::<_, Vec<kavach_db::Entity>>("concept.search", Some(params)).map_err(format_err)
 }
 pub(super) fn citation_add(
     project: &str,
     entry_key: &str,
     name: &str,
-    metadata: Vec<kavach_surreal::CitationMeta>,
+    metadata: Vec<kavach_db::CitationMeta>,
 ) -> Result<kavach_rpc::methods::citation::IdResult, String> {
     let params = kavach_rpc::methods::citation::AddParams {
         project: project.to_owned(),
@@ -237,11 +237,11 @@ pub(super) fn citation_add(
     call::<_, kavach_rpc::methods::citation::IdResult>("citation.add", Some(params))
         .map_err(format_err)
 }
-pub(super) fn citation_list(project: &str) -> Result<Vec<kavach_surreal::Citation>, String> {
+pub(super) fn citation_list(project: &str) -> Result<Vec<kavach_db::Citation>, String> {
     let params = kavach_rpc::methods::citation::ListParams {
         project: project.to_owned(),
     };
-    call::<_, Vec<kavach_surreal::Citation>>("citation.list", Some(params)).map_err(format_err)
+    call::<_, Vec<kavach_db::Citation>>("citation.list", Some(params)).map_err(format_err)
 }
 pub(super) fn gate_config_get(
     project: &str,
@@ -281,16 +281,16 @@ pub(super) fn bridge_create(
     call::<_, kavach_rpc::methods::bridge::IdResult>("bridge.create", Some(params))
         .map_err(format_err)
 }
-pub(super) fn bridge_concepts_for(project: &str) -> Result<Vec<kavach_surreal::BridgeHit>, String> {
+pub(super) fn bridge_concepts_for(project: &str) -> Result<Vec<kavach_db::BridgeHit>, String> {
     let params = kavach_rpc::methods::bridge::ConceptsForParams::new(project.to_owned());
-    call::<_, Vec<kavach_surreal::BridgeHit>>("bridge.concepts_for", Some(params))
+    call::<_, Vec<kavach_db::BridgeHit>>("bridge.concepts_for", Some(params))
         .map_err(format_err)
 }
 pub(super) fn bridge_projects_for(
     concept: &str,
-) -> Result<Vec<kavach_surreal::ProjectHit>, String> {
+) -> Result<Vec<kavach_db::ProjectHit>, String> {
     let params = kavach_rpc::methods::bridge::ProjectsForParams::new(concept.to_owned());
-    call::<_, Vec<kavach_surreal::ProjectHit>>("bridge.projects_for", Some(params))
+    call::<_, Vec<kavach_db::ProjectHit>>("bridge.projects_for", Some(params))
         .map_err(format_err)
 }
 pub(super) fn mistake_hit_count(

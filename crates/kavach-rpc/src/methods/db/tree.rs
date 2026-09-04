@@ -3,7 +3,7 @@
 //! `db.tree` RPC method — the project hierarchy forest.
 //!
 //! Read routed through the single-writer daemon. The recursive `TreeNode` DTO
-//! mirrors `kavach_surreal::ProjectNode` but flattens display fields so the CLI
+//! mirrors `kavach_db::ProjectNode` but flattens display fields so the CLI
 //! renders identically over RPC and the direct fallback.
 //! SOURCE: <https://github.com/facebook/rocksdb/issues/1780>
 
@@ -37,7 +37,7 @@ pub struct TreeNode {
 /// # Errors
 /// Returns an RPC error when the forest read fails.
 pub async fn tree(ctx: &AppState, _params: TreeParams) -> Result<TreeResult, ErrorObjectOwned> {
-    let forest = kavach_surreal::projects_build_forest(&ctx.db)
+    let forest = kavach_db::projects_build_forest(&ctx.db)
         .await
         .map_err(|e| internal(e.to_string()))?
         .iter()
@@ -46,7 +46,7 @@ pub async fn tree(ctx: &AppState, _params: TreeParams) -> Result<TreeResult, Err
     Ok(TreeResult { forest })
 }
 
-fn flatten(node: &kavach_surreal::ProjectNode) -> TreeNode {
+fn flatten(node: &kavach_db::ProjectNode) -> TreeNode {
     TreeNode {
         slug: node.project.slug.clone(),
         workdir: node.project.workdir.clone(),

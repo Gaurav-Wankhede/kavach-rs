@@ -1,7 +1,7 @@
 //! E3 regression: a low-urgency blocker inherits its urgent dependent's priority
 //! so the urgent card isn't starved. Pure test of the inversion + sort key.
 use super::{effective_priorities, sort_by_effective_priority};
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 
 /// Entry with a priority + optional `DEPENDS_ON` line.
 fn card(key: &str, priority: Option<i64>, deps: &[&str]) -> MemoryEntry {

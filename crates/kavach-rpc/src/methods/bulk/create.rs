@@ -4,7 +4,7 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::bulk_manifest::{BulkManifest, CreateParams, create as bm_create};
+use kavach_db::bulk_manifest::{BulkManifest, CreateParams, create as bm_create};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

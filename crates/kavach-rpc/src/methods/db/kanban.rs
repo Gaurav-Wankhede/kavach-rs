@@ -6,7 +6,7 @@ use super::util::{ROADMAP_TABLE, resolve_project_id};
 use crate::error::internal;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 use kavach_types::MemoryStatus;
 
 mod types;
@@ -24,7 +24,7 @@ pub async fn kanban(
 ) -> Result<KanbanResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let entries: Vec<MemoryEntry> =
-        kavach_surreal::read::list_by_project(&ctx.db, ROADMAP_TABLE, &pid)
+        kavach_db::read::list_by_project(&ctx.db, ROADMAP_TABLE, &pid)
             .await
             .map_err(|e| internal(e.to_string()))?;
 

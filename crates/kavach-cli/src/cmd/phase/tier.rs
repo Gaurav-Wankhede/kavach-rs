@@ -25,16 +25,16 @@ fn current_tier_for(project: &str) -> kavach_types::ProjectTier {
 }
 
 async fn current_tier_for_async(project: &str) -> kavach_types::ProjectTier {
-    let Ok(db) = kavach_surreal::open_default_resilient().await else {
+    let Ok(db) = kavach_db::open_default_resilient().await else {
         return kavach_types::ProjectTier::Refactor;
     };
-    let Ok(Some(project_rec)) = kavach_surreal::projects::get_by_slug(&db, project).await else {
+    let Ok(Some(project_rec)) = kavach_db::projects::get_by_slug(&db, project).await else {
         return kavach_types::ProjectTier::Refactor;
     };
     let Some(project_id) = project_rec.id else {
         return kavach_types::ProjectTier::Refactor;
     };
-    let Ok(rows) = kavach_surreal::read::list_by_project(&db, "decision", &project_id).await else {
+    let Ok(rows) = kavach_db::read::list_by_project(&db, "decision", &project_id).await else {
         return kavach_types::ProjectTier::Refactor;
     };
     rows.into_iter()

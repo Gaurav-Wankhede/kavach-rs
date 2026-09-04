@@ -36,7 +36,7 @@ pub async fn register(
             params.abs_path
         )));
     }
-    let id = kavach_surreal::project_register(
+    let id = kavach_db::project_register(
         &ctx.db,
         &params.slug,
         &params.slug,

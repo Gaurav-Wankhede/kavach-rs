@@ -4,7 +4,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
-use kavach_surreal::bulk_manifest::{close as bm_close, mark_expired};
+use kavach_db::bulk_manifest::{close as bm_close, mark_expired};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -37,7 +37,7 @@ pub async fn get_harness(
     params: GetHarnessParams,
 ) -> Result<GetHarnessResult, ErrorObjectOwned> {
     let pid = project_id(state, &params.project).await?;
-    let link = kavach_surreal::harness_link::get_harness_link(&state.db, &pid, &params.key)
+    let link = kavach_db::harness_link::get_harness_link(&state.db, &pid, &params.key)
         .await
         .map_err(|e| internal(e.to_string()))?;
     match link {

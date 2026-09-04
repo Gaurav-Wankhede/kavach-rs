@@ -24,11 +24,11 @@ pub fn bare_dep_key(key: &str) -> &str {
 /// tail (`bare_dep_key`) so a project-qualified dep (`<project>/<category>/<key>`)
 /// resolves against the bare stored `entry_key` instead of wedging the DAG.
 #[must_use]
-pub fn dep_key_satisfied(dep_key: &str, all: &[kavach_surreal::MemoryEntry]) -> bool {
+pub fn dep_key_satisfied(dep_key: &str, all: &[kavach_db::MemoryEntry]) -> bool {
     let want = bare_dep_key(dep_key);
     all.iter()
         .find(|e| bare_dep_key(&e.entry_key) == want)
-        .and_then(kavach_surreal::MemoryEntry::lifecycle)
+        .and_then(kavach_db::MemoryEntry::lifecycle)
         .is_some_and(kavach_types::MemoryStatus::is_complete)
 }
 

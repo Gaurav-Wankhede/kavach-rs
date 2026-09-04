@@ -43,7 +43,7 @@ pub async fn list_parts(
     params: ListPartsParams,
 ) -> Result<ListPartsResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
-    let parts = kavach_surreal::parts_list_by_project(&ctx.db, &pid)
+    let parts = kavach_db::parts_list_by_project(&ctx.db, &pid)
         .await
         .map_err(|e| internal(e.to_string()))?
         .into_iter()

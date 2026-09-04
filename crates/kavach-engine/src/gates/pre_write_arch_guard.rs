@@ -18,7 +18,7 @@ fn load_prior_decision(project_slug: &str, pattern: &str) -> Option<String> {
         return None;
     }
     let params = serde_json::json!({"project": project_slug, "limit": 5});
-    let recent: Vec<kavach_surreal::ArchDecision> =
+    let recent: Vec<kavach_db::ArchDecision> =
         kavach_rpc::client::call("arch.list_recent", Some(params)).ok()?;
     if recent.is_empty() {
         return None;

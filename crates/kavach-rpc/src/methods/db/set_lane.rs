@@ -34,7 +34,7 @@ pub async fn set_lane(
 ) -> Result<SetLaneResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =
-        kavach_surreal::set_lane(&ctx.db, &params.category, &pid, &params.key, params.lane).await;
+        kavach_db::set_lane(&ctx.db, &params.category, &pid, &params.key, params.lane).await;
     match result {
         Ok(id) => Ok(SetLaneResult {
             success: true,

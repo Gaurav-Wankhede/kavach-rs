@@ -6,7 +6,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{BrainHit, search_corpus};
+use kavach_db::{BrainHit, search_corpus};
 use serde::{Deserialize, Serialize};
 
 /// Default hit count when the caller omits `limit`. Small: the recall block is

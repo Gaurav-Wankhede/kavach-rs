@@ -37,7 +37,7 @@ pub async fn archive(
     params: ArchiveParams,
 ) -> Result<ArchiveResult, ErrorObjectOwned> {
     let dry_run = params.dry_run.unwrap_or_default();
-    let report = kavach_surreal::archive_irrelevant(&ctx.db, params.floor_days, dry_run)
+    let report = kavach_db::archive_irrelevant(&ctx.db, params.floor_days, dry_run)
         .await
         .map_err(|e| internal(e.to_string()))?;
 

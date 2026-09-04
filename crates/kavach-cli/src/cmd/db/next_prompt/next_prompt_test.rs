@@ -1,5 +1,5 @@
 use super::{Pick, pick};
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 
 fn card(key: &str, status: &str, exec_prompt: Option<&str>) -> MemoryEntry {
     MemoryEntry {

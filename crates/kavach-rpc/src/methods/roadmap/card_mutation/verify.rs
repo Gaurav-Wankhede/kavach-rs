@@ -11,7 +11,7 @@ pub async fn verify_card(
     state: &AppState,
     params: ClaimCardParams,
 ) -> Result<VerifyCardResult, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -32,7 +32,7 @@ pub async fn verify_card(
     // same fix as claim_card. The prior read-then-write let a second session
     // verify a card the first was mid-transition on. Only one racer matches the
     // `entry_status = 'done'` predicate at write time.
-    let updated = kavach_surreal::update_status_cas(
+    let updated = kavach_db::update_status_cas(
         &state.db,
         TABLE_ROADMAP,
         &project_id,
@@ -50,7 +50,7 @@ pub async fn verify_card(
         });
     }
     // CAS missed: report the real current status (absent, or not yet `done`).
-    let current = kavach_surreal::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
+    let current = kavach_db::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
         .map_err(surreal_to_rpc)?;
     let current_status = current

@@ -2,7 +2,7 @@
 //! stalled. Covers the 2-node and 3-node cycles the card mandates, plus the
 //! acyclic and dangling-dep negatives.
 use super::{cycle_message, detect_cycle};
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 
 /// Minimal roadmap entry: a key + content carrying its `DEPENDS_ON:` line.
 fn card(key: &str, deps: &[&str]) -> MemoryEntry {

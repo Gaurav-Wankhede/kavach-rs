@@ -128,7 +128,7 @@ pub async fn kanban_ranked(
     let hit_ids: Vec<String> = if p.prompt.trim().is_empty() {
         Vec::new()
     } else {
-        kavach_surreal::search_corpus(&state.db, &p.prompt, limit.saturating_mul(4))
+        kavach_db::search_corpus(&state.db, &p.prompt, limit.saturating_mul(4))
             .await
             .map(|hits| hits.into_iter().map(|h| h.id).collect())
             .unwrap_or_default()

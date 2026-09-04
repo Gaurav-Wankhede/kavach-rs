@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use super::super::TeamDispatchError;
 use super::common::{dep, node, scheduler};
-use kavach_surreal::graph::roadmap_dag::RoadmapDag;
+use kavach_db::graph::roadmap_dag::RoadmapDag;
 
 #[test]
 fn two_independent_tasks_both_ready() {

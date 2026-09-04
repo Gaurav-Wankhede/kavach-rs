@@ -52,12 +52,12 @@ pub(super) fn first() -> String {
 }
 
 async fn phases_from_db() -> Option<Vec<String>> {
-    let db = kavach_surreal::open_default_resilient().await.ok()?;
-    let project_rec = kavach_surreal::projects::get_by_slug(&db, PHASE_PROJECT)
+    let db = kavach_db::open_default_resilient().await.ok()?;
+    let project_rec = kavach_db::projects::get_by_slug(&db, PHASE_PROJECT)
         .await
         .ok()??;
     let project_id = project_rec.id?;
-    let rows = kavach_surreal::read::list_by_project(&db, "decision", &project_id)
+    let rows = kavach_db::read::list_by_project(&db, "decision", &project_id)
         .await
         .ok()?;
     let row = rows

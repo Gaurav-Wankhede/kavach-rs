@@ -31,7 +31,7 @@ pub async fn find_project(
     params: FindParams,
 ) -> Result<FindResult, ErrorObjectOwned> {
     require_absolute(&params.abs_path)?;
-    let hit = kavach_surreal::project_find_by_path(&ctx.db, &params.abs_path)
+    let hit = kavach_db::project_find_by_path(&ctx.db, &params.abs_path)
         .await
         .map_err(|e| internal(e.to_string()))?;
     Ok(hit.map_or(
@@ -50,7 +50,7 @@ pub async fn find_project(
 /// Returns an RPC error when the path is not absolute or the read fails.
 pub async fn find_part(ctx: &AppState, params: FindParams) -> Result<FindResult, ErrorObjectOwned> {
     require_absolute(&params.abs_path)?;
-    let hit = kavach_surreal::part_find_by_path(&ctx.db, &params.abs_path)
+    let hit = kavach_db::part_find_by_path(&ctx.db, &params.abs_path)
         .await
         .map_err(|e| internal(e.to_string()))?;
     Ok(hit.map_or(

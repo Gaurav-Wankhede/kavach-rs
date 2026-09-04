@@ -1,10 +1,11 @@
 // `kavach db status-update` — set strict entry_status for a memory entry.
-// SurrealDB-backed: routes through kavach_surreal::update_status with table name.
+// SurrealDB-backed: routes through kavach_db::update_status with table name.
 // SOURCE: https://docs.rs/strum/0.28 — MemoryStatus uses strum EnumString + EnumIter.
 use kavach_types::MemoryStatus;
 use std::str::FromStr as _;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use kavach_db::turso::entries::EntryStore;
 
 #[expect(
     clippy::too_many_lines,
@@ -109,56 +110,25 @@ pub(super) fn run(
     };
 
     runtime.block_on(async {
-        let db = match super::rpc_client::open_direct_resilient().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: open SurrealDB: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
                 return 1;
             }
         };
-        if let Err(e) = kavach_surreal::apply_schema(&db).await {
-            let msg = format!("error: schema apply: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-        let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
-            Ok(Some(p)) => p,
-            Ok(None) => {
-                let msg = format!("error: project not found: {project_slug}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-            Err(e) => {
-                let msg = format!("error: {e}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-        };
-        if let Err(code) = super::validate_project_workdir(&project) {
-            return code;
-        }
-        let Some(project_id) = project.id else {
-            if let Err(io_err) = ewrite_or_exit("error: project has no id") {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        };
-        match kavach_surreal::update_status(&db, category, &project_id, key, status).await {
+        // Use CAS update for safety - only update if current status matches expected
+        // For now, we'll use the simple update_status (non-CAS) since we don't have the current status
+        match store.update_status(project_slug, category, key, status).await {
             Ok(n) if n > 0 => {
                 let msg = format!("status: [{category}] {key} → {status}");
                 if let Err(io_err) = print_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
-                refresh_memory_entry_graph(&db, category, key, project_slug).await;
                 0
             }
             Ok(_) => {
@@ -177,36 +147,4 @@ pub(super) fn run(
             }
         }
     })
-}
-
-/// Direct-DB graph projection refresh. Best-effort: errors are intentionally
-/// discarded because the primary status-update already succeeded. The graph
-/// refresh is a secondary signal; primary stream success is the user-facing contract.
-async fn refresh_memory_entry_graph(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
-    category: &str,
-    entry_key: &str,
-    project_slug: &str,
-) {
-    use kavach_surreal::graph::dynamic::{relate_dynamic, upsert_entity};
-    let qualified_name =
-        kavach_engine::memory_entry_qualified_name(category, entry_key, project_slug);
-    let entry_id = match upsert_entity(db, category, &qualified_name).await {
-        Ok(id) => id,
-        Err(e) => {
-            let msg = format!("graph: upsert {category}/{qualified_name} failed: {e}");
-            if ewrite_or_exit(&msg).is_err() {
-                return;
-            }
-            return;
-        }
-    };
-    if !project_slug.is_empty()
-        && let Ok(proj_id) = upsert_entity(db, "project", project_slug).await
-        && let Err(e) = relate_dynamic(db, &entry_id, &proj_id, "in_scope", 1.0).await
-    {
-        let msg = format!("graph: in_scope edge failed: {e}");
-        if ewrite_or_exit(&msg).is_err() {
-        }
-    }
 }

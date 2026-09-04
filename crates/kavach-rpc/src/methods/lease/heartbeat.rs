@@ -5,7 +5,7 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::lease::{Lease, heartbeat as lease_heartbeat};
+use kavach_db::lease::{Lease, heartbeat as lease_heartbeat};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

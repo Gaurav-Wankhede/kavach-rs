@@ -13,7 +13,7 @@ pub async fn next_open_hunt(
     state: &AppState,
     params: NextOpenTaskParams,
 ) -> Result<Option<NextTaskResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -22,10 +22,10 @@ pub async fn next_open_hunt(
     let Some(project_id) = project.id else {
         return Ok(None);
     };
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
-    let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
+    let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
     let hunt = entries

@@ -1,5 +1,5 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_surreal::{Project, ProjectNode};
+use kavach_db::{Project, ProjectNode};
 
 /// `kavach db set-parent --child <slug> [--parent <slug>]`
 pub(super) fn set_parent(child: &str, parent: Option<&str>) -> i32 {
@@ -21,7 +21,7 @@ pub(super) fn set_parent(child: &str, parent: Option<&str>) -> i32 {
             Ok(d) => d,
             Err(e) => return report_err(&format!("open SurrealDB: {e}")),
         };
-        match kavach_surreal::project_set_parent(&db, child, parent).await {
+        match kavach_db::project_set_parent(&db, child, parent).await {
             Ok(()) => {
                 let msg = parent.map_or_else(
                     || format!("detached {child} to top-level"),
@@ -64,7 +64,7 @@ pub(super) fn render() -> i32 {
             Ok(d) => d,
             Err(e) => return report_err(&format!("open SurrealDB: {e}")),
         };
-        match kavach_surreal::projects_build_forest(&db).await {
+        match kavach_db::projects_build_forest(&db).await {
             Ok(forest) => {
                 if forest.is_empty() {
                     return print_or_exit("no projects registered")
@@ -104,7 +104,7 @@ fn print_node(node: &ProjectNode, depth: usize, parent_workdir: Option<&str>) ->
 /// Build the ` (rel: <relative>)` suffix when the node nests under a known parent.
 fn relative_label(project: &Project, parent_workdir: Option<&str>) -> String {
     match (parent_workdir, project.workdir.as_deref()) {
-        (Some(parent), Some(child)) => kavach_surreal::project_relative_to_parent(parent, child)
+        (Some(parent), Some(child)) => kavach_db::project_relative_to_parent(parent, child)
             .map(|rel| format!(" (rel: {rel})"))
             .unwrap_or_default(),
         _ => String::new(),
@@ -122,7 +122,7 @@ fn print_rpc_node(
     let indent = "  ".repeat(depth);
     let abs = node.workdir.as_deref().unwrap_or("(no path)");
     let rel = match (parent_workdir, node.workdir.as_deref()) {
-        (Some(parent), Some(child)) => kavach_surreal::project_relative_to_parent(parent, child)
+        (Some(parent), Some(child)) => kavach_db::project_relative_to_parent(parent, child)
             .map(|r| format!(" (rel: {r})"))
             .unwrap_or_default(),
         _ => String::new(),

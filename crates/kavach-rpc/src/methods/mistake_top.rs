@@ -4,13 +4,13 @@
 // of the legacy `pattern` memory_entries the writers stopped populating.
 // Split out of methods/mistake.rs to keep each leaf ≤100 LOC.
 //
-//   to kavach_surreal::graph_top_anti_patterns (see that module's ALGO note:
+//   to kavach_db::graph_top_anti_patterns (see that module's ALGO note:
 //   bounded in-memory sort). Here we only clamp the page size and map rows to the
 //   wire DTO. TIME: O(N) map over the already-ranked slice. YEAR: 2026.
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::graph_top_anti_patterns;
+use kavach_db::graph_top_anti_patterns;
 use serde::{Deserialize, Serialize};
 
 /// Default page size when the caller omits `limit`.

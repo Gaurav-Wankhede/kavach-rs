@@ -13,7 +13,7 @@
 //! NEVER run until B does. Ceiling lifts B's EFFECTIVE priority to 1 (A's), so B
 //! is dispatched next and A unblocks. Pure: computes a sort key, no I/O.
 use super::super::readiness::parse_declared_deps;
-use kavach_surreal::MemoryEntry;
+use kavach_db::MemoryEntry;
 use std::collections::HashMap;
 /// Absent priority sorts last — mirrors `read.rs`'s `priority ?? 999999`.
 const PRIORITY_NONE: i64 = 999_999;

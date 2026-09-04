@@ -57,7 +57,7 @@ pub async fn status_update(
     }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =
-        kavach_surreal::update_status(&ctx.db, &params.category, &pid, &params.key, &params.status)
+        kavach_db::update_status(&ctx.db, &params.category, &pid, &params.key, &params.status)
             .await;
 
     match result {

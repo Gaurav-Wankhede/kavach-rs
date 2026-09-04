@@ -11,7 +11,7 @@ pub async fn entry_status(
     state: &AppState,
     params: EntryStatusParams,
 ) -> Result<Option<EntryStatusResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -20,7 +20,7 @@ pub async fn entry_status(
     let Some(project_id) = project.id else {
         return Ok(None);
     };
-    let entry = kavach_surreal::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
+    let entry = kavach_db::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
         .map_err(surreal_to_rpc)?;
     Ok(entry.map(|e| EntryStatusResult {

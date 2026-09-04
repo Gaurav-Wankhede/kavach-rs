@@ -31,7 +31,7 @@ fn task_to_json(task: &NextTaskResult) -> serde_json::Value {
 }
 
 async fn open_state() -> Result<AppState, String> {
-    let db = kavach_surreal::open_default_resilient()
+    let db = kavach_db::open_default_resilient()
         .await
         .map_err(|e| format!("SurrealDB open failed: {e}"))?;
     Ok(AppState::new(db))
@@ -68,10 +68,10 @@ pub(super) fn renew_my_leases() -> usize {
         return 0;
     };
     rt.block_on(async {
-        let Ok(db) = kavach_surreal::open_default_resilient().await else {
+        let Ok(db) = kavach_db::open_default_resilient().await else {
             return 0;
         };
-        kavach_surreal::lease::renew_active_leases(&db)
+        kavach_db::lease::renew_active_leases(&db)
             .await
             .unwrap_or(0)
     })

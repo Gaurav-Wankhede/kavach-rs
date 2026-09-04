@@ -5,7 +5,7 @@
 //! the makespan: the bottleneck task starts as early as possible, so its tail
 //! of dependents is not the thing that ends up gating the whole project.
 use std::collections::HashMap;
-use kavach_surreal::graph::roadmap_dag::RoadmapDag;
+use kavach_db::graph::roadmap_dag::RoadmapDag;
 /// Map each node id to its critical-path length (count of nodes on the longest
 /// dependency chain rooted at it, inclusive — a leaf is 1).
 ///

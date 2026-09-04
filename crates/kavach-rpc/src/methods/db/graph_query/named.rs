@@ -13,7 +13,7 @@ pub(super) async fn graph_query_named(
 ) -> Result<GraphQueryResult, ErrorObjectOwned> {
     use std::fmt::Write as _;
 
-    let entity = match kavach_surreal::graph_find_entity(&ctx.db, etype, n).await {
+    let entity = match kavach_db::graph_find_entity(&ctx.db, etype, n).await {
         Ok(Some(e)) => e,
         Ok(None) => {
             #[expect(
@@ -41,7 +41,7 @@ pub(super) async fn graph_query_named(
             error: Some("entity has no id".to_owned()),
         });
     };
-    let rows = kavach_surreal::graph_get_related(&ctx.db, &entity_id, 200)
+    let rows = kavach_db::graph_get_related(&ctx.db, &entity_id, 200)
         .await
         .map_err(|e| internal(e.to_string()))?;
     let mut lines = Vec::with_capacity(rows.len().saturating_add(2));

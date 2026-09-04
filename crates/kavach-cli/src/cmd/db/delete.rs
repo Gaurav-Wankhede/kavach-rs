@@ -1,8 +1,6 @@
 // split: intentional - single command handler for granular delete
 use kavach_rpc::methods::db::delete_confirm_phrase;
-use kavach_surreal::{
-    delete_by_key, delete_category, open_default, preview_delete_by_key, preview_delete_category,
-};
+use kavach_db::turso::entries::EntryStore;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_line_or_exit};
 
@@ -107,10 +105,11 @@ pub(super) fn run(
     };
 
     runtime.block_on(async {
-        let db = match open_default().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: failed to open db: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
@@ -120,14 +119,29 @@ pub(super) fn run(
 
         if let Some(k) = key {
             if dry_run {
-                match preview_delete_by_key(&db, project, category, k).await {
-                    Ok(report) => {
+                // For dry-run, just check if the key exists
+                match store.get_by_key(project, category, k).await {
+                    Ok(Some(_)) => {
                         let l1 = format!("(dry-run) target: {category}/{k}");
                         if let Err(io_err) = print_or_exit(&l1) {
                             return into_exit_code(io_err);
                         }
-                        let l2 = format!("(dry-run) matches: {} row(s)", report.count);
-                        if let Err(io_err) = print_or_exit(&l2) {
+                        let l2 = "(dry-run) matches: 1 row(s)";
+                        if let Err(io_err) = print_or_exit(l2) {
+                            return into_exit_code(io_err);
+                        }
+                        if let Err(io_err) = print_or_exit("(dry-run) NO CHANGES MADE") {
+                            return into_exit_code(io_err);
+                        }
+                        0
+                    }
+                    Ok(None) => {
+                        let l1 = format!("(dry-run) target: {category}/{k}");
+                        if let Err(io_err) = print_or_exit(&l1) {
+                            return into_exit_code(io_err);
+                        }
+                        let l2 = "(dry-run) matches: 0 row(s)";
+                        if let Err(io_err) = print_or_exit(l2) {
                             return into_exit_code(io_err);
                         }
                         if let Err(io_err) = print_or_exit("(dry-run) NO CHANGES MADE") {
@@ -144,12 +158,9 @@ pub(super) fn run(
                     }
                 }
             } else {
-                match delete_by_key(&db, project, category, k).await {
-                    Ok(report) => {
-                        let msg = format!(
-                            "(applied) {}/{} {} row(s)",
-                            report.category, k, report.count
-                        );
+                match store.delete_by_key(project, category, k).await {
+                    Ok(n) => {
+                        let msg = format!("(applied) {category}/{k} {} row(s)", n);
                         if let Err(io_err) = print_or_exit(&msg) {
                             return into_exit_code(io_err);
                         }
@@ -165,14 +176,16 @@ pub(super) fn run(
                 }
             }
         } else {
+            // --all: delete all entries in category for project
             if dry_run {
-                match preview_delete_category(&db, project, category).await {
-                    Ok(report) => {
+                // Count entries in category
+                match store.list_by_category(project, category).await {
+                    Ok(rows) => {
                         let l1 = format!("(dry-run) target: ALL rows in {category}");
                         if let Err(io_err) = print_or_exit(&l1) {
                             return into_exit_code(io_err);
                         }
-                        let l2 = format!("(dry-run) count: {} row(s)", report.count);
+                        let l2 = format!("(dry-run) count: {} row(s)", rows.len());
                         if let Err(io_err) = print_or_exit(&l2) {
                             return into_exit_code(io_err);
                         }
@@ -192,10 +205,23 @@ pub(super) fn run(
                     }
                 }
             } else {
-                match delete_category(&db, project, category).await {
-                    Ok(report) => {
-                        let msg =
-                            format!("(applied) all {} {} row(s)", report.category, report.count);
+                // Delete all entries in category one by one
+                match store.list_by_category(project, category).await {
+                    Ok(rows) => {
+                        let mut total = 0u64;
+                        for row in rows {
+                            match store.delete_by_key(project, category, &row.entry_key).await {
+                                Ok(n) => total += n,
+                                Err(e) => {
+                                    let msg = format!("error deleting {}: {e}", row.entry_key);
+                                    if let Err(io_err) = ewrite_or_exit(&msg) {
+                                        return into_exit_code(io_err);
+                                    }
+                                    return 1;
+                                }
+                            }
+                        }
+                        let msg = format!("(applied) all {category} {} row(s)", total);
                         if let Err(io_err) = print_or_exit(&msg) {
                             return into_exit_code(io_err);
                         }

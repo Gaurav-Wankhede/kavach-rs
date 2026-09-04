@@ -11,7 +11,7 @@ pub(super) async fn graph_query_list(
     entity_type: Option<&str>,
     limit: usize,
 ) -> Result<GraphQueryResult, ErrorObjectOwned> {
-    let entities = kavach_surreal::graph_list_entities(&ctx.db, entity_type)
+    let entities = kavach_db::graph_list_entities(&ctx.db, entity_type)
         .await
         .map_err(|e| internal(e.to_string()))?;
     let total = entities.len();
@@ -30,7 +30,7 @@ pub(super) async fn graph_query_list(
     })
 }
 
-fn format_entity_line(e: &kavach_surreal::Entity) -> String {
+fn format_entity_line(e: &kavach_db::Entity) -> String {
     use std::fmt::Write as _;
 
     let id_str = e.id.as_ref().map_or_else(

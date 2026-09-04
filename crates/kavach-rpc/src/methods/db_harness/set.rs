@@ -42,7 +42,7 @@ pub async fn set_harness(
     params: SetHarnessParams,
 ) -> Result<SetHarnessResult, ErrorObjectOwned> {
     let pid = project_id(state, &params.project).await?;
-    let result = kavach_surreal::set_harness(
+    let result = kavach_db::set_harness(
         &state.db,
         &pid,
         &params.key,

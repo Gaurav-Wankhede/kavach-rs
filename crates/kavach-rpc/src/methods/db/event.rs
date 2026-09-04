@@ -31,7 +31,7 @@ pub async fn event(ctx: &AppState, params: EventParams) -> Result<EventResult, E
     let project_id = if params.work_dir.is_empty() {
         None
     } else {
-        match kavach_surreal::project_find_by_path(&ctx.db, &params.work_dir).await {
+        match kavach_db::project_find_by_path(&ctx.db, &params.work_dir).await {
             Ok(Some(p)) => p.id,
             // Genuinely-absent project: attribute to None (correct).
             Ok(None) => None,
@@ -43,7 +43,7 @@ pub async fn event(ctx: &AppState, params: EventParams) -> Result<EventResult, E
             }
         }
     };
-    match kavach_surreal::append_event(
+    match kavach_db::append_event(
         &ctx.db,
         &params.event_type,
         "kavach-cli",
@@ -97,7 +97,7 @@ pub async fn bandit_row(
     ctx: &AppState,
     params: BanditRowParams,
 ) -> Result<BanditRowResult, ErrorObjectOwned> {
-    match kavach_surreal::append_bandit_row(&ctx.db, &params.payload).await {
+    match kavach_db::append_bandit_row(&ctx.db, &params.payload).await {
         Ok(id) => Ok(BanditRowResult {
             success: true,
             id: Some(format!("{id:?}")),

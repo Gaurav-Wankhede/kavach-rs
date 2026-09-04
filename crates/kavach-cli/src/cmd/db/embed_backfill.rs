@@ -1,7 +1,7 @@
 //! `kavach db embed-backfill` — populate `memories.embedding` for NULL rows (Phase 5).
 
-use kavach_surreal::turso::TursoStore;
-use kavach_surreal::turso::vector::VectorStore as _;
+use kavach_db::turso::TursoStore;
+use kavach_db::turso::vector::VectorStore as _;
 
 /// Run the backfill. Returns process exit code.
 pub(crate) fn run(batch: usize, json: bool) -> i32 {

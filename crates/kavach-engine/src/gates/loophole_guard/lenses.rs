@@ -75,7 +75,7 @@ pub(super) fn lens_block(markers: &[&str]) -> String {
 /// fail-soft to empty on any RPC error (⇒ canonical six only).
 fn brain_lenses(query: &str) -> Vec<String> {
     let params = serde_json::json!({ "query": query, "limit": LENS_LIMIT });
-    let hits: Vec<kavach_surreal::BrainHit> =
+    let hits: Vec<kavach_db::BrainHit> =
         match kavach_rpc::client::call("brain.think", Some(params)) {
             Ok(h) => h,
             Err(_) => return Vec::new(),

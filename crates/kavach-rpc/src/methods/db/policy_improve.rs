@@ -12,7 +12,7 @@ use jsonrpsee::types::ErrorObjectOwned;
 use kavach_ope::Estimate;
 use kavach_ope::controller::promote;
 use kavach_ope::ips::FixedPolicy;
-use kavach_surreal::{
+use kavach_db::{
     DeployedPolicyProps, graph_top_deployed_policies, graph_upsert_deployed_policy,
 };
 use serde::{Deserialize, Serialize};
@@ -76,7 +76,7 @@ pub async fn policy_improve(
     ctx: &AppState,
     params: PolicyImproveParams,
 ) -> Result<PolicyImproveResult, ErrorObjectOwned> {
-    let raw = match kavach_surreal::list_bandit_rows(&ctx.db, params.limit).await {
+    let raw = match kavach_db::list_bandit_rows(&ctx.db, params.limit).await {
         Ok(rows) => rows,
         Err(e) => return Ok(load_failed(e.to_string())),
     };

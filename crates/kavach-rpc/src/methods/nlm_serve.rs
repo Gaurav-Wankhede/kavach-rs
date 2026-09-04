@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::nlm_query_docs;
+use kavach_db::nlm_query_docs;
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;

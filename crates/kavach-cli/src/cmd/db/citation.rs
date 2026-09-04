@@ -2,7 +2,8 @@
 //! (project, entry-key) for research-consumption guard and citation graph.
 //! SOURCE: <https://surrealdb.com/docs/surrealql/statements/define/table>
 use super::rpc_client;
-use kavach_surreal::CitationMeta;
+use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use kavach_db::turso::entries::EntryStore;
 
 /// Pin an official-docs citation to a (project, entry-key).
 pub(super) fn add(
@@ -12,22 +13,71 @@ pub(super) fn add(
     slug: &str,
     url: &str,
 ) -> i32 {
-    let metadata = vec![CitationMeta::new(slug.to_owned(), url.to_owned())];
+    // RPC-first
+    let metadata = vec![kavach_db::CitationMeta::new(slug.to_owned(), url.to_owned())];
     match rpc_client::citation_add(project, entry_key, name, metadata) {
         Ok(_) => {
-            println!("ok — citation '{name}' pinned to {project}/{entry_key}");
-            0
+            if let Err(io_err) = print_or_exit(&format!("ok — citation '{name}' pinned to {project}/{entry_key}")) {
+                return into_exit_code(io_err);
+            }
+            return 0;
         }
-        Err(e) => emit_err(&format!("citation add: {e}")),
+        Err(e) if rpc_client::should_fallback_to_direct(&e) => {}
+        Err(e) => {
+            if let Err(io_err) = ewrite_or_exit(&format!("error: {e}")) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
     }
+
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(r) => r,
+        Err(e) => {
+            let msg = format!("error: tokio runtime: {e}");
+            if let Err(io_err) = ewrite_or_exit(&msg) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
+    };
+
+    runtime.block_on(async {
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
+            Err(e) => {
+                let msg = format!("error: open kavach.db: {e}");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+        };
+
+        if let Err(e) = store.upsert_citation(project, entry_key, name, slug, url).await {
+            let msg = format!("error: {e}");
+            if let Err(io_err) = ewrite_or_exit(&msg) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
+        if let Err(io_err) = print_or_exit(&format!("ok — citation '{name}' pinned to {project}/{entry_key}")) {
+            return into_exit_code(io_err);
+        }
+        0
+    })
 }
 
 /// List every citation for a project (newest-updated first).
 pub(super) fn list(project: &str) -> i32 {
+    // RPC-first
     match rpc_client::citation_list(project) {
         Ok(items) if items.is_empty() => {
-            println!("(no citations for {project})");
-            0
+            if let Err(io_err) = print_or_exit(&format!("(no citations for {project})")) {
+                return into_exit_code(io_err);
+            }
+            return 0;
         }
         Ok(items) => {
             for item in items {
@@ -39,13 +89,65 @@ pub(super) fn list(project: &str) -> i32 {
                     item.entry_key, slug, item.name, url
                 );
             }
-            0
+            return 0;
         }
-        Err(e) => emit_err(&format!("citation list: {e}")),
+        Err(e) if rpc_client::should_fallback_to_direct(&e) => {}
+        Err(e) => {
+            if let Err(io_err) = ewrite_or_exit(&format!("error: {e}")) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
     }
-}
 
-fn emit_err(msg: &str) -> i32 {
-    eprintln!("{msg}");
-    1
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(r) => r,
+        Err(e) => {
+            let msg = format!("error: tokio runtime: {e}");
+            if let Err(io_err) = ewrite_or_exit(&msg) {
+                return into_exit_code(io_err);
+            }
+            return 1;
+        }
+    };
+
+    runtime.block_on(async {
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
+            Err(e) => {
+                let msg = format!("error: open kavach.db: {e}");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+        };
+
+        let rows = match store.list_citations(project).await {
+            Ok(rows) => rows,
+            Err(e) => {
+                let msg = format!("error: {e}");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+        };
+
+        if rows.is_empty() {
+            if let Err(io_err) = print_or_exit(&format!("(no citations for {project})")) {
+                return into_exit_code(io_err);
+            }
+            return 0;
+        }
+
+        for row in rows {
+            println!(
+                "{:<20} {:<12} {:<30} {}",
+                row.entry_key, row.slug, row.name, row.url
+            );
+        }
+        0
+    })
 }

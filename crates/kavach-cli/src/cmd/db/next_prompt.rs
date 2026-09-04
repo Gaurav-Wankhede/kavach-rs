@@ -1,9 +1,7 @@
 // `kavach db next-prompt` — serve the top-priority todo card's exec_prompt to stdout.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_surreal::MemoryEntry;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
+use kavach_db::dual_write::MemoryEntry;
+use kavach_db::turso::entries::EntryStore;
 mod author;
 #[cfg(test)]
 #[path = "next_prompt/next_prompt_test.rs"]
@@ -20,7 +18,7 @@ pub(crate) enum Pick<'a> {
 /// Pick the first `todo` roadmap card from a priority-ordered slice and classify
 /// its exec_prompt. Pure — the IO wrapper below renders the outcome.
 pub(crate) fn pick(rows: &[MemoryEntry]) -> Pick<'_> {
-    let Some(top) = rows.iter().find(|r| r.entry_status_str() == "todo") else {
+    let Some(top) = rows.iter().find(|r| r.entry_status.as_deref().unwrap_or("todo") == "todo") else {
         return Pick::Empty;
     };
     match top.exec_prompt.as_deref() {
@@ -36,19 +34,12 @@ pub(crate) fn run(project: &str) -> i32 {
         Err(e) => return render_err(&format!("error: tokio runtime: {e}")),
     };
     runtime.block_on(async {
-        let db = match kavach_surreal::open_default().await {
-            Ok(d) => d,
-            Err(e) => return render_err(&format!("error: open SurrealDB: {e}")),
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
+            Err(e) => return render_err(&format!("error: open kavach.db: {e}")),
         };
-        let project_id = match kavach_surreal::project_get_by_slug(&db, project).await {
-            Ok(Some(p)) => match p.id {
-                Some(id) => id,
-                None => return render_err("error: project has no id"),
-            },
-            Ok(None) => return render_err(&format!("error: project not found: {project}")),
-            Err(e) => return render_err(&format!("error: {e}")),
-        };
-        let rows = match kavach_surreal::list_by_project(&db, "roadmap", &project_id).await {
+        let rows = match store.list_by_category(project, "roadmap").await {
             Ok(rs) => rs,
             Err(e) => return render_err(&format!("error: list lookup: {e}")),
         };
@@ -57,7 +48,7 @@ pub(crate) fn run(project: &str) -> i32 {
                 Ok(()) => 0,
                 Err(io_err) => into_exit_code(io_err),
             },
-            Pick::Missing(card) => author_and_serve(&db, &project_id, project, card).await,
+            Pick::Missing(card) => author_and_serve(&store, project, card).await,
             Pick::Empty => render_err(&format!("error: no todo card on the {project} board")),
         }
     })
@@ -66,8 +57,7 @@ pub(crate) fn run(project: &str) -> i32 {
 /// skip), then serve it. Fail-soft: any author/write error falls back to the
 /// strict missing-prompt error so the harness never crashes.
 async fn author_and_serve(
-    db: &Surreal<Db>,
-    project_id: &RecordId,
+    store: &impl EntryStore,
     project: &str,
     card: &MemoryEntry,
 ) -> i32 {
@@ -82,21 +72,10 @@ async fn author_and_serve(
             ));
         }
     };
-    let qname = format!("{project}/roadmap/{}", card.entry_key);
-    let written = kavach_surreal::upsert_entry_full()
-        .db(db)
-        .category("roadmap")
-        .project_id(project_id)
-        .entry_key(&card.entry_key)
-        .title(&card.title)
-        .content(&card.content)
-        .event_source("next-prompt-autoauthor")
-        .qualified_name(&qname)
-        .references(&[])
-        .maybe_exec_prompt(Some(authored.as_str()))
-        .build_for_call()
-        .await;
-    if let Err(e) = written {
+    // Update the entry with the authored exec_prompt
+    let mut updated = card.clone();
+    updated.exec_prompt = Some(authored.clone());
+    if let Err(e) = store.upsert_entry(&updated).await {
         return render_err(&format!(
             "error: authored prompt but write-back failed: {e}"
         ));

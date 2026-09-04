@@ -11,7 +11,7 @@ use super::util::resolve_project_id;
 use crate::error::internal;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::{FilterBuilder, FilterExpr};
+use kavach_db::{FilterBuilder, FilterExpr};
 
 mod types;
 
@@ -39,7 +39,7 @@ pub async fn search(
 
     let mut hits = Vec::new();
     for table in &tables {
-        let rows = kavach_surreal::list_with_filter(
+        let rows = kavach_db::list_with_filter(
             &ctx.db,
             table,
             &pid,

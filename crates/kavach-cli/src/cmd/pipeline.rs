@@ -1,7 +1,7 @@
 // split: intentional - cohesive pipeline subcommand (plan + status share the project resolver)
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
 // `kavach pipeline` — initializer→subagent pipeline (planner only).
-// SurrealDB-backed: app_spec → roadmap items via kavach_surreal::upsert_entry_full
+// SurrealDB-backed: app_spec → roadmap items via kavach_db::upsert_entry_full
 // (atomic memory entry + event + entity + graph edges in one transaction).
 use crate::cli::PipelineAction;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
@@ -32,7 +32,7 @@ fn plan(project_slug: &str, spec_key: &str) -> i32 {
     reason = "plan_async: linear pipeline initialization flow — project resolution + spec loading + task iteration + upsert loop"
 )]
 async fn plan_async(project_slug: &str, spec_key: &str) -> i32 {
-    let db = match kavach_surreal::open_default().await {
+    let db = match kavach_db::open_default().await {
         Ok(d) => d,
         Err(e) => {
             let msg = format!("error: open SurrealDB: {e}");
@@ -42,7 +42,7 @@ async fn plan_async(project_slug: &str, spec_key: &str) -> i32 {
             return 1;
         }
     };
-    let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+    let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
         Ok(Some(p)) => p,
         Ok(None) => {
             let msg = format!("error: project not found: {project_slug}");
@@ -68,7 +68,7 @@ async fn plan_async(project_slug: &str, spec_key: &str) -> i32 {
         }
         return 1;
     };
-    let spec = match kavach_surreal::get_by_key(&db, "app_spec", &project_id, spec_key).await {
+    let spec = match kavach_db::get_by_key(&db, "app_spec", &project_id, spec_key).await {
         Ok(Some(e)) => e,
         Ok(None) => {
             let msg = format!("error: app_spec '{spec_key}' not found");
@@ -140,7 +140,7 @@ async fn plan_async(project_slug: &str, spec_key: &str) -> i32 {
         let qualified_name =
             kavach_engine::memory_entry_qualified_name("roadmap", &task_key, project_slug);
         let refs: Vec<String> = kavach_engine::extract_memory_entry_references(task_content);
-        match kavach_surreal::upsert_entry_full()
+        match kavach_db::upsert_entry_full()
             .db(&db)
             .category("roadmap")
             .project_id(&project_id)
@@ -190,7 +190,7 @@ fn status(project_slug: &str) -> i32 {
 }
 
 async fn status_async(project_slug: &str) -> i32 {
-    let db = match kavach_surreal::open_default().await {
+    let db = match kavach_db::open_default().await {
         Ok(d) => d,
         Err(e) => {
             let msg = format!("error: open SurrealDB: {e}");
@@ -200,7 +200,7 @@ async fn status_async(project_slug: &str) -> i32 {
             return 1;
         }
     };
-    let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+    let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
         Ok(Some(p)) => p,
         Ok(None) => {
             let msg = format!("error: project not found: {project_slug}");
@@ -226,7 +226,7 @@ async fn status_async(project_slug: &str) -> i32 {
         }
         return 1;
     };
-    let entries = match kavach_surreal::list_by_project(&db, "roadmap", &project_id).await {
+    let entries = match kavach_db::list_by_project(&db, "roadmap", &project_id).await {
         Ok(v) => v,
         Err(e) => {
             let msg = format!("error: {e}");
@@ -242,7 +242,7 @@ async fn status_async(project_slug: &str) -> i32 {
     }
     let mut printed = false;
     for status_label in ["in_progress", "todo", "done"] {
-        let group: Vec<&kavach_surreal::MemoryEntry> = entries
+        let group: Vec<&kavach_db::MemoryEntry> = entries
             .iter()
             .filter(|e| e.entry_status_str() == status_label)
             .collect();

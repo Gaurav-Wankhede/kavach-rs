@@ -10,7 +10,7 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_surreal::{
+use kavach_db::{
     append_bandit_row, apply_schema, list_bandit_rows, list_unrewarded_bandit_rows,
     list_unrewarded_bandit_rows_for_session, open_memory, update_bandit_reward,
 };

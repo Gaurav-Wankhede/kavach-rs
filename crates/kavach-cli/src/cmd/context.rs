@@ -34,7 +34,7 @@ async fn run_async(
     // DB connection. Resilient open: this runs inside a hook child, so a daemon
     // mid-restart can transiently hold the RocksDB lock — wait it out rather than
     // race-and-fail (rca-stop-hook-surreal-lock-direct-open-bypasses-rpc).
-    let db = match kavach_surreal::open_default_resilient().await {
+    let db = match kavach_db::open_default_resilient().await {
         Ok(d) => d,
         Err(e) => {
             let msg = format!(r#"{{"error":"db: {e}"}}"#);
@@ -46,7 +46,7 @@ async fn run_async(
     };
 
     // Project lookup
-    let project = match kavach_surreal::project_get_by_slug(&db, project_slug).await {
+    let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
         Ok(Some(p)) => p,
         Ok(None) => {
             let msg = format!(r#"{{"error":"project not found: {project_slug}"}}"#);
@@ -72,7 +72,7 @@ async fn run_async(
     };
 
     // Kanban items
-    let roadmap = match kavach_surreal::list_by_project(&db, "roadmap", &project_id).await {
+    let roadmap = match kavach_db::list_by_project(&db, "roadmap", &project_id).await {
         Ok(rows) => rows,
         Err(e) => {
             let msg = format!(r#"{{"error":"{e}"}}"#);
@@ -108,8 +108,8 @@ async fn run_async(
 fn build_and_print_payload(
     project_slug: &str,
     session: &kavach_session::SessionState,
-    roadmap: &[kavach_surreal::MemoryEntry],
-    displayed: &[kavach_surreal::MemoryEntry],
+    roadmap: &[kavach_db::MemoryEntry],
+    displayed: &[kavach_db::MemoryEntry],
     limit: usize,
     total: usize,
 ) -> i32 {

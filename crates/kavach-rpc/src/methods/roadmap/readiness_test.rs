@@ -2,8 +2,8 @@ use crate::methods::roadmap::readiness::{
     dep_key_satisfied, deps_satisfied, is_runnable_status, parse_declared_deps,
 };
 
-fn entry(key: &str, status: &str, content: &str) -> kavach_surreal::MemoryEntry {
-    kavach_surreal::MemoryEntry {
+fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
+    kavach_db::MemoryEntry {
         id: None,
         project: surrealdb_types::RecordId::new("project", "t"),
         category: Some("roadmap".into()),
@@ -61,7 +61,7 @@ fn parse_deps_prose_false_positive_is_fail_closed() {
     );
     let literal_line = "DEPENDS_ON: looks-like-a-dep";
     assert_eq!(parse_declared_deps(literal_line), ["looks-like-a-dep"]);
-    let all: Vec<kavach_surreal::MemoryEntry> = Vec::new();
+    let all: Vec<kavach_db::MemoryEntry> = Vec::new();
     assert!(
         !dep_key_satisfied("looks-like-a-dep", &all),
         "an unresolvable parsed key is fail-closed"
@@ -81,7 +81,7 @@ fn dep_key_satisfied_only_for_verified_or_done() {
     assert!(!dep_key_satisfied("d.missing", &all));
 }
 
-fn first(v: &[kavach_surreal::MemoryEntry]) -> &kavach_surreal::MemoryEntry {
+fn first(v: &[kavach_db::MemoryEntry]) -> &kavach_db::MemoryEntry {
     v.first().expect("fixture must be non-empty")
 }
 
@@ -173,8 +173,8 @@ fn dispatcher_picks_first_runnable_dependency_satisfied_leaf() {
         status: &str,
         priority: Option<i64>,
         content: &str,
-    ) -> kavach_surreal::MemoryEntry {
-        kavach_surreal::MemoryEntry {
+    ) -> kavach_db::MemoryEntry {
+        kavach_db::MemoryEntry {
             id: None,
             project: surrealdb_types::RecordId::new("project", "t"),
             category: Some("roadmap".into()),
@@ -195,7 +195,7 @@ fn dispatcher_picks_first_runnable_dependency_satisfied_leaf() {
             occupied_until: None,
         }
     }
-    fn pick_first(entries: &[kavach_surreal::MemoryEntry]) -> Option<&kavach_surreal::MemoryEntry> {
+    fn pick_first(entries: &[kavach_db::MemoryEntry]) -> Option<&kavach_db::MemoryEntry> {
         entries
             .iter()
             .find(|e| is_runnable_status(e.entry_status_str()) && deps_satisfied(e, entries))

@@ -13,7 +13,7 @@ pub async fn next_open_task(
     state: &AppState,
     params: NextOpenTaskParams,
 ) -> Result<Option<NextTaskResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -29,10 +29,10 @@ pub async fn next_open_task(
     // failure must NOT block dispatch of the cards that are already runnable, but
     // it is logged (not silently swallowed) so a persistent reclaim fault is
     // diagnosable rather than an invisible backlog leak.
-    if let Err(e) = kavach_surreal::lease::reclaim_orphaned_in_progress(&state.db).await {
+    if let Err(e) = kavach_db::lease::reclaim_orphaned_in_progress(&state.db).await {
         tracing::warn!(error = %e, "crash-orphan reclaim failed before dispatch; proceeding with current runnable set");
     }
-    let mut entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let mut entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
     // E3 priority-ceiling: re-rank so a low-urgency BLOCKER inherits the priority
@@ -41,7 +41,7 @@ pub async fn next_open_task(
     // priority; this lifts blockers to their ceiling before selection. SOURCE:
     // decision.harness.loop-edge-cases-and-db-optimization E3.
     super::priority_ceiling::sort_by_effective_priority(&mut entries);
-    let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
+    let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
     // Two-pass lane-affinity dispatch. `entries` is priority-ordered, so the
@@ -79,7 +79,7 @@ pub async fn ready_set(
     state: &AppState,
     params: NextOpenTaskParams,
 ) -> Result<Vec<NextTaskResult>, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -89,13 +89,13 @@ pub async fn ready_set(
         return Ok(Vec::new());
     };
     // Reclaim crash-orphans before censusing the ready set (see `next_open_task`).
-    if let Err(e) = kavach_surreal::lease::reclaim_orphaned_in_progress(&state.db).await {
+    if let Err(e) = kavach_db::lease::reclaim_orphaned_in_progress(&state.db).await {
         tracing::warn!(error = %e, "crash-orphan reclaim failed before ready_set; proceeding with current runnable set");
     }
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
-    let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
+    let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
     let ready = entries

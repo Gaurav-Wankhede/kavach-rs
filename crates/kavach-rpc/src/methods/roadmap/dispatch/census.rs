@@ -27,7 +27,7 @@ pub async fn open_set_census(
     state: &AppState,
     params: NextOpenTaskParams,
 ) -> Result<OpenSetCensus, ErrorObjectOwned> {
-    let Some(project) = kavach_surreal::project_get_by_slug(&state.db, &params.project)
+    let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
         .map_err(surreal_to_rpc)?
     else {
@@ -36,10 +36,10 @@ pub async fn open_set_census(
     let Some(project_id) = project.id else {
         return Ok(OpenSetCensus::default());
     };
-    let entries = kavach_surreal::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
+    let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
         .map_err(surreal_to_rpc)?;
-    let dep_pool = kavach_surreal::list_all_by_table(&state.db, TABLE_ROADMAP)
+    let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
         .map_err(surreal_to_rpc)?;
     // Index the GLOBAL dep pool once: cycle detection follows declared-dep edges

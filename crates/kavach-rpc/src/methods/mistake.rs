@@ -14,8 +14,8 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_surreal::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
-use kavach_surreal::{graph_delete_anti_patterns_by_gate, graph_query_anti_pattern_hit_count};
+use kavach_db::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
+use kavach_db::{graph_delete_anti_patterns_by_gate, graph_query_anti_pattern_hit_count};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

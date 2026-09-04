@@ -18,7 +18,7 @@ pub async fn wipe_project(
     let dry_run = params.dry_run.unwrap_or_default();
 
     if dry_run {
-        let report = kavach_surreal::preview_wipe(&ctx.db, &params.project)
+        let report = kavach_db::preview_wipe(&ctx.db, &params.project)
             .await
             .map_err(|e| internal(e.to_string()))?;
         return Ok(WipeProjectResult {
@@ -48,7 +48,7 @@ pub async fn wipe_project(
         });
     }
 
-    let report = kavach_surreal::wipe_project(&ctx.db, &params.project)
+    let report = kavach_db::wipe_project(&ctx.db, &params.project)
         .await
         .map_err(|e| internal(e.to_string()))?;
 

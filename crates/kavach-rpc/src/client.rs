@@ -48,7 +48,7 @@ fn build_inproc() -> Result<InProc, String> {
         .build()
         .map_err(|e| format!("runtime: {e}"))?;
     let db = rt
-        .block_on(kavach_surreal::open_default_held())
+        .block_on(kavach_db::open_default_held())
         .map_err(|e| format!("connect surreal server: {e}"))?;
     let state = crate::state::AppState::new(db);
     let module = crate::rpc::build_module(state).map_err(|e| format!("build module: {e}"))?;

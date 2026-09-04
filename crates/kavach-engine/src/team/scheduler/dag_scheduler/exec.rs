@@ -1,7 +1,7 @@
 //! `DagScheduler::plan` (pure ready-set computation) + `dispatch` (plan + spawn).
 use std::collections::HashSet;
 
-use kavach_surreal::graph::roadmap_dag::{RoadmapDag, TopoOrder};
+use kavach_db::graph::roadmap_dag::{RoadmapDag, TopoOrder};
 
 use super::super::predicates::{deps_done, is_runnable_status, is_terminal_status};
 use super::super::types::{DispatchPlan, Spawner, TeamDispatchError};

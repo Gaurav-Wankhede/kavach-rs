@@ -1,4 +1,5 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use kavach_db::turso::entries::EntryStore;
 
 pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
     if !abs_path.starts_with('/') {
@@ -31,10 +32,11 @@ pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
     };
 
     runtime.block_on(async {
-        let db = match super::rpc_client::open_direct_resilient().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: open SurrealDB: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
@@ -42,21 +44,19 @@ pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
             }
         };
 
-        match kavach_surreal::project_register(&db, slug, slug, abs_path, stack).await {
-            Ok(id) => {
-                let msg = format!("registered project: {slug} (id={id:?}) at {abs_path}");
-                if let Err(io_err) = print_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                0
+        // Insert or update project in the projects table
+        let tags_json = stack.map(|s| format!("[\"{}\"]", s));
+        if let Err(e) = store.register_project(slug, abs_path, tags_json.as_deref()).await {
+            let msg = format!("error: {e}");
+            if let Err(io_err) = ewrite_or_exit(&msg) {
+                return into_exit_code(io_err);
             }
-            Err(e) => {
-                let msg = format!("error: {e}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                1
-            }
+            return 1;
         }
+        let msg = format!("registered project: {slug} at {abs_path}");
+        if let Err(io_err) = print_or_exit(&msg) {
+            return into_exit_code(io_err);
+        }
+        0
     })
 }

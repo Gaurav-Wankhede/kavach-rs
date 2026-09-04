@@ -18,7 +18,7 @@ kavach-config = { path = "../kavach-config" }
 kavach-rule-engine = { path = "../kavach-rule-engine" }
 kavach-rule-storage = { path = "../kavach-rule-storage" }
 kavach-rule-generator = { path = "../kavach-rule-generator" }
-kavach-surreal = { path = "../kavach-surreal" }
+kavach-db = { path = "../kavach-db" }
 kavach-rpc = { path = "../kavach-rpc" }
 kavach-web = { path = "../kavach-web" }
 kavach-patterns = { path = "../kavach-patterns" }

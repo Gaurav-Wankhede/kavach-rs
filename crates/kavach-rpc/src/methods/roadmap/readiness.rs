@@ -19,8 +19,8 @@ pub use status_check::{is_needs_decomposition, is_runnable_status, is_umbrella};
 /// built is deleted, never flagged (operator directive 2026-06-16).
 #[must_use]
 pub fn deps_satisfied(
-    entry: &kavach_surreal::MemoryEntry,
-    dep_pool: &[kavach_surreal::MemoryEntry],
+    entry: &kavach_db::MemoryEntry,
+    dep_pool: &[kavach_db::MemoryEntry],
 ) -> bool {
     parse_declared_deps(&entry.content)
         .iter()

@@ -11,7 +11,7 @@ use std::cell::RefCell;
 use clap::{Args, Subcommand};
 
 use kavach_engine::{DagScheduler, EngineError, Spawner, SpawnerKind, TeamDispatchError};
-use kavach_surreal::graph::roadmap_dag::RoadmapDag;
+use kavach_db::graph::roadmap_dag::RoadmapDag;
 
 use crate::cmd::io_safe::{IoExit, ewrite_or_exit, into_exit_code, print_or_exit};
 
@@ -98,8 +98,8 @@ fn claim_batch(project: &str, session_id: &str) -> i32 {
         Err(e) => return report_err(&format!("team claim-batch: tokio runtime: {e}")),
     };
     let dag: RoadmapDag = match runtime.block_on(async {
-        let db = kavach_surreal::open_default().await?;
-        kavach_surreal::roadmap_dag_fetch(&db, project).await
+        let db = kavach_db::open_default().await?;
+        kavach_db::roadmap_dag_fetch(&db, project).await
     }) {
         Ok(dag) => dag,
         Err(e) => return report_err(&format!("team claim-batch: fetch DAG: {e}")),
@@ -146,11 +146,11 @@ async fn dispatch(
     dry_run: bool,
     spawner: &str,
 ) -> Result<i32, IoExit> {
-    let db = match kavach_surreal::open_default().await {
+    let db = match kavach_db::open_default().await {
         Ok(db) => db,
         Err(e) => return Ok(report_err(&format!("team dispatch: open db: {e}"))),
     };
-    let dag: RoadmapDag = match kavach_surreal::roadmap_dag_fetch(&db, project).await {
+    let dag: RoadmapDag = match kavach_db::roadmap_dag_fetch(&db, project).await {
         Ok(dag) => dag,
         Err(e) => {
             return Ok(report_err(&format!(

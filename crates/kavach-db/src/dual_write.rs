@@ -8,7 +8,7 @@
 //   - `migrate_memory_entry` (one-shot per-category insert helper).
 //
 // Module name kept (rather than renamed to `memory_entry.rs`) to avoid
-// touching every caller's `use kavach_surreal::dual_write::MemoryEntry;`
+// touching every caller's `use kavach_db::dual_write::MemoryEntry;`
 // import path. The rename is a separate cosmetic unit.
 use serde::{Deserialize, Serialize};
 use surrealdb_types::{RecordId, SurrealValue};

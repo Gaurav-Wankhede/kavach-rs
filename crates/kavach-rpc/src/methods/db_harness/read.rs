@@ -36,7 +36,7 @@ pub async fn latest_goal_attempt(
     params: LatestAttemptParams,
 ) -> Result<LatestAttemptResult, ErrorObjectOwned> {
     let pid = project_id(state, &params.project).await?;
-    let row = kavach_surreal::latest_goal_attempt(&state.db, &pid)
+    let row = kavach_db::latest_goal_attempt(&state.db, &pid)
         .await
         .map_err(|e| internal(e.to_string()))?;
     match row {

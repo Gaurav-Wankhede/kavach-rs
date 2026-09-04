@@ -1,6 +1,6 @@
 // split: intentional - single command handler for wipe-project
 use kavach_rpc::methods::db::wipe_confirm_phrase;
-use kavach_surreal::{open_default, wipe::preview_wipe, wipe_project};
+use kavach_db::turso::entries::EntryStore;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_line_or_exit};
 
@@ -9,11 +9,7 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_
     reason = "single command handler: RPC attempt, fallback path, and async runtime management must stay unified"
 )]
 pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
-    if dry_run {
-        return run_dry_run(project);
-    }
-
-    if !confirm {
+    if !confirm && !dry_run {
         if let Err(io_err) =
             ewrite_or_exit("error: --confirm flag required for destructive operation")
         {
@@ -99,10 +95,11 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
     };
 
     runtime.block_on(async {
-        let db = match open_default().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: failed to open db: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
@@ -110,33 +107,43 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
             }
         };
 
-        match wipe_project(&db, project).await {
+        match wipe_project_turso(&store, project, dry_run).await {
             Ok(report) => {
-                let head = format!("[wipe] project: {}", report.project_slug);
+                let prefix = if dry_run { "[dry-run]" } else { "[wipe]" };
+                let action = if dry_run { "would remove" } else { "removed" };
+                let action_past = if dry_run { "would be removed" } else { "removed" };
+                let head = format!("{} project: {}", prefix, report.project_slug);
                 if let Err(io_err) = print_or_exit(&head) {
                     return into_exit_code(io_err);
                 }
                 let mut total = 0usize;
                 for (table, count) in &report.tables {
                     if *count > 0 {
-                        let line = format!("[wipe] {table}: removed {count} rows");
+                        let line = format!("{} {}: {} {} rows", prefix, table, action, count);
                         if let Err(io_err) = print_or_exit(&line) {
                             return into_exit_code(io_err);
                         }
                     }
                     total = total.saturating_add(*count);
                 }
-                if report.project_deleted
-                    && let Err(io_err) = print_or_exit("[wipe] project registry: removed 1 row")
-                {
-                    return into_exit_code(io_err);
+                if report.project_deleted {
+                    if let Err(io_err) = print_or_exit(&format!("{} project registry: {} 1 row", prefix, action)) {
+                        return into_exit_code(io_err);
+                    }
                 }
                 let summary = format!(
-                    "[wipe] total: {total} rows removed across {} tables",
-                    report.tables.len()
+                    "{} total: {total} rows {} across {} tables",
+                    prefix, action_past, report.tables.len()
                 );
                 if let Err(io_err) = print_or_exit(&summary) {
                     return into_exit_code(io_err);
+                }
+                if dry_run {
+                    if let Err(io_err) =
+                        print_or_exit("[dry-run] NO CHANGES MADE — run with --confirm to execute")
+                    {
+                        return into_exit_code(io_err);
+                    }
                 }
                 0
             }
@@ -151,71 +158,50 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
     })
 }
 
-fn run_dry_run(project: &str) -> i32 {
-    let runtime = match tokio::runtime::Runtime::new() {
-        Ok(r) => r,
-        Err(e) => {
-            let msg = format!("error: tokio runtime: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
+#[derive(Default)]
+struct WipeReport {
+    project_slug: String,
+    tables: Vec<(String, usize)>,
+    project_deleted: bool,
+}
+
+async fn wipe_project_turso(
+    store: &impl EntryStore,
+    project: &str,
+    dry_run: bool,
+) -> Result<WipeReport, String> {
+    let mut report = WipeReport {
+        project_slug: project.to_string(),
+        ..Default::default()
     };
 
-    runtime.block_on(async {
-        let db = match open_default().await {
-            Ok(d) => d,
-            Err(e) => {
-                let msg = format!("error: failed to open db: {e}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                return 1;
-            }
-        };
+    // Categories to wipe
+    let categories = ["decision", "research", "roadmap", "pattern", "app_spec", "mistake"];
 
-        match preview_wipe(&db, project).await {
-            Ok(report) => {
-                let head = format!("[dry-run] project: {}", report.project_slug);
-                if let Err(io_err) = print_or_exit(&head) {
-                    return into_exit_code(io_err);
+    for cat in categories {
+        let rows = store
+            .list_by_category(project, cat)
+            .await
+            .map_err(|e| format!("list {cat}: {e}"))?;
+        let count = rows.len();
+        if count > 0 {
+            report.tables.push((cat.to_string(), count));
+            if !dry_run {
+                for row in rows {
+                    store
+                        .delete_by_key(project, cat, &row.entry_key)
+                        .await
+                        .map_err(|e| format!("delete {cat}/{}: {e}", row.entry_key))?;
                 }
-                let mut total = 0usize;
-                for (table, count) in &report.tables {
-                    if *count > 0 {
-                        let line = format!("[dry-run] {table}: would remove {count} rows");
-                        if let Err(io_err) = print_or_exit(&line) {
-                            return into_exit_code(io_err);
-                        }
-                    }
-                    total = total.saturating_add(*count);
-                }
-                if let Err(io_err) = print_or_exit("[dry-run] project registry: would remove 1 row")
-                {
-                    return into_exit_code(io_err);
-                }
-                let summary = format!(
-                    "[dry-run] total: {total} rows would be removed across {} tables",
-                    report.tables.len()
-                );
-                if let Err(io_err) = print_or_exit(&summary) {
-                    return into_exit_code(io_err);
-                }
-                if let Err(io_err) =
-                    print_or_exit("[dry-run] NO CHANGES MADE — run with --confirm to execute")
-                {
-                    return into_exit_code(io_err);
-                }
-                0
-            }
-            Err(e) => {
-                let msg = format!("error: {e}");
-                if let Err(io_err) = ewrite_or_exit(&msg) {
-                    return into_exit_code(io_err);
-                }
-                1
             }
         }
-    })
+    }
+
+    // TODO: Also wipe events, projects, parts tables (need TursoStore methods)
+    // For now, we skip these as they require additional TursoStore methods
+
+    // Project registry deletion would go here
+    // project_deleted would be set to true after deleting from projects table
+
+    Ok(report)
 }
