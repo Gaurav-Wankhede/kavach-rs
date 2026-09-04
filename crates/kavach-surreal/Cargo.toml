@@ -18,6 +18,7 @@ surrealdb-types = "3.1.4"
 libsql = { version = "0.9", default-features = false, features = ["core"] }
 blake3 = { workspace = true }
 kavach-types = { path = "../kavach-types" }
+fastembed = { version = "6.0.2", default-features = false, features = ["hf-hub-native-tls", "ort-download-binaries-native-tls"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }

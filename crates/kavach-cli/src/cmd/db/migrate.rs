@@ -5,7 +5,8 @@ use std::path::Path;
 
 use kavach_surreal::turso::TursoStore;
 use kavach_surreal::turso::migrate::{
-    ImportOpts, SourceCounts, export_from_surreal, import_records, read_ndjson, validate_store,
+    ImportOpts, NormalizedRecord, SourceCounts, export_from_surreal, import_records, read_ndjson,
+    validate_store,
 };
 
 /// Run the requested migrate verb. Returns the process exit code.
@@ -13,6 +14,7 @@ pub(crate) fn run(
     verb: &str,
     from: &str,
     to: &str,
+    overwrite: bool,
 ) -> i32 {
     let rt = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
@@ -23,7 +25,7 @@ pub(crate) fn run(
     };
     match verb {
         "export" => rt.block_on(export_cmd(to)),
-        "import" => rt.block_on(import_cmd(from, to, false)),
+        "import" => rt.block_on(import_cmd(from, to, overwrite)),
         "verify" => rt.block_on(verify_cmd(from, to)),
         _ => {
             eprintln!("unknown migrate verb: {verb} (expected export|import|verify)");
@@ -88,8 +90,17 @@ async fn import_cmd(from: &str, to: &str, overwrite: bool) -> i32 {
         }
     };
     let mut counts = SourceCounts::new();
+    let mut seen_edges = std::collections::HashSet::new();
     for rec in &records {
-        rec.count_into(&mut counts);
+        if let NormalizedRecord::Edge(ed) = rec {
+            let src_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.from_id);
+            let dst_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.to_id);
+            if seen_edges.insert((src_ep, ed.rel_type.clone(), dst_ep)) {
+                counts.edge = counts.edge.saturating_add(1);
+            }
+        } else {
+            rec.count_into(&mut counts);
+        }
     }
     println!(
         "source: {} memories, {} entities, {} edges, {} projects",
@@ -115,7 +126,17 @@ async fn import_cmd(from: &str, to: &str, overwrite: bool) -> i32 {
                 println!("validation passed: {} memories, {} entities, {} edges", v.memory_count, v.entity_count, v.edge_count);
                 0
             } else {
-                eprintln!("validation failed: {} dangling edges, fts_matched: {}", v.dangling_edges.len(), v.fts_matched);
+                eprintln!(
+                    "validation failed: {} dangling edges, fts_matched: {}, mem: {}/{}, ent: {}/{}, edges: {}/{}",
+                    v.dangling_edges.len(),
+                    v.fts_matched,
+                    v.memory_count,
+                    counts.memory,
+                    v.entity_count,
+                    counts.entity,
+                    v.edge_count,
+                    counts.edge
+                );
                 1
             }
         }
@@ -147,8 +168,17 @@ async fn verify_cmd(from: &str, to: &str) -> i32 {
         }
     };
     let mut counts = SourceCounts::new();
+    let mut seen_edges = std::collections::HashSet::new();
     for rec in &records {
-        rec.count_into(&mut counts);
+        if let NormalizedRecord::Edge(ed) = rec {
+            let src_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.from_id);
+            let dst_ep = kavach_surreal::turso::migrate::export::normalize_endpoint(&ed.to_id);
+            if seen_edges.insert((src_ep, ed.rel_type.clone(), dst_ep)) {
+                counts.edge = counts.edge.saturating_add(1);
+            }
+        } else {
+            rec.count_into(&mut counts);
+        }
     }
     let store = match open_store(to).await {
         Ok(s) => s,
@@ -163,7 +193,17 @@ async fn verify_cmd(from: &str, to: &str) -> i32 {
                 println!("verification OK: {} memories, {} entities, {} edges match source", v.memory_count, v.entity_count, v.edge_count);
                 0
             } else {
-                eprintln!("verification failed: {} dangling edges, fts_matched: {}", v.dangling_edges.len(), v.fts_matched);
+                eprintln!(
+                    "verification failed: {} dangling edges, fts_matched: {}, mem: {}/{}, ent: {}/{}, edges: {}/{}",
+                    v.dangling_edges.len(),
+                    v.fts_matched,
+                    v.memory_count,
+                    counts.memory,
+                    v.entity_count,
+                    counts.entity,
+                    v.edge_count,
+                    counts.edge
+                );
                 1
             }
         }

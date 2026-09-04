@@ -75,6 +75,9 @@ impl TursoStore {
         for stmt in entries_ddl().chain(search_ddl()).chain(graph_ddl()) {
             self.exec(stmt).await?;
         }
+        for stmt in vector_ddl() {
+            crate::turso::vector::exec_vector_ddl_best_effort(self, stmt).await?;
+        }
         Ok(())
     }
 }
@@ -89,4 +92,8 @@ fn search_ddl() -> impl Iterator<Item = &'static str> {
 
 fn graph_ddl() -> impl Iterator<Item = &'static str> {
     super::graph::DDL.iter().copied()
+}
+
+fn vector_ddl() -> impl Iterator<Item = &'static str> {
+    super::vector::DDL.iter().copied()
 }

@@ -107,8 +107,9 @@ async fn import_pass_one(
                 in_batch = in_batch.saturating_add(1);
             }
             NormalizedRecord::Entity(e) => {
+                let id = super::export::normalize_endpoint(&e.id);
                 let ge = GraphEntity::new(
-                    e.id.clone(),
+                    id,
                     e.entity_type.clone(),
                     e.name.clone(),
                     e.properties.clone(),
@@ -164,11 +165,17 @@ async fn import_pass_two(
     report: &mut MigrateReport,
 ) -> Result<(), String> {
     let mut in_batch = 0usize;
+    let mut seen_edges = std::collections::HashSet::new();
     store.exec("BEGIN TRANSACTION").await.map_err(|e| format!("begin tx: {e}"))?;
     for record in records {
         if let NormalizedRecord::Edge(ed) = record {
-            if let Err(e) = store.relate_dynamic(&ed.from_id, &ed.to_id, &ed.rel_type, ed.weight).await {
-                report.warnings.push(format!("skip edge {} -{}-> {}: {e}", ed.from_id, ed.rel_type, ed.to_id));
+            let from = super::export::normalize_endpoint(&ed.from_id);
+            let to = super::export::normalize_endpoint(&ed.to_id);
+            if !seen_edges.insert((from.clone(), ed.rel_type.clone(), to.clone())) {
+                continue;
+            }
+            if let Err(e) = store.relate_dynamic(&from, &to, &ed.rel_type, ed.weight).await {
+                report.warnings.push(format!("skip edge {} -{}-> {}: {e}", from, ed.rel_type, to));
             } else {
                 report.edge_count = report.edge_count.saturating_add(1);
                 in_batch = in_batch.saturating_add(1);

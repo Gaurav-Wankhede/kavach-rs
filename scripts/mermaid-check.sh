@@ -5,6 +5,13 @@ bun_bin="$(command -v bun || echo "$HOME/.bun/bin/bun")"
 mmdc="$(command -v mmdc || echo "$HOME/.bun/bin/mmdc")"
 [ -x "$bun_bin" ] || { echo "mermaid-check: bun absent" >&2; exit 127; }
 [ -x "$mmdc" ] || { echo "mermaid-check: mmdc absent — bun add -g @mermaid-js/mermaid-cli" >&2; exit 127; }
+if [ -z "${PUPPETEER_EXECUTABLE_PATH:-}" ]; then
+  if [ -x "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" ]; then
+    export PUPPETEER_EXECUTABLE_PATH="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+  elif [ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]; then
+    export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  fi
+fi
 work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 md="$work/blocks.md"
 n="$("$bun_bin" "$(dirname "$0")/mermaid-extract.js" "$file" "$md")"

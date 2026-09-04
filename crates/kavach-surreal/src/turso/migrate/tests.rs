@@ -44,7 +44,7 @@ fn test_normalize_record_edge() {
             assert_eq!(e.from_id, "entity:task_b");
             assert_eq!(e.to_id, "entity:task_a");
             assert_eq!(e.rel_type, "depends_on");
-            assert_eq!(e.weight, 1.5);
+            assert!((e.weight - 1.5).abs() < f64::EPSILON);
         }
         _ => panic!("expected NormalizedRecord::Edge"),
     }
@@ -182,4 +182,82 @@ async fn test_quote_injection_safe() {
     let mems = store.list_all().await.unwrap();
     assert_eq!(mems.len(), 1);
     assert_eq!(mems[0].title, "'; DROP TABLE memories; --");
+}
+
+#[test]
+fn test_normalize_endpoint_formats() {
+    use super::export::normalize_endpoint;
+    assert_eq!(normalize_endpoint("entity:00102z3nqek0gu0fs8nj"), "entity:00102z3nqek0gu0fs8nj");
+    assert_eq!(
+        normalize_endpoint("`RecordId { table`: `Table(\"entity\"), key: String(\"amjap2ghdqap5pjmveh9\") }`"),
+        "entity:amjap2ghdqap5pjmveh9"
+    );
+    assert_eq!(
+        normalize_endpoint("RecordId { table: Table(\"entity\"), key: String(\"xyz\") }"),
+        "entity:xyz"
+    );
+    assert_eq!(
+        normalize_endpoint("entity:`skill:durable_objects.bindings`"),
+        "entity:skill:durable_objects.bindings"
+    );
+    assert_eq!(
+        normalize_endpoint("roadmap:`String(\"nicole-carpenter\"):roadmap.unit.backend.cursor`"),
+        "roadmap:nicole-carpenter:roadmap.unit.backend.cursor"
+    );
+    assert_eq!(normalize_endpoint("citation:1cmrc2u6s2h3rnpfp8zx"), "citation:1cmrc2u6s2h3rnpfp8zx");
+}
+
+#[tokio::test]
+async fn test_validate_store_with_memory_and_project_endpoints() {
+    let dir = tempfile::TempDir::new().unwrap();
+    let db_path = dir.path().join("mem_edge.db");
+    let store = TursoStore::open(&db_path).await.unwrap();
+    let records = vec![
+        NormalizedRecord::Memory(Box::new(MemoryRecord {
+            project: "proj1".to_owned(),
+            category: "roadmap".to_owned(),
+            entry_key: "unit.task1".to_owned(),
+            title: "Task 1".to_owned(),
+            content: "Content".to_owned(),
+            status: Some("done".to_owned()),
+            entry_status: None,
+            tags: vec![],
+            decay_score: None,
+            access_count: 0,
+            priority: None,
+            lane: None,
+            exec_prompt: None,
+            occupied_by: None,
+            occupied_until: None,
+            created_at: None,
+            updated_at: None,
+        })),
+        NormalizedRecord::Entity(EntityRecord {
+            id: "entity:c1".to_owned(),
+            entity_type: "concept".to_owned(),
+            name: "concept1".to_owned(),
+            properties: None,
+            content_hash: None,
+            project: None,
+        }),
+        NormalizedRecord::Edge(EdgeRecord {
+            from_id: "roadmap:proj1:unit.task1".to_owned(),
+            rel_type: "implements".to_owned(),
+            to_id: "entity:c1".to_owned(),
+            weight: 1.0,
+        }),
+    ];
+    let opts = ImportOpts { batch_size: 10, overwrite: true, dry_run: false };
+    import_records(&store, &records, opts).await.unwrap();
+    let expected = SourceCounts {
+        memory: 1,
+        entity: 1,
+        edge: 1,
+        project: 0,
+        part: 0,
+        event: 0,
+    };
+    let val = validate_store(&store, &expected).await.unwrap();
+    assert!(val.is_clean);
+    assert!(val.dangling_edges.is_empty());
 }

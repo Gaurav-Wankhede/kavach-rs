@@ -1,4 +1,5 @@
 //! Exporter and record normalizer for SurrealDB to NDJSON migration stream.
+use std::collections::HashSet;
 use serde_json::Value;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any as Db;
@@ -39,6 +40,9 @@ pub fn normalize_record(raw: &Value) -> Result<NormalizedRecord, String> {
     if table == "entity" || is_entity_shape(record) {
         return Ok(parse_entity_record(record));
     }
+    if table == "citation" || is_citation_shape(record) {
+        return Ok(parse_citation_record(record));
+    }
     if ALLOWED_RELS.contains(&table) || is_edge_shape(record) {
         return Ok(parse_edge_record(record, table));
     }
@@ -64,9 +68,40 @@ fn is_entity_shape(val: &Value) -> bool {
     val.get("entity_type").is_some() && val.get("name").is_some() && val.get("id").is_some()
 }
 
+/// Heuristic check for citation row structure.
+fn is_citation_shape(val: &Value) -> bool {
+    val.get("metadata").is_some() && val.get("name").is_some() && val.get("entry_key").is_some()
+}
+
 /// Heuristic check for directed relation edge structure.
 fn is_edge_shape(val: &Value) -> bool {
     val.get("in").is_some() && val.get("out").is_some()
+}
+
+/// Normalize an endpoint ID string, stripping SurrealDB Debug wrappers and backticks.
+#[must_use]
+pub fn normalize_endpoint(raw: &str) -> String {
+    let s = raw.trim().trim_matches('`');
+    if let Some((_, rest)) = s.split_once("Table(\"")
+        && let Some((table, after_table)) = rest.split_once('"')
+        && let Some((_, after_key)) = after_table.split_once("key:")
+        && let Some((_, after_string)) = after_key.split_once("String(\"")
+        && let Some((inner_key, _)) = after_string.rsplit_once('"')
+    {
+        let clean_key = inner_key
+            .replace("\\\"", "\"")
+            .replace("String(\"", "")
+            .replace("\")", "")
+            .replace('`', "");
+        return format!("{table}:{clean_key}");
+    }
+    let cleaned = s.replace('`', "");
+    if let Some((cat, rest)) = cleaned.split_once(":String(\"")
+        && let Some((proj, key)) = rest.split_once("\"):")
+    {
+        return format!("{cat}:{proj}:{key}");
+    }
+    cleaned
 }
 
 /// Normalize raw json into a MemoryRecord.
@@ -118,7 +153,8 @@ fn parse_memory_record(val: &Value, table: &str) -> NormalizedRecord {
 
 /// Normalize raw json into an EntityRecord.
 fn parse_entity_record(val: &Value) -> NormalizedRecord {
-    let id = val.get("id").and_then(Value::as_str).unwrap_or_default().to_owned();
+    let id_raw = val.get("id").and_then(Value::as_str).unwrap_or_default();
+    let id = normalize_endpoint(id_raw);
     let entity_type = val.get("entity_type").and_then(Value::as_str).unwrap_or_default().to_owned();
     let name = val.get("name").and_then(Value::as_str).unwrap_or_default().to_owned();
     let properties = val.get("properties").map(|p| {
@@ -140,10 +176,41 @@ fn parse_entity_record(val: &Value) -> NormalizedRecord {
     })
 }
 
+/// Normalize raw json citation row into an EntityRecord.
+fn parse_citation_record(val: &Value) -> NormalizedRecord {
+    let id_raw = val.get("id").and_then(Value::as_str).unwrap_or_default();
+    let id = normalize_endpoint(id_raw);
+    let entity_type = "citation".to_owned();
+    let name = val.get("name").and_then(Value::as_str).unwrap_or_default().to_owned();
+    let properties = val.get("metadata").map(|p| {
+        if p.is_string() {
+            p.as_str().unwrap_or_default().to_owned()
+        } else {
+            p.to_string()
+        }
+    });
+    let proj_raw = val.get("project").and_then(Value::as_str).unwrap_or_default();
+    let project = if proj_raw.is_empty() {
+        None
+    } else {
+        Some(strip_prefix(proj_raw, "project"))
+    };
+    NormalizedRecord::Entity(EntityRecord {
+        id,
+        entity_type,
+        name,
+        properties,
+        content_hash: None,
+        project,
+    })
+}
+
 /// Normalize raw json into an EdgeRecord.
 fn parse_edge_record(val: &Value, table: &str) -> NormalizedRecord {
-    let from_id = val.get("in").or_else(|| val.get("from_id")).and_then(Value::as_str).unwrap_or_default().to_owned();
-    let to_id = val.get("out").or_else(|| val.get("to_id")).and_then(Value::as_str).unwrap_or_default().to_owned();
+    let from_raw = val.get("in").or_else(|| val.get("from_id")).and_then(Value::as_str).unwrap_or_default();
+    let from_id = normalize_endpoint(from_raw);
+    let to_raw = val.get("out").or_else(|| val.get("to_id")).and_then(Value::as_str).unwrap_or_default();
+    let to_id = normalize_endpoint(to_raw);
     let rel_type = val.get("rel_type").and_then(Value::as_str).map_or_else(
         || {
             if ALLOWED_RELS.contains(&table) { table.to_owned() } else { "references".to_owned() }
@@ -216,6 +283,18 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
         writer.write_all(b"\n").await.map_err(|e| format!("newline entity: {e}"))?;
         report.entity_count = report.entity_count.saturating_add(1);
     }
+    if let Ok(mut cit_resp) = db.query("SELECT * FROM citation;").await
+        && let Ok(citations) = cit_resp.take::<Vec<Value>>(0)
+    {
+        for cit in citations {
+            let norm = parse_citation_record(&cit);
+            let line = serde_json::to_string(&norm).map_err(|e| format!("serialize citation: {e}"))?;
+            writer.write_all(line.as_bytes()).await.map_err(|e| format!("write citation: {e}"))?;
+            writer.write_all(b"\n").await.map_err(|e| format!("newline citation: {e}"))?;
+            report.entity_count = report.entity_count.saturating_add(1);
+        }
+    }
+    let mut seen_edges = HashSet::new();
     for rel in ALLOWED_RELS {
         let sql = format!("SELECT * FROM {rel};");
         if let Ok(mut resp) = db.query(sql).await
@@ -223,6 +302,12 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
         {
             for row in rows {
                 let norm = parse_edge_record(&row, rel);
+                if let NormalizedRecord::Edge(ref ed) = norm {
+                    let key = (ed.from_id.clone(), ed.rel_type.clone(), ed.to_id.clone());
+                    if !seen_edges.insert(key) {
+                        continue;
+                    }
+                }
                 let line = serde_json::to_string(&norm).map_err(|e| format!("serialize edge {rel}: {e}"))?;
                 writer.write_all(line.as_bytes()).await.map_err(|e| format!("write edge {rel}: {e}"))?;
                 writer.write_all(b"\n").await.map_err(|e| format!("newline edge {rel}: {e}"))?;

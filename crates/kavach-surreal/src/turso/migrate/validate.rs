@@ -1,4 +1,6 @@
 //! Validation pass verifying entity-edge integrity, count parity, and FTS sync.
+use std::collections::HashSet;
+
 use super::types::{SourceCounts, ValidateReport};
 use crate::turso::TursoStore;
 use crate::turso::entries::EntryStore;
@@ -12,11 +14,12 @@ pub async fn validate_store(
 ) -> Result<ValidateReport, String> {
     let mut report = ValidateReport::default();
     let mut is_clean = true;
+    let valid_nodes = load_valid_nodes(store).await?;
     let edges = store.all_edges_raw().await.map_err(|e| format!("read edges: {e}"))?;
     report.edge_count = edges.len();
     for (from, rel, to) in &edges {
         for endpoint in [from, to] {
-            if store.get_entity(endpoint).await.ok().flatten().is_none() {
+            if !valid_nodes.contains(endpoint) {
                 report.dangling_edges.push(format!("{from} -{rel}-> {to} (missing {endpoint})"));
                 is_clean = false;
             }
@@ -42,6 +45,38 @@ pub async fn validate_store(
     }
     report.is_clean = is_clean;
     Ok(report)
+}
+
+/// Load all valid endpoint IDs from entities, memories, and projects tables.
+async fn load_valid_nodes(store: &TursoStore) -> Result<HashSet<String>, String> {
+    let mut nodes = HashSet::new();
+    let mut ent_rows = store.query("SELECT id FROM entities", ()).await.map_err(|e| format!("query entities: {e}"))?;
+    while let Some(row) = ent_rows.next().await.map_err(|e| format!("entity row: {e}"))? {
+        let id: String = row.get(0).map_err(|e| format!("entity id: {e}"))?;
+        if let Some(stripped) = id.strip_prefix("entity:") {
+            nodes.insert(stripped.to_owned());
+        } else {
+            nodes.insert(format!("entity:{id}"));
+        }
+        nodes.insert(id);
+    }
+    let mut mem_rows = store.query("SELECT project, category, entry_key FROM memories", ()).await.map_err(|e| format!("query memories: {e}"))?;
+    while let Some(row) = mem_rows.next().await.map_err(|e| format!("memory row: {e}"))? {
+        let proj: String = row.get(0).map_err(|e| format!("mem proj: {e}"))?;
+        let cat: String = row.get(1).map_err(|e| format!("mem cat: {e}"))?;
+        let key: String = row.get(2).map_err(|e| format!("mem key: {e}"))?;
+        nodes.insert(format!("{cat}:{proj}:{key}"));
+        nodes.insert(format!("{proj}/{cat}/{key}"));
+        nodes.insert(format!("{cat}:{key}"));
+    }
+    let mut proj_rows = store.query("SELECT slug FROM projects", ()).await.map_err(|e| format!("query projects: {e}"))?;
+    while let Some(row) = proj_rows.next().await.map_err(|e| format!("proj row: {e}"))? {
+        let slug: String = row.get(0).map_err(|e| format!("proj slug: {e}"))?;
+        nodes.insert(format!("project:{slug}"));
+        nodes.insert(format!("entity:project:{slug}"));
+        nodes.insert(slug);
+    }
+    Ok(nodes)
 }
 
 /// Fetch row count from memories_fts virtual table.

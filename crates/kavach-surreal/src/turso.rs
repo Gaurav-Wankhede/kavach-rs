@@ -17,6 +17,7 @@ pub mod entries;
 pub mod graph;
 pub mod migrate;
 pub mod search;
+pub mod vector;
 
 #[cfg(test)]
 #[path = "turso/entries_test.rs"]
@@ -29,6 +30,10 @@ mod search_test;
 #[cfg(test)]
 #[path = "turso/graph_test.rs"]
 mod graph_test;
+
+#[cfg(test)]
+#[path = "turso/vector_test.rs"]
+mod vector_test;
 
 pub const DEFAULT_DB_FILENAME: &str = "kavach.db";
 
@@ -84,7 +89,7 @@ pub(crate) const SCHEMA_DDL: &[&str] = &[
               occupied_until TEXT,
               created_at    TEXT NOT NULL,
               updated_at    TEXT NOT NULL,
-              embedding     F32_BLOB(768),
+              embedding     F32_BLOB(384),
               PRIMARY KEY (project, category, entry_key)
             )",
     "CREATE INDEX IF NOT EXISTS idx_memories_status ON memories(project, status)",

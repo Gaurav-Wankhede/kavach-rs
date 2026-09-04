@@ -433,5 +433,20 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         /// Target libSQL database path (or output NDJSON for export)
         #[arg(long, default_value = "")]
         to: String,
+        /// Overwrite target database if it already contains memories
+        #[arg(long, default_value_t = false)]
+        overwrite: bool,
+    },
+    /// Backfill vector embeddings for existing memories (Phase 5)
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db embed-backfill --batch 50\n  kavach db embed-backfill --batch 64 --json\n\nWHEN: Populate `embedding` column for pre-vector rows; idempotent and resumable."
+    )]
+    EmbedBackfill {
+        /// Batch size per embedding pass (default 50)
+        #[arg(long, default_value_t = 50)]
+        batch: usize,
+        /// Output JSON instead of human table
+        #[arg(long, default_value_t = false)]
+        json: bool,
     },
 }

@@ -1,9 +1,4 @@
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
-use super::kanban::is_done_title;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-const ALL_CATEGORIES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
 /// Resolved per-row content depth for query output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Depth {
@@ -16,7 +11,7 @@ pub(crate) enum Depth {
 }
 /// Resolve the depth from the `--depth` flag and the `KAVACH_NO_TRUNCATE` env.
 /// The env override wins (forces `All`); else `all`/empty→`All`, an integer→
-/// `Chars(n)`, a non-integer→`None` (fail-safe: a typo never dumps huge bodies).
+/// `Chars(n)`, a non-integer→`None` (fail-safe: a typo never dumps huge bodies).\
 #[must_use]
 pub(crate) fn resolve_depth(flag: Option<&str>, no_truncate_env: bool) -> Depth {
     if no_truncate_env {
@@ -100,7 +95,7 @@ pub(crate) fn format_query_entry(
 
 #[expect(
     clippy::too_many_lines,
-    reason = "RPC-first with direct-DB fallback requires both print paths inline"
+    reason = "RPC-first with Turso direct-DB fallback requires both print paths inline"
 )]
 pub(super) fn run(
     project_slug: &str,
@@ -110,6 +105,8 @@ pub(super) fn run(
     field: Option<&str>,
     compact: bool,
 ) -> i32 {
+    use kavach_surreal::turso::entries::EntryStore;
+    use super::kanban::is_done_title;
     let depth = resolve_depth(
         depth_flag,
         std::env::var("KAVACH_NO_TRUNCATE").as_deref() == Ok("1"),
@@ -144,8 +141,6 @@ pub(super) fn run(
         }
         Err(e) if super::rpc_client::should_fallback_to_direct(&e) => {}
         Err(e) => {
-            // Daemon is UP and holds the RocksDB lock — a direct open here
-            // would race it (LOCK: Resource temporarily unavailable).
             let msg = format!("rpc error: {e}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
@@ -164,44 +159,49 @@ pub(super) fn run(
         }
     };
     runtime.block_on(async {
-        // Resilient open — closes the daemon-restart TOCTOU
-        // (`rca.db-event-daemon-restart-race`): retry the lock-acquiring open
-        // (bounded) instead of trusting the socket proxy; a genuine stale
-        // lock still surfaces after the backoff exhausts.
-        let db = match super::rpc_client::open_direct_resilient().await {
-            Ok(d) => d,
+        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        let store = match super::rpc_client::open_turso_resilient().await {
+            Ok(s) => s,
             Err(e) => {
-                let msg = format!("error: open SurrealDB: {e}");
+                let msg = format!("error: open kavach.db: {e}");
                 if let Err(io_err) = ewrite_or_exit(&msg) {
                     return into_exit_code(io_err);
                 }
                 return 1;
             }
         };
-        let project_id = match resolve_project_id(&db, project_slug).await {
-            Ok(id) => id,
-            Err(code) => return code,
-        };
-        let tables: Vec<&str> = category.map_or_else(|| ALL_CATEGORIES.to_vec(), |c| vec![c]);
-        let mut entries = Vec::new();
-        for table in &tables {
-            match kavach_surreal::list_by_project(&db, table, &project_id).await {
-                Ok(rows) => entries.extend(rows),
+        let entries = if let Some(cat) = category {
+            match store.list_by_category(project_slug, cat).await {
+                Ok(rows) => rows,
                 Err(e) => {
-                    let msg = format!("error reading {table}: {e}");
+                    let msg = format!("error reading {cat}: {e}");
                     if let Err(io_err) = ewrite_or_exit(&msg) {
                         return into_exit_code(io_err);
                     }
                     return 1;
                 }
             }
-        }
+        } else {
+            match store.list_by_project(project_slug).await {
+                Ok(rows) => rows,
+                Err(e) => {
+                    let msg = format!("error reading project {project_slug}: {e}");
+                    if let Err(io_err) = ewrite_or_exit(&msg) {
+                        return into_exit_code(io_err);
+                    }
+                    return 1;
+                }
+            }
+        };
         let filtered: Vec<_> = if include_done {
             entries
         } else {
             entries
                 .into_iter()
-                .filter(|e| e.category_str() != "roadmap" || !is_done_title(&e.title))
+                .filter(|e| {
+                    e.category.as_deref().unwrap_or("") != "roadmap"
+                        || !is_done_title(&e.title)
+                })
                 .collect()
         };
         if filtered.is_empty() {
@@ -218,11 +218,13 @@ pub(super) fn run(
             return 0;
         }
         for entry in &filtered {
+            let cat_str = entry.category.as_deref().unwrap_or("unknown");
+            let status_str = entry.entry_status.as_deref().unwrap_or("todo");
             let view = QueryEntryView {
-                category: entry.category_str(),
+                category: cat_str,
                 key: &entry.entry_key,
                 title: &entry.title,
-                status: entry.entry_status_str(),
+                status: status_str,
                 access_count: entry.access_count.unwrap_or(0),
                 content: Some(&entry.content),
             };
@@ -243,34 +245,6 @@ pub(super) fn run(
         }
         0
     })
-}
-async fn resolve_project_id(db: &Surreal<Db>, slug: &str) -> Result<RecordId, i32> {
-    match kavach_surreal::project_get_by_slug(db, slug).await {
-        Ok(Some(p)) => {
-            if let Some(id) = p.id {
-                Ok(id)
-            } else {
-                if let Err(io_err) = ewrite_or_exit("error: project missing id") {
-                    return Err(into_exit_code(io_err));
-                }
-                Err(1)
-            }
-        }
-        Ok(None) => {
-            let msg = format!("error: project not found: {slug}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return Err(into_exit_code(io_err));
-            }
-            Err(1)
-        }
-        Err(e) => {
-            let msg = format!("error: {e}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return Err(into_exit_code(io_err));
-            }
-            Err(1)
-        }
-    }
 }
 #[cfg(test)]
 #[path = "query_depth_test.rs"]

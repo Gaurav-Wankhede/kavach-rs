@@ -265,14 +265,34 @@ impl EntryStore for TursoStore {
                  VALUES (?1,?2,?3,?4,?5)",
                 libsql::params![
                     e.entry_key.clone(),
-                    project_ref,
-                    category,
+                    project_ref.clone(),
+                    category.clone(),
                     e.title.clone(),
                     e.content.clone(),
                 ],
             )
             .await
             .map_err(map_err)?;
+        // Phase 5: write-time embedding — best-effort, never fails the upsert.
+        // Block ONNX on a dedicated thread so the async executor stays unblocked.
+        let title_for_embed = e.title.clone();
+        let content_for_embed = e.content.clone();
+        let embed_res = tokio::task::spawn_blocking(move || {
+            crate::turso::vector::embed_one(&title_for_embed, &content_for_embed)
+        })
+        .await;
+        if let Ok(Ok(vec)) = embed_res
+            && vec.len() == crate::turso::vector::EMBEDDING_DIMS
+        {
+            let blob = crate::turso::vector::serialize_embedding(&vec);
+            self.conn
+                .execute(
+                    "UPDATE memories SET embedding = ?1 WHERE project = ?2 AND category = ?3 AND entry_key = ?4",
+                    libsql::params![blob, project_ref, category, e.entry_key.clone()],
+                )
+                .await
+                .ok();
+        }
         Ok(())
     }
 

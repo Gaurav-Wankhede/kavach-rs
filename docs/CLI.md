@@ -224,6 +224,23 @@ EXAMPLES:
 WHEN: Granular removal of one row or a whole category. Prefer over wipe-project.
 ```
 
+## `kavach db embed-backfill`
+
+Backfill vector embeddings for existing memories (Phase 5)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--batch` | Batch size per embedding pass (default 50) | 50 |
+| `--json` | Output JSON instead of human table | false |
+
+```
+EXAMPLES:
+  kavach db embed-backfill --batch 50
+  kavach db embed-backfill --batch 64 --json
+
+WHEN: Populate `embedding` column for pre-vector rows; idempotent and resumable.
+```
+
 ## `kavach db event`
 
 Append an event to the log
@@ -349,6 +366,7 @@ SurrealDB → embedded Turso migration (PRD_SURREALDB_TO_TURSO_MIGRATION Phase 4
 | `--verb` | Which migrate step: `export` (dump live SurrealDB), `import` (build DB from NDJSON), or `verify` | import |
 | `--from` | NDJSON export path (source of truth for import/verify) |  |
 | `--to` | Target libSQL database path (or output NDJSON for export) |  |
+| `--overwrite` | Overwrite target database if it already contains memories | false |
 
 ```
 EXAMPLES:

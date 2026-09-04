@@ -15,6 +15,15 @@ pub(crate) fn fallback_backoff_schedule() -> impl Iterator<Item = std::time::Dur
         .map(std::time::Duration::from_millis)
 }
 
+/// Open the Turso (libSQL) store — Phase 6 default direct-open path.
+///
+/// libSQL is a local file; no lock-contention retry needed.
+pub(crate) async fn open_turso_resilient() -> Result<kavach_surreal::turso::TursoStore, String> {
+    kavach_surreal::turso::TursoStore::open_default()
+        .await
+        .map_err(|e| e.to_string())
+}
+
 pub(crate) async fn open_direct_resilient()
 -> Result<surrealdb::Surreal<surrealdb::engine::any::Any>, String> {
     let mut last = match kavach_surreal::open_default().await {

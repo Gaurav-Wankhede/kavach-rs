@@ -57,6 +57,10 @@ ignore = [
     # maud_macros → maud → kavach-web. No safe upgrade path; awaits
     # maud migration to a maintained proc-macro error crate.
     "RUSTSEC-2024-0370",
+    # paste unmaintained (RUSTSEC-2024-0436). Transitive-only via
+    # fastembed→tokenizers. No safe upgrade available upstream.
+    # Decision row: crate.paste.advisory.RUSTSEC-2024-0436
+    "RUSTSEC-2024-0436",
 ]
 
 # ─────────────────────────────────────────────────────────────
