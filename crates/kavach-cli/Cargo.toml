@@ -24,8 +24,6 @@ kavach-web = { path = "../kavach-web" }
 kavach-patterns = { path = "../kavach-patterns" }
 regex = { workspace = true }
 chrono = { workspace = true }
-surrealdb = { workspace = true }
-surrealdb-types = { workspace = true }
 kavach-advisor = { path = "../kavach-advisor" }
 postgres = { workspace = true }
 postgres-native-tls = { workspace = true }

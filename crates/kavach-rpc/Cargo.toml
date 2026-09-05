@@ -16,8 +16,6 @@ kavach-db = { path = "../kavach-db" }
 kavach-patterns = { path = "../kavach-patterns" }
 kavach-ope = { path = "../kavach-ope" }
 kavach-types = { path = "../kavach-types" }
-surrealdb = { workspace = true }
-surrealdb-types = { workspace = true }
 jsonrpsee = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
