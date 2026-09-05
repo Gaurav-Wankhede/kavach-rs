@@ -10,11 +10,11 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
+use kavach_db::turso::TursoStore;
 use kavach_db::{
     append_bandit_row, list_bandit_rows, list_unrewarded_bandit_rows,
     list_unrewarded_bandit_rows_for_session, open_memory, update_bandit_reward,
 };
-use kavach_db::turso::TursoStore;
 
 /// Open an in-memory db with the production schema applied — `open_memory`
 /// bootstraps the schema, so a read of a never-written `bandit_log` must see a
@@ -31,7 +31,11 @@ async fn append_persists_a_row_and_returns_its_content_addressed_id() {
     let id = append_bandit_row(&db, PAYLOAD).await.expect("first append");
 
     // The id is the BLAKE3-derived content key (32 hex chars), not a record id.
-    assert_eq!(id.len(), 32, "content key is the truncated BLAKE3 digest: {id}");
+    assert_eq!(
+        id.len(),
+        32,
+        "content key is the truncated BLAKE3 digest: {id}"
+    );
 
     // Prove the payload actually landed — read it back by the same key.
     let mut resp = db
@@ -44,7 +48,11 @@ async fn append_persists_a_row_and_returns_its_content_addressed_id() {
     let row = resp.next().await.expect("next").expect("row exists");
     let payload: String = row.get(0).expect("payload");
     let v: serde_json::Value = serde_json::from_str(&payload).expect("payload is JSON");
-    assert_eq!(v["action"].as_str(), Some("block"), "payload did not persist");
+    assert_eq!(
+        v["action"].as_str(),
+        Some("block"),
+        "payload did not persist"
+    );
 }
 
 #[tokio::test]
@@ -55,7 +63,9 @@ async fn replaying_the_identical_decision_does_not_double_count() {
     // counts.
     let db = open_memory().await.expect("memory db");
     append_bandit_row(&db, PAYLOAD).await.expect("first append");
-    let second = append_bandit_row(&db, PAYLOAD).await.expect("replay is idempotent");
+    let second = append_bandit_row(&db, PAYLOAD)
+        .await
+        .expect("replay is idempotent");
 
     // The invariant that matters: exactly one row, and the same key back.
     let mut resp = db

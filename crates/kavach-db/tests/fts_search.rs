@@ -15,8 +15,8 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_db::turso::search::SearchStore;
 use kavach_db::turso::TursoStore;
+use kavach_db::turso::search::SearchStore;
 use kavach_db::{open_memory, upsert_entry_full};
 
 /// In-memory db with the production schema (incl. the FTS5 index) applied.
