@@ -1,5 +1,7 @@
 //! Unit tests for migration normalizer, batch import, and validation.
-use super::types::{EdgeRecord, EntityRecord, ImportOpts, MemoryRecord, NormalizedRecord, SourceCounts};
+use super::types::{
+    EdgeRecord, EntityRecord, ImportOpts, MemoryRecord, NormalizedRecord, SourceCounts,
+};
 use super::{import_records, normalize_record, validate_store};
 use crate::turso::TursoStore;
 use crate::turso::entries::EntryStore;
@@ -98,7 +100,11 @@ async fn test_import_and_validate_roundtrip() {
             weight: 1.0,
         }),
     ];
-    let opts = ImportOpts { batch_size: 50, overwrite: true, dry_run: false };
+    let opts = ImportOpts {
+        batch_size: 50,
+        overwrite: true,
+        dry_run: false,
+    };
     let rep = import_records(&store, &records, opts).await.unwrap();
     assert_eq!(rep.memory_count, 1);
     assert_eq!(rep.entity_count, 2);
@@ -138,7 +144,11 @@ async fn test_dangling_edge_detected() {
             weight: 1.0,
         }),
     ];
-    let opts = ImportOpts { batch_size: 50, overwrite: true, dry_run: false };
+    let opts = ImportOpts {
+        batch_size: 50,
+        overwrite: true,
+        dry_run: false,
+    };
     let _ = import_records(&store, &records, opts).await.unwrap();
     let expected = SourceCounts {
         memory: 0,
@@ -177,7 +187,11 @@ async fn test_quote_injection_safe() {
         created_at: None,
         updated_at: None,
     }))];
-    let opts = ImportOpts { batch_size: 10, overwrite: true, dry_run: false };
+    let opts = ImportOpts {
+        batch_size: 10,
+        overwrite: true,
+        dry_run: false,
+    };
     import_records(&store, &records, opts).await.unwrap();
     let mems = store.list_all().await.unwrap();
     assert_eq!(mems.len(), 1);
@@ -187,13 +201,18 @@ async fn test_quote_injection_safe() {
 #[test]
 fn test_normalize_endpoint_formats() {
     use super::export::normalize_endpoint;
-    assert_eq!(normalize_endpoint("entity:00102z3nqek0gu0fs8nj"), "entity:00102z3nqek0gu0fs8nj");
     assert_eq!(
-        normalize_endpoint("`RecordId { table`: `Table(\"entity\"), key: String(\"amjap2ghdqap5pjmveh9\") }`"),
+        normalize_endpoint("entity:00102z3nqek0gu0fs8nj"),
+        "entity:00102z3nqek0gu0fs8nj"
+    );
+    assert_eq!(
+        normalize_endpoint(
+            "`String { table`: `Table(\"entity\"), key: String(\"amjap2ghdqap5pjmveh9\") }`"
+        ),
         "entity:amjap2ghdqap5pjmveh9"
     );
     assert_eq!(
-        normalize_endpoint("RecordId { table: Table(\"entity\"), key: String(\"xyz\") }"),
+        normalize_endpoint("String { table: Table(\"entity\"), key: String(\"xyz\") }"),
         "entity:xyz"
     );
     assert_eq!(
@@ -204,7 +223,10 @@ fn test_normalize_endpoint_formats() {
         normalize_endpoint("roadmap:`String(\"nicole-carpenter\"):roadmap.unit.backend.cursor`"),
         "roadmap:nicole-carpenter:roadmap.unit.backend.cursor"
     );
-    assert_eq!(normalize_endpoint("citation:1cmrc2u6s2h3rnpfp8zx"), "citation:1cmrc2u6s2h3rnpfp8zx");
+    assert_eq!(
+        normalize_endpoint("citation:1cmrc2u6s2h3rnpfp8zx"),
+        "citation:1cmrc2u6s2h3rnpfp8zx"
+    );
 }
 
 #[tokio::test]
@@ -247,7 +269,11 @@ async fn test_validate_store_with_memory_and_project_endpoints() {
             weight: 1.0,
         }),
     ];
-    let opts = ImportOpts { batch_size: 10, overwrite: true, dry_run: false };
+    let opts = ImportOpts {
+        batch_size: 10,
+        overwrite: true,
+        dry_run: false,
+    };
     import_records(&store, &records, opts).await.unwrap();
     let expected = SourceCounts {
         memory: 1,

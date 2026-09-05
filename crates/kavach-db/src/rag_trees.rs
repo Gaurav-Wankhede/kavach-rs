@@ -1,22 +1,20 @@
 // split: intentional - cohesive rag_tree storage (struct + 2 read fns)
-// SurrealDB-backed rag_tree store. Mirrors kavach-db::rag_trees read API.
+// SQL-backed rag_tree store. Mirrors kavach-db::rag_trees read API.
 // sql-safe: explicit column list; bound params only; no string concat.
 use crate::error::Result;
+use crate::turso::TursoStore;
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct RagTreeRow {
     pub source: String,
     pub built_at: String,
-    pub tree_json: surrealdb_types::Bytes,
+    pub tree_json: Vec<u8>,
     pub source_hash: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct RagTreeLabel {
     pub source: String,
@@ -27,30 +25,46 @@ pub struct RagTreeLabel {
 /// Fetch a `rag_tree` row by source label.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn get(db: &Surreal<Db>, source: &str) -> Result<Option<RagTreeRow>> {
-    let q = "SELECT source, built_at, tree_json, source_hash FROM rag_tree \
-             WHERE source = $source LIMIT 1";
-    let mut response = db.query(q).bind(("source", source.to_owned())).await?;
-    match response.take::<Option<RagTreeRow>>(0) {
-        Ok(row) => Ok(row),
-        Err(e) if crate::error::is_missing_table_error(&e) => Ok(None),
-        Err(e) => Err(e.into()),
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn get(db: &TursoStore, source: &str) -> Result<Option<RagTreeRow>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT source, built_at, tree_json, source_hash FROM rag_tree \
+             WHERE source = $source LIMIT 1",
+            libsql::params![source.to_owned()],
+        )
+        .await?;
+    match rows.next().await? {
+        Some(r) => Ok(Some(RagTreeRow {
+            source: r.get::<String>(0)?,
+            built_at: r.get::<String>(1)?,
+            tree_json: r.get::<Vec<u8>>(2)?,
+            source_hash: r.get::<String>(3)?,
+        })),
+        None => Ok(None),
     }
 }
 
 /// List all `rag_tree` rows (label-only projection).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn list(db: &Surreal<Db>) -> Result<Vec<RagTreeLabel>> {
-    let q = "SELECT source, built_at, source_hash FROM rag_tree";
-    let mut response = db.query(q).await?;
-    let rows: Vec<RagTreeLabel> = response.take(0)?;
-    Ok(rows)
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn list(db: &TursoStore) -> Result<Vec<RagTreeLabel>> {
+    let mut rows = db
+        .exec_params("SELECT source, built_at, source_hash FROM rag_tree", ())
+        .await?;
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(RagTreeLabel {
+            source: r.get::<String>(0)?,
+            built_at: r.get::<String>(1)?,
+            source_hash: r.get::<String>(2)?,
+        });
+    }
+    Ok(out)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct RagTreeRefreshable {
     pub source: String,
@@ -60,47 +74,57 @@ pub struct RagTreeRefreshable {
 /// List all `rag_tree` labels with non-empty `source_dir`, for stale-refresh.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn list_refreshable(db: &Surreal<Db>) -> Result<Vec<RagTreeRefreshable>> {
-    let q = "SELECT source, source_dir FROM rag_tree WHERE source_dir != ''";
-    let mut response = db.query(q).await?;
-    let rows: Vec<RagTreeRefreshable> = response.take(0)?;
-    Ok(rows)
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn list_refreshable(db: &TursoStore) -> Result<Vec<RagTreeRefreshable>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT source, source_dir FROM rag_tree WHERE source_dir != ''",
+            (),
+        )
+        .await?;
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(RagTreeRefreshable {
+            source: r.get::<String>(0)?,
+            source_dir: r.get::<String>(1)?,
+        });
+    }
+    Ok(out)
 }
 
 /// Upsert a `rag_tree` row by `source` (label).
 ///
-/// Mirrors the prior `SQLite` shape: stores the NDJSON tree blob, the
-/// BLAKE3 source hash, and the originating source directory so
-/// `refresh-if-stale` can detect drift. Uses the UNIQUE index
-/// `idx_rag_tree_source` for O(1) lookup.
+/// Stores the NDJSON tree blob, the BLAKE3 source hash, and the originating
+/// source directory so `refresh-if-stale` can detect drift. Keyed UPSERT on the
+/// `source` primary key.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the UPSERT.
+/// Propagates `Error::Turso` from the UPSERT.
 pub async fn upsert_with_dir(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     source: &str,
     built_at: &str,
     tree_json: &[u8],
     source_hash: &str,
     source_dir: &str,
 ) -> Result<()> {
-    let q = "UPSERT type::record('rag_tree', $source) SET \
-                source = $source, \
-                built_at = $built_at, \
-                tree_json = $tree_json, \
-                source_hash = $source_hash, \
-                source_dir = $source_dir, \
-                updated_at = time::now()";
-    db.query(q)
-        .bind(("source", source.to_owned()))
-        .bind(("built_at", built_at.to_owned()))
-        .bind((
-            "tree_json",
-            surrealdb_types::Bytes::from(tree_json.to_vec()),
-        ))
-        .bind(("source_hash", source_hash.to_owned()))
-        .bind(("source_dir", source_dir.to_owned()))
-        .await?;
+    let now = crate::turso::now_rfc3339();
+    db.exec_params(
+        "INSERT INTO rag_tree (source, built_at, tree_json, source_hash, source_dir, updated_at) \
+         VALUES ($source, $built_at, $tree_json, $source_hash, $source_dir, $now) \
+         ON CONFLICT(source) DO UPDATE SET \
+             built_at = excluded.built_at, tree_json = excluded.tree_json, \
+             source_hash = excluded.source_hash, source_dir = excluded.source_dir, \
+             updated_at = excluded.updated_at",
+        libsql::params![
+            source.to_owned(),
+            built_at.to_owned(),
+            tree_json.to_vec(),
+            source_hash.to_owned(),
+            source_dir.to_owned(),
+            now
+        ],
+    )
+    .await?;
     Ok(())
 }

@@ -3,7 +3,6 @@
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::fmt;
-use surrealdb_types::SurrealValue;
 
 pub const LEASE_TTL_SECS: i64 = 300;
 
@@ -53,13 +52,24 @@ impl fmt::Debug for AcquireOutcome {
     }
 }
 
-#[derive(Deserialize, SurrealValue)]
+/// Raw lease columns as stored on a `memories` row (RFC3339 TEXT for times).
+#[derive(Deserialize)]
 #[expect(
     clippy::struct_field_names,
     reason = "field names mirror DB column names"
 )]
 pub(super) struct LeaseRow {
     pub occupied_by: Option<String>,
-    pub occupied_until: Option<DateTime<Utc>>,
+    pub occupied_until: Option<String>,
     pub occupied_epoch: Option<i64>,
+}
+
+impl LeaseRow {
+    /// Parse the stored RFC3339 `occupied_until` into a `DateTime<Utc>`.
+    pub(super) fn expires_at(&self) -> Option<DateTime<Utc>> {
+        self.occupied_until
+            .as_deref()
+            .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+            .map(|d| d.with_timezone(&Utc))
+    }
 }

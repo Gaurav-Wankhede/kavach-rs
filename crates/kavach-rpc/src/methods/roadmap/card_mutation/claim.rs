@@ -65,7 +65,7 @@ pub async fn claim_card(
 /// claim is "won" only when BOTH the status flip and the lease succeed.
 async fn claim_won(
     state: &AppState,
-    project_id: &surrealdb_types::RecordId,
+    project_id: &String,
     params: ClaimCardParams,
 ) -> Result<ClaimCardResult, ErrorObjectOwned> {
     let Some(session_id) = params.session_id.as_deref().filter(|s| !s.is_empty()) else {
@@ -92,7 +92,7 @@ async fn claim_won(
 /// holder-less card is a dispatch leak the time-based reclaim still recovers.
 async fn roll_back_to_todo(
     state: &AppState,
-    project_id: &surrealdb_types::RecordId,
+    project_id: &String,
     key: &str,
 ) -> Result<(), ErrorObjectOwned> {
     if let Err(e) = kavach_db::update_status_cas(

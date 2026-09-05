@@ -7,24 +7,27 @@
 )]
 
 use super::{is_citation_rel, relate_citation, traverse_with_citations};
+use crate::turso::TursoStore;
 use crate::{apply_schema, open_memory};
-use surrealdb_types::RecordId;
 
-async fn seed() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
+async fn seed() -> TursoStore {
     let db = open_memory().await.expect("mem db");
     apply_schema(&db).await.expect("schema");
-    db.query("CREATE project:p SET slug = 'p', name = 'p'")
-        .await
-        .expect("project");
-    db.query(
-        "CREATE citation:cit SET project = project:p, entry_key = 'surreal', name = 'SurrealDB', \
-         metadata = [{ slug: 'records', url: 'https://surrealdb.com/docs' }]",
+    db.exec_params(
+        "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at) \
+         VALUES ('p', 'surreal', 'TursoStoreDB', 'records', 'https://surrealdb.com/docs', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
     )
     .await
     .expect("citation");
-    db.query("CREATE decision:d SET project = project:p, entry_key = 'use-surreal', title = 't', content = 'c'")
-        .await
-        .expect("decision");
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, created_at, updated_at) \
+         VALUES ('p', 'decision', 'use-surreal', 't', 'c', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
+    )
+    .await
+    .expect("decision");
     db
 }
 
@@ -46,8 +49,8 @@ fn citation_rel_allowlist_is_exact() {
 #[tokio::test]
 async fn decision_cites_citation_and_single_query_traversal_finds_it() {
     let db = seed().await;
-    let from = RecordId::new("decision", "d");
-    let to = RecordId::new("citation", "cit");
+    let from = "memory:p/decision/use-surreal".to_owned();
+    let to = "citation:p/surreal".to_owned();
     relate_citation(&db, &from, &to, "cite", 1.0)
         .await
         .expect("cite edge accepted");
@@ -69,8 +72,8 @@ async fn decision_cites_citation_and_single_query_traversal_finds_it() {
 #[tokio::test]
 async fn foreign_edge_is_rejected_on_citation_relate() {
     let db = seed().await;
-    let from = RecordId::new("decision", "d");
-    let to = RecordId::new("citation", "cit");
+    let from = "memory:p/decision/use-surreal".to_owned();
+    let to = "citation:p/surreal".to_owned();
     let res = relate_citation(&db, &from, &to, "contains", 1.0).await;
     assert!(
         res.is_err(),
@@ -81,14 +84,15 @@ async fn foreign_edge_is_rejected_on_citation_relate() {
 #[tokio::test]
 async fn citation_parent_edge_links_citations() {
     let db = seed().await;
-    db.query(
-        "CREATE citation:child SET project = project:p, entry_key = 'child', name = 'Child', \
-         metadata = [{ slug: 'c', url: 'https://surrealdb.com/docs/child' }]",
+    db.exec_params(
+        "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at) \
+         VALUES ('p', 'child', 'Child', 'c', 'https://surrealdb.com/docs/child', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
     )
     .await
     .expect("child citation");
-    let child = RecordId::new("citation", "child");
-    let parent = RecordId::new("citation", "cit");
+    let child = "citation:p/child".to_owned();
+    let parent = "citation:p/surreal".to_owned();
     relate_citation(&db, &child, &parent, "parent", 1.0)
         .await
         .expect("parent edge accepted");

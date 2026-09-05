@@ -4,26 +4,23 @@ use super::{
     FAMILY_LOOPHOLE, FAMILY_MISTAKE, append_loophole_event, append_mistake_event,
     upsert_anti_pattern, upsert_anti_pattern_with_family,
 };
+use crate::error::Result;
 use crate::open_memory;
-use surrealdb_types::SurrealValue;
+use crate::turso::TursoStore;
 
-#[derive(SurrealValue)]
-struct FamilyRow {
-    family: String,
-}
-
-async fn family_of(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
-    entity_type: &str,
-) -> Option<String> {
-    let q = "SELECT properties.family AS family FROM entity WHERE entity_type = $t LIMIT 1";
+async fn family_of(db: &TursoStore, entity_type: &str) -> Result<Option<String>> {
     let mut resp = db
-        .query(q)
-        .bind(("t", entity_type.to_owned()))
+        .exec_params(
+            "SELECT json_extract(properties, '$.family') AS family \
+             FROM entities WHERE entity_type = ?1 LIMIT 1",
+            libsql::params![entity_type.to_owned()],
+        )
         .await
         .expect("query");
-    let row: Option<FamilyRow> = resp.take(0).expect("take");
-    row.map(|r| r.family)
+    let row = resp.next().await.expect("next");
+    Ok(row
+        .map(|r| r.get::<Option<String>>(0).expect("family"))
+        .flatten())
 }
 
 #[tokio::test]
@@ -41,7 +38,10 @@ async fn mistake_event_is_tagged_family_mistake() {
     .await
     .expect("append mistake");
     assert_eq!(
-        family_of(&db, "mistake_event").await.as_deref(),
+        family_of(&db, "mistake_event")
+            .await
+            .expect("family")
+            .as_deref(),
         Some(FAMILY_MISTAKE)
     );
 }
@@ -60,7 +60,10 @@ async fn loophole_event_is_tagged_family_loophole() {
     .await
     .expect("append loophole");
     assert_eq!(
-        family_of(&db, "loophole_event").await.as_deref(),
+        family_of(&db, "loophole_event")
+            .await
+            .expect("family")
+            .as_deref(),
         Some(FAMILY_LOOPHOLE)
     );
 }
@@ -87,14 +90,20 @@ async fn anti_pattern_default_family_is_mistake_overlay_is_loophole() {
     upsert_anti_pattern_with_family(&db, "ap-loop", "injection", "parameterize", FAMILY_LOOPHOLE)
         .await
         .expect("loophole family");
-    let q = "SELECT properties.family AS family FROM entity \
-             WHERE entity_type = 'anti_pattern' AND name = $n LIMIT 1";
     let read = |name: &'static str| {
         let db = db.clone();
         async move {
-            let mut r = db.query(q).bind(("n", name)).await.expect("q");
-            let row: Option<FamilyRow> = r.take(0).expect("take");
-            row.map(|x| x.family)
+            let mut r = db
+                .exec_params(
+                    "SELECT json_extract(properties, '$.family') AS family FROM entities \
+                     WHERE entity_type = 'anti_pattern' AND name = ?1 LIMIT 1",
+                    libsql::params![name.to_owned()],
+                )
+                .await
+                .expect("q");
+            let row = r.next().await.expect("next");
+            row.map(|x| x.get::<Option<String>>(0).expect("family"))
+                .flatten()
         }
     };
     assert_eq!(read("ap-default").await.as_deref(), Some(FAMILY_MISTAKE));

@@ -3014,8 +3014,6 @@ dependencies = [
  "rustix 1.1.4",
  "serde",
  "serde_json",
- "surrealdb",
- "surrealdb-types",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",

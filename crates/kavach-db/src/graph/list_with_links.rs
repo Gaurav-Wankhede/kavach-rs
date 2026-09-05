@@ -6,11 +6,11 @@
 // repro:      crates/kavach-app/src/pages/{roadmap,kanban,decisions}.rs:35
 //             all end with kavach_db::list_by_project(...) — flat SELECT,
 //             no graph traversal.
-// why5:       Dashboard treats one SurrealDB as if it were 4 isolated DBs.
-//             The SurrealDB value-prop (multi-model joins in one query) is
+// why5:       Dashboard treats one TursoStoreDB as if it were 4 isolated DBs.
+//             The TursoStoreDB value-prop (multi-model joins in one query) is
 //             unused at the read path.
 // root_cause: No row-with-neighbourhood fetch fn over per-category tables.
-// fix:        This module. ONE SurrealQL block: SELECT rows from <category>,
+// fix:        This module. ONE SQL block: SELECT rows from memories,
 //             plus the entity-graph neighbours (depends_on / blocks /
 //             supersedes / references / mentions, both directions). Caller
 //             joins by entry_key.
@@ -27,17 +27,16 @@
 //
 // TIME: O(n + e) | SPACE: O(n + e)
 // YEAR: 2026 | SEARCHED: 2026-05
-// SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
+// SOURCE: https://github.com/tursodatabase/libSQL
 use crate::dual_write::MemoryEntry;
 use crate::error::Result;
+use crate::turso::TursoStore;
+use crate::turso::entries::EntryStore;
 use serde::Deserialize;
 use std::collections::HashMap;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
 
 /// A row plus its inbound + outbound graph neighbours grouped by relation type.
-#[derive(Debug, Clone, SurrealValue)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct LinkedRow {
     pub entry: MemoryEntry,
@@ -55,104 +54,61 @@ const TRACKED_RELS: &[&str] = &[
     "mentions",
 ];
 
-#[derive(Deserialize, surrealdb_types::SurrealValue, Default)]
-struct GraphRow {
-    name: String,
-    #[serde(default)]
-    out_depends_on: Vec<String>,
-    #[serde(default)]
-    out_blocks: Vec<String>,
-    #[serde(default)]
-    out_supersedes: Vec<String>,
-    #[serde(default)]
-    out_references: Vec<String>,
-    #[serde(default)]
-    out_mentions: Vec<String>,
-    #[serde(default)]
-    in_depends_on: Vec<String>,
-    #[serde(default)]
-    in_blocks: Vec<String>,
-    #[serde(default)]
-    in_supersedes: Vec<String>,
-    #[serde(default)]
-    in_references: Vec<String>,
-    #[serde(default)]
-    in_mentions: Vec<String>,
+#[derive(Deserialize)]
+struct EdgeRow {
+    src_key: String,
+    dst_key: String,
+    kind: String,
 }
 
 /// Fetch category rows with their inbound and outbound graph neighbours.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the `SurrealDB` query fails.
+/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
 pub async fn list_with_links(
-    db: &Surreal<Db>,
+    store: &TursoStore,
     category: &str,
     project_slug: &str,
 ) -> Result<Vec<LinkedRow>> {
-    #[derive(surrealdb_types::SurrealValue)]
-    struct IdRow {
-        id: RecordId,
+    // Fetch all memory entries for this project+category.
+    let entries = store
+        .list_by_category(project_slug, category)
+        .await
+        .map_err(crate::error::Error::Turso)?;
+
+    if entries.is_empty() {
+        return Ok(Vec::new());
     }
 
-    let proj_q = "SELECT id FROM project WHERE slug = $slug LIMIT 1";
-    let mut proj_resp = db
-        .query(proj_q)
-        .bind(("slug", project_slug.to_owned()))
-        .await?;
-    let row: Option<IdRow> = proj_resp.take(0)?;
-    let pid = match row {
-        Some(r) => r.id,
-        None => return Ok(Vec::new()),
-    };
+    // Build the key list for the IN clause.
+    let keys: Vec<String> = entries.iter().map(|e| e.entry_key.clone()).collect();
 
-    let rows_q = "SELECT id, project, entry_key, title, content, status, entry_status, \
-                  access_count, created_at, updated_at \
-                  FROM type::table($table) WHERE project = $pid ORDER BY entry_key";
-    let mut rows_resp = db
-        .query(rows_q)
-        .bind(("table", category.to_owned()))
-        .bind(("pid", pid.clone()))
-        .await?;
-    let entries: Vec<MemoryEntry> = rows_resp.take(0)?;
+    // Fetch outgoing edges for these entries.
+    let out_edges = edges_for_keys(store, project_slug, category, &keys, "out").await?;
 
-    let prefix = format!("{project_slug}/{category}/");
-    let graph_q = "SELECT name, \
-            ->depends_on->entity.name  AS out_depends_on, \
-            ->blocks->entity.name      AS out_blocks, \
-            ->supersedes->entity.name  AS out_supersedes, \
-            ->references->entity.name  AS out_references, \
-            ->mentions->entity.name    AS out_mentions, \
-            <-depends_on<-entity.name  AS in_depends_on, \
-            <-blocks<-entity.name      AS in_blocks, \
-            <-supersedes<-entity.name  AS in_supersedes, \
-            <-references<-entity.name  AS in_references, \
-            <-mentions<-entity.name    AS in_mentions \
-         FROM entity WHERE entity_type = 'memory' AND string::starts_with(name, $prefix);";
-    let mut graph_resp = db.query(graph_q).bind(("prefix", prefix.clone())).await?;
-    let graph_rows: Vec<GraphRow> = graph_resp.take(0)?;
+    // Fetch incoming edges for these entries.
+    let in_edges = edges_for_keys(store, project_slug, category, &keys, "in").await?;
 
-    let prefix_ref = prefix.as_str();
+    // Build lookup maps: key → {rel → [names]}.
     let mut out_idx: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
     let mut in_idx: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
-    for gr in graph_rows {
-        let key = match gr.name.strip_prefix(prefix_ref) {
-            Some(k) => k.to_owned(),
-            None => continue,
-        };
-        let mut out: HashMap<String, Vec<String>> = HashMap::new();
-        out.insert("depends_on".into(), gr.out_depends_on);
-        out.insert("blocks".into(), gr.out_blocks);
-        out.insert("supersedes".into(), gr.out_supersedes);
-        out.insert("references".into(), gr.out_references);
-        out.insert("mentions".into(), gr.out_mentions);
-        let mut inb: HashMap<String, Vec<String>> = HashMap::new();
-        inb.insert("depends_on".into(), gr.in_depends_on);
-        inb.insert("blocks".into(), gr.in_blocks);
-        inb.insert("supersedes".into(), gr.in_supersedes);
-        inb.insert("references".into(), gr.in_references);
-        inb.insert("mentions".into(), gr.in_mentions);
-        out_idx.insert(key.clone(), out);
-        in_idx.insert(key, inb);
+
+    let prefix = format!("{project_slug}/{category}/");
+
+    for edge in out_edges {
+        let key = edge.src_key;
+        let map = out_idx.entry(key).or_default();
+        map.entry(edge.kind)
+            .or_default()
+            .push(format!("{}{}", prefix, edge.dst_key));
+    }
+
+    for edge in in_edges {
+        let key = edge.dst_key;
+        let map = in_idx.entry(key).or_default();
+        map.entry(edge.kind)
+            .or_default()
+            .push(format!("{}{}", prefix, edge.src_key));
     }
 
     let mut result: Vec<LinkedRow> = Vec::with_capacity(entries.len());
@@ -168,5 +124,44 @@ pub async fn list_with_links(
     }
 
     let _ = TRACKED_RELS;
+    Ok(result)
+}
+
+/// Fetch edges involving the given keys. Direction `out` returns edges where
+/// the key is `src_key`; `in` returns edges where the key is `dst_key`.
+async fn edges_for_keys(
+    store: &TursoStore,
+    project: &str,
+    category: &str,
+    keys: &[String],
+    direction: &str,
+) -> Result<Vec<EdgeRow>> {
+    let placeholders = keys.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let sql = match direction {
+        "out" => format!(
+            "SELECT src_key, dst_key, kind FROM edges WHERE src_project = ? AND src_cat = ? AND src_key IN ({placeholders})"
+        ),
+        "in" => format!(
+            "SELECT src_key, dst_key, kind FROM edges WHERE dst_project = ? AND dst_cat = ? AND dst_key IN ({placeholders})"
+        ),
+        _ => return Ok(Vec::new()),
+    };
+    let params = [vec![project.to_owned(), category.to_owned()], keys.to_vec()].concat();
+    let mut rows = store
+        .exec_params(&sql, params)
+        .await
+        .map_err(|e| crate::error::Error::Turso(e))?;
+    let mut result = Vec::new();
+    while let Some(row) = rows
+        .next()
+        .await
+        .map_err(|e| crate::error::Error::Turso(e.into()))?
+    {
+        result.push(EdgeRow {
+            src_key: row.get::<String>(0).unwrap_or_default(),
+            dst_key: row.get::<String>(1).unwrap_or_default(),
+            kind: row.get::<String>(2).unwrap_or_default(),
+        });
+    }
     Ok(result)
 }

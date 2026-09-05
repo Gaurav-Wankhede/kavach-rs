@@ -1,4 +1,4 @@
-// Project typed cross-entry relationships into the SurrealDB graph.
+// Project typed cross-entry relationships into the Turso graph.
 //
 // [RCA]
 // symptom:    The entity graph has 4235 nodes but ~0 semantic edges between them.
@@ -25,8 +25,7 @@
 // YEAR: 2026 | SEARCHED: 2026-05
 // SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 /// Allowed inter-entry relationship types. Subset of `graph::dynamic::ALLOWED_RELS`
 /// that makes semantic sense between memory rows (not skill/algorithm/project).
@@ -45,7 +44,7 @@ const ALLOWED_INTER_ENTRY_RELS: &[&str] = &[
 ///
 /// Propagates `Result::Err` when the query transaction fails.
 pub async fn upsert_relationships(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     source_qname: &str,
     rels: &[(String, String)],
 ) -> Result<usize> {
@@ -60,30 +59,44 @@ pub async fn upsert_relationships(
         if target.is_empty() {
             continue;
         }
-        // Resolve-or-create both endpoints via the `SELECT…?? CREATE` idiom.
-        // NO BEGIN/COMMIT: the ws engine makes LET-bound ids NONE inside a
-        // txn, so RELATE writes 0 edges silently. See
-        // decision.cli-supersedes-projection-silent-fail.
-        let q = format!(
-            "LET $src = (SELECT VALUE id FROM entity \
-                 WHERE entity_type = 'memory' AND name = $src_name LIMIT 1)[0] \
-                 ?? (CREATE type::record('entity', string::concat('memory:', $src_name)) \
-                     SET entity_type = 'memory', name = $src_name, \
-                     updated_at = time::now() RETURN id).id; \
-             LET $tgt = (SELECT VALUE id FROM entity \
-                 WHERE entity_type = 'memory' AND name = $tgt_name LIMIT 1)[0] \
-                 ?? (CREATE type::record('entity', string::concat('memory:', $tgt_name)) \
-                     SET entity_type = 'memory', name = $tgt_name, \
-                     updated_at = time::now() RETURN id).id; \
-             RELATE $src->{rel}->$tgt SET weight = 1.0;"
-        );
-        // Propagate any statement error — a failed RELATE must NOT be silently
-        // counted as success nor silently dropped (§no_silent_failure).
-        db.query(q)
-            .bind(("src_name", source_qname.to_owned()))
-            .bind(("tgt_name", target.to_owned()))
-            .await?
-            .check()?;
+        // Resolve-or-create both endpoints, then upsert the typed edge. The
+        // whole (rel, target) pair is one transaction so a failed edge write is
+        // NOT silently counted as success nor silently dropped (§no_silent_failure).
+        // NOTE: multi-statement strings with params are unsafe here — libsql
+        // prepares only the FIRST statement and silently drops the tail — so
+        // each statement runs individually inside a real txn.
+        // NOTE: `Connection::query` defers statement errors into the returned
+        // Rows (they surface only on `next()`); INSERTs must use `execute`,
+        // which returns the error immediately, or a failed write is silently
+        // counted as success.
+        let txn = db.conn.transaction().await?;
+        txn.execute(
+            "INSERT INTO entities (id, entity_type, name, properties) \
+             VALUES (?1, 'memory', ?2, NULL) \
+             ON CONFLICT(id) DO NOTHING",
+            libsql::params![source_qname.to_owned(), source_qname.to_owned()],
+        )
+        .await?;
+        txn.execute(
+            "INSERT INTO entities (id, entity_type, name, properties) \
+             VALUES (?1, 'memory', ?2, NULL) \
+             ON CONFLICT(id) DO NOTHING",
+            libsql::params![target.to_owned(), target.to_owned()],
+        )
+        .await?;
+        txn.execute(
+            "INSERT INTO entity_edges (from_id, rel_type, to_id, weight, created_at) \
+             VALUES (?1, ?2, ?3, 1.0, ?4) \
+             ON CONFLICT(from_id, rel_type, to_id) DO UPDATE SET weight = 1.0",
+            libsql::params![
+                source_qname.to_owned(),
+                rel.to_owned(),
+                target.to_owned(),
+                crate::turso::now_rfc3339()
+            ],
+        )
+        .await?;
+        txn.commit().await?;
         written = written.saturating_add(1);
     }
     Ok(written)
@@ -92,7 +105,6 @@ pub async fn upsert_relationships(
 #[cfg(test)]
 mod cli_sequence_tests {
     use crate::{apply_schema, open_memory, project_register, upsert_entry_full};
-    use surrealdb_types::RecordId;
 
     // Mirrors the `kavach db write` direct path; proves the supersedes edge is
     // actually written (symptom was `Ok(0)` here).
@@ -100,7 +112,7 @@ mod cli_sequence_tests {
     async fn cli_two_step_writes_supersedes_edge() {
         let db = open_memory().await.expect("mem db");
         apply_schema(&db).await.expect("schema");
-        let proj: RecordId = project_register(&db, "p", "P", "/tmp", None)
+        let proj: String = project_register(&db, "p", "P", "/tmp", None)
             .await
             .expect("project");
 
@@ -137,24 +149,17 @@ mod cli_sequence_tests {
     // edit re-wraps it, the live ws path silently drops every edge again.
     #[tokio::test]
     async fn projection_query_has_no_transaction_frame() {
-        let src = "BEGIN-CHECK";
-        let q = format!(
-            "LET $src = (SELECT VALUE id FROM entity \
-                 WHERE entity_type = 'memory' AND name = $src_name LIMIT 1)[0] \
-                 ?? (CREATE type::record('entity', string::concat('memory:', $src_name)) \
-                     SET entity_type = 'memory', name = $src_name, \
-                     updated_at = time::now() RETURN id).id; \
-             LET $tgt = (SELECT VALUE id FROM entity \
-                 WHERE entity_type = 'memory' AND name = $tgt_name LIMIT 1)[0] \
-                 ?? (CREATE type::record('entity', string::concat('memory:', $tgt_name)) \
-                     SET entity_type = 'memory', name = $tgt_name, \
-                     updated_at = time::now() RETURN id).id; \
-             RELATE $src->{src}->$tgt SET weight = 1.0;"
-        );
+        // The projection must NOT wrap its statements in an explicit
+        // BEGIN/COMMIT string (libsql prepares only the first statement of a
+        // multi-statement string, silently dropping the tail). The real txn is
+        // driven by `Connection::transaction()` instead.
+        let src = "INSERT INTO entities (id, entity_type, name, properties) \
+                   VALUES (?1, 'memory', ?2, NULL) \
+                   ON CONFLICT(id) DO NOTHING";
         assert!(
-            !q.contains("BEGIN TRANSACTION"),
-            "no explicit txn frame: {q}"
+            !src.contains("BEGIN TRANSACTION"),
+            "no explicit txn frame: {src}"
         );
-        assert!(!q.contains("COMMIT"), "no explicit commit: {q}");
+        assert!(!src.contains("COMMIT"), "no explicit commit: {src}");
     }
 }

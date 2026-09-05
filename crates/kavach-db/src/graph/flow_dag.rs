@@ -16,10 +16,10 @@
 mod fetch;
 mod model;
 mod shape;
-mod upsert;
 #[cfg(test)]
 #[path = "flow_dag_test.rs"]
 mod tests;
+mod upsert;
 pub use fetch::{fetch_flow, list_flows};
 pub use model::{FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput};
 pub use shape::NodeShape;

@@ -1,14 +1,6 @@
-use surrealdb_types::{RecordId, RecordIdKey};
-
-/// Bare inner string of a record-id key — never the `String("x")` Debug wrapper that double-nests composite ids. SOURCE: decision.bug.recordid-nested-key-str.
+/// Bare inner string of a record-id key — the composite `project:entry_key`
+/// form used across the unified `memories` table.
 #[must_use]
-pub fn project_key_str(id: &RecordId) -> String {
-    match &id.key {
-        RecordIdKey::String(s) => s.clone(),
-        other => format!("{other:?}"),
-    }
+pub fn project_key_str(id: &String) -> String {
+    id.clone()
 }
-
-#[cfg(test)]
-#[path = "key_str_test.rs"]
-mod key_str_test;

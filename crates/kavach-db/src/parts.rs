@@ -1,15 +1,13 @@
 // split: intentional - project-part lookup helpers (find_by_path, list_by_project, upsert)
-// sql-safe: queries use static literals + .bind() for params, no user input concatenation
+// sql-safe: queries use static literals + params, no user input concatenation
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
+use crate::turso::TursoStore;
 
-#[derive(Debug, Clone, SurrealValue)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct Part {
-    pub id: Option<RecordId>,
-    pub project: RecordId,
+    pub id: Option<String>,
+    pub project: String,
     pub part_name: String,
     pub part_path: String,
     pub part_type: String,
@@ -17,79 +15,96 @@ pub struct Part {
     pub description: Option<String>,
 }
 
+/// Map a `parts` row (column order: project, part_name, part_path, part_type,
+/// stack, description) into a [`Part`]. The id is the composite
+/// `project:part_name` key.
+fn part_from_row(r: &libsql::Row) -> Result<Part> {
+    let project = r.get::<String>(0)?;
+    let part_name = r.get::<String>(1)?;
+    Ok(Part {
+        id: Some(format!("{project}:{part_name}")),
+        project,
+        part_name,
+        part_path: r.get::<String>(2)?,
+        part_type: r.get::<String>(3)?,
+        stack: r.get::<Option<String>>(4)?,
+        description: r.get::<Option<String>>(5)?,
+    })
+}
+
 /// Longest-prefix match: find the part whose path is a prefix of `file_path`,
 /// preferring the longest match (deepest registered part wins).
 ///
-/// Uses field alias workaround for ORDER BY function (`SurrealDB` issue #1525).
-///
 /// # Errors
 ///
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn find_by_path(db: &Surreal<Db>, file_path: &str) -> Result<Option<Part>> {
-    let query = "SELECT id, project, part_name, part_path, part_type, stack, description, \
-                 string::len(part_path) AS path_len \
-                 FROM part \
-                 WHERE string::starts_with($path, part_path) \
-                 ORDER BY path_len DESC \
-                 LIMIT 1";
-    let mut response = db.query(query).bind(("path", file_path.to_owned())).await?;
-    let part: Option<Part> = response.take(0)?;
-    Ok(part)
+/// Propagates `Error::Turso` when the query fails.
+pub async fn find_by_path(db: &TursoStore, file_path: &str) -> Result<Option<Part>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT project, part_name, part_path, part_type, stack, description \
+             FROM parts \
+             WHERE $path LIKE part_path || '%' \
+             ORDER BY length(part_path) DESC \
+             LIMIT 1",
+            libsql::params![file_path.to_owned()],
+        )
+        .await?;
+    match rows.next().await? {
+        Some(r) => Ok(Some(part_from_row(&r)?)),
+        None => Ok(None),
+    }
 }
 
 /// # Errors
 ///
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn list_by_project(db: &Surreal<Db>, project_id: &RecordId) -> Result<Vec<Part>> {
-    let query = "SELECT id, project, part_name, part_path, part_type, stack, description \
-                 FROM part WHERE project = $project";
-    let mut response = db
-        .query(query)
-        .bind(("project", project_id.clone()))
+/// Propagates `Error::Turso` when the query fails.
+pub async fn list_by_project(db: &TursoStore, project_id: &str) -> Result<Vec<Part>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT project, part_name, part_path, part_type, stack, description \
+             FROM parts WHERE project = $project ORDER BY part_path",
+            libsql::params![project_id.to_owned()],
+        )
         .await?;
-    let parts: Vec<Part> = response.take(0)?;
-    Ok(parts)
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(part_from_row(&r)?);
+    }
+    Ok(out)
 }
 
 /// Upsert a part. Idempotent on (project, `part_name`).
 ///
 /// # Errors
 ///
-/// Propagates `Error::Surreal` when the query fails or if the part ID is missing from the result.
+/// Propagates `Error::Turso` when the query fails.
 pub async fn upsert(
-    db: &Surreal<Db>,
-    project_id: &RecordId,
+    db: &TursoStore,
+    project_id: &str,
     part_name: &str,
     part_path: &str,
     part_type: &str,
     stack: Option<&str>,
     description: Option<&str>,
-) -> Result<RecordId> {
-    // FIX: [dependency_skew] SurrealDB 3.0: type::thing() -> type::record().
-    let query = "UPSERT type::record('part', string::concat($project_slug, ':', $part_name)) \
-                 SET project = $project, part_name = $part_name, part_path = $part_path, \
-                     part_type = $part_type, stack = $stack, description = $description, \
-                     updated_at = time::now() \
-                 RETURN AFTER";
-    // SOURCE: decision.bug.recordid-nested-key-str — bare slug, no Debug wrapper
-    let project_slug = crate::key_str::project_key_str(project_id);
-    let mut response = db
-        .query(query)
-        .bind(("project", project_id.clone()))
-        .bind(("project_slug", project_slug))
-        .bind(("part_name", part_name.to_owned()))
-        .bind(("part_path", part_path.to_owned()))
-        .bind(("part_type", part_type.to_owned()))
-        .bind(("stack", stack.map(ToOwned::to_owned)))
-        .bind(("description", description.map(ToOwned::to_owned)))
-        .await?;
-    let result: Option<Part> = response.take(0)?;
-    match result {
-        Some(p) => p
-            .id
-            .ok_or_else(|| crate::error::Error::RecordNotFound(format!("part upsert {part_name}"))),
-        None => Err(crate::error::Error::RecordNotFound(format!(
-            "part upsert returned empty for {part_name}"
-        ))),
-    }
+) -> Result<String> {
+    let now = crate::turso::now_rfc3339();
+    db.exec_params(
+        "INSERT INTO parts (project, part_name, part_path, part_type, stack, description, updated_at) \
+         VALUES ($project, $part_name, $part_path, $part_type, $stack, $description, $now) \
+         ON CONFLICT(project, part_name) DO UPDATE SET \
+             part_path = excluded.part_path, part_type = excluded.part_type, \
+             stack = excluded.stack, description = excluded.description, \
+             updated_at = excluded.updated_at",
+        libsql::params![
+            project_id.to_owned(),
+            part_name.to_owned(),
+            part_path.to_owned(),
+            part_type.to_owned(),
+            stack.map(ToOwned::to_owned),
+            description.map(ToOwned::to_owned),
+            now
+        ],
+    )
+    .await?;
+    Ok(format!("{project_id}:{part_name}"))
 }

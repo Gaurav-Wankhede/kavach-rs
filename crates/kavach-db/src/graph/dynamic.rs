@@ -1,21 +1,19 @@
+use crate::turso::TursoStore;
 // split: intentional - dynamic graph ops (string rel_type, upsert-by-name) for engine gates
-// SurrealDB-backed dynamic graph helpers — mirror kavach-db graph_entity + graph
-// add_relationship/get_related shapes. The fixed RelationType enum in
-// graph::types::RelationType is preferred for new code; this module exists to
-// migrate engine gates that use dynamic rel_types like "uses_skill",
-// "cross_invoke", "INVOKE" without expanding the typed enum.
+// SQL-backed dynamic graph helpers — delegate to the `GraphStore` trait
+// (turso/graph.rs) which models entities + edges as plain tables. The fixed
+// RelationType enum in graph::types::RelationType is preferred for new code;
+// this module exists to migrate engine gates that use dynamic rel_types like
+// "uses_skill", "cross_invoke", "INVOKE" without expanding the typed enum.
 // sql-safe: bound params; rel_type validated against an allowlist before use.
 use crate::error::{Error, Result};
 use crate::graph::types::Entity;
+use crate::turso::graph::{GraphEntity, GraphStore};
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
 
 /// Allowlist of relation names accepted by dynamic helpers.
 /// Adding a new `rel_type` here is the only path for engine gates to introduce one.
-/// Underscored names match the `SurrealDB` graph edge table identifiers.
-const ALLOWED_RELS: &[&str] = &[
+pub const ALLOWED_RELS: &[&str] = &[
     // Workflow / project-DAG edges (original set)
     "contains",
     "depends_on",
@@ -108,113 +106,78 @@ fn validate_rel(rel: &str) -> Result<()> {
     }
 }
 
-#[derive(surrealdb_types::SurrealValue)]
-struct EntityIdRow {
-    id: RecordId,
+/// Bridge `GraphEntity` (properties as JSON text) to the public `Entity`
+/// (properties as `serde_json::Value`).
+fn entity_from_graph(e: GraphEntity) -> Entity {
+    Entity {
+        id: Some(e.id),
+        entity_type: e.entity_type,
+        name: e.name,
+        properties: e.properties.and_then(|p| serde_json::from_str(&p).ok()),
+        content_hash: e.content_hash,
+        project: e.project,
+    }
 }
 
 /// Find an entity by (`entity_type`, name); insert it if absent. Returns its id.
 ///
-/// # Errors
-/// `Error::Surreal` on SELECT or CREATE failure; `Error::RecordNotFound`
-/// when the CREATE returns no id row.
-pub async fn upsert_entity(db: &Surreal<Db>, entity_type: &str, name: &str) -> Result<RecordId> {
-    let find_q = "SELECT id FROM entity \
-                  WHERE entity_type = $type AND name = $name LIMIT 1";
-    let mut response = db
-        .query(find_q)
-        .bind(("type", entity_type.to_owned()))
-        .bind(("name", name.to_owned()))
-        .await?;
-    let existing: Option<EntityIdRow> = response.take(0)?;
-    if let Some(row) = existing {
-        return Ok(row.id);
-    }
-    let create_q = "CREATE entity SET entity_type = $type, name = $name RETURN id";
-    let mut resp = db
-        .query(create_q)
-        .bind(("type", entity_type.to_owned()))
-        .bind(("name", name.to_owned()))
-        .await?;
-    let row: Option<EntityIdRow> = resp.take(0)?;
-    row.map(|ir| ir.id)
-        .ok_or_else(|| Error::RecordNotFound("entity create returned no id".into()))
-}
-
-/// List entities, optionally filtered by `entity_type`. Caps at `LIST_ENTITIES_MAX`.
-const LIST_ENTITIES_MAX: i64 = 5_000;
-
-/// List entities, optionally filtered by `entity_type`. Caps at `LIST_ENTITIES_MAX`.
+/// The id is a deterministic BLAKE3 hash of `(entity_type, name)` so re-ingest
+/// of the same (type, name) converges to one row (idempotent upsert).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn list_entities(db: &Surreal<Db>, entity_type: Option<&str>) -> Result<Vec<Entity>> {
-    let q = match entity_type {
-        Some(_) => {
-            "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
-                    WHERE entity_type = $type LIMIT $limit"
-        }
-        None => {
-            "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
-                 LIMIT $limit"
-        }
-    };
-    let mut response = match entity_type {
-        Some(et) => {
-            db.query(q)
-                .bind(("type", et.to_owned()))
-                .bind(("limit", LIST_ENTITIES_MAX))
-                .await?
-        }
-        None => db.query(q).bind(("limit", LIST_ENTITIES_MAX)).await?,
-    };
-    let entities: Vec<Entity> = response.take(0)?;
-    Ok(entities)
+/// `Error::Turso` on SELECT or INSERT failure.
+pub async fn upsert_entity(db: &TursoStore, entity_type: &str, name: &str) -> Result<String> {
+    if let Some(e) = db.find_entity(entity_type, name).await? {
+        return Ok(e.id);
+    }
+    let id = crate::decisions::hash_keyed("entity", entity_type, name, "");
+    db.upsert_entity(&GraphEntity::new(
+        id.clone(),
+        entity_type,
+        name,
+        None,
+        None,
+        None,
+    ))
+    .await?;
+    Ok(id)
+}
+
+/// List entities, optionally filtered by `entity_type`. Capped at 5_000 rows.
+///
+/// # Errors
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn list_entities(db: &TursoStore, entity_type: Option<&str>) -> Result<Vec<Entity>> {
+    let rows = db.list_entities(entity_type).await?;
+    Ok(rows.into_iter().map(entity_from_graph).collect())
 }
 
 /// Find an entity by (`entity_type`, name). Returns None if absent.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn find_entity(
-    db: &Surreal<Db>,
-    entity_type: &str,
-    name: &str,
-) -> Result<Option<Entity>> {
-    let q = "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
-             WHERE entity_type = $type AND name = $name LIMIT 1";
-    let mut response = db
-        .query(q)
-        .bind(("type", entity_type.to_owned()))
-        .bind(("name", name.to_owned()))
-        .await?;
-    let row: Option<Entity> = response.take(0)?;
-    Ok(row)
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn find_entity(db: &TursoStore, entity_type: &str, name: &str) -> Result<Option<Entity>> {
+    Ok(db
+        .find_entity(entity_type, name)
+        .await?
+        .map(entity_from_graph))
 }
 
 /// Add a relationship between two entities by string `rel_type`.
 /// `rel_type` must be in `ALLOWED_RELS` — unknown names error to prevent typos.
 ///
 /// # Errors
-/// `Error::RecordNotFound` when `rel_type` is not in `ALLOWED_RELS`;
-/// `Error::Surreal` from the RELATE.
+/// `Error::Migration` when `rel_type` is not in `ALLOWED_RELS`;
+/// `Error::Turso` from the INSERT.
 pub async fn relate_dynamic(
-    db: &Surreal<Db>,
-    from: &RecordId,
-    to: &RecordId,
+    db: &TursoStore,
+    from: &str,
+    to: &str,
     rel_type: &str,
     weight: f64,
 ) -> Result<()> {
     validate_rel(rel_type)?;
-    // SurrealDB RELATE statement requires the rel name as a bare identifier;
-    // we cannot bind it as a parameter. The allowlist check above guarantees
-    // rel_type is one of a fixed set of literals, so format!() is sql-safe.
-    let q = format!("RELATE $from->{rel_type}->$to SET weight = $weight");
-    db.query(q)
-        .bind(("from", from.clone()))
-        .bind(("to", to.clone()))
-        .bind(("weight", weight))
-        .await?;
+    db.relate_dynamic(from, to, rel_type, weight).await?;
     Ok(())
 }
 
@@ -223,12 +186,12 @@ pub async fn relate_dynamic(
 /// cannot leak into the citation DAG.
 ///
 /// # Errors
-/// `Error::Migration` when `rel_type` is not a citation edge; `Error::Surreal`
-/// from the RELATE.
+/// `Error::Migration` when `rel_type` is not a citation edge; `Error::Turso`
+/// from the INSERT.
 pub async fn relate_citation(
-    db: &Surreal<Db>,
-    from: &RecordId,
-    to: &RecordId,
+    db: &TursoStore,
+    from: &str,
+    to: &str,
     rel_type: &str,
     weight: f64,
 ) -> Result<()> {
@@ -240,42 +203,39 @@ pub async fn relate_citation(
     relate_dynamic(db, from, to, rel_type, weight).await
 }
 
-/// Single-query traversal: in ONE `SurrealDB` round-trip via the `<-cite` graph
-/// arrow, return the record ids of every node that cites `citation` (no N+1).
+/// Single-query traversal: return the record ids of every node that cites
+/// `citation` (incoming `cite` edges) — no N+1.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the query.
-pub async fn traverse_with_citations(
-    db: &Surreal<Db>,
-    citation: &RecordId,
-) -> Result<Vec<RecordId>> {
-    let ids: Vec<RecordId> = db
-        .query("SELECT VALUE in FROM $cit<-cite")
-        .bind(("cit", citation.clone()))
-        .await?
-        .take(0)?;
-    Ok(ids)
+/// Propagates `Error::Turso` from the query.
+pub async fn traverse_with_citations(db: &TursoStore, citation: &str) -> Result<Vec<String>> {
+    let edges = db.related_backward(citation).await?;
+    Ok(edges
+        .into_iter()
+        .filter(|e| e.rel_type == "cite")
+        .map(|e| e.from)
+        .collect())
 }
 
-/// Forward complement of `traverse_with_citations`: in ONE `SurrealDB` round-trip
-/// via the `->cite` arrow, return the citation record ids that `node` cites.
+/// Forward complement of `traverse_with_citations`: return the citation record
+/// ids that `node` cites (outgoing `cite` edges).
 ///
 /// Lets a mistake/decision/roadmap node reach its merged citations without a
 /// second query — the read half of the non-destructive C6 merge.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the query.
-pub async fn citations_cited_by(db: &Surreal<Db>, node: &RecordId) -> Result<Vec<RecordId>> {
-    let ids: Vec<RecordId> = db
-        .query("SELECT VALUE out FROM $node->cite")
-        .bind(("node", node.clone()))
-        .await?
-        .take(0)?;
-    Ok(ids)
+/// Propagates `Error::Turso` from the query.
+pub async fn citations_cited_by(db: &TursoStore, node: &str) -> Result<Vec<String>> {
+    let edges = db.related_forward(node).await?;
+    Ok(edges
+        .into_iter()
+        .filter(|e| e.rel_type == "cite")
+        .map(|e| e.to)
+        .collect())
 }
 
 /// One row of the related-entity result set: outgoing edge → target entity.
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct RelatedRow {
     pub rel_type: String,
@@ -285,7 +245,7 @@ pub struct RelatedRow {
 
 /// One edge whose both endpoints fall inside a given node set. Endpoint ids are
 /// stringified record ids matching the form the KG renderer keys nodes by.
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct EdgeRow {
     pub from: String,
@@ -296,90 +256,37 @@ pub struct EdgeRow {
 /// Return every allowed edge whose endpoints are both in `node_ids`.
 ///
 /// These are the edges internal to the visible node set, so the graph view never
-/// draws a line to an off-canvas node. Each source node is traversed per relation
-/// (the only way to recover the relation name), then targets are filtered to the
-/// set — keying endpoints exactly as the KG renderer does so they resolve.
+/// draws a line to an off-canvas node.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from any per-relation SELECT.
-pub async fn list_edges_among(db: &Surreal<Db>, node_ids: &[RecordId]) -> Result<Vec<EdgeRow>> {
-    if node_ids.len() < 2 {
-        return Ok(Vec::new());
-    }
-    // Membership set keyed the same way endpoints are stringified, so the
-    // post-filter and the renderer agree on node identity.
-    let allowed: std::collections::HashSet<String> =
-        node_ids.iter().map(|id| format!("{id:?}")).collect();
-
-    let mut out: Vec<EdgeRow> = Vec::new();
-    for node in node_ids {
-        for &rel in ALLOWED_RELS {
-            // sql-safe: rel is a compile-time const from ALLOWED_RELS; the source
-            // node is bound. Traverse outgoing edges via the graph operator (the
-            // codebase-proven form — `get_related` uses the same `->rel->`), then
-            // keep only edges whose target is also in the visible set.
-            let q = format!("SELECT out AS target FROM $node->{rel}");
-            let mut response = db.query(q).bind(("node", node.clone())).await?;
-            let targets: Vec<TargetId> = match response.take(0) {
-                Ok(t) => t,
-                Err(_) => continue,
-            };
-            let from = format!("{node:?}");
-            for t in targets {
-                let to = format!("{:?}", t.target);
-                if allowed.contains(&to) {
-                    out.push(EdgeRow {
-                        from: from.clone(),
-                        to,
-                        rel_type: rel.to_owned(),
-                    });
-                }
-            }
-        }
-    }
-    Ok(out)
-}
-
-/// A single outgoing-edge target id pulled from a `->rel->` traversal.
-#[derive(Debug, Clone, Deserialize, SurrealValue)]
-struct TargetId {
-    target: RecordId,
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn list_edges_among(db: &TursoStore, node_ids: &[String]) -> Result<Vec<EdgeRow>> {
+    let edges = db.list_edges_among(node_ids).await?;
+    Ok(edges
+        .into_iter()
+        .map(|e| EdgeRow {
+            from: e.from,
+            to: e.to,
+            rel_type: e.rel_type,
+        })
+        .collect())
 }
 
 /// Return outgoing edges from `from` across all `ALLOWED_RELS`, paired with
-/// the target entity. Limit caps the per-rel-type fan-out.
+/// the target entity. Limit caps the fan-out.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from any per-relation SELECT.
-pub async fn get_related(
-    db: &Surreal<Db>,
-    from: &RecordId,
-    limit: usize,
-) -> Result<Vec<RelatedRow>> {
-    let mut out: Vec<RelatedRow> = Vec::new();
-    for &rel in ALLOWED_RELS {
-        // sql-safe: rel comes from compile-time const ALLOWED_RELS only.
-        // Bind the RecordId DIRECTLY (the proven `$node` form used by
-        // list_edges_among) — NOT type::record($tb,$id) with Debug-formatted
-        // table/key, which embeds quotes (`Table("entity")`/`String("…")`) and
-        // resolves to a phantom record => 0 edges for every real edge.
-        // See decision.cli-supersedes-projection-silent-fail.
-        let q = format!(
-            "SELECT '{rel}' AS rel_type, weight, out.* AS target \
-             FROM $from->{rel} LIMIT $limit"
-        );
-        let mut response = db
-            .query(q)
-            .bind(("from", from.clone()))
-            .bind(("limit", i64::try_from(limit).unwrap_or(i64::MAX)))
-            .await?;
-        let rows: Vec<RelatedRow> = match response.take(0) {
-            Ok(r) => r,
-            Err(_) => continue,
-        };
-        out.extend(rows);
-    }
-    Ok(out)
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn get_related(db: &TursoStore, from: &str, limit: usize) -> Result<Vec<RelatedRow>> {
+    let rows = db.get_related(from, limit).await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| RelatedRow {
+            rel_type: r.rel_type,
+            weight: r.weight,
+            target: entity_from_graph(r.target),
+        })
+        .collect())
 }
 
 #[cfg(test)]

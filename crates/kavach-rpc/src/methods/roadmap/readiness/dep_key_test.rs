@@ -6,7 +6,7 @@ fn entry(key: &str, status: &str) -> kavach_db::MemoryEntry {
     // the rest take their empty/None form.
     kavach_db::MemoryEntry {
         id: None,
-        project: surrealdb_types::RecordId::new("project", "t"),
+        project: "t".to_owned(),
         category: Some("roadmap".into()),
         entry_key: key.to_owned(),
         title: "t".to_owned(),

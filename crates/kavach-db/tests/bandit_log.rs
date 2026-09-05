@@ -1,9 +1,9 @@
 //! Integration proof for the Layer-A bandit-log store (harness-rl Wave P2).
 //!
 //! The store is the durable substrate for the RLVR `(x, a, p, r)` tuple. These
-//! tests prove against a real (in-memory) `SurrealDB` that a row persists and that
-//! a replayed identical decision behaves as the store's doc claims — content
-//! addressing must not silently double-count training signal.
+//! tests prove against a real (in-memory) `TursoStore` that a row persists and
+//! that a replayed identical decision behaves as the store's doc claims —
+//! content addressing must not silently double-count training signal.
 #![allow(
     clippy::expect_used,
     clippy::unwrap_in_result,
@@ -11,18 +11,16 @@
 )]
 
 use kavach_db::{
-    append_bandit_row, apply_schema, list_bandit_rows, list_unrewarded_bandit_rows,
+    append_bandit_row, list_bandit_rows, list_unrewarded_bandit_rows,
     list_unrewarded_bandit_rows_for_session, open_memory, update_bandit_reward,
 };
+use kavach_db::turso::TursoStore;
 
-/// Open an in-memory db with the production schema applied — the daemon path
-/// (`open_default_held`) runs `apply_schema`, so a read of a never-written
-/// `bandit_log` must see a *defined, empty* table, not `SurrealDB` 3.0's
-/// "table does not exist" error. `open_memory` alone skips schema.
-async fn open_with_schema() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
-    let db = open_memory().await.expect("memory db");
-    apply_schema(&db).await.expect("apply schema");
-    db
+/// Open an in-memory db with the production schema applied — `open_memory`
+/// bootstraps the schema, so a read of a never-written `bandit_log` must see a
+/// *defined, empty* table, not a "no such table" error.
+async fn open_with_schema() -> TursoStore {
+    open_memory().await.expect("memory db")
 }
 
 const PAYLOAD: &str = r#"{"session_id":"sess_x","timestamp_ms":1717,"action":"block","propensity":1.0,"reward":null}"#;
@@ -32,46 +30,42 @@ async fn append_persists_a_row_and_returns_its_content_addressed_id() {
     let db = open_memory().await.expect("memory db");
     let id = append_bandit_row(&db, PAYLOAD).await.expect("first append");
 
-    // The id table is bandit_log and the key is the BLAKE3-derived digest.
-    let id_str = format!("{id:?}");
-    assert!(id_str.contains("bandit_log"), "id was {id_str}");
+    // The id is the BLAKE3-derived content key (32 hex chars), not a record id.
+    assert_eq!(id.len(), 32, "content key is the truncated BLAKE3 digest: {id}");
 
     // Prove the payload actually landed — read it back by the same key.
     let mut resp = db
-        .query("SELECT VALUE payload.action FROM type::record('bandit_log', $k)")
-        .bind(("k", blake3_key(PAYLOAD)))
+        .query_with_params(
+            "SELECT payload FROM bandit_log WHERE key = ?1",
+            libsql::params![blake3_key(PAYLOAD)],
+        )
         .await
         .expect("readback query");
-    let action: Option<String> = resp.take(0).expect("take action");
-    assert_eq!(action.as_deref(), Some("block"), "payload did not persist");
+    let row = resp.next().await.expect("next").expect("row exists");
+    let payload: String = row.get(0).expect("payload");
+    let v: serde_json::Value = serde_json::from_str(&payload).expect("payload is JSON");
+    assert_eq!(v["action"].as_str(), Some("block"), "payload did not persist");
 }
 
 #[tokio::test]
 async fn replaying_the_identical_decision_does_not_double_count() {
     // The doc contract: content addressing means one logical decision = one row.
-    // SurrealDB CREATE on an existing id errors; the store must surface that
-    // rather than silently writing a second row that would skew the OPE counts.
+    // The store upserts by content key (`ON CONFLICT DO NOTHING`), so a replay
+    // is idempotent: it must NOT write a second row that would skew the OPE
+    // counts.
     let db = open_memory().await.expect("memory db");
     append_bandit_row(&db, PAYLOAD).await.expect("first append");
-    let second = append_bandit_row(&db, PAYLOAD).await;
+    let second = append_bandit_row(&db, PAYLOAD).await.expect("replay is idempotent");
 
-    // Whatever the outcome, the invariant that matters is: exactly one row.
+    // The invariant that matters: exactly one row, and the same key back.
     let mut resp = db
-        .query("SELECT count() FROM bandit_log GROUP ALL")
+        .query_with_params("SELECT count(*) FROM bandit_log", ())
         .await
         .expect("count query");
-    let count: Option<i64> = resp.take((0, "count")).expect("take count");
-    assert_eq!(
-        count,
-        Some(1),
-        "identical replay must yield exactly one row"
-    );
-
-    // And a rejected replay must be an Err, never a silent Ok masking the drop.
-    assert!(
-        second.is_err(),
-        "a duplicate decision must not report success"
-    );
+    let row = resp.next().await.expect("next").expect("count row");
+    let count: i64 = row.get(0).expect("count");
+    assert_eq!(count, 1, "identical replay must yield exactly one row");
+    assert_eq!(second.len(), 32, "replay returns the same content key");
 }
 
 /// Mirror of the store's key derivation so the readback targets the same record.
@@ -113,7 +107,7 @@ async fn list_bandit_rows_reads_back_appended_payloads() {
 #[tokio::test]
 async fn list_bandit_rows_is_empty_on_a_fresh_db() {
     // With the schema applied, `bandit_log` is a DEFINED but empty table — the
-    // read must return [], not `SurrealDB` 3.0's "table does not exist" error.
+    // read must return [], not a "no such table" error.
     let db = open_with_schema().await;
     let rows = list_bandit_rows(&db, 100).await.expect("list");
     assert!(rows.is_empty(), "no rows logged yet");

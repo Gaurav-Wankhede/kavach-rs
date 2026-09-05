@@ -1,23 +1,21 @@
 // SOURCE: relocated from write/upsert.rs — roadmap.upsert-microfile-split (kavach:relocated)
 use super::full::upsert_entry_full;
 use crate::error::Result;
+use crate::turso::TursoStore;
 use kavach_types::Priority;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
 
 /// Upsert entry + event log in one txn (no entity graph).
 #[bon::builder]
 pub async fn upsert_entry_with_event(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     category: &str,
-    project_id: &RecordId,
+    project_id: &String,
     entry_key: &str,
     title: &str,
     content: &str,
     event_source: &str,
     priority: Option<Priority>,
-) -> Result<RecordId> {
+) -> Result<String> {
     upsert_entry_full()
         .db(db)
         .category(category)

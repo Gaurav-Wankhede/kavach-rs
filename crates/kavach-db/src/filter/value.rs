@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use surrealdb_types::SurrealValue;
 
 use super::guard::is_valid_duration;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub enum FilterValue {
     String(String),

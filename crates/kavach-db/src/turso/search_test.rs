@@ -1,16 +1,15 @@
 //! SearchStore tests — Phase 2 acceptance (PRD §4 Phase 2).
 
+use super::TursoStore;
 use super::entries::EntryStore;
 use super::search::{SearchStore, fts5_query};
-use super::TursoStore;
 use crate::dual_write::MemoryEntry;
 use proptest::prop_assert_eq;
-use surrealdb_types::{RecordId, RecordIdKey};
 
 fn entry(project: &str, category: &str, key: &str, title: &str, content: &str) -> MemoryEntry {
     MemoryEntry {
         id: None,
-        project: RecordId::new("project", RecordIdKey::String(project.to_owned())),
+        project: project.to_owned(),
         category: Some(category.to_owned()),
         entry_key: key.to_owned(),
         title: title.to_owned(),
@@ -39,7 +38,7 @@ async fn fts_finds_title_and_content_matches() {
         "decision",
         "decision.use-turso",
         "Adopt embedded Turso",
-        "libSQL storage replaces the SurrealDB server hop",
+        "libSQL storage replaces the TursoStoreDB server hop",
     ))
     .await
     .unwrap();
@@ -54,7 +53,10 @@ async fn fts_finds_title_and_content_matches() {
     .unwrap();
 
     // Title hit.
-    let title_hits = s.fts_rank_category("p", "decision", "turso", 10).await.unwrap();
+    let title_hits = s
+        .fts_rank_category("p", "decision", "turso", 10)
+        .await
+        .unwrap();
     assert_eq!(title_hits, vec!["decision.use-turso".to_owned()]);
 
     // Content hit in another category.
@@ -65,7 +67,10 @@ async fn fts_finds_title_and_content_matches() {
     assert_eq!(content_hits, vec!["research.wal-size".to_owned()]);
 
     // Category isolation: decision term must not surface under research.
-    let isolated = s.fts_rank_category("p", "research", "turso", 10).await.unwrap();
+    let isolated = s
+        .fts_rank_category("p", "research", "turso", 10)
+        .await
+        .unwrap();
     assert!(isolated.is_empty());
 }
 
@@ -74,9 +79,15 @@ async fn fts_orders_by_relevance_not_insertion() {
     let dir = tempfile::TempDir::new().unwrap();
     let s = TursoStore::open(dir.path().join("fts2.db")).await.unwrap();
     // Inserted FIRST but mentions the term once; the second entry is denser.
-    s.upsert_entry(&entry("p", "pattern", "pattern.a", "Note", "mentions rust once"))
-        .await
-        .unwrap();
+    s.upsert_entry(&entry(
+        "p",
+        "pattern",
+        "pattern.a",
+        "Note",
+        "mentions rust once",
+    ))
+    .await
+    .unwrap();
     s.upsert_entry(&entry(
         "p",
         "pattern",
@@ -86,7 +97,10 @@ async fn fts_orders_by_relevance_not_insertion() {
     ))
     .await
     .unwrap();
-    let hits = s.fts_rank_category("p", "pattern", "rust", 10).await.unwrap();
+    let hits = s
+        .fts_rank_category("p", "pattern", "rust", 10)
+        .await
+        .unwrap();
     assert_eq!(hits.first().map(String::as_str), Some("pattern.b"));
 }
 

@@ -8,14 +8,12 @@ use std::future::Future;
 
 use chrono::{DateTime, Utc};
 
-use super::fake_record_id;
 use super::{TursoError, TursoResult, TursoStore};
 use crate::dual_write::MemoryEntry;
 
 /// DDL owned by this domain, executed by `connection::init_schema`.
-pub const DDL: &[&str] = &[
-    "CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project, category)",
-];
+pub const DDL: &[&str] =
+    &["CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project, category)"];
 
 pub(crate) fn map_err<E: std::fmt::Display>(e: E) -> TursoError {
     TursoError::Mapping(format!("{e}"))
@@ -27,8 +25,7 @@ pub(crate) const ENTRY_COLS: &str = "project, category, entry_key, title, conten
          exec_prompt, occupied_by, occupied_until, created_at, updated_at";
 
 pub(crate) fn entry_from_row(row: &libsql::Row) -> TursoResult<MemoryEntry> {
-    let get_s =
-        |i: i32| -> Option<String> { row.get::<Option<String>>(i).ok().flatten() };
+    let get_s = |i: i32| -> Option<String> { row.get::<Option<String>>(i).ok().flatten() };
     let get_dt = |i: i32| -> Option<DateTime<Utc>> {
         get_s(i)
             .and_then(|v| DateTime::parse_from_rfc3339(&v).ok())
@@ -38,10 +35,8 @@ pub(crate) fn entry_from_row(row: &libsql::Row) -> TursoResult<MemoryEntry> {
         get_s(0).ok_or_else(|| TursoError::Mapping("memory row missing `project`".into()))?;
     let tags_json: String = get_s(6).unwrap_or_else(|| "[]".into());
     Ok(MemoryEntry {
-        // RecordId is Surreal-only; the Turso DTO identity is the composite
-        // (project, category, entry_key).
         id: None,
-        project: fake_record_id(&project),
+        project: project.clone(),
         category: get_s(1),
         entry_key: get_s(2).unwrap_or_default(),
         title: get_s(3).unwrap_or_default(),
@@ -68,10 +63,7 @@ pub trait EntryStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    fn upsert_entry(
-        &self,
-        e: &MemoryEntry,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    fn upsert_entry(&self, e: &MemoryEntry) -> impl Future<Output = TursoResult<()>> + Send;
 
     /// Fetch one entry by composite key.
     ///
@@ -226,7 +218,10 @@ pub trait EntryStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    fn list_citations(&self, project: &str) -> impl Future<Output = TursoResult<Vec<CitationRow>>> + Send;
+    fn list_citations(
+        &self,
+        project: &str,
+    ) -> impl Future<Output = TursoResult<Vec<CitationRow>>> + Send;
 
     /// Get a gate config override.
     ///
@@ -280,7 +275,7 @@ pub struct GateConfigRow {
 impl EntryStore for TursoStore {
     async fn upsert_entry(&self, e: &MemoryEntry) -> TursoResult<()> {
         let now = super::now_rfc3339();
-        let project = record_id_slug(&e.project);
+        let project = e.project.clone();
         let project_ref = project.clone();
         let tags = serde_json::to_string(&e.tags.clone().unwrap_or_default())
             .unwrap_or_else(|_| "[]".into());
@@ -383,7 +378,9 @@ impl EntryStore for TursoStore {
         let sql = format!(
             "SELECT {ENTRY_COLS} FROM memories WHERE project=?1 AND category=?2 AND entry_key=?3"
         );
-        let mut rows = self.query(&sql, libsql::params![project, category, key]).await?;
+        let mut rows = self
+            .exec_params(&sql, libsql::params![project, category, key])
+            .await?;
         take_first(&mut rows).await
     }
 
@@ -392,12 +389,12 @@ impl EntryStore for TursoStore {
             "SELECT {ENTRY_COLS} FROM memories WHERE project=?1 \
              ORDER BY priority ASC NULLS LAST, created_at ASC"
         );
-        collect(&mut self.query(&sql, libsql::params![project]).await?).await
+        collect(&mut self.exec_params(&sql, libsql::params![project]).await?).await
     }
 
     async fn list_all(&self) -> TursoResult<Vec<MemoryEntry>> {
         let sql = format!("SELECT {ENTRY_COLS} FROM memories");
-        collect(&mut self.query(&sql, ()).await?).await
+        collect(&mut self.exec_params(&sql, ()).await?).await
     }
 
     async fn list_by_category(
@@ -411,7 +408,7 @@ impl EntryStore for TursoStore {
         );
         collect(
             &mut self
-                .query(&sql, libsql::params![project, category])
+                .exec_params(&sql, libsql::params![project, category])
                 .await?,
         )
         .await
@@ -448,7 +445,7 @@ impl EntryStore for TursoStore {
         let sql = format!(
             "SELECT {ENTRY_COLS} FROM memories {where_} ORDER BY updated_at DESC LIMIT {limit}"
         );
-        collect(&mut self.query(&sql, args).await?).await
+        collect(&mut self.exec_params(&sql, args).await?).await
     }
 
     async fn update_status(
@@ -504,12 +501,7 @@ impl EntryStore for TursoStore {
             .map_err(map_err)
     }
 
-    async fn set_lane(
-        &self,
-        project: &str,
-        key: &str,
-        lane: Option<String>,
-    ) -> TursoResult<u64> {
+    async fn set_lane(&self, project: &str, key: &str, lane: Option<String>) -> TursoResult<u64> {
         self.conn
             .execute(
                 "UPDATE memories SET lane=?3 WHERE project=?1 AND category='roadmap' AND entry_key=?2",
@@ -540,17 +532,15 @@ impl EntryStore for TursoStore {
             .unwrap_or_else(Utc::now)
             .to_rfc3339();
         self.conn
-            .execute("DELETE FROM events WHERE created_at < ?1", libsql::params![cutoff])
+            .execute(
+                "DELETE FROM events WHERE created_at < ?1",
+                libsql::params![cutoff],
+            )
             .await
             .map_err(map_err)
     }
 
-    async fn delete_by_key(
-        &self,
-        project: &str,
-        category: &str,
-        key: &str,
-    ) -> TursoResult<u64> {
+    async fn delete_by_key(&self, project: &str, category: &str, key: &str) -> TursoResult<u64> {
         let n = self
             .conn
             .execute(
@@ -648,7 +638,12 @@ impl EntryStore for TursoStore {
             .map_err(map_err)?;
         if let Some(row) = rows.next().await.map_err(TursoError::from)? {
             let value_num: Option<f64> = row.get(3).map_err(map_err).ok().flatten();
-            let value_bool: Option<bool> = row.get::<Option<i64>>(4).map_err(map_err).ok().flatten().map(|v| v != 0);
+            let value_bool: Option<bool> = row
+                .get::<Option<i64>>(4)
+                .map_err(map_err)
+                .ok()
+                .flatten()
+                .map(|v| v != 0);
             Ok(Some(GateConfigRow {
                 project: row.get::<String>(0).map_err(map_err)?,
                 gate_key: row.get::<String>(1).map_err(map_err)?,
@@ -689,11 +684,6 @@ impl EntryStore for TursoStore {
             .map_err(map_err)?;
         Ok(())
     }
-}
-
-/// Extract the slug from the Surreal RecordId we synthesize at read time.
-fn record_id_slug(id: &surrealdb_types::RecordId) -> String {
-    crate::key_str::project_key_str(id)
 }
 
 async fn collect(rows: &mut libsql::Rows) -> TursoResult<Vec<MemoryEntry>> {

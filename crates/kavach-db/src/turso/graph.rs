@@ -1,6 +1,6 @@
 //! Graph storage — `GraphStore` extension trait over `TursoStore`.
 //!
-//! Phase 3 parity with graph/dynamic.rs: SurrealDB kept entities in the
+//! Phase 3 parity with graph/dynamic.rs: TursoStoreDB kept entities in the
 //! `entity` table and relationships as per-type edge tables created by RELATE.
 //! libSQL models this as two plain tables (`entities`, `entity_edges`) with
 //! recursive-CTE traversal. Edge identity is `(from_id, rel_type, to_id)`.
@@ -97,7 +97,7 @@ pub const DDL: &[&str] = &[
     "CREATE INDEX IF NOT EXISTS idx_edges_to ON entity_edges(to_id)",
 ];
 
-/// A graph entity row — parity of `graph::types::Entity` without RecordId.
+/// A graph entity row — parity of `graph::types::Entity` without String.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub struct GraphEntity {
@@ -169,19 +169,14 @@ pub trait GraphStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    fn upsert_entity(
-        &self,
-        e: &GraphEntity,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    fn upsert_entity(&self, e: &GraphEntity) -> impl Future<Output = TursoResult<()>> + Send;
 
     /// Fetch one entity by id.
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    fn get_entity(
-        &self,
-        id: &str,
-    ) -> impl Future<Output = TursoResult<Option<GraphEntity>>> + Send;
+    fn get_entity(&self, id: &str)
+    -> impl Future<Output = TursoResult<Option<GraphEntity>>> + Send;
 
     /// List entities, optionally filtered by type (parity of `list_entities`).
     ///
@@ -310,7 +305,7 @@ impl GraphStore for TursoStore {
 
     async fn get_entity(&self, id: &str) -> TursoResult<Option<GraphEntity>> {
         let mut rows = self
-            .query(
+            .exec_params(
                 "SELECT id, entity_type, name, properties, content_hash, project \
                  FROM entities WHERE id = ?1",
                 libsql::params![id],
@@ -328,13 +323,14 @@ impl GraphStore for TursoStore {
                 "SELECT id, entity_type, name, properties, content_hash, project \
                  FROM entities WHERE entity_type = ?1 ORDER BY id"
             }
-            None => "SELECT id, entity_type, name, properties, content_hash, project \
-                     FROM entities ORDER BY id",
+            None => {
+                "SELECT id, entity_type, name, properties, content_hash, project \
+                     FROM entities ORDER BY id"
+            }
         };
-        let params = entity_type.map_or_else(Vec::new, |et| {
-            vec![libsql::Value::Text(et.to_owned())]
-        });
-        let mut rows = self.query(sql, params).await?;
+        let params =
+            entity_type.map_or_else(Vec::new, |et| vec![libsql::Value::Text(et.to_owned())]);
+        let mut rows = self.exec_params(sql, params).await?;
         let mut out = Vec::new();
         while let Some(row) = rows.next().await.map_err(TursoError::from)? {
             out.push(entity_from_row(&row)?);
@@ -342,13 +338,9 @@ impl GraphStore for TursoStore {
         Ok(out)
     }
 
-    async fn find_entity(
-        &self,
-        entity_type: &str,
-        name: &str,
-    ) -> TursoResult<Option<GraphEntity>> {
+    async fn find_entity(&self, entity_type: &str, name: &str) -> TursoResult<Option<GraphEntity>> {
         let mut rows = self
-            .query(
+            .exec_params(
                 "SELECT id, entity_type, name, properties, content_hash, project \
                  FROM entities WHERE entity_type = ?1 AND name = ?2 LIMIT 1",
                 libsql::params![entity_type, name],
@@ -418,7 +410,7 @@ impl GraphStore for TursoStore {
                  WHERE reach.depth < {max_depth} \
              ) SELECT DISTINCT node FROM reach WHERE node != ?1 ORDER BY node"
         );
-        let mut rows = self.query(&sql, libsql::params![start]).await?;
+        let mut rows = self.exec_params(&sql, libsql::params![start]).await?;
         let mut out = Vec::new();
         while let Some(row) = rows.next().await.map_err(TursoError::from)? {
             out.push(row.get::<String>(0).map_err(TursoError::from)?);
@@ -431,24 +423,20 @@ impl GraphStore for TursoStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    async fn get_related(
-        &self,
-        from_id: &str,
-        limit: usize,
-    ) -> TursoResult<Vec<RelatedRow>> {
+    async fn get_related(&self, from_id: &str, limit: usize) -> TursoResult<Vec<RelatedRow>> {
         #[expect(
             clippy::cast_possible_wrap,
             reason = "limit is a bounded search cap; far below i64::MAX"
         )]
         let limit64 = limit as i64;
-        // Single join over ALL rel types (SurrealDB needed one query per
+        // Single join over ALL rel types (TursoStoreDB needed one query per
         // ALLOWED_RELS entry; libSQL stores rel_type as a column).
         let sql = "SELECT e.rel_type, e.weight, \
                    t.id, t.entity_type, t.name, t.properties, t.content_hash, t.project \
                    FROM entity_edges e JOIN entities t ON t.id = e.to_id \
                    WHERE e.from_id = ?1 LIMIT ?2";
         let mut rows = self
-            .query(sql, libsql::params![from_id, limit64])
+            .exec_params(sql, libsql::params![from_id, limit64])
             .await?;
         let mut out = Vec::new();
         while let Some(row) = rows.next().await.map_err(TursoError::from)? {
@@ -466,10 +454,7 @@ impl GraphStore for TursoStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    async fn list_edges_among(
-        &self,
-        node_ids: &[String],
-    ) -> TursoResult<Vec<EdgeRow>> {
+    async fn list_edges_among(&self, node_ids: &[String]) -> TursoResult<Vec<EdgeRow>> {
         if node_ids.len() < 2 {
             return Ok(Vec::new());
         }
@@ -477,7 +462,9 @@ impl GraphStore for TursoStore {
             clippy::arithmetic_side_effects,
             reason = "placeholder index bounded by node_ids.len() (SQL param limit far higher)"
         )]
-        let placeholders = node_ids.iter().enumerate()
+        let placeholders = node_ids
+            .iter()
+            .enumerate()
             .map(|(i, _)| format!("?{}", i + 1))
             .collect::<Vec<_>>()
             .join(",");
@@ -486,10 +473,12 @@ impl GraphStore for TursoStore {
              WHERE from_id IN ({placeholders}) AND to_id IN ({placeholders}) \
              ORDER BY from_id, rel_type"
         );
-        let mut params: Vec<libsql::Value> =
-            node_ids.iter().map(|id| libsql::Value::Text(id.clone())).collect();
+        let mut params: Vec<libsql::Value> = node_ids
+            .iter()
+            .map(|id| libsql::Value::Text(id.clone()))
+            .collect();
         params.extend(node_ids.iter().map(|id| libsql::Value::Text(id.clone())));
-        let mut rows = self.query(&sql, params).await?;
+        let mut rows = self.exec_params(&sql, params).await?;
         let mut out = Vec::new();
         while let Some(row) = rows.next().await.map_err(TursoError::from)? {
             out.push(EdgeRow {
@@ -503,7 +492,7 @@ impl GraphStore for TursoStore {
 
     async fn all_edges_raw(&self) -> TursoResult<Vec<(String, String, String)>> {
         let mut rows = self
-            .query(
+            .exec_params(
                 "SELECT from_id, rel_type, to_id FROM entity_edges ORDER BY from_id",
                 (),
             )
@@ -521,7 +510,7 @@ impl GraphStore for TursoStore {
 }
 
 async fn edges_query(store: &TursoStore, sql: &str, id: &str) -> TursoResult<Vec<GraphEdge>> {
-    let mut rows = store.query(sql, libsql::params![id]).await?;
+    let mut rows = store.exec_params(sql, libsql::params![id]).await?;
     let mut out = Vec::new();
     while let Some(row) = rows.next().await.map_err(TursoError::from)? {
         out.push(GraphEdge {
@@ -547,7 +536,11 @@ fn entity_from_row_offset(row: &libsql::Row, base: i32) -> TursoResult<GraphEnti
         clippy::arithmetic_side_effects,
         reason = "constant column offsets; base is 0 or 2 at all call sites"
     )]
-    let cols = (0..6).map(|k| row.get::<Option<String>>(base + k).map_err(TursoError::from))
+    let cols = (0..6)
+        .map(|k| {
+            row.get::<Option<String>>(base + k)
+                .map_err(TursoError::from)
+        })
         .collect::<Result<Vec<_>, _>>()?;
     let mut it = cols.into_iter();
     Ok(GraphEntity {
@@ -561,11 +554,11 @@ fn entity_from_row_offset(row: &libsql::Row, base: i32) -> TursoResult<GraphEnti
 }
 
 /// Render an entity in the Phase-0 golden fixture shape:
-/// `[type] name (id=RecordId { table: Table("entity"), key: String("KEY") }) {props}`
+/// `[type] name (id=String { table: Table("entity"), key: String("KEY") }) {props}`
 #[must_use]
 pub fn render_entity_fixture(e: &GraphEntity) -> String {
     let mut s = format!(
-        "[{}] {} (id=RecordId {{ table: Table(\"entity\"), key: String(\"{}\") }})",
+        "[{}] {} (id=String {{ table: Table(\"entity\"), key: String(\"{}\") }})",
         e.entity_type, e.name, e.id
     );
     if let Some(props) = &e.properties {
@@ -578,7 +571,10 @@ pub fn render_entity_fixture(e: &GraphEntity) -> String {
 /// `format_entity_line` (`[type] name (id=<debug-id>) [props]`).
 #[must_use]
 pub fn render_entity_line(e: &GraphEntity) -> String {
-    let id_str = format!("RecordId {{ table: Table(\"entity\"), key: String(\"{}\") }}", e.id);
+    let id_str = format!(
+        "String {{ table: Table(\"entity\"), key: String(\"{}\") }}",
+        e.id
+    );
     match &e.properties {
         Some(p) if !p.is_empty() => {
             format!("[{}] {} (id={id_str}) {p}", e.entity_type, e.name)
@@ -590,17 +586,14 @@ pub fn render_entity_line(e: &GraphEntity) -> String {
 /// Render named-entity query lines — parity of `graph_query_named`:
 /// header `[type] name (id=…)` then `  ──rel──► [type] name` per relation.
 #[must_use]
-pub fn render_named_lines(
-    entity: &GraphEntity,
-    related: &[RelatedRow],
-) -> Vec<String> {
+pub fn render_named_lines(entity: &GraphEntity, related: &[RelatedRow]) -> Vec<String> {
     #[expect(
         clippy::arithmetic_side_effects,
         reason = "capacity estimate: header line + related rows + sentinel; operands bounded"
     )]
     let mut lines = Vec::with_capacity(related.len() + 2);
     lines.push(format!(
-        "[{}] {} (id=RecordId {{ table: Table(\"entity\"), key: String(\"{}\") }})",
+        "[{}] {} (id=String {{ table: Table(\"entity\"), key: String(\"{}\") }})",
         entity.entity_type, entity.name, entity.id
     ));
     if related.is_empty() {

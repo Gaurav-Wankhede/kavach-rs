@@ -1,51 +1,54 @@
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
-
-#[derive(SurrealValue)]
-pub(super) struct EventRow {
-    pub id: RecordId,
-}
+use crate::turso::TursoStore;
 
 /// Delete events older than `days` days. Returns count deleted.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the DELETE query.
-pub async fn rotate_events(db: &Surreal<Db>, days: i64) -> Result<usize> {
-    let query =
-        "DELETE event WHERE created_at < time::now() - duration::from::days($days) RETURN BEFORE"; // doctor:ok
-    let mut response = db.query(query).bind(("days", days)).await?;
-    let deleted: Vec<serde_json::Value> = response.take(0)?;
-    Ok(deleted.len())
+/// Propagates `Error::Turso` from the DELETE query.
+pub async fn rotate_events(db: &TursoStore, days: i64) -> Result<usize> {
+    let floor_secs = days.saturating_mul(86_400);
+    let floor_ts = chrono::Utc::now() - chrono::Duration::seconds(floor_secs);
+    let floor_s = floor_ts.to_rfc3339();
+    let mut rows = db
+        .exec_params(
+            "DELETE FROM events WHERE created_at < $floor RETURNING id",
+            libsql::params![floor_s],
+        )
+        .await?;
+    let mut deleted = 0usize;
+    while rows.next().await?.is_some() {
+        deleted += 1;
+    }
+    Ok(deleted)
 }
 
 /// Append an event row.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the CREATE query.
+/// Propagates `Error::Turso` from the INSERT query.
 pub async fn append_event(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     event_type: &str,
-    source: &str,
-    project: Option<RecordId>,
+    _source: &str,
+    project: Option<String>,
     payload: Option<&str>,
-) -> Result<RecordId> {
-    let payload_value: Option<serde_json::Value> = payload.map(|p| {
-        serde_json::from_str(p).unwrap_or_else(|_| serde_json::Value::String(p.to_owned()))
-    });
-    let query = "CREATE event SET event_type = $event_type, source = $source, \
-                 project = $project, payload = $payload, created_at = time::now() RETURN AFTER";
+) -> Result<String> {
+    let now = crate::turso::now_rfc3339();
     let mut response = db
-        .query(query)
-        .bind(("event_type", event_type.to_owned()))
-        .bind(("source", source.to_owned()))
-        .bind(("project", project))
-        .bind(("payload", payload_value))
+        .exec_params(
+            "INSERT INTO events (project, kind, payload, created_at) \
+             VALUES ($project, $kind, $payload, $now) \
+             RETURNING id",
+            libsql::params![
+                project,
+                event_type.to_owned(),
+                payload.map(ToOwned::to_owned),
+                now
+            ],
+        )
         .await?;
-    let result: Option<EventRow> = response.take(0)?;
-    match result {
-        Some(e) => Ok(e.id),
+    match response.next().await? {
+        Some(r) => Ok(r.get::<String>(0)?),
         None => Err(crate::error::Error::RecordNotFound("event create".into())),
     }
 }

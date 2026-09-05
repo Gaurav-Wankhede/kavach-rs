@@ -110,7 +110,7 @@ fn done_card_satisfies_a_dependent_and_is_promotable() {
     fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
         kavach_db::MemoryEntry {
             id: None,
-            project: surrealdb_types::RecordId::new("project", "t"),
+            project: "t".to_owned(),
             category: Some("roadmap".into()),
             entry_key: key.into(),
             title: key.into(),

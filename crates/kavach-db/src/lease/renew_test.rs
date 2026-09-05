@@ -8,14 +8,12 @@
 
 use super::renew_active_leases;
 use crate::open_memory;
+use crate::turso::TursoStore;
 use chrono::{Duration, Utc};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
 
 /// Seed one roadmap card with explicit lease columns + status.
 async fn seed_card(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     id: &str,
     occupied_by: Option<&str>,
     until_offset_secs: i64,
@@ -23,33 +21,38 @@ async fn seed_card(
 ) {
     let until = occupied_by
         .and_then(|_| Utc::now().checked_add_signed(Duration::seconds(until_offset_secs)));
-    db.query(
-        "CREATE type::record('roadmap', $id) SET \
-         occupied_by=$ob, occupied_until=$u, occupied_epoch=1, \
-         entry_status=$st, entry_key=$id, project='p', title='t', content='c', \
-         updated_at=time::now()",
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, entry_status, \
+          occupied_by, occupied_until, occupied_epoch, created_at, updated_at) \
+         VALUES ('p', 'roadmap', ?1, 't', 'c', ?5, ?2, ?3, 1, ?4, ?4)",
+        libsql::params![
+            id.to_owned(),
+            occupied_by.map(ToOwned::to_owned),
+            until.map(|u| u.to_rfc3339()),
+            crate::turso::now_rfc3339(),
+            status.to_owned()
+        ],
     )
-    .bind(("id", id.to_owned()))
-    .bind(("ob", occupied_by.map(ToOwned::to_owned)))
-    .bind(("u", until))
-    .bind(("st", status.to_owned()))
     .await
     .expect("seed card");
 }
 
-async fn until_of(db: &Surreal<Db>, id: &str) -> Option<chrono::DateTime<Utc>> {
-    #[derive(surrealdb_types::SurrealValue)]
-    struct Row {
-        occupied_until: Option<chrono::DateTime<Utc>>,
-    }
-    let row: Option<Row> = db
-        .query("SELECT occupied_until FROM type::record('roadmap', $id)")
-        .bind(("id", id.to_owned()))
+async fn until_of(db: &TursoStore, id: &str) -> Option<chrono::DateTime<Utc>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT occupied_until FROM memories \
+             WHERE project = 'p' AND category = 'roadmap' AND entry_key = ?1",
+            libsql::params![id.to_owned()],
+        )
         .await
-        .expect("select")
-        .take(0)
-        .expect("take");
-    row.and_then(|r| r.occupied_until)
+        .expect("select");
+    let row = rows.next().await.expect("next").expect("row exists");
+    row.get::<Option<String>>(0).expect("get").and_then(|s| {
+        chrono::DateTime::parse_from_rfc3339(&s)
+            .ok()
+            .map(|d| d.with_timezone(&Utc))
+    })
 }
 
 #[tokio::test]

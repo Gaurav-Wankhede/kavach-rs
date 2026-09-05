@@ -12,7 +12,7 @@ fn card(key: &str, priority: Option<i64>, deps: &[&str]) -> MemoryEntry {
     };
     MemoryEntry {
         id: None,
-        project: surrealdb_types::RecordId::new("project", "t"),
+        project: "t".to_owned(),
         category: Some("roadmap".into()),
         entry_key: key.to_owned(),
         title: key.to_owned(),

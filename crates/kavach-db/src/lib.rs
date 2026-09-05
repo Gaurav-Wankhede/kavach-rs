@@ -2,12 +2,12 @@
 // A re-export hub aggregates the crate's public API; it cannot decompose without a
 // mod.rs (which the legacy layout used), so it carries the hub exemption.
 // SOURCE: https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#result_large_err
-// Reason: surrealdb::Error is enum-driven and large by design; boxing the entire
+// Reason: crate::error::Error is enum-driven and large by design; boxing the entire
 // `Result<T, Error>` chain would touch every public API. Pre-existing latent lints
 // surfaced by deploy.rs warnings-as-errors gate (TASK#1297).
 #![allow(
     clippy::result_large_err,
-    reason = "TASK#1297: surrealdb::Error is large; boxing requires API-wide refactor"
+    reason = "TASK#1297: crate::error::Error is large; boxing requires API-wide refactor"
 )]
 #![allow(
     clippy::should_implement_trait,
@@ -148,9 +148,7 @@ pub use rag_trees::{
     RagTreeLabel, RagTreeRefreshable, RagTreeRow, get as rag_tree_get, list as rag_tree_list,
     list_refreshable as rag_tree_list_refreshable, upsert_with_dir as rag_tree_upsert_with_dir,
 };
-pub use read::{
-    get_by_id, get_by_key, list_all_by_table, list_by_project, list_by_status, list_with_filter,
-};
+pub use read::{get_by_key, list_all_by_table, list_by_project, list_by_status, list_with_filter};
 pub use runs::{
     RunRecord, run_get, run_insert, run_list_by_project, run_reconcile_orphans, run_update_status,
 };

@@ -1,10 +1,8 @@
 // Read side of the autonomous mistake loop: recurrence-ranked anti_pattern
 // listing + practice-delta renderer. See decision/mistake-loop-close-read-graph.
 use crate::error::Result;
+use crate::turso::TursoStore;
 use std::fmt::Write as _;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
 
 /// One recurrence-ranked anti-pattern: the clustered behavioral lesson plus how
 /// often a `mistake_event` has been routed to it (inbound `instance_of` edges).
@@ -25,50 +23,37 @@ pub struct AntiPatternRanked {
 /// stable tie-break.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn top_anti_patterns(db: &Surreal<Db>, limit: usize) -> Result<Vec<AntiPatternRanked>> {
+/// Propagates `Error::Turso` when the query fails.
+pub async fn top_anti_patterns(db: &TursoStore, limit: usize) -> Result<Vec<AntiPatternRanked>> {
     // gate + correct_action are non-optional: upsert_anti_pattern always sets
-    // both. Deserializing as String (not Option) fails closed on a malformed
-    // node rather than silently defaulting to "" — the caller then falls back to
-    // the legacy ledger instead of reinjecting a blank rule.
-    #[derive(SurrealValue)]
-    struct Row {
-        name: String,
-        gate: String,
-        correct_action: String,
-        hit_count: i64,
+    // both. Reading as String (not Option) fails closed on a malformed node
+    // rather than silently defaulting to "" — the caller then falls back to the
+    // legacy ledger instead of reinjecting a blank rule.
+    let mut resp = db
+        .exec_params(
+            "SELECT e.name, \
+             json_extract(e.properties, '$.gate') AS gate, \
+             json_extract(e.properties, '$.correct_action') AS correct_action, \
+             COUNT(ed.to_id) AS hit_count \
+             FROM entities e \
+             LEFT JOIN entity_edges ed ON ed.to_id = e.id AND ed.rel_type = 'instance_of' \
+             WHERE e.entity_type = 'anti_pattern' \
+             GROUP BY e.id \
+             ORDER BY hit_count DESC, e.name ASC",
+            (),
+        )
+        .await?;
+    let mut rows: Vec<AntiPatternRanked> = Vec::new();
+    while let Some(r) = resp.next().await? {
+        rows.push(AntiPatternRanked {
+            name: r.get::<String>(0)?,
+            gate: r.get::<Option<String>>(1)?.unwrap_or_default(),
+            correct_action: r.get::<Option<String>>(2)?.unwrap_or_default(),
+            hit_count: r.get::<i64>(3)?,
+        });
     }
-
-    let q = "SELECT name, \
-             properties.gate AS gate, \
-             properties.correct_action AS correct_action, \
-             count(<-instance_of<-entity) AS hit_count \
-             FROM entity WHERE entity_type = 'anti_pattern'";
-    let mut resp = db.query(q).await?;
-    // A brand-new graph has never created the `entity` table (no migration / no
-    // prior write), so SELECT raises "table does not exist". That is the empty
-    // case — zero anti_patterns — not a failure: return [] so callers render
-    // "no mistakes yet" instead of an error.
-    let mut rows: Vec<Row> = match resp.take(0) {
-        Ok(rows) => rows,
-        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(Vec::new()),
-        Err(e) => return Err(e.into()),
-    };
-    rows.sort_by(|a, b| {
-        b.hit_count
-            .cmp(&a.hit_count)
-            .then_with(|| a.name.cmp(&b.name))
-    });
     rows.truncate(limit);
-    Ok(rows
-        .into_iter()
-        .map(|r| AntiPatternRanked {
-            name: r.name,
-            gate: r.gate,
-            correct_action: r.correct_action,
-            hit_count: r.hit_count,
-        })
-        .collect())
+    Ok(rows)
 }
 
 /// Render ranked anti-patterns as a `[PRACTICE_DELTA]` Mermaid contrast.

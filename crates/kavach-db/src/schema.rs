@@ -1,23 +1,21 @@
-//! Schema hub: applies the unified DDL (single source of truth for all 32 tables).
+//! Schema hub. The single source of truth for the SQLite DDL is
+//! `turso::SCHEMA_DDL` + the per-module DDL slices, applied idempotently at
+//! `TursoStore::open` / `open_memory` via `init_schema`. `apply_schema` exists
+//! for the explicit `--apply-schema` path and re-runs that same idempotent DDL.
 mod core;
 mod graph;
 mod memory;
 mod migrations;
-pub mod unified;
 #[cfg(test)]
 #[path = "schema_test.rs"]
 mod tests;
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-/// Applies the unified schema DDL to the `SurrealDB` instance.
-///
-/// Uses `unified::DDL` as the single source of truth for all 32 tables
-/// (core + memory + graph + WebFind).
+use crate::turso::TursoStore;
+/// Re-applies the unified SQLite schema DDL (idempotent — every statement uses
+/// `IF NOT EXISTS`).
 ///
 /// # Errors
-/// Propagates errors from the `SurrealDB` query execution.
-pub async fn apply_schema(db: &Surreal<Db>) -> Result<()> {
-    db.query(unified::DDL).await?;
-    Ok(())
+/// Propagates errors from the `Turso` query execution.
+pub async fn apply_schema(db: &TursoStore) -> Result<()> {
+    db.apply_schema().await.map_err(Into::into)
 }

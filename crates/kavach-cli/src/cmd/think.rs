@@ -3,8 +3,6 @@
 // thin for the query, auto-files a research card so the gap becomes tracked work.
 // SOURCE: roadmap.unit.harness.brain-os.g2-think-mode.
 use crate::cmd::io_safe::{into_exit_code, print_or_exit};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any;
 
 /// Below this many hits the query is treated as a knowledge gap (auto-filed).
 const GAP_FLOOR: usize = 3;
@@ -36,7 +34,7 @@ async fn run_async(project_slug: &str, query: &str, limit: usize) -> i32 {
 
 /// File the unanswered query as a `research` card so the gap is tracked work.
 /// A missing project is non-fatal: we still report the hits, just unfiled.
-async fn file_gap(db: &Surreal<Any>, project_slug: &str, query: &str) -> bool {
+async fn file_gap(db: &kavach_db::turso::TursoStore, project_slug: &str, query: &str) -> bool {
     let Ok(Some(project)) = kavach_db::project_get_by_slug(db, project_slug).await else {
         return false;
     };

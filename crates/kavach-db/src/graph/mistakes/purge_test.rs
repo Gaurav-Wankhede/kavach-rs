@@ -4,13 +4,10 @@ use super::delete_anti_patterns_by_gate;
 use crate::error::Result;
 use crate::graph::mistakes::{append_mistake_event, cluster_event_to_pattern, top_anti_patterns};
 use crate::open_memory;
+use crate::turso::TursoStore;
 
 /// Route one mistake observation through the capture path (same as `top_test::seed`).
-async fn seed(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
-    gate: &str,
-    fix: &str,
-) -> Result<()> {
+async fn seed(db: &TursoStore, gate: &str, fix: &str) -> Result<()> {
     let ev = append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj"), 0).await?;
     cluster_event_to_pattern(db, &ev, gate, fix).await?;
     Ok(())

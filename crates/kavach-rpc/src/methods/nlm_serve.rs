@@ -11,9 +11,8 @@ use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::nlm_query_docs;
+use kavach_db::turso::TursoStore;
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any;
 
 /// The expert-policies the serving path fans out — external Kavach skills.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,7 +113,7 @@ pub struct AdviseResult {
     reason = "hit counts are tiny; f32 precision is ample for a confidence ratio"
 )]
 async fn run_expert(
-    db: &Surreal<Any>,
+    db: &TursoStore,
     policy: ExpertPolicy,
     query: &str,
     limit: usize,
@@ -154,7 +153,7 @@ pub async fn advise(state: &AppState, p: AdviseParams) -> Result<AdviseResult, E
 
     let mut set = tokio::task::JoinSet::new();
     for policy in ExpertPolicy::ALL {
-        let db: Arc<Surreal<Any>> = Arc::clone(&state.db);
+        let db: Arc<TursoStore> = Arc::clone(&state.db);
         let q = query.clone();
         set.spawn(async move { run_expert(&db, policy, &q, limit).await });
     }

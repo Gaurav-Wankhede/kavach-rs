@@ -61,7 +61,7 @@ fn backlog_skips_umbrella_but_takes_gate_or_real() {
 fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
     kavach_db::MemoryEntry {
         id: None,
-        project: surrealdb_types::RecordId::new("project", "t"),
+        project: "t".to_owned(),
         category: Some("roadmap".into()),
         entry_key: key.into(),
         title: key.into(),
@@ -88,7 +88,7 @@ fn entry_with_priority(
 ) -> kavach_db::MemoryEntry {
     kavach_db::MemoryEntry {
         id: None,
-        project: surrealdb_types::RecordId::new("project", "t"),
+        project: "t".to_owned(),
         category: Some("roadmap".into()),
         entry_key: key.into(),
         title: key.into(),

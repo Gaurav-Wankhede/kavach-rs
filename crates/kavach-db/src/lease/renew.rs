@@ -1,12 +1,10 @@
 // SPEC: docs/architecture/session-occupancy-lease.md §Renewal (liveness janitor)
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
 // SOURCE: https://medium.com/@Modexa/7-lease-based-locks-that-dont-deadlock-d6de4a0562c9
-use chrono::{Duration, Utc};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
 use super::types::LEASE_TTL_SECS;
 use crate::error::{Error, Result};
-use surrealdb_types::SurrealValue;
+use crate::turso::TursoStore;
+use chrono::{Duration, Utc};
 /// The leased tables a renewal sweep covers. Mirrors `recovery::LEASED_TABLES`;
 /// any table whose cards carry the `occupied_*` lease columns belongs here.
 const LEASED_TABLES: &[&str] = &["roadmap", "decision", "app_spec"];
@@ -34,7 +32,7 @@ pub const RENEW_INTERVAL_SECS: u64 = (LEASE_TTL_SECS as u64) / 3;
 /// bookkeeping. The `WHERE` guarantees the three card requirements:
 /// - stops renewing a finished card: `entry_status = 'in_progress'` excludes
 ///   `done`/`verified`/`todo`,
-/// - stops renewing a released lease: `occupied_by != NONE` excludes unlocked
+/// - stops renewing a released lease: `occupied_by IS NOT NULL` excludes unlocked
 ///   rows,
 /// - never resurrects a lapsed-and-restolen lease: only rows whose CURRENT
 ///   `occupied_until` is in the future are pushed forward; a lease that already
@@ -42,9 +40,9 @@ pub const RENEW_INTERVAL_SECS: u64 = (LEASE_TTL_SECS as u64) / 3;
 ///   to life under the old holder).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when a table's UPDATE fails, or `Error::Migration`
+/// Propagates `Error::Turso` when a table's UPDATE fails, or `Error::Migration`
 /// on expiry arithmetic overflow.
-pub async fn renew_active_leases(db: &Surreal<Db>) -> Result<usize> {
+pub async fn renew_active_leases(db: &TursoStore) -> Result<usize> {
     let now = Utc::now();
     let expires = now
         .checked_add_signed(Duration::seconds(LEASE_TTL_SECS))
@@ -57,50 +55,28 @@ pub async fn renew_active_leases(db: &Surreal<Db>) -> Result<usize> {
 }
 /// Renew the live leases of a single table. Counts the rows actually extended.
 async fn renew_table(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     table: &str,
     now: chrono::DateTime<Utc>,
     expires: chrono::DateTime<Utc>,
 ) -> Result<usize> {
-    let resp = db
-        .query(
-            "UPDATE type::table($t) SET occupied_until=$u, occupied_heartbeat=$h \
-             WHERE occupied_by != NONE AND occupied_until != NONE AND occupied_until > $now \
-                   AND entry_status = 'in_progress' \
-             RETURN id",
+    let now_s = now.to_rfc3339();
+    let expires_s = expires.to_rfc3339();
+    let mut resp = db
+        .exec_params(
+            "UPDATE memories SET occupied_until = $u, occupied_heartbeat = $h \
+             WHERE category = $t \
+               AND occupied_by IS NOT NULL AND occupied_until IS NOT NULL AND occupied_until > $now \
+               AND entry_status = 'in_progress' \
+             RETURNING entry_key",
+            libsql::params![expires_s, now_s.clone(), table.to_owned(), now_s],
         )
-        .bind(("t", table.to_owned()))
-        .bind(("u", expires))
-        .bind(("h", now))
-        .bind(("now", now))
-        .await;
-    // SurrealDB defers a "table does not exist" error to result extraction, not
-    // the query future — so the tolerance check must wrap BOTH .await and
-    // .take(). A leased table absent on a fresh store holds no renewable lease:
-    // a 0-row no-op, not a sweep-aborting failure.
-    let taken = match resp {
-        Ok(mut r) => r.take::<Vec<RenewedIdRow>>(0),
-        Err(e) => Err(e),
-    };
-    match taken {
-        Ok(updated) => Ok(updated.len()),
-        Err(e) if is_missing_table(&e) => Ok(0),
-        Err(e) => Err(Error::Surreal(e)),
+        .await?;
+    let mut renewed = 0usize;
+    while resp.next().await?.is_some() {
+        renewed += 1;
     }
-}
-/// True when the error is `SurrealDB`'s "table does not exist" — the only error
-/// `renew_table` swallows (an absent leased table simply holds no renewable
-/// lease). Matched on the rendered message because the typed `NotFound` variant
-/// is not surfaced through the SDK error tree at this version.
-fn is_missing_table(e: &surrealdb::Error) -> bool {
-    // Display renders "The table 'X' does not exist"; Debug wraps it in
-    // NotFound(Table{..}). Match the stable phrase common to both.
-    let msg = e.to_string();
-    msg.contains("does not exist")
-}
-#[derive(surrealdb_types::SurrealValue)]
-struct RenewedIdRow {
-    id: surrealdb_types::RecordId,
+    Ok(renewed)
 }
 #[cfg(test)]
 #[path = "renew_test.rs"]

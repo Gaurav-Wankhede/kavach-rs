@@ -4,6 +4,7 @@ use super::{
     top_anti_patterns,
 };
 use crate::error::Result;
+use crate::turso::TursoStore;
 
 #[test]
 fn mistake_row_renders_single_banned_to_fix_dag() {
@@ -114,12 +115,7 @@ use crate::open_memory;
 /// (`anti.<gate>.<blake3(fix)[..8]>`); the same pair re-clusters to the same node.
 /// Helper returns `Result` and propagates with `?` — it asserts nothing, so it
 /// does not trip `panic_in_result_fn` (which fires only on asserting bodies).
-async fn seed(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
-    gate: &str,
-    fix: &str,
-    turn: i32,
-) -> Result<()> {
+async fn seed(db: &TursoStore, gate: &str, fix: &str, turn: i32) -> Result<()> {
     let ev =
         append_mistake_event(db, gate, fix, "banned phrase", "sess", Some("proj"), turn).await?;
     cluster_event_to_pattern(db, &ev, gate, fix).await?;

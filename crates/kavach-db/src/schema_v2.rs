@@ -1,24 +1,23 @@
-// ARCH: AgentMemorySchema — SurrealDB 3.0 patterns for self-improving agents
+// ARCH: AgentMemorySchema — Turso 3.0 patterns for self-improving agents
 // SEARCHED: 2026-05
 // SOURCE: https://arxiv.org/html/2603.10600v1 (Trajectory-Informed Memory)
 // SOURCE: https://arxiv.org/html/2512.18950v1 (MACLA hierarchical procedural memory)
 // SOURCE: https://github.com/surrealdb/agent-memory (official agent-memory schema)
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 /// Applies the agent memory schema v2 to the database.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the schema definition query fails.
-pub async fn apply_agent_memory_schema(db: &Surreal<Db>) -> Result<()> {
-    db.query(AGENT_MEMORY_DDL).await?;
+/// Propagates `Error::Turso` when the schema definition query fails.
+pub async fn apply_agent_memory_schema(db: &TursoStore) -> Result<()> {
+    db.exec_params(AGENT_MEMORY_DDL, ()).await?;
     Ok(())
 }
 
 const AGENT_MEMORY_DDL: &str = r"
 -- =============================================================================
--- AGENT MEMORY SCHEMA v2 (SurrealDB 3.0 patterns)
+-- AGENT MEMORY SCHEMA v2 (Turso 3.0 patterns)
 -- =============================================================================
 -- Design principles:
 -- 1. Temporal versioning: every write creates a version record (journal)

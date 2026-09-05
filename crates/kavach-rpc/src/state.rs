@@ -1,9 +1,8 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
 use tokio::sync::Notify;
+use kavach_db::turso::TursoStore;
 
 /// In-process change channel: a monotonic version counter plus a `Notify`.
 ///
@@ -57,7 +56,7 @@ impl ChangeFeed {
     reason = "constructed at RPC handler boundary"
 )]
 pub struct AppState {
-    pub db: Arc<Surreal<Db>>,
+    pub db: Arc<TursoStore>,
     pub started_at: chrono::DateTime<chrono::Utc>,
     /// Shared change feed driven by the LIVE SELECT watcher, awaited by
     /// the `change.wait` RPC. Cloned cheaply (Arc) across handlers + the task.
@@ -66,7 +65,7 @@ pub struct AppState {
 
 impl AppState {
     #[must_use]
-    pub fn new(db: Surreal<Db>) -> Self {
+    pub fn new(db: TursoStore) -> Self {
         Self {
             db: Arc::new(db),
             started_at: chrono::Utc::now(),

@@ -4,21 +4,64 @@
 //! domain behavior is provided by extension traits in sibling modules
 //! (`entries::EntryStore`, `search::SearchStore`, `graph::GraphStore`).
 
+use std::future::Future;
 use std::path::Path;
+use std::pin::Pin;
 
 use super::{SCHEMA_DDL, TursoError, TursoResult, TursoStore};
 
+#[derive(Debug)]
+pub struct QueryBuilder {
+    store: TursoStore,
+    sql: String,
+    params: Vec<libsql::Value>,
+}
+
+impl QueryBuilder {
+    pub fn bind(mut self, pair: (&str, impl Into<libsql::Value>)) -> QueryBuilder {
+        self.params.push(pair.1.into());
+        self
+    }
+}
+
+impl IntoFuture for QueryBuilder {
+    type Output = TursoResult<libsql::Rows>;
+    type IntoFuture = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(async move {
+            self.store
+                .conn
+                .query(&self.sql, self.params)
+                .await
+                .map_err(Into::into)
+        })
+    }
+}
+
 impl TursoStore {
-    /// Open (creating if needed) the database at `path` and ensure schema.
-    ///
-    /// # Errors
-    /// Returns [`TursoError`] on filesystem or SQL failure.
+    pub fn query(&self, sql: impl AsRef<str>) -> QueryBuilder {
+        QueryBuilder {
+            store: self.clone(),
+            sql: sql.as_ref().to_owned(),
+            params: Vec::new(),
+        }
+    }
+
+    pub async fn query_with_params(
+        &self,
+        sql: &str,
+        params: impl libsql::params::IntoParams,
+    ) -> TursoResult<libsql::Rows> {
+        self.conn.query(sql, params).await.map_err(Into::into)
+    }
+
     pub async fn open(path: impl AsRef<Path>) -> TursoResult<Self> {
         let path = path.as_ref();
         if let Some(dir) = path.parent() {
-            tokio::fs::create_dir_all(dir)
-                .await
-                .map_err(|e| TursoError::Mapping(format!("create_dir_all {}: {e}", dir.display())))?;
+            tokio::fs::create_dir_all(dir).await.map_err(|e| {
+                TursoError::Mapping(format!("create_dir_all {}: {e}", dir.display()))
+            })?;
         }
         let db = libsql::Builder::new_local(path.display().to_string())
             .build()
@@ -45,16 +88,40 @@ impl TursoStore {
         Self::open(base.join(super::DEFAULT_DB_FILENAME)).await
     }
 
+    /// Open an in-memory store (tests). The single held connection keeps the
+    /// `:memory:` database alive for the store's lifetime.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    pub async fn open_memory() -> TursoResult<Self> {
+        let db = libsql::Builder::new_local(":memory:").build().await?;
+        let conn = db.connect()?;
+        let store = Self { conn };
+        store.init_schema().await?;
+        Ok(store)
+    }
+
+    /// Re-apply the schema idempotently (all DDL uses `IF NOT EXISTS`).
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    pub async fn apply_schema(&self) -> TursoResult<()> {
+        self.init_schema().await
+    }
+
     pub(crate) async fn exec(&self, sql: &str) -> TursoResult<u64> {
         self.conn.execute(sql, ()).await.map_err(Into::into)
     }
 
-    pub(crate) async fn query(
+    pub(crate) async fn exec_params(
         &self,
-        sql: &str,
+        sql: impl AsRef<str>,
         params: impl libsql::params::IntoParams,
     ) -> TursoResult<libsql::Rows> {
-        self.conn.query(sql, params).await.map_err(Into::into)
+        self.conn
+            .query(sql.as_ref(), params)
+            .await
+            .map_err(Into::into)
     }
 
     /// Execute statements that may return rows (e.g. `PRAGMA journal_mode`)

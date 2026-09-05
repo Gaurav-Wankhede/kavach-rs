@@ -11,7 +11,6 @@ use kavach_db::{
     graph_upsert_entity,
 };
 use serde::{Deserialize, Serialize};
-use surrealdb_types::RecordId;
 
 /// Parameters for upserting a graph entity.
 #[non_exhaustive]
@@ -54,13 +53,12 @@ pub struct GetRelatedParams {
     pub limit: Option<usize>,
 }
 
-fn parse_record_id(s: &str) -> Result<RecordId, ErrorObjectOwned> {
+/// Validate the `table:key` record-id shape and return it unchanged — the
+/// Turso layer keys entities and edges by the full string id.
+fn parse_record_id(s: &str) -> Result<String, ErrorObjectOwned> {
     match s.split_once(':') {
-        Some((table, key)) => Ok(RecordId {
-            table: table.to_owned().into(),
-            key: surrealdb_types::RecordIdKey::String(key.to_owned()),
-        }),
-        None => Err(invalid_params(format!(
+        Some((table, key)) if !table.is_empty() && !key.is_empty() => Ok(s.to_owned()),
+        _ => Err(invalid_params(format!(
             "expected RecordId 'table:id', got: {s}"
         ))),
     }
@@ -78,9 +76,7 @@ pub async fn entity_upsert(
     let id = graph_upsert_entity(&state.db, &params.entity_type, &params.name)
         .await
         .map_err(surreal_to_rpc)?;
-    Ok(EntityIdResult {
-        id: format!("{id:?}"),
-    })
+    Ok(EntityIdResult { id })
 }
 
 /// Find a graph entity by type and name.

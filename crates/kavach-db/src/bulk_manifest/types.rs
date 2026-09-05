@@ -1,17 +1,16 @@
 // Types + pure helpers for bulk_manifest. No I/O — keeps the DB ops files
-// small and the type surface unit-testable without a live Surreal handle.
+// small and the type surface unit-testable without a live TursoStore handle.
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use surrealdb_types::{RecordId, SurrealValue};
 
 pub(super) const STATUS_ACTIVE: &str = "active";
 pub(super) const STATUS_CLOSED: &str = "closed";
 pub(super) const STATUS_EXPIRED: &str = "expired";
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct BulkManifest {
-    pub id: Option<RecordId>,
+    pub id: Option<String>,
     pub sweep_id: String,
     pub project: String,
     pub root_rca: String,

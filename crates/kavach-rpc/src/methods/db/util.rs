@@ -1,5 +1,6 @@
 use crate::error::internal;
 use jsonrpsee::types::ErrorObjectOwned;
+use kavach_db::turso::TursoStore;
 
 pub(super) const ROADMAP_TABLE: &str = "roadmap";
 
@@ -13,15 +14,15 @@ pub(super) const fn or_str<'a>(opt: Option<&'a str>, default: &'a str) -> &'a st
 }
 
 pub(super) async fn resolve_project_id(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
+    db: &TursoStore,
     slug: &str,
-) -> Result<surrealdb_types::RecordId, ErrorObjectOwned> {
+) -> Result<String, ErrorObjectOwned> {
     let project = kavach_db::project_get_by_slug(db, slug)
         .await
         .map_err(|e| internal(e.to_string()))?;
     match project {
         Some(p) => {
-            p.id.map_or_else(|| Err(internal(format!("project has no id: {slug}"))), Ok)
+            p.id.ok_or_else(|| internal(format!("project has no id: {slug}")))
         }
         None => Err(internal(format!("project not found: {slug}"))),
     }

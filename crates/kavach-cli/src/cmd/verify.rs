@@ -190,8 +190,8 @@ fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
 /// Flip roadmap row done → verified and print PASS. Shared by the cargo and the
 /// external-verified paths.
 async fn finalize_verified(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
-    project_id: &surrealdb_types::RecordId,
+    db: &kavach_db::turso::TursoStore,
+    project_id: &String,
     key: &str,
 ) -> i32 {
     if let Err(e) = kavach_db::update_status(db, "roadmap", project_id, key, "verified").await

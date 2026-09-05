@@ -1,4 +1,4 @@
-//! Operation-scoped transient-fault retry for `SurrealDB` queries.
+//! Operation-scoped transient-fault retry for `TursoStoreDB` queries.
 //!
 //! Connection-level recovery (`connection::open_default_held`) heals the
 //! server at OPEN time. This module heals an individual query that hits a
@@ -24,7 +24,7 @@ use std::time::Duration;
 /// that outlives the budget is NOT transient — surface it, never spin forever.
 const MAX_ATTEMPTS: u32 = 5;
 const BASE_BACKOFF_MS: u64 = 25;
-/// True when a `SurrealDB` error is a TRANSIENT fault worth retrying.
+/// True when a `TursoStoreDB` error is a TRANSIENT fault worth retrying.
 ///
 /// Transient = `RocksDB` lock/busy contention, a timeout, or a
 /// dropped/unavailable connection. Matched on the rendered message because the
@@ -36,10 +36,10 @@ const BASE_BACKOFF_MS: u64 = 25;
 /// surfaced error; a false "transient" would mask a real defect AND burn budget.
 #[must_use]
 pub fn is_transient(err: &Error) -> bool {
-    // Only raw SurrealDB errors can be transient at the engine layer; our own
+    // Only raw TursoStoreDB errors can be transient at the engine layer; our own
     // typed variants (RecordNotFound, ProjectNotFound, Migration, InvalidHierarchy,
     // Json) are deterministic and never retryable.
-    let Error::Surreal(e) = err else {
+    let Error::Turso(e) = err else {
         return false;
     };
     let msg = e.to_string().to_lowercase();

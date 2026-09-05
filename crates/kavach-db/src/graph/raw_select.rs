@@ -1,50 +1,66 @@
-// Ad-hoc READ entry point into the store (completes read CRUD alongside the
-// typed listers): run an operator-supplied SurrealQL SELECT and return its rows
-// as plain JSON. SELECT/INFO only — SurrealDB 3.x has no native readonly tx/user
-// (surrealdb#1711), so the read-only guarantee is enforced here, statement by
-// statement, after comment stripping. SOURCE: decision.raw-select-cli.
-// https://surrealdb.com/docs/sdk/rust/methods/query
 use crate::error::{Error, Result};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 /// Statement verbs this read path permits. Anything else (UPDATE/DELETE/CREATE/
 /// REMOVE/DEFINE/INSERT/RELATE/BEGIN/…) is rejected before execution so a raw
 /// query can never mutate or escape the single-writer routing.
 const READ_VERBS: [&str; 2] = ["SELECT", "INFO"];
 
-/// Run a read-only `SurrealQL` query and return all result sets as pretty JSON.
+/// Run a read-only SQL query and return all rows as pretty JSON.
 ///
 /// Every statement must begin with `SELECT` or `INFO` (checked after stripping
 /// `--`/`#` line comments and `/* */` block comments); a write verb is refused
-/// with `Error::Validation`. A missing `entity` table (brand-new graph) is the
-/// empty case, returned as `[]` rather than an error.
+/// with `Error::Validation`. A missing table (brand-new graph) is the empty
+/// case, returned as `[]` rather than an error.
 ///
 /// # Errors
 /// `Error::Validation` if the query is empty or contains a non-read statement;
-/// `Error::Surreal` on a real query failure.
-pub async fn raw_select(db: &Surreal<Db>, sql: &str) -> Result<String> {
+/// `Error::Turso` on a real query failure.
+pub async fn raw_select(db: &TursoStore, sql: &str) -> Result<String> {
     assert_read_only(sql)?;
-    let mut resp = db.query(sql).await?;
-    // Collect each statement's result set into one JSON array, bounded by the
-    // KNOWN statement count (never probe open-endedly). take(i) on a generic
-    // Value yields that statement's output; a missing-table error is the empty
-    // graph, not a failure.
-    let n = resp.num_statements();
-    let mut sets: Vec<serde_json::Value> = Vec::with_capacity(n);
-    for idx in 0..n {
-        match resp.take::<surrealdb_types::Value>(idx) {
-            Ok(v) => sets.push(v.into_json_value()),
-            Err(e) if crate::error::is_missing_table_error(&e) => {
-                sets.push(serde_json::Value::Array(Vec::new()));
-            }
-            Err(e) => return Err(e.into()),
+    let mut resp = match db.exec_params(sql, ()).await {
+        Ok(resp) => resp,
+        // A missing table is the brand-new graph, not a failure: return `[]`.
+        Err(crate::turso::TursoError::Libsql(libsql::Error::SqliteFailure(_, msg)))
+            if msg.contains("no such table") =>
+        {
+            return Ok("[]".to_owned());
         }
+        Err(e) => return Err(Error::Turso(e)),
+    };
+    // Collect every row into one JSON array.
+    let mut rows_out: Vec<serde_json::Value> = Vec::new();
+    while let Some(row) = resp.next().await? {
+        let mut obj = serde_json::Map::new();
+        let ncols = row.column_count();
+        for i in 0..ncols {
+            let col = row.column_name(i).unwrap_or_default().to_owned();
+            let v = match row.get::<Option<String>>(i) {
+                Ok(Some(s)) => serde_json::Value::String(s),
+                Ok(None) => serde_json::Value::Null,
+                Err(_) => match row.get::<Option<i64>>(i) {
+                    Ok(Some(n)) => serde_json::Value::Number(n.into()),
+                    Ok(None) => serde_json::Value::Null,
+                    Err(_) => match row.get::<Option<f64>>(i) {
+                        Ok(Some(f)) => serde_json::Number::from_f64(f)
+                            .map(serde_json::Value::Number)
+                            .unwrap_or(serde_json::Value::Null),
+                        Ok(None) => serde_json::Value::Null,
+                        Err(_) => serde_json::Value::Null,
+                    },
+                },
+            };
+            obj.insert(col, v);
+        }
+        rows_out.push(serde_json::Value::Object(obj));
     }
-    let body = if sets.len() == 1 {
-        sets.into_iter().next().unwrap_or(serde_json::Value::Null)
+    let body = if rows_out.len() == 1 {
+        rows_out
+            .into_iter()
+            .next()
+            .unwrap_or(serde_json::Value::Null)
     } else {
-        serde_json::Value::Array(sets)
+        serde_json::Value::Array(rows_out)
     };
     serde_json::to_string_pretty(&body).map_err(Error::Json)
 }

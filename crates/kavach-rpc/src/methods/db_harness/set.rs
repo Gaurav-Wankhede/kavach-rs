@@ -53,7 +53,7 @@ pub async fn set_harness(
     match result {
         Ok(id) => Ok(SetHarnessResult {
             success: true,
-            id: Some(format!("{id:?}")),
+            id: Some(id),
             error: None,
         }),
         Err(e) => Ok(SetHarnessResult {

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use surrealdb_types::{RecordId, SurrealValue};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[expect(
@@ -45,23 +44,23 @@ impl RelationType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Entity {
-    pub id: Option<RecordId>,
+    pub id: Option<String>,
     pub entity_type: String,
     pub name: String,
     pub properties: Option<serde_json::Value>,
     pub content_hash: Option<String>,
-    pub project: Option<RecordId>,
+    pub project: Option<String>,
 }
 
-#[derive(Debug, Clone, SurrealValue)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct Edge {
-    pub id: Option<RecordId>,
-    pub r#in: RecordId,
-    pub out: RecordId,
+    pub id: Option<String>,
+    pub r#in: String,
+    pub out: String,
     pub weight: f64,
     pub properties: Option<serde_json::Value>,
 }
@@ -72,8 +71,8 @@ pub struct Edge {
     reason = "cross-crate struct-literal DTO (kavach-rpc); non_exhaustive => E0639"
 )]
 pub struct RelateParams {
-    pub from_id: RecordId,
-    pub to_id: RecordId,
+    pub from_id: String,
+    pub to_id: String,
     pub rel_type: RelationType,
     pub weight: Option<f64>,
     pub properties: Option<serde_json::Value>,

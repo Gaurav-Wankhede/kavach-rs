@@ -1,28 +1,22 @@
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
+use crate::turso::TursoStore;
 
-/// Queries the hit count for an anti-pattern.
+/// Queries the hit count for an anti-pattern (inbound `instance_of` edges).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn query_anti_pattern_hit_count(
-    db: &Surreal<Db>,
-    anti_pattern_name: &str,
-) -> Result<i64> {
-    #[derive(SurrealValue)]
-    struct Row {
-        n: i64,
-    }
-
-    let q = "SELECT count(<-instance_of<-entity) AS n \
-             FROM entity WHERE entity_type = 'anti_pattern' AND name = $name \
-             LIMIT 1";
+/// Propagates `Error::Turso` when the query fails.
+pub async fn query_anti_pattern_hit_count(db: &TursoStore, anti_pattern_name: &str) -> Result<i64> {
     let mut resp = db
-        .query(q)
-        .bind(("name", anti_pattern_name.to_owned()))
+        .exec_params(
+            "SELECT COUNT(*) FROM entity_edges ed \
+             JOIN entities e ON e.id = ed.to_id \
+             WHERE ed.rel_type = 'instance_of' AND e.entity_type = 'anti_pattern' \
+               AND e.name = ?1",
+            libsql::params![anti_pattern_name.to_owned()],
+        )
         .await?;
-    let row: Option<Row> = resp.take(0)?;
-    row.map_or(Ok(0), |r| Ok(r.n))
+    match resp.next().await? {
+        Some(row) => Ok(row.get::<i64>(0)?),
+        None => Ok(0),
+    }
 }

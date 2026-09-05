@@ -1,42 +1,45 @@
 // split: intentional - project lookup helpers (find_by_path, get_by_slug, list_all)
 // sql-safe: queries use static literals + .bind() for params, no user input concatenation
-use crate::error::Result;
+use crate::error::{Error, Result};
+use crate::turso::TursoStore;
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
+use serde_json;
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Project {
-    pub id: Option<RecordId>,
+    pub id: Option<String>,
     pub slug: String,
     pub display: String,
     pub workdir: Option<String>,
     pub stack: Option<String>,
     pub aliases: Option<Vec<String>>,
     #[serde(default)]
-    pub parent: Option<RecordId>,
+    pub parent: Option<String>,
 }
 
 const ANCESTRY_MAX_DEPTH: usize = 7;
 
-/// Walk the parent chain from a project id; returns [child, parent, grandparent, ...]
+/// Walk the parent chain from a project slug; returns [child, parent, grandparent, ...]
 /// up to `ANCESTRY_MAX_DEPTH` (7) levels. Iterative — no recursive CTE needed.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from any per-step SELECT.
-pub async fn get_ancestry(db: &Surreal<Db>, start_id: &RecordId) -> Result<Vec<Project>> {
+/// Propagates `Error::Turso` from any per-step SELECT.
+pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project>> {
     let mut chain: Vec<Project> = Vec::new();
-    let mut cursor: Option<RecordId> = Some(start_id.clone());
+    let mut cursor: Option<String> = Some(start_id.to_owned());
     for _ in 0..ANCESTRY_MAX_DEPTH {
         let Some(id) = cursor.take() else { break };
-        let q = "SELECT id, slug, display, workdir, stack, aliases, parent FROM project \
-                 WHERE id = $id LIMIT 1";
-        let mut response = db.query(q).bind(("id", id)).await?;
-        let row: Option<Project> = response.take(0)?;
-        let Some(proj) = row else { break };
-        cursor.clone_from(&proj.parent);
+        let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
+        let mut rows = db
+            .exec_params(q, [id.clone()])
+            .await
+            .map_err(|e| Error::Turso(e.into()))?;
+        let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+            break;
+        };
+        let proj = project_from_row(row);
+        cursor = proj.parent.clone();
         chain.push(proj);
     }
     Ok(chain)
@@ -45,41 +48,49 @@ pub async fn get_ancestry(db: &Surreal<Db>, start_id: &RecordId) -> Result<Vec<P
 /// Fetch a project row by its unique slug.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn get_by_slug(db: &Surreal<Db>, slug: &str) -> Result<Option<Project>> {
-    // BUG-FIX [silent-read-drop]: `parent` was omitted from this SELECT, so the
-    // #[serde(default)] field always deserialized to None — making the hierarchy
-    // invisible to every get_by_slug caller despite the column existing in schema.
-    let query = "SELECT id, slug, display, workdir, stack, aliases, parent FROM project \
-                 WHERE slug = $slug LIMIT 1";
-    let mut response = db.query(query).bind(("slug", slug.to_owned())).await?;
-    let project: Option<Project> = response.take(0)?;
-    Ok(project)
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>> {
+    let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
+    let mut rows = db
+        .exec_params(q, [slug.to_owned()])
+        .await
+        .map_err(|e| Error::Turso(e.into()))?;
+    let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+        return Ok(None);
+    };
+    Ok(Some(project_from_row(row)))
 }
 
 /// Find a project where `path` matches `workdir` exactly or is in `aliases`.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn find_by_path(db: &Surreal<Db>, path: &str) -> Result<Option<Project>> {
-    // BUG-FIX [silent-read-drop]: include `parent` (see get_by_slug).
-    let query = "SELECT id, slug, display, workdir, stack, aliases, parent FROM project \
-                 WHERE workdir = $path OR aliases CONTAINS $path LIMIT 1";
-    let mut response = db.query(query).bind(("path", path.to_owned())).await?;
-    let project: Option<Project> = response.take(0)?;
-    Ok(project)
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>> {
+    let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects WHERE workdir = ? OR aliases LIKE '%' || ? || '%' LIMIT 1";
+    let mut rows = db
+        .exec_params(q, [path.to_owned(), path.to_owned()])
+        .await
+        .map_err(|e| Error::Turso(e.into()))?;
+    let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+        return Ok(None);
+    };
+    Ok(Some(project_from_row(row)))
 }
 
 /// List all projects ordered by slug.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn list_all(db: &Surreal<Db>) -> Result<Vec<Project>> {
-    // BUG-FIX [silent-read-drop]: include `parent` (see get_by_slug).
-    let query = "SELECT id, slug, display, workdir, stack, aliases, parent FROM project \
-                 ORDER BY slug";
-    let mut response = db.query(query).await?;
-    let projects: Vec<Project> = response.take(0)?;
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn list_all(db: &TursoStore) -> Result<Vec<Project>> {
+    let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects ORDER BY slug";
+    let mut rows = db
+        .exec_params(q, ())
+        .await
+        .map_err(|e| Error::Turso(e.into()))?;
+    let mut projects = Vec::new();
+    while let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? {
+        projects.push(project_from_row(row));
+    }
     Ok(projects)
 }
 
@@ -91,37 +102,33 @@ pub async fn list_all(db: &Surreal<Db>) -> Result<Vec<Project>> {
 /// # Errors
 /// - `Error::RecordNotFound` if either slug is unknown.
 /// - `Error::InvalidHierarchy` if the link would create a self-loop or cycle.
-/// - `Error::Surreal` on the UPDATE.
+/// - `Error::Turso` on the UPDATE.
 pub async fn set_parent(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     child_slug: &str,
     parent_slug: Option<&str>,
 ) -> Result<()> {
     let child = get_by_slug(db, child_slug)
         .await?
-        .ok_or_else(|| crate::error::Error::RecordNotFound(format!("project {child_slug}")))?;
-    let child_id = child
-        .id
-        .ok_or_else(|| crate::error::Error::RecordNotFound(format!("project id {child_slug}")))?;
+        .ok_or_else(|| Error::RecordNotFound(format!("project {child_slug}")))?;
+    let child_id = child.slug.clone();
 
     let parent_id = match parent_slug {
         None => None,
         Some(ps) => {
             let parent = get_by_slug(db, ps)
                 .await?
-                .ok_or_else(|| crate::error::Error::RecordNotFound(format!("project {ps}")))?;
-            let pid = parent
-                .id
-                .ok_or_else(|| crate::error::Error::RecordNotFound(format!("project id {ps}")))?;
+                .ok_or_else(|| Error::RecordNotFound(format!("project {ps}")))?;
+            let pid = parent.slug.clone();
             if pid == child_id {
-                return Err(crate::error::Error::InvalidHierarchy(format!(
+                return Err(Error::InvalidHierarchy(format!(
                     "project {child_slug} cannot be its own parent"
                 )));
             }
             // Cycle guard: child must not already be an ancestor of the proposed parent.
             for ancestor in get_ancestry(db, &pid).await? {
-                if ancestor.id.as_ref() == Some(&child_id) {
-                    return Err(crate::error::Error::InvalidHierarchy(format!(
+                if ancestor.id.as_deref() == Some(&child_id) {
+                    return Err(Error::InvalidHierarchy(format!(
                         "linking {child_slug} -> {ps} would create a cycle"
                     )));
                 }
@@ -130,12 +137,33 @@ pub async fn set_parent(
         }
     };
 
-    let query = "UPDATE $id SET parent = $parent, updated_at = time::now()";
-    db.query(query)
-        .bind(("id", child_id))
-        .bind(("parent", parent_id))
-        .await?;
+    let q = "UPDATE projects SET parent = ?, updated_at = datetime('now') WHERE slug = ?";
+    db.exec_params(q, [parent_id.clone().unwrap_or_default(), child_id])
+        .await
+        .map_err(|e| Error::Turso(e.into()))?;
     Ok(())
+}
+
+/// Build a `Project` from a `libsql::Row`.
+fn project_from_row(row: libsql::Row) -> Project {
+    let slug: String = row.get::<String>(0).unwrap_or_default();
+    let display: String = row.get::<String>(1).unwrap_or_default();
+    let workdir: Option<String> = row.get::<Option<String>>(2).unwrap_or_default();
+    let stack: Option<String> = row.get::<Option<String>>(3).unwrap_or_default();
+    let aliases_str: Option<String> = row.get::<Option<String>>(4).unwrap_or_default();
+    let aliases: Option<Vec<String>> = aliases_str
+        .map(|s| serde_json::from_str(&s).unwrap_or_default())
+        .flatten();
+    let parent: Option<String> = row.get::<Option<String>>(5).unwrap_or_default();
+    Project {
+        id: Some(slug.clone()),
+        slug,
+        display,
+        workdir,
+        stack,
+        aliases,
+        parent,
+    }
 }
 
 /// A node in the project hierarchy tree: a project plus its child subtrees.
@@ -171,8 +199,8 @@ fn build_node(
 /// Orphans (parent set to a missing id) are surfaced as roots so nothing is hidden.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from `list_all`.
-pub async fn build_forest(db: &Surreal<Db>) -> Result<Vec<ProjectNode>> {
+/// Propagates `Error::Turso` from `list_all`.
+pub async fn build_forest(db: &TursoStore) -> Result<Vec<ProjectNode>> {
     let projects = list_all(db).await?;
     Ok(assemble_forest(&projects))
 }
@@ -183,30 +211,24 @@ pub async fn build_forest(db: &Surreal<Db>) -> Result<Vec<ProjectNode>> {
 pub fn assemble_forest(projects: &[Project]) -> Vec<ProjectNode> {
     use std::collections::BTreeMap;
 
-    // RecordId has no Display; key maps on its stable Debug form (same convention
-    // as parts.rs upsert). Local helper keeps the call sites readable.
-    fn key(id: &RecordId) -> String {
-        format!("{id:?}")
-    }
-
     // Map id-string -> children id-strings, and id-string -> project.
     let by_id: BTreeMap<String, Project> = projects
         .iter()
-        .filter_map(|p| p.id.as_ref().map(|id| (key(id), p.clone())))
+        .filter_map(|p| p.id.as_ref().map(|id| (id.clone(), p.clone())))
         .collect();
     let mut children_of: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut roots: Vec<String> = Vec::new();
 
     for p in projects {
-        let Some(id) = p.id.as_ref().map(key) else {
+        let Some(id) = p.id.as_ref() else {
             continue;
         };
-        match p.parent.as_ref().map(key) {
+        match p.parent.as_ref() {
             // Parent exists in the set -> nest under it; otherwise treat as root (orphan-safe).
-            Some(pid) if by_id.contains_key(&pid) => {
-                children_of.entry(pid).or_default().push(id);
+            Some(pid) if by_id.contains_key(pid) => {
+                children_of.entry(pid.clone()).or_default().push(id.clone());
             }
-            _ => roots.push(id),
+            _ => roots.push(id.clone()),
         }
     }
 
@@ -235,54 +257,45 @@ pub fn relative_to_parent(parent_workdir: &str, child_workdir: &str) -> Option<S
 /// Register or update a project. Uses UPSERT to be idempotent on slug.
 ///
 /// # Errors
-/// `Error::Surreal` on UPSERT failure; `Error::Migration` if the response
-/// shape is malformed.
+/// `Error::Turso` on UPSERT failure.
 pub async fn register(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     slug: &str,
     display: &str,
     workdir: &str,
     stack: Option<&str>,
-) -> Result<RecordId> {
-    // FIX: [dependency_skew] SurrealDB 3.0 renamed SurrealQL type::thing()
-    // -> type::record(). The 2->3 SDK migration fixed the Rust API but
-    // not query-string builtin names; type::thing parse-errors at runtime.
-    let query = "UPSERT type::record('project', $slug) \
-                 SET slug = $slug, display = $display, workdir = $workdir, stack = $stack, \
-                     updated_at = time::now() \
-                 RETURN AFTER";
-    let mut response = db
-        .query(query)
-        .bind(("slug", slug.to_owned()))
-        .bind(("display", display.to_owned()))
-        .bind(("workdir", workdir.to_owned()))
-        .bind(("stack", stack.map(ToOwned::to_owned)))
-        .await?;
-    let result: Option<Project> = response.take(0)?;
-    match result {
-        Some(p) => p
-            .id
-            .ok_or_else(|| crate::error::Error::RecordNotFound(format!("project upsert {slug}"))),
-        None => Err(crate::error::Error::RecordNotFound(format!(
-            "project upsert returned empty for {slug}"
-        ))),
-    }
+) -> Result<String> {
+    let aliases_json = None::<String>;
+    let q = "INSERT INTO projects (slug, display, workdir, stack, aliases, parent) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO UPDATE SET display = excluded.display, workdir = excluded.workdir, stack = excluded.stack, updated_at = datetime('now')";
+    db.exec_params(
+        q,
+        [
+            slug.to_owned(),
+            display.to_owned(),
+            workdir.to_owned(),
+            stack.map(ToOwned::to_owned).unwrap_or_default(),
+            aliases_json.unwrap_or_default(),
+            slug.to_owned(),
+        ],
+    )
+    .await
+    .map_err(|e| Error::Turso(e))?;
+    Ok(slug.to_owned())
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Project, assemble_forest, relative_to_parent};
-    use surrealdb_types::RecordId;
 
     fn proj(slug: &str, workdir: &str, parent: Option<&str>) -> Project {
         Project {
-            id: Some(RecordId::new("project", slug)),
+            id: Some(slug.to_owned()),
             slug: slug.to_owned(),
             display: slug.to_owned(),
             workdir: Some(workdir.to_owned()),
             stack: None,
             aliases: None,
-            parent: parent.map(|p| RecordId::new("project", p)),
+            parent: parent.map(|p| p.to_owned()),
         }
     }
 

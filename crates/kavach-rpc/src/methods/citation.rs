@@ -8,7 +8,6 @@ use kavach_db::{
     citation_list, citation_merge_node, citation_reward, citation_traverse, citation_upsert,
 };
 use serde::{Deserialize, Serialize};
-use surrealdb_types::RecordId;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[expect(clippy::exhaustive_structs, reason = "RPC DTO at handler boundary")]
@@ -33,11 +32,10 @@ pub struct IdResult {
 /// # Errors
 /// Returns `ErrorObjectOwned` when a metadata URL is empty or the DB fails.
 pub async fn add(state: &AppState, p: AddParams) -> Result<IdResult, ErrorObjectOwned> {
-    let project = RecordId::new("project", p.project);
     let id = citation_upsert(
         &state.db,
         &UpsertCitation {
-            project,
+            project: p.project,
             entry_key: &p.entry_key,
             name: &p.name,
             metadata: p.metadata,
@@ -45,9 +43,7 @@ pub async fn add(state: &AppState, p: AddParams) -> Result<IdResult, ErrorObject
     )
     .await
     .map_err(surreal_to_rpc)?;
-    Ok(IdResult {
-        id: format!("{id:?}"),
-    })
+    Ok(IdResult { id })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,8 +58,7 @@ pub struct GetParams {
 /// # Errors
 /// Returns `ErrorObjectOwned` when the DB fails.
 pub async fn get(state: &AppState, p: GetParams) -> Result<Option<Citation>, ErrorObjectOwned> {
-    let project = RecordId::new("project", p.project);
-    citation_get(&state.db, &project, &p.entry_key)
+    citation_get(&state.db, &p.project, &p.entry_key)
         .await
         .map_err(surreal_to_rpc)
 }
@@ -79,8 +74,7 @@ pub struct ListParams {
 /// # Errors
 /// Returns `ErrorObjectOwned` when the DB fails.
 pub async fn list(state: &AppState, p: ListParams) -> Result<Vec<Citation>, ErrorObjectOwned> {
-    let project = RecordId::new("project", p.project);
-    citation_list(&state.db, &project)
+    citation_list(&state.db, &p.project)
         .await
         .map_err(surreal_to_rpc)
 }
@@ -92,11 +86,27 @@ pub struct LinkParams {
     pub citation: String,
 }
 
-fn parse_record(s: &str) -> Result<RecordId, ErrorObjectOwned> {
+/// Validate the `table:key` record-id shape and return it unchanged — the
+/// Turso layer keys edges by the full string id, not a parsed record.
+fn parse_record(s: &str) -> Result<String, ErrorObjectOwned> {
     s.split_once(':')
-        .map(|(table, key)| RecordId::new(table, key))
-        .ok_or_else(|| {
-            ErrorObjectOwned::owned(-32602, "expected 'table:key' record id", None::<()>)
+        .map(|(table, key)| {
+            if table.is_empty() || key.is_empty() {
+                Err(ErrorObjectOwned::owned(
+                    -32602,
+                    "expected 'table:key' record id",
+                    None::<()>,
+                ))
+            } else {
+                Ok(format!("{table}:{key}"))
+            }
+        })
+        .unwrap_or_else(|| {
+            Err(ErrorObjectOwned::owned(
+                -32602,
+                "expected 'table:key' record id",
+                None::<()>,
+            ))
         })
 }
 
@@ -140,9 +150,7 @@ pub async fn traverse(
     let citers = citation_traverse(&state.db, &citation)
         .await
         .map_err(surreal_to_rpc)?;
-    Ok(CitersResult {
-        citers: citers.iter().map(|id| format!("{id:?}")).collect(),
-    })
+    Ok(CitersResult { citers })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -188,7 +196,7 @@ pub async fn for_nodes(
     state: &AppState,
     p: ForNodesParams,
 ) -> Result<CitersResult, ErrorObjectOwned> {
-    let nodes: Vec<RecordId> = p
+    let nodes: Vec<String> = p
         .nodes
         .iter()
         .map(|s| parse_record(s))
@@ -196,7 +204,5 @@ pub async fn for_nodes(
     let cites = citation_citations_for_nodes(&state.db, &nodes)
         .await
         .map_err(surreal_to_rpc)?;
-    Ok(CitersResult {
-        citers: cites.iter().map(|id| format!("{id:?}")).collect(),
-    })
+    Ok(CitersResult { citers: cites })
 }

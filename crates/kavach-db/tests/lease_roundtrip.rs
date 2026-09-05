@@ -1,8 +1,8 @@
 //! Regression proof for the session-occupancy lease query path.
 //!
 //! These functions build their queries as `&str`, so `cargo check` cannot see a
-//! dead `SurrealQL` builtin inside them — only execution against a real DB can.
-//! The lease subsystem shipped on `type::thing(...)`, which `SurrealDB` 3.0
+//! dead SQL builtin inside them — only execution against a real DB can. The
+//! lease subsystem shipped on SurrealDB `type::thing(...)`, which SurrealDB 3.0
 //! renamed to `type::record(...)`; every `lease.*` RPC parse-errored at runtime
 //! with zero test coverage to catch it. This drives the full
 //! acquire → status → heartbeat → unlock cycle against an in-memory DB so the
@@ -15,21 +15,31 @@
 
 use kavach_db::lease::{AcquireOutcome, acquire, heartbeat, status, unlock};
 use kavach_db::open_memory;
+use kavach_db::turso::TursoStore;
 
-const TABLE: &str = "lease";
+const TABLE: &str = "roadmap";
 const KEY: &str = "session-occupancy:proj-x";
 const SESSION: &str = "sess_abc";
 
 /// Seed the lease row the way the live system does before a first acquire
-/// (acquire itself returns `RecordNotFound` on a missing record).
-async fn seed(db: &surrealdb::Surreal<surrealdb::engine::any::Any>) {
-    db.query(
-        "CREATE type::record($t, $k) SET occupied_by=NONE, occupied_until=NONE, occupied_epoch=0",
-    )
-    .bind(("t", TABLE))
-    .bind(("k", KEY))
-    .await
-    .expect("seed lease row");
+/// (acquire itself returns `RecordNotFound` on a missing record). The lease
+/// lives on the `memories` row keyed by (category, entry_key).
+async fn seed(db: &TursoStore) {
+    let mut rows = db
+        .query_with_params(
+            "INSERT INTO memories \
+             (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
+             VALUES ('p', ?1, ?2, 't', 'c', 'in_progress', ?3, ?3)",
+            libsql::params![
+                TABLE.to_owned(),
+                KEY.to_owned(),
+                chrono::Utc::now().to_rfc3339()
+            ],
+        )
+        .await
+        .expect("seed lease row");
+    // Drain so a deferred INSERT error surfaces (query defers into Rows).
+    while rows.next().await.expect("drain seed").is_some() {}
 }
 
 #[tokio::test]
@@ -121,26 +131,27 @@ async fn concurrent_acquire_yields_exactly_one_winner() {
 #[tokio::test]
 async fn status_cas_transitions_only_from_expected() {
     use kavach_db::update_status_cas;
-    use surrealdb_types::RecordId;
     let db = open_memory().await.expect("memory db");
-    // A roadmap row in `todo`, owned by a concrete project record.
-    let pid = RecordId::new("project", "p1");
-    db.query(
-        "CREATE roadmap:c1 SET project=$p, entry_key='card-1', entry_status='todo', \
-         title='t', content='c', updated_at=time::now()",
-    )
-    .bind(("p", pid.clone()))
-    .await
-    .expect("seed card");
+    // A roadmap row in `todo`, owned by a concrete project slug.
+    let mut rows = db
+        .query_with_params(
+            "INSERT INTO memories \
+             (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
+             VALUES ('p1', 'roadmap', 'card-1', 't', 'c', 'todo', ?1, ?1)",
+            libsql::params![chrono::Utc::now().to_rfc3339()],
+        )
+        .await
+        .expect("seed card");
+    while rows.next().await.expect("drain seed").is_some() {}
 
     // First CAS todo->in_progress wins (1 row).
-    let first = update_status_cas(&db, "roadmap", &pid, "card-1", "todo", "in_progress")
+    let first = update_status_cas(&db, "roadmap", "p1", "card-1", "todo", "in_progress")
         .await
         .expect("first cas");
     assert_eq!(first, 1, "first claim transitions the card");
 
     // Second CAS from todo now matches nothing (already in_progress).
-    let second = update_status_cas(&db, "roadmap", &pid, "card-1", "todo", "in_progress")
+    let second = update_status_cas(&db, "roadmap", "p1", "card-1", "todo", "in_progress")
         .await
         .expect("second cas");
     assert_eq!(second, 0, "a second claim from todo must match no rows");
@@ -151,20 +162,21 @@ async fn status_cas_transitions_only_from_expected() {
 #[tokio::test]
 async fn verify_cas_yields_one_winner_from_done() {
     use kavach_db::update_status_cas;
-    use surrealdb_types::RecordId;
     let db = open_memory().await.expect("memory db");
-    let pid = RecordId::new("project", "p2");
-    db.query(
-        "CREATE roadmap:c2 SET project=$p, entry_key='card-2', entry_status='done', \
-         title='t', content='c', updated_at=time::now()",
-    )
-    .bind(("p", pid.clone()))
-    .await
-    .expect("seed done card");
+    let mut rows = db
+        .query_with_params(
+            "INSERT INTO memories \
+             (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
+             VALUES ('p2', 'roadmap', 'card-2', 't', 'c', 'done', ?1, ?1)",
+            libsql::params![chrono::Utc::now().to_rfc3339()],
+        )
+        .await
+        .expect("seed done card");
+    while rows.next().await.expect("drain seed").is_some() {}
 
     let mut wins = 0_usize;
     for _ in 0..5 {
-        wins += update_status_cas(&db, "roadmap", &pid, "card-2", "done", "verified")
+        wins += update_status_cas(&db, "roadmap", "p2", "card-2", "done", "verified")
             .await
             .expect("verify cas");
     }

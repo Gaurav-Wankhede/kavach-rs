@@ -1,28 +1,27 @@
 // Proves the loop-engineering Frame-1 changes to `list_hot`: the SELECT now
 // (a) ORDER BY occurrence_count DESC (was unordered LIMIT — the ExpeL flaw) and
-// (b) surfaces `updated_unix` (time::unix(updated_at)) so the SessionStart
+// (b) surfaces `updated_unix` (unix(updated_at)) so the SessionStart
 // consumer can rank by k_pri recency. The recency×recurrence scoring itself is
 // proven in k_pri's own tests; here we prove the SQL feeds it correctly.
 use super::list_hot;
 use crate::open_memory;
-use surrealdb_types::RecordId;
+use crate::turso::TursoStore;
 
-/// CREATE one autonomous-tier `gate_pattern` with an explicit `occurrence_count`.
-async fn seed(
-    db: &surrealdb::Surreal<surrealdb::engine::any::Any>,
-    proj: &RecordId,
-    tokens: &str,
-    count: i64,
-) {
-    db.query(
-        "CREATE gate_pattern SET project = $p, tool_name = 't', gate_name = 'g', \
-         error_tokens = $e, fix_strategy = 'f', imperative_rewrite = '', \
-         dsa_rationale = '', occurrence_count = $c, tier = 'autonomous', \
-         updated_at = time::now()",
+/// INSERT one autonomous-tier `gate_pattern` with an explicit `occurrence_count`.
+async fn seed(db: &TursoStore, proj: &str, tokens: &str, count: i64) {
+    db.exec_params(
+        "INSERT INTO gate_pattern \
+         (id, project, tool_name, gate_name, error_tokens, fix_strategy, \
+          imperative_rewrite, dsa_rationale, occurrence_count, tier, updated_at) \
+         VALUES (?1, ?2, 't', 'g', ?3, 'f', '', '', ?4, 'autonomous', ?5)",
+        libsql::params![
+            format!("{proj}:{tokens}"),
+            proj.to_owned(),
+            tokens.to_owned(),
+            count,
+            crate::turso::now_rfc3339()
+        ],
     )
-    .bind(("p", proj.clone()))
-    .bind(("e", tokens.to_owned()))
-    .bind(("c", count))
     .await
     .expect("seed autonomous gate_pattern");
 }
@@ -30,12 +29,12 @@ async fn seed(
 #[tokio::test]
 async fn list_hot_orders_by_occurrence_desc_and_surfaces_updated_unix() {
     let db = open_memory().await.expect("open in-memory db");
-    let proj = RecordId::new("project", "test-proj");
-    seed(&db, &proj, "low", 5).await;
-    seed(&db, &proj, "high", 50).await;
-    seed(&db, &proj, "mid", 10).await;
+    let proj = "test-proj";
+    seed(&db, proj, "low", 5).await;
+    seed(&db, proj, "high", 50).await;
+    seed(&db, proj, "mid", 10).await;
 
-    let rows = list_hot(&db, &proj, 10).await.expect("list_hot");
+    let rows = list_hot(&db, proj, 10).await.expect("list_hot");
     assert_eq!(
         rows.len(),
         3,
@@ -48,7 +47,7 @@ async fn list_hot_orders_by_occurrence_desc_and_surfaces_updated_unix() {
     );
     assert_eq!(rows[1].occurrence_count, 10);
     assert_eq!(rows[2].occurrence_count, 5);
-    // updated_unix surfaced from time::unix(updated_at) for the recency axis.
+    // updated_unix surfaced from unix(updated_at) for the recency axis.
     assert!(
         rows[0].updated_unix.is_some(),
         "updated_unix must surface so the consumer can rank by k_pri recency"
@@ -62,8 +61,7 @@ async fn list_hot_is_empty_not_error_when_table_absent() {
     // (the SessionStart consumer would otherwise lose its injection on a benign
     // empty state).
     let db = open_memory().await.expect("open in-memory db");
-    let proj = RecordId::new("project", "test-proj");
-    let rows = list_hot(&db, &proj, 10)
+    let rows = list_hot(&db, "test-proj", 10)
         .await
         .expect("missing table must be the empty case, not an error");
     assert!(rows.is_empty(), "no patterns ⇒ empty, got {rows:?}");
@@ -72,18 +70,22 @@ async fn list_hot_is_empty_not_error_when_table_absent() {
 #[tokio::test]
 async fn list_hot_excludes_non_autonomous_tier() {
     let db = open_memory().await.expect("open in-memory db");
-    let proj = RecordId::new("project", "test-proj");
-    db.query(
-        "CREATE gate_pattern SET project = $p, tool_name = 't', gate_name = 'g', \
-         error_tokens = 'x', fix_strategy = 'f', imperative_rewrite = '', \
-         dsa_rationale = '', occurrence_count = 99, tier = 'research', \
-         updated_at = time::now()",
+    let proj = "test-proj";
+    db.exec_params(
+        "INSERT INTO gate_pattern \
+         (id, project, tool_name, gate_name, error_tokens, fix_strategy, \
+          imperative_rewrite, dsa_rationale, occurrence_count, tier, updated_at) \
+         VALUES (?1, ?2, 't', 'g', 'x', 'f', '', '', 99, 'research', ?3)",
+        libsql::params![
+            format!("{proj}:x"),
+            proj.to_owned(),
+            crate::turso::now_rfc3339()
+        ],
     )
-    .bind(("p", proj.clone()))
     .await
     .expect("seed research-tier row");
 
-    let rows = list_hot(&db, &proj, 10).await.expect("list_hot");
+    let rows = list_hot(&db, proj, 10).await.expect("list_hot");
     assert!(
         rows.is_empty(),
         "research-tier rows are not hot, got {rows:?}"

@@ -1,8 +1,8 @@
 //! Tests for operation-scoped transient-fault retry.
 //!
-//! These cover the typed-boundary classification (non-Surreal variants are never
+//! These cover the typed-boundary classification (non-TursoStore variants are never
 //! transient) and the retry control-flow (permanent fails fast, success runs
-//! once, budget is bounded). Live `Error::Surreal` transient strings are
+//! once, budget is bounded). Live `Error::TursoStore` transient strings are
 //! exercised in the integration layer where a real engine produces them; the
 //! classifier's string matching is unit-level deterministic and asserted there.
 
@@ -17,7 +17,7 @@ fn typed_variants_are_never_transient() {
     assert!(!is_transient(&Error::ProjectNotFound("p".into())));
     assert!(!is_transient(&Error::InvalidHierarchy("h".into())));
     // A Migration carrying lock-shaped text is STILL permanent: classification is
-    // variant-gated (only Error::Surreal can be transient), not a raw string match.
+    // variant-gated (only Error::TursoStore can be transient), not a raw string match.
     assert!(!is_transient(&Error::Migration(
         "LOCK: Resource temporarily unavailable".into()
     )));
@@ -49,7 +49,7 @@ async fn success_on_first_try_runs_once() {
 
 #[tokio::test]
 async fn migration_error_fails_fast() {
-    // A non-Surreal error (parse/validator drift) is permanent — one attempt.
+    // A non-TursoStore error (parse/validator drift) is permanent — one attempt.
     let calls = Cell::new(0_u32);
     let result: Result<(), Error> = with_retry(|| {
         calls.set(calls.get().saturating_add(1));

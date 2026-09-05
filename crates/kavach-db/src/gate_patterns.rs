@@ -1,13 +1,10 @@
+use crate::turso::TursoStore;
 // split: intentional - cohesive gate_pattern store (struct + 3 async DB ops + pure helpers)
-// SurrealDB-backed gate_pattern store. Mirrors kavach-db::gate_patterns API.
+// Turso-backed gate_pattern store. Mirrors kavach-db::gate_patterns API.
 // Tokenization, bloom filter, and TF-IDF scoring are pure-fn ports.
-// SDK ref: surrealdb 3.1.4 — CREATE ... RETURN id + take(0) into typed struct.
 // sql-safe: explicit column list; bound params only; no string concat.
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
 const TIER_RESEARCH: &str = "research";
 const TIER_AUTONOMOUS: &str = "autonomous";
 const PROMOTION_THRESHOLD: i64 = 50;
@@ -23,14 +20,14 @@ const MAX_TOKENS: usize = 20;
 const MIN_TOKEN_LEN: usize = 3;
 const SCAN_LIMIT: i64 = 200;
 const MIN_SIM: f64 = 0.35;
-const COLS: &str = "id, project, tool_name, gate_name, error_tokens, fix_strategy, \
-                    imperative_rewrite, dsa_rationale, occurrence_count, bloom_bytes, tier, \
-                    time::unix(updated_at) AS updated_unix";
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+// Column order for gate_pattern rows: id, project, tool_name, gate_name,
+// error_tokens, fix_strategy, imperative_rewrite, dsa_rationale,
+// occurrence_count, bloom_bytes, tier, updated_at
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct GatePattern {
-    pub id: Option<RecordId>,
-    pub project: RecordId,
+    pub id: Option<String>,
+    pub project: String,
     pub tool_name: String,
     pub gate_name: String,
     pub error_tokens: String,
@@ -41,8 +38,8 @@ pub struct GatePattern {
     #[serde(default)]
     pub bloom_bytes: Option<Vec<u8>>,
     pub tier: String,
-    /// Unix epoch of last touch (`time::unix(updated_at)`), driving the `k_pri`
-    /// recency axis when injection-ranking. `None` on legacy rows.
+    /// Unix epoch of last touch, driving the `k_pri` recency axis when
+    /// injection-ranking. `None` on legacy rows.
     #[serde(default)]
     pub updated_unix: Option<i64>,
 }
@@ -52,7 +49,7 @@ pub struct GatePattern {
     reason = "cross-crate struct-literal DTO (kavach-rpc); non_exhaustive => E0639"
 )]
 pub struct UpsertParams<'a> {
-    pub project: RecordId,
+    pub project: String,
     pub error_tokens: &'a str,
     pub fix_strategy: &'a str,
     pub imperative_rewrite: &'a str,
@@ -119,31 +116,57 @@ fn fnv1a(s: &str, seed: u32) -> u32 {
     }
     h
 }
-#[derive(surrealdb_types::SurrealValue)]
 struct ExistingRow {
-    id: RecordId,
+    id: String,
     occurrence_count: i64,
 }
-#[derive(surrealdb_types::SurrealValue)]
-struct IdRow {
-    id: RecordId,
+/// Map a `gate_pattern` row (column order per `COLS`) into a [`GatePattern`].
+fn pattern_from_row(r: &libsql::Row) -> Result<GatePattern> {
+    let updated_at: Option<String> = r.get(11)?;
+    Ok(GatePattern {
+        id: Some(r.get::<String>(0)?),
+        project: r.get::<String>(1)?,
+        tool_name: r.get::<String>(2)?,
+        gate_name: r.get::<String>(3)?,
+        error_tokens: r.get::<String>(4)?,
+        fix_strategy: r.get::<String>(5)?,
+        imperative_rewrite: r.get::<String>(6)?,
+        dsa_rationale: r.get::<String>(7)?,
+        occurrence_count: r.get::<i64>(8)?,
+        bloom_bytes: r.get::<Option<Vec<u8>>>(9)?,
+        tier: r.get::<String>(10)?,
+        updated_unix: updated_at
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+            .map(|d| d.timestamp()),
+    })
+}
+/// True when the error is libsql's "no such table" — the empty-store case for
+/// tables created lazily on first write. Mirrors the old `is_missing_table_error`.
+fn is_missing_table(e: &libsql::Error) -> bool {
+    e.to_string().contains("no such table")
 }
 /// Upsert a `gate_pattern` row. Increments `occurrence_count` for an existing
 /// (project, `error_tokens`) pair or creates a new row in `research` tier.
 ///
 /// # Errors
-/// Returns `Error::Surreal` when the SELECT/UPDATE/CREATE query fails, and
+/// Returns `Error::Turso` when the SELECT/UPDATE/CREATE query fails, and
 /// `Error::Migration` when the CREATE response yields no id row.
-pub async fn upsert(db: &Surreal<Db>, p: &UpsertParams<'_>) -> Result<RecordId> {
+pub async fn upsert(db: &TursoStore, p: &UpsertParams<'_>) -> Result<String> {
     let tokens = tokenize(p.error_tokens);
-    let find = "SELECT id, occurrence_count FROM gate_pattern \
-                WHERE project = $project AND error_tokens = $tokens LIMIT 1";
     let mut response = db
-        .query(find)
-        .bind(("project", p.project.clone()))
-        .bind(("tokens", tokens.clone()))
+        .exec_params(
+            "SELECT id, occurrence_count FROM gate_pattern \
+             WHERE project = $project AND error_tokens = $tokens LIMIT 1",
+            libsql::params![p.project.clone(), tokens.clone()],
+        )
         .await?;
-    let existing: Option<ExistingRow> = response.take(0)?;
+    let existing: Option<ExistingRow> = match response.next().await? {
+        Some(r) => Some(ExistingRow {
+            id: r.get::<String>(0)?,
+            occurrence_count: r.get::<i64>(1)?,
+        }),
+        None => None,
+    };
     if let Some(row) = existing {
         let new_count = row.occurrence_count.saturating_add(1);
         let (tier, bloom): (&str, Option<Vec<u8>>) = if new_count >= PROMOTION_THRESHOLD {
@@ -151,51 +174,67 @@ pub async fn upsert(db: &Surreal<Db>, p: &UpsertParams<'_>) -> Result<RecordId> 
         } else {
             (TIER_RESEARCH, None)
         };
-        let upd = "UPDATE $id SET \
-                   occurrence_count = $count, fix_strategy = $fix, \
-                   imperative_rewrite = $rewrite, dsa_rationale = $dsa, \
-                   tier = $tier, bloom_bytes = $bloom, updated_at = time::now()";
-        db.query(upd)
-            .bind(("id", row.id.clone()))
-            .bind(("count", new_count))
-            .bind(("fix", p.fix_strategy.to_owned()))
-            .bind(("rewrite", p.imperative_rewrite.to_owned()))
-            .bind(("dsa", p.dsa_rationale.to_owned()))
-            .bind(("tier", tier.to_owned()))
-            .bind(("bloom", bloom))
-            .await?;
+        let now = crate::turso::now_rfc3339();
+        db.exec_params(
+            "UPDATE gate_pattern SET \
+               occurrence_count = $count, fix_strategy = $fix, \
+               imperative_rewrite = $rewrite, dsa_rationale = $dsa, \
+               tier = $tier, bloom_bytes = $bloom, updated_at = $now \
+             WHERE id = $id",
+            libsql::params![
+                new_count,
+                p.fix_strategy.to_owned(),
+                p.imperative_rewrite.to_owned(),
+                p.dsa_rationale.to_owned(),
+                tier.to_owned(),
+                bloom,
+                now,
+                row.id.clone()
+            ],
+        )
+        .await?;
         Ok(row.id)
     } else {
-        let ins = "CREATE gate_pattern SET \
-                   project = $project, tool_name = $tool, gate_name = $gate, \
-                   error_tokens = $tokens, fix_strategy = $fix, \
-                   imperative_rewrite = $rewrite, dsa_rationale = $dsa, \
-                   occurrence_count = 1, tier = 'research' \
-                   RETURN id";
+        let id = crate::decisions::hash_keyed("gate_pattern", &p.project, &tokens, p.tool_name);
+        let now = crate::turso::now_rfc3339();
         let mut resp = db
-            .query(ins)
-            .bind(("project", p.project.clone()))
-            .bind(("tool", p.tool_name.to_owned()))
-            .bind(("gate", p.gate_name.to_owned()))
-            .bind(("tokens", tokens))
-            .bind(("fix", p.fix_strategy.to_owned()))
-            .bind(("rewrite", p.imperative_rewrite.to_owned()))
-            .bind(("dsa", p.dsa_rationale.to_owned()))
+            .exec_params(
+                "INSERT INTO gate_pattern \
+                     (id, project, tool_name, gate_name, error_tokens, fix_strategy, \
+                      imperative_rewrite, dsa_rationale, occurrence_count, tier, updated_at) \
+                 VALUES ($id, $project, $tool, $gate, $tokens, $fix, $rewrite, $dsa, 1, 'research', $now) \
+                 ON CONFLICT(id) DO NOTHING \
+                 RETURNING id",
+                libsql::params![
+                    id.clone(),
+                    p.project.clone(),
+                    p.tool_name.to_owned(),
+                    p.gate_name.to_owned(),
+                    tokens,
+                    p.fix_strategy.to_owned(),
+                    p.imperative_rewrite.to_owned(),
+                    p.dsa_rationale.to_owned(),
+                    now
+                ],
+            )
             .await?;
-        let row: Option<IdRow> = resp.take(0)?;
-        row.map(|ir| ir.id)
-            .ok_or_else(|| Error::Migration("gate_pattern create returned no id".into()))
+        match resp.next().await? {
+            Some(_) => Ok(id),
+            None => Err(Error::Migration(
+                "gate_pattern create returned no id".into(),
+            )),
+        }
     }
 }
 /// Find the best-matching autonomous-tier `gate_pattern` for `error` via
 /// TF-IDF scored against the candidate set scoped to `project`.
 ///
 /// # Errors
-/// Returns `Error::Surreal` when the candidate SELECT fails to execute or
+/// Returns `Error::Turso` when the candidate SELECT fails to execute or
 /// deserialize.
 pub async fn find_autonomous(
-    db: &Surreal<Db>,
-    project: &RecordId,
+    db: &TursoStore,
+    project: &str,
     error: &str,
     tool_name: &str,
 ) -> Result<Option<GatePattern>> {
@@ -204,25 +243,29 @@ pub async fn find_autonomous(
     if query_vec.is_empty() {
         return Ok(None);
     }
-    let q = format!(
-        "SELECT {COLS} FROM gate_pattern \
-         WHERE project = $project AND tier = 'autonomous' \
-           AND (tool_name = '' OR tool_name = $tool) \
-         LIMIT $limit"
-    );
     let mut response = db
-        .query(q)
-        .bind(("project", project.clone()))
-        .bind(("tool", tool_name.to_owned()))
-        .bind(("limit", SCAN_LIMIT))
+        .exec_params(
+            "SELECT id, project, tool_name, gate_name, error_tokens, fix_strategy, \
+                    imperative_rewrite, dsa_rationale, occurrence_count, bloom_bytes, tier, \
+                    updated_at \
+             FROM gate_pattern \
+             WHERE project = $project AND tier = 'autonomous' \
+               AND (tool_name = '' OR tool_name = $tool) \
+             LIMIT $limit",
+            libsql::params![project.to_owned(), tool_name.to_owned(), SCAN_LIMIT],
+        )
         .await?;
     // Missing `gate_pattern` table (no pattern ever recorded) is the empty case,
     // not a failure — same as `list_hot`.
-    let candidates: Vec<GatePattern> = match response.take(0) {
-        Ok(c) => c,
-        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(None),
-        Err(e) => return Err(e.into()),
-    };
+    let mut candidates: Vec<GatePattern> = Vec::new();
+    loop {
+        match response.next().await {
+            Ok(Some(r)) => candidates.push(pattern_from_row(&r)?),
+            Ok(None) => break,
+            Err(e) if is_missing_table(&e) => return Ok(None),
+            Err(e) => return Err(e.into()),
+        }
+    }
     if candidates.is_empty() {
         return Ok(None);
     }
@@ -307,32 +350,34 @@ fn tfidf_best_match(
 /// List the hottest (highest `occurrence_count`) `gate_pattern` rows for a project.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
-pub async fn list_hot(
-    db: &Surreal<Db>,
-    project: &RecordId,
-    limit: usize,
-) -> Result<Vec<GatePattern>> {
-    let q = format!(
-        "SELECT {COLS} FROM gate_pattern \
-         WHERE project = $project AND tier = 'autonomous' \
-         ORDER BY occurrence_count DESC \
-         LIMIT $limit"
-    );
+/// Propagates `Error::Turso` from the SELECT.
+pub async fn list_hot(db: &TursoStore, project: &str, limit: usize) -> Result<Vec<GatePattern>> {
     let limit_i64 = i64::try_from(limit).unwrap_or(i64::MAX);
     let mut response = db
-        .query(q)
-        .bind(("project", project.clone()))
-        .bind(("limit", limit_i64))
+        .exec_params(
+            "SELECT id, project, tool_name, gate_name, error_tokens, fix_strategy, \
+                    imperative_rewrite, dsa_rationale, occurrence_count, bloom_bytes, tier, \
+                    updated_at \
+             FROM gate_pattern \
+             WHERE project = $project AND tier = 'autonomous' \
+             ORDER BY occurrence_count DESC \
+             LIMIT $limit",
+            libsql::params![project.to_owned(), limit_i64],
+        )
         .await?;
     // A daemon DB that never recorded an autonomous pattern has no `gate_pattern`
-    // table yet, so SELECT raises "table does not exist" — the empty case (zero
+    // table yet, so SELECT raises "no such table" — the empty case (zero
     // hot patterns), not a failure. Mirrors `top_deployed_policies`.
-    match response.take(0) {
-        Ok(rows) => Ok(rows),
-        Err(e) if crate::error::is_missing_table_error(&e) => Ok(Vec::new()),
-        Err(e) => Err(e.into()),
+    let mut out = Vec::new();
+    loop {
+        match response.next().await {
+            Ok(Some(r)) => out.push(pattern_from_row(&r)?),
+            Ok(None) => break,
+            Err(e) if is_missing_table(&e) => return Ok(Vec::new()),
+            Err(e) => return Err(e.into()),
+        }
     }
+    Ok(out)
 }
 #[cfg(test)]
 #[path = "gate_patterns_test.rs"]

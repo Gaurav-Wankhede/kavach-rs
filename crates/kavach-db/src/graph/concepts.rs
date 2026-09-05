@@ -1,6 +1,6 @@
 // L0 global concept tier — knowledge-graph nodes shared across projects.
 // Concepts ride on the existing `entity` table (entity_type='concept',
-// project=NONE). Edge names flow through type::table($edge) — SurrealDB 3.0
+// project=NONE). Edge names flow through type::table($edge) — TursoStoreDB 3.0
 // parameter binding eliminates SQL interpolation in production paths.
 //
 // SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview

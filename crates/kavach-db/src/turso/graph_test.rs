@@ -1,10 +1,10 @@
 //! GraphStore tests — Phase 3 acceptance (PRD §4 Phase 3).
 
+use super::TursoStore;
 use super::graph::{
     EdgeRow, GraphEntity, GraphStore, render_entity_fixture, render_entity_line,
     render_named_lines, validate_rel,
 };
-use super::TursoStore;
 
 fn entity(id: &str, etype: &str, name: &str) -> GraphEntity {
     GraphEntity {
@@ -60,7 +60,11 @@ async fn edges_relate_traverse_delete() {
     s.relate_dynamic("b", "c", "references", 2.0).await.unwrap();
 
     // Unknown rel rejected (typo-guard parity).
-    assert!(s.relate_dynamic("a", "c", "depends_onn", 1.0).await.is_err());
+    assert!(
+        s.relate_dynamic("a", "c", "depends_onn", 1.0)
+            .await
+            .is_err()
+    );
 
     // Forward/backward hops.
     let fwd = s.related_forward("a").await.unwrap();
@@ -96,7 +100,7 @@ fn fixture_renderer_matches_golden_shape() {
     let rendered = render_entity_fixture(&e);
     assert_eq!(
         rendered,
-        r#"[skill] loop-engineering (id=RecordId { table: Table("entity"), key: String("abc123") }) {"level":2}"#
+        r#"[skill] loop-engineering (id=String { table: Table("entity"), key: String("abc123") }) {"level":2}"#
     );
 }
 
@@ -116,7 +120,9 @@ async fn get_related_resolves_targets() {
     s.upsert_entity(&entity("n2", "gate", "suppression_swap"))
         .await
         .unwrap();
-    s.relate_dynamic("n1", "n2", "references", 3.0).await.unwrap();
+    s.relate_dynamic("n1", "n2", "references", 3.0)
+        .await
+        .unwrap();
 
     let related = s.get_related("n1", 50).await.unwrap();
     assert_eq!(related.len(), 1);
@@ -133,22 +139,33 @@ async fn list_edges_among_filters_to_set_and_short_circuits() {
     let dir = tempfile::TempDir::new().unwrap();
     let s = TursoStore::open(dir.path().join("g4.db")).await.unwrap();
     for id in ["a", "b", "c"] {
-        s.upsert_entity(&entity(id, "file", &format!("f-{id}"))).await.unwrap();
+        s.upsert_entity(&entity(id, "file", &format!("f-{id}")))
+            .await
+            .unwrap();
     }
     s.relate_dynamic("a", "b", "mentions", 1.0).await.unwrap();
     // Boundary edge: c -> external node must be dropped.
-    s.relate_dynamic("c", "external-x", "mentions", 1.0).await.unwrap();
+    s.relate_dynamic("c", "external-x", "mentions", 1.0)
+        .await
+        .unwrap();
 
     // Short-set short-circuit: <2 nodes yields nothing without a query.
     let none = s.list_edges_among(&["a".to_owned()]).await.unwrap();
     assert!(none.is_empty());
 
-    let rows: Vec<EdgeRow> =
-        s.list_edges_among(&["a".to_owned(), "b".to_owned(), "c".to_owned()])
-            .await
-            .unwrap();
+    let rows: Vec<EdgeRow> = s
+        .list_edges_among(&["a".to_owned(), "b".to_owned(), "c".to_owned()])
+        .await
+        .unwrap();
     assert_eq!(rows.len(), 1);
-    assert_eq!((rows[0].from.as_str(), rows[0].rel_type.as_str(), rows[0].to.as_str()), ("a", "mentions", "b"));
+    assert_eq!(
+        (
+            rows[0].from.as_str(),
+            rows[0].rel_type.as_str(),
+            rows[0].to.as_str()
+        ),
+        ("a", "mentions", "b")
+    );
 }
 
 #[test]
@@ -177,7 +194,7 @@ fn named_renderer_parity_with_rpc_shapes() {
     let lines = render_named_lines(&src, &related);
     assert_eq!(
         lines[0],
-        r#"[roadmap] unit.migration (id=RecordId { table: Table("entity"), key: String("k1") })"#
+        r#"[roadmap] unit.migration (id=String { table: Table("entity"), key: String("k1") })"#
     );
     assert_eq!(lines[1], "  ──depends_on──► [decision] use-libsql");
 
@@ -200,6 +217,6 @@ fn list_line_matches_fixture_bytes() {
     };
     assert_eq!(
         render_entity_line(&e),
-        r#"[session] auto-49431 (id=RecordId { table: Table("entity"), key: String("01abc") })"#
+        r#"[session] auto-49431 (id=String { table: Table("entity"), key: String("01abc") })"#
     );
 }

@@ -1,86 +1,76 @@
 // Compile-time dispatch over (table, edge) pairs — 20 const queries.
 // Same pattern as `fix-Bash-sql-guard-format-on-validated-arrow`.
 use crate::error::{Error, Result};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
+use crate::turso::TursoStore;
 
-macro_rules! q_bridge {
-    ($table:literal, $edge:literal) => {
-        concat!(
-            "BEGIN TRANSACTION; LET $src = (SELECT id FROM ",
-            $table,
-            " WHERE entry_key = $src_key LIMIT 1)[0].id; ",
-            "LET $tgt = (UPSERT entity SET entity_type = 'concept', ",
-            "name = $concept_name, updated_at = time::now() ",
-            "WHERE entity_type = 'concept' AND name = $concept_name RETURN id)[0].id; ",
-            "LET $rel = (RELATE $src->",
-            $edge,
-            "->$tgt SET weight = 1.0 RETURN id)[0].id; ",
-            "COMMIT TRANSACTION; RETURN $rel;"
-        )
-    };
-}
+/// Bridge edge names allowed between a memory row and a concept.
+const ALLOWED_EDGES: &[&str] = &["implements", "discusses", "references_concept", "violates"];
 
-fn pick_query(table: &str, edge: &str) -> Option<&'static str> {
-    match (table, edge) {
-        ("roadmap", "implements") => Some(q_bridge!("roadmap", "implements")),
-        ("roadmap", "discusses") => Some(q_bridge!("roadmap", "discusses")),
-        ("roadmap", "references_concept") => Some(q_bridge!("roadmap", "references_concept")),
-        ("roadmap", "violates") => Some(q_bridge!("roadmap", "violates")),
-        ("decision", "implements") => Some(q_bridge!("decision", "implements")),
-        ("decision", "discusses") => Some(q_bridge!("decision", "discusses")),
-        ("decision", "references_concept") => Some(q_bridge!("decision", "references_concept")),
-        ("decision", "violates") => Some(q_bridge!("decision", "violates")),
-        ("research", "implements") => Some(q_bridge!("research", "implements")),
-        ("research", "discusses") => Some(q_bridge!("research", "discusses")),
-        ("research", "references_concept") => Some(q_bridge!("research", "references_concept")),
-        ("research", "violates") => Some(q_bridge!("research", "violates")),
-        ("pattern", "implements") => Some(q_bridge!("pattern", "implements")),
-        ("pattern", "discusses") => Some(q_bridge!("pattern", "discusses")),
-        ("pattern", "references_concept") => Some(q_bridge!("pattern", "references_concept")),
-        ("pattern", "violates") => Some(q_bridge!("pattern", "violates")),
-        ("app_spec", "implements") => Some(q_bridge!("app_spec", "implements")),
-        ("app_spec", "discusses") => Some(q_bridge!("app_spec", "discusses")),
-        ("app_spec", "references_concept") => Some(q_bridge!("app_spec", "references_concept")),
-        ("app_spec", "violates") => Some(q_bridge!("app_spec", "violates")),
-        (_, _) => None,
-    }
-}
+/// Bridge source tables (memory categories) allowed.
+const ALLOWED_TABLES: &[&str] = &["roadmap", "decision", "research", "pattern", "app_spec"];
 
 /// Create a bridge linking an entity to a concept via an edge.
 ///
+/// The source memory row must exist (`memories`); the concept is upserted into
+/// `entities`; the typed edge is written into `entity_edges` with the canonical
+/// `memory:<qname>` / `concept:<name>` ids. One transaction per bridge so a
+/// partial write can never leave a dangling edge.
+///
 /// # Errors
 /// Propagates `Error::Migration` when inputs are empty or the (table, edge) pair is invalid.
-/// Propagates `Error::RecordNotFound` when the bridge record cannot be retrieved.
+/// Propagates `Error::RecordNotFound` when the source memory row does not exist.
 pub async fn bridge_to_concept(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     src_table: &str,
     src_key: &str,
     edge: &str,
     concept_name: &str,
-) -> Result<RecordId> {
+) -> Result<String> {
     if src_key.is_empty() || concept_name.is_empty() {
         return Err(Error::Migration("bridge endpoints cannot be empty".into()));
     }
-    let Some(q) = pick_query(src_table, edge) else {
+    if !ALLOWED_TABLES.contains(&src_table) || !ALLOWED_EDGES.contains(&edge) {
         return Err(Error::Migration(format!(
             "invalid (table, edge): ({src_table}, {edge})"
         )));
-    };
-    let mut resp = db
-        .query(q)
-        .bind(("src_key", src_key.to_owned()))
-        .bind(("concept_name", concept_name.to_owned()))
+    }
+    let src_qname = format!("{src_table}:{src_key}");
+    let concept_id = format!("concept:{concept_name}");
+    let txn = db.conn.transaction().await?;
+    // Source must exist as a memory row — fail closed rather than bridge to air.
+    let mut src = txn
+        .query(
+            "SELECT 1 FROM memories WHERE project = ?1 AND category = ?2 AND entry_key = ?3 LIMIT 1",
+            libsql::params![src_table.to_owned(), src_table.to_owned(), src_key.to_owned()],
+        )
         .await?;
-    let last = resp.num_statements().saturating_sub(1);
-    let raw: Option<RecordId> = resp.take(last)?;
-    raw.map_or_else(
-        || {
-            Err(Error::RecordNotFound(format!(
-                "bridge create: {src_table}/{src_key}"
-            )))
-        },
-        Ok,
+    if src.next().await?.is_none() {
+        return Err(Error::RecordNotFound(format!(
+            "bridge source missing: {src_table}/{src_key}"
+        )));
+    }
+    // Concept upsert (idempotent). `execute` (not `query`) so a failed INSERT
+    // surfaces immediately instead of being deferred into unconsumed Rows.
+    txn.execute(
+        "INSERT INTO entities (id, entity_type, name, properties) \
+         VALUES (?1, 'concept', ?2, NULL) \
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name",
+        libsql::params![concept_id.clone(), concept_name.to_owned()],
     )
+    .await?;
+    // Typed edge.
+    txn.execute(
+        "INSERT INTO entity_edges (from_id, rel_type, to_id, weight, created_at) \
+         VALUES (?1, ?2, ?3, 1.0, ?4) \
+         ON CONFLICT(from_id, rel_type, to_id) DO UPDATE SET weight = 1.0",
+        libsql::params![
+            src_qname.clone(),
+            edge.to_owned(),
+            concept_id.clone(),
+            crate::turso::now_rfc3339()
+        ],
+    )
+    .await?;
+    txn.commit().await?;
+    Ok(format!("{src_qname}->{edge}->{concept_id}"))
 }

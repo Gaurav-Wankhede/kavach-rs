@@ -101,7 +101,7 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
     use kavach_db::MemoryEntry;
     let row = |key: &str, content: &str| MemoryEntry {
         id: None,
-        project: surrealdb_types::RecordId::new("project", "p"),
+        project: "p".to_owned(),
         category: Some("roadmap".to_owned()),
         entry_key: key.to_owned(),
         title: format!("title {key}"),

@@ -1,6 +1,6 @@
 //! FTS5 search — `SearchStore` extension trait over `TursoStore`.
 //!
-//! Phase 2 parity with brain_query.rs: SurrealDB ran one BM25 query per
+//! Phase 2 parity with brain_query.rs: TursoStoreDB ran one BM25 query per
 //! category table and produced one rank list per table. libSQL keeps all
 //! categories in ONE fts5 table with a `category` column, so the equivalent is
 //! one filtered query per category: bm25() ranks rows, RRF consumes order.
@@ -13,8 +13,7 @@ use crate::rrf::{RRF_K, rrf_fuse};
 
 /// Categories that carry searchable title/content corpora (mirrors
 /// `CORPUS_TABLES` in brain_query.rs).
-pub const CORPUS_CATEGORIES: [&str; 5] =
-    ["decision", "roadmap", "research", "pattern", "app_spec"];
+pub const CORPUS_CATEGORIES: [&str; 5] = ["decision", "roadmap", "research", "pattern", "app_spec"];
 
 /// FTS-owned DDL, executed by `connection::init_schema`.
 pub const DDL: &[&str] = &[
@@ -23,7 +22,7 @@ pub const DDL: &[&str] = &[
 
 /// Convert a user query string to FTS5 MATCH syntax, injection-safe.
 ///
-/// SurrealDB `@0@` treats terms as an implicit AND of prefixes; FTS5 needs
+/// TursoStoreDB `@0@` treats terms as an implicit AND of prefixes; FTS5 needs
 /// explicit quoting so user punctuation can't break the expression. Each
 /// whitespace-separated token is quoted (with embedded quotes doubled).
 #[must_use]
@@ -92,7 +91,7 @@ impl SearchStore for TursoStore {
     ) -> TursoResult<Vec<String>> {
         // bm25() lower = better; ORDER BY bm25(memories_fts) ascending.
         let mut rows = self
-            .query(
+            .exec_params(
                 "SELECT entry_key FROM memories_fts \
                  WHERE memories_fts MATCH ?1 AND project = ?2 AND category = ?3 \
                  ORDER BY bm25(memories_fts) LIMIT ?4",
@@ -115,8 +114,7 @@ impl SearchStore for TursoStore {
         if query.trim().is_empty() {
             return Ok(Vec::new());
         }
-        let mut ranked: Vec<Vec<String>> =
-            Vec::with_capacity(CORPUS_CATEGORIES.len());
+        let mut ranked: Vec<Vec<String>> = Vec::with_capacity(CORPUS_CATEGORIES.len());
         for cat in CORPUS_CATEGORIES {
             ranked.push(self.fts_rank_category(project, cat, query, limit).await?);
         }

@@ -1,14 +1,8 @@
 // Ontology edges between L0 concepts. Edge name validated against
-// ALLOWED_ONTOLOGY_RELS, then interpolated as a bare identifier.
-// sql-safe: edge string comes from compile-time const ALLOWED_ONTOLOGY_RELS
-// after validate_ontology() rejects anything outside the allow-list. Same
-// escape-hatch pattern used by graph/dynamic.rs::relate_dynamic — installed
-// SurrealDB parser does NOT accept type::table($edge) in RELATE edge slot
-// despite docs example (see decision:concept-relate-runtime-fix).
+// ALLOWED_ONTOLOGY_RELS, then bound as a parameter (never interpolated).
 use crate::error::{Error, Result};
 use crate::graph::dynamic::{ALLOWED_ONTOLOGY_RELS, is_bridge_rel};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 fn validate_ontology(rel: &str) -> Result<()> {
     if ALLOWED_ONTOLOGY_RELS.contains(&rel) {
@@ -26,10 +20,14 @@ fn validate_ontology(rel: &str) -> Result<()> {
 
 /// Relates two L0 concepts via a validated ontology edge.
 ///
+/// Both endpoints are upserted into `entities` (idempotent), then the typed
+/// edge is written into `entity_edges` — one transaction so a partial write
+/// can never leave a dangling edge.
+///
 /// # Errors
 /// Propagates `Error::Migration` if the edge is not an ontology edge or if concept names are empty.
 pub async fn relate_concepts(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     from_name: &str,
     edge: &str,
     to_name: &str,
@@ -38,32 +36,32 @@ pub async fn relate_concepts(
     if from_name.is_empty() || to_name.is_empty() {
         return Err(Error::Migration("concept names cannot be empty".into()));
     }
-    let src_q = "UPSERT entity SET entity_type = 'concept', name = $from_name, \
-                 updated_at = time::now() WHERE entity_type = 'concept' AND name = $from_name \
-                 RETURN id";
-    let tgt_q = "UPSERT entity SET entity_type = 'concept', name = $to_name, \
-                 updated_at = time::now() WHERE entity_type = 'concept' AND name = $to_name \
-                 RETURN id";
-    let src_row: Option<serde_json::Value> = db
-        .query(src_q)
-        .bind(("from_name", from_name.to_owned()))
-        .await?
-        .take(0)?;
-    let src_id = src_row
-        .and_then(|v| v.get("id").cloned())
-        .ok_or_else(|| Error::Migration(format!("concept '{from_name}' not found after upsert")))?;
-    let tgt_row: Option<serde_json::Value> = db
-        .query(tgt_q)
-        .bind(("to_name", to_name.to_owned()))
-        .await?
-        .take(0)?;
-    let tgt_id = tgt_row
-        .and_then(|v| v.get("id").cloned())
-        .ok_or_else(|| Error::Migration(format!("concept '{to_name}' not found after upsert")))?;
-    let relate_q = format!("RELATE $src->{edge}->$tgt SET weight = 1.0");
-    db.query(relate_q)
-        .bind(("src", src_id))
-        .bind(("tgt", tgt_id))
-        .await?;
+    let src_id = format!("concept:{from_name}");
+    let tgt_id = format!("concept:{to_name}");
+    let txn = db.conn.transaction().await?;
+    // `execute` (not `query`) so a failed INSERT surfaces immediately instead
+    // of being deferred into unconsumed Rows (§no_silent_failure).
+    txn.execute(
+        "INSERT INTO entities (id, entity_type, name, properties) \
+         VALUES (?1, 'concept', ?2, NULL) \
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name",
+        libsql::params![src_id.clone(), from_name.to_owned()],
+    )
+    .await?;
+    txn.execute(
+        "INSERT INTO entities (id, entity_type, name, properties) \
+         VALUES (?1, 'concept', ?2, NULL) \
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name",
+        libsql::params![tgt_id.clone(), to_name.to_owned()],
+    )
+    .await?;
+    txn.execute(
+        "INSERT INTO entity_edges (from_id, rel_type, to_id, weight, created_at) \
+         VALUES (?1, ?2, ?3, 1.0, ?4) \
+         ON CONFLICT(from_id, rel_type, to_id) DO UPDATE SET weight = 1.0",
+        libsql::params![src_id, edge.to_owned(), tgt_id, crate::turso::now_rfc3339()],
+    )
+    .await?;
+    txn.commit().await?;
     Ok(())
 }

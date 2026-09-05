@@ -49,7 +49,9 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
             reason = "cosine in [-1,1] fits f32 exactly"
         )]
         #[expect(clippy::float_arithmetic, reason = "cosine: bounded division")]
-        { (dot / denom) as f32 }
+        {
+            (dot / denom) as f32
+        }
     }
 }
 
@@ -113,24 +115,29 @@ pub fn fallback_embed(text: &str) -> Vec<f32> {
             *digest_bytes.get(3).unwrap_or(&0),
         ];
         let raw_u32 = u32::from_le_bytes(byte_arr);
-        #[expect(clippy::float_arithmetic, reason = "fallback: bounded mapping to [-1,1]")]
+        #[expect(
+            clippy::float_arithmetic,
+            reason = "fallback: bounded mapping to [-1,1]"
+        )]
         #[expect(
             clippy::cast_possible_truncation,
             reason = "mul_add result in [-1,1]; truncation to f32 acceptable for fallback"
         )]
-        let sample = f64::from(raw_u32).mul_add(
-            2.0 / f64::from(u32::MAX),
-            -1.0,
-        ) as f32;
+        let sample = f64::from(raw_u32).mul_add(2.0 / f64::from(u32::MAX), -1.0) as f32;
         out.push(sample);
         cur_seed = *digest.as_bytes();
     }
     // L2-normalize to unit sphere (cosine = dot product after normalization).
-    let norm_sq: f64 = out.iter().map(|v| {
-        let vd = f64::from(*v);
-        #[expect(clippy::float_arithmetic, reason = "norm: bounded squaring")]
-        { vd * vd }
-    }).sum();
+    let norm_sq: f64 = out
+        .iter()
+        .map(|v| {
+            let vd = f64::from(*v);
+            #[expect(clippy::float_arithmetic, reason = "norm: bounded squaring")]
+            {
+                vd * vd
+            }
+        })
+        .sum();
     let norm_f64 = norm_sq.sqrt();
     #[expect(
         clippy::cast_possible_truncation,
@@ -139,8 +146,13 @@ pub fn fallback_embed(text: &str) -> Vec<f32> {
     let norm_f32 = norm_f64 as f32;
     if norm_f32 > f32::EPSILON {
         for v in &mut out {
-            #[expect(clippy::float_arithmetic, reason = "normalization; guarded by EPSILON check")]
-            { *v /= norm_f32; }
+            #[expect(
+                clippy::float_arithmetic,
+                reason = "normalization; guarded by EPSILON check"
+            )]
+            {
+                *v /= norm_f32;
+            }
         }
     }
     out
@@ -203,9 +215,8 @@ pub fn embed_texts(texts: &[String]) -> TursoResult<Vec<Vec<f32>>> {
     if texts.is_empty() {
         return Ok(Vec::new());
     }
-    Ok(try_fastembed_batch(texts).unwrap_or_else(|_| {
-        texts.iter().map(|t| fallback_embed(t)).collect()
-    }))
+    Ok(try_fastembed_batch(texts)
+        .unwrap_or_else(|_| texts.iter().map(|t| fallback_embed(t)).collect()))
 }
 
 /// Embed a single `title + content` concatenation (write-time helper).
@@ -254,7 +265,7 @@ async fn brute_rank(
     limit: usize,
 ) -> TursoResult<Vec<String>> {
     let mut rows = store
-        .query(
+        .exec_params(
             "SELECT entry_key, embedding FROM memories WHERE project = ?1 AND embedding IS NOT NULL",
             libsql::params![project],
         )
@@ -298,7 +309,7 @@ async fn graph_expand(
              ) SELECT DISTINCT dst_key FROM reach ORDER BY dst_key"
         );
         let mut rows = store
-            .query(&sql, libsql::params![project, seed.clone()])
+            .exec_params(&sql, libsql::params![project, seed.clone()])
             .await?;
         while let Some(row) = rows.next().await.map_err(TursoError::from)? {
             let key = row.get::<String>(0).map_err(TursoError::from)?;
@@ -342,10 +353,7 @@ pub trait VectorStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
-    fn backfill_embeddings(
-        &self,
-        batch: usize,
-    ) -> impl Future<Output = TursoResult<usize>> + Send;
+    fn backfill_embeddings(&self, batch: usize) -> impl Future<Output = TursoResult<usize>> + Send;
 }
 
 impl VectorStore for TursoStore {
@@ -367,7 +375,10 @@ impl VectorStore for TursoStore {
         let ann_sql = "SELECT entry_key FROM vector_top_k('idx_memories_embedding', vector32(?1), ?2) JOIN memories ON memories.rowid = id WHERE project = ?3";
         let vec_json = format!(
             "[{}]",
-            qv.iter().map(|v| format!("{v:.6}")).collect::<Vec<_>>().join(",")
+            qv.iter()
+                .map(|v| format!("{v:.6}"))
+                .collect::<Vec<_>>()
+                .join(",")
         );
         #[expect(
             clippy::cast_possible_wrap,
@@ -375,7 +386,7 @@ impl VectorStore for TursoStore {
         )]
         let limit_i = limit as i64;
         let attempt = self
-            .query(
+            .exec_params(
                 ann_sql,
                 libsql::params![vec_json.clone(), limit_i, project.to_owned()],
             )
@@ -444,7 +455,7 @@ impl VectorStore for TursoStore {
                 "SELECT project, category, entry_key, title, content \
                  FROM memories WHERE embedding IS NULL LIMIT {batch}"
             );
-            let mut rows = self.query(&sql, ()).await?;
+            let mut rows = self.exec_params(&sql, ()).await?;
             let mut chunk: Vec<(String, String, String, String, String)> = Vec::new();
             while let Some(row) = rows.next().await.map_err(TursoError::from)? {
                 let proj: String = row.get(0).map_err(TursoError::from)?;

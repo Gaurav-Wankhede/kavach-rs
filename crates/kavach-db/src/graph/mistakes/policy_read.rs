@@ -3,14 +3,12 @@
 //
 //   handful, not millions) by pessimistic value (lcb), descending. CHOICE:
 //   materialize all rows, then slice::sort_by (Rust stdlib stable sort,
-//   Timsort-derived, O(N log N)). REJECTED: SurrealDB `ORDER BY properties.lcb`
-//   — ordering on a nested-property alias is non-portable across SurrealDB
+//   Timsort-derived, O(N log N)). REJECTED: SQL `ORDER BY json_extract(...)`
+//   — ordering on a nested-property alias is non-portable across libsql
 //   versions; a partial sort gives no measurable win at N≈scopes.
 //   TIME: O(N log N), N = deployed_policy count. SPACE: O(N). YEAR: 2026.
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
+use crate::turso::TursoStore;
 
 /// One deployed advisory policy: the promoted action distribution plus the
 /// coverage/sample evidence, surfaced for reinjection (highest `lcb` first).
@@ -37,37 +35,36 @@ pub struct DeployedPolicyRow {
 /// stable tie-break.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the query fails (but a brand-new graph with
-/// no `entity` table yet is the empty case, not an error).
+/// Propagates `Error::Turso` when the query fails.
 pub async fn top_deployed_policies(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     limit: usize,
 ) -> Result<Vec<DeployedPolicyRow>> {
-    #[derive(SurrealValue)]
-    struct Row {
-        name: String,
-        allow: f64,
-        ask: f64,
-        block: f64,
-        lcb: f64,
-        coverage_ratio: f64,
-        usable_samples: i64,
+    let mut resp = db
+        .exec_params(
+            "SELECT name, \
+             json_extract(properties, '$.allow') AS allow, \
+             json_extract(properties, '$.ask') AS ask, \
+             json_extract(properties, '$.block') AS block, \
+             json_extract(properties, '$.lcb') AS lcb, \
+             json_extract(properties, '$.coverage_ratio') AS coverage_ratio, \
+             json_extract(properties, '$.usable_samples') AS usable_samples \
+             FROM entities WHERE entity_type = 'deployed_policy'",
+            (),
+        )
+        .await?;
+    let mut rows: Vec<DeployedPolicyRow> = Vec::new();
+    while let Some(r) = resp.next().await? {
+        rows.push(DeployedPolicyRow {
+            name: r.get::<String>(0)?,
+            allow: r.get::<f64>(1)?,
+            ask: r.get::<f64>(2)?,
+            block: r.get::<f64>(3)?,
+            lcb: r.get::<f64>(4)?,
+            coverage_ratio: r.get::<f64>(5)?,
+            usable_samples: r.get::<i64>(6)?,
+        });
     }
-
-    let q = "SELECT name, \
-             properties.allow AS allow, properties.ask AS ask, \
-             properties.block AS block, properties.lcb AS lcb, \
-             properties.coverage_ratio AS coverage_ratio, \
-             properties.usable_samples AS usable_samples \
-             FROM entity WHERE entity_type = 'deployed_policy'";
-    let mut resp = db.query(q).await?;
-    // A brand-new graph never created the `entity` table, so SELECT raises
-    // "table does not exist" — the empty case (zero policies), not a failure.
-    let mut rows: Vec<Row> = match resp.take(0) {
-        Ok(rows) => rows,
-        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(Vec::new()),
-        Err(e) => return Err(e.into()),
-    };
     rows.sort_by(|a, b| {
         b.lcb
             .partial_cmp(&a.lcb)
@@ -75,16 +72,5 @@ pub async fn top_deployed_policies(
             .then_with(|| a.name.cmp(&b.name))
     });
     rows.truncate(limit);
-    Ok(rows
-        .into_iter()
-        .map(|r| DeployedPolicyRow {
-            name: r.name,
-            allow: r.allow,
-            ask: r.ask,
-            block: r.block,
-            lcb: r.lcb,
-            coverage_ratio: r.coverage_ratio,
-            usable_samples: r.usable_samples,
-        })
-        .collect())
+    Ok(rows)
 }

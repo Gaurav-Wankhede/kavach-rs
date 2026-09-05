@@ -1,10 +1,9 @@
-// SPEC: docs/architecture/session-occupancy-lease.md §Acquire (CAS via SurrealDB OCC)
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+// SPEC: docs/architecture/session-occupancy-lease.md §Acquire (CAS via Turso OCC)
 use super::acquire::acquire;
 use super::types::{AcquireOutcome, Lease};
 use super::unlock::unlock;
 use crate::error::Result;
+use crate::turso::TursoStore;
 /// Outcome of an all-or-nothing batch reservation over a `Vec` of keys.
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[expect(
@@ -33,7 +32,7 @@ pub enum AcquireSetOutcome {
 /// Propagates the first [`acquire`] DB error; any won leases are rolled back first
 /// (best-effort — a rollback error is swallowed so the original error surfaces).
 pub async fn acquire_set(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     table: &str,
     keys: &[&str],
     session_id: &str,
@@ -65,7 +64,7 @@ pub async fn acquire_set(
 /// Release every already-won lease (fencing-matched). Best-effort: a failed unlock
 /// is ignored so the original conflict/error is what the caller sees; the orphaned
 /// lease then expires by TTL rather than wedging the set forever.
-async fn rollback(db: &Surreal<Db>, table: &str, won: &[(String, Lease)]) {
+async fn rollback(db: &TursoStore, table: &str, won: &[(String, Lease)]) {
     for (key, lease) in won {
         // Best-effort: a failed unlock leaves a lease that expires by TTL rather
         // than wedging the set; the original conflict/error is what surfaces.

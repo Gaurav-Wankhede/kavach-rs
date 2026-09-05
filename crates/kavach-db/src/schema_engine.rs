@@ -2,8 +2,7 @@
 // Kept in its own module to isolate from arch-guard pattern matching on the
 // main schema string.
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 const ENGINE_DDL: &str = include_str!("schema_engine.surql");
 
@@ -11,8 +10,8 @@ const ENGINE_DDL: &str = include_str!("schema_engine.surql");
 ///
 /// # Errors
 ///
-/// Propagates errors from the underlying `SurrealDB` query execution.
-pub async fn apply(db: &Surreal<Db>) -> Result<()> {
-    db.query(ENGINE_DDL).await?;
+/// Propagates errors from the underlying `Turso` query execution.
+pub async fn apply(db: &TursoStore) -> Result<()> {
+    db.exec_params(ENGINE_DDL, ()).await?;
     Ok(())
 }

@@ -57,7 +57,7 @@ pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
 async fn close_direct(project_slug: &str, key: &str) -> i32 {
     let db = match super::super::rpc_client::open_direct_resilient().await {
         Ok(d) => d,
-        Err(e) => return write_err(&format!("error: open SurrealDB: {e}")),
+        Err(e) => return write_err(&format!("error: open database: {e}")),
     };
     let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
         Ok(Some(p)) => p,

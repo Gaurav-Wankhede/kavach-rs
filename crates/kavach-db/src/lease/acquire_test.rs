@@ -4,7 +4,7 @@
 //! resuming a hung holder's card. These tests pin the three load-bearing
 //! guarantees — single-winner under contention, fence-epoch monotonicity, and
 //! TTL-expiry reclaimability — at the primitive level, with a real in-memory
-//! `SurrealDB` so the WHERE-clause CAS is exercised, not mocked.
+//! `TursoStore` so the WHERE-clause CAS is exercised, not mocked.
 #![allow(
     clippy::expect_used,
     clippy::unwrap_in_result,
@@ -15,20 +15,18 @@ use super::acquire;
 use crate::lease::status;
 use crate::lease::types::AcquireOutcome;
 use crate::open_memory;
+use crate::turso::TursoStore;
 use chrono::{Duration, Utc};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
 
 /// Seed a roadmap card with an UNHELD lease (the fresh-claim shape: no holder,
 /// no `occupied_until`), so the first `acquire` must win it.
-async fn seed_unheld(db: &Surreal<Db>, id: &str) {
-    db.query(
-        "CREATE type::record('roadmap', $id) SET \
-         occupied_by=NONE, occupied_until=NONE, occupied_epoch=NONE, \
-         entry_status='in_progress', entry_key=$id, project='p', title='t', \
-         content='c', updated_at=time::now()",
+async fn seed_unheld(db: &TursoStore, id: &str) {
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
+         VALUES ('p', 'roadmap', ?1, 't', 'c', 'in_progress', ?2, ?2)",
+        libsql::params![id.to_owned(), crate::turso::now_rfc3339()],
     )
-    .bind(("id", id.to_owned()))
     .await
     .expect("seed unheld card");
 }
@@ -93,14 +91,17 @@ async fn expired_lease_is_reacquirable_by_foreign_session() {
     let past = Utc::now()
         .checked_sub_signed(Duration::seconds(10))
         .expect("past instant");
-    db.query(
-        "CREATE type::record('roadmap', $id) SET \
-         occupied_by='sess-dead', occupied_until=$u, occupied_epoch=5, \
-         entry_status='in_progress', entry_key=$id, project='p', title='t', \
-         content='c', updated_at=time::now()",
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, entry_status, \
+          occupied_by, occupied_until, occupied_epoch, created_at, updated_at) \
+         VALUES ('p', 'roadmap', ?1, 't', 'c', 'in_progress', 'sess-dead', ?2, 5, ?3, ?3)",
+        libsql::params![
+            "card-exp".to_owned(),
+            past.to_rfc3339(),
+            crate::turso::now_rfc3339()
+        ],
     )
-    .bind(("id", "card-exp".to_owned()))
-    .bind(("u", past))
     .await
     .expect("seed expired lease");
 

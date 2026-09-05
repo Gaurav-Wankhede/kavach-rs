@@ -52,22 +52,17 @@ async fn list_edges_among_keeps_intra_set_drops_boundary() {
 
     assert_eq!(edges.len(), 2, "only the two intra-set edges survive");
 
-    // Endpoints are keyed as format!("{id:?}") — the exact form the KG renderer
-    // and the node-id builder in graph_fetch_impl use, so edges resolve to nodes.
-    let key_a = format!("{a:?}");
-    let key_b = format!("{b:?}");
-    let key_c = format!("{c:?}");
-    let key_outside = format!("{outside:?}");
-
+    // Endpoints are the raw entity ids — the exact form the KG renderer and the
+    // node-id builder in graph_fetch_impl use, so edges resolve to nodes.
     let has = |from: &str, to: &str, rel: &str| {
         edges
             .iter()
             .any(|e| e.from == from && e.to == to && e.rel_type == rel)
     };
-    assert!(has(&key_a, &key_b, "is_a"), "a->b is_a present");
-    assert!(has(&key_b, &key_c, "part_of"), "b->c part_of present");
+    assert!(has(&a, &b, "is_a"), "a->b is_a present");
+    assert!(has(&b, &c, "part_of"), "b->c part_of present");
     assert!(
-        !edges.iter().any(|e| e.to == key_outside),
+        !edges.iter().any(|e| e.to == outside),
         "no edge to the off-canvas node"
     );
 }

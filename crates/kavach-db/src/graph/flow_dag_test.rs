@@ -2,6 +2,7 @@ use super::fetch::fetch_flow;
 use super::model::{FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput};
 use super::shape::NodeShape;
 use super::upsert::upsert_flow;
+use crate::turso::TursoStore;
 
 fn sample() -> FlowDag {
     FlowDag {
@@ -92,12 +93,15 @@ fn spec() -> FlowSpec {
     }
 }
 
-async fn db_with_project() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
+async fn db_with_project() -> TursoStore {
     let db = crate::open_memory().await.expect("open in-memory db");
     crate::apply_schema(&db).await.expect("schema");
-    db.query("CREATE project SET slug = 'p', display = 'P', workdir = '/tmp'")
-        .await
-        .expect("create project");
+    db.exec_params(
+        "INSERT INTO projects (slug, path, tags) VALUES ('p', '/tmp', '[]')",
+        (),
+    )
+    .await
+    .expect("create project");
     db
 }
 

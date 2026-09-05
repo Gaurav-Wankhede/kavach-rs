@@ -1,39 +1,33 @@
 //! Integration proof for the Brain-OS Gap-1 `BM25`/FTS retrieval corpus
-//! (roadmap.unit.harness.brain-os.g1a). Proves against a real in-memory
-//! `SurrealDB` — with the PRODUCTION schema applied — that the per-field FULLTEXT
-//! indexes on the typed memory tables actually match (`@@`) and rank
-//! (`search::score`) by BM25 relevance. This is the no-vector retrieval side of
-//! hybrid search: the ONNX embedder was removed (decision/onnx-removal-dag-rlaif-only),
-//! so keyword relevance is the surviving lexical signal.
+//! (roadmap.unit.harness.brain-os.g1a). Proves against a real embedded libSQL
+//! store — with the PRODUCTION schema applied — that the FTS5 index on the
+//! unified `memories_fts` table actually matches and ranks by BM25 relevance.
+//! This is the no-vector retrieval side of hybrid search: the ONNX embedder was
+//! removed (decision/onnx-removal-dag-rlaif-only), so keyword relevance is the
+//! surviving lexical signal.
 //!
-//! If the DDL syntax were wrong, `apply_schema` here would error and every test
-//! below would fail at setup — so setup itself is a witness that the schema
-//! applies cleanly. Syntax: research.surrealdb-3.1-fulltext-bm25-syntax +
-//! <https://surrealdb.com/docs/surrealql/statements/define/indexes>
+//! If the FTS DDL syntax were wrong, `open_memory` here would error and every
+//! test below would fail at setup — so setup itself is a witness that the schema
+//! applies cleanly.
 #![allow(
     clippy::expect_used,
     clippy::unwrap_in_result,
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_db::{apply_schema, open_memory, upsert_entry_full};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any;
-use surrealdb_types::RecordId;
+use kavach_db::turso::search::SearchStore;
+use kavach_db::turso::TursoStore;
+use kavach_db::{open_memory, upsert_entry_full};
 
-/// In-memory db with the production schema (incl. the Gap-1 FTS indexes) applied.
-async fn db_with_schema() -> Surreal<Any> {
-    let db = open_memory().await.expect("memory db");
-    apply_schema(&db)
-        .await
-        .expect("apply schema (FTS DDL must parse)");
-    db
+/// In-memory db with the production schema (incl. the FTS5 index) applied.
+async fn db_with_schema() -> TursoStore {
+    open_memory().await.expect("memory db")
 }
 
 /// Seed a decision row through the PRODUCTION write path, so the FTS proof runs
 /// over rows shaped exactly as `kavach db write` produces them.
-async fn seed_decision(db: &Surreal<Any>, key: &str, title: &str, content: &str) {
-    let proj = RecordId::new("project", "fts-test");
+async fn seed_decision(db: &TursoStore, key: &str, title: &str, content: &str) {
+    let proj = "fts-test".to_owned();
     upsert_entry_full()
         .db(db)
         .category("decision")
@@ -49,17 +43,9 @@ async fn seed_decision(db: &Surreal<Any>, key: &str, title: &str, content: &str)
         .expect("seed decision");
 }
 
-/// FTS-match proof. `#[ignore]`d because the `kv-mem` engine used by
-/// `open_memory` does NOT serve FULLTEXT/BM25 the way the production
-/// `kv-rocksdb` server does (rows land — verified by the probe below — but `@@`
-/// returns nothing on `kv-mem`). The match + ranking ARE proven against the live
-/// rocksdb server: `content @0@ 'embedder retrieval'` returned the Brain-OS
-/// decision with `search::score` 6.23, correctly ranked first (recorded in
-/// research.surrealdb-3.1-fulltext-bm25-syntax). Run with `--ignored` only
-/// against a rocksdb-backed instance. The schema-applies + DDL-valid witness is
-/// the always-on `fresh_corpus_matches_nothing` test, which passes on kv-mem.
+/// FTS-match proof: only the decision whose content carries the query terms
+/// matches; the unrelated row stays out.
 #[tokio::test]
-#[ignore = "kv-mem does not serve FULLTEXT; proven on live kv-rocksdb (score 6.23)"]
 async fn bm25_matches_content_on_the_decision_corpus() {
     let db = db_with_schema().await;
     seed_decision(
@@ -77,33 +63,19 @@ async fn bm25_matches_content_on_the_decision_corpus() {
     )
     .await;
 
-    // The rows land on kv-mem even though @@ won't match there.
-    let mut all = db
-        .query("SELECT VALUE title FROM decision")
-        .await
-        .expect("plain select");
-    let all_titles: Vec<String> = all.take(0).expect("all titles");
-    assert_eq!(all_titles.len(), 2, "both rows must exist: {all_titles:?}");
-
-    let mut resp = db
-        .query("SELECT VALUE title FROM decision WHERE content @@ $q")
-        .bind(("q", "embedder retrieval".to_owned()))
+    let hits = db
+        .fts_rank_category("fts-test", "decision", "embedder retrieval", 10)
         .await
         .expect("fts query");
-    let titles: Vec<String> = resp.take(0).expect("titles");
     assert_eq!(
-        titles.len(),
-        1,
-        "only the relevant decision matches, got {titles:?}"
+        hits,
+        vec!["d1".to_owned()],
+        "only the relevant decision matches, got {hits:?}"
     );
-    assert_eq!(titles[0], "hybrid retrieval design");
 }
 
-/// BM25 ranking proof. `#[ignore]`d for the same `kv-mem` FULLTEXT limitation as
-/// `bm25_matches_content_on_the_decision_corpus`; ranking is proven on the live
-/// rocksdb server (research.surrealdb-3.1-fulltext-bm25-syntax).
+/// BM25 ranking proof: the denser doc ranks first, not insertion order.
 #[tokio::test]
-#[ignore = "kv-mem does not serve FULLTEXT; proven on live kv-rocksdb (score 6.23)"]
 async fn bm25_score_ranks_more_relevant_first() {
     let db = db_with_schema().await;
     seed_decision(
@@ -121,32 +93,24 @@ async fn bm25_score_ranks_more_relevant_first() {
     )
     .await;
 
-    // `@0@` binds the match to index ref 0 so `search::score(0)` can read its
-    // BM25; ORDER BY that score then SELECT VALUE title yields titles in rank order.
-    let mut resp = db
-        .query(
-            "SELECT VALUE title FROM decision \
-             WHERE content @0@ $q ORDER BY search::score(0) DESC",
-        )
-        .bind(("q", "retrieval".to_owned()))
+    let hits = db
+        .fts_rank_category("fts-test", "decision", "retrieval", 10)
         .await
         .expect("scored fts query");
-    let titles: Vec<String> = resp.take(0).expect("titles");
-    assert_eq!(titles.len(), 2, "both decisions mention the term");
+    assert_eq!(hits.len(), 2, "both decisions mention the term");
     assert_eq!(
-        titles[0], "retrieval retrieval retrieval",
-        "denser doc ranks first"
+        hits.first().map(String::as_str),
+        Some("hot"),
+        "denser doc ranks first, got {hits:?}"
     );
 }
 
 #[tokio::test]
 async fn fresh_corpus_matches_nothing() {
     let db = db_with_schema().await;
-    let mut resp = db
-        .query("SELECT VALUE title FROM decision WHERE content @@ $q")
-        .bind(("q", "anything".to_owned()))
+    let hits = db
+        .fts_rank_category("fts-test", "decision", "anything", 10)
         .await
         .expect("fts query on empty corpus");
-    let titles: Vec<String> = resp.take(0).expect("titles");
-    assert!(titles.is_empty(), "no rows => no hits, not an error");
+    assert!(hits.is_empty(), "no rows => no hits, not an error");
 }

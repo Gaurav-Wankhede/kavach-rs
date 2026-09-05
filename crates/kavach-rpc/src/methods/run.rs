@@ -4,7 +4,6 @@ use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{RunRecord, run_get, run_insert, run_list_by_project, run_update_status};
 use serde::{Deserialize, Serialize};
 use std::process::{Command, Stdio};
-use surrealdb_types::RecordId;
 
 #[non_exhaustive]
 #[derive(Debug, Deserialize)]
@@ -65,9 +64,8 @@ pub struct IdResult {
 
 /// A run row with a flat, JSON-friendly `table:key` string id.
 ///
-/// The web/CLI clients consume this — never raw `RunRecord`, whose `id`/`project`
-/// are `RecordId`s that serialize as maps (breaks `id: String` deserialization and
-/// gives clients no usable cancel handle).
+/// The web/CLI clients consume this — the Turso `run` table keys by a plain
+/// string id, so no RecordId conversion is needed.
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize)]
 pub struct RunDto {
@@ -82,19 +80,9 @@ pub struct RunDto {
     pub exit_code: Option<i64>,
 }
 
-/// Render a `RecordId` as the canonical `table:key` string that
-/// `parse_record_id` round-trips. Mirrors `SurrealDB`'s own thing id syntax.
-fn record_id_to_string(id: &RecordId) -> String {
-    let key = match &id.key {
-        surrealdb_types::RecordIdKey::String(s) => s.clone(),
-        other => format!("{other:?}"),
-    };
-    format!("{}:{key}", id.table)
-}
-
 fn run_to_dto(r: RunRecord) -> RunDto {
     RunDto {
-        id: r.id.as_ref().map(record_id_to_string).unwrap_or_default(),
+        id: r.id.unwrap_or_default(),
         entry_key: r.entry_key,
         branch: r.branch,
         status: r.status,
@@ -113,11 +101,12 @@ pub struct SuccessResult {
     pub error: Option<String>,
 }
 
-/// Resolve a project SLUG (e.g. "kavach-rs") to its `project:` `RecordId`. The
-/// web UI and CLI pass slugs, not pre-formatted `RecordId`s — mirrors the `db.*`
-/// methods' `resolve_project_id`. Use this for the `project` field;
-/// `parse_record_id` stays for run-id strings (`run:…`) returned by `run.list`.
-async fn resolve_project(state: &AppState, slug: &str) -> Result<RecordId, ErrorObjectOwned> {
+/// Resolve a project SLUG (e.g. "kavach-rs") to its project id string (the
+/// slug itself — the Turso `projects` table keys by slug). The web UI and CLI
+/// pass slugs, not pre-formatted record ids — mirrors the `db.*` methods'
+/// `resolve_project_id`. Use this for the `project` field; `parse_record_id`
+/// stays for run-id strings (`run:…`) returned by `run.list`.
+async fn resolve_project(state: &AppState, slug: &str) -> Result<String, ErrorObjectOwned> {
     let project = kavach_db::project_get_by_slug(&state.db, slug)
         .await
         .map_err(surreal_to_rpc)?;
@@ -126,13 +115,11 @@ async fn resolve_project(state: &AppState, slug: &str) -> Result<RecordId, Error
         .ok_or_else(|| invalid_params(format!("project not found: {slug}")))
 }
 
-fn parse_record_id(s: &str) -> Result<RecordId, ErrorObjectOwned> {
+/// Validate the `table:key` record-id shape and return it unchanged.
+fn parse_record_id(s: &str) -> Result<String, ErrorObjectOwned> {
     match s.split_once(':') {
-        Some((table, key)) => Ok(RecordId {
-            table: table.to_owned().into(),
-            key: surrealdb_types::RecordIdKey::String(key.to_owned()),
-        }),
-        None => Err(invalid_params(format!(
+        Some((table, key)) if !table.is_empty() && !key.is_empty() => Ok(s.to_owned()),
+        _ => Err(invalid_params(format!(
             "expected RecordId 'table:id', got: {s}"
         ))),
     }
@@ -172,9 +159,7 @@ pub async fn record(state: &AppState, params: RecordParams) -> Result<IdResult, 
         cost_usd: None,
     };
     let id = run_insert(&state.db, &run).await.map_err(surreal_to_rpc)?;
-    Ok(IdResult {
-        id: record_id_to_string(&id),
-    })
+    Ok(IdResult { id })
 }
 
 /// Update a run's status.
@@ -312,7 +297,7 @@ pub async fn spawn(state: &AppState, params: SpawnParams) -> Result<SpawnResult,
     });
 
     Ok(SpawnResult {
-        id: record_id_to_string(&record_id),
+        id: record_id,
         pid: Some(pid_u32),
     })
 }

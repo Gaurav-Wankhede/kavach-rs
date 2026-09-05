@@ -8,17 +8,15 @@
 //! populated, enforced at the write edge so a threshold can never hold a string
 //! and a pattern-list can never hold a number (illegal cross-kind states are
 //! unrepresentable past `set`). `project = "*"` is the global row.
-use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
 use crate::error::{Error, Result};
+use crate::turso::TursoStore;
+use serde::{Deserialize, Serialize};
 /// The global (project-agnostic) row sentinel. A per-project lookup falls back
 /// to this when no project-scoped row exists.
 pub const GLOBAL_PROJECT: &str = "*";
 /// The kind tag that selects which `value_*` column carries the payload. Mirrors
 /// the `ASSERT` on `gate_config.kind` in `schema.rs`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum GateConfigKind {
@@ -34,10 +32,7 @@ pub enum GateConfigKind {
     Text,
 }
 impl GateConfigKind {
-    /// The bare wire string stored in the SCHEMAFULL `gate_config.kind` column.
-    /// MUST be bound as this `&str` (not the enum) — a `SurrealValue`-derived
-    /// fieldless enum serializes as a tagged object, which fails the column's
-    /// `TYPE string ASSERT` and silently drops the CREATE.
+    /// The bare wire string stored in the `gate_config.kind` column.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -78,14 +73,10 @@ pub enum GateConfigValue {
 }
 /// Raw row as stored — the four optional value columns + the kind tag. Only the
 /// column matching `kind` is ever `Some` after a validated `set`.
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct GateConfigRow {
     project: String,
     gate_key: String,
-    // `kind` is the BARE wire string (`threshold`/…), NOT the enum: the
-    // SCHEMAFULL column is `TYPE string`, and a `SurrealValue`-derived fieldless
-    // enum round-trips as a tagged object that neither writes nor reads against
-    // a string column. Parsed to the typed kind in `value()` via `from_wire`.
     kind: String,
     #[serde(default)]
     value_num: Option<f64>,
@@ -113,6 +104,23 @@ impl GateConfigRow {
             }
         }
     }
+}
+/// Map a `gate_config` row (column order: project, gate_key, kind, value_num,
+/// value_bool, value_list, value_text) into a [`GateConfigRow`].
+fn row_from_row(row: &libsql::Row) -> Result<GateConfigRow> {
+    let value_list = row
+        .get::<Option<String>>(5)?
+        .map(|s| serde_json::from_str(&s).unwrap_or_default())
+        .unwrap_or_default();
+    Ok(GateConfigRow {
+        project: row.get::<String>(0)?,
+        gate_key: row.get::<String>(1)?,
+        kind: row.get::<String>(2)?,
+        value_num: row.get::<Option<f64>>(3)?,
+        value_bool: row.get::<Option<bool>>(4)?,
+        value_list,
+        value_text: row.get::<Option<String>>(6)?,
+    })
 }
 /// The four value columns for one row — exactly one is `Some`, matching the
 /// row's kind. Built by [`Columns::for_value`] so column population happens in a
@@ -169,24 +177,24 @@ const fn kind_of(value: &GateConfigValue) -> GateConfigKind {
 /// One exact lookup — the caller orders any project-then-global fallback.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the query fails.
+/// Propagates `Error::Turso` when the query fails.
 pub async fn gate_config_get(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     project: &str,
     gate_key: &str,
 ) -> Result<Option<GateConfigValue>> {
-    let row: Option<GateConfigRow> = db
-        .query(
-            "SELECT * FROM gate_config \
-             WHERE project = $p AND gate_key = $k LIMIT 1",
+    let mut rows = db
+        .exec_params(
+            "SELECT project, gate_key, kind, value_num, value_bool, value_list, value_text \
+             FROM gate_config WHERE project = $p AND gate_key = $k LIMIT 1",
+            libsql::params![project.to_owned(), gate_key.to_owned()],
         )
-        .bind(("p", project.to_owned()))
-        .bind(("k", gate_key.to_owned()))
-        .await
-        .map_err(Error::Surreal)?
-        .take(0)
-        .map_err(Error::Surreal)?;
-    Ok(row.and_then(|r| r.value()))
+        .await?;
+    let row = match rows.next().await? {
+        Some(row) => row_from_row(&row)?,
+        None => return Ok(None),
+    };
+    Ok(row.value())
 }
 /// Resolve `(project, gate_key)` with project-then-global fallback.
 ///
@@ -194,9 +202,9 @@ pub async fn gate_config_get(
 /// `None` (caller falls through to file/compiled default).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when either query fails.
+/// Propagates `Error::Turso` when either query fails.
 pub async fn gate_config_resolve(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     project: &str,
     gate_key: &str,
 ) -> Result<Option<GateConfigValue>> {
@@ -209,15 +217,15 @@ pub async fn gate_config_resolve(
 }
 /// Upsert an override, idempotent on `(project, gate_key)`.
 ///
-/// DELETE-then-CREATE keeps exactly one row per key (last write wins), so a
-/// concurrent double-set converges instead of duplicating. The stamped `kind`
-/// comes from the value; a severity string must use [`set_with_kind`] so it
-/// reads back as `Severity`.
+/// Single-statement keyed UPSERT keeps exactly one row per key (last write
+/// wins), so a concurrent double-set converges instead of duplicating. The
+/// stamped `kind` comes from the value; a severity string must use
+/// [`set_with_kind`] so it reads back as `Severity`.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the write fails.
+/// Propagates `Error::Turso` when the write fails.
 pub async fn gate_config_set(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     project: &str,
     gate_key: &str,
     value: &GateConfigValue,
@@ -231,10 +239,10 @@ pub async fn gate_config_set(
 /// value is rejected before it can poison a reader.
 ///
 /// # Errors
-/// `Error::Migration` on a kind/value shape mismatch; `Error::Surreal` on write
+/// `Error::Migration` on a kind/value shape mismatch; `Error::Turso` on write
 /// failure.
 pub async fn set_with_kind(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     project: &str,
     gate_key: &str,
     value: &GateConfigValue,
@@ -256,26 +264,28 @@ pub async fn set_with_kind(
         )));
     }
     let cols = Columns::for_value(value);
-    // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (two concurrent
-    // setters double-write / a reader sees zero rows mid-swap).
-    // SOURCE: decision.algo-upsert-idempotent-keyed.
-    let key = crate::decisions::hash_keyed("gate_config", project, gate_key, "");
-    db.query(
-        "UPSERT type::record('gate_config', $key) SET \
-             project = $p, gate_key = $k, kind = $kind, \
-             value_num = $num, value_bool = $boolean, \
-             value_list = $list, value_text = $text, updated_at = time::now();",
+    let list_json = cols.list.map(|l| serde_json::to_string(l)).transpose()?;
+    let now = crate::turso::now_rfc3339();
+    db.exec_params(
+        "INSERT INTO gate_config \
+             (project, gate_key, kind, value_num, value_bool, value_list, value_text, updated_at) \
+         VALUES ($p, $k, $kind, $num, $boolean, $list, $text, $now) \
+         ON CONFLICT(project, gate_key) DO UPDATE SET \
+             kind = excluded.kind, value_num = excluded.value_num, \
+             value_bool = excluded.value_bool, value_list = excluded.value_list, \
+             value_text = excluded.value_text, updated_at = excluded.updated_at",
+        libsql::params![
+            project.to_owned(),
+            gate_key.to_owned(),
+            kind.as_str().to_owned(),
+            cols.num,
+            cols.boolean,
+            list_json,
+            cols.text.cloned(),
+            now
+        ],
     )
-    .bind(("key", key))
-    .bind(("p", project.to_owned()))
-    .bind(("k", gate_key.to_owned()))
-    .bind(("kind", kind.as_str().to_owned()))
-    .bind(("num", cols.num))
-    .bind(("boolean", cols.boolean))
-    .bind(("list", cols.list.cloned()))
-    .bind(("text", cols.text.cloned()))
-    .await
-    .map_err(Error::Surreal)?;
+    .await?;
     Ok(())
 }
 /// Remove the override for `(project, gate_key)`.
@@ -284,17 +294,17 @@ pub async fn set_with_kind(
 /// key is a no-op success (the post-condition — "no override exists" — holds).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the delete fails.
-pub async fn gate_config_delete(db: &Surreal<Db>, project: &str, gate_key: &str) -> Result<()> {
-    db.query("DELETE gate_config WHERE project = $p AND gate_key = $k")
-        .bind(("p", project.to_owned()))
-        .bind(("k", gate_key.to_owned()))
-        .await
-        .map_err(Error::Surreal)?;
+/// Propagates `Error::Turso` when the delete fails.
+pub async fn gate_config_delete(db: &TursoStore, project: &str, gate_key: &str) -> Result<()> {
+    db.exec_params(
+        "DELETE FROM gate_config WHERE project = $p AND gate_key = $k",
+        libsql::params![project.to_owned(), gate_key.to_owned()],
+    )
+    .await?;
     Ok(())
 }
 /// One overridden key's identity, for `list`/inspection.
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct GateConfigEntry {
     /// Owning project (`*` = global).
@@ -308,16 +318,23 @@ pub struct GateConfigEntry {
 /// List every override for `project` (pass [`GLOBAL_PROJECT`] for the globals).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn gate_config_list(db: &Surreal<Db>, project: &str) -> Result<Vec<GateConfigEntry>> {
-    let rows: Vec<GateConfigEntry> = db
-        .query("SELECT project, gate_key, kind FROM gate_config WHERE project = $p")
-        .bind(("p", project.to_owned()))
-        .await
-        .map_err(Error::Surreal)?
-        .take(0)
-        .map_err(Error::Surreal)?;
-    Ok(rows)
+/// Propagates `Error::Turso` when the query fails.
+pub async fn gate_config_list(db: &TursoStore, project: &str) -> Result<Vec<GateConfigEntry>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT project, gate_key, kind FROM gate_config WHERE project = $p",
+            libsql::params![project.to_owned()],
+        )
+        .await?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next().await? {
+        out.push(GateConfigEntry {
+            project: row.get::<String>(0)?,
+            gate_key: row.get::<String>(1)?,
+            kind: row.get::<String>(2)?,
+        });
+    }
+    Ok(out)
 }
 #[cfg(test)]
 #[path = "gate_config_test.rs"]

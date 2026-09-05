@@ -9,15 +9,13 @@
 
 use super::reclaim_orphaned_in_progress;
 use crate::open_memory;
+use crate::turso::TursoStore;
 use chrono::{Duration, Utc};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
 
 /// Seed one roadmap card. `until_offset_secs` is relative to now; pass `None`
 /// for `occupied_by` to leave the lease columns unset (the CAS-claim shape).
 async fn seed_card(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     id: &str,
     occupied_by: Option<&str>,
     until_offset_secs: i64,
@@ -25,33 +23,34 @@ async fn seed_card(
 ) {
     let until = occupied_by
         .and_then(|_| Utc::now().checked_add_signed(Duration::seconds(until_offset_secs)));
-    db.query(
-        "CREATE type::record('roadmap', $id) SET \
-         occupied_by=$ob, occupied_until=$u, occupied_epoch=1, \
-         entry_status=$st, entry_key=$id, project='p', title='t', content='c', \
-         updated_at=time::now()",
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, entry_status, \
+          occupied_by, occupied_until, occupied_epoch, created_at, updated_at) \
+         VALUES ('p', 'roadmap', ?1, 't', 'c', ?5, ?2, ?3, 1, ?4, ?4)",
+        libsql::params![
+            id.to_owned(),
+            occupied_by.map(ToOwned::to_owned),
+            until.map(|u| u.to_rfc3339()),
+            crate::turso::now_rfc3339(),
+            status.to_owned()
+        ],
     )
-    .bind(("id", id.to_owned()))
-    .bind(("ob", occupied_by.map(ToOwned::to_owned)))
-    .bind(("u", until))
-    .bind(("st", status.to_owned()))
     .await
     .expect("seed card");
 }
 
-async fn status_of(db: &Surreal<Db>, id: &str) -> String {
-    #[derive(surrealdb_types::SurrealValue)]
-    struct Row {
-        entry_status: String,
-    }
-    let row: Option<Row> = db
-        .query("SELECT entry_status FROM type::record('roadmap', $id)")
-        .bind(("id", id.to_owned()))
+async fn status_of(db: &TursoStore, id: &str) -> String {
+    let mut rows = db
+        .exec_params(
+            "SELECT entry_status FROM memories \
+             WHERE project = 'p' AND category = 'roadmap' AND entry_key = ?1",
+            libsql::params![id.to_owned()],
+        )
         .await
-        .expect("select")
-        .take(0)
-        .expect("take");
-    row.map(|r| r.entry_status).expect("row exists")
+        .expect("select");
+    let row = rows.next().await.expect("next").expect("row exists");
+    row.get::<String>(0).expect("get")
 }
 
 #[tokio::test]

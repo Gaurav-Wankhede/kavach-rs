@@ -5,7 +5,7 @@ use crate::methods::roadmap::readiness::{
 fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
     kavach_db::MemoryEntry {
         id: None,
-        project: surrealdb_types::RecordId::new("project", "t"),
+        project: "t".to_owned(),
         category: Some("roadmap".into()),
         entry_key: key.into(),
         title: key.into(),
@@ -176,7 +176,7 @@ fn dispatcher_picks_first_runnable_dependency_satisfied_leaf() {
     ) -> kavach_db::MemoryEntry {
         kavach_db::MemoryEntry {
             id: None,
-            project: surrealdb_types::RecordId::new("project", "t"),
+            project: "t".to_owned(),
             category: Some("roadmap".into()),
             entry_key: key.into(),
             title: key.into(),

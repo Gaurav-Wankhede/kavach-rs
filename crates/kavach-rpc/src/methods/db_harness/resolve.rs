@@ -1,14 +1,14 @@
-// Shared project-slug -> RecordId resolver for the harness-loop RPC methods.
+// Shared project-slug -> project-id resolver for the harness-loop RPC methods.
 use crate::error::internal;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use surrealdb_types::RecordId;
 
-/// Resolve a project slug to its `RecordId`, mirroring `db::resolve_project_id`.
+/// Resolve a project slug to its id string (the slug itself — the Turso
+/// `projects` table keys by slug), mirroring `db::resolve_project_id`.
 ///
 /// # Errors
 /// Returns an RPC `ErrorObjectOwned` when the project is absent or has no id.
-pub(super) async fn project_id(state: &AppState, slug: &str) -> Result<RecordId, ErrorObjectOwned> {
+pub(super) async fn project_id(state: &AppState, slug: &str) -> Result<String, ErrorObjectOwned> {
     let project = kavach_db::project_get_by_slug(&state.db, slug)
         .await
         .map_err(|e| internal(e.to_string()))?;

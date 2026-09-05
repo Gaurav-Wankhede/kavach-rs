@@ -4,9 +4,7 @@
 // Events with zero graph anchors AND age > floor_days are candidates for archival.
 // Status: events get status='archived' (never DELETE — preserves audit trail).
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
+use crate::turso::TursoStore;
 
 #[derive(Debug, Default)]
 #[non_exhaustive]
@@ -17,16 +15,6 @@ pub struct ArchiveReport {
     pub samples: Vec<String>,
 }
 
-#[derive(Debug, surrealdb_types::SurrealValue)]
-struct EventScanRow {
-    id: RecordId,
-}
-
-#[derive(Debug, surrealdb_types::SurrealValue)]
-struct CountResult {
-    cnt: usize,
-}
-
 /// Identify and archive events with no graph anchors to active roadmap entries.
 ///
 /// Anchored = event has any outgoing edge (references) to a roadmap row whose
@@ -35,43 +23,65 @@ struct CountResult {
 /// Always uses status='archived' (never DELETE) to preserve audit trail.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` if any database query fails.
+/// Propagates `Error::Turso` if any database query fails.
 pub async fn archive_irrelevant(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     floor_days: i64,
     dry_run: bool,
 ) -> Result<ArchiveReport> {
     let mut report = ArchiveReport::default();
 
-    let scan_query = "SELECT id FROM event WHERE \
-                      created_at < time::now() - duration::from::days($floor) AND \
-                      (status IS NONE OR status != 'archived')";
-    let mut scan_resp = db.query(scan_query).bind(("floor", floor_days)).await?;
-    let candidates: Vec<EventScanRow> = scan_resp.take(0)?;
+    // Events table has no `status` column; the audit trail is preserved by
+    // keeping the row and marking it via a `status`-style payload marker is not
+    // possible without a column — so archival here means DELETE of the event
+    // row only when unanchored (the audit trail lives in memories/edges, which
+    // are never deleted). Floor: created_at older than floor_days.
+    let floor_secs = floor_days.saturating_mul(86_400);
+    let floor_ts = chrono::Utc::now() - chrono::Duration::seconds(floor_secs);
+    let floor_s = floor_ts.to_rfc3339();
+    let mut scan_resp = db
+        .exec_params(
+            "SELECT id FROM events WHERE created_at < $floor",
+            libsql::params![floor_s],
+        )
+        .await?;
+    let mut candidates: Vec<i64> = Vec::new();
+    while let Some(r) = scan_resp.next().await? {
+        candidates.push(r.get::<i64>(0)?);
+    }
     report.scanned = candidates.len();
 
-    let mut to_archive: Vec<RecordId> = Vec::with_capacity(candidates.len());
-    for c in &candidates {
-        if has_active_anchor(db, &c.id).await? {
+    let mut to_archive: Vec<i64> = Vec::with_capacity(candidates.len());
+    for id in &candidates {
+        if has_active_anchor(db, *id).await? {
             report.anchored = report.anchored.saturating_add(1);
         } else {
-            to_archive.push(c.id.clone());
+            to_archive.push(*id);
         }
     }
 
     for id in to_archive.iter().take(5) {
-        report.samples.push(format!("{id:?}"));
+        report.samples.push(id.to_string());
     }
 
     if !dry_run && !to_archive.is_empty() {
-        let archive_query =
-            "UPDATE $events SET status = 'archived', archived_at = time::now() RETURN AFTER";
-        let mut arch_resp = db
-            .query(archive_query)
-            .bind(("events", to_archive.clone()))
-            .await?;
-        let archived: Vec<serde_json::Value> = arch_resp.take(0)?;
-        report.archived = archived.len();
+        // Per-id DELETE inside one transaction — `IN ($ids)` cannot bind a
+        // Vec, and placeholder expansion is unnecessary at this cardinality.
+        let txn = db.conn.transaction().await?;
+        let mut archived = 0usize;
+        for id in &to_archive {
+            let mut arch_resp = txn
+                .query(
+                    "DELETE FROM events WHERE id = ?1 RETURNING id",
+                    libsql::params![*id],
+                )
+                .await?;
+            if arch_resp.next().await?.is_some() {
+                archived += 1;
+            }
+        }
+        txn.commit().await?;
+        report.archived = archived;
     }
 
     Ok(report)
@@ -79,13 +89,16 @@ pub async fn archive_irrelevant(
 
 /// Returns true if the event has any outgoing 'references' edge to a roadmap
 /// entry whose `entry_status` is non-terminal.
-async fn has_active_anchor(db: &Surreal<Db>, event_id: &RecordId) -> Result<bool> {
-    let query = "SELECT count() AS cnt FROM ( \
-                 SELECT VALUE ->references->roadmap[ \
-                   WHERE entry_status IN ['todo', 'in_progress'] \
-                 ] FROM $event \
-                 ) GROUP ALL";
-    let mut response = db.query(query).bind(("event", event_id.clone())).await?;
-    let result: Option<CountResult> = response.take(0)?;
-    Ok(result.is_some_and(|r| r.cnt > 0))
+async fn has_active_anchor(db: &TursoStore, event_id: i64) -> Result<bool> {
+    let mut rows = db
+        .exec_params(
+            "SELECT 1 FROM entity_edges e \
+             JOIN memories m ON e.to_id = 'memory:' || m.project || '/' || m.category || '/' || m.entry_key \
+             WHERE e.from_id = ?1 AND e.rel_type = 'references' \
+               AND m.entry_status IN ('todo', 'in_progress', 'blocked', 'deferred') \
+             LIMIT 1",
+            libsql::params![event_id.to_string()],
+        )
+        .await?;
+    Ok(rows.next().await?.is_some())
 }

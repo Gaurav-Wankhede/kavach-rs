@@ -1,6 +1,6 @@
 //! Proof of the all-or-nothing batch lease-set (E8): a session reserves a Vec of
 //! keys steal-proof, and a single conflict ROLLS BACK every partial win so no
-//! orphaned half-set is left holding cards. Real in-memory `SurrealDB` so the CAS
+//! orphaned half-set is left holding cards. Real in-memory `TursoStoreDB` so the CAS
 //! WHERE-clause is exercised, not mocked.
 #![allow(
     clippy::expect_used,
@@ -12,17 +12,15 @@ use super::{AcquireSetOutcome, acquire_set};
 use crate::lease::types::AcquireOutcome;
 use crate::lease::{Lease, acquire, status, unlock};
 use crate::open_memory;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
-async fn seed_unheld(db: &Surreal<Db>, id: &str) {
-    db.query(
-        "CREATE type::record('roadmap', $id) SET \
-         occupied_by=NONE, occupied_until=NONE, occupied_epoch=NONE, \
-         entry_status='in_progress', entry_key=$id, project='p', title='t', \
-         content='c', updated_at=time::now()",
+async fn seed_unheld(db: &TursoStore, id: &str) {
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
+         VALUES ('p', 'roadmap', ?1, 't', 'c', 'in_progress', ?2, ?2)",
+        libsql::params![id.to_owned(), crate::turso::now_rfc3339()],
     )
-    .bind(("id", id.to_owned()))
     .await
     .expect("seed unheld card");
 }

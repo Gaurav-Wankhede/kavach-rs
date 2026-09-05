@@ -4,10 +4,10 @@ mod expire;
 mod priority_lane;
 // SOURCE: key_str relocated to crate root (crate::key_str) — decision.bug.recordid-nested-key-str
 mod status;
-mod upsert;
 #[cfg(test)]
 #[path = "write_test.rs"]
 mod tests;
+mod upsert;
 pub use events::{append_event, rotate_events};
 pub use expire::{ExpireReport, expire_stale};
 pub use priority_lane::{set_lane, set_priority};

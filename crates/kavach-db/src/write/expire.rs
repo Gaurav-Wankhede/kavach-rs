@@ -1,6 +1,5 @@
 use crate::error::Result;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 const TYPED_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
 
@@ -13,13 +12,13 @@ pub struct ExpireReport {
 
 /// Archive entries past their `expires_at` timestamp across all typed memory tables.
 ///
-/// Mirrors `kavach_db::memory::expire_stale` behavior over `SurrealDB`.
-/// Returns count via .`len()` of UPDATE ... RETURN AFTER result array
-/// (`SurrealDB` has no native affected-rows count; see issue #5258).
+/// Mirrors `kavach_db::memory::expire_stale` behavior over `TursoStoreDB`.
+/// Counts rows via `RETURNING` (SQLite has no native affected-rows count on
+/// UPDATE without RETURNING).
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from any failed per-table UPDATE.
-pub async fn expire_stale(db: &Surreal<Db>) -> Result<ExpireReport> {
+/// Propagates `Error::Turso` from any failed per-table UPDATE.
+pub async fn expire_stale(db: &TursoStore) -> Result<ExpireReport> {
     let mut report = ExpireReport::default();
     for table in TYPED_TABLES {
         let count = expire_table(db, table).await?;
@@ -31,26 +30,22 @@ pub async fn expire_stale(db: &Surreal<Db>) -> Result<ExpireReport> {
     Ok(report)
 }
 
-async fn expire_table(db: &Surreal<Db>, table: &str) -> Result<usize> {
-    let query = match table {
-        "decision" => {
-            "UPDATE decision SET status = 'archived' WHERE expires_at != NONE AND expires_at < time::now() RETURN AFTER"
-        }
-        "research" => {
-            "UPDATE research SET status = 'archived' WHERE expires_at != NONE AND expires_at < time::now() RETURN AFTER"
-        }
-        "roadmap" => {
-            "UPDATE roadmap SET status = 'archived' WHERE expires_at != NONE AND expires_at < time::now() RETURN AFTER"
-        }
-        "pattern" => {
-            "UPDATE pattern SET status = 'archived' WHERE expires_at != NONE AND expires_at < time::now() RETURN AFTER"
-        }
-        "app_spec" => {
-            "UPDATE app_spec SET status = 'archived' WHERE expires_at != NONE AND expires_at < time::now() RETURN AFTER"
-        }
-        _ => return Ok(0),
-    };
-    let mut response = db.query(query).await?;
-    let updated: Vec<serde_json::Value> = response.take(0)?;
-    Ok(updated.len())
+async fn expire_table(db: &TursoStore, table: &str) -> Result<usize> {
+    if !TYPED_TABLES.contains(&table) {
+        return Ok(0);
+    }
+    let now = crate::turso::now_rfc3339();
+    let mut rows = db
+        .exec_params(
+            "UPDATE memories SET status = 'archived', updated_at = $now \
+             WHERE category = $table AND expires_at IS NOT NULL AND expires_at < $now \
+             RETURNING entry_key",
+            libsql::params![now, table.to_owned()],
+        )
+        .await?;
+    let mut count = 0usize;
+    while rows.next().await?.is_some() {
+        count += 1;
+    }
+    Ok(count)
 }

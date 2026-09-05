@@ -1,9 +1,5 @@
-// Anti-pattern upsert — L0.5 nodes that aggregate mistake_events by gate+
-// correct_action centroid. Stored on entity table with entity_type='anti_pattern'.
 use crate::error::{Error, Result};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
+use crate::turso::TursoStore;
 
 /// The two anti-pattern families that share this graph tier (the umbrella):
 /// a committed error (`mistake`) and a predicted risk surface (`loophole`).
@@ -20,11 +16,11 @@ pub const FAMILY_LOOPHOLE: &str = "loophole";
 /// # Errors
 /// Returns `Error::Migration` if the name is empty, or `Error::RecordNotFound` if the upsert query returns no rows.
 pub async fn upsert_anti_pattern(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     name: &str,
     gate: &str,
     correct_action: &str,
-) -> Result<RecordId> {
+) -> Result<String> {
     upsert_anti_pattern_with_family(db, name, gate, correct_action, FAMILY_MISTAKE).await
 }
 
@@ -34,17 +30,12 @@ pub async fn upsert_anti_pattern(
 /// # Errors
 /// Returns `Error::Migration` if the name is empty, or `Error::RecordNotFound` if the upsert query returns no rows.
 pub async fn upsert_anti_pattern_with_family(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     name: &str,
     gate: &str,
     correct_action: &str,
     family: &str,
-) -> Result<RecordId> {
-    #[derive(SurrealValue)]
-    struct IdRow {
-        id: RecordId,
-    }
-
+) -> Result<String> {
     if name.is_empty() {
         return Err(Error::Migration("anti_pattern name cannot be empty".into()));
     }
@@ -53,17 +44,22 @@ pub async fn upsert_anti_pattern_with_family(
         "correct_action": correct_action,
         "family": family,
     });
-    let q = "UPSERT entity \
-             SET entity_type = 'anti_pattern', name = $name, properties = $props, \
-                 updated_at = time::now() \
-             WHERE entity_type = 'anti_pattern' AND name = $name \
-             RETURN id";
+    let props_json = serde_json::to_string(&props)?;
+    let id = format!("anti_pattern:{name}");
     let mut resp = db
-        .query(q)
-        .bind(("name", name.to_owned()))
-        .bind(("props", props))
+        .exec_params(
+            "INSERT INTO entities (id, entity_type, name, properties) \
+             VALUES ($id, 'anti_pattern', $name, $props) \
+             ON CONFLICT(id) DO UPDATE SET \
+                 name = excluded.name, properties = excluded.properties \
+             RETURNING id",
+            libsql::params![id.clone(), name.to_owned(), props_json],
+        )
         .await?;
-    let row: Option<IdRow> = resp.take(0)?;
-    row.map(|r| r.id)
-        .ok_or_else(|| Error::RecordNotFound(format!("anti_pattern upsert empty: {name}")))
+    match resp.next().await? {
+        Some(_) => Ok(id),
+        None => Err(Error::RecordNotFound(format!(
+            "anti_pattern upsert empty: {name}"
+        ))),
+    }
 }

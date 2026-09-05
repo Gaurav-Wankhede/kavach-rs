@@ -15,7 +15,6 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, read_stdin_body_or_exit};
 use kavach_db::dual_write::MemoryEntry;
 use kavach_db::turso::entries::EntryStore;
-use surrealdb_types::{RecordId, RecordIdKey};
 use kavach_types::Priority;
 use std::fmt::Write as _;
 const ROADMAP_CATEGORY: &str = "roadmap";
@@ -388,7 +387,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         let now = chrono::Utc::now().to_rfc3339();
         let entry = MemoryEntry {
             id: None,
-            project: RecordId::new("project", RecordIdKey::String(project_slug.to_string())),
+            project: project_slug.to_string(),
             category: Some(category.to_string()),
             entry_key: effective_key.to_string(),
             title: title.to_string(),

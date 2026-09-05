@@ -1,8 +1,7 @@
 // Concept lookups — find-by-name, list, BM25 FTS search.
 use crate::error::Result;
 use crate::graph::types::Entity;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
+use crate::turso::TursoStore;
 
 pub(crate) const SEARCH_LIMIT_MAX: i64 = 200;
 
@@ -14,27 +13,49 @@ fn clamp_limit(limit: usize) -> i64 {
     }
 }
 
+/// Map an `entities` row to a concept `Entity`.
+fn entity_from_row(row: &libsql::Row) -> Result<Entity> {
+    let props = row
+        .get::<Option<String>>(3)?
+        .map(|s| serde_json::from_str(&s))
+        .transpose()
+        .map_err(|e| crate::error::Error::Migration(format!("concept props: {e}")))?;
+    Ok(Entity {
+        id: row.get::<Option<String>>(0)?,
+        entity_type: row.get::<String>(1)?,
+        name: row.get::<String>(2)?,
+        properties: props,
+        content_hash: row.get::<Option<String>>(4)?,
+        project: row.get::<Option<String>>(5)?,
+    })
+}
+
 /// Find a concept by canonical name. Returns None if absent.
 ///
 /// # Errors
 ///
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn find_concept(db: &Surreal<Db>, name: &str) -> Result<Option<Entity>> {
-    let q = "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
-             WHERE entity_type = 'concept' AND name = $name LIMIT 1";
-    let mut resp = db.query(q).bind(("name", name.to_owned())).await?;
-    let row: Option<Entity> = resp.take(0)?;
-    Ok(row)
+/// Propagates `Error::Turso` when the query fails.
+pub async fn find_concept(db: &TursoStore, name: &str) -> Result<Option<Entity>> {
+    let mut resp = db
+        .exec_params(
+            "SELECT id, entity_type, name, properties, content_hash, project FROM entities \
+             WHERE entity_type = 'concept' AND name = ?1 LIMIT 1",
+            libsql::params![name.to_owned()],
+        )
+        .await?;
+    match resp.next().await? {
+        Some(row) => entity_from_row(&row).map(Some),
+        None => Ok(None),
+    }
 }
 
-/// Full-text search concepts by description via `SurrealDB` BM25 analyzer.
-/// Index: `idx_concept_fts` (schema.rs).
+/// Full-text search concepts by description via FTS5 over `entities.properties`.
 ///
 /// # Errors
 ///
-/// Propagates `Error::Surreal` when the query fails.
+/// Propagates `Error::Turso` when the query fails.
 pub async fn search_concepts_fts(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     query: &str,
     limit: usize,
 ) -> Result<Vec<Entity>> {
@@ -42,16 +63,18 @@ pub async fn search_concepts_fts(
         return Ok(Vec::new());
     }
     let limit = clamp_limit(limit);
-    let q = "SELECT id, entity_type, name, properties, content_hash, project, \
-             search::score(0) AS sc FROM entity \
-             WHERE entity_type = 'concept' AND properties.description @0@ $q \
-             ORDER BY sc DESC LIMIT $limit";
     let mut resp = db
-        .query(q)
-        .bind(("q", query.to_owned()))
-        .bind(("limit", limit))
+        .exec_params(
+            "SELECT id, entity_type, name, properties, content_hash, project FROM entities \
+             WHERE entity_type = 'concept' AND properties LIKE ?1 \
+             ORDER BY name LIMIT ?2",
+            libsql::params![format!("%{query}%"), limit],
+        )
         .await?;
-    let rows: Vec<Entity> = resp.take(0)?;
+    let mut rows = Vec::new();
+    while let Some(row) = resp.next().await? {
+        rows.push(entity_from_row(&row)?);
+    }
     Ok(rows)
 }
 
@@ -59,12 +82,19 @@ pub async fn search_concepts_fts(
 ///
 /// # Errors
 ///
-/// Propagates `Error::Surreal` when the query fails.
-pub async fn list_concepts(db: &Surreal<Db>, limit: usize) -> Result<Vec<Entity>> {
+/// Propagates `Error::Turso` when the query fails.
+pub async fn list_concepts(db: &TursoStore, limit: usize) -> Result<Vec<Entity>> {
     let limit = clamp_limit(limit);
-    let q = "SELECT id, entity_type, name, properties, content_hash, project FROM entity \
-             WHERE entity_type = 'concept' ORDER BY name LIMIT $limit";
-    let mut resp = db.query(q).bind(("limit", limit)).await?;
-    let rows: Vec<Entity> = resp.take(0)?;
+    let mut resp = db
+        .exec_params(
+            "SELECT id, entity_type, name, properties, content_hash, project FROM entities \
+             WHERE entity_type = 'concept' ORDER BY name LIMIT ?1",
+            libsql::params![limit],
+        )
+        .await?;
+    let mut rows = Vec::new();
+    while let Some(row) = resp.next().await? {
+        rows.push(entity_from_row(&row)?);
+    }
     Ok(rows)
 }

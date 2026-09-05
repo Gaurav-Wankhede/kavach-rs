@@ -1,72 +1,61 @@
 use crate::error::{Error, Result};
 use crate::graph::dynamic::relate_dynamic;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
-use surrealdb_types::SurrealValue;
+use crate::turso::TursoStore;
+use crate::turso::graph::{GraphEntity, GraphStore};
 
 use super::model::{FlowDag, FlowSpec, FlowStep};
 use super::shape::NodeShape;
 
-#[derive(SurrealValue)]
-pub(super) struct EntityIdRow {
-    id: RecordId,
-}
-
-#[derive(SurrealValue)]
-pub(super) struct ProjectIdRow {
-    id: RecordId,
-}
-
 /// Resolve a project slug to its record id, or `Err(RecordNotFound)`.
-async fn project_id(db: &Surreal<Db>, project_slug: &str) -> Result<RecordId> {
-    let q = "SELECT id FROM project WHERE slug = $slug LIMIT 1";
-    let mut resp = db.query(q).bind(("slug", project_slug.to_owned())).await?;
-    let row: Option<ProjectIdRow> = resp.take(0)?;
-    row.map(|r| r.id)
-        .ok_or_else(|| Error::RecordNotFound(format!("project '{project_slug}' not registered")))
+async fn project_id(db: &TursoStore, project_slug: &str) -> Result<String> {
+    let mut resp = db
+        .exec_params(
+            "SELECT slug FROM projects WHERE slug = $slug LIMIT 1",
+            libsql::params![project_slug.to_owned()],
+        )
+        .await?;
+    match resp.next().await? {
+        Some(r) => Ok(r.get::<String>(0)?),
+        None => Err(Error::RecordNotFound(format!(
+            "project '{project_slug}' not registered"
+        ))),
+    }
 }
 
 /// Upsert an entity carrying `properties` and `project`, keyed on
 /// (`entity_type`, `name`). Updates the row in place if it exists so re-ingest
 /// of the same flow is idempotent. Returns the entity id.
 async fn upsert_entity_props(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     entity_type: &str,
     name: &str,
-    project: &RecordId,
+    project: &String,
     properties: serde_json::Value,
-) -> Result<RecordId> {
-    let find_q = "SELECT id FROM entity WHERE entity_type = $type AND name = $name LIMIT 1";
-    let mut resp = db
-        .query(find_q)
-        .bind(("type", entity_type.to_owned()))
-        .bind(("name", name.to_owned()))
+) -> Result<String> {
+    let props_json = serde_json::to_string(&properties).map_err(Error::Json)?;
+    if let Some(e) = db.find_entity(entity_type, name).await? {
+        db.upsert_entity(&GraphEntity::new(
+            e.id.clone(),
+            entity_type,
+            name,
+            Some(props_json),
+            e.content_hash,
+            Some(project.clone()),
+        ))
         .await?;
-    let existing: Option<EntityIdRow> = resp.take(0)?;
-    if let Some(row) = existing {
-        let upd = "UPDATE $id SET properties = $props, project = $project RETURN id";
-        let mut r = db
-            .query(upd)
-            .bind(("id", row.id.clone()))
-            .bind(("props", properties))
-            .bind(("project", project.clone()))
-            .await?;
-        let updated: Option<EntityIdRow> = r.take(0)?;
-        return Ok(updated.map_or(row.id, |u| u.id));
+        return Ok(e.id);
     }
-    let create_q = "CREATE entity SET entity_type = $type, name = $name, \
-                    properties = $props, project = $project RETURN id";
-    let mut cresp = db
-        .query(create_q)
-        .bind(("type", entity_type.to_owned()))
-        .bind(("name", name.to_owned()))
-        .bind(("props", properties))
-        .bind(("project", project.clone()))
-        .await?;
-    let row: Option<EntityIdRow> = cresp.take(0)?;
-    row.map(|r| r.id)
-        .ok_or_else(|| Error::RecordNotFound("flow entity create returned no id".into()))
+    let id = crate::decisions::hash_keyed("entity", entity_type, name, "");
+    db.upsert_entity(&GraphEntity::new(
+        id.clone(),
+        entity_type,
+        name,
+        Some(props_json),
+        None,
+        Some(project.clone()),
+    ))
+    .await?;
+    Ok(id)
 }
 
 /// Fully-qualified, globally-unique step entity name: `flow_step:{slug}/{flow}/{step}`.
@@ -86,12 +75,8 @@ fn flow_name(project_slug: &str, flow_key: &str) -> String {
 /// - `Error::RecordNotFound` if the project is not registered.
 /// - `Error::Migration` if the supplied edges form a cycle, or reference an
 ///   unknown `step_id`.
-/// - `Error::Surreal` on any underlying query failure.
-pub async fn upsert_flow(
-    db: &Surreal<Db>,
-    project_slug: &str,
-    spec: &FlowSpec,
-) -> Result<RecordId> {
+/// - `Error::TursoStore` on any underlying query failure.
+pub async fn upsert_flow(db: &TursoStore, project_slug: &str, spec: &FlowSpec) -> Result<String> {
     let known: std::collections::HashSet<&str> =
         spec.steps.iter().map(|s| s.step_id.as_str()).collect();
     for e in &spec.edges {
@@ -146,15 +131,24 @@ pub async fn upsert_flow(
     )
     .await?;
 
-    db.query(
-        "LET $steps = (SELECT VALUE out FROM $anchor->contains); \
-         DELETE depends_on WHERE in IN $steps; \
-         DELETE contains WHERE in = $anchor;",
+    // Remove the previous step set: delete the anchor's `contains` edges and
+    // every `depends_on` edge among its steps, then re-create below. The old
+    // SurrealQL `LET $steps = (SELECT VALUE out FROM $anchor->contains)` +
+    // `DELETE depends_on WHERE in IN $steps` is a two-statement sweep; SQL
+    // does it with two DELETE statements keyed on the anchor id.
+    db.exec_params(
+        "DELETE FROM entity_edges WHERE from_id = $anchor AND rel_type = 'contains'",
+        libsql::params![anchor_id.clone()],
     )
-    .bind(("anchor", anchor_id.clone()))
+    .await?;
+    db.exec_params(
+        "DELETE FROM entity_edges WHERE rel_type = 'depends_on' AND from_id IN \
+           (SELECT to_id FROM entity_edges WHERE from_id = $anchor AND rel_type = 'contains')",
+        libsql::params![anchor_id.clone()],
+    )
     .await?;
 
-    let mut step_ids: std::collections::HashMap<&str, RecordId> = std::collections::HashMap::new();
+    let mut step_ids: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
     for s in &spec.steps {
         let shape = s.shape.as_deref().map_or(NodeShape::Rect, NodeShape::parse);
         let props = serde_json::json!({

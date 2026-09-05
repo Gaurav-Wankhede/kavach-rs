@@ -1,16 +1,15 @@
 //! EntryStore tests — Phase 1 acceptance (PRD §4 Phase 1) + proptests.
 
-use super::entries::EntryStore;
 use super::TursoStore;
+use super::entries::EntryStore;
 use crate::dual_write::MemoryEntry;
 use proptest::prop_assert;
 use proptest::prop_assert_eq;
-use surrealdb_types::{RecordId, RecordIdKey};
 
 fn entry(project: &str, category: &str, key: &str, title: &str) -> MemoryEntry {
     MemoryEntry {
         id: None,
-        project: RecordId::new("project", RecordIdKey::String(project.to_owned())),
+        project: project.to_owned(),
         category: Some(category.to_owned()),
         entry_key: key.to_owned(),
         title: title.to_owned(),
@@ -54,7 +53,9 @@ async fn upsert_get_roundtrip_preserves_fields() {
 async fn upsert_twice_updates_not_duplicates() {
     let dir = tempfile::TempDir::new().unwrap();
     let s = TursoStore::open(dir.path().join("dedup.db")).await.unwrap();
-    s.upsert_entry(&entry("p", "research", "k1", "v1")).await.unwrap();
+    s.upsert_entry(&entry("p", "research", "k1", "v1"))
+        .await
+        .unwrap();
     let mut e2 = entry("p", "research", "k1", "v2-renamed");
     e2.content = "updated body".into();
     s.upsert_entry(&e2).await.unwrap();
@@ -67,16 +68,20 @@ async fn upsert_twice_updates_not_duplicates() {
 async fn status_cas_transitions_only_from_expected() {
     let dir = tempfile::TempDir::new().unwrap();
     let s = TursoStore::open(dir.path().join("cas.db")).await.unwrap();
-    s.upsert_entry(&entry("p", "roadmap", "card", "A card")).await.unwrap();
-    assert!(s
-        .update_status_cas("p", "roadmap", "card", "todo", "in_progress")
+    s.upsert_entry(&entry("p", "roadmap", "card", "A card"))
         .await
-        .unwrap());
+        .unwrap();
+    assert!(
+        s.update_status_cas("p", "roadmap", "card", "todo", "in_progress")
+            .await
+            .unwrap()
+    );
     // stale CAS from `todo` must fail now that status is `in_progress`
-    assert!(!s
-        .update_status_cas("p", "roadmap", "card", "todo", "done")
-        .await
-        .unwrap());
+    assert!(
+        !s.update_status_cas("p", "roadmap", "card", "todo", "done")
+            .await
+            .unwrap()
+    );
     let got = s.get_by_key("p", "roadmap", "card").await.unwrap().unwrap();
     assert_eq!(got.status.as_deref(), Some("in_progress"));
 }
@@ -89,7 +94,12 @@ async fn delete_removes_row_and_fts() {
         .await
         .unwrap();
     assert_eq!(s.delete_by_key("p", "pattern", "pat1").await.unwrap(), 1);
-    assert!(s.get_by_key("p", "pattern", "pat1").await.unwrap().is_none());
+    assert!(
+        s.get_by_key("p", "pattern", "pat1")
+            .await
+            .unwrap()
+            .is_none()
+    );
     // FTS must not return ghosts
     let hits = s
         .list_with_filter("p", Some("pattern"), None, Some("Unique pattern"), 10)

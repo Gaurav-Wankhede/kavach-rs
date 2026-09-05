@@ -1,15 +1,13 @@
 //! `[STACK_FIT]` renderer: the chosen language/tech-stack bound to its boundaries.
 //!
-//! Read-side VIEW over `app_spec` rows keyed `stack.<component>` (title =
+//! Read-side VIEW over `app_spec` memories rows keyed `stack.<component>` (title =
 //! component, content = the invariant it imposes), rendered as a Mermaid
 //! `graph TD`. AGNOSTIC: nothing is hardcoded — components and boundaries come
 //! entirely from the project's own `app_spec`.
 //! SOURCE: roadmap.unit.mermaid-decision-architecture.
 use crate::error::Result;
+use crate::turso::TursoStore;
 use std::fmt::Write as _;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::SurrealValue;
 
 /// One stack component and the non-negotiable boundary it imposes.
 #[derive(Debug, Clone)]
@@ -21,53 +19,38 @@ pub struct StackInvariant {
     pub invariant: String,
 }
 
-/// Row shape for the `stack.<component>` `app_spec` query.
-#[derive(SurrealValue)]
-struct StackRow {
-    title: String,
-    content: String,
-}
-
-/// Bare-id projection from the `project` lookup.
-#[derive(SurrealValue)]
-struct IdRow {
-    id: surrealdb_types::RecordId,
-}
-
 /// Fetch the project's `stack.*` `app_spec` rows as ordered invariants.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` on query failure. A project with no `stack.*`
+/// Propagates `Error::Turso` on query failure. A project with no `stack.*`
 /// rows (or no project record) yields an empty vec — the fail-soft "nothing to
 /// inject" case, not an error.
-pub async fn stack_invariants(db: &Surreal<Db>, project_slug: &str) -> Result<Vec<StackInvariant>> {
-    let proj_q = "SELECT id FROM project WHERE slug = $slug LIMIT 1";
+pub async fn stack_invariants(db: &TursoStore, project_slug: &str) -> Result<Vec<StackInvariant>> {
+    let proj_q = "SELECT slug FROM projects WHERE slug = $slug LIMIT 1";
     let mut p_resp = db
-        .query(proj_q)
-        .bind(("slug", project_slug.to_owned()))
+        .exec_params(proj_q, libsql::params![project_slug.to_owned()])
         .await?;
-    let Some(IdRow { id: pid }): Option<IdRow> = p_resp.take(0)? else {
+    if p_resp.next().await?.is_none() {
         return Ok(Vec::new());
-    };
+    }
 
-    // app_spec rows whose key marks them a stack component. string::starts_with
+    // app_spec rows whose key marks them a stack component. LIKE 'stack.%'
     // keeps the filter in the DB; ORDER BY entry_key gives stable render order.
-    let row_q = "SELECT title, content FROM app_spec \
-                 WHERE project = $pid AND string::starts_with(entry_key, 'stack.') \
+    let row_q = "SELECT title, content FROM memories \
+                 WHERE project = $pid AND category = 'app_spec' \
+                   AND entry_key LIKE 'stack.%' \
                  ORDER BY entry_key ASC";
-    let mut r = db.query(row_q).bind(("pid", pid)).await?;
-    let rows: Vec<StackRow> = match r.take(0) {
-        Ok(rows) => rows,
-        Err(e) if crate::error::is_missing_table_error(&e) => return Ok(Vec::new()),
-        Err(e) => return Err(e.into()),
-    };
-    Ok(rows
-        .into_iter()
-        .map(|row| StackInvariant {
-            component: row.title,
-            invariant: row.content,
-        })
-        .collect())
+    let mut r = db
+        .exec_params(row_q, libsql::params![project_slug.to_owned()])
+        .await?;
+    let mut out = Vec::new();
+    while let Some(row) = r.next().await? {
+        out.push(StackInvariant {
+            component: row.get::<String>(0)?,
+            invariant: row.get::<String>(1)?,
+        });
+    }
+    Ok(out)
 }
 
 /// Render stack invariants as a `[STACK_FIT]` Mermaid `graph TD`: each component

@@ -35,7 +35,7 @@ async fn upsert_then_get_returns_the_persisted_blob() {
     .expect("row present after upsert");
     assert_eq!(
         row.tree_json,
-        surrealdb_types::Bytes::from(blob.clone()),
+        blob.clone(),
         "fetched blob must equal persisted blob"
     );
     assert_eq!(row.source_hash, "deadbeef");

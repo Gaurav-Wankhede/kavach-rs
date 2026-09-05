@@ -13,17 +13,12 @@ use super::{
     citations_cited_by, citations_for_nodes, freshness, get_citation, list_citations_by_project,
     mark_if_stale, merge_node_into_citation, plan_refresh, reward_citation_edges, upsert_citation,
 };
+use crate::turso::TursoStore;
 use crate::{apply_schema, open_memory};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any;
-use surrealdb_types::RecordId;
 
-async fn seed() -> Surreal<Any> {
+async fn seed() -> TursoStore {
     let db = open_memory().await.expect("mem db");
     apply_schema(&db).await.expect("schema");
-    db.query("CREATE project:p SET slug = 'p', name = 'p'")
-        .await
-        .expect("project");
     db
 }
 
@@ -43,13 +38,13 @@ fn meta(slug: &str, url: &str) -> CitationMeta {
 #[tokio::test]
 async fn upsert_creates_then_updates_on_same_key() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     let first = upsert_citation(
         &db,
         &UpsertCitation {
             project: project.clone(),
             entry_key: "surreal",
-            name: "SurrealDB",
+            name: "TursoStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
@@ -61,7 +56,7 @@ async fn upsert_creates_then_updates_on_same_key() {
         &UpsertCitation {
             project: project.clone(),
             entry_key: "surreal",
-            name: "SurrealDB v3",
+            name: "TursoStoreDB v3",
             metadata: vec![meta("graph", "https://surrealdb.com/docs/graph")],
         },
     )
@@ -76,7 +71,7 @@ async fn upsert_creates_then_updates_on_same_key() {
         .await
         .expect("list");
     assert_eq!(rows.len(), 1, "the UNIQUE index kept exactly one row");
-    assert_eq!(rows[0].name, "SurrealDB v3", "name refreshed on update");
+    assert_eq!(rows[0].name, "TursoStoreDB v3", "name refreshed on update");
     assert_eq!(
         rows[0].metadata[0].slug, "graph",
         "metadata replaced on update"
@@ -86,7 +81,7 @@ async fn upsert_creates_then_updates_on_same_key() {
 #[tokio::test]
 async fn get_bumps_access_count() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     upsert_citation(
         &db,
         &UpsertCitation {
@@ -114,7 +109,7 @@ async fn get_bumps_access_count() {
 #[tokio::test]
 async fn get_missing_is_none_not_err() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     let got = get_citation(&db, &project, "nope").await.expect("query ok");
     assert!(got.is_none(), "absent key yields None, not Err");
 }
@@ -122,30 +117,28 @@ async fn get_missing_is_none_not_err() {
 #[tokio::test]
 async fn traverse_reexport_finds_a_citer() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     upsert_citation(
         &db,
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "SurrealDB",
+            name: "TursoStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
     .await
     .expect("create");
-    db.query("CREATE decision:d SET project = project:p, entry_key = 'use-surreal', title = 't', content = 'c'")
-        .await
-        .expect("decision");
-    let from = RecordId::new("decision", "d");
-    let to: RecordId = db
-        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
-        .await
-        .expect("cite id")
-        .take::<Vec<RecordId>>(0)
-        .expect("take")
-        .pop()
-        .expect("one citation");
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, created_at, updated_at) \
+         VALUES ('p', 'decision', 'use-surreal', 't', 'c', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
+    )
+    .await
+    .expect("decision");
+    let from = "memory:p/decision/use-surreal".to_owned();
+    let to = "citation:p/surreal".to_owned();
     crate::graph::relate_citation(&db, &from, &to, "cite", 1.0)
         .await
         .expect("cite edge");
@@ -218,7 +211,7 @@ fn mark_if_stale_flags_only_stale() {
 fn cite(entry_key: &str, name: &str, url: &str, updated_unix: Option<i64>) -> Citation {
     Citation {
         id: None,
-        project: RecordId::new("project", "p"),
+        project: "p".to_owned(),
         entry_key: entry_key.to_owned(),
         name: name.to_owned(),
         metadata: vec![meta("s", url)],
@@ -234,7 +227,7 @@ fn plan_refresh_partitions_stale_and_serves_all() {
     let fresh = cite("axum", "Axum", "https://docs.rs/axum", Some(now));
     let stale = cite(
         "surreal",
-        "SurrealDB",
+        "TursoStoreDB",
         "https://surrealdb.com/docs",
         Some(now - FRESHNESS_WINDOW_SECS - 1),
     );
@@ -279,31 +272,27 @@ fn plan_refresh_empty_recall_is_empty_plan() {
 #[tokio::test]
 async fn merge_node_wires_cite_edge_non_destructively() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     upsert_citation(
         &db,
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "SurrealDB",
+            name: "TursoStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
     .await
     .expect("citation");
-    db.query("CREATE entity:ap SET entity_type = 'anti_pattern', name = 'await-swallows-err'")
-        .await
-        .expect("anti_pattern node");
+    db.exec_params(
+        "INSERT INTO entities (id, entity_type, name) VALUES ('entity:ap', 'anti_pattern', 'await-swallows-err')",
+        (),
+    )
+    .await
+    .expect("anti_pattern node");
 
-    let node = RecordId::new("entity", "ap");
-    let citation: RecordId = db
-        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
-        .await
-        .expect("cite id")
-        .take::<Vec<RecordId>>(0)
-        .expect("take")
-        .pop()
-        .expect("one citation");
+    let node = "entity:ap".to_owned();
+    let citation = "citation:p/surreal".to_owned();
 
     merge_node_into_citation(&db, &node, &citation)
         .await
@@ -316,32 +305,29 @@ async fn merge_node_wires_cite_edge_non_destructively() {
         "the node reaches its merged citation in one query"
     );
 
-    let still_there: Vec<RecordId> = db
-        .query("SELECT VALUE id FROM entity WHERE entity_type = 'anti_pattern'")
+    let mut still_there = db
+        .exec_params("SELECT name FROM entities WHERE id = 'entity:ap'", ())
         .await
-        .expect("entity still queryable")
-        .take::<Vec<RecordId>>(0)
-        .expect("take");
-    assert_eq!(
-        still_there,
-        vec![node.clone()],
+        .expect("entity still queryable");
+    assert!(
+        still_there.next().await.expect("next").is_some(),
         "the anti_pattern row is untouched — merge is an edge, not a move"
     );
 
     merge_node_into_citation(&db, &node, &citation)
         .await
         .expect("replayed merge");
-    let edges: Vec<RecordId> = db
-        .query("SELECT VALUE id FROM cite WHERE in = $node AND out = $cit")
-        .bind(("node", node))
-        .bind(("cit", citation))
+    let mut edges = db
+        .exec_params(
+            "SELECT COUNT(*) AS n FROM entity_edges WHERE from_id = ?1 AND rel_type = 'cite' AND to_id = ?2",
+            libsql::params![node, citation],
+        )
         .await
-        .expect("edge count")
-        .take::<Vec<RecordId>>(0)
-        .expect("take");
+        .expect("edge count");
+    let row = edges.next().await.expect("next").expect("row");
+    let n: i64 = row.get(0).expect("get");
     assert_eq!(
-        edges.len(),
-        1,
+        n, 1,
         "replayed merge is idempotent — exactly one cite edge, no double-count"
     );
 }
@@ -349,38 +335,37 @@ async fn merge_node_wires_cite_edge_non_destructively() {
 #[tokio::test]
 async fn citations_for_nodes_dedupes_across_recalled_rows() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     upsert_citation(
         &db,
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "SurrealDB",
+            name: "TursoStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
     .await
     .expect("citation");
-    let citation: RecordId = db
-        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
-        .await
-        .expect("cite id")
-        .take::<Vec<RecordId>>(0)
-        .expect("take")
-        .pop()
-        .expect("one citation");
-    db.query(
-        "CREATE decision:d SET project = project:p, entry_key = 'k1', title = 't', content = 'c'",
+    let citation = "citation:p/surreal".to_owned();
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, created_at, updated_at) \
+         VALUES ('p', 'decision', 'k1', 't', 'c', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
     )
     .await
     .expect("decision");
-    db.query(
-        "CREATE roadmap:r SET project = project:p, entry_key = 'k2', title = 't', content = 'c'",
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, created_at, updated_at) \
+         VALUES ('p', 'roadmap', 'k2', 't', 'c', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
     )
     .await
     .expect("roadmap");
-    let decision = RecordId::new("decision", "d");
-    let roadmap = RecordId::new("roadmap", "r");
+    let decision = "memory:p/decision/k1".to_owned();
+    let roadmap = "memory:p/roadmap/k2".to_owned();
     merge_node_into_citation(&db, &decision, &citation)
         .await
         .expect("merge decision");
@@ -404,32 +389,28 @@ async fn citations_for_nodes_dedupes_across_recalled_rows() {
 #[tokio::test]
 async fn reward_flows_along_cite_edges() {
     let db = seed().await;
-    let project = RecordId::new("project", "p");
+    let project = "p".to_owned();
     upsert_citation(
         &db,
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "SurrealDB",
+            name: "TursoStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
     .await
     .expect("citation");
-    let citation: RecordId = db
-        .query("SELECT VALUE id FROM citation WHERE entry_key = 'surreal' LIMIT 1")
-        .await
-        .expect("cite id")
-        .take::<Vec<RecordId>>(0)
-        .expect("take")
-        .pop()
-        .expect("one citation");
-    db.query(
-        "CREATE decision:d SET project = project:p, entry_key = 'k', title = 't', content = 'c'",
+    let citation = "citation:p/surreal".to_owned();
+    db.exec_params(
+        "INSERT INTO memories \
+         (project, category, entry_key, title, content, created_at, updated_at) \
+         VALUES ('p', 'decision', 'k', 't', 'c', ?1, ?1)",
+        libsql::params![crate::turso::now_rfc3339()],
     )
     .await
     .expect("decision");
-    let node = RecordId::new("decision", "d");
+    let node = "memory:p/decision/k".to_owned();
     merge_node_into_citation(&db, &node, &citation)
         .await
         .expect("merge");
@@ -439,20 +420,21 @@ async fn reward_flows_along_cite_edges() {
         .expect("reward");
     assert_eq!(n, 1, "the single cite edge into the citation is rewarded");
 
-    let weights: Vec<f64> = db
-        .query("SELECT VALUE weight FROM cite WHERE out = $cit")
-        .bind(("cit", citation.clone()))
+    let mut weights = db
+        .exec_params(
+            "SELECT weight FROM entity_edges WHERE rel_type = 'cite' AND to_id = ?1",
+            libsql::params![citation.clone()],
+        )
         .await
-        .expect("weights")
-        .take::<Vec<f64>>(0)
-        .expect("take");
+        .expect("weights");
+    let row = weights.next().await.expect("next").expect("row");
+    let w: f64 = row.get(0).expect("get");
     assert_eq!(
-        weights,
-        vec![1.5],
+        w, 1.5,
         "edge weight climbed from the merge default 1.0 by delta 0.5"
     );
 
-    let unlinked = reward_citation_edges(&db, &RecordId::new("citation", "absent"), 1.0)
+    let unlinked = reward_citation_edges(&db, "citation:p/absent", 1.0)
         .await
         .expect("reward on unlinked citation");
     assert_eq!(

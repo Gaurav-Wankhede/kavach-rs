@@ -1,13 +1,5 @@
-// split: keyed-idempotent event upsert (mistake+loophole), not a request handler
 use crate::error::{Error, Result};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
-
-#[derive(SurrealValue)]
-struct IdRow {
-    id: RecordId,
-}
+use crate::turso::TursoStore;
 
 /// Derives the stable, deterministic event name from its semantic identity.
 /// Same shape as `cluster::derive_pattern_name` — first 8 hex chars of blake3.
@@ -25,14 +17,14 @@ fn event_key(prefix: &str, parts: &[&str], session_id: &str, turn: i32) -> Strin
 ///
 /// Returns an error if `gate` is empty, the query fails, or the database returns no record.
 pub async fn append_mistake_event(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     gate: &str,
     correct_action: &str,
     banned_sample: &str,
     session_id: &str,
     project_slug: Option<&str>,
     turn: i32,
-) -> Result<RecordId> {
+) -> Result<String> {
     if gate.is_empty() {
         return Err(Error::Migration(
             "mistake_event: gate cannot be empty".into(),
@@ -65,13 +57,13 @@ pub async fn append_mistake_event(
 /// # Errors
 /// Returns an error if `dimension` is empty, the query fails, or no record returns.
 pub async fn append_loophole_event(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     dimension: &str,
     site: &str,
     session_id: &str,
     project_slug: Option<&str>,
     turn: i32,
-) -> Result<RecordId> {
+) -> Result<String> {
     if dimension.is_empty() {
         return Err(Error::Migration(
             "loophole_event: dimension cannot be empty".into(),
@@ -90,29 +82,35 @@ pub async fn append_loophole_event(
 
 /// Shared idempotent event upsert keyed by `name`, so a re-file converges.
 async fn create_event(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     entity_type: &str,
     name: &str,
     props: serde_json::Value,
-) -> Result<RecordId> {
-    let q = "UPSERT entity SET \
-             entity_type = $etype, \
-             name = $name, \
-             properties = $props, \
-             created_at = time::now() \
-             WHERE entity_type = $etype AND name = $name \
-             RETURN id";
+) -> Result<String> {
+    let id = format!("{entity_type}:{name}");
+    let props_json = serde_json::to_string(&props)?;
     let mut resp = db
-        .query(q)
-        .bind(("etype", entity_type.to_owned()))
-        .bind(("name", name.to_owned()))
-        .bind(("props", props))
+        .exec_params(
+            "INSERT INTO entities (id, entity_type, name, properties, content_hash, project) \
+             VALUES ($id, $etype, $name, $props, NULL, $project) \
+             ON CONFLICT(id) DO UPDATE SET \
+                 entity_type = excluded.entity_type, name = excluded.name, \
+                 properties = excluded.properties \
+             RETURNING id",
+            libsql::params![
+                id.clone(),
+                entity_type.to_owned(),
+                name.to_owned(),
+                props_json,
+                props
+                    .get("project_slug")
+                    .and_then(serde_json::Value::as_str)
+                    .map(ToOwned::to_owned),
+            ],
+        )
         .await?;
-    let row: Option<IdRow> = resp.take(0)?;
-    row.map(|r| r.id)
-        .ok_or_else(|| Error::RecordNotFound(format!("{entity_type} create empty")))
+    match resp.next().await? {
+        Some(_) => Ok(id),
+        None => Err(Error::RecordNotFound(format!("{entity_type} create empty"))),
+    }
 }
-
-#[cfg(test)]
-#[path = "append_test.rs"]
-mod append_test;

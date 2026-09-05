@@ -4,19 +4,18 @@
 //! (offline) so `embed_texts` falls back to `fallback_embed` (blake3 hash),
 //! ensuring cosine scores are reproducible without a 120 MB model cache.
 
+use super::TursoStore;
 use super::entries::EntryStore;
 use super::vector::{
-    EMBEDDING_DIMS, VectorStore, cosine_similarity, deserialize_embedding,
-    embed_texts, fallback_embed, serialize_embedding,
+    EMBEDDING_DIMS, VectorStore, cosine_similarity, deserialize_embedding, embed_texts,
+    fallback_embed, serialize_embedding,
 };
-use super::TursoStore;
 use crate::dual_write::MemoryEntry;
-use surrealdb_types::{RecordId, RecordIdKey};
 
 fn entry(project: &str, category: &str, key: &str, title: &str, content: &str) -> MemoryEntry {
     MemoryEntry {
         id: None,
-        project: RecordId::new("project", RecordIdKey::String(project.to_owned())),
+        project: project.to_owned(),
         category: Some(category.to_owned()),
         entry_key: key.to_owned(),
         title: title.to_owned(),
@@ -42,7 +41,11 @@ fn entry(project: &str, category: &str, key: &str, title: &str, content: &str) -
 fn serialize_deserialize_roundtrip() {
     let original: Vec<f32> = (0..EMBEDDING_DIMS).map(|i| i as f32 / 100.0).collect();
     let blob = serialize_embedding(&original);
-    assert_eq!(blob.len(), EMBEDDING_DIMS * 4, "blob must be 4 bytes per f32");
+    assert_eq!(
+        blob.len(),
+        EMBEDDING_DIMS * 4,
+        "blob must be 4 bytes per f32"
+    );
     let recovered = deserialize_embedding(&blob);
     assert_eq!(recovered.len(), EMBEDDING_DIMS);
     for (a, b) in original.iter().zip(recovered.iter()) {
@@ -95,7 +98,10 @@ fn fallback_embed_is_unit_length() {
     let v = fallback_embed("unit sphere");
     let norm_sq: f32 = v.iter().map(|x| x * x).sum();
     let diff = (norm_sq - 1.0_f32).abs();
-    assert!(diff < 1e-3_f32, "fallback vector must be unit length, norm²={norm_sq}");
+    assert!(
+        diff < 1e-3_f32,
+        "fallback vector must be unit length, norm²={norm_sq}"
+    );
 }
 
 // ── embed_texts ───────────────────────────────────────────────────────────────
@@ -112,7 +118,11 @@ fn embed_texts_produces_correct_dimension() {
     let out = embed_texts(&texts).unwrap();
     assert_eq!(out.len(), 2);
     for v in &out {
-        assert_eq!(v.len(), EMBEDDING_DIMS, "all vectors must be {EMBEDDING_DIMS}-D");
+        assert_eq!(
+            v.len(),
+            EMBEDDING_DIMS,
+            "all vectors must be {EMBEDDING_DIMS}-D"
+        );
     }
 }
 
@@ -121,15 +131,23 @@ fn embed_texts_produces_correct_dimension() {
 #[tokio::test]
 async fn upsert_entry_writes_embedding() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_embed.db")).await.unwrap();
-    s.upsert_entry(&entry("p", "decision", "d.embed", "Rust async", "tokio runtime"))
+    let s = TursoStore::open(dir.path().join("vec_embed.db"))
         .await
         .unwrap();
+    s.upsert_entry(&entry(
+        "p",
+        "decision",
+        "d.embed",
+        "Rust async",
+        "tokio runtime",
+    ))
+    .await
+    .unwrap();
 
     // Give spawn_blocking a moment then check embedding was written.
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     let mut rows = s
-        .query(
+        .query_with_params(
             "SELECT embedding FROM memories WHERE entry_key = ?1",
             libsql::params!["d.embed"],
         )
@@ -139,7 +157,11 @@ async fn upsert_entry_writes_embedding() {
     let blob: Option<Vec<u8>> = row.get(0).ok();
     assert!(blob.is_some(), "embedding must be non-NULL after upsert");
     let vec = deserialize_embedding(&blob.unwrap());
-    assert_eq!(vec.len(), EMBEDDING_DIMS, "embedded vector must be {EMBEDDING_DIMS}-D");
+    assert_eq!(
+        vec.len(),
+        EMBEDDING_DIMS,
+        "embedded vector must be {EMBEDDING_DIMS}-D"
+    );
 }
 
 // ── VectorStore::vector_rank ──────────────────────────────────────────────────
@@ -147,7 +169,9 @@ async fn upsert_entry_writes_embedding() {
 #[tokio::test]
 async fn vector_rank_returns_hits() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_rank.db")).await.unwrap();
+    let s = TursoStore::open(dir.path().join("vec_rank.db"))
+        .await
+        .unwrap();
 
     for (key, title, content) in [
         ("k.rust", "Rust ownership", "borrow checker and lifetimes"),
@@ -161,7 +185,10 @@ async fn vector_rank_returns_hits() {
     // Allow spawn_blocking to complete.
     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
 
-    let hits = s.vector_rank("proj", "Rust borrow checker", 5).await.unwrap();
+    let hits = s
+        .vector_rank("proj", "Rust borrow checker", 5)
+        .await
+        .unwrap();
     assert!(!hits.is_empty(), "vector_rank must return at least one hit");
     // The top hit must be the Rust entry.
     assert_eq!(hits.first().map(String::as_str), Some("k.rust"));
@@ -170,7 +197,9 @@ async fn vector_rank_returns_hits() {
 #[tokio::test]
 async fn vector_rank_empty_query_returns_empty() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_empty.db")).await.unwrap();
+    let s = TursoStore::open(dir.path().join("vec_empty.db"))
+        .await
+        .unwrap();
     let hits = s.vector_rank("proj", "  ", 5).await.unwrap();
     assert!(hits.is_empty());
 }
@@ -180,12 +209,29 @@ async fn vector_rank_empty_query_returns_empty() {
 #[tokio::test]
 async fn search_hybrid_returns_fused_results() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_hybrid.db")).await.unwrap();
+    let s = TursoStore::open(dir.path().join("vec_hybrid.db"))
+        .await
+        .unwrap();
 
     for (key, cat, title, content) in [
-        ("decision.embed", "decision", "Embed libSQL", "replace surreal with libsql"),
-        ("roadmap.embed-task", "roadmap", "Migrate storage", "swap backend to turso"),
-        ("pattern.unrelated", "pattern", "Kanban lanes", "dispatch order priority"),
+        (
+            "decision.embed",
+            "decision",
+            "Embed libSQL",
+            "replace surreal with libsql",
+        ),
+        (
+            "roadmap.embed-task",
+            "roadmap",
+            "Migrate storage",
+            "swap backend to turso",
+        ),
+        (
+            "pattern.unrelated",
+            "pattern",
+            "Kanban lanes",
+            "dispatch order priority",
+        ),
     ] {
         s.upsert_entry(&entry("proj", cat, key, title, content))
             .await
@@ -193,13 +239,22 @@ async fn search_hybrid_returns_fused_results() {
     }
     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
 
-    let hits = s.search_hybrid("proj", "embed libsql storage", 10).await.unwrap();
+    let hits = s
+        .search_hybrid("proj", "embed libsql storage", 10)
+        .await
+        .unwrap();
     assert!(!hits.is_empty(), "hybrid search must return results");
 
     let ids: Vec<&str> = hits.iter().map(|h| h.id.as_str()).collect();
     // Both matching entries must surface.
-    assert!(ids.contains(&"decision.embed"), "decision.embed must surface");
-    assert!(ids.contains(&"roadmap.embed-task"), "roadmap.embed-task must surface");
+    assert!(
+        ids.contains(&"decision.embed"),
+        "decision.embed must surface"
+    );
+    assert!(
+        ids.contains(&"roadmap.embed-task"),
+        "roadmap.embed-task must surface"
+    );
 
     // Scores must be descending.
     let scores: Vec<f64> = hits.iter().map(|h| h.score).collect();
@@ -213,7 +268,9 @@ async fn search_hybrid_returns_fused_results() {
 #[tokio::test]
 async fn backfill_fills_null_embeddings() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_backfill.db")).await.unwrap();
+    let s = TursoStore::open(dir.path().join("vec_backfill.db"))
+        .await
+        .unwrap();
 
     // Directly insert rows with NULL embedding to simulate pre-Phase5 rows.
     for key in ["bf.a", "bf.b", "bf.c"] {
@@ -230,15 +287,33 @@ async fn backfill_fills_null_embeddings() {
     }
 
     // Verify NULL before backfill.
-    let mut rows = s.query("SELECT count(*) FROM memories WHERE embedding IS NULL AND project='bp'", ()).await.unwrap();
+    let mut rows = s
+        .query_with_params(
+            "SELECT count(*) FROM memories WHERE embedding IS NULL AND project='bp'",
+            (),
+        )
+        .await
+        .unwrap();
     let null_count: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
-    assert_eq!(null_count, 3, "should have 3 NULL embeddings before backfill");
+    assert_eq!(
+        null_count, 3,
+        "should have 3 NULL embeddings before backfill"
+    );
 
     let filled = s.backfill_embeddings(50).await.unwrap();
     assert_eq!(filled, 3, "backfill must fill all 3 rows");
 
     // Verify non-NULL after backfill.
-    let mut rows = s.query("SELECT count(*) FROM memories WHERE embedding IS NULL AND project='bp'", ()).await.unwrap();
+    let mut rows = s
+        .query_with_params(
+            "SELECT count(*) FROM memories WHERE embedding IS NULL AND project='bp'",
+            (),
+        )
+        .await
+        .unwrap();
     let still_null: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
-    assert_eq!(still_null, 0, "no NULL embeddings must remain after backfill");
+    assert_eq!(
+        still_null, 0,
+        "no NULL embeddings must remain after backfill"
+    );
 }

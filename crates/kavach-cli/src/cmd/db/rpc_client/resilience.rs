@@ -24,21 +24,8 @@ pub(crate) async fn open_turso_resilient() -> Result<kavach_db::turso::TursoStor
         .map_err(|e| e.to_string())
 }
 
-pub(crate) async fn open_direct_resilient()
--> Result<surrealdb::Surreal<surrealdb::engine::any::Any>, String> {
-    let mut last = match kavach_db::open_default().await {
-        Ok(db) => return Ok(db),
-        Err(e) => e.to_string(),
-    };
-    for backoff in fallback_backoff_schedule() {
-        if !is_rocksdb_lock_contention(&last) {
-            break;
-        }
-        tokio::time::sleep(backoff).await;
-        match kavach_db::open_default().await {
-            Ok(db) => return Ok(db),
-            Err(e) => last = e.to_string(),
-        }
-    }
-    Err(last)
+/// Legacy alias for `open_turso_resilient` — the SurrealDB RocksDB retry loop
+/// is obsolete; libSQL opens are local-file and non-contended.
+pub(crate) async fn open_direct_resilient() -> Result<kavach_db::turso::TursoStore, String> {
+    open_turso_resilient().await
 }

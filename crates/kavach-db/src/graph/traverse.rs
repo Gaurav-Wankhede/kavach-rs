@@ -1,49 +1,56 @@
 use crate::error::Result;
 use crate::graph::types::{Entity, RelationType};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
+use crate::turso::TursoStore;
 
-/// # Errors
-/// Propagates `Error::Surreal` when the database query fails.
-pub async fn forward(
-    db: &Surreal<Db>,
-    from: &RecordId,
-    rel_type: RelationType,
-) -> Result<Vec<Entity>> {
-    let query = match rel_type {
-        RelationType::Contains => "SELECT out.* AS entity FROM $node->contains->entity",
-        RelationType::DependsOn => "SELECT out.* AS entity FROM $node->depends_on->entity",
-        RelationType::Modifies => "SELECT out.* AS entity FROM $node->modifies->entity",
-        RelationType::References => "SELECT out.* AS entity FROM $node->references->entity",
-        RelationType::Mentions => "SELECT out.* AS entity FROM $node->mentions->entity",
-        RelationType::WorksOn => "SELECT out.* AS entity FROM $node->works_on->entity",
-        RelationType::Owns => "SELECT out.* AS entity FROM $node->owns->entity",
-    };
-
-    let mut response = db.query(query).bind(("node", from.clone())).await?;
-    let entities: Vec<Entity> = response.take(0)?;
-    Ok(entities)
+fn entity_from_row(r: &libsql::Row) -> Result<Entity> {
+    Ok(Entity {
+        id: Some(r.get::<String>(0)?),
+        entity_type: r.get::<String>(1)?,
+        name: r.get::<String>(2)?,
+        properties: r
+            .get::<Option<String>>(3)?
+            .and_then(|s| serde_json::from_str(&s).ok()),
+        content_hash: r.get::<Option<String>>(4)?,
+        project: r.get::<Option<String>>(5)?,
+    })
 }
 
 /// # Errors
-/// Propagates `Error::Surreal` when the database query fails.
-pub async fn backward(
-    db: &Surreal<Db>,
-    to: &RecordId,
-    rel_type: RelationType,
-) -> Result<Vec<Entity>> {
-    let query = match rel_type {
-        RelationType::Contains => "SELECT in.* AS entity FROM $node<-contains<-entity",
-        RelationType::DependsOn => "SELECT in.* AS entity FROM $node<-depends_on<-entity",
-        RelationType::Modifies => "SELECT in.* AS entity FROM $node<-modifies<-entity",
-        RelationType::References => "SELECT in.* AS entity FROM $node<-references<-entity",
-        RelationType::Mentions => "SELECT in.* AS entity FROM $node<-mentions<-entity",
-        RelationType::WorksOn => "SELECT in.* AS entity FROM $node<-works_on<-entity",
-        RelationType::Owns => "SELECT in.* AS entity FROM $node<-owns<-entity",
-    };
+/// Propagates `Error::Turso` when the database query fails.
+pub async fn forward(db: &TursoStore, from: &str, rel_type: RelationType) -> Result<Vec<Entity>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT e.id, e.entity_type, e.name, e.properties, e.content_hash, e.project \
+             FROM entity_edges ed \
+             JOIN entities e ON e.id = ed.to_id \
+             WHERE ed.from_id = $from AND ed.rel_type = $rel \
+             ORDER BY e.name",
+            libsql::params![from.to_owned(), rel_type.as_str().to_owned()],
+        )
+        .await?;
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(entity_from_row(&r)?);
+    }
+    Ok(out)
+}
 
-    let mut response = db.query(query).bind(("node", to.clone())).await?;
-    let entities: Vec<Entity> = response.take(0)?;
-    Ok(entities)
+/// # Errors
+/// Propagates `Error::Turso` when the database query fails.
+pub async fn backward(db: &TursoStore, to: &str, rel_type: RelationType) -> Result<Vec<Entity>> {
+    let mut rows = db
+        .exec_params(
+            "SELECT e.id, e.entity_type, e.name, e.properties, e.content_hash, e.project \
+             FROM entity_edges ed \
+             JOIN entities e ON e.id = ed.from_id \
+             WHERE ed.to_id = $to AND ed.rel_type = $rel \
+             ORDER BY e.name",
+            libsql::params![to.to_owned(), rel_type.as_str().to_owned()],
+        )
+        .await?;
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(entity_from_row(&r)?);
+    }
+    Ok(out)
 }

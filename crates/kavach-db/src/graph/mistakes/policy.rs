@@ -1,15 +1,5 @@
-// Learned-policy persistence — the `deployed_policy` node of the RLVR loop.
-// db.policy_improve UPSERTs one versioned singleton per advisory scope here
-// (name = 'policy.advisory.<scope>') ONLY after the three-gate AND: trust
-// coverage >= floor, ope_audit promotable, controller::promote LCB win.
-// SessionStart reads it back (policy_read::top_deployed_policies) and reinjects
-// it as advisory context. Mirrors the anti_pattern upsert; same single-writer
-// invariant (daemon-held &state.db only, never open_default()).
-// See roadmap/unit.harness-rl.p6-policy-promotion-loop.
 use crate::error::{Error, Result};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
+use crate::turso::TursoStore;
 
 /// The promoted advisory policy distribution plus the OPE evidence that won it.
 ///
@@ -67,15 +57,10 @@ impl DeployedPolicyProps {
 /// `Error::Migration` if `name` is empty; `Error::RecordNotFound` if the upsert
 /// returns no row.
 pub async fn upsert_deployed_policy(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     name: &str,
     props: &DeployedPolicyProps,
-) -> Result<RecordId> {
-    #[derive(SurrealValue)]
-    struct IdRow {
-        id: RecordId,
-    }
-
+) -> Result<String> {
     if name.is_empty() {
         return Err(Error::Migration(
             "deployed_policy name cannot be empty".into(),
@@ -90,19 +75,24 @@ pub async fn upsert_deployed_policy(
         "coverage_ratio": props.coverage_ratio,
         "usable_samples": props.usable_samples,
     });
-    let q = "UPSERT entity \
-             SET entity_type = 'deployed_policy', name = $name, properties = $props, \
-                 updated_at = time::now() \
-             WHERE entity_type = 'deployed_policy' AND name = $name \
-             RETURN id";
+    let props_json = serde_json::to_string(&properties)?;
+    let id = format!("deployed_policy:{name}");
     let mut resp = db
-        .query(q)
-        .bind(("name", name.to_owned()))
-        .bind(("props", properties))
+        .exec_params(
+            "INSERT INTO entities (id, entity_type, name, properties) \
+             VALUES ($id, 'deployed_policy', $name, $props) \
+             ON CONFLICT(id) DO UPDATE SET \
+                 name = excluded.name, properties = excluded.properties \
+             RETURNING id",
+            libsql::params![id.clone(), name.to_owned(), props_json],
+        )
         .await?;
-    let row: Option<IdRow> = resp.take(0)?;
-    row.map(|r| r.id)
-        .ok_or_else(|| Error::RecordNotFound(format!("deployed_policy upsert empty: {name}")))
+    match resp.next().await? {
+        Some(_) => Ok(id),
+        None => Err(Error::RecordNotFound(format!(
+            "deployed_policy upsert empty: {name}"
+        ))),
+    }
 }
 
 #[cfg(test)]

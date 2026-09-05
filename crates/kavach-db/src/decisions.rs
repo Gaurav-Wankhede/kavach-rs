@@ -1,21 +1,14 @@
 // split: intentional - read helpers for algo_decision and arch_decision tables
-// sql-safe: queries use static literals + .bind(); no user input concatenated.
+// sql-safe: queries use static literals + params; no user input concatenated.
 use crate::error::Result;
+use crate::turso::TursoStore;
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::{RecordId, SurrealValue};
 
-#[derive(surrealdb_types::SurrealValue)]
-struct IdRow {
-    id: RecordId,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct AlgoDecision {
-    pub id: Option<RecordId>,
-    pub project: RecordId,
+    pub id: Option<String>,
+    pub project: String,
     pub problem_class: String,
     pub chosen: String,
     pub time_complexity: String,
@@ -25,11 +18,11 @@ pub struct AlgoDecision {
     pub search_month: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct ArchDecision {
-    pub id: Option<RecordId>,
-    pub project: RecordId,
+    pub id: Option<String>,
+    pub project: String,
     pub pattern: String,
     pub scope: String,
     pub cap_choice: Option<String>,
@@ -43,22 +36,36 @@ pub struct ArchDecision {
 /// List up to `limit` recent `algo_decision` rows for `project_id`.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
+/// Propagates `Error::Turso` from the SELECT.
 pub async fn algo_list_recent(
-    db: &Surreal<Db>,
-    project_id: &RecordId,
+    db: &TursoStore,
+    project_id: &str,
     limit: usize,
 ) -> Result<Vec<AlgoDecision>> {
-    let query = "SELECT id, project, problem_class, chosen, time_complexity, space_complexity, file_path, search_year, search_month \
-                 FROM algo_decision WHERE project = $project LIMIT $limit";
     let limit_i64 = i64::try_from(limit).unwrap_or(i64::MAX);
-    let mut response = db
-        .query(query)
-        .bind(("project", project_id.clone()))
-        .bind(("limit", limit_i64))
+    let mut rows = db
+        .exec_params(
+            "SELECT id, project, problem_class, chosen, time_complexity, space_complexity, \
+                    file_path, search_year, search_month \
+             FROM algo_decision WHERE project = $project LIMIT $limit",
+            libsql::params![project_id.to_owned(), limit_i64],
+        )
         .await?;
-    let rows: Vec<AlgoDecision> = response.take(0)?;
-    Ok(rows)
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(AlgoDecision {
+            id: Some(r.get::<String>(0)?),
+            project: r.get::<String>(1)?,
+            problem_class: r.get::<String>(2)?,
+            chosen: r.get::<String>(3)?,
+            time_complexity: r.get::<String>(4)?,
+            space_complexity: r.get::<String>(5)?,
+            file_path: r.get::<String>(6)?,
+            search_year: r.get::<i64>(7)? as i32,
+            search_month: r.get::<i64>(8)? as i32,
+        });
+    }
+    Ok(out)
 }
 
 #[derive(Debug)]
@@ -67,7 +74,7 @@ pub async fn algo_list_recent(
     reason = "cross-crate struct-literal DTO (kavach-rpc); non_exhaustive => E0639"
 )]
 pub struct ArchUpsertParams<'a> {
-    pub project: RecordId,
+    pub project: String,
     pub pattern: &'a str,
     pub scope: &'a str,
     pub cap_choice: Option<&'a str>,
@@ -84,7 +91,7 @@ pub struct ArchUpsertParams<'a> {
     reason = "cross-crate struct-literal DTO (kavach-rpc)"
 )]
 pub struct AlgoUpsertParams<'a> {
-    pub project: RecordId,
+    pub project: String,
     pub problem_class: &'a str,
     pub chosen: &'a str,
     pub time_complexity: &'a str,
@@ -97,84 +104,104 @@ pub struct AlgoUpsertParams<'a> {
 /// Upsert an `arch_decision` row keyed by (project, pattern, `file_path`).
 ///
 /// # Errors
-/// `Error::Surreal` on query failure; `Error::RecordNotFound` if CREATE
+/// `Error::Turso` on query failure; `Error::RecordNotFound` if the upsert
 /// yields no id row.
-pub async fn arch_upsert(db: &Surreal<Db>, p: &ArchUpsertParams<'_>) -> Result<RecordId> {
+pub async fn arch_upsert(db: &TursoStore, p: &ArchUpsertParams<'_>) -> Result<String> {
     // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (sibling of
     // algo_upsert). SOURCE: decision.algo-upsert-idempotent-keyed.
     let key = arch_record_key(&p.project, p.pattern, p.file_path);
-    let q = "UPSERT type::record('arch_decision', $key) SET \
-                 project = $project, pattern = $pattern, \
-                 scope = $scope, cap_choice = $cap, failure_mode = $failure_mode, \
-                 tradeoff = $tradeoff, file_path = $file_path, \
-                 search_year = $search_year, search_month = $search_month \
-                 RETURN id";
-    let mut response = db
-        .query(q)
-        .bind(("key", key))
-        .bind(("project", p.project.clone()))
-        .bind(("pattern", p.pattern.to_owned()))
-        .bind(("scope", p.scope.to_owned()))
-        .bind(("cap", p.cap_choice.map(ToOwned::to_owned)))
-        .bind(("failure_mode", p.failure_mode.to_owned()))
-        .bind(("tradeoff", p.tradeoff.to_owned()))
-        .bind(("file_path", p.file_path.to_owned()))
-        .bind(("search_year", p.search_year))
-        .bind(("search_month", p.search_month))
+    let mut resp = db
+        .exec_params(
+            "INSERT INTO arch_decision \
+                 (id, project, pattern, scope, cap_choice, failure_mode, tradeoff, \
+                  file_path, search_year, search_month) \
+             VALUES ($key, $project, $pattern, $scope, $cap, $failure_mode, $tradeoff, \
+                     $file_path, $search_year, $search_month) \
+             ON CONFLICT(id) DO UPDATE SET \
+                 project = excluded.project, pattern = excluded.pattern, \
+                 scope = excluded.scope, cap_choice = excluded.cap_choice, \
+                 failure_mode = excluded.failure_mode, tradeoff = excluded.tradeoff, \
+                 file_path = excluded.file_path, search_year = excluded.search_year, \
+                 search_month = excluded.search_month \
+             RETURNING id",
+            libsql::params![
+                key.clone(),
+                p.project.clone(),
+                p.pattern.to_owned(),
+                p.scope.to_owned(),
+                p.cap_choice.map(ToOwned::to_owned),
+                p.failure_mode.to_owned(),
+                p.tradeoff.to_owned(),
+                p.file_path.to_owned(),
+                p.search_year,
+                p.search_month
+            ],
+        )
         .await?;
-    let row: Option<IdRow> = response.take(0)?;
-    row.map(|ir| ir.id).ok_or_else(|| {
-        crate::error::Error::RecordNotFound("arch_decision upsert returned no id".into())
-    })
+    match resp.next().await? {
+        Some(_) => Ok(key),
+        None => Err(crate::error::Error::RecordNotFound(
+            "arch_decision upsert returned no id".into(),
+        )),
+    }
 }
 
 /// Upsert an `algo_decision` row keyed by (project, `problem_class`,
 /// `file_path`).
 ///
 /// # Errors
-/// `Error::Surreal` on query failure; `Error::RecordNotFound` if CREATE
+/// `Error::Turso` on query failure; `Error::RecordNotFound` if the upsert
 /// yields no id row.
-pub async fn algo_upsert(db: &Surreal<Db>, p: &AlgoUpsertParams<'_>) -> Result<RecordId> {
+pub async fn algo_upsert(db: &TursoStore, p: &AlgoUpsertParams<'_>) -> Result<String> {
     // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (two concurrent
     // recorders -> double row; reader mid-swap -> zero rows).
     // SOURCE: decision.algo-upsert-idempotent-keyed.
     let key = algo_record_key(&p.project, p.problem_class, p.file_path);
-    let q = "UPSERT type::record('algo_decision', $key) SET \
-                 project = $project, problem_class = $problem_class, \
-                 chosen = $chosen, time_complexity = $time, space_complexity = $space, \
-                 file_path = $file_path, search_year = $search_year, search_month = $search_month \
-                 RETURN id";
-    let mut response = db
-        .query(q)
-        .bind(("key", key))
-        .bind(("project", p.project.clone()))
-        .bind(("problem_class", p.problem_class.to_owned()))
-        .bind(("chosen", p.chosen.to_owned()))
-        .bind(("time", p.time_complexity.to_owned()))
-        .bind(("space", p.space_complexity.to_owned()))
-        .bind(("file_path", p.file_path.to_owned()))
-        .bind(("search_year", p.search_year))
-        .bind(("search_month", p.search_month))
+    let mut resp = db
+        .exec_params(
+            "INSERT INTO algo_decision \
+                 (id, project, problem_class, chosen, time_complexity, space_complexity, \
+                  file_path, search_year, search_month) \
+             VALUES ($key, $project, $problem_class, $chosen, $time, $space, \
+                     $file_path, $search_year, $search_month) \
+             ON CONFLICT(id) DO UPDATE SET \
+                 project = excluded.project, problem_class = excluded.problem_class, \
+                 chosen = excluded.chosen, time_complexity = excluded.time_complexity, \
+                 space_complexity = excluded.space_complexity, \
+                 file_path = excluded.file_path, search_year = excluded.search_year, \
+                 search_month = excluded.search_month \
+             RETURNING id",
+            libsql::params![
+                key.clone(),
+                p.project.clone(),
+                p.problem_class.to_owned(),
+                p.chosen.to_owned(),
+                p.time_complexity.to_owned(),
+                p.space_complexity.to_owned(),
+                p.file_path.to_owned(),
+                p.search_year,
+                p.search_month
+            ],
+        )
         .await?;
-    let row: Option<IdRow> = response.take(0)?;
-    row.map(|ir| ir.id).ok_or_else(|| {
-        crate::error::Error::RecordNotFound("algo_decision upsert returned no id".into())
-    })
+    match resp.next().await? {
+        Some(_) => Ok(key),
+        None => Err(crate::error::Error::RecordNotFound(
+            "algo_decision upsert returned no id".into(),
+        )),
+    }
 }
 
-/// Deterministic `algo_decision` record key: `blake3(project:class:file)[..16]`.
+/// Deterministic `algo_decision` record key: `blake3(project:class:file)[..32]`.
 /// Identical inputs -> identical key, so the UPSERT is idempotent per dedup
 /// tuple — the same recipe `graph/mistakes/cluster.rs` uses for its content key.
-fn algo_record_key(project: &RecordId, problem_class: &str, file_path: &str) -> String {
-    // RecordId is not Display; its key component is the stable per-project token.
-    let project_key = format!("{:?}", project.key);
-    hash_decision_key(&project_key, problem_class, file_path)
+fn algo_record_key(project: &str, problem_class: &str, file_path: &str) -> String {
+    hash_decision_key(project, problem_class, file_path)
 }
 
 /// Deterministic `arch_decision` record key — sibling of `algo_record_key`.
-fn arch_record_key(project: &RecordId, pattern: &str, file_path: &str) -> String {
-    let project_key = format!("{:?}", project.key);
-    hash_decision_key(&project_key, pattern, file_path)
+fn arch_record_key(project: &str, pattern: &str, file_path: &str) -> String {
+    hash_decision_key(project, pattern, file_path)
 }
 
 /// Pure seed→key hash for a (project, discriminant, file) decision tuple, split
@@ -198,29 +225,43 @@ pub(crate) fn hash_keyed(table: &str, a: &str, b: &str, c: &str) -> String {
 /// List up to `limit` recent `arch_decision` rows for `project_id`.
 ///
 /// # Errors
-/// Propagates `Error::Surreal` from the SELECT.
+/// Propagates `Error::Turso` from the SELECT.
 pub async fn arch_list_recent(
-    db: &Surreal<Db>,
-    project_id: &RecordId,
+    db: &TursoStore,
+    project_id: &str,
     limit: usize,
 ) -> Result<Vec<ArchDecision>> {
-    let query = "SELECT id, project, pattern, scope, cap_choice, failure_mode, tradeoff, file_path, search_year, search_month \
-                 FROM arch_decision WHERE project = $project LIMIT $limit";
     let limit_i64 = i64::try_from(limit).unwrap_or(i64::MAX);
-    let mut response = db
-        .query(query)
-        .bind(("project", project_id.clone()))
-        .bind(("limit", limit_i64))
+    let mut rows = db
+        .exec_params(
+            "SELECT id, project, pattern, scope, cap_choice, failure_mode, tradeoff, \
+                    file_path, search_year, search_month \
+             FROM arch_decision WHERE project = $project LIMIT $limit",
+            libsql::params![project_id.to_owned(), limit_i64],
+        )
         .await?;
-    let rows: Vec<ArchDecision> = response.take(0)?;
-    Ok(rows)
+    let mut out = Vec::new();
+    while let Some(r) = rows.next().await? {
+        out.push(ArchDecision {
+            id: Some(r.get::<String>(0)?),
+            project: r.get::<String>(1)?,
+            pattern: r.get::<String>(2)?,
+            scope: r.get::<String>(3)?,
+            cap_choice: r.get::<Option<String>>(4)?,
+            failure_mode: r.get::<String>(5)?,
+            tradeoff: r.get::<String>(6)?,
+            file_path: r.get::<String>(7)?,
+            search_year: r.get::<i64>(8)? as i32,
+            search_month: r.get::<i64>(9)? as i32,
+        });
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
 mod algo_upsert_tests {
     use super::{AlgoUpsertParams, algo_list_recent, algo_upsert};
     use crate::open_memory;
-    use surrealdb_types::RecordId;
 
     // The whole point of the keyed-UPSERT race fix: two upserts of the same
     // (project, problem_class, file_path) tuple converge to ONE row carrying
@@ -228,7 +269,7 @@ mod algo_upsert_tests {
     #[tokio::test]
     async fn re_upsert_same_tuple_converges_to_one_row() {
         let db = open_memory().await.expect("open mem");
-        let pid = RecordId::new("project", "p");
+        let pid = "p".to_owned();
         let mk = |chosen: &'static str| AlgoUpsertParams {
             project: pid.clone(),
             problem_class: "sort",
@@ -259,7 +300,7 @@ mod algo_upsert_tests {
     #[tokio::test]
     async fn distinct_tuple_is_a_separate_row() {
         let db = open_memory().await.expect("open mem");
-        let pid = RecordId::new("project", "p");
+        let pid = "p".to_owned();
         let mk = |file_path: &'static str| AlgoUpsertParams {
             project: pid.clone(),
             problem_class: "sort",

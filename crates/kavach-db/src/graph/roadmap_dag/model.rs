@@ -1,6 +1,4 @@
-use surrealdb_types::SurrealValue;
-
-#[derive(Debug, Clone, SurrealValue)]
+#[derive(Debug, Clone)]
 #[expect(
     clippy::exhaustive_structs,
     reason = "constructed cross-crate by kavach-engine scheduler tests + fetch(); non_exhaustive => E0639"
@@ -13,7 +11,7 @@ pub struct DagNode {
     pub category: String,
 }
 
-#[derive(Debug, Clone, SurrealValue)]
+#[derive(Debug, Clone)]
 #[expect(
     clippy::exhaustive_structs,
     reason = "constructed cross-crate by kavach-engine scheduler tests + fetch(); non_exhaustive => E0639"
@@ -24,7 +22,7 @@ pub struct DagEdge {
     pub rel: String,
 }
 
-#[derive(Debug, Clone, Default, SurrealValue)]
+#[derive(Debug, Clone, Default)]
 #[expect(
     clippy::exhaustive_structs,
     reason = "constructed cross-crate by kavach-engine scheduler tests + fetch(); non_exhaustive => E0639"

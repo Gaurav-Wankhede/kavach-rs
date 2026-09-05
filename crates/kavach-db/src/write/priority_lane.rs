@@ -1,8 +1,6 @@
 use crate::error::Result;
+use crate::turso::TursoStore;
 use kavach_types::Priority;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any as Db;
-use surrealdb_types::RecordId;
 
 /// Surgical priority mutation — partial UPDATE of `priority` + `updated_at` only.
 ///
@@ -10,42 +8,45 @@ use surrealdb_types::RecordId;
 /// reranking without re-supplying full row data. Returns the row id on success,
 /// or `Err(RecordNotFound)` if no row matches the (project, key) pair.
 ///
-/// `new_priority = Some(n)` sets the priority; `None` clears it back to NONE
+/// `new_priority = Some(n)` sets the priority; `None` clears it back to NULL
 /// (FIFO tail in the dispatch sort).
 ///
 /// # Errors
-/// `Error::RecordNotFound` when no row matches (project, key); `Error::Surreal`
-/// when the UPDATE itself fails or returns malformed shape.
+/// `Error::RecordNotFound` when no row matches (project, key); `Error::Turso`
+/// when the UPDATE itself fails.
 pub async fn set_priority(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     category: &str,
-    project_id: &RecordId,
+    project_id: &str,
     entry_key: &str,
     new_priority: Option<Priority>,
-) -> Result<RecordId> {
-    let query = match category {
-        "decision" => {
-            "UPDATE decision SET priority = $priority, updated_at = time::now() WHERE project = $pid AND entry_key = $key RETURN id"
-        }
-        "roadmap" => {
-            "UPDATE roadmap SET priority = $priority, updated_at = time::now() WHERE project = $pid AND entry_key = $key RETURN id"
-        }
-        _ => {
-            return Err(crate::error::Error::RecordNotFound(format!(
-                "priority is only defined on roadmap and decision tables, got: {category}"
-            )));
-        }
-    };
+) -> Result<String> {
+    if category != "decision" && category != "roadmap" {
+        return Err(crate::error::Error::RecordNotFound(format!(
+            "priority is only defined on roadmap and decision tables, got: {category}"
+        )));
+    }
+    let now = crate::turso::now_rfc3339();
     let mut response = db
-        .query(query)
-        .bind(("pid", project_id.clone()))
-        .bind(("key", entry_key.to_owned()))
-        .bind(("priority", new_priority.map(Priority::get)))
+        .exec_params(
+            "UPDATE memories SET priority = $priority, updated_at = $now \
+             WHERE project = $pid AND category = $cat AND entry_key = $key \
+             RETURNING entry_key",
+            libsql::params![
+                new_priority.map(Priority::get),
+                now,
+                project_id.to_owned(),
+                category.to_owned(),
+                entry_key.to_owned()
+            ],
+        )
         .await?;
-    let ids: Vec<RecordId> = response.take("id")?;
-    ids.into_iter().next().ok_or_else(|| {
-        crate::error::Error::RecordNotFound(format!("{category}/{entry_key} not found in project"))
-    })
+    match response.next().await? {
+        Some(r) => Ok(r.get::<String>(0)?),
+        None => Err(crate::error::Error::RecordNotFound(format!(
+            "{category}/{entry_key} not found in project"
+        ))),
+    }
 }
 
 /// Surgical lane mutation — partial UPDATE of `lane` + `updated_at` only.
@@ -56,30 +57,38 @@ pub async fn set_priority(
 ///
 /// # Errors
 /// `Error::RecordNotFound` when no row matches (project, key) or the category is
-/// not `roadmap`; `Error::Surreal` when the UPDATE itself fails.
+/// not `roadmap`; `Error::Turso` when the UPDATE itself fails.
 pub async fn set_lane(
-    db: &Surreal<Db>,
+    db: &TursoStore,
     category: &str,
-    project_id: &RecordId,
+    project_id: &str,
     entry_key: &str,
     new_lane: Option<String>,
-) -> Result<RecordId> {
+) -> Result<String> {
     if category != "roadmap" {
         return Err(crate::error::Error::RecordNotFound(format!(
             "lane is only defined on the roadmap table, got: {category}"
         )));
     }
+    let now = crate::turso::now_rfc3339();
     let mut response = db
-        .query(
-            "UPDATE roadmap SET lane = $lane, updated_at = time::now() \
-             WHERE project = $pid AND entry_key = $key RETURN id",
+        .exec_params(
+            "UPDATE memories SET lane = $lane, updated_at = $now \
+             WHERE project = $pid AND category = $cat AND entry_key = $key \
+             RETURNING entry_key",
+            libsql::params![
+                new_lane,
+                now,
+                project_id.to_owned(),
+                category.to_owned(),
+                entry_key.to_owned()
+            ],
         )
-        .bind(("pid", project_id.clone()))
-        .bind(("key", entry_key.to_owned()))
-        .bind(("lane", new_lane))
         .await?;
-    let ids: Vec<RecordId> = response.take("id")?;
-    ids.into_iter().next().ok_or_else(|| {
-        crate::error::Error::RecordNotFound(format!("roadmap/{entry_key} not found in project"))
-    })
+    match response.next().await? {
+        Some(r) => Ok(r.get::<String>(0)?),
+        None => Err(crate::error::Error::RecordNotFound(format!(
+            "roadmap/{entry_key} not found in project"
+        ))),
+    }
 }
