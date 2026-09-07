@@ -99,7 +99,7 @@ impl RoadmapDag {
             let arrow = match e.rel.as_str() {
                 "depends_on" => Some(" --> "),
                 "supersedes" => Some(" -.retires.-> "),
-                _ => None,
+                _unsupported => None,
             };
             if let Some(a) = arrow {
                 out.push_str("  ");

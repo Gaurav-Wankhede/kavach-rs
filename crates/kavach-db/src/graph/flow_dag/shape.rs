@@ -27,7 +27,7 @@ impl NodeShape {
             "stadium" => Self::Stadium,
             "diamond" => Self::Diamond,
             "circle" => Self::Circle,
-            _ => Self::Rect,
+            _other => Self::Rect,
         }
     }
 

@@ -39,7 +39,7 @@ impl RelationType {
             "mentions" => Some(Self::Mentions),
             "works_on" => Some(Self::WorksOn),
             "owns" => Some(Self::Owns),
-            _ => None,
+            _unknown => None,
         }
     }
 }

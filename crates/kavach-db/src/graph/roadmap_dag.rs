@@ -161,8 +161,9 @@ mod decision_mermaid_tests {
     fn retired_patterns_returns_target_and_replacement() {
         let r = pattern_sample().retired_patterns();
         assert_eq!(r.len(), 1, "{r:?}");
-        assert_eq!(r[0].0, "dioxus-0.7 web-sys gap");
-        assert_eq!(r[0].1, "dioxus-0.8 location via BFF");
+        let first = r.first().expect("retired pattern exists");
+        assert_eq!(first.0, "dioxus-0.7 web-sys gap");
+        assert_eq!(first.1, "dioxus-0.8 location via BFF");
     }
 
     #[test]
@@ -227,9 +228,10 @@ mod decision_mermaid_tests {
         );
         let retired = dag.retired_patterns();
         assert_eq!(retired.len(), 1, "exactly one retired pair: {retired:?}");
-        assert_eq!(retired[0].0, "old pattern: web-sys gap", "retired title");
+        let first = retired.first().expect("retired pattern exists");
+        assert_eq!(first.0, "old pattern: web-sys gap", "retired title");
         assert_eq!(
-            retired[0].1, "new pattern: router hook",
+            first.1, "new pattern: router hook",
             "replacement title"
         );
     }
