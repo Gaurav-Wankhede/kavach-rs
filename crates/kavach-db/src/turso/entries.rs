@@ -36,7 +36,7 @@ pub(crate) fn entry_from_row(row: &libsql::Row) -> TursoResult<MemoryEntry> {
     let tags_json: String = get_s(6).unwrap_or_else(|| "[]".into());
     Ok(MemoryEntry {
         id: None,
-        project: project.clone(),
+        project,
         category: get_s(1),
         entry_key: get_s(2).unwrap_or_default(),
         title: get_s(3).unwrap_or_default(),
@@ -237,6 +237,10 @@ pub trait EntryStore {
     ///
     /// # Errors
     /// Returns [`TursoError`] on SQL failure.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "gate config has exactly 5 typed value columns; bundling them would obscure the SQL mapping"
+    )]
     fn gate_config_set(
         &self,
         project: &str,
@@ -251,6 +255,7 @@ pub trait EntryStore {
 
 /// A citation row for CLI display.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct CitationRow {
     pub entry_key: String,
     pub name: String,
@@ -261,6 +266,7 @@ pub struct CitationRow {
 
 /// A gate config row for CLI display.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct GateConfigRow {
     pub project: String,
     pub gate_key: String,
@@ -670,7 +676,7 @@ impl EntryStore for TursoStore {
         text: Option<&str>,
     ) -> TursoResult<()> {
         let now = super::now_rfc3339();
-        let value_bool = boolean.map(|b| if b { 1i64 } else { 0i64 });
+        let value_bool = boolean.map(i64::from);
         self.conn
             .execute(
                 "INSERT INTO gate_config (project, gate_key, kind, value_num, value_bool, value_list, value_text, updated_at)

@@ -56,7 +56,7 @@ async fn reclaim_table(db: &TursoStore, table: &str, now: chrono::DateTime<Utc>)
         .await?;
     let mut reclaimed = 0usize;
     while resp.next().await?.is_some() {
-        reclaimed += 1;
+        reclaimed = reclaimed.saturating_add(1);
     }
     Ok(reclaimed)
 }

@@ -18,7 +18,8 @@ pub struct QueryBuilder {
 }
 
 impl QueryBuilder {
-    pub fn bind(mut self, pair: (&str, impl Into<libsql::Value>)) -> QueryBuilder {
+    #[must_use]
+    pub fn bind(mut self, pair: (&str, impl Into<libsql::Value>)) -> Self {
         self.params.push(pair.1.into());
         self
     }
@@ -48,6 +49,10 @@ impl TursoStore {
         }
     }
 
+    /// Run a parameterized query, returning the raw `libsql::Rows`.
+    ///
+    /// # Errors
+    /// Returns `TursoError` when the statement fails to prepare or execute.
     pub async fn query_with_params(
         &self,
         sql: &str,
@@ -56,6 +61,11 @@ impl TursoStore {
         self.conn.query(sql, params).await.map_err(Into::into)
     }
 
+    /// Open (or create) a local Turso database at `path`, applying the schema.
+    ///
+    /// # Errors
+    /// Returns `TursoError` when the file cannot be created, the connection
+    /// cannot be established, or schema bootstrap fails.
     pub async fn open(path: impl AsRef<Path>) -> TursoResult<Self> {
         let path = path.as_ref();
         if let Some(dir) = path.parent() {

@@ -43,10 +43,8 @@ pub async fn raw_select(db: &TursoStore, sql: &str) -> Result<String> {
                     Ok(None) => serde_json::Value::Null,
                     Err(_) => match row.get::<Option<f64>>(i) {
                         Ok(Some(f)) => serde_json::Number::from_f64(f)
-                            .map(serde_json::Value::Number)
-                            .unwrap_or(serde_json::Value::Null),
-                        Ok(None) => serde_json::Value::Null,
-                        Err(_) => serde_json::Value::Null,
+                            .map_or(serde_json::Value::Null, serde_json::Value::Number),
+                        Ok(None) | Err(_) => serde_json::Value::Null,
                     },
                 },
             };

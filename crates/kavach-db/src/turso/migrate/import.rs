@@ -78,7 +78,7 @@ const fn count_record(record: &NormalizedRecord, report: &mut MigrateReport) {
         NormalizedRecord::Entity(_) => report.entity_count = report.entity_count.saturating_add(1),
         NormalizedRecord::Edge(_) => report.edge_count = report.edge_count.saturating_add(1),
         NormalizedRecord::Project(_) => {
-            report.project_count = report.project_count.saturating_add(1)
+            report.project_count = report.project_count.saturating_add(1);
         }
         NormalizedRecord::Part(_) => report.part_count = report.part_count.saturating_add(1),
         NormalizedRecord::Event(_) => report.event_count = report.event_count.saturating_add(1),
@@ -86,6 +86,10 @@ const fn count_record(record: &NormalizedRecord, report: &mut MigrateReport) {
 }
 
 /// Pass 1 inserts memories, entities, projects, parts, and events.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one record kind per match arm; splitting would scatter the migration contract"
+)]
 async fn import_pass_one(
     store: &TursoStore,
     records: &[NormalizedRecord],

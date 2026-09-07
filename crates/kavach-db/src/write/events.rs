@@ -7,17 +7,19 @@ use crate::turso::TursoStore;
 /// Propagates `Error::Turso` from the DELETE query.
 pub async fn rotate_events(db: &TursoStore, days: i64) -> Result<usize> {
     let floor_secs = days.saturating_mul(86_400);
-    let floor_ts = chrono::Utc::now() - chrono::Duration::seconds(floor_secs);
-    let floor_s = floor_ts.to_rfc3339();
+    let floor_ts = chrono::Utc::now()
+        .checked_sub_signed(chrono::Duration::seconds(floor_secs))
+        .unwrap_or_else(chrono::Utc::now);
+    let floor_str = floor_ts.to_rfc3339();
     let mut rows = db
         .exec_params(
             "DELETE FROM events WHERE created_at < $floor RETURNING id",
-            libsql::params![floor_s],
+            libsql::params![floor_str],
         )
         .await?;
     let mut deleted = 0usize;
     while rows.next().await?.is_some() {
-        deleted += 1;
+        deleted = deleted.saturating_add(1);
     }
     Ok(deleted)
 }

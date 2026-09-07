@@ -1,7 +1,9 @@
 //! Schema hub. The single source of truth for the SQLite DDL is
 //! `turso::SCHEMA_DDL` + the per-module DDL slices, applied idempotently at
-//! `TursoStore::open` / `open_memory` via `init_schema`. `apply_schema` exists
-//! for the explicit `--apply-schema` path and re-runs that same idempotent DDL.
+//! `TursoStore::open` / `open_memory` via `init_schema`.
+//!
+//! `apply_schema` exists for the explicit `--apply-schema` path and re-runs
+//! that same idempotent DDL.
 mod core;
 mod graph;
 mod memory;

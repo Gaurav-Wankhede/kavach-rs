@@ -89,25 +89,16 @@ pub struct LinkParams {
 /// Validate the `table:key` record-id shape and return it unchanged — the
 /// Turso layer keys edges by the full string id, not a parsed record.
 fn parse_record(s: &str) -> Result<String, ErrorObjectOwned> {
-    s.split_once(':')
-        .map(|(table, key)| {
-            if table.is_empty() || key.is_empty() {
-                Err(ErrorObjectOwned::owned(
-                    -32602,
-                    "expected 'table:key' record id",
-                    None::<()>,
-                ))
-            } else {
-                Ok(format!("{table}:{key}"))
-            }
-        })
-        .unwrap_or_else(|| {
-            Err(ErrorObjectOwned::owned(
-                -32602,
-                "expected 'table:key' record id",
-                None::<()>,
-            ))
-        })
+    match s.split_once(':') {
+        Some((table, key)) if !table.is_empty() && !key.is_empty() => {
+            Ok(format!("{table}:{key}"))
+        }
+        Some(_) | None => Err(ErrorObjectOwned::owned(
+            -32602,
+            "expected 'table:key' record id",
+            None::<()>,
+        )),
+    }
 }
 
 /// Merge a learning/decision/roadmap node into a citation (`->cite->`, idempotent).

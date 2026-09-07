@@ -99,7 +99,7 @@ pub async fn list_with_filter(
     let filter_cat = Some(table);
     let status = None;
     let contains = None;
-    let limit_i64 = limit.map(|l| l as i64).unwrap_or(i64::MAX);
+    let limit_i64 = limit.map_or(i64::MAX, |l| i64::try_from(l).unwrap_or(i64::MAX));
     let entries = store
         .list_with_filter(project, filter_cat, status, contains, limit_i64)
         .await

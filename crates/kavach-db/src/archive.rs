@@ -37,12 +37,14 @@ pub async fn archive_irrelevant(
     // row only when unanchored (the audit trail lives in memories/edges, which
     // are never deleted). Floor: created_at older than floor_days.
     let floor_secs = floor_days.saturating_mul(86_400);
-    let floor_ts = chrono::Utc::now() - chrono::Duration::seconds(floor_secs);
-    let floor_s = floor_ts.to_rfc3339();
+    let floor_ts = chrono::Utc::now()
+        .checked_sub_signed(chrono::Duration::seconds(floor_secs))
+        .unwrap_or_else(chrono::Utc::now);
+    let floor_str = floor_ts.to_rfc3339();
     let mut scan_resp = db
         .exec_params(
             "SELECT id FROM events WHERE created_at < $floor",
-            libsql::params![floor_s],
+            libsql::params![floor_str],
         )
         .await?;
     let mut candidates: Vec<i64> = Vec::new();
@@ -77,7 +79,7 @@ pub async fn archive_irrelevant(
                 )
                 .await?;
             if arch_resp.next().await?.is_some() {
-                archived += 1;
+                archived = archived.saturating_add(1);
             }
         }
         txn.commit().await?;

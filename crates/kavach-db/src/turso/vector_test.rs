@@ -38,6 +38,10 @@ fn entry(project: &str, category: &str, key: &str, title: &str, content: &str) -
 // ── Serialization round-trip ──────────────────────────────────────────────────
 
 #[test]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "test fixture: EMBEDDING_DIMS is a small compile-time constant"
+)]
 fn serialize_deserialize_roundtrip() {
     let original: Vec<f32> = (0..EMBEDDING_DIMS).map(|i| i as f32 / 100.0).collect();
     let blob = serialize_embedding(&original);
@@ -304,14 +308,14 @@ async fn backfill_fills_null_embeddings() {
     assert_eq!(filled, 3, "backfill must fill all 3 rows");
 
     // Verify non-NULL after backfill.
-    let mut rows = s
+    let mut verify_rows = s
         .query_with_params(
             "SELECT count(*) FROM memories WHERE embedding IS NULL AND project='bp'",
             (),
         )
         .await
         .unwrap();
-    let still_null: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+    let still_null: i64 = verify_rows.next().await.unwrap().unwrap().get(0).unwrap();
     assert_eq!(
         still_null, 0,
         "no NULL embeddings must remain after backfill"

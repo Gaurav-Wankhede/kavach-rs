@@ -264,7 +264,7 @@ pub async fn set_with_kind(
         )));
     }
     let cols = Columns::for_value(value);
-    let list_json = cols.list.map(|l| serde_json::to_string(l)).transpose()?;
+    let list_json = cols.list.map(serde_json::to_string).transpose()?;
     let now = crate::turso::now_rfc3339();
     db.exec_params(
         "INSERT INTO gate_config \

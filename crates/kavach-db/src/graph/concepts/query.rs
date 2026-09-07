@@ -43,10 +43,10 @@ pub async fn find_concept(db: &TursoStore, name: &str) -> Result<Option<Entity>>
             libsql::params![name.to_owned()],
         )
         .await?;
-    match resp.next().await? {
-        Some(row) => entity_from_row(&row).map(Some),
-        None => Ok(None),
-    }
+    resp
+        .next()
+        .await?
+        .map_or_else(|| Ok(None), |row| entity_from_row(&row).map(Some))
 }
 
 /// Full-text search concepts by description via FTS5 over `entities.properties`.

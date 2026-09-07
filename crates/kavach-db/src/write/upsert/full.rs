@@ -10,7 +10,7 @@ use super::graph_stmts::append_entity_graph;
 pub async fn upsert_entry_full(
     db: &TursoStore,
     category: &str,
-    project_id: &String,
+    project_id: &str,
     entry_key: &str,
     title: &str,
     content: &str,
@@ -49,7 +49,7 @@ pub async fn upsert_entry_full(
                  exec_prompt = COALESCE(excluded.exec_prompt, memories.exec_prompt), \
                  updated_at = excluded.updated_at",
             libsql::params![
-                project_id.clone(),
+                project_id.to_owned(),
                 category.to_owned(),
                 entry_key.to_owned(),
                 title.to_owned(),
@@ -66,7 +66,7 @@ pub async fn upsert_entry_full(
         txn.execute(
             "DELETE FROM memories_fts WHERE project=?1 AND category=?2 AND entry_key=?3",
             libsql::params![
-                project_id.clone(),
+                project_id.to_owned(),
                 category.to_owned(),
                 entry_key.to_owned()
             ],
@@ -77,7 +77,7 @@ pub async fn upsert_entry_full(
              VALUES (?1,?2,?3,?4,?5)",
             libsql::params![
                 entry_key.to_owned(),
-                project_id.clone(),
+                project_id.to_owned(),
                 category.to_owned(),
                 title.to_owned(),
                 content.to_owned()
@@ -88,7 +88,7 @@ pub async fn upsert_entry_full(
             "INSERT INTO events (project, kind, payload, created_at) \
              VALUES (?1, 'memory_write', ?2, ?3)",
             libsql::params![
-                project_id.clone(),
+                project_id.to_owned(),
                 format!("{{\"category\":\"{category}\",\"entry_key\":\"{entry_key}\"}}"),
                 now.clone()
             ],

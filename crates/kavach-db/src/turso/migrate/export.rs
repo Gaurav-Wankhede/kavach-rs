@@ -384,7 +384,7 @@ fn parse_event_record(val: &Value) -> NormalizedRecord {
 /// Convert a libsql row into a JSON object keyed by column name (string values
 /// for TEXT, numbers for INTEGER/REAL, null otherwise). The parse_* functions
 /// read by key, so column names must match the record shapes.
-fn row_to_value(row: &libsql::Row) -> Result<Value, String> {
+fn row_to_value(row: &libsql::Row) -> Value {
     let mut obj = serde_json::Map::new();
     let ncols = row.column_count();
     for i in 0..ncols {
@@ -397,16 +397,14 @@ fn row_to_value(row: &libsql::Row) -> Result<Value, String> {
                 Ok(None) => Value::Null,
                 Err(_) => match row.get::<Option<f64>>(i) {
                     Ok(Some(f)) => serde_json::Number::from_f64(f)
-                        .map(Value::Number)
-                        .unwrap_or(Value::Null),
-                    Ok(None) => Value::Null,
-                    Err(_) => Value::Null,
+                        .map_or(Value::Null, Value::Number),
+                    Ok(None) | Err(_) => Value::Null,
                 },
             },
         };
         obj.insert(col, v);
     }
-    Ok(Value::Object(obj))
+    Value::Object(obj)
 }
 
 /// Map a `citations` row to the shape `parse_citation_record` expects
@@ -466,6 +464,10 @@ fn part_row_to_value(row: &libsql::Row) -> Result<Value, String> {
     clippy::missing_errors_doc,
     reason = "comment_noise_guard single-line ceiling"
 )]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one table per loop iteration; splitting would scatter the migration contract"
+)]
 pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
     db: &TursoStore,
     writer: &mut W,
@@ -480,7 +482,7 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
             .await
             .map_err(|e| format!("query memories {cat}: {e}"))?;
         while let Some(row) = rows.next().await.map_err(|e| format!("next {cat}: {e}"))? {
-            let val = row_to_value(&row)?;
+            let val = row_to_value(&row);
             let norm = parse_memory_record(&val, cat);
             let line = serde_json::to_string(&norm).map_err(|e| format!("serialize {cat}: {e}"))?;
             writer
@@ -503,7 +505,7 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
         .await
         .map_err(|e| format!("next entity: {e}"))?
     {
-        let val = row_to_value(&row)?;
+        let val = row_to_value(&row);
         let norm = parse_entity_record(&val);
         let line = serde_json::to_string(&norm).map_err(|e| format!("serialize entity: {e}"))?;
         writer
@@ -548,7 +550,7 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
         .await
         .map_err(|e| format!("next edge: {e}"))?
     {
-        let val = row_to_value(&row)?;
+        let val = row_to_value(&row);
         let norm = parse_edge_record(&val, "");
         if let NormalizedRecord::Edge(ref ed) = norm {
             let key = (ed.from_id.clone(), ed.rel_type.clone(), ed.to_id.clone());
@@ -576,7 +578,7 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
         .await
         .map_err(|e| format!("next project: {e}"))?
     {
-        let val = row_to_value(&row)?;
+        let val = row_to_value(&row);
         let norm = parse_project_record(&val);
         let line = serde_json::to_string(&norm).map_err(|e| format!("serialize project: {e}"))?;
         writer
@@ -620,7 +622,7 @@ pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
         .await
         .map_err(|e| format!("next event: {e}"))?
     {
-        let val = row_to_value(&row)?;
+        let val = row_to_value(&row);
         let norm = parse_event_record(&val);
         let line = serde_json::to_string(&norm).map_err(|e| format!("serialize event: {e}"))?;
         writer

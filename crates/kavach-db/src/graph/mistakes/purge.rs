@@ -61,7 +61,7 @@ pub async fn delete_anti_patterns_by_gate(db: &TursoStore, gate: &str) -> Result
             )
             .await?;
         if del.next().await?.is_some() {
-            removed += 1;
+            removed = removed.saturating_add(1);
         }
     }
     txn.commit().await?;

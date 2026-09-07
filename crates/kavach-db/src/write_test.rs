@@ -25,7 +25,7 @@ async fn read_card(db: &TursoStore, key: &str) -> Result<StatusRow> {
     })
 }
 
-async fn upsert(db: &TursoStore, proj: &String, key: &str, content: &str) {
+async fn upsert(db: &TursoStore, proj: &str, key: &str, content: &str) {
     upsert_entry_full()
         .db(db)
         .category("roadmap")

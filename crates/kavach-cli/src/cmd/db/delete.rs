@@ -160,7 +160,7 @@ pub(super) fn run(
             } else {
                 match store.delete_by_key(project, category, k).await {
                     Ok(n) => {
-                        let msg = format!("(applied) {category}/{k} {} row(s)", n);
+                        let msg = format!("(applied) {category}/{k} {n} row(s)");
                         if let Err(io_err) = print_or_exit(&msg) {
                             return into_exit_code(io_err);
                         }
@@ -211,7 +211,7 @@ pub(super) fn run(
                         let mut total = 0u64;
                         for row in rows {
                             match store.delete_by_key(project, category, &row.entry_key).await {
-                                Ok(n) => total += n,
+                                Ok(n) => total = total.saturating_add(n),
                                 Err(e) => {
                                     let msg = format!("error deleting {}: {e}", row.entry_key);
                                     if let Err(io_err) = ewrite_or_exit(&msg) {
@@ -221,7 +221,7 @@ pub(super) fn run(
                                 }
                             }
                         }
-                        let msg = format!("(applied) all {category} {} row(s)", total);
+                        let msg = format!("(applied) all {category} {total} row(s)");
                         if let Err(io_err) = print_or_exit(&msg) {
                             return into_exit_code(io_err);
                         }

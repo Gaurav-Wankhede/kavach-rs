@@ -70,12 +70,12 @@ pub async fn list_unrewarded_bandit_rows(db: &TursoStore, limit: u32) -> Result<
     // JSON null. Reading the payload back as plain JSON and testing `is_null()`
     // is version-proof. `limit` is applied AFTER the filter so it bounds candidates.
     let rows = select_all_payloads(db).await?;
-    Ok(rows
+    rows
         .into_iter()
         // A malformed payload (Err) is kept so it surfaces, not silently hidden.
         .filter(|res| res.as_ref().map_or(true, |s| reward_is_absent(s)))
         .take(limit as usize)
-        .collect::<std::result::Result<Vec<_>, _>>()?)
+        .collect::<std::result::Result<Vec<_>, _>>()
 }
 /// List a SINGLE session's un-rewarded decisions — the P3a JOIN input.
 ///
@@ -97,7 +97,7 @@ pub async fn list_unrewarded_bandit_rows_for_session(
     limit: u32,
 ) -> Result<Vec<String>> {
     let rows = select_all_payloads(db).await?;
-    Ok(rows
+    rows
         .into_iter()
         // A malformed payload (Err) is kept so it surfaces, never silently hidden.
         // Parse ONCE per row and test both predicates on the same Value (the
@@ -108,7 +108,7 @@ pub async fn list_unrewarded_bandit_rows_for_session(
                 .map_or(true, |s| pending_for_session(s, session_id))
         })
         .take(limit as usize)
-        .collect::<std::result::Result<Vec<_>, _>>()?)
+        .collect::<std::result::Result<Vec<_>, _>>()
 }
 /// Back-fill the realized reward on one logged decision (P3a write).
 ///
@@ -125,7 +125,10 @@ pub async fn update_bandit_reward(db: &TursoStore, payload: &str, reward: &str) 
     let row_key = content_key(payload);
     let mut payload_value: serde_json::Value =
         serde_json::from_str(payload).map_err(crate::error::Error::Json)?;
-    payload_value["reward"] = serde_json::Value::String(reward.to_owned());
+    let payload_obj = payload_value.as_object_mut().ok_or_else(|| {
+        crate::error::Error::Validation("bandit payload must be a JSON object".into())
+    })?;
+    payload_obj.insert("reward".to_owned(), serde_json::Value::String(reward.to_owned()));
     let updated_payload =
         serde_json::to_string(&payload_value).map_err(crate::error::Error::Json)?;
     let now = crate::turso::now_rfc3339();

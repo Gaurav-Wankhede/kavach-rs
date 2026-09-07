@@ -139,7 +139,7 @@ pub(super) fn run(
                         exec_prompt: entry.exec_prompt.as_deref(),
                         priority: entry.priority,
                         lane: entry.lane.as_deref(),
-                        tags: entry.tags.as_deref().map(|v| &v[..]),
+                        tags: entry.tags.as_deref(),
                     };
                     match extract_field(&view, f, compact) {
                         Ok(val) => {

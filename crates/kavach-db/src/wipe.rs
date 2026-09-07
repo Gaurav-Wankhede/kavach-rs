@@ -40,17 +40,17 @@ async fn verified_delete(
     let entries = db
         .list_by_category(project_slug, table)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     let before = entries.len();
     for entry in entries {
         db.delete_by_key(project_slug, table, &entry.entry_key)
             .await
-            .map_err(|e| Error::Turso(e))?;
+            .map_err(Error::Turso)?;
     }
     let after = db
         .list_by_category(project_slug, table)
         .await
-        .map_err(|e| Error::Turso(e))?
+        .map_err(Error::Turso)?
         .len();
     if after != 0 {
         return Err(Error::RecordNotFound(format!(
@@ -100,7 +100,7 @@ pub async fn wipe_project(db: &TursoStore, slug: &str) -> Result<WipeReport> {
 
     db.exec("DELETE FROM projects WHERE slug = ?")
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     report.project_deleted = true;
 
     Ok(report)
@@ -126,7 +126,7 @@ pub async fn preview_wipe(db: &TursoStore, slug: &str) -> Result<WipeReport> {
         let entries = db
             .list_by_category(&project_slug, table)
             .await
-            .map_err(|e| Error::Turso(e))?;
+            .map_err(Error::Turso)?;
         report.tables.push((table, entries.len()));
     }
 

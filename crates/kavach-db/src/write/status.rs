@@ -38,7 +38,7 @@ pub async fn update_status(
         .await?;
     let mut count = 0usize;
     while response.next().await?.is_some() {
-        count += 1;
+        count = count.saturating_add(1);
     }
     Ok(count)
 }
@@ -90,7 +90,7 @@ pub async fn update_status_cas(
         .await?;
     let mut count = 0usize;
     while response.next().await?.is_some() {
-        count += 1;
+        count = count.saturating_add(1);
     }
     Ok(count)
 }
@@ -129,7 +129,7 @@ pub async fn update_feedback(
         .await?;
     let mut count = 0usize;
     while response.next().await?.is_some() {
-        count += 1;
+        count = count.saturating_add(1);
     }
     Ok(count)
 }

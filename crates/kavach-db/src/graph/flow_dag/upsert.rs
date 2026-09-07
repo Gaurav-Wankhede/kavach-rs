@@ -29,7 +29,7 @@ async fn upsert_entity_props(
     db: &TursoStore,
     entity_type: &str,
     name: &str,
-    project: &String,
+    project: &str,
     properties: serde_json::Value,
 ) -> Result<String> {
     let props_json = serde_json::to_string(&properties).map_err(Error::Json)?;
@@ -40,7 +40,7 @@ async fn upsert_entity_props(
             name,
             Some(props_json),
             e.content_hash,
-            Some(project.clone()),
+            Some(project.to_owned()),
         ))
         .await?;
         return Ok(e.id);
@@ -52,7 +52,7 @@ async fn upsert_entity_props(
         name,
         Some(props_json),
         None,
-        Some(project.clone()),
+        Some(project.to_owned()),
     ))
     .await?;
     Ok(id)

@@ -34,12 +34,12 @@ pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project
         let mut rows = db
             .exec_params(q, [id.clone()])
             .await
-            .map_err(|e| Error::Turso(e.into()))?;
+            .map_err(Error::Turso)?;
         let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
             break;
         };
-        let proj = project_from_row(row);
-        cursor = proj.parent.clone();
+        let proj = project_from_row(&row);
+        cursor.clone_from(&proj.parent);
         chain.push(proj);
     }
     Ok(chain)
@@ -54,11 +54,11 @@ pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>>
     let mut rows = db
         .exec_params(q, [slug.to_owned()])
         .await
-        .map_err(|e| Error::Turso(e.into()))?;
+        .map_err(Error::Turso)?;
     let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
         return Ok(None);
     };
-    Ok(Some(project_from_row(row)))
+    Ok(Some(project_from_row(&row)))
 }
 
 /// Find a project where `path` matches `workdir` exactly or is in `aliases`.
@@ -70,11 +70,11 @@ pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>
     let mut rows = db
         .exec_params(q, [path.to_owned(), path.to_owned()])
         .await
-        .map_err(|e| Error::Turso(e.into()))?;
+        .map_err(Error::Turso)?;
     let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
         return Ok(None);
     };
-    Ok(Some(project_from_row(row)))
+    Ok(Some(project_from_row(&row)))
 }
 
 /// List all projects ordered by slug.
@@ -86,10 +86,10 @@ pub async fn list_all(db: &TursoStore) -> Result<Vec<Project>> {
     let mut rows = db
         .exec_params(q, ())
         .await
-        .map_err(|e| Error::Turso(e.into()))?;
+        .map_err(Error::Turso)?;
     let mut projects = Vec::new();
     while let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? {
-        projects.push(project_from_row(row));
+        projects.push(project_from_row(&row));
     }
     Ok(projects)
 }
@@ -140,20 +140,19 @@ pub async fn set_parent(
     let q = "UPDATE projects SET parent = ?, updated_at = datetime('now') WHERE slug = ?";
     db.exec_params(q, [parent_id.clone().unwrap_or_default(), child_id])
         .await
-        .map_err(|e| Error::Turso(e.into()))?;
+        .map_err(Error::Turso)?;
     Ok(())
 }
 
 /// Build a `Project` from a `libsql::Row`.
-fn project_from_row(row: libsql::Row) -> Project {
+fn project_from_row(row: &libsql::Row) -> Project {
     let slug: String = row.get::<String>(0).unwrap_or_default();
     let display: String = row.get::<String>(1).unwrap_or_default();
     let workdir: Option<String> = row.get::<Option<String>>(2).unwrap_or_default();
     let stack: Option<String> = row.get::<Option<String>>(3).unwrap_or_default();
     let aliases_str: Option<String> = row.get::<Option<String>>(4).unwrap_or_default();
     let aliases: Option<Vec<String>> = aliases_str
-        .map(|s| serde_json::from_str(&s).unwrap_or_default())
-        .flatten();
+        .and_then(|s| serde_json::from_str(&s).unwrap_or_default());
     let parent: Option<String> = row.get::<Option<String>>(5).unwrap_or_default();
     Project {
         id: Some(slug.clone()),
@@ -265,7 +264,6 @@ pub async fn register(
     workdir: &str,
     stack: Option<&str>,
 ) -> Result<String> {
-    let aliases_json = None::<String>;
     let q = "INSERT INTO projects (slug, display, workdir, stack, aliases, parent) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO UPDATE SET display = excluded.display, workdir = excluded.workdir, stack = excluded.stack, updated_at = datetime('now')";
     db.exec_params(
         q,
@@ -274,12 +272,12 @@ pub async fn register(
             display.to_owned(),
             workdir.to_owned(),
             stack.map(ToOwned::to_owned).unwrap_or_default(),
-            aliases_json.unwrap_or_default(),
+            String::new(),
             slug.to_owned(),
         ],
     )
     .await
-    .map_err(|e| Error::Turso(e))?;
+    .map_err(Error::Turso)?;
     Ok(slug.to_owned())
 }
 
@@ -295,7 +293,7 @@ mod tests {
             workdir: Some(workdir.to_owned()),
             stack: None,
             aliases: None,
-            parent: parent.map(|p| p.to_owned()),
+            parent: parent.map(ToOwned::to_owned),
         }
     }
 

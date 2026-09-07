@@ -206,7 +206,7 @@ pub(super) fn search(query: &str, limit: usize) -> i32 {
             .into_iter()
             .filter(|e| {
                 e.name.to_lowercase().contains(&query_lower)
-                    || e.properties.as_ref().map_or(false, |p| p.to_lowercase().contains(&query_lower))
+                    || e.properties.as_ref().is_some_and(|p| p.to_lowercase().contains(&query_lower))
             })
             .take(limit)
             .collect();
@@ -222,10 +222,9 @@ pub(super) fn search(query: &str, limit: usize) -> i32 {
             let desc = entity.properties
                 .as_ref()
                 .and_then(|p| {
-                    // Try to parse JSON and extract "desc"
                     serde_json::from_str::<serde_json::Value>(p)
                         .ok()
-                        .and_then(|v| v.get("desc").and_then(|d| d.as_str().map(|s| s.to_owned())))
+                        .and_then(|v| v.get("desc").and_then(|d| d.as_str().map(str::to_owned)))
                 })
                 .unwrap_or_default();
             println!("{:<24}  {}", entity.name, desc);

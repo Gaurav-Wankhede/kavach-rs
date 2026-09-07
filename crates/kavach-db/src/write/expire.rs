@@ -45,7 +45,7 @@ async fn expire_table(db: &TursoStore, table: &str) -> Result<usize> {
         .await?;
     let mut count = 0usize;
     while rows.next().await?.is_some() {
-        count += 1;
+        count = count.saturating_add(1);
     }
     Ok(count)
 }

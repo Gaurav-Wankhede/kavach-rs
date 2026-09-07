@@ -63,9 +63,10 @@ pub fn gate_threshold<F>(call: F, project: &str, gate_key: &str, default: f64) -
 where
     F: FnOnce(&str, &str) -> Option<GateValueDto>,
 {
-    fetch(call, project, gate_key)
-        .and_then(|d| d.num)
-        .unwrap_or(default)
+    match fetch(call, project, gate_key) {
+        Some(GateValueDto { num: Some(v), .. }) => v,
+        Some(_) | None => default,
+    }
 }
 
 /// Resolve a boolean enablement toggle, falling back to `default` on any miss.
@@ -73,9 +74,10 @@ pub fn gate_enabled<F>(call: F, project: &str, gate_key: &str, default: bool) ->
 where
     F: FnOnce(&str, &str) -> Option<GateValueDto>,
 {
-    fetch(call, project, gate_key)
-        .and_then(|d| d.boolean)
-        .unwrap_or(default)
+    match fetch(call, project, gate_key) {
+        Some(GateValueDto { boolean: Some(v), .. }) => v,
+        Some(_) | None => default,
+    }
 }
 
 /// Resolve injected text (or a severity string), falling back to `default`.
@@ -83,25 +85,22 @@ pub fn gate_text<F>(call: F, project: &str, gate_key: &str, default: &str) -> St
 where
     F: FnOnce(&str, &str) -> Option<GateValueDto>,
 {
-    fetch(call, project, gate_key)
-        .and_then(|d| d.text)
-        .unwrap_or_else(|| default.to_owned())
+    match fetch(call, project, gate_key) {
+        Some(GateValueDto { text: Some(v), .. }) => v,
+        Some(_) | None => default.to_owned(),
+    }
 }
 
 /// Resolve a detection-pattern / safelist, ADDITIVELY.
-///
-/// The returned list is the compiled `default` floor with any DB-provided
-/// patterns appended. A DB row can only ADD patterns — it can never remove a
-/// compiled one. This is the security-gate fail-closed invariant (a P0 pattern
-/// is not deletable via DB).
 pub fn gate_patterns<F>(call: F, project: &str, gate_key: &str, default: &[&str]) -> Vec<String>
 where
     F: FnOnce(&str, &str) -> Option<GateValueDto>,
 {
+    let mut seen: std::collections::HashSet<String> = default.iter().map(|s| (*s).to_owned()).collect();
     let mut out: Vec<String> = default.iter().map(|s| (*s).to_owned()).collect();
     if let Some(extra) = fetch(call, project, gate_key).and_then(|d| d.list) {
         for p in extra {
-            if !out.contains(&p) {
+            if seen.insert(p.clone()) {
                 out.push(p);
             }
         }
@@ -110,63 +109,5 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// A miss (call returns None) must yield the compiled default, never panic.
-    #[test]
-    fn miss_falls_back_to_default() {
-        let miss = |_: &str, _: &str| None;
-        assert!((gate_threshold(miss, "p", "k", 0.85) - 0.85).abs() < f64::EPSILON);
-        assert!(gate_enabled(miss, "p", "k", true));
-        assert_eq!(gate_text(miss, "p", "k", "D"), "D");
-    }
-
-    /// Empty project/key short-circuits to a miss before the call fires.
-    #[test]
-    fn empty_inputs_short_circuit() {
-        let boom = |_: &str, _: &str| -> Option<GateValueDto> { panic!("call must not fire") };
-        assert!((gate_threshold(boom, "", "k", 1.0) - 1.0).abs() < f64::EPSILON);
-    }
-
-    /// A hit replaces the default for the matching field.
-    #[test]
-    fn hit_replaces_default() {
-        let hit = |_: &str, _: &str| {
-            Some(GateValueDto {
-                kind: "threshold".to_owned(),
-                num: Some(0.42),
-                boolean: None,
-                list: None,
-                text: None,
-            })
-        };
-        assert!((gate_threshold(hit, "p", "k", 0.85) - 0.42).abs() < f64::EPSILON);
-    }
-
-    /// Patterns are additive: floor preserved, DB extras appended, no dup.
-    #[test]
-    fn patterns_are_additive_floor_immutable() {
-        let extra = |_: &str, _: &str| {
-            Some(GateValueDto {
-                kind: "pattern_list".to_owned(),
-                num: None,
-                boolean: None,
-                list: Some(vec!["rm -rf".to_owned(), "custom".to_owned()]),
-                text: None,
-            })
-        };
-        let floor = ["rm -rf", "DROP TABLE"];
-        let resolved = gate_patterns(extra, "p", "k", &floor);
-        // Floor entries always present; the duplicate "rm -rf" is not re-added;
-        // the new "custom" is appended.
-        assert_eq!(
-            resolved,
-            vec![
-                "rm -rf".to_owned(),
-                "DROP TABLE".to_owned(),
-                "custom".to_owned()
-            ]
-        );
-    }
-}
+#[path = "gate_config_test.rs"]
+mod tests;

@@ -1,6 +1,10 @@
 use super::*;
 
 #[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "test assertions: a panic on the Err/None path IS the failure signal"
+)]
 async fn test_open_memory() -> Result<()> {
     let db = open_memory().await?;
     // The schema bootstrap must have created the core tables.

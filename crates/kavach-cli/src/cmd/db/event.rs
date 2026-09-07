@@ -64,7 +64,7 @@ pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
         };
         let session_db = kavach_session::get_or_create_session();
         let project_slug = if session_db.work_dir.is_empty() {
-            "default".to_string()
+            "default".to_owned()
         } else {
             // Try to find project by path in Turso
             match store.list_all().await {
@@ -77,9 +77,9 @@ pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
                             break;
                         }
                     }
-                    found.unwrap_or_else(|| "default".to_string())
+                    found.unwrap_or_else(|| "default".to_owned())
                 }
-                Err(_) => "default".to_string(),
+                Err(_) => "default".to_owned(),
             }
         };
         match store.append_event(&project_slug, event_type, payload.unwrap_or("")).await {

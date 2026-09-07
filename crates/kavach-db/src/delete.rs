@@ -31,7 +31,7 @@ async fn get_project(db: &TursoStore, project_slug: &str) -> Result<String> {
     let mut rows = db
         .exec_params(q, [project_slug.to_owned()])
         .await
-        .map_err(|e| Error::Turso(e.into()))?;
+        .map_err(Error::Turso)?;
     let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
         return Err(Error::RecordNotFound(format!("project '{project_slug}'")));
     };
@@ -55,12 +55,12 @@ pub async fn delete_by_key(
     let count = db
         .delete_by_key(project_slug, category, key)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
         category: category.to_owned(),
         key: Some(key.to_owned()),
-        count: count as usize,
+        count: usize::try_from(count).map_or(usize::MAX, |c| c),
     })
 }
 
@@ -79,7 +79,7 @@ pub async fn preview_delete_by_key(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     let count = entries.iter().filter(|e| e.entry_key == key).count();
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
@@ -103,12 +103,12 @@ pub async fn delete_category(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     let count = entries.len();
     for entry in entries {
         db.delete_by_key(project_slug, category, &entry.entry_key)
             .await
-            .map_err(|e| Error::Turso(e))?;
+            .map_err(Error::Turso)?;
     }
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
@@ -129,7 +129,7 @@ async fn count_by_key_prefix(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     Ok(entries
         .iter()
         .filter(|e| e.entry_key.starts_with(key_prefix))
@@ -177,12 +177,12 @@ pub async fn delete_by_key_prefix(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     for entry in entries {
         if entry.entry_key.starts_with(key_prefix) {
             db.delete_by_key(project_slug, category, &entry.entry_key)
                 .await
-                .map_err(|e| Error::Turso(e))?;
+                .map_err(Error::Turso)?;
         }
     }
     Ok(DeleteReport {
@@ -207,7 +207,7 @@ pub async fn preview_delete_category(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(|e| Error::Turso(e))?;
+        .map_err(Error::Turso)?;
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
         category: category.to_owned(),

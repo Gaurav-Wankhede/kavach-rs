@@ -86,12 +86,17 @@ pub async fn create(db: &TursoStore, params: CreateParams<'_>) -> Result<BulkMan
             ],
         )
         .await?;
-    match response.next().await? {
-        Some(row) => manifest_from_row(&row),
-        None => Err(Error::RecordNotFound(
-            "bulk_manifest create returned no row".to_owned(),
-        )),
-    }
+    response
+        .next()
+        .await?
+        .map_or_else(
+            || {
+                Err(Error::RecordNotFound(
+                    "bulk_manifest create returned no row".to_owned(),
+                ))
+            },
+            |row| manifest_from_row(&row),
+        )
 }
 
 /// Fetch manifest by `sweep_id`. Ok(None) on miss.
@@ -102,10 +107,9 @@ pub async fn get(db: &TursoStore, sweep_id: &str) -> Result<Option<BulkManifest>
     let mut r = db
         .exec_params(sql::SQL_GET, libsql::params![sweep_id.to_owned()])
         .await?;
-    match r.next().await? {
-        Some(row) => manifest_from_row(&row).map(Some),
-        None => Ok(None),
-    }
+    r.next()
+        .await?
+        .map_or_else(|| Ok(None), |row| manifest_from_row(&row).map(Some))
 }
 
 /// Increment a conformance counter atomically. Column whitelist via enum.

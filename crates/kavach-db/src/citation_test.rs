@@ -429,9 +429,9 @@ async fn reward_flows_along_cite_edges() {
         .expect("weights");
     let row = weights.next().await.expect("next").expect("row");
     let w: f64 = row.get(0).expect("get");
-    assert_eq!(
-        w, 1.5,
-        "edge weight climbed from the merge default 1.0 by delta 0.5"
+    assert!(
+        (w - 1.5).abs() < f64::EPSILON,
+        "edge weight climbed from the merge default 1.0 by delta 0.5 (got {w})"
     );
 
     let unlinked = reward_citation_edges(&db, "citation:p/absent", 1.0)

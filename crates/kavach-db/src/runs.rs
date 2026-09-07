@@ -148,7 +148,7 @@ pub async fn run_reconcile_orphans(db: &TursoStore) -> Result<u64> {
         .await?;
     let mut count = 0u64;
     while resp.next().await?.is_some() {
-        count += 1;
+        count = count.saturating_add(1);
     }
     Ok(count)
 }

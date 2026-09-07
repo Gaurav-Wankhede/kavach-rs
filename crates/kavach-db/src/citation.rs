@@ -1,8 +1,4 @@
-//! Turso-backed citation store: official-docs context rows keyed by
-//! (project, entry_key) via the UNIQUE idx_citation_project_key. Mirrors the
-//! gate_patterns CRUD idiom — explicit column list, bound params, row mapping
-//! via `next()` + typed `get`. Datetimes project through RFC3339 TEXT columns.
-//! sql-safe: static literals + bound params only; no string concat.
+//! Turso-backed citation store for official-docs context.
 use crate::error::Result;
 pub use crate::graph::{citations_cited_by, traverse_with_citations as traverse};
 use crate::turso::TursoStore;
@@ -85,7 +81,7 @@ pub async fn reward_citation_edges(db: &TursoStore, citation: &str, delta: f64) 
         .await?;
     let mut updated = 0usize;
     while response.next().await?.is_some() {
-        updated += 1;
+        updated = updated.saturating_add(1);
     }
     Ok(updated)
 }

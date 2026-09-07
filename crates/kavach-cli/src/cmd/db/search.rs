@@ -64,9 +64,10 @@ pub(super) fn run(
         let tables: Vec<&str> = category.map_or_else(|| ALL_CATEGORIES.to_vec(), |c| vec![c]);
 
         let mut all_entries = Vec::new();
+        let limit_i64 = i64::try_from(limit).map_or(i64::MAX, |l| l);
         for table in &tables {
             match store
-                .list_with_filter(project_slug, Some(table), status, contains, limit as i64)
+                .list_with_filter(project_slug, Some(table), status, contains, limit_i64)
                 .await
             {
                 Ok(rows) => all_entries.extend(rows),
@@ -82,8 +83,8 @@ pub(super) fn run(
 
         // Sort by updated_at descending (most recent first)
         all_entries.sort_by(|a, b| {
-            let a_ts = a.updated_at.unwrap_or_else(|| chrono::Utc::now());
-            let b_ts = b.updated_at.unwrap_or_else(|| chrono::Utc::now());
+            let a_ts = a.updated_at.unwrap_or_else(chrono::Utc::now);
+            let b_ts = b.updated_at.unwrap_or_else(chrono::Utc::now);
             b_ts.cmp(&a_ts)
         });
         all_entries.truncate(limit);

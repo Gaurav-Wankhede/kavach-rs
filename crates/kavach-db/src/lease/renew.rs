@@ -74,7 +74,7 @@ async fn renew_table(
         .await?;
     let mut renewed = 0usize;
     while resp.next().await?.is_some() {
-        renewed += 1;
+        renewed = renewed.saturating_add(1);
     }
     Ok(renewed)
 }

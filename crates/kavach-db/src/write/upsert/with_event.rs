@@ -9,7 +9,7 @@ use kavach_types::Priority;
 pub async fn upsert_entry_with_event(
     db: &TursoStore,
     category: &str,
-    project_id: &String,
+    project_id: &str,
     entry_key: &str,
     title: &str,
     content: &str,

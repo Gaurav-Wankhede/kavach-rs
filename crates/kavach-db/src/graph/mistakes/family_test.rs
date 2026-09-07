@@ -18,9 +18,7 @@ async fn family_of(db: &TursoStore, entity_type: &str) -> Result<Option<String>>
         .await
         .expect("query");
     let row = resp.next().await.expect("next");
-    Ok(row
-        .map(|r| r.get::<Option<String>>(0).expect("family"))
-        .flatten())
+    Ok(row.and_then(|r| r.get::<Option<String>>(0).expect("family")))
 }
 
 #[tokio::test]
@@ -102,8 +100,7 @@ async fn anti_pattern_default_family_is_mistake_overlay_is_loophole() {
                 .await
                 .expect("q");
             let row = r.next().await.expect("next");
-            row.map(|x| x.get::<Option<String>>(0).expect("family"))
-                .flatten()
+            row.and_then(|x| x.get::<Option<String>>(0).expect("family"))
         }
     };
     assert_eq!(read("ap-default").await.as_deref(), Some(FAMILY_MISTAKE));

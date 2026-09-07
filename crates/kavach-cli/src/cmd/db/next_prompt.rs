@@ -57,7 +57,7 @@ pub(crate) fn run(project: &str) -> i32 {
 /// skip), then serve it. Fail-soft: any author/write error falls back to the
 /// strict missing-prompt error so the harness never crashes.
 async fn author_and_serve(
-    store: &impl EntryStore,
+    store: &(impl EntryStore + Sync),
     project: &str,
     card: &MemoryEntry,
 ) -> i32 {
@@ -65,10 +65,10 @@ async fn author_and_serve(
     let authored = match kavach_advisor::ask(&prompt, 4) {
         Ok(text) if !text.trim().is_empty() => text,
         _ => {
+            let key = &card.entry_key;
             return render_err(&format!(
-                "error: top todo card '{}' has no exec_prompt and auto-authoring failed \
-                 (set ANTHROPIC_API_KEY); author one with --exec-prompt",
-                card.entry_key
+                "error: top todo card '{key}' has no exec_prompt and auto-authoring failed \
+                 (set ANTHROPIC_API_KEY); author one with --exec-prompt"
             ));
         }
     };

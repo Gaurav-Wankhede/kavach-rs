@@ -150,7 +150,7 @@ async fn edges_for_keys(
     let mut rows = store
         .exec_params(&sql, params)
         .await
-        .map_err(|e| crate::error::Error::Turso(e))?;
+        .map_err(crate::error::Error::Turso)?;
     let mut result = Vec::new();
     while let Some(row) = rows
         .next()

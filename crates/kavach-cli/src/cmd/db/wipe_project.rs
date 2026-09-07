@@ -119,7 +119,7 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
                 let mut total = 0usize;
                 for (table, count) in &report.tables {
                     if *count > 0 {
-                        let line = format!("{} {}: {} {} rows", prefix, table, action, count);
+                        let line = format!("{prefix} {table}: {action} {count} rows");
                         if let Err(io_err) = print_or_exit(&line) {
                             return into_exit_code(io_err);
                         }
@@ -127,21 +127,21 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
                     total = total.saturating_add(*count);
                 }
                 if report.project_deleted {
-                    if let Err(io_err) = print_or_exit(&format!("{} project registry: {} 1 row", prefix, action)) {
+                    let msg = format!("{prefix} project registry: {action} 1 row");
+                    if let Err(io_err) = print_or_exit(&msg) {
                         return into_exit_code(io_err);
                     }
                 }
+                let count = report.tables.len();
                 let summary = format!(
-                    "{} total: {total} rows {} across {} tables",
-                    prefix, action_past, report.tables.len()
+                    "{prefix} total: {total} rows {action_past} across {count} tables"
                 );
                 if let Err(io_err) = print_or_exit(&summary) {
                     return into_exit_code(io_err);
                 }
                 if dry_run {
-                    if let Err(io_err) =
-                        print_or_exit("[dry-run] NO CHANGES MADE — run with --confirm to execute")
-                    {
+                    let res = print_or_exit("[dry-run] NO CHANGES MADE — run with --confirm to execute");
+                    if let Err(io_err) = res {
                         return into_exit_code(io_err);
                     }
                 }
@@ -166,13 +166,14 @@ struct WipeReport {
 }
 
 async fn wipe_project_turso(
-    store: &impl EntryStore,
+    store: &(impl EntryStore + Sync),
     project: &str,
     dry_run: bool,
 ) -> Result<WipeReport, String> {
     let mut report = WipeReport {
-        project_slug: project.to_string(),
-        ..Default::default()
+        project_slug: project.to_owned(),
+        tables: Vec::new(),
+        project_deleted: false,
     };
 
     // Categories to wipe
@@ -185,13 +186,14 @@ async fn wipe_project_turso(
             .map_err(|e| format!("list {cat}: {e}"))?;
         let count = rows.len();
         if count > 0 {
-            report.tables.push((cat.to_string(), count));
+            report.tables.push((cat.to_owned(), count));
             if !dry_run {
                 for row in rows {
+                    let key = &row.entry_key;
                     store
-                        .delete_by_key(project, cat, &row.entry_key)
+                        .delete_by_key(project, cat, key)
                         .await
-                        .map_err(|e| format!("delete {cat}/{}: {e}", row.entry_key))?;
+                        .map_err(|e| format!("delete {cat}/{key}: {e}"))?;
                 }
             }
         }

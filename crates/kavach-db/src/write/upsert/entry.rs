@@ -10,7 +10,7 @@ use kavach_types::Priority;
 pub async fn upsert_entry(
     db: &TursoStore,
     category: &str,
-    project_id: &String,
+    project_id: &str,
     entry_key: &str,
     title: &str,
     content: &str,
@@ -37,7 +37,7 @@ pub async fn upsert_entry(
                  updated_at = excluded.updated_at \
              RETURNING entry_key",
             libsql::params![
-                project_id.clone(),
+                project_id.to_owned(),
                 category.to_owned(),
                 entry_key.to_owned(),
                 title.to_owned(),

@@ -383,27 +383,26 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                 }
             }
         }
-        // Build MemoryEntry for upsert
-        let now = chrono::Utc::now().to_rfc3339();
+        let now = chrono::Utc::now();
         let entry = MemoryEntry {
             id: None,
-            project: project_slug.to_string(),
-            category: Some(category.to_string()),
-            entry_key: effective_key.to_string(),
-            title: title.to_string(),
+            project: project_slug.to_owned(),
+            category: Some(category.to_owned()),
+            entry_key: effective_key.to_owned(),
+            title: title.to_owned(),
             content: body.clone(),
-            status: Some("todo".to_string()),
-            entry_status: Some("todo".to_string()),
+            status: Some("todo".to_owned()),
+            entry_status: Some("todo".to_owned()),
             tags: None,
             decay_score: None,
             access_count: Some(0),
-            priority: priority.map(|p| p.get()),
+            priority: priority.map(Priority::get),
             lane: None,
-            exec_prompt: req.exec_prompt.map(|s| s.to_string()),
+            exec_prompt: req.exec_prompt.map(str::to_owned),
             occupied_by: None,
             occupied_until: None,
-            created_at: Some(chrono::DateTime::parse_from_rfc3339(&now).unwrap().with_timezone(&chrono::Utc)),
-            updated_at: Some(chrono::DateTime::parse_from_rfc3339(&now).unwrap().with_timezone(&chrono::Utc)),
+            created_at: Some(now),
+            updated_at: Some(now),
         };
         // Upsert the entry (includes FTS sync and write-time embedding)
         if let Err(e) = store.upsert_entry(&entry).await {

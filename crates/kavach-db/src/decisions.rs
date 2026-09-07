@@ -61,8 +61,8 @@ pub async fn algo_list_recent(
             time_complexity: r.get::<String>(4)?,
             space_complexity: r.get::<String>(5)?,
             file_path: r.get::<String>(6)?,
-            search_year: r.get::<i64>(7)? as i32,
-            search_month: r.get::<i64>(8)? as i32,
+            search_year: i32::try_from(r.get::<i64>(7)?).unwrap_or_default(),
+            search_month: i32::try_from(r.get::<i64>(8)?).unwrap_or_default(),
         });
     }
     Ok(out)
@@ -251,8 +251,8 @@ pub async fn arch_list_recent(
             failure_mode: r.get::<String>(5)?,
             tradeoff: r.get::<String>(6)?,
             file_path: r.get::<String>(7)?,
-            search_year: r.get::<i64>(8)? as i32,
-            search_month: r.get::<i64>(9)? as i32,
+            search_year: i32::try_from(r.get::<i64>(8)?).unwrap_or_default(),
+            search_month: i32::try_from(r.get::<i64>(9)?).unwrap_or_default(),
         });
     }
     Ok(out)
