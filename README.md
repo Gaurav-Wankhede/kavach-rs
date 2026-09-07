@@ -80,11 +80,11 @@ AI coding agents are powerful but **stateless between sessions** and easily slip
 
 ## How It Works — System Architecture
 
-Every harness lifecycle event invokes the `kavach` binary as a thin client. Gates are pure Rust functions that inspect the event and return **allow / block / ask**. All durable state lives in a standalone SurrealDB **server** (not a daemon) — every Kavach process is a thin WebSocket client of it, and the server is the single writer.
+Every harness lifecycle event invokes the `kavach` binary. Gates are pure Rust functions that inspect the event and return **allow / block / ask**. All durable state lives in an **embedded Turso/libSQL database** (`~/.kavach/kavach.db`) in WAL mode — zero daemon, zero external server process, zero WebSocket IPC hop.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│   AI HARNESS  (Claude Code · Codex · Cursor — identical hook set)              │
+│   AI HARNESS  (Claude Code · Codex · Cursor · Antigravity)                   │
 │   settings.json hooks → ~/.local/bin/kavach gates <event> --hook              │
 └───────────────┬──────────────────────────────────────────────────────────────┘
                 │ lifecycle events
@@ -99,32 +99,21 @@ Every harness lifecycle event invokes the `kavach` binary as a thin client. Gate
     │ [RECALL] context   │ brain.think │ (WRITE)                    │ (WRITE)
     ▼ to agent           │ (READ)      ▼                            ▼
                          │  ┌──────────────────────────────────────────────────┐
-                         │  │   kavach-rpc  ── IN-PROCESS dispatch ──           │
-                         │  │   (NO daemon, NO Unix socket — client.rs)        │
-                         │  │   holds ONE long-lived DB handle:                │
-                         └─►│   open_default_held()                            │
-                            │   verbs: brain.think · concept.* · …             │
+                         │  │   kavach-db  ── In-Process TursoStore (libSQL) ──│
+                         │  │   Direct embedded SQLite/WAL engine (no daemon)  │
+                         └─►│   FTS5 BM25 · BGE-small Vector ANN · Graphs (CTE)│
+                            │   verbs: brain.think · concept.* · entries.*     │
                             └──────────────────────┬───────────────────────────┘
-                                                   │ ws://127.0.0.1:7710
-                                                   │ (thin ws CLIENT; root signin)
+                                                   │ embedded in-process
                             ┌──────────────────────▼───────────────────────────┐
-                            │   surreal start  SERVER   ◄── the real "server"   │
-                            │   official SurrealDB binary                       │
-                            │   launchd  ai.shared.kavach-surreal  (KeepAlive)  │
-                            │   ★ SERIALIZES ALL WRITERS — no file LOCK to hold │
-                            └──────────────────────┬───────────────────────────┘
-                                                   │ owns on-disk store
-                            ┌──────────────────────▼───────────────────────────┐
-                            │  kv-rocksdb (BM25 FULLTEXT + concept graph)       │
-                            │  per-OS data dir / SharedAI / kavach.surreal      │
-                            │  (macOS · Linux · Windows — resolved at runtime)  │
+                            │  ~/.kavach/kavach.db (WAL Mode + FTS5 + Vectors) │
+                            │  ~/.kavach/backups/ (Automated snapshots & rot)  │
+                            │  No external server or daemon required           │
                             └───────────────────────────────────────────────────┘
 
-  every kavach process (gate · CLI · web) = a thin ws CLIENT of the surreal SERVER.
-  the SERVER is the single writer. there is no kavach-owned daemon anywhere.
+  Every kavach process executes against embedded Turso/libSQL with zero network hops.
+  WAL checkpoint hygiene and automatic snapshots ensure ACID safety and high performance.
 ```
-
-> **Two layers, named correctly.** `kavach-rpc` is an **in-process** dispatch (not a daemon, not a socket) that holds one DB handle via `open_default_held()`. The **`surreal start` server** (the official SurrealDB binary, supervised by launchd `ai.shared.kavach-surreal` on `ws://127.0.0.1:7710`) is the single writer — a real server, not a daemon.
 
 <hr>
 

@@ -41,7 +41,7 @@ pub(super) fn run(keep: usize) -> i32 {
         // 2. Run integrity check
         match store.integrity_check().await {
             Ok(rows) => {
-                if rows.len() != 1 || rows[0] != "ok" {
+                if rows.len() != 1 || rows.first().is_none_or(|r| r != "ok") {
                     let msg = format!("error: integrity check failed before backup: {rows:?}");
                     if let Err(io_err) = ewrite_or_exit(&msg) {
                         return into_exit_code(io_err);
@@ -116,18 +116,14 @@ fn rotate_backups(dir: &Path, keep: usize) {
         .flatten()
         .filter_map(|e| {
             let p = e.path();
-            if p.is_file() && p.extension().is_some_and(|ext| ext == "db") {
-                Some(p)
-            } else {
-                None
-            }
+            (p.is_file() && p.extension().is_some_and(|ext| ext == "db")).then_some(p)
         })
         .collect();
     files.sort();
     if files.len() > keep {
-        let to_remove = files.len() - keep;
+        let to_remove = files.len().saturating_sub(keep);
         for p in files.into_iter().take(to_remove) {
-            let _ = fs::remove_file(p);
+            drop(fs::remove_file(p));
         }
     }
 }

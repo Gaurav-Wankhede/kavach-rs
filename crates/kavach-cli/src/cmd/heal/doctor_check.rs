@@ -23,6 +23,9 @@ const SELF_CRATES: [&str; 5] = [
     "crates/kavach-surreal/src",
 ];
 
+/// Maximum acceptable WAL size before warning (64MB).
+const MAX_WAL_BYTES: u64 = 64 * 1024 * 1024;
+
 /// Run the kavach self-audit (doctor check). Returns findings found.
 pub(crate) fn run_doctor(workspace_root: &Path) -> Vec<Finding> {
     let mut findings: Vec<Finding> = Vec::new();
@@ -56,15 +59,14 @@ fn check_db_health(findings: &mut Vec<Finding>) {
     let wal_path = base.join("kavach.db-wal");
     if let Ok(meta) = std::fs::metadata(&wal_path) {
         let wal_bytes = meta.len();
-        const MAX_WAL_BYTES: u64 = 64 * 1024 * 1024; // 64MB
         if wal_bytes > MAX_WAL_BYTES {
+            let mb = wal_bytes >> 20;
             findings.push(Finding {
                 class: detect::Class::WalWarning,
                 file: wal_path.to_string_lossy().into_owned(),
                 line: 1,
                 hint: format!(
-                    "WAL file is {} MB (>64MB); run `kavach db checkpoint --truncate` to reclaim disk space",
-                    wal_bytes / (1024 * 1024)
+                    "WAL file is {mb} MB (>64MB); run `kavach db checkpoint --truncate` to reclaim disk space"
                 ),
             });
         }

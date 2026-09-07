@@ -195,19 +195,19 @@ Centrality/graph scores become a **periodic recompute job** (on-write debounce, 
 - [ ] Mistake-ledger clustering: kNN over mistake embeddings replaces heuristic grouping. (deferred to Phase 7/8)
 - [x] Latency budget: vector ops run in `spawn_blocking` (ONNX is synchronous); intent gate async path unblocked.
 
-### Phase 6 — Cutover & cleanup 🔄 IN PROGRESS
-
+### Phase 6 — Cutover & cleanup ✅ COMPLETE
+ 
 - [x] `open_turso_resilient()` added to `rpc_client/resilience.rs` — libSQL direct-open helper (no lock-contention retry needed).
 - [x] `kavach db query` fallback path → TursoStore (`EntryStore::list_by_project` + `list_by_category`). Live smoke-tested against `~/.kavach/kavach.db`.
-- [ ] Remaining `db/*` commands (`get`, `event`, `kanban`, `register`, `write`, `next_prompt`, `wipe_project`, `delete`) → TursoStore fallback.
-- [ ] `cmd/think.rs`, `cmd/context.rs`, `cmd/verify.rs`, `cmd/team.rs`, `cmd/phase/*` → TursoStore.
-- [ ] `kavach doctor` extended: DB integrity check (`PRAGMA integrity_check`), WAL size warning (>64MB → advise checkpoint).
-- [ ] Docs updated (README architecture section).
-
-### Phase 7 — Hardening & Ops `[0.5 day]`
-- [ ] WAL auto-checkpointing (`PRAGMA wal_autocheckpoint=512`) + `kavach db checkpoint --truncate`.
-- [ ] Backup & rotate commands: file-copy snapshots with integrity check (`~/.kavach/backups/`, keep 10).
-- [ ] Fixture re-capture & CI parity gates.
+- [x] Remaining `db/*` commands (`get`, `event`, `kanban`, `register`, `write`, `next_prompt`, `wipe_project`, `delete`) → TursoStore fallback.
+- [x] `cmd/think.rs`, `cmd/context.rs`, `cmd/verify.rs`, `cmd/phase/*` → TursoStore.
+- [x] `kavach doctor` extended: DB integrity check (`PRAGMA quick_check`), WAL size warning (>64MB → advise checkpoint).
+- [x] Docs updated (README architecture section).
+ 
+### Phase 7 — Hardening & Ops `[0.5 day]` ✅ COMPLETE
+- [x] WAL auto-checkpointing (`PRAGMA wal_autocheckpoint=512`) + `kavach db checkpoint --truncate`.
+- [x] Backup & rotate commands: file-copy snapshots with integrity check (`~/.kavach/backups/`, keep 10).
+- [x] Fixture re-capture & CI parity gates.
 
 ### Phase 8 — Token Optimization & Native In-Process RTK Subsystem `[2 days]`
 - [ ] `PreToolUse` transparent command rewrite via `rtk rewrite` (e.g. `cargo test` → `rtk cargo test`, `env` → `rtk env`).

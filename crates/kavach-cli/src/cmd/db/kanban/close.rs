@@ -2,6 +2,7 @@
 // Tries the RPC daemon first; falls back to a direct resilient SurrealDB open
 // only when the daemon is provably down (no competing RocksDB lock holder).
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use kavach_db::turso::entries::EntryStore;
 
 pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
     // EVIDENCE GATE: kanban-close promotes roadmap→verified — run the workspace
@@ -59,7 +60,6 @@ async fn close_direct(project_slug: &str, key: &str) -> i32 {
         Ok(s) => s,
         Err(e) => return write_err(&format!("error: open kavach.db: {e}")),
     };
-    use kavach_db::turso::entries::EntryStore;
     let entry = match store.get_by_key(project_slug, "roadmap", key).await {
         Ok(Some(e)) => e,
         Ok(None) => return write_err(&format!("error: no roadmap entry with key: {key}")),
