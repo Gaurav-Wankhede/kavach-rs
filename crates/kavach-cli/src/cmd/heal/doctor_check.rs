@@ -39,7 +39,54 @@ pub(crate) fn run_doctor(workspace_root: &Path) -> Vec<Finding> {
             findings.extend(scan_source(&rel_path.to_string_lossy(), &src));
         }
     }
+    // Database integrity and WAL checks (Phase 7 Ops)
+    check_db_health(&mut findings);
     findings
+}
+
+fn check_db_health(findings: &mut Vec<Finding>) {
+    let base = std::env::var_os("KAVACH_HOME").map_or_else(
+        || {
+            dirs::home_dir()
+                .unwrap_or_else(|| std::path::PathBuf::from("."))
+                .join(".kavach")
+        },
+        std::path::PathBuf::from,
+    );
+    let wal_path = base.join("kavach.db-wal");
+    if let Ok(meta) = std::fs::metadata(&wal_path) {
+        let wal_bytes = meta.len();
+        const MAX_WAL_BYTES: u64 = 64 * 1024 * 1024; // 64MB
+        if wal_bytes > MAX_WAL_BYTES {
+            findings.push(Finding {
+                class: detect::Class::WalWarning,
+                file: wal_path.to_string_lossy().into_owned(),
+                line: 1,
+                hint: format!(
+                    "WAL file is {} MB (>64MB); run `kavach db checkpoint --truncate` to reclaim disk space",
+                    wal_bytes / (1024 * 1024)
+                ),
+            });
+        }
+    }
+    let db_path = base.join("kavach.db");
+    if db_path.exists() {
+        let out = std::process::Command::new("sqlite3")
+            .arg(&db_path)
+            .arg("PRAGMA quick_check;")
+            .output();
+        if let Ok(o) = out {
+            let res = String::from_utf8_lossy(&o.stdout);
+            if !o.status.success() || res.trim() != "ok" {
+                findings.push(Finding {
+                    class: detect::Class::DbHealth,
+                    file: db_path.to_string_lossy().into_owned(),
+                    line: 1,
+                    hint: format!("database quick_check failed: {}", res.trim()),
+                });
+            }
+        }
+    }
 }
 
 /// Collect every `.rs` file under `root` (recursive, test files included — a

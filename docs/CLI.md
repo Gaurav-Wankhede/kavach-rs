@@ -117,6 +117,38 @@ EXAMPLES:
 WHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks.
 ```
 
+## `kavach db backup`
+
+Backup database snapshot with integrity check to ~/.kavach/backups/
+
+| Flag | Description | Default |
+|---|---|---|
+| `--keep` | Number of recent backups to keep (default: 10) | 10 |
+
+```
+EXAMPLES:
+  kavach db backup
+  kavach db backup --keep 5
+
+WHEN: Create a point-in-time snapshot of kavach.db.
+```
+
+## `kavach db checkpoint`
+
+Flush and checkpoint WAL journal pages (PRD Phase 7 Ops discipline)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--truncate` | Truncate WAL file to zero bytes | false |
+
+```
+EXAMPLES:
+  kavach db checkpoint
+  kavach db checkpoint --truncate
+
+WHEN: Reclaim disk space or checkpoint transactions before backup.
+```
+
 ## `kavach db citation-add`
 
 Add or refresh a citation (official-docs context) keyed by (project, entry-key)

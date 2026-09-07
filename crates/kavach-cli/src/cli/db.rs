@@ -449,4 +449,22 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         #[arg(long, default_value_t = false)]
         json: bool,
     },
+    /// Flush and checkpoint WAL journal pages (PRD Phase 7 Ops discipline)
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db checkpoint\n  kavach db checkpoint --truncate\n\nWHEN: Reclaim disk space or checkpoint transactions before backup."
+    )]
+    Checkpoint {
+        /// Truncate WAL file to zero bytes
+        #[arg(long, default_value_t = false)]
+        truncate: bool,
+    },
+    /// Backup database snapshot with integrity check to ~/.kavach/backups/
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db backup\n  kavach db backup --keep 5\n\nWHEN: Create a point-in-time snapshot of kavach.db."
+    )]
+    Backup {
+        /// Number of recent backups to keep (default: 10)
+        #[arg(long, default_value_t = 10)]
+        keep: usize,
+    },
 }

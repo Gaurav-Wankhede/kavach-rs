@@ -4,6 +4,8 @@
 // This change adds only `pub(crate) mod write;` so `cli::db` can reference
 // `write::CATEGORY_HELP` — the category single-source-of-truth
 // (rca.kavach-db-write-category-enum-inconsistent).
+mod backup;
+mod checkpoint;
 mod citation;
 mod concept;
 mod delete;

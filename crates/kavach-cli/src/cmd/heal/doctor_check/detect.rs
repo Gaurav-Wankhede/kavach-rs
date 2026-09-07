@@ -15,6 +15,10 @@ pub(crate) enum Class {
     DestructiveQuery,
     /// `Err(_) =>` arm collapsing an error into a non-error value silently.
     SwallowedArm,
+    /// Database integrity check error (PRAGMA integrity_check).
+    DbHealth,
+    /// Database WAL size exceeded threshold (>64MB).
+    WalWarning,
 }
 
 impl Class {
@@ -24,6 +28,8 @@ impl Class {
             Self::SwallowedResult => "swallowed-result",
             Self::DestructiveQuery => "destructive-query",
             Self::SwallowedArm => "swallowed-arm",
+            Self::DbHealth => "db-health",
+            Self::WalWarning => "wal-warning",
         }
     }
 }

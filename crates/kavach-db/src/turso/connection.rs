@@ -119,6 +119,34 @@ impl TursoStore {
         self.init_schema().await
     }
 
+    /// Run WAL checkpoint on the database.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure.
+    pub async fn wal_checkpoint(&self, truncate: bool) -> TursoResult<()> {
+        let sql = if truncate {
+            "PRAGMA wal_checkpoint(TRUNCATE);"
+        } else {
+            "PRAGMA wal_checkpoint(PASSIVE);"
+        };
+        self.exec_drain(sql).await
+    }
+
+    /// Run PRAGMA integrity_check on the database.
+    ///
+    /// # Errors
+    /// Returns [`TursoError`] on SQL failure or if integrity check fails.
+    pub async fn integrity_check(&self) -> TursoResult<Vec<String>> {
+        let mut rows = self.conn.query("PRAGMA integrity_check;", ()).await.map_err(TursoError::from)?;
+        let mut results = Vec::new();
+        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+            if let Ok(msg) = row.get::<String>(0) {
+                results.push(msg);
+            }
+        }
+        Ok(results)
+    }
+
     pub(crate) async fn exec(&self, sql: &str) -> TursoResult<u64> {
         self.conn.execute(sql, ()).await.map_err(Into::into)
     }
