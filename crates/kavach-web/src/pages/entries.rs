@@ -74,6 +74,6 @@ fn status_class(status: &str) -> &'static str {
         "verified" => "s-verified",
         "inprogress" | "in_progress" => "s-prog",
         "onhold" | "on_hold" => "s-hold",
-        _ => "s-todo",
+        _other => "s-todo",
     }
 }

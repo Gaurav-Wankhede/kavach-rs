@@ -48,10 +48,14 @@ pub async fn fragment() -> Html<String> {
 
 /// `GET /concepts/search?q=<query>` — search results fragment.
 pub async fn search(Query(q): Query<SearchQ>) -> Html<String> {
-    if q.q.trim().is_empty() {
+    let query_str = q.q.trim();
+    if query_str.is_empty() {
         return render(list_section().await);
     }
-    let params = json!({ "query": q.q, "limit": 100 });
+    if query_str.len() > 256 {
+        return Html("<p class=\"empty\">Search query is too long (max 256 chars).</p>".to_string());
+    }
+    let params = json!({ "query": query_str, "limit": 100 });
     render(
         call::<_, Vec<Concept>>("concept.search", params)
             .await
@@ -59,8 +63,33 @@ pub async fn search(Query(q): Query<SearchQ>) -> Html<String> {
     )
 }
 
+fn validate_add_form(f: &AddForm) -> Result<(), &'static str> {
+    if f.name.trim().is_empty() || f.name.len() > 128 {
+        return Err("Concept name must be between 1 and 128 characters.");
+    }
+    if f.display.trim().is_empty() || f.display.len() > 256 {
+        return Err("Concept display must be between 1 and 256 characters.");
+    }
+    if f.desc.len() > 2048 {
+        return Err("Concept description cannot exceed 2048 characters.");
+    }
+    if f.sources.trim().is_empty() {
+        return Err("At least one source URL is required.");
+    }
+    Ok(())
+}
+
 /// `POST /concepts/add` — create a concept, then return the refreshed list.
 pub async fn add(Form(f): Form<AddForm>) -> Html<String> {
+    if let Err(msg) = validate_add_form(&f) {
+        let panel = html! {
+            div.panel.panel-error {
+                h2 { "Validation error" }
+                pre { (msg) }
+            }
+        };
+        return Html(panel.into_string());
+    }
     let sources: Vec<String> = f
         .sources
         .split(',')

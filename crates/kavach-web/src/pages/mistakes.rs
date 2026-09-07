@@ -36,15 +36,26 @@ pub async fn page() -> Html<String> {
     Html(shell("/mistakes", None, inner).into_string())
 }
 
-/// `GET /mistakes/lookup?name=<name>` — the hit-count result fragment.
-pub async fn lookup(Query(q): Query<NameQ>) -> Html<String> {
-    render(result(q.name).await)
+fn check_name(name: &str) -> Result<&str, &'static str> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("Enter an anti-pattern name.");
+    }
+    if trimmed.len() > 128 {
+        return Err("Anti-pattern name is too long (max 128 characters).");
+    }
+    Ok(trimmed)
 }
 
-async fn result(name: String) -> Result<Markup, RpcError> {
-    if name.trim().is_empty() {
-        return Ok(html! { p.empty { "Enter an anti-pattern name." } });
+/// `GET /mistakes/lookup?name=<name>` — the hit-count result fragment.
+pub async fn lookup(Query(q): Query<NameQ>) -> Html<String> {
+    match check_name(&q.name) {
+        Ok(valid_name) => render(result(valid_name).await),
+        Err(msg) => Html(format!("<p class=\"empty\">{msg}</p>")),
     }
+}
+
+async fn result(name: &str) -> Result<Markup, RpcError> {
     let r: HitCount = call("mistake.hit_count", json!({ "name": name })).await?;
     Ok(html! {
         div.panel {

@@ -13,22 +13,27 @@ use crate::rpc::RpcError;
 
 const CATEGORY: &str = "decision";
 
+fn check_project_q(q: &ProjectQ) -> Option<String> {
+    q.project
+        .as_ref()
+        .filter(|p| !p.trim().is_empty() && p.len() <= 128)
+        .cloned()
+}
+
 /// `GET /decisions?project=<slug>` — full page.
 pub async fn page(Query(q): Query<ProjectQ>) -> Html<String> {
-    render(body(q.project).await)
+    render(body(check_project_q(&q)).await)
 }
 
 /// `GET /decisions/fragment?project=<slug>` — just the table, for SSE swaps.
 pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
-    render(section(q.project).await)
+    render(section(check_project_q(&q)).await)
 }
 
 async fn body(requested: Option<String>) -> Result<Markup, RpcError> {
     let project = resolve_project(requested).await?;
-    let frag = format!(
-        "/decisions/fragment?project={}",
-        project.as_deref().unwrap_or("")
-    );
+    let slug: &str = project.as_deref().unwrap_or_default();
+    let frag = format!("/decisions/fragment?project={slug}");
     let inner = html! {
         (heading("Decisions"))
         (live(&frag, section(project.clone()).await?))

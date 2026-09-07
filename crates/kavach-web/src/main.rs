@@ -5,16 +5,19 @@
 //! offline panel.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
-        )
-        .init();
+    let filter = match tracing_subscriber::EnvFilter::try_from_default_env() {
+        Ok(f) => f,
+        Err(_) => tracing_subscriber::EnvFilter::new("info"),
+    };
+    tracing_subscriber::fmt().with_env_filter(filter).init();
 
-    let port = std::env::args()
-        .nth(1)
-        .and_then(|s| s.parse::<u16>().ok())
-        .unwrap_or(kavach_web::DEFAULT_PORT);
+    let port = match std::env::args().nth(1) {
+        Some(s) => match s.parse::<u16>() {
+            Ok(p) => p,
+            Err(_) => kavach_web::DEFAULT_PORT,
+        },
+        None => kavach_web::DEFAULT_PORT,
+    };
 
     kavach_web::serve(port)
 }

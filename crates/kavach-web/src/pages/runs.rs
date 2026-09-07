@@ -111,9 +111,15 @@ fn table(runs: &[RunRow]) -> Markup {
                         tr {
                             td { span.status.(status_class(&r.status)) { (r.status) } }
                             td.key { (r.entry_key) }
-                            td { (r.branch.as_deref().unwrap_or("—")) }
-                            td.time { (r.started_at.as_deref().unwrap_or("—")) }
-                            td.num { (r.pid.map(|p| p.to_string()).as_deref().unwrap_or("—")) }
+                            td { (match r.branch.as_deref() { Some(b) => b, None => "—" }) }
+                            td.time { (match r.started_at.as_deref() { Some(t) => t, None => "—" }) }
+                            td.num {
+                                @if let Some(pid) = r.pid {
+                                    (pid)
+                                } @else {
+                                    "—"
+                                }
+                            }
                             td {
                                 @if let Some(_pid) = r.pid {
                                     @if r.status != "cancelled" && r.status != "done" {
@@ -137,18 +143,25 @@ fn status_class(status: &str) -> &'static str {
         "done" => "s-done",
         "cancelled" => "s-hold",
         "running" => "s-prog",
-        _ => "s-todo",
+        _other => "s-todo",
     }
+}
+
+fn check_project_q(q: &ProjectQ) -> Option<String> {
+    q.project
+        .as_ref()
+        .filter(|p| !p.trim().is_empty() && p.len() <= 128)
+        .cloned()
 }
 
 /// `GET /runs?project=<slug>` — full page.
 pub async fn page(Query(q): Query<ProjectQ>) -> Html<String> {
-    render(body(q.project).await)
+    render(body(check_project_q(&q)).await)
 }
 
 /// `GET /runs/fragment?project=<slug>` — just the table, for SSE swaps.
 pub async fn fragment(Query(q): Query<ProjectQ>) -> Html<String> {
-    render(section(q.project).await)
+    render(section(check_project_q(&q)).await)
 }
 
 /// `POST /runs/cancel` — cancel a run by ID.

@@ -58,13 +58,32 @@ fn is_http_url(url: &str) -> bool {
     host.is_some_and(|h| !h.is_empty() && !h.starts_with('/'))
 }
 
+fn validate_citation(f: &AddForm) -> Result<(), &'static str> {
+    if f.project.trim().is_empty() || f.project.len() > 128 {
+        return Err("Project name must be between 1 and 128 characters.");
+    }
+    if f.entry_key.trim().is_empty() || f.entry_key.len() > 128 {
+        return Err("Entry key must be between 1 and 128 characters.");
+    }
+    if f.name.trim().is_empty() || f.name.len() > 256 {
+        return Err("Citation name must be between 1 and 256 characters.");
+    }
+    if f.slug.trim().is_empty() || f.slug.len() > 128 {
+        return Err("Citation slug must be between 1 and 128 characters.");
+    }
+    if !is_http_url(&f.url) || f.url.len() > 2048 {
+        return Err("Citation url must be valid http:// or https:// (max 2048 chars).");
+    }
+    Ok(())
+}
+
 /// `POST /citations/add` — upsert a citation, then return the refreshed list.
 pub async fn add(Form(f): Form<AddForm>) -> Html<String> {
-    if !is_http_url(&f.url) {
+    if let Err(msg) = validate_citation(&f) {
         let panel = html! {
             div.panel.panel-error {
                 h2 { "Request failed" }
-                pre { "citation url must be http:// or https://" }
+                pre { (msg) }
             }
         };
         return Html(panel.into_string());
@@ -83,7 +102,7 @@ pub async fn add(Form(f): Form<AddForm>) -> Html<String> {
 
 async fn body(requested: Option<String>) -> Result<Markup, RpcError> {
     let project = resolve_project(requested).await?;
-    let slug = project.as_deref().unwrap_or("");
+    let slug: &str = project.as_deref().unwrap_or_default();
     let frag = format!("/citations/fragment?project={slug}");
     let inner = html! {
         (heading("Citations"))

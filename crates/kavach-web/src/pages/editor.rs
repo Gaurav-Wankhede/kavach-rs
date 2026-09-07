@@ -40,8 +40,24 @@ pub struct StatusForm {
     status: String,
 }
 
+fn validate_edit_q(q: &EditQ) -> Result<(), &'static str> {
+    if q.project.trim().is_empty() || q.project.len() > 256 {
+        return Err("Invalid project.");
+    }
+    if q.category.trim().is_empty() || !["roadmap", "decision"].contains(&q.category.as_str()) {
+        return Err("Invalid category.");
+    }
+    if q.key.trim().is_empty() || q.key.len() > 128 {
+        return Err("Invalid key.");
+    }
+    Ok(())
+}
+
 /// `GET /entries/edit?project=&category=&key=` — the prefilled edit form.
 pub async fn edit(Query(q): Query<EditQ>) -> Html<String> {
+    if let Err(msg) = validate_edit_q(&q) {
+        return Html(format!("<div class=\"panel panel-error\"><h2>Validation error</h2><pre>{msg}</pre></div>"));
+    }
     render(form(q).await)
 }
 
@@ -117,7 +133,11 @@ fn result_panel(r: Result<WriteResult, RpcError>, project: &str, category: &str)
         }
         .into_string(),
         Ok(w) => {
-            html! { div.panel.panel-error { (w.error.unwrap_or_else(|| "write failed".into())) } }
+            let err_msg = match w.error {
+                Some(err) => err,
+                None => "write failed".to_string(),
+            };
+            html! { div.panel.panel-error { (err_msg) } }
                 .into_string()
         }
         Err(e) => error_panel(&e).into_string(),
@@ -135,9 +155,10 @@ fn list_path(category: &str) -> &'static str {
 async fn form(q: EditQ) -> Result<Markup, RpcError> {
     let entries = fetch(&q.project, &q.category).await?;
     let found = entries.into_iter().find(|e| e.key == q.key);
-    let (title, content) = found
-        .map(|e| (e.title, e.content.unwrap_or_default()))
-        .unwrap_or_default();
+    let (title, content) = match found {
+        Some(e) => (e.title, e.content.unwrap_or_default()),
+        None => (String::new(), String::new()),
+    };
     let inner = html! {
         (heading("Edit Entry"))
         div.muted { (q.category) " · " (q.key) }
