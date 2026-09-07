@@ -7,10 +7,9 @@ mod resilience;
 mod witness;
 mod write_request;
 pub(crate) use error::{format_err, should_fallback_to_direct};
-pub(crate) use resilience::{open_direct_resilient, open_turso_resilient, or_str};
+pub(crate) use resilience::{open_turso_resilient, or_str};
 pub(crate) use witness::mint_receipt;
-pub(crate) use write_request::WriteRequest;
-pub(crate) use write_request::write;
+pub(crate) use write_request::{WriteRequest, write};
 use kavach_rpc::client::call;
 use kavach_rpc::methods::db::{
     DeleteParams, DeleteResult, EventParams, EventResult, GetParams, GetResult,

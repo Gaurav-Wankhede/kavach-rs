@@ -55,29 +55,17 @@ pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
 }
 
 async fn close_direct(project_slug: &str, key: &str) -> i32 {
-    let db = match super::super::rpc_client::open_direct_resilient().await {
-        Ok(d) => d,
-        Err(e) => return write_err(&format!("error: open database: {e}")),
+    let store = match super::super::rpc_client::open_turso_resilient().await {
+        Ok(s) => s,
+        Err(e) => return write_err(&format!("error: open kavach.db: {e}")),
     };
-    let project = match kavach_db::project_get_by_slug(&db, project_slug).await {
-        Ok(Some(p)) => p,
-        Ok(None) => return write_err(&format!("error: project not found: {project_slug}")),
-        Err(e) => return write_err(&format!("error: {e}")),
-    };
-    if let Err(code) = super::super::validate_project_workdir(&project) {
-        return code;
-    }
-    let Some(project_id) = project.id else {
-        return write_err("error: project has no id");
-    };
-    let entry = match kavach_db::get_by_key(&db, "roadmap", &project_id, key).await {
+    use kavach_db::turso::entries::EntryStore;
+    let entry = match store.get_by_key(project_slug, "roadmap", key).await {
         Ok(Some(e)) => e,
         Ok(None) => return write_err(&format!("error: no roadmap entry with key: {key}")),
         Err(e) => return write_err(&format!("error: {e}")),
     };
-    if let Err(e) =
-        kavach_db::update_status(&db, "roadmap", &project_id, key, "verified").await
-    {
+    if let Err(e) = store.update_status(project_slug, "roadmap", key, "verified").await {
         return write_err(&format!("error: {e}"));
     }
     let ok = format!("closed [roadmap] {key} — {}", entry.title);
