@@ -21,7 +21,7 @@ use crate::gates::stop::shared::StopCtx;
 /// Stop-retry terminal. Runs the ordered branch chain; the first branch to
 /// `Break` decides the stop. Only active under `stop_hook_active`.
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if !ctx.input.stop_hook_active {
+    if !ctx.input.is_stop_hook_active() {
         return ControlFlow::Continue(());
     }
     failure::check(ctx)?;

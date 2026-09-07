@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
 fn null_string<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
-    Ok(Option::<String>::deserialize(d)?.unwrap_or_default())
+    Option::<String>::deserialize(d)?.map_or_else(|| Ok(String::new()), Ok)
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -38,8 +38,8 @@ pub struct HookInput {
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub prompt: String,
 
-    #[serde(default)]
-    pub stop_hook_active: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_hook_active: Option<bool>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub background_tasks: Vec<serde_json::Value>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -205,7 +205,7 @@ impl HookInput {
             "task_description" => &self.task_description,
             "error" => &self.error,
             "compact_summary" => &self.compact_summary,
-            _ => return None,
+            _other => return None,
         };
         if s.is_empty() { None } else { Some(s) }
     }
@@ -216,13 +216,21 @@ impl HookInput {
     }
 
     #[must_use]
+    pub fn is_stop_hook_active(&self) -> bool {
+        self.stop_hook_active.is_some_and(|b| b)
+    }
+
+    #[must_use]
     pub fn effort_level(&self) -> String {
         if let Some(e) = self.effort.as_ref()
             && !e.level.is_empty()
         {
             return e.level.clone();
         }
-        std::env::var("CLAUDE_EFFORT").unwrap_or_default()
+        match std::env::var("CLAUDE_EFFORT") {
+            Ok(v) if !v.is_empty() => v,
+            Ok(_) | Err(_) => String::new(),
+        }
     }
 }
 
@@ -230,6 +238,6 @@ fn vendor_alias(key: &str) -> Option<&'static str> {
     match key {
         "file_path" => Some("path"),
         "content" => Some("contents"),
-        _ => None,
+        _other => None,
     }
 }

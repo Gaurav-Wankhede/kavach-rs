@@ -63,7 +63,7 @@ fn has_gaming_language(vocab: &DoneGamingVocab, lc: &str, raw: &str) -> bool {
 /// The block verdict (`Break`) when the three-condition AND holds; else `Continue`.
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Re-entrant stop (hook already active): never fire.
-    if ctx.input.stop_hook_active {
+    if ctx.input.is_stop_hook_active() {
         return ControlFlow::Continue(());
     }
     let raw = ctx.input.last_assistant_message.trim();

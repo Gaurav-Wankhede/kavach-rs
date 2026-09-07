@@ -9,7 +9,7 @@ use super::super::shared::{StopCtx, card_owns_any_turn_file};
 use crate::gates::stop_dispatch::card_is_still_open;
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if !(!ctx.input.stop_hook_active
+    if !(!ctx.input.is_stop_hook_active()
         && !ctx.session.files_modified_this_turn.is_empty()
         && !ctx.session.current_kanban_card.is_empty())
     {

@@ -13,7 +13,7 @@ use super::super::shared::StopCtx;
 use crate::gates::stop_dispatch::card_is_still_open;
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if !ctx.input.stop_hook_active && !ctx.session.current_kanban_card.is_empty() {
+    if !ctx.input.is_stop_hook_active() && !ctx.session.current_kanban_card.is_empty() {
         let card = ctx.session.current_kanban_card.clone();
         // Only a terminal (verified/deferred) card is a stale pointer to clear.
         // An open card is left in place for the reblock dispatch; never halt.

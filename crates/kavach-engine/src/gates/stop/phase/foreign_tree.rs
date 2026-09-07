@@ -29,7 +29,7 @@ use crate::gates::stop::foreign_tree_logic::foreign_dirty_count;
 const FOREIGN_DIRTY_THRESHOLD: usize = 8;
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if ctx.input.stop_hook_active {
+    if ctx.input.is_stop_hook_active() {
         return ControlFlow::Continue(());
     }
     // OPT-IN: guard concurrent editors via git-dirty heuristic (belt-and-suspenders).

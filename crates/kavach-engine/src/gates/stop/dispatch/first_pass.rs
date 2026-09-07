@@ -19,7 +19,7 @@ use core::ops::ControlFlow;
 use super::super::shared::StopCtx;
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if ctx.input.stop_hook_active {
+    if ctx.input.is_stop_hook_active() {
         return ControlFlow::Continue(());
     }
     task::check(ctx)?;

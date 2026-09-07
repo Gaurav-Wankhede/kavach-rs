@@ -61,15 +61,15 @@ fn cursor_loop_count_maps_to_stop_hook_active() {
     let initial =
         cursor::lower(r#"{"hook_event_name":"stop","loop_count":0}"#).expect("cursor lowers");
     assert!(
-        !initial.stop_hook_active,
+        !initial.is_stop_hook_active(),
         "loop_count 0 is the initial stop"
     );
     let reentry =
         cursor::lower(r#"{"hook_event_name":"stop","loop_count":3}"#).expect("cursor lowers");
-    assert!(reentry.stop_hook_active, "loop_count>0 is a re-entry stop");
+    assert!(reentry.is_stop_hook_active(), "loop_count>0 is a re-entry stop");
     let absent = cursor::lower(r#"{"hook_event_name":"stop"}"#).expect("cursor lowers");
     assert!(
-        !absent.stop_hook_active,
+        !absent.is_stop_hook_active(),
         "absent loop_count defaults to initial"
     );
 }

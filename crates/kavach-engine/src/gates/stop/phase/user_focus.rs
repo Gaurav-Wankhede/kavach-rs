@@ -28,7 +28,7 @@ use super::super::shared::StopCtx;
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Only fires on a fresh stop (not a re-entrant loop tick) where the user
     // steered THIS turn and no card is mid-work by this session.
-    if ctx.input.stop_hook_active
+    if ctx.input.is_stop_hook_active()
         || !ctx.session.user_is_steering_this_turn()
         || !ctx.session.current_kanban_card.is_empty()
     {

@@ -11,7 +11,7 @@ use core::ops::ControlFlow;
 use super::super::shared::StopCtx;
 
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
-    if !ctx.input.stop_hook_active && !ctx.session.current_iteration_file.is_empty() {
+    if !ctx.input.is_stop_hook_active() && !ctx.session.current_iteration_file.is_empty() {
         let file = ctx.session.current_iteration_file.clone();
         // A recorded iteration file that still exists is left untouched (no halt —
         // the dispatch chain decides what happens next). Only a STALE recording

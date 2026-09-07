@@ -42,7 +42,7 @@ pub fn lower(raw_payload: &str) -> Result<HookInput, String> {
         tool_input: cursor_tool_input(obj),
         // Cursor `loop_count>0` maps to CC `stop_hook_active` (the stop gate's
         // retry/verify pivot). See decision.hook.cursor-loop-count-map.
-        stop_hook_active: get_u64(obj, "loop_count") > 0,
+        stop_hook_active: Some(get_u64(obj, "loop_count") > 0),
         ..HookInput::default()
     };
     Ok(input)
