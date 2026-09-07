@@ -15,10 +15,11 @@ use std::path::Path;
 
 /// Crate `src/` roots that constitute kavach's own governed code. A finding here
 /// is a kavach self-bug; code outside these dirs is a user project, not our scope.
-const SELF_CRATES: [&str; 4] = [
+const SELF_CRATES: [&str; 5] = [
     "crates/kavach-engine/src",
     "crates/kavach-session/src",
     "crates/kavach-rpc/src",
+    "crates/kavach-db/src",
     "crates/kavach-surreal/src",
 ];
 

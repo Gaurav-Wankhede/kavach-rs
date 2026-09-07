@@ -1,4 +1,4 @@
-// `kavach verify` — Writer-Evaluator separation gate (SurrealDB-backed).
+// `kavach verify` — Writer-Evaluator separation gate.
 // Runs cargo check + nextest, then transitions roadmap entry done → verified.
 use std::process::Command;
 
@@ -30,7 +30,7 @@ pub(crate) fn run(
 
 #[expect(
     clippy::too_many_lines,
-    reason = "SurrealDB multi-stage verification pipeline with error handling for each stage"
+    reason = "database multi-stage verification pipeline with error handling for each stage"
 )]
 async fn run_async(
     project_slug: &str,
@@ -42,7 +42,7 @@ async fn run_async(
     let db = match kavach_db::open_default().await {
         Ok(d) => d,
         Err(e) => {
-            let msg = format!("error: open SurrealDB: {e}");
+            let msg = format!("error: open database: {e}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
             }
