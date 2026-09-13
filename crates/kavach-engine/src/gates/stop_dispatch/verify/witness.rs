@@ -114,11 +114,46 @@ pub(crate) fn failing_witness_report(cmd: &str, output_tail: &str) -> String {
         output_tail.trim_end()
     )
 }
+/// Compute a content-addressed fingerprint of the git working tree state in `ws`.
+fn compute_workspace_fingerprint(ws: &std::path::Path) -> Option<String> {
+    let head = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(ws)
+        .output()
+        .ok()?;
+    if !head.status.success() {
+        return None;
+    }
+    let status = std::process::Command::new("git")
+        .args(["status", "--porcelain", "-uno"])
+        .current_dir(ws)
+        .output()
+        .ok()?;
+    if !status.status.success() {
+        return None;
+    }
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&head.stdout);
+    hasher.update(&status.stdout);
+    Some(hasher.finalize().to_hex().to_string())
+}
+
 /// Run cargo check + clippy + nextest + git-diff IN `ws` (the discovered Rust
 /// workspace dir) — `current_dir(ws)` so a monorepo's `Backend/` is verified. On
 /// failure, ECHO the failing command + its output to stderr so the agent sees the
 /// REAL error (not an opaque "FAILED") and fixes it instead of theorizing a phantom.
 fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
+    // Content-addressed witness caching: if the git working tree has not mutated
+    // since the last successful witness pass, reuse the proof and avoid 5+ second
+    // redundant re-compiles.
+    let cache_file = ws.join("target").join(".kavach_witness_cache");
+    let current_fp = compute_workspace_fingerprint(ws);
+    if let (Some(fp), Ok(cached)) = (&current_fp, std::fs::read_to_string(&cache_file)) {
+        if cached.trim() == fp {
+            return WitnessRun::Passed;
+        }
+    }
+
     let run = |args: &[&str]| {
         std::process::Command::new("cargo")
             .args(args)
@@ -152,6 +187,12 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
             Err(_) => return WitnessRun::SpawnError,
         }
     }
+
+    // Record the successful fingerprint to disk cache
+    if let Some(ref fp) = current_fp {
+        let _ = std::fs::write(&cache_file, fp);
+    }
+
     // Change-landed witness: a committed (clean) tree is landed too, not a failure.
     WitnessRun::Passed
 }
