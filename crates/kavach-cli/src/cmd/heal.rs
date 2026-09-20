@@ -27,7 +27,7 @@ pub(crate) fn run(
     let log = log_path.map_or_else(String::new, |p| {
         std::fs::read_to_string(p).unwrap_or_else(|e| format!("(log unreadable: {e})"))
     });
-    capture_incident(project, incident, summary, &log, diff_base)
+    capture_incident(project, incident, summary, &log, diff_base, None)
 }
 
 /// Gather context for an incident (log already in memory) and upsert its
@@ -40,9 +40,10 @@ pub(crate) fn capture_incident(
     summary: &str,
     log: &str,
     diff_base: &str,
+    exec_prompt: Option<&str>,
 ) -> i32 {
     let inc = capture::gather(incident, summary, log, diff_base);
     let key = capture::card_key(&inc.id);
     let content = capture::card_content(&inc);
-    crate::cmd::db::upsert_roadmap_card(project, &key, summary, &content)
+    crate::cmd::db::upsert_roadmap_card(project, &key, summary, &content, exec_prompt)
 }

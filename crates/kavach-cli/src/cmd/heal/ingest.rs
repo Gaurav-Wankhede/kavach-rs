@@ -38,7 +38,7 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
             continue;
         };
         // Capture locally via the H1 RPC path (idempotent on inc.id).
-        let code = capture_incident(project, &inc.id, &inc.summary, body, "HEAD~1");
+        let code = capture_incident(project, &inc.id, &inc.summary, body, "HEAD~1", None);
         if code != 0 {
             print_or_exit(&format!(
                 "[heal ingest] WARN #{number}: capture returned {code}"

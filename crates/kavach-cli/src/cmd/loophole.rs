@@ -71,7 +71,21 @@ fn sweep_round(project: &str, run_id: &str, round: u32) -> Result<RoundOutcome, 
             f.line
         );
         let body = card_body(f);
-        let code = capture_incident(project, &incident, &summary, &body, "HEAD~1");
+        let exec_prompt = format!(
+            "ROLE: Senior Systems Reliability Engineer\n\
+             TASK: Remediate {} loophole at {}:{} ({})\n\
+             FILES: {}\n\
+             CONSTRAINTS: Fail-closed error handling, zero unwrap() in production paths, zero regressions.\n\
+             VERIFY: rtk cargo clippy --workspace -- -D warnings && rtk cargo nextest run\n\
+             DONE WHEN: 3 witnesses satisfied (physical artifact, atomic diff landed, clippy/tests pass).\n\
+             ON FAILURE: Trace 5-why RCA chain, branch via Tree of Thought.",
+            f.lens.slug(),
+            f.file,
+            f.line,
+            f.hint,
+            f.file,
+        );
+        let code = capture_incident(project, &incident, &summary, &body, "HEAD~1", Some(&exec_prompt));
         if code == 0 {
             if !keys.contains(&incident) {
                 keys.push(incident);

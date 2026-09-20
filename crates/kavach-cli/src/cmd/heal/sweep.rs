@@ -89,7 +89,7 @@ fn run_inner(project: &str) -> Result<(), IoExit> {
             GateOutcome::Pass => {}
             GateOutcome::Fail(output) => {
                 let code =
-                    capture_incident(project, gate.incident, gate.summary, &output, "HEAD~1");
+                    capture_incident(project, gate.incident, gate.summary, &output, "HEAD~1", None);
                 if code == 0 {
                     captured = captured.saturating_add(1);
                 } else {

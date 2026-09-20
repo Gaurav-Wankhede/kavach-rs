@@ -36,7 +36,13 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 /// `(project, roadmap, key)` — so re-capture of the same key UPDATES one card.
 /// Callers outside `db` (e.g. `heal`) use this instead of opening the DB
 /// directly, preserving the single-writer invariant. Returns the CLI exit code.
-pub(crate) fn upsert_roadmap_card(project: &str, key: &str, title: &str, content: &str) -> i32 {
+pub(crate) fn upsert_roadmap_card(
+    project: &str,
+    key: &str,
+    title: &str,
+    content: &str,
+    exec_prompt: Option<&str>,
+) -> i32 {
     write::run(&rpc_client::WriteRequest {
         project,
         category: "roadmap",
@@ -45,7 +51,7 @@ pub(crate) fn upsert_roadmap_card(project: &str, key: &str, title: &str, content
         content: Some(content),
         new: true,
         update_key: None,
-        exec_prompt: None,
+        exec_prompt,
         priority: None,
         depends_on: &[],
     })
