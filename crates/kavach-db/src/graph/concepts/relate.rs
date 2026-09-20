@@ -65,3 +65,7 @@ pub async fn relate_concepts(
     txn.commit().await?;
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "relate_test.rs"]
+mod relate_test;
