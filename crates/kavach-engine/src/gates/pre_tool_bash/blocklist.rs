@@ -125,14 +125,13 @@ fn test_and_toolbelt(command: &str) -> Option<Decision> {
     }
     drop(scaffold_ctx); // side-effect only; the tail re-runs it for context
     if let Some(hit) = kavach_patterns::legacy_tool_guard::inspect(command) {
-        return Some(Decision::Allow(Some(format!(
-            "[ADVISORY:legacy-tool] `{tool}` is deprecated — use the installed Rust CLI \
-             `{repl}` (§TOOLBELT). Map: grep→rg · find→fd · cat→bat · sed→sd · \
-             ls -R→eza · jq→jaq · curl→xh · du→dust · tree→erd · ps→procs · \
-             diff→difft · wc -l→tokei. Re-run with `{repl}`.",
+        return Some(Decision::Deny(format!(
+            "[BANNED_LEGACY_TOOL] `{tool}` is strictly forbidden (§TOOLBELT P0 Deny). \
+             You must use the installed Rust toolbelt equivalent: `{repl}`.\n\
+             NEXT ACTION: Re-run using `{repl}` instead of `{tool}`.",
             tool = hit.tool,
             repl = hit.replacement,
-        ))        ));
+        )));
     }
     None
 }

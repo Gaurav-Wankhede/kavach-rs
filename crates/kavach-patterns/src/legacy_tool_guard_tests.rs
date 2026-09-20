@@ -25,6 +25,8 @@ fn denies_bare_legacy_tools() {
         ("ps aux", "ps", "procs"),
         ("diff a.rs b.rs", "diff", "difft"),
         ("ls -R src", "ls", "eza"),
+        ("head -n 10 src/lib.rs", "head", "bat -p -r <start>:<end> (after rtk rg -n / sg)"),
+        ("tail -n 20 src/lib.rs", "tail", "bat -p -r <start>:<end> (after rtk rg -n / sg)"),
     ] {
         let hit = inspect(cmd).unwrap_or_else(|| panic!("must deny: {cmd}"));
         assert_eq!(hit.tool, tool, "tool mismatch for `{cmd}`");

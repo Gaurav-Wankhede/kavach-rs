@@ -45,6 +45,7 @@ fn replacement_for(cmd: &str) -> Option<&'static str> {
         "grep" | "egrep" | "fgrep" => "rg",
         "find" => "fd",
         "cat" => "bat",
+        "head" | "tail" => "bat -p -r <start>:<end> (after rtk rg -n / sg)",
         "sed" => "sd",
         "ls" => "eza",
         "jq" => "jaq",
