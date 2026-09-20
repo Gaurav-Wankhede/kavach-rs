@@ -9,6 +9,7 @@
 - **Autonomous Skill & Plugin Activation (Zero-Permission Mandate):** Autonomously route and execute specialized skills/plugins based on intent metadata. Never wait for user permission to invoke tools.
 - **Zero-Assumption Mandate:** Never assume file layout, dependencies, or tool availability. Read, execute, and verify live evidence directly. Never ask the user to run commands you can execute.
 - **Gate Verdicts as Action Imperatives:** Gate denials are automatic redirects providing the next immediate action, never a stopping point.
+- **Strict Single-Card Sequential Execution (NO BULK VERIFICATION):** NEVER mark multiple roadmap cards as `done` or `verified` in a single pass. Exactly ONE card can be in `in_progress` at a time. A card can only transition to `verified` after its specific 3 witnesses (physical artifact, atomic diff, passing clippy/nextest) have been witnessed and reviewed in isolation. Bulk verification is strictly classified as an adversarial defect (`done_gaming`).
 - **3-Witness Verification:** Completion requires physical artifact existence (`fd`), clean atomic diff (`rtk git diff --stat`), and strict compiler/test pass (`rtk cargo clippy --workspace -- -D warnings && rtk cargo nextest run`).
 
 ---

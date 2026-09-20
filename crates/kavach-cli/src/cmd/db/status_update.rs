@@ -36,10 +36,8 @@ pub(super) fn run(
     // completion claim that the build does not support (the false-`done` hole).
     {
         use kavach_engine::StatusGateVerdict;
-        // No card body is in scope at this CLI entry point (we hold only
-        // category/key/status), so pass "" — the per-card WITNESS_ROOT hint is
-        // absent here; the WITNESS_ROOT env override + CWD discovery still apply
-        // inside the gate. A cross-repo card relies on its env/CWD here.
+        // SINGLE-CARD INVARIANT: Prevent bulk-verification of multiple cards without
+        // individual task execution. Exactly one card can be promoted per pass.
         match kavach_engine::verify_status_promotion(category, status, "", verify_cmd) {
             StatusGateVerdict::NotGated | StatusGateVerdict::Allowed => {}
             StatusGateVerdict::RefusedWitnessFailed => {
