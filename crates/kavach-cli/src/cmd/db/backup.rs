@@ -68,14 +68,6 @@ pub(super) fn run(keep: usize) -> i32 {
             PathBuf::from,
         );
         let db_path = base.join("kavach.db");
-        if !db_path.exists() {
-            let msg = format!("error: db file not found at {}", db_path.display());
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            return 1;
-        }
-
         let backups_dir = base.join("backups");
         if let Err(e) = fs::create_dir_all(&backups_dir) {
             let msg = format!("error: create backups dir {}: {e}", backups_dir.display());
@@ -90,7 +82,11 @@ pub(super) fn run(keep: usize) -> i32 {
         let dest_path = backups_dir.join(&dest_filename);
 
         if let Err(e) = fs::copy(&db_path, &dest_path) {
-            let msg = format!("error: copy to {} failed: {e}", dest_path.display());
+            let msg = if e.kind() == std::io::ErrorKind::NotFound {
+                format!("error: db file not found at {}", db_path.display())
+            } else {
+                format!("error: copy to {} failed: {e}", dest_path.display())
+            };
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
             }
