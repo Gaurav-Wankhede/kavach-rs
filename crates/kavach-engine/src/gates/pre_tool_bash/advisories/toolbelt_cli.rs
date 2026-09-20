@@ -19,6 +19,16 @@ const TOOLBELT: &[(&str, &str, &str)] = &[
         "bat",
         "syntax highlight + line numbers (reads only — NEVER on .env)",
     ),
+    (
+        "head",
+        "bat -p -r <start>:<end> (after rtk rg -n / sg)",
+        "arbitrary slicing hides context; resolve AST/regex coordinates first",
+    ),
+    (
+        "tail",
+        "bat -p -r <start>:<end> (after rtk rg -n / sg)",
+        "arbitrary slicing hides context; resolve AST/regex coordinates first",
+    ),
     ("diff", "difft", "structural (AST) diff"),
 ];
 /// `Some(advisory)` when a legacy tool appears as a command word and its Rust

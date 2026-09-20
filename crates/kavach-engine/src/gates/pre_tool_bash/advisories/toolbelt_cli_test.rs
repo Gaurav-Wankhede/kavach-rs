@@ -21,6 +21,16 @@ fn fires_on_multiple() {
 }
 
 #[test]
+fn fires_on_head_and_tail() {
+    let a = check_toolbelt_cli("head -n 20 file.rs").expect("head must advise");
+    assert!(a.contains("`head` → `bat -p -r <start>:<end> (after rtk rg -n / sg)`"));
+    assert!(a.contains("arbitrary slicing hides context"));
+    let b = check_toolbelt_cli("tail -n 10 file.rs").expect("tail must advise");
+    assert!(b.contains("`tail` → `bat -p -r <start>:<end> (after rtk rg -n / sg)`"));
+    assert!(b.contains("arbitrary slicing hides context"));
+}
+
+#[test]
 fn silent_on_substring_not_command_word() {
     // `oldfind`, `category`, `procstat` are not the legacy tool.
     assert!(check_toolbelt_cli("oldfind --help").is_none());

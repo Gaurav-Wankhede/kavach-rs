@@ -13,6 +13,12 @@ pub mod hook_io;
 pub use hook_io::{HookInput, HookResponse, HookSpecificOutput};
 
 pub mod memory_status;
+pub mod text_range;
+pub use text_range::TextRange;
+
+#[cfg(test)]
+#[path = "text_range_test.rs"]
+mod text_range_test;
 pub use memory_status::MemoryStatus;
 
 // TIME: O(0) runtime — expands to () | SPACE: O(0)

@@ -127,9 +127,28 @@ pub(crate) fn read_stdin_body_or_exit() -> Result<Option<String>, IoExit> {
         // Interactive TTY with no redirect: nothing was piped in.
         return Ok(None);
     }
-    let mut body = String::new();
-    stdin.lock().read_to_string(&mut body)?;
-    Ok(classify_stdin_body(body))
+    // Safe non-blocking check: read in a dedicated thread with a short timeout.
+    // If the pipe is open but empty (e.g. subshell background execution without
+    // redirected input), don't block the entire process forever.
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        let mut body = String::new();
+        let res = io::stdin().lock().read_to_string(&mut body).map(|_| body);
+        if tx.send(res).is_err() {
+            // Receiver dropped due to timeout, ignore safely
+        }
+    });
+
+    match rx.recv_timeout(std::time::Duration::from_millis(50)) {
+        Ok(Ok(body)) => Ok(classify_stdin_body(body)),
+        Ok(Err(e)) => Err(e.into()),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+            // Nothing was ready within timeout; treat as empty body rather than hanging
+            drop(handle);
+            Ok(None)
+        }
+        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => Ok(None),
+    }
 }
 
 /// Pure body-classification seam (testable without a real stdin/TTY): an empty

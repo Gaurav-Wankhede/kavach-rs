@@ -148,10 +148,10 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
     // redundant re-compiles.
     let cache_file = ws.join("target").join(".kavach_witness_cache");
     let current_fp = compute_workspace_fingerprint(ws);
-    if let (Some(fp), Ok(cached)) = (&current_fp, std::fs::read_to_string(&cache_file)) {
-        if cached.trim() == fp {
-            return WitnessRun::Passed;
-        }
+    if let (Some(fp), Ok(cached)) = (&current_fp, std::fs::read_to_string(&cache_file))
+        && cached.trim() == fp
+    {
+        return WitnessRun::Passed;
     }
 
     let run = |args: &[&str]| {
@@ -189,8 +189,10 @@ fn run_cargo_witnesses(ws: &std::path::Path) -> WitnessRun {
     }
 
     // Record the successful fingerprint to disk cache
-    if let Some(ref fp) = current_fp {
-        let _ = std::fs::write(&cache_file, fp);
+    if let Some(ref fp) = current_fp
+        && let Err(e) = std::fs::write(&cache_file, fp)
+    {
+        eprintln!("kavach: failed to write witness cache: {e}");
     }
 
     // Change-landed witness: a committed (clean) tree is landed too, not a failure.
