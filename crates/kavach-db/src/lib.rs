@@ -49,7 +49,7 @@ pub mod wipe;
 pub mod write;
 
 pub use brain::{BrainHit, GapReport, KavachBrain, hybrid_search};
-pub use brain_query::{gap_for, search_corpus};
+pub use brain_query::{gap_for, gap_for_project, search_corpus, search_corpus_project};
 pub use connection::{
     default_db_path, open_db, open_default, open_default_held, open_default_resilient, open_memory,
 };

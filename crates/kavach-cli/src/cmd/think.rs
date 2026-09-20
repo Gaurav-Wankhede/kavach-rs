@@ -20,7 +20,8 @@ async fn run_async(project_slug: &str, query: &str, limit: usize) -> i32 {
         Ok(d) => d,
         Err(e) => return emit(&format!(r#"{{"error":"db: {e}"}}"#)),
     };
-    let hits = match kavach_db::search_corpus(&db, query, limit).await {
+    let hits = match kavach_db::search_corpus_project(&db, Some(project_slug), query, limit).await
+    {
         Ok(h) => h,
         Err(e) => return emit(&format!(r#"{{"error":"{e}"}}"#)),
     };

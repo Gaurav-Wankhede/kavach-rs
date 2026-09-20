@@ -6,7 +6,7 @@
 use crate::error::surreal_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_db::{BrainHit, search_corpus};
+use kavach_db::{BrainHit, search_corpus_project};
 use serde::{Deserialize, Serialize};
 
 /// Default hit count when the caller omits `limit`. Small: the recall block is
@@ -23,6 +23,8 @@ pub struct ThinkParams {
     pub query: String,
     /// Max fused hits to return. Defaults to [`DEFAULT_LIMIT`].
     pub limit: Option<usize>,
+    /// Optional project slug to prioritize project-specific memory hits.
+    pub project: Option<String>,
 }
 
 /// Hybrid keyword+graph retrieval over the memory corpus, RRF-ranked.
@@ -32,7 +34,7 @@ pub struct ThinkParams {
 /// query yields an empty list (not an error) — the caller injects nothing.
 pub async fn think(state: &AppState, p: ThinkParams) -> Result<Vec<BrainHit>, ErrorObjectOwned> {
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT);
-    search_corpus(&state.db, &p.query, limit)
+    search_corpus_project(&state.db, p.project.as_deref(), &p.query, limit)
         .await
         .map_err(surreal_to_rpc)
 }

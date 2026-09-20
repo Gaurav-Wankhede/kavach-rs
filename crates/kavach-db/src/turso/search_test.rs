@@ -158,6 +158,44 @@ async fn empty_query_yields_no_hits() {
     assert!(fused.is_empty());
 }
 
+#[tokio::test]
+async fn search_corpus_project_prioritizes_scoped_project_and_handles_hyphens() {
+    let dir = tempfile::TempDir::new().unwrap();
+    let s = TursoStore::open(dir.path().join("fts_project.db")).await.unwrap();
+    s.upsert_entry(&entry(
+        "webfind",
+        "decision",
+        "decision.webfind-system-one",
+        "Jev-Style System 1 Extractive Classifier Architecture",
+        "two-stage extraction pipeline with confidence gates",
+    ))
+    .await
+    .unwrap();
+    s.upsert_entry(&entry(
+        "other-project",
+        "decision",
+        "decision.other-system-one",
+        "Other System 1 Architecture",
+        "generic system architecture",
+    ))
+    .await
+    .unwrap();
+
+    // Query with hyphens, numbers, and multiple terms.
+    let hits = crate::search_corpus_project(&s, Some("webfind"), "Jev-Style System 1", 5)
+        .await
+        .unwrap();
+    assert!(!hits.is_empty());
+    assert_eq!(hits[0].id, "decision.webfind-system-one");
+
+    // Scoped project priorities: "System" matches both, but webfind must rank first.
+    let hits_system = crate::search_corpus_project(&s, Some("webfind"), "System", 5)
+        .await
+        .unwrap();
+    assert!(!hits_system.is_empty());
+    assert_eq!(hits_system[0].id, "decision.webfind-system-one");
+}
+
 proptest::proptest! {
     // Property: the escaper never panics and always yields a balanced-quotes
     // MATCH fragment (even number of double quotes).

@@ -110,7 +110,11 @@ pub async fn kanban_ranked(
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT);
     // Pull the whole roadmap board (priority-ordered by list_by_project), then
     // filter to runnable here so we rank over the real candidate set.
-    let board = kanban(state, KanbanParams::new(p.project, 1000, None, None)).await?;
+    let board = kanban(
+        state,
+        KanbanParams::new(p.project.clone(), 1000, None, None),
+    )
+    .await?;
     let runnable: Vec<RankableCard> = board
         .items
         .into_iter()
@@ -128,10 +132,15 @@ pub async fn kanban_ranked(
     let hit_ids: Vec<String> = if p.prompt.trim().is_empty() {
         Vec::new()
     } else {
-        kavach_db::search_corpus(&state.db, &p.prompt, limit.saturating_mul(4))
-            .await
-            .map(|hits| hits.into_iter().map(|h| h.id).collect())
-            .unwrap_or_default()
+        kavach_db::search_corpus_project(
+            &state.db,
+            Some(&p.project),
+            &p.prompt,
+            limit.saturating_mul(4),
+        )
+        .await
+        .map(|hits| hits.into_iter().map(|h| h.id).collect())
+        .unwrap_or_default()
     };
 
     Ok(KanbanRankedResult {

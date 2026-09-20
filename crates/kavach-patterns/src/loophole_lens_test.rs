@@ -110,3 +110,9 @@ fn concurrency_silent_on_local_contains() {
     // TOCTOU (the loophole.rs/dag_render FP class).
     assert!(classify("if !keys.contains(&incident) { keys.push(incident) }").is_none());
 }
+
+#[test]
+fn concurrency_silent_on_readonly_path_guard() {
+    assert!(classify("if !root.exists() { return 2; }").is_none());
+    assert!(classify("if !path.exists() { return Err(e); }").is_none());
+}

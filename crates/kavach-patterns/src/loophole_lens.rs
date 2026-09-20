@@ -141,10 +141,16 @@ pub fn classify(l: &str) -> Option<(Lens, &'static str)> {
         ));
     }
     // concurrency: a DB-level check-then-act (existence probe before a write). We
-    // match `exists`/`EXISTS` only — a bare Rust `.contains()` on a local
-    // collection is single-threaded membership, not a cross-actor TOCTOU, so
-    // matching it produces false positives with near-zero real yield.
-    if l.contains("if !") && (l.contains("exists") || l.contains("EXISTS")) {
+    // match DB/record existence probes (`row_exists`, `record_exists`, `key_exists`, `EXISTS`)
+    // or probe-then-create patterns. Read-only path validation guards (`if !root.exists()`)
+    // that only exit without mutating are single-reader assertions, not cross-actor TOCTOUs.
+    if l.contains("if !")
+        && (l.contains("row_exists")
+            || l.contains("record_exists")
+            || l.contains("key_exists")
+            || l.contains("table_exists")
+            || l.contains("EXISTS"))
+    {
         return Some((
             Lens::Concurrency,
             "check-then-act — TOCTOU window between existence check and write",
