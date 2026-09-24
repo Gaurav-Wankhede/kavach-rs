@@ -4,7 +4,9 @@
 //! fully literal; `"…"` + `$'…'`; `$(…)` nests as code islands; backquote
 //! runs are command text (`Code`); `<<[-]WORD` heredoc bodies are `Str`;
 //! `\` escapes + continuation.
-use super::{RsKind, RsSeg, consume_escaped, consume_to_eol, consume_until, push, skip_quoted_island};
+use super::{
+    RsKind, RsSeg, consume_escaped, consume_to_eol, consume_until, push, skip_quoted_island,
+};
 
 /// Shell source cursor.
 #[must_use]
@@ -102,9 +104,7 @@ fn emit_sh_interp(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize) 
             Some(b'\\') => {
                 cur = cur.saturating_add(2);
             }
-            Some(b'$')
-                if bytes.get(cur.saturating_add(1)).copied() == Some(b'(') =>
-            {
+            Some(b'$') if bytes.get(cur.saturating_add(1)).copied() == Some(b'(') => {
                 push(out, RsKind::Str, chunk, cur);
                 cur = lex_paren_island(bytes, out, cur);
                 chunk = cur;
@@ -197,10 +197,7 @@ fn parse_heredoc_header(bytes: &[u8], pos: usize) -> Option<(bool, &[u8], usize)
         if byte == b'\n'
             || byte == b' '
             || byte == b'\t'
-            || matches!(
-                byte,
-                b';' | b'&' | b'|' | b'<' | b'>' | b'(' | b')'
-            )
+            || matches!(byte, b';' | b'&' | b'|' | b'<' | b'>' | b'(' | b')')
         {
             break;
         }
@@ -301,7 +298,11 @@ mod tests {
     use crate::lex::{RsKind, text};
 
     fn joined(src: &str) -> String {
-        lex(src).iter().map(|s| text(src, s)).collect::<Vec<_>>().join("")
+        lex(src)
+            .iter()
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     #[test]

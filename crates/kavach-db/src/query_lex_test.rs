@@ -49,7 +49,16 @@ fn status_keywords_become_typed_tokens() {
 fn keyword_match_is_exact_and_case_sensitive() {
     // Prefixes, suffixes, case variants, and overlong words stay plain words —
     // the old `== "todo"` scans were exact, and the table preserves that.
-    for raw in ["Todo", "TODO", "Done", "DONE", "todos", "todo!", "in-progress", "done2"] {
+    for raw in [
+        "Todo",
+        "TODO",
+        "Done",
+        "DONE",
+        "todos",
+        "todo!",
+        "in-progress",
+        "done2",
+    ] {
         assert_eq!(kinds(raw), vec![TokenKind::Word], "raw={raw:?}");
     }
 }

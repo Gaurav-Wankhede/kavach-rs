@@ -131,7 +131,10 @@ impl<'src> QueryAst<'src> {
             }
             tokens.push(token);
         }
-        Self { source: src, tokens }
+        Self {
+            source: src,
+            tokens,
+        }
     }
 
     /// True when the input held no words (whitespace-only or empty).
@@ -241,7 +244,9 @@ fn sat_u32(n: usize) -> u32 {
 
 /// First char at byte offset `pos` (`pos` is always a boundary by construction).
 fn char_at(src: &str, pos: usize) -> char {
-    src.get(pos..).and_then(|s| s.chars().next()).unwrap_or('\0')
+    src.get(pos..)
+        .and_then(|s| s.chars().next())
+        .unwrap_or('\0')
 }
 
 /// Byte length of the char at offset `pos`.

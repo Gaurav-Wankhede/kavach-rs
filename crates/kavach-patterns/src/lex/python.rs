@@ -241,8 +241,7 @@ fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize,
                 chunk = cur;
             }
             Some(b'"' | b'\'') => {
-                if let Some((lit, content, close, triple, quote)) =
-                    nested_fstring(bytes, cur, end)
+                if let Some((lit, content, close, triple, quote)) = nested_fstring(bytes, cur, end)
                 {
                     // The prefix letters belong to the nested literal: end the
                     // pending code chunk before them so no byte emits twice.
@@ -370,7 +369,11 @@ mod tests {
     use super::lex;
     use crate::lex::{RsKind, text};
     fn joined(src: &str) -> String {
-        lex(src).iter().map(|s| text(src, s)).collect::<Vec<_>>().join("")
+        lex(src)
+            .iter()
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     #[test]
@@ -391,10 +394,7 @@ mod tests {
         let src = "s = '''line1\nline2 # not comment'''\nx = 1\n";
         let segs = lex(src);
         assert_eq!(joined(src), src);
-        assert_eq!(
-            segs.iter().filter(|s| s.kind == RsKind::Comment).count(),
-            0
-        );
+        assert_eq!(segs.iter().filter(|s| s.kind == RsKind::Comment).count(), 0);
         assert_eq!(segs.iter().filter(|s| s.kind == RsKind::Str).count(), 1);
     }
 

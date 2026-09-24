@@ -152,7 +152,9 @@ fn consume_quoted_tail(bytes: &[u8], mut cur: usize) -> usize {
 /// identifier: the previous byte is not an ident char, and a quote form
 /// (`"`, `#*"`, `r#*"`) follows.
 fn is_literal_prefix(bytes: &[u8], pos: usize) -> bool {
-    if pos > 0 && at(bytes, pos.saturating_sub(1)).is_some_and(|b| b.is_ascii_alphanumeric() || b == b'_') {
+    if pos > 0
+        && at(bytes, pos.saturating_sub(1)).is_some_and(|b| b.is_ascii_alphanumeric() || b == b'_')
+    {
         return false;
     }
     // Skip the optional `b`, then the optional `r`, then optional `#`s.
@@ -220,7 +222,13 @@ fn char_literal_end(bytes: &[u8], pos: usize) -> Option<usize> {
     while cur < bytes.len() && len < 12 {
         match at(bytes, cur) {
             None | Some(b'\n') => return None,
-            Some(b'\'') => return if len == 0 { None } else { Some(cur.saturating_add(1)) },
+            Some(b'\'') => {
+                return if len == 0 {
+                    None
+                } else {
+                    Some(cur.saturating_add(1))
+                };
+            }
             Some(byte) if byte.is_ascii_whitespace() => return None,
             _ => {
                 cur = cur.saturating_add(1);

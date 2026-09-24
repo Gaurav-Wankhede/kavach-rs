@@ -34,11 +34,7 @@ pub fn lex(src: &str) -> Vec<RsSeg> {
         if byte == b'\'' || (byte == b'E' || byte == b'e') && ahead == Some(b'\'') {
             // `E'…'`: backslash escapes live; plain `'…'`: only `''` doubling.
             let escapes = byte == b'E' || byte == b'e';
-            let content = if escapes {
-                pos.saturating_add(1)
-            } else {
-                pos
-            };
+            let content = if escapes { pos.saturating_add(1) } else { pos };
             let end = consume_sql_string(bytes, content, escapes);
             push(&mut out, RsKind::Code, span_start, pos);
             push(&mut out, RsKind::Str, pos, end);
@@ -128,9 +124,7 @@ fn consume_dollar_quote(bytes: &[u8], pos: usize) -> Option<usize> {
     let tag_len = tag_end.saturating_sub(pos);
     let mut close = tag_end;
     while close < bytes.len() {
-        if bytes.get(close).copied() == Some(b'$')
-            && tag_matches(bytes, pos, close, tag_len)
-        {
+        if bytes.get(close).copied() == Some(b'$') && tag_matches(bytes, pos, close, tag_len) {
             return Some(close.saturating_add(tag_len));
         }
         close = close.saturating_add(1);
@@ -155,7 +149,11 @@ mod tests {
     use crate::lex::{RsKind, text};
 
     fn joined(src: &str) -> String {
-        lex(src).iter().map(|s| text(src, s)).collect::<Vec<_>>().join("")
+        lex(src)
+            .iter()
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     #[test]

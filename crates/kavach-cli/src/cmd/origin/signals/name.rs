@@ -25,9 +25,9 @@ pub(in crate::cmd::origin) fn score(aliases: &[String], name: &str) -> f32 {
 /// token: one `Vec` of borrowed slices, deduped case-insensitively.
 fn tokens(s: &str) -> Vec<&str> {
     let mut out: Vec<&str> = Vec::new();
-    for tok in
-        s.split(|c: char| c == '_' || c == '-' || c == '.' || c.is_whitespace() || c.is_uppercase())
-            .filter(|p| !p.is_empty())
+    for tok in s
+        .split(|c: char| c == '_' || c == '-' || c == '.' || c.is_whitespace() || c.is_uppercase())
+        .filter(|p| !p.is_empty())
     {
         if !out.iter().any(|t| t.eq_ignore_ascii_case(tok)) {
             out.push(tok);

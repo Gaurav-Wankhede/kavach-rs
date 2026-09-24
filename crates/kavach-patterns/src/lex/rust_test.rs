@@ -85,7 +85,10 @@ fn char_literal_is_str_but_lifetime_is_code() {
         .collect();
     assert_eq!(strs, vec!["'a'"]);
     // The lifetime quote stays code (no string opened).
-    assert!(segs.iter().any(|s| s.kind == RsKind::Code && text(src, s).contains("'static")));
+    assert!(
+        segs.iter()
+            .any(|s| s.kind == RsKind::Code && text(src, s).contains("'static"))
+    );
 }
 
 #[test]
@@ -105,7 +108,10 @@ fn escaped_quote_does_not_end_string() {
 fn unicode_text_passes_through_untouched() {
     let src = "// héllo wörld\nlet s = \"日本語\"; // ok\n";
     assert_eq!(joined(src), src);
-    assert_eq!(kinds(src).iter().filter(|k| **k == RsKind::Comment).count(), 2);
+    assert_eq!(
+        kinds(src).iter().filter(|k| **k == RsKind::Comment).count(),
+        2
+    );
 }
 
 #[test]

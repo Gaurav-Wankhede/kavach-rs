@@ -11,7 +11,11 @@ fn single_word_hits_whole_words_only() {
 
 #[test]
 fn matching_is_case_insensitive_and_punctuation_tolerant() {
-    assert!(concept_text_matches("PASETO Tokens", "auth, scoped.", &["paseto"]));
+    assert!(concept_text_matches(
+        "PASETO Tokens",
+        "auth, scoped.",
+        &["paseto"]
+    ));
     assert!(concept_text_matches("x", "trailing comma,", &["comma"]));
     assert!(concept_text_matches("n", "\"quoted\"", &["quoted"]));
 }
@@ -19,9 +23,21 @@ fn matching_is_case_insensitive_and_punctuation_tolerant() {
 #[test]
 fn multi_word_queries_are_and_not_substring() {
     // Both words anywhere (FTS parity); the contiguous phrase is not required.
-    assert!(concept_text_matches("session tokens", "expiry", &["session", "tokens"]));
-    assert!(concept_text_matches("tokens", "session scope", &["session", "tokens"]));
-    assert!(!concept_text_matches("session log", "expiry", &["session", "tokens"]));
+    assert!(concept_text_matches(
+        "session tokens",
+        "expiry",
+        &["session", "tokens"]
+    ));
+    assert!(concept_text_matches(
+        "tokens",
+        "session scope",
+        &["session", "tokens"]
+    ));
+    assert!(!concept_text_matches(
+        "session log",
+        "expiry",
+        &["session", "tokens"]
+    ));
 }
 
 #[test]

@@ -37,6 +37,7 @@ pub enum Block {
     /// `/*` nests until balanced (Kotlin per spec).
     Nested,
 }
+
 /// Script extras: TS/JS hashbang (`#!`) + regex literals; other C-likes plain.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -46,6 +47,7 @@ pub enum Script {
     /// TypeScript/JavaScript: hashbang + `/pattern/flags` literals.
     Js,
 }
+
 /// Backquote handling per C-like language.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -325,7 +327,9 @@ fn regex_opens(bytes: &[u8], pos: usize) -> bool {
     }
     if prev.is_ascii_alphanumeric() || prev == b'_' || prev == b'$' {
         // Trailing word: keyword → regex, anything else → division.
-        return REGEX_KEYWORDS.iter().any(|kw| trailing_word_is(bytes, cur, kw));
+        return REGEX_KEYWORDS
+            .iter()
+            .any(|kw| trailing_word_is(bytes, cur, kw));
     }
     // Operators, openers, commas, semicolons: an operand (regex) follows.
     true
@@ -475,7 +479,13 @@ fn char_end(bytes: &[u8], pos: usize) -> Option<usize> {
     while cur < bytes.len() && len < 12 {
         match bytes.get(cur).copied() {
             None | Some(b'\n') => return None,
-            Some(b'\'') => return if len == 0 { None } else { Some(cur.saturating_add(1)) },
+            Some(b'\'') => {
+                return if len == 0 {
+                    None
+                } else {
+                    Some(cur.saturating_add(1))
+                };
+            }
             Some(b'\\') => {
                 cur = cur.saturating_add(2);
                 len = len.saturating_add(1);
@@ -544,10 +554,7 @@ mod tests {
         // First `*/` wins per spec.
         let src = "/* a /* b */ let x = 1;";
         assert_eq!(joined(src, C_GO), src);
-        assert_eq!(
-            kinds(src, C_GO),
-            vec![RsKind::Comment, RsKind::Code]
-        );
+        assert_eq!(kinds(src, C_GO), vec![RsKind::Comment, RsKind::Code]);
     }
 
     #[test]
@@ -556,20 +563,14 @@ mod tests {
         let segs = lex(src, C_JAVA);
         assert_eq!(joined(src, C_JAVA), src);
         assert!(!segs.iter().any(|s| s.kind == RsKind::Comment));
-        assert_eq!(
-            segs.iter().filter(|s| s.kind == RsKind::Str).count(),
-            1
-        );
+        assert_eq!(segs.iter().filter(|s| s.kind == RsKind::Str).count(), 1);
     }
 
     #[test]
     fn ts_block_comment_does_not_nest() {
         let src = "/* a /* b */ const x = 1;";
         assert_eq!(joined(src, C_TSJS), src);
-        assert_eq!(
-            kinds(src, C_TSJS),
-            vec![RsKind::Comment, RsKind::Code]
-        );
+        assert_eq!(kinds(src, C_TSJS), vec![RsKind::Comment, RsKind::Code]);
     }
 
     #[test]
@@ -682,8 +683,10 @@ mod tests {
             .collect::<Vec<_>>()
             .join("");
         assert!(code.contains("${user.name}"), "got: {code}");
-        assert!(!segs
-            .iter()
-            .any(|s| s.kind == RsKind::Comment && text(src, s) != "// bye"));
+        assert!(
+            !segs
+                .iter()
+                .any(|s| s.kind == RsKind::Comment && text(src, s) != "// bye")
+        );
     }
 }

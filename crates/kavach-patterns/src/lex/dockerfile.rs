@@ -57,7 +57,11 @@ mod tests {
     use crate::lex::{RsKind, text};
 
     fn joined(src: &str) -> String {
-        lex(src).iter().map(|s| text(src, s)).collect::<Vec<_>>().join("")
+        lex(src)
+            .iter()
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     #[test]
@@ -79,10 +83,7 @@ mod tests {
         let src = "# syntax=docker/dockerfile:1\nFROM alpine\n";
         let segs = lex(src);
         assert_eq!(joined(src), src);
-        assert_eq!(
-            segs.iter().filter(|s| s.kind == RsKind::Comment).count(),
-            1
-        );
+        assert_eq!(segs.iter().filter(|s| s.kind == RsKind::Comment).count(), 1);
     }
 
     #[test]

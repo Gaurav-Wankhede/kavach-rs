@@ -176,7 +176,8 @@ fn empty_dag_is_safe() {
 }
 
 #[test]
-fn closed_cards_not_in_ready_now() {    // Verify that verified/done cards do NOT appear in TIER 0 "ready now",
+fn closed_cards_not_in_ready_now() {
+    // Verify that verified/done cards do NOT appear in TIER 0 "ready now",
     // even if all their prerequisites are satisfied.
     // Bug: is_ready() checked prereqs only, ignoring node.entry_status.
     let d = RoadmapDag {

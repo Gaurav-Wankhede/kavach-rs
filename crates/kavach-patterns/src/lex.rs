@@ -17,9 +17,9 @@
 pub mod c_like;
 pub mod dockerfile;
 pub mod python;
+pub(crate) mod rust;
 pub mod shell;
 pub mod sql;
-pub(crate) mod rust;
 
 /// Rust cursor, re-exported for detectors that scan Rust sources.
 pub use rust::{code_words, segments};
@@ -199,9 +199,9 @@ pub fn segments_for(lang: Lang, src: &str) -> Vec<RsSeg> {
 /// `.kt`/`.kts` split from Java (which shares the `is_java_file` classifier).
 fn is_kotlin_path(path: &str) -> bool {
     use std::path::Path;
-    Path::new(path).extension().is_some_and(|ext| {
-        ext.eq_ignore_ascii_case("kt") || ext.eq_ignore_ascii_case("kts")
-    })
+    Path::new(path)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("kt") || ext.eq_ignore_ascii_case("kts"))
 }
 
 /// `.java` (Kotlin already excluded above).

@@ -88,11 +88,9 @@ pub(super) fn has_exempt_marker(path: &str) -> bool {
         .map_while(Result::ok)
         .any(|line| {
             let segs = segments(&line);
-            segs.iter().filter(|s| s.kind == RsKind::Comment).any(|s| {
-                EXEMPT_MARKERS
-                    .iter()
-                    .any(|m| text(&line, s).contains(m))
-            })
+            segs.iter()
+                .filter(|s| s.kind == RsKind::Comment)
+                .any(|s| EXEMPT_MARKERS.iter().any(|m| text(&line, s).contains(m)))
         })
 }
 

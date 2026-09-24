@@ -1,6 +1,6 @@
 use super::{
-    CATEGORY_HELP, STRICT_CATEGORIES, check_protected_closure, length_ratio_can_reach,
-    lower_chars, mirror_depends_on_into_content, resolve_speculative_deps, similarity_lowered,
+    CATEGORY_HELP, STRICT_CATEGORIES, check_protected_closure, length_ratio_can_reach, lower_chars,
+    mirror_depends_on_into_content, resolve_speculative_deps, similarity_lowered,
 };
 use kavach_engine::ExtractedRelationship;
 
@@ -143,7 +143,10 @@ fn similarity_lowered_scores_sane_values() {
     // ("abc"/"abcd" = 0.75, "kitten"/"sitten" ≈ 0.83).
     for (a, b) in [("abc", "abcd"), ("kitten", "sitten")] {
         let (s1, s2) = (score(a, b), score(b, a));
-        assert!(s1 > 0.7 && s1 < 0.9 && s2 > 0.7 && s2 < 0.9, "pair=({a:?}, {b:?})");
+        assert!(
+            s1 > 0.7 && s1 < 0.9 && s2 > 0.7 && s2 < 0.9,
+            "pair=({a:?}, {b:?})"
+        );
     }
 }
 
