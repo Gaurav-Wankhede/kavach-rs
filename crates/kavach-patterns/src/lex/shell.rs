@@ -2,8 +2,8 @@
 //!
 //! `#` comments only at word start (POSIX: `a#b` is literal); `'...'`
 //! fully literal; `"…"` + `$'…'`; `$(…)` nests as code islands; backquote
-//! runs are command text (`Code`); `\` escapes + continuation. Heredocs are
-//! NOT tracked (bodies read as code, as before).
+//! runs are command text (`Code`); `<<[-]WORD` heredoc bodies are `Str`;
+//! `\` escapes + continuation.
 use super::{RsKind, RsSeg, consume_escaped, consume_to_eol, consume_until, push, skip_quoted_island};
 
 /// Shell source cursor.
@@ -64,6 +64,22 @@ pub fn lex(src: &str) -> Vec<RsSeg> {
             push(&mut out, RsKind::Code, span_start, end);
             pos = end;
             span_start = pos;
+            continue;
+        }
+        if byte == b'<' && bytes.get(pos.saturating_add(1)).copied() == Some(b'<') {
+            // Heredoc `<<[-]WORD` (not `<<<` herestring): the operator line
+            // stays code, the body through the delimiter line becomes `Str`
+            // (prose/data, expansion or not — detectors must not read it).
+            if bytes.get(pos.saturating_add(2)).copied() == Some(b'<') {
+                pos = pos.saturating_add(2);
+                continue;
+            }
+            if let Some(end) = lex_heredoc(bytes, &mut out, span_start, pos) {
+                pos = end;
+                span_start = pos;
+                continue;
+            }
+            pos = pos.saturating_add(2);
             continue;
         }
         if byte == b'\\' {
@@ -133,6 +149,96 @@ fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize 
     }
     push(out, RsKind::Code, dollar, cur);
     cur
+}
+
+/// Heredoc at `pos` (first `<` of `<<`, in code): parse `<<[-]WORD` on this
+/// line; on success emit the operator line as `Code` and the body through
+/// the delimiter line as `Str`, returning the resume offset. `None` when no
+/// delimiter word follows on this line or no terminator exists (plain
+/// redirections fall through as code).
+fn lex_heredoc(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usize) -> Option<usize> {
+    let mut cur = pos.saturating_add(2);
+    // Optional `-` (leading tabs stripped on terminator lines).
+    let dash = bytes.get(cur).copied() == Some(b'-');
+    if dash {
+        cur = cur.saturating_add(1);
+    }
+    while matches!(bytes.get(cur).copied(), Some(b' ' | b'\t')) {
+        cur = cur.saturating_add(1);
+    }
+    // Delimiter word on this same line (quoted or bare); empty/EOL → no heredoc.
+    let word_start = cur;
+    while let Some(&byte) = bytes.get(cur) {
+        if byte == b'\n'
+            || byte == b' '
+            || byte == b'\t'
+            || matches!(
+                byte,
+                b';' | b'&' | b'|' | b'<' | b'>' | b'(' | b')'
+            )
+        {
+            break;
+        }
+        cur = cur.saturating_add(1);
+    }
+    if cur == word_start {
+        return None;
+    }
+    let mut delim = bytes.get(word_start..cur).unwrap_or_default();
+    // One layer of matching outer quotes (`"EOF"`, `'EOF'`).
+    for quote in *b"\"'" {
+        if delim.len() >= 2
+            && delim.first().copied() == Some(quote)
+            && delim.last().copied() == Some(quote)
+        {
+            delim = delim.get(1..delim.len().saturating_sub(1)).unwrap_or_default();
+            break;
+        }
+    }
+    if delim.is_empty() {
+        return None;
+    }
+    // Body starts past the operator line's newline.
+    let mut body = cur;
+    while bytes.get(body).copied().is_some_and(|b| b != b'\n') {
+        body = body.saturating_add(1);
+    }
+    if bytes.get(body).copied() != Some(b'\n') {
+        return None;
+    }
+    body = body.saturating_add(1);
+    // Scan line by line for the delimiter-only terminator.
+    let mut line = body;
+    loop {
+        let mut line_end = line;
+        while bytes.get(line_end).copied().is_some_and(|b| b != b'\n') {
+            line_end = line_end.saturating_add(1);
+        }
+        let mut text = bytes.get(line..line_end).unwrap_or_default();
+        while text.last().copied() == Some(b'\r') {
+            text = text.get(..text.len().saturating_sub(1)).unwrap_or_default();
+        }
+        let mut cmp = text;
+        if dash {
+            while cmp.first().copied() == Some(b'\t') {
+                cmp = cmp.get(1..).unwrap_or_default();
+            }
+        }
+        if cmp == delim {
+            let end = if bytes.get(line_end).copied() == Some(b'\n') {
+                line_end.saturating_add(1)
+            } else {
+                line_end
+            };
+            push(out, RsKind::Code, span_start, body);
+            push(out, RsKind::Str, body, end);
+            return Some(end);
+        }
+        if bytes.get(line_end).copied() != Some(b'\n') {
+            return None;
+        }
+        line = line_end.saturating_add(1);
+    }
 }
 
 /// Consume to the next unescaped `quote` (shell backquotes: `\` escapes).
@@ -205,5 +311,65 @@ mod tests {
             .collect::<Vec<_>>()
             .join("");
         assert!(code.contains("$(whoami)"), "got: {code}");
+    }
+
+    #[test]
+    fn heredoc_body_is_str_not_code() {
+        let src = "cat <<EOF\nhello $(not-code)\n# not comment\nEOF\necho done\n";
+        let segs = lex(src);
+        assert_eq!(joined(src), src);
+        let code: String = segs
+            .iter()
+            .filter(|s| s.kind == RsKind::Code)
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("");
+        assert!(!code.contains("not-code"), "got: {code}");
+        assert!(!code.contains("not comment"), "got: {code}");
+        assert!(code.contains("echo done"), "got: {code}");
+    }
+
+    #[test]
+    fn heredoc_dash_strips_tabs_on_terminator() {
+        let src = "cat <<-EOF\n\tbody\n\tEOF\necho done\n";
+        let segs = lex(src);
+        assert_eq!(joined(src), src);
+        let code: String = segs
+            .iter()
+            .filter(|s| s.kind == RsKind::Code)
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("");
+        assert!(!code.contains("body"), "got: {code}");
+        assert!(code.contains("echo done"), "got: {code}");
+    }
+
+    #[test]
+    fn herestring_is_not_a_heredoc() {
+        // `<<<` takes one word: no body tracking past the line.
+        let src = "cat <<< hello\n echo done\n";
+        let segs = lex(src);
+        assert_eq!(joined(src), src);
+        let code: String = segs
+            .iter()
+            .filter(|s| s.kind == RsKind::Code)
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("");
+        assert!(code.contains("hello"), "got: {code}");
+    }
+
+    #[test]
+    fn unterminated_heredoc_falls_back_to_code() {
+        let src = "cat <<EOF\nbody with no terminator\n";
+        let segs = lex(src);
+        assert_eq!(joined(src), src);
+        let code: String = segs
+            .iter()
+            .filter(|s| s.kind == RsKind::Code)
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("");
+        assert!(code.contains("body with no terminator"), "got: {code}");
     }
 }
