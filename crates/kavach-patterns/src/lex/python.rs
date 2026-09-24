@@ -9,8 +9,8 @@ use super::{RsKind, RsSeg, consume_escaped, consume_to_eol, consume_until, push}
 /// Python source cursor.
 ///
 /// `f`/`t`-string replacement fields are re-lexed: field code as `Code`,
-/// `#` comments inside fields as `Comment`, nested strings as `Str` (one
-/// level — fields inside nested f-strings stay opaque).
+/// `#` comments inside fields as `Comment`, nested strings as `Str`, nested
+/// f-strings recurse (depth-capped).
 #[must_use]
 pub fn lex(src: &str) -> Vec<RsSeg> {
     let bytes = src.as_bytes();
@@ -36,7 +36,18 @@ pub fn lex(src: &str) -> Vec<RsSeg> {
             };
             push(&mut out, RsKind::Code, span_start, pos);
             if is_fstring(bytes, pos, start) {
-                lex_fstring(bytes, &mut out, pos, start, end, triple, quote);
+                lex_fstring(
+                    bytes,
+                    &mut out,
+                    FStrSpan {
+                        lit_start: pos,
+                        content_start: start,
+                        end,
+                        triple,
+                        quote,
+                    },
+                    0,
+                );
             } else {
                 push(&mut out, RsKind::Str, pos, end);
             }
@@ -95,29 +106,52 @@ fn is_fstring(bytes: &[u8], pos: usize, quote_pos: usize) -> bool {
     false
 }
 
+/// Max f-string nesting re-lexed (CPython allows arbitrary nesting; past
+/// this depth fields stay opaque `Str` — spans still tile losslessly).
+const FSTRING_MAX_DEPTH: usize = 3;
+
+/// One f/t-string literal's bounds: outer span plus content span sans
+/// delimiters, triple flag, and quote byte.
+#[derive(Debug, Clone, Copy)]
+struct FStrSpan {
+    /// Literal start (prefix included).
+    lit_start: usize,
+    /// Content start (past prefix + opening quotes).
+    content_start: usize,
+    /// Literal end (past closing quotes, or EOF when unterminated).
+    end: usize,
+    /// Triple-quoted form.
+    triple: bool,
+    /// Quote byte.
+    quote: u8,
+}
+
 /// Emit an f/t-string span: literal chunks as `Str`, `{…}` fields re-lexed
 /// (field code as `Code`, `#` comments as `Comment`, nested strings as
-/// `Str`). `{{`/`}}` are literal-brace escapes staying `Str`.
-fn lex_fstring(
-    bytes: &[u8],
-    out: &mut Vec<RsSeg>,
-    lit_start: usize,
-    content_start: usize,
-    end: usize,
-    triple: bool,
-    quote: u8,
-) {
+/// `Str`). `{{`/`}}` are literal-brace escapes staying `Str`. Past
+/// [`FSTRING_MAX_DEPTH`] the whole literal stays opaque `Str`.
+fn lex_fstring(bytes: &[u8], out: &mut Vec<RsSeg>, span: FStrSpan, depth: usize) {
+    if depth > FSTRING_MAX_DEPTH {
+        push(out, RsKind::Str, span.lit_start, span.end);
+        return;
+    }
     // Content bounds sans delimiters (unterminated spans simply run to EOF).
-    let open_len = if triple { 3 } else { 1 };
+    let open_len = if span.triple { 3 } else { 1 };
     let mut close_len = 0usize;
-    if triple && end >= 3 && bytes.get(end.saturating_sub(3)).copied() == Some(quote) {
+    if span.triple
+        && span.end >= 3
+        && bytes.get(span.end.saturating_sub(3)).copied() == Some(span.quote)
+    {
         close_len = 3;
-    } else if !triple && end > 0 && bytes.get(end.saturating_sub(1)).copied() == Some(quote) {
+    } else if !span.triple
+        && span.end > 0
+        && bytes.get(span.end.saturating_sub(1)).copied() == Some(span.quote)
+    {
         close_len = 1;
     }
-    let content_end = end.saturating_sub(close_len);
-    let mut chunk = lit_start;
-    let mut cur = content_start.saturating_add(open_len);
+    let content_end = span.end.saturating_sub(close_len);
+    let mut chunk = span.lit_start;
+    let mut cur = span.content_start.saturating_add(open_len);
     while cur < content_end {
         match bytes.get(cur).copied() {
             Some(b'{') if bytes.get(cur.saturating_add(1)).copied() == Some(b'{') => {
@@ -128,7 +162,7 @@ fn lex_fstring(
             }
             Some(b'{') => {
                 push(out, RsKind::Str, chunk, cur);
-                cur = lex_field(bytes, out, cur, content_end);
+                cur = lex_field(bytes, out, cur, content_end, depth);
                 chunk = cur;
             }
             _ => {
@@ -136,16 +170,22 @@ fn lex_fstring(
             }
         }
     }
-    push(out, RsKind::Str, chunk, end);
+    push(out, RsKind::Str, chunk, span.end);
 }
 
 /// Re-lex one `{…}` field starting at the open brace: balanced braces with
 /// quote-skipping; returns the offset past the closing `}` (or content end).
-/// Interior: strings → `Str`, `#`-to-EOL → `Comment`, rest `Code` (braces ride
-/// with the surrounding `Code`).
-fn lex_field(bytes: &[u8], out: &mut Vec<RsSeg>, open: usize, content_end: usize) -> usize {
+/// Interior: strings → `Str` (nested f-strings recurse while `depth` allows),
+/// `#`-to-EOL → `Comment`, rest `Code` (braces ride with surrounding `Code`).
+fn lex_field(
+    bytes: &[u8],
+    out: &mut Vec<RsSeg>,
+    open: usize,
+    content_end: usize,
+    depth: usize,
+) -> usize {
     // Find the matching close first (nesting + quote aware).
-    let mut depth = 0usize;
+    let mut brace_depth = 0usize;
     let mut cur = open;
     let mut close = content_end;
     while cur < content_end {
@@ -154,17 +194,17 @@ fn lex_field(bytes: &[u8], out: &mut Vec<RsSeg>, open: usize, content_end: usize
                 cur = skip_py_string(bytes, cur);
             }
             Some(b'{') => {
-                depth = depth.saturating_add(1);
+                brace_depth = brace_depth.saturating_add(1);
                 cur = cur.saturating_add(1);
             }
             Some(b'}') => {
                 if bytes.get(cur.saturating_add(1)).copied() == Some(b'}') {
                     cur = cur.saturating_add(2);
-                } else if depth <= 1 {
+                } else if brace_depth <= 1 {
                     close = cur;
                     break;
                 } else {
-                    depth = depth.saturating_sub(1);
+                    brace_depth = brace_depth.saturating_sub(1);
                     cur = cur.saturating_add(1);
                 }
             }
@@ -175,7 +215,7 @@ fn lex_field(bytes: &[u8], out: &mut Vec<RsSeg>, open: usize, content_end: usize
     }
     // Both braces ride as Code so spans tile losslessly (in offset order).
     push(out, RsKind::Code, open, open.saturating_add(1));
-    partition_field(bytes, out, open.saturating_add(1), close);
+    partition_field(bytes, out, open.saturating_add(1), close, depth);
     if close < content_end {
         push(out, RsKind::Code, close, close.saturating_add(1));
         close.saturating_add(1)
@@ -184,9 +224,9 @@ fn lex_field(bytes: &[u8], out: &mut Vec<RsSeg>, open: usize, content_end: usize
     }
 }
 
-/// Partition field interior `[start, end)`: strings → `Str`, `#`-to-EOL →
-/// `Comment`, everything else `Code`.
-fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize) {
+/// Partition field interior `[start, end)`: nested f-strings recurse (depth
+/// capped), other strings → `Str`, `#`-to-EOL → `Comment`, rest `Code`.
+fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize, depth: usize) {
     let mut chunk = start;
     let mut cur = start;
     while cur < end {
@@ -201,7 +241,28 @@ fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize)
                 chunk = cur;
             }
             Some(b'"' | b'\'') => {
-                push(out, RsKind::Code, chunk, cur);
+                if let Some((lit, content, close, triple, quote)) =
+                    nested_fstring(bytes, cur, end)
+                {
+                    // The prefix letters belong to the nested literal: end the
+                    // pending code chunk before them so no byte emits twice.
+                    push(out, RsKind::Code, chunk, lit);
+                    lex_fstring(
+                        bytes,
+                        out,
+                        FStrSpan {
+                            lit_start: lit,
+                            content_start: content,
+                            end: close,
+                            triple,
+                            quote,
+                        },
+                        depth.saturating_add(1),
+                    );
+                    cur = close;
+                    chunk = cur;
+                    continue;
+                }
                 let str_start = cur;
                 cur = skip_py_string(bytes, cur);
                 push(out, RsKind::Str, str_start, cur);
@@ -213,6 +274,62 @@ fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize)
         }
     }
     push(out, RsKind::Code, chunk, end);
+}
+
+/// Bounds of a nested f/t-string whose opening quote sits at `quote_pos`
+/// (prefix letters immediately before it): `(lit_start, content_start, end,
+/// triple, quote)`. `None` for plain strings or when the prefix check fails.
+/// The end is found with the same triple/escape rules (bounded by `bound`).
+fn nested_fstring(
+    bytes: &[u8],
+    quote_pos: usize,
+    bound: usize,
+) -> Option<(usize, usize, usize, bool, u8)> {
+    let quote = bytes.get(quote_pos).copied()?;
+    if quote != b'"' && quote != b'\'' {
+        return None;
+    }
+    // Prefix: up to 2 f/t letters directly before the quote, ident-bounded.
+    let mut lit = quote_pos;
+    let mut seen_format = false;
+    for _ in 0..2 {
+        if lit == 0 {
+            break;
+        }
+        match bytes.get(lit.saturating_sub(1)).copied() {
+            Some(b'f' | b'F' | b't' | b'T') => {
+                seen_format = true;
+                lit = lit.saturating_sub(1);
+            }
+            Some(b'r' | b'R' | b'b' | b'B' | b'u' | b'U') => {
+                lit = lit.saturating_sub(1);
+            }
+            _ => break,
+        }
+    }
+    if !seen_format {
+        return None;
+    }
+    if lit > 0
+        && bytes
+            .get(lit.saturating_sub(1))
+            .copied()
+            .is_some_and(|b| b.is_ascii_alphanumeric() || b == b'_')
+    {
+        return None;
+    }
+    let triple = bytes.get(quote_pos.saturating_add(1)).copied() == Some(quote)
+        && bytes.get(quote_pos.saturating_add(2)).copied() == Some(quote);
+    let content_start = quote_pos;
+    let mut end = if triple {
+        consume_until(bytes, quote_pos.saturating_add(3), quote, 3)
+    } else {
+        consume_escaped(bytes, quote_pos, quote)
+    };
+    if end > bound {
+        end = bound;
+    }
+    Some((lit, content_start, end, triple, quote))
 }
 
 /// Skip a (possibly prefixed/triple) string starting at a quote byte;
@@ -334,5 +451,19 @@ mod tests {
             .collect::<Vec<_>>()
             .join("");
         assert!(!code.contains("not code"), "got: {code}");
+    }
+
+    #[test]
+    fn nested_fstring_fields_recurse() {
+        let src = "s = f\"outer {f'{x}'} done\";\n";
+        let segs = lex(src);
+        assert_eq!(joined(src), src);
+        let code: String = segs
+            .iter()
+            .filter(|s| s.kind == RsKind::Code)
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("");
+        assert!(code.contains("{x}"), "got: {code}");
     }
 }

@@ -124,14 +124,28 @@ fn emit_sh_interp(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize) 
     push(out, RsKind::Str, chunk, end);
 }
 
-/// `$(` island from the `$` at `dollar`: paren-nested, quote-aware-lite,
-/// emitted as ONE `Code` span (inner quotes are shell syntax, not strings).
+/// `$(` island from the `$` at `dollar`: paren-nested, quote-aware-lite.
+/// Emitted as `Code` spans, except heredoc bodies inside, which become `Str`
+/// (a `)` in a body must neither close the island nor read as code).
 fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize {
     let mut depth = 0usize;
     let mut cur = dollar;
+    let mut seg_start = dollar;
     while let Some(&byte) = bytes.get(cur) {
         if byte == b'"' || byte == b'\'' || byte == b'`' {
             cur = skip_quoted_island(bytes, cur, byte);
+            continue;
+        }
+        if byte == b'<'
+            && bytes.get(cur.saturating_add(1)).copied() == Some(b'<')
+            && bytes.get(cur.saturating_add(2)).copied() != Some(b'<')
+            && let Some((dash, delim, body)) = parse_heredoc_header(bytes, cur)
+            && let Some(end) = heredoc_end(bytes, body, delim, dash)
+        {
+            push(out, RsKind::Code, seg_start, body);
+            push(out, RsKind::Str, body, end);
+            seg_start = end;
+            cur = end;
             continue;
         }
         if byte == b'(' {
@@ -139,7 +153,7 @@ fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize 
         } else if byte == b')' {
             depth = depth.saturating_sub(1);
             if depth == 0 {
-                push(out, RsKind::Code, dollar, cur.saturating_add(1));
+                push(out, RsKind::Code, seg_start, cur.saturating_add(1));
                 return cur.saturating_add(1);
             }
         } else if byte == b'\\' {
@@ -147,7 +161,7 @@ fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize 
         }
         cur = cur.saturating_add(1);
     }
-    push(out, RsKind::Code, dollar, cur);
+    push(out, RsKind::Code, seg_start, cur);
     cur
 }
 
@@ -157,6 +171,17 @@ fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize 
 /// delimiter word follows on this line or no terminator exists (plain
 /// redirections fall through as code).
 fn lex_heredoc(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usize) -> Option<usize> {
+    let (dash, delim, body) = parse_heredoc_header(bytes, pos)?;
+    let end = heredoc_end(bytes, body, delim, dash)?;
+    push(out, RsKind::Code, span_start, body);
+    push(out, RsKind::Str, body, end);
+    Some(end)
+}
+
+/// Parse `<<[-]WORD` at `pos`: `(dash, delimiter, body_start)`. The delimiter
+/// word must sit on the same line; quotes stripped one layer. `None` for
+/// `<<<`, empty words, or EOL-first (plain redirections).
+fn parse_heredoc_header(bytes: &[u8], pos: usize) -> Option<(bool, &[u8], usize)> {
     let mut cur = pos.saturating_add(2);
     // Optional `-` (leading tabs stripped on terminator lines).
     let dash = bytes.get(cur).copied() == Some(b'-');
@@ -206,8 +231,13 @@ fn lex_heredoc(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usize
     if bytes.get(body).copied() != Some(b'\n') {
         return None;
     }
-    body = body.saturating_add(1);
-    // Scan line by line for the delimiter-only terminator.
+    Some((dash, delim, body.saturating_add(1)))
+}
+
+/// Scan line by line from `body` for the delimiter-only terminator (tabs
+/// allowed first when `dash`); returns the offset past its newline, or `None`
+/// when unterminated.
+fn heredoc_end(bytes: &[u8], body: usize, delim: &[u8], dash: bool) -> Option<usize> {
     let mut line = body;
     loop {
         let mut line_end = line;
@@ -225,14 +255,11 @@ fn lex_heredoc(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usize
             }
         }
         if cmp == delim {
-            let end = if bytes.get(line_end).copied() == Some(b'\n') {
+            return Some(if bytes.get(line_end).copied() == Some(b'\n') {
                 line_end.saturating_add(1)
             } else {
                 line_end
-            };
-            push(out, RsKind::Code, span_start, body);
-            push(out, RsKind::Str, body, end);
-            return Some(end);
+            });
         }
         if bytes.get(line_end).copied() != Some(b'\n') {
             return None;
@@ -371,5 +398,21 @@ mod tests {
             .collect::<Vec<_>>()
             .join("");
         assert!(code.contains("body with no terminator"), "got: {code}");
+    }
+
+    #[test]
+    fn heredoc_inside_dollar_paren_keeps_depth() {
+        // A `)` inside the heredoc body must not close the `$(…)` island.
+        let src = "x=$(cat <<EOF\nnot code (here)\nEOF\n)\n";
+        let segs = lex(src);
+        assert_eq!(joined(src), src);
+        let code: String = segs
+            .iter()
+            .filter(|s| s.kind == RsKind::Code)
+            .map(|s| text(src, s))
+            .collect::<Vec<_>>()
+            .join("");
+        assert!(code.contains("$(cat"), "got: {code}");
+        assert!(!code.contains("not code"), "got: {code}");
     }
 }
