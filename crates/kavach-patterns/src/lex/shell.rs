@@ -209,14 +209,15 @@ fn parse_heredoc_header(bytes: &[u8], pos: usize) -> Option<(bool, &[u8], usize)
     if cur == word_start {
         return None;
     }
-    let mut delim = bytes.get(word_start..cur).unwrap_or_default();
+    let mut delim = bytes.get(word_start..cur)?;
     // One layer of matching outer quotes (`"EOF"`, `'EOF'`).
     for quote in *b"\"'" {
         if delim.len() >= 2
             && delim.first().copied() == Some(quote)
             && delim.last().copied() == Some(quote)
         {
-            delim = delim.get(1..delim.len().saturating_sub(1)).unwrap_or_default();
+            let inner = delim.get(1..delim.len().saturating_sub(1))?;
+            delim = inner;
             break;
         }
     }
@@ -244,14 +245,14 @@ fn heredoc_end(bytes: &[u8], body: usize, delim: &[u8], dash: bool) -> Option<us
         while bytes.get(line_end).copied().is_some_and(|b| b != b'\n') {
             line_end = line_end.saturating_add(1);
         }
-        let mut text = bytes.get(line..line_end).unwrap_or_default();
-        while text.last().copied() == Some(b'\r') {
-            text = text.get(..text.len().saturating_sub(1)).unwrap_or_default();
+        let mut text = bytes.get(line..line_end)?;
+        while let [rest @ .., b'\r'] = text {
+            text = rest;
         }
         let mut cmp = text;
         if dash {
-            while cmp.first().copied() == Some(b'\t') {
-                cmp = cmp.get(1..).unwrap_or_default();
+            while let [b'\t', rest @ ..] = cmp {
+                cmp = rest;
             }
         }
         if cmp == delim {

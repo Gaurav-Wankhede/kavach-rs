@@ -355,7 +355,11 @@ fn py_open(bytes: &[u8], pos: usize) -> (usize, bool, u8) {
         }
         cur = cur.saturating_add(1);
     }
-    let quote = bytes.get(cur).copied().unwrap_or(b'"');
+    let Some(quote) = bytes.get(cur).copied() else {
+        // Unreachable through `is_py_prefix` (a quote always follows), but
+        // total: fall back to a plain double-quote open at `cur`.
+        return (cur, false, b'"');
+    };
     let triple = bytes.get(cur.saturating_add(1)).copied() == Some(quote)
         && bytes.get(cur.saturating_add(2)).copied() == Some(quote);
     (cur, triple, quote)
