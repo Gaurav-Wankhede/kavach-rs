@@ -9,10 +9,11 @@
 //! spec, JLS §3, Kotlin spec + strings docs, ECMA-262 + MDN, CPython lexical
 //! analysis, POSIX shell, Dockerfile reference, PostgreSQL lexical docs.
 //!
-//! Documented approximations (v1): JS regex literals are NOT lexed (a `/`
-//! never opens a literal; same as the old raw-line behavior); shell heredocs
-//! are NOT tracked (bodies read as code, as before); Python f-string `{…}`
-//! fields stay opaque `Str` (re-lexing them is a follow-up).
+//! Documented approximations (v1): shell heredocs inside `$(…)` are not
+//! tracked; Python f-string `{…}` fields nested inside other f-strings stay
+//! opaque; regex-vs-division uses the standard operand-position heuristic
+//! (`}` and line-start always allow regex — rare object-division cases
+//! mislex, documented at `regex_opens`).
 pub mod c_like;
 pub mod dockerfile;
 pub mod python;
