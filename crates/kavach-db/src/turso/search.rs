@@ -9,6 +9,7 @@ use std::future::Future;
 
 use super::{TursoError, TursoResult, TursoStore};
 use crate::brain::BrainHit;
+use crate::query_lex::{Lexer, TokenKind};
 use crate::rrf::{RRF_K, rrf_fuse};
 
 /// Categories that carry searchable title/content corpora (mirrors
@@ -23,19 +24,36 @@ pub const DDL: &[&str] = &[
 /// Convert a user query string to FTS5 MATCH syntax, injection-safe.
 ///
 /// TursoStoreDB `@0@` treats terms as an implicit AND of prefixes; FTS5 needs
-/// explicit quoting so user punctuation can't break the expression. Each
-/// whitespace-separated token is quoted (with embedded quotes doubled).
+/// explicit quoting so user punctuation can't break the expression. Each word
+/// is a lexer token (quoted, embedded quotes doubled) — the same term stream
+/// the old `split_whitespace` + per-word `format!` produced, but decoded in
+/// one pass into ONE output `String` instead of N+1 per-word allocations.
+/// Status keywords are ordinary FTS words here (no query-syntax change).
 #[must_use]
 pub fn fts5_query(query: &str) -> String {
-    query
-        .split_whitespace()
-        .map(fts_escape)
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-fn fts_escape(term: &str) -> String {
-    format!("\"{}\"", term.replace('"', "\"\""))
+    let lexer = Lexer::new(query);
+    let mut out = String::with_capacity(query.len().saturating_add(16));
+    let mut first = true;
+    let mut cursor = lexer;
+    loop {
+        let token = cursor.next_token();
+        if token.kind == TokenKind::EndOfFile {
+            break;
+        }
+        if !first {
+            out.push(' ');
+        }
+        first = false;
+        out.push('"');
+        for ch in cursor.text(&token).chars() {
+            if ch == '"' {
+                out.push('"');
+            }
+            out.push(ch);
+        }
+        out.push('"');
+    }
+    out
 }
 
 /// Positional params for [`SearchStore::fts_rank_category`].

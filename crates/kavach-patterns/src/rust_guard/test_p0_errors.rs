@@ -83,3 +83,28 @@ fn p0_default_fill() {
             .any(|x| x.severity == RustSeverity::P0Block && x.pattern.contains("Default"))
     );
 }
+
+#[test]
+fn comment_prose_mentions_do_not_fire() {
+    // Joined trigger words in comment prose are not code using them.
+    // (Spelled plainly here, not via j(): the split form could never match
+    // even on raw text, which would vacate this proof. The carrier fn has a
+    // body so only the comment is under test.)
+    let code = "// never call unwrap() or panic! here\nfn x() { 1 }";
+    let v = detect("src/lib.rs", code);
+    assert!(
+        v.iter().all(|x| x.severity != RustSeverity::P0Block),
+        "got: {v:?}"
+    );
+}
+
+#[test]
+fn string_text_mentions_do_not_fire() {
+    let code = "let msg = \"do not unwrap() or panic!\";";
+    let v = detect("src/lib.rs", code);
+    assert!(
+        v.iter().all(|x| x.severity != RustSeverity::P0Block),
+        "got: {v:?}"
+    );
+}
+

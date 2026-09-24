@@ -206,3 +206,19 @@ fn detects_manual_range_struct() {
     );
     assert!(v.iter().any(|x| x.pattern == "manual range struct over core::range"));
 }
+
+#[test]
+fn comment_prose_does_not_fire_code_patterns() {
+    // Prose mentioning `static mut` is not a static-mut declaration.
+    let v = detect(
+        "src/lib.rs",
+        "// NOTE: static mut is banned, use Atomics\nfn x() {}",
+    );
+    assert!(!v.iter().any(|x| x.pattern == "static mut"));
+}
+
+#[test]
+fn string_text_does_not_fire_code_patterns() {
+    let v = detect("src/lib.rs", "let msg = \"avoid static mut here\";");
+    assert!(!v.iter().any(|x| x.pattern == "static mut"));
+}

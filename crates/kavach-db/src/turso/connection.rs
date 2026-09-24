@@ -171,7 +171,11 @@ impl TursoStore {
     }
 
     async fn init_schema(&self) -> TursoResult<()> {
+        // K-4 concurrency triad (Handbook §4): WAL + NORMAL sync + 5s busy
+        // timeout, applied on EVERY open so concurrent CLI/hook/daemon readers
+        // never hit `database is locked`.
         self.exec_drain("PRAGMA journal_mode=WAL;").await?;
+        self.exec_drain("PRAGMA synchronous=NORMAL;").await?;
         self.exec_drain("PRAGMA wal_autocheckpoint=512;").await?; // §7 ops discipline
         self.exec_drain("PRAGMA busy_timeout=5000;").await?;
         for stmt in SCHEMA_DDL {

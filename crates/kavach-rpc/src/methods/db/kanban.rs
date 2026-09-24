@@ -31,38 +31,32 @@ pub async fn kanban(
     let mut counts = KanbanCounts::default();
     let mut items: Vec<KanbanItem> = Vec::with_capacity(params.limit.min(entries.len()));
 
+    // Lexed once: the status filter is a token, and every row matches on its
+    // typed lane — no per-row `== "…"` string scans.
+    let want = kavach_db::StatusPred::from_opt(params.status.as_deref());
+
     for entry in &entries {
-        let status_str = if entry.entry_status_str().is_empty() {
-            "todo"
-        } else {
-            entry.entry_status_str()
-        };
-
-        let include = match (&params.status, &params.key) {
-            (Some(s), _) if s != status_str => false,
-            (_, Some(k)) if !entry.entry_key.contains(k) => false,
-            _ => true,
-        };
-
-        if !include {
+        let typed = entry.effective_status_typed();
+        if !want.matches_typed(typed) || !key_matches(entry, params.key.as_deref()) {
             continue;
         }
 
-        match status_str.parse::<MemoryStatus>() {
-            Ok(MemoryStatus::Todo) => counts.todo = counts.todo.saturating_add(1),
-            Ok(MemoryStatus::InProgress) => {
+        match typed {
+            Some(MemoryStatus::Todo) => counts.todo = counts.todo.saturating_add(1),
+            Some(MemoryStatus::InProgress) => {
                 counts.in_progress = counts.in_progress.saturating_add(1);
             }
-            Ok(MemoryStatus::Done) => counts.done = counts.done.saturating_add(1),
-            Ok(MemoryStatus::Verified) => counts.verified = counts.verified.saturating_add(1),
-            Ok(_) | Err(_) => {} // doctor:ok unknown/legacy status is simply not counted (no op needed)
+            Some(MemoryStatus::Done) => counts.done = counts.done.saturating_add(1),
+            Some(MemoryStatus::Verified) => counts.verified = counts.verified.saturating_add(1),
+            // doctor:ok unknown/legacy status is simply not counted (no op needed)
+            Some(_) | None => {}
         }
 
         if items.len() < params.limit {
             items.push(KanbanItem {
                 key: entry.entry_key.clone(),
                 title: entry.title.clone(),
-                status: status_str.to_owned(),
+                status: entry.effective_status().to_owned(),
                 category: entry.category_str().to_owned(),
                 content: entry.content.clone(),
             });
@@ -70,4 +64,10 @@ pub async fn kanban(
     }
 
     Ok(KanbanResult { items, counts })
+}
+
+/// Key substring gate (unchanged string path: keys are open-ended identifiers,
+/// not a keyword vocabulary, so there is nothing to intern).
+fn key_matches(entry: &MemoryEntry, key: Option<&str>) -> bool {
+    key.is_none_or(|k| entry.entry_key.contains(k))
 }

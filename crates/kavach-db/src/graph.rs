@@ -17,8 +17,8 @@ pub use bridges::{
     BridgeHit, ProjectHit, bridge_to_concept, concepts_for_project, projects_for_concept,
 };
 pub use concepts::{
-    delete_concept, delete_concepts_by_prefix, find_concept, list_concepts, relate_concepts,
-    search_concepts_fts, upsert_concept,
+    concept_query_words, concept_text_matches, delete_concept, delete_concepts_by_prefix,
+    find_concept, list_concepts, relate_concepts, search_concepts_fts, upsert_concept,
 };
 pub use dynamic::{
     EdgeRow, RelatedRow, citations_cited_by, find_entity, get_related, is_citation_rel,

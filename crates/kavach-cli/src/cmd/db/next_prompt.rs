@@ -17,8 +17,15 @@ pub(crate) enum Pick<'a> {
 }
 /// Pick the first `todo` roadmap card from a priority-ordered slice and classify
 /// its exec_prompt. Pure — the IO wrapper below renders the outcome.
+///
+/// Lane match is typed (`effective_status_typed`): legacy `status`-only rows
+/// read through the same default as every other board, so a `done` row can
+/// never be served as the next todo.
 pub(crate) fn pick(rows: &[MemoryEntry]) -> Pick<'_> {
-    let Some(top) = rows.iter().find(|r| r.entry_status.as_deref().unwrap_or("todo") == "todo") else {
+    let Some(top) = rows
+        .iter()
+        .find(|r| r.effective_status_typed() == Some(kavach_types::MemoryStatus::Todo))
+    else {
         return Pick::Empty;
     };
     match top.exec_prompt.as_deref() {

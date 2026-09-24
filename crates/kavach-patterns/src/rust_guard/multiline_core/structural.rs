@@ -112,11 +112,21 @@ const SIMPLE: &[(usize, Severity, &str, &str)] = {
 
 pub(super) fn scan(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
     use Severity::{P0Block, P1Advisory};
-    let m = |idx: usize| r.get(idx).is_some_and(|re| re.is_match(content));
-    let count = |idx: usize| r.get(idx).map_or(0, |re| re.find_iter(content).count());
+    // Triggers match the code view (comments + strings dropped); exemption
+    // needles (`validate`, `axum::`, …) stay on raw content so no existing
+    // suppression is lost. Indices 22/23 are payload rules (body words live
+    // in strings) and stay raw like 72/74.
+    let code = crate::lex::code_text(content);
+    let m = |idx: usize| r.get(idx).is_some_and(|re| re.is_match(&code));
+    let m_raw = |idx: usize| r.get(idx).is_some_and(|re| re.is_match(content));
+    let count = |idx: usize| r.get(idx).map_or(0, |re| re.find_iter(&code).count());
 
     for &(idx, sev, pat, fix) in SIMPLE {
-        if m(idx) {
+        if idx == 22 || idx == 23 {
+            if m_raw(idx) {
+                one(v, sev, pat, fix);
+            }
+        } else if m(idx) {
             one(v, sev, pat, fix);
         }
     }

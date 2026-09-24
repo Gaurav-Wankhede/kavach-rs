@@ -1,5 +1,6 @@
 use super::{
-    CATEGORY_HELP, STRICT_CATEGORIES, mirror_depends_on_into_content, resolve_speculative_deps,
+    CATEGORY_HELP, STRICT_CATEGORIES, check_protected_closure, length_ratio_can_reach,
+    lower_chars, mirror_depends_on_into_content, resolve_speculative_deps, similarity_lowered,
 };
 use kavach_engine::ExtractedRelationship;
 
@@ -104,4 +105,70 @@ fn category_help_matches_strict_categories() {
         "`proposal` is a dead category accepted by zero validators — it \
          must not return to the help text or the validator set"
     );
+}
+
+#[test]
+fn protected_closure_blocks_true_positives() {
+    // Canonical protected key + closure title is still blocked.
+    assert!(check_protected_closure("auth.migration.p0-fix", "Closed as done").is_some());
+    assert!(check_protected_closure("todo-12", "Closed.").is_some());
+    assert!(check_protected_closure("market-gap-v2", "ARCHIVED").is_some());
+    assert!(check_protected_closure("grpc-api", "deprecated endpoint").is_some());
+}
+
+#[test]
+fn protected_closure_ignores_substring_false_positives() {
+    // Token-boundary matching: prose containing pattern letters must not block.
+    assert!(check_protected_closure("emphasis-notes", "Writeup disclosed").is_none());
+    assert!(check_protected_closure("rapid-prototype", "Fix nonblocking IO").is_none());
+    assert!(check_protected_closure("stalemate-review", "Update docs").is_none());
+    // No closure word → no block even on a protected key.
+    assert!(check_protected_closure("todo-12", "Add tests").is_none());
+    // Unprotected key + closure title → no block.
+    assert!(check_protected_closure("notes-misc", "Closed").is_none());
+}
+
+#[test]
+fn similarity_lowered_scores_sane_values() {
+    let score = |a: &str, b: &str| similarity_lowered(&lower_chars(a), &lower_chars(b));
+    // Exact identities land exactly on the 0/1 rails (ordering compares —
+    // float `==` is banned by `clippy::float_cmp`).
+    assert!(score("hello world", "hello world") >= 1.0);
+    assert!(score("Hello World", "hello world") >= 1.0);
+    assert!(score("", "") >= 1.0);
+    assert!(score("", "a") <= 0.0);
+    assert!(score("auth guard", "auth guards") > 0.85);
+    assert!(score("totally different title here", "nothing alike at all") < 0.5);
+    // Symmetric: pair order lands in the same band either way
+    // ("abc"/"abcd" = 0.75, "kitten"/"sitten" ≈ 0.83).
+    for (a, b) in [("abc", "abcd"), ("kitten", "sitten")] {
+        let (s1, s2) = (score(a, b), score(b, a));
+        assert!(s1 > 0.7 && s1 < 0.9 && s2 > 0.7 && s2 < 0.9, "pair=({a:?}, {b:?})");
+    }
+}
+
+#[test]
+fn length_ratio_gate_never_skips_a_hit() {
+    // Soundness: every pair that reaches threshold passes the gate (the gate
+    // may pass pairs that miss — it must never skip pairs that hit).
+    let titles = [
+        "auth guard for session tokens",
+        "auth guards for session token",
+        "completely unrelated roadmap item",
+        "todo",
+        "todo!",
+        "",
+        "a much longer title with many words in it",
+    ];
+    for a in titles {
+        for b in titles {
+            let s = similarity_lowered(&lower_chars(a), &lower_chars(b));
+            if s >= super::FUZZY_THRESHOLD {
+                assert!(
+                    length_ratio_can_reach(lower_chars(a).len(), lower_chars(b).len()),
+                    "gate skipped a hit: ({a:?}, {b:?}) scored {s}"
+                );
+            }
+        }
+    }
 }

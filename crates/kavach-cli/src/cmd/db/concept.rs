@@ -136,6 +136,43 @@ pub(super) fn link(from: &str, edge: &str, to: &str) -> i32 {
     })
 }
 
+/// Search haystack for the direct-DB fallback: the parsed text fields when the
+/// properties JSON has the canonical shape, else the raw string (recall-safe:
+/// never match on nothing just because the shape drifted).
+fn fallback_search_text(props_json: Option<&str>) -> String {
+    let mut text = String::new();
+    let mut push = |part: &str| {
+        if !part.is_empty() {
+            if !text.is_empty() {
+                text.push(' ');
+            }
+            text.push_str(part);
+        }
+    };
+    match props_json.and_then(|p| serde_json::from_str::<serde_json::Value>(p).ok()) {
+        Some(v) if v.is_object() => {
+            if let Some(desc) = v.get("desc").and_then(|d| d.as_str()) {
+                push(desc);
+            }
+            for key in ["tags", "sources"] {
+                if let Some(items) = v.get(key).and_then(|a| a.as_array()) {
+                    for item in items.iter().filter_map(|i| i.as_str()) {
+                        push(item);
+                    }
+                } else if let Some(single) = v.get(key).and_then(|s| s.as_str()) {
+                    push(single);
+                }
+            }
+        }
+        _ => {
+            if let Some(raw) = props_json {
+                push(raw);
+            }
+        }
+    }
+    text
+}
+
 /// Full-text (BM25) search over concept descriptions.
 pub(super) fn search(query: &str, limit: usize) -> i32 {
     match rpc_client::concept_search(query, limit) {
@@ -200,13 +237,24 @@ pub(super) fn search(query: &str, limit: usize) -> i32 {
             }
         };
 
-        // Filter by query (simple substring match on name and properties)
-        let query_lower = query.to_lowercase();
+        // Whole-word match (shared matcher with the RPC path): the query is
+        // lexed once, and every row matches on token spans — no per-row
+        // lowercased copies, no substring hits ("auth" vs "author").
+        let words = kavach_db::graph_concept_query_words(query);
+        if words.is_empty() {
+            if let Err(io_err) = print_or_exit(&format!("(no concepts match '{query}')")) {
+                return into_exit_code(io_err);
+            }
+            return 0;
+        }
         let filtered: Vec<_> = entities
             .into_iter()
             .filter(|e| {
-                e.name.to_lowercase().contains(&query_lower)
-                    || e.properties.as_ref().is_some_and(|p| p.to_lowercase().contains(&query_lower))
+                kavach_db::graph_concept_text_matches(
+                    &e.name,
+                    &fallback_search_text(e.properties.as_deref()),
+                    &words,
+                )
             })
             .take(limit)
             .collect();

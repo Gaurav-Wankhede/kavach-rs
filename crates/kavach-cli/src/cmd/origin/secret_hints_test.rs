@@ -24,3 +24,16 @@ fn non_secret_database_url() {
 fn non_secret_retry_count() {
     assert!(!is_secret("retry_count"));
 }
+
+#[test]
+fn fragment_mid_word_is_not_a_hit() {
+    // Token-prefix matching: "api" must not fire inside "rapid".
+    assert!(!is_secret("rapid"));
+    assert!(!is_secret("opacitycheck"));
+}
+
+#[test]
+fn fragment_prefix_of_token_is_a_hit() {
+    assert!(is_secret("pass"));
+    assert!(is_secret("PRIVATE_KEY"));
+}

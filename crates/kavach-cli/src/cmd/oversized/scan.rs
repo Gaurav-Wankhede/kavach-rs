@@ -75,15 +75,25 @@ fn is_excluded(path: &str) -> bool {
 const EXEMPT_MARKERS: [&str; 2] = ["// split:", "kavach:intentional"];
 
 pub(super) fn has_exempt_marker(path: &str) -> bool {
+    use kavach_patterns::lex::{RsKind, segments, text};
     use std::io::{BufRead, BufReader};
     let Ok(f) = std::fs::File::open(path) else {
         return false;
     };
+    // Markers count only in real comments: `"// split:"` inside a string
+    // literal is data, not an escape hatch.
     BufReader::new(f)
         .lines()
         .take(15)
         .map_while(Result::ok)
-        .any(|line| EXEMPT_MARKERS.iter().any(|m| line.contains(m)))
+        .any(|line| {
+            let segs = segments(&line);
+            segs.iter().filter(|s| s.kind == RsKind::Comment).any(|s| {
+                EXEMPT_MARKERS
+                    .iter()
+                    .any(|m| text(&line, s).contains(m))
+            })
+        })
 }
 
 #[cfg(test)]

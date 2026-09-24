@@ -36,10 +36,12 @@ pub(super) fn scan(file_path: &str, content: &str, v: &mut Vec<Violation>) {
     if !is_governed_path(file_path) || is_exempt_path(file_path) {
         return;
     }
-    for (i, line) in content.lines().enumerate() {
-        // Match `std::env::var(` or a bare `env::var(` call. Cheap substring
+    for (i, raw) in content.lines().enumerate() {
+        // Match `std::env::var(` or a bare `env::var(` call on the code view:
+        // mentions inside comments or strings are not reads. Cheap substring
         // test — no regex needed; the LAW bans the literal call shape.
-        let has_call = line.contains("std::env::var(") || line.contains("env::var(");
+        let code = crate::lex::code_line(raw);
+        let has_call = code.contains("std::env::var(") || code.contains("env::var(");
         if has_call {
             v.push(Violation::new(
                 Severity::P0Block,

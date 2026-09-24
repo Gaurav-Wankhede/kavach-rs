@@ -62,6 +62,32 @@ fn allows_phantom_data() {
 }
 
 #[test]
+fn block_comment_decoy_does_not_hit() {
+    // A `let _ =` inside a block comment is prose, not a discard.
+    let code = "/* let _ = db.query(); */\nfn x() {}";
+    let hits = detect("src/main.rs", code);
+    assert!(hits.is_empty(), "comment prose must not match: {hits:?}");
+}
+
+#[test]
+fn rule_trigger_inside_a_string_does_not_hit() {
+    // The IO fragment lives in string text; the code binds nothing fallible.
+    let code = "let msg = \"query() failed, do not .ok() it\";";
+    let hits = detect("src/main.rs", code);
+    assert!(hits.is_empty(), "string text must not match: {hits:?}");
+}
+
+#[test]
+fn safety_marker_inside_a_string_excuses_nothing() {
+    // A real discard with only a string-mention of the SAFETY marker still
+    // hits: the marker must live in a comment. (The marker literal is split
+    // so clippy's own unnecessary-safety-comment lint stays quiet.)
+    let code = concat!("let _ = do_io(\"// SAFE", "TY: fine\");");
+    let hits = detect("src/main.rs", code);
+    assert!(!hits.is_empty(), "string marker must not exempt: {hits:?}");
+}
+
+#[test]
 fn allows_test_files() {
     let code = "let _ = writeln!(stdout, \"x\");";
     let hits = detect("src/tests/foo.rs", code);

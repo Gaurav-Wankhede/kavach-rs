@@ -219,7 +219,9 @@ pub(super) fn run(
         }
         for entry in &filtered {
             let cat_str = entry.category.as_deref().unwrap_or("unknown");
-            let status_str = entry.entry_status.as_deref().unwrap_or("todo");
+            // K-1: single read path (effective_status) so query agrees with
+            // context/kanban on legacy/empty-status rows.
+            let status_str = entry.effective_status();
             let view = QueryEntryView {
                 category: cat_str,
                 key: &entry.entry_key,

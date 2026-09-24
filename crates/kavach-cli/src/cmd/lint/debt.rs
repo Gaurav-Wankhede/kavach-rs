@@ -11,6 +11,12 @@ struct Debt {
     has_trigger: bool,
 }
 fn marker_note(line: &str) -> Option<(String, bool)> {
+    // The marker must live in code or a comment — a `kavach:intentional`
+    // inside a string literal is data, not an annotation. The walker only
+    // visits `.rs` files, so the Rust segments apply.
+    if !marker_in_code_or_comment(line) {
+        return None;
+    }
     let after = line.split(MARKER).nth(1)?.trim();
     // A trigger is named when the note mentions upgrade/when/if/until/once.
     let lower = after.to_lowercase();
@@ -18,6 +24,14 @@ fn marker_note(line: &str) -> Option<(String, bool)> {
         .iter()
         .any(|t| lower.contains(t));
     Some((after.to_owned(), has_trigger))
+}
+
+/// True when MARKER appears outside string literals on the line.
+fn marker_in_code_or_comment(line: &str) -> bool {
+    use kavach_patterns::lex::{RsKind, segments, text};
+    segments(line).iter().any(|s| {
+        (s.kind == RsKind::Code || s.kind == RsKind::Comment) && text(line, s).contains(MARKER)
+    })
 }
 /// Scan `root` for ceiling markers and print the ledger. Returns 0 always (report-only).
 pub(crate) fn run(root: &Path) -> i32 {

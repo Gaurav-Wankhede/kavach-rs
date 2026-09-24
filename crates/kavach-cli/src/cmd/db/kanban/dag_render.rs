@@ -132,7 +132,10 @@ fn deps_suffix(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode
     }
 }
 /// Render the topo-tiered text DAG. Returns the assembled string (caller prints).
-fn render_tiered_text(dag: &RoadmapDag) -> String {
+/// `show_closed` keeps `done`/`verified` nodes in their tiers (K-5): the
+/// default awareness view hides closed rows, but an explicit
+/// `--status done|verified` filter asks for exactly those rows.
+fn render_tiered_text(dag: &RoadmapDag, show_closed: bool) -> String {
     let by_id: HashMap<&str, &DagNode> = dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
     let mut out = format!(
         "[KANBAN DAG] {} node(s), {} edge(s)\n",
@@ -161,11 +164,13 @@ fn render_tiered_text(dag: &RoadmapDag) -> String {
         let mut ids: Vec<&String> = order
             .iter()
             .filter(|id| depth.get(*id) == Some(&tier))
-            // Exclude closed nodes (verified/done) from tier display.
+            // Closed nodes (verified/done) are excluded from tier display
+            // unless explicitly requested via `--status done|verified`.
             .filter(|id| {
-                by_id
-                    .get(id.as_str())
-                    .is_none_or(|n| !matches!(n.entry_status.as_str(), "verified" | "done"))
+                show_closed
+                    || by_id
+                        .get(id.as_str())
+                        .is_none_or(|n| !matches!(n.entry_status.as_str(), "verified" | "done"))
             })
             .collect();
         ids.sort();
@@ -237,11 +242,36 @@ fn render_mermaid(dag: &RoadmapDag) -> String {
 /// any other value is treated as `"dag"` (clap restricts the flag, so this is
 /// defense-in-depth).
 pub(in crate::cmd::db) fn render_dag_from_rows(rows: &[MemoryEntry], format: &str) -> i32 {
-    let dag = dag_from_roadmap(rows);
+    render_dag_from_filtered(rows, format, false, 0)
+}
+
+/// Filtered entry point (K-5): render the DAG over pre-filtered `rows`
+/// (status/key/lane already applied by the caller). `show_closed` keeps
+/// `done`/`verified` tiers visible; `limit` caps rendered nodes (0 = all).
+/// An empty filtered set reports itself instead of the full-graph view so a
+/// lane filter is verifiable from the output.
+pub(in crate::cmd::db) fn render_dag_from_filtered(
+    rows: &[MemoryEntry],
+    format: &str,
+    show_closed: bool,
+    limit: usize,
+) -> i32 {
+    if rows.is_empty() {
+        return match print_or_exit("[KANBAN DAG] 0 node(s), 0 edge(s) — no rows match the filters") {
+            Ok(()) => 0,
+            Err(io_err) => into_exit_code(io_err),
+        };
+    }
+    let scoped: Vec<MemoryEntry> = if limit == 0 {
+        rows.to_vec()
+    } else {
+        rows.iter().take(limit).cloned().collect()
+    };
+    let dag = dag_from_roadmap(&scoped);
     let body = if format == "mermaid" {
         render_mermaid(&dag)
     } else {
-        render_tiered_text(&dag)
+        render_tiered_text(&dag, show_closed)
     };
     match print_or_exit(body.trim_end()) {
         Ok(()) => 0,

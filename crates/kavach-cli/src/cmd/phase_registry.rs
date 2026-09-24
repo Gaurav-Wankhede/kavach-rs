@@ -25,20 +25,18 @@ fn builtin() -> Vec<String> {
     BUILTIN_PHASES.iter().map(|s| (*s).to_owned()).collect()
 }
 
-/// `true` when `name` (case-insensitive) is a registered phase.
+/// `true` when `name` (case-insensitive, no alloc) is a registered phase.
 #[must_use]
 pub(super) fn is_valid(name: &str) -> bool {
-    let upper = name.to_uppercase();
-    phases().iter().any(|p| p == &upper)
+    phases().iter().any(|p| p.eq_ignore_ascii_case(name))
 }
 
 /// The phase after `current` in registry order, or `None` at the final phase or
 /// when `current` is unknown (caller decides how to message each case).
 #[must_use]
 pub(super) fn next_after(current: &str) -> Option<String> {
-    let upper = current.to_uppercase();
     let ordered = phases();
-    let idx = ordered.iter().position(|p| p == &upper)?;
+    let idx = ordered.iter().position(|p| p.eq_ignore_ascii_case(current))?;
     ordered.get(idx.saturating_add(1)).cloned()
 }
 

@@ -206,3 +206,22 @@ proptest::proptest! {
         prop_assert_eq!(quotes % 2, 0);
     }
 }
+
+#[test]
+fn lexer_fts_output_matches_legacy_term_stream_exactly() {
+    // Parity vectors for the lexer rewrite: identical MATCH strings to the old
+    // `split_whitespace` + per-word quoting (verified by hand against it).
+    for (raw, want) in [
+        ("", ""),
+        ("   ", ""),
+        ("foo", "\"foo\""),
+        ("foo bar", "\"foo\" \"bar\""),
+        ("  foo   bar  ", "\"foo\" \"bar\""),
+        ("foo \"bar\" baz", "\"foo\" \"\"\"bar\"\"\" \"baz\""),
+        ("say \"hi\"", "\"say\" \"\"\"hi\"\"\""),
+        ("todo done", "\"todo\" \"done\""),
+        ("héllo wörk", "\"héllo\" \"wörk\""),
+    ] {
+        assert_eq!(fts5_query(raw), want, "raw={raw:?}");
+    }
+}

@@ -2,13 +2,16 @@
 // hunt lenses, applies status/key/lane filters, and renders the optional
 // [VERIFIED] lens. Split out of the kanban hub to keep each file ≤100 LOC.
 use crate::cmd::io_safe::{into_exit_code, print_or_exit};
+use kavach_types::MemoryStatus;
 
-use super::{VERIFIED_STATUS, count_non_open, is_hunt_key, is_open_status};
+use super::{count_non_open, is_hunt_key, is_open_status};
 
 /// Filters used to narrow the board before rendering. Each field is a distinct
 /// user-facing flag; a struct keeps the render signature within argument limits.
 pub(in crate::cmd::db) struct KanbanFilters<'a> {
-    pub status: Option<&'a str>,
+    /// Lexed `--status` predicate (keyword → token at the CLI boundary; row
+    /// matches are discriminant compares, never string scans).
+    pub status: kavach_db::StatusPred,
     pub key: Option<&'a str>,
     pub lane: Option<&'a str>,
     pub active_first: bool,
@@ -20,7 +23,8 @@ pub(in crate::cmd::db) struct KanbanFilters<'a> {
 }
 
 fn matches_filters(e: &kavach_db::MemoryEntry, f: &KanbanFilters<'_>) -> bool {
-    f.status.is_none_or(|s| e.entry_status_str() == s)
+    // Token predicate (lexed once) over the typed lane — no string scan.
+    f.status.matches_typed(e.effective_status_typed())
         && f.key.is_none_or(|k| e.entry_key.contains(k))
         && f.lane.is_none_or(|l| e.lane.as_deref() == Some(l))
 }
@@ -33,7 +37,7 @@ pub(in crate::cmd::db) fn render_kanban(
 ) -> i32 {
     let mut open: Vec<&kavach_db::MemoryEntry> = roadmap
         .iter()
-        .filter(|e| is_open_status(e.entry_status_str()))
+        .filter(|e| is_open_status(e.effective_status()))
         .filter(|e| matches_filters(e, f))
         .collect();
 
@@ -43,7 +47,7 @@ pub(in crate::cmd::db) fn render_kanban(
     let verified: Vec<&kavach_db::MemoryEntry> = if f.include_verified {
         roadmap
             .iter()
-            .filter(|e| e.entry_status_str() == VERIFIED_STATUS)
+            .filter(|e| e.effective_status_typed() == Some(MemoryStatus::Verified))
             .filter(|e| f.key.is_none_or(|k| e.entry_key.contains(k)))
             .filter(|e| f.lane.is_none_or(|l| e.lane.as_deref() == Some(l)))
             .collect()
@@ -58,7 +62,9 @@ pub(in crate::cmd::db) fn render_kanban(
         return render_empty_json(roadmap);
     }
     if f.active_first {
-        open.sort_by_key(|e| i32::from(e.entry_status_str() != "in_progress"));
+        open.sort_by_key(|e| {
+            i32::from(e.effective_status_typed() != Some(MemoryStatus::InProgress))
+        });
     }
     let total = open.len();
     let displayed: Vec<_> = if limit == 0 {
@@ -77,11 +83,7 @@ pub(in crate::cmd::db) fn render_kanban(
 }
 
 fn render_empty_json(roadmap: &[kavach_db::MemoryEntry]) -> i32 {
-    let counts = count_non_open(
-        roadmap
-            .iter()
-            .map(kavach_db::MemoryEntry::entry_status_str),
-    );
+    let counts = count_non_open(roadmap.iter().map(kavach_db::MemoryEntry::effective_status));
     let line = format!(
         r#"{{"items":[],"total":0,"displayed":0,"has_more":false,"verified":{},"unparseable":{}}}"#,
         counts.verified, counts.unparseable
@@ -96,7 +98,7 @@ fn entry_json(e: &kavach_db::MemoryEntry) -> String {
     format!(
         r#"{{"key":"{}","status":"{}","title":"{}"}}"#,
         e.entry_key.replace('"', r#"\""#),
-        e.entry_status_str(),
+        e.effective_status(),
         e.title.replace('"', r#"\""#),
     )
 }

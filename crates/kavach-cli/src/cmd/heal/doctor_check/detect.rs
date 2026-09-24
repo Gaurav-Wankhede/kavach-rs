@@ -1,8 +1,9 @@
 //! The self-audit matrix: four silent-failure / unsafe-mutation classes, scanned
-//! line-by-line over a Rust source. Pure string heuristics (no AST) — kept
-//! deliberately conservative to minimize false positives, with a `// doctor:ok`
-//! line-suffix escape so a reviewed benign-by-design site is silenced explicitly
-//! rather than the whole class being dropped.
+//! line-by-line over a Rust source. Trivia-aware matching via segment views
+//! (code vs string-literal innards vs comments): code matchers never see prose
+//! or string text, and query matchers see only string contents — with a
+//! `// doctor:ok` line-suffix escape so a reviewed benign-by-design site is
+//! silenced explicitly rather than the whole class being dropped.
 
 /// The four audit classes. Each maps to a lived kavach incident class.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,21 +63,24 @@ pub(crate) fn scan_source(file: &str, src: &str) -> Vec<Finding> {
     let mut out = Vec::new();
     for (i, raw) in joined_logical_lines(src).into_iter().enumerate() {
         let line_no = i.saturating_add(1);
-        let line = strip_line_comment_for_code(&raw);
+        // Segment views: code matchers see executable code only (comments and
+        // string text are opaque), query matchers see string innards only.
+        let code = code_view(&raw);
+        let strs = str_view(&raw);
         // An explicit reviewer escape silences any class on this line.
         if raw.contains(OK_MARKER) {
             continue;
         }
-        if let Some(hint) = match_silent_discard(&line) {
+        if let Some(hint) = match_silent_discard(&code) {
             out.push(mk(Class::SilentDiscard, file, line_no, hint));
         }
-        if let Some(hint) = match_swallowed_result(&line) {
+        if let Some(hint) = match_swallowed_result(&code) {
             out.push(mk(Class::SwallowedResult, file, line_no, hint));
         }
-        if let Some(hint) = match_destructive_query(file, &line) {
+        if let Some(hint) = match_destructive_query(file, &strs) {
             out.push(mk(Class::DestructiveQuery, file, line_no, hint));
         }
-        if let Some(hint) = match_swallowed_arm(&line) {
+        if let Some(hint) = match_swallowed_arm(&code) {
             out.push(mk(Class::SwallowedArm, file, line_no, hint));
         }
     }
@@ -112,20 +116,54 @@ fn mk(class: Class, file: &str, line: usize, hint: &str) -> Finding {
     }
 }
 
-/// Drop a trailing `//` line comment so comment prose can't trip a code matcher,
-/// but keep string-literal content (queries live in strings). Conservative: only
-/// strips when `//` is not inside an obvious `"` span on the same line.
-fn strip_line_comment_for_code(line: &str) -> String {
-    // `find("//")` yields a byte index at an ASCII boundary; `get(..idx)` is
-    // panic-free (never splits a multi-byte char). Only strip when the `//` is
-    // OUTSIDE a string literal (even number of quotes before it).
-    line.find("//").map_or_else(
-        || line.to_owned(),
-        |idx| match line.get(..idx) {
-            Some(head) if head.matches('"').count().is_multiple_of(2) => head.to_owned(),
-            _ => line.to_owned(),
-        },
-    )
+/// Code-only view of a logical line: comments and string literals dropped, so
+/// comment prose and string text can never trip a code matcher. Replaces the
+/// old quote-counting `//` stripper (which kept block comments and mishandled
+/// `//` inside strings with an odd quote count).
+fn code_view(line: &str) -> String {
+    use kavach_patterns::lex::{RsKind, segments, text};
+    segments(line)
+        .iter()
+        .filter(|s| s.kind == RsKind::Code)
+        .map(|s| text(line, s))
+        .collect()
+}
+
+/// String-literal innards of a logical line, joined: what query matchers scan.
+/// Delimiters (`"`, `r#"…"#`, `b"…"`, char quotes) are stripped; everything
+/// else — including comment-looking text inside strings — is preserved.
+fn str_view(line: &str) -> String {
+    use kavach_patterns::lex::{RsKind, segments, text};
+    segments(line)
+        .iter()
+        .filter(|s| s.kind == RsKind::Str)
+        .map(|s| str_inner(text(line, s)))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Strip literal delimiters, returning the content slice (borrowed, no alloc).
+fn str_inner(lit: &str) -> &str {
+    let mut s = lit;
+    if let Some(rest) = s.strip_prefix('b') {
+        s = rest;
+    }
+    if let Some(rest) = s.strip_prefix('r') {
+        s = rest;
+    }
+    while let Some(rest) = s.strip_prefix('#') {
+        s = rest;
+    }
+    if let Some(rest) = s.strip_prefix('"').or_else(|| s.strip_prefix('\'')) {
+        s = rest;
+    }
+    while let Some(rest) = s.strip_suffix('#') {
+        s = rest;
+    }
+    if let Some(rest) = s.strip_suffix('"').or_else(|| s.strip_suffix('\'')) {
+        s = rest;
+    }
+    s
 }
 
 fn match_silent_discard(line: &str) -> Option<&'static str> {
@@ -145,7 +183,7 @@ fn match_swallowed_result(line: &str) -> Option<&'static str> {
     None
 }
 
-fn match_destructive_query(file: &str, line: &str) -> Option<&'static str> {
+fn match_destructive_query(file: &str, strs: &str) -> Option<&'static str> {
     // Precision (kavach-doctor-FP-tighten): the read-back-assertion class targets
     // unbounded row DELETION only. Exclude the false-positive families that
     // drowned the real signal:
@@ -157,28 +195,29 @@ fn match_destructive_query(file: &str, line: &str) -> Option<&'static str> {
     if is_test_file(file) || is_sql_detector_source(file) {
         return None;
     }
-    // Must be a real DELETE *statement*: `"DELETE <table>"` or `"DELETE $rec"`.
-    // This excludes error-message / data strings that merely contain the word
-    // "DELETE" (e.g. `"… after DELETE (partial)"`, `"serves; DELETE roadmap"`).
-    if !is_delete_statement(line) {
+    // Must be a real DELETE *statement* at the start of string content:
+    // `DELETE <table>` or `DELETE $rec`. Error-message / data strings that
+    // merely contain the word ("… after DELETE (partial)") never start with it.
+    if !is_delete_statement(strs) {
         return None;
     }
     // Bounded if the WHERE binds any `$param` (dynamic, not a frozen name-list).
-    let keyed_where = line.contains("WHERE") && line.contains('$');
+    let keyed_where = strs.contains("WHERE") && strs.contains('$');
     // A record-id delete (`DELETE $pid`) targets a row by id.
-    let record_id_delete = line.contains("DELETE $");
+    let record_id_delete = strs.contains("DELETE $");
     // `RETURN BEFORE` returns deleted rows — the read-back is present, not silent.
-    let verified_readback = line.contains("RETURN BEFORE");
+    let verified_readback = strs.contains("RETURN BEFORE");
     if keyed_where || record_id_delete || verified_readback {
         return None;
     }
     Some("unbounded DELETE — add a read-back assertion (count→delete→re-count) or a key predicate")
 }
 
-/// True iff the line opens a `DELETE` SQL statement inside a string literal —
-/// `"DELETE <ident>` or `"DELETE $rec`, NOT the word DELETE buried in prose.
-fn is_delete_statement(line: &str) -> bool {
-    line.contains("\"DELETE ") || line.contains("\" DELETE ") || line.contains("query(\"DELETE")
+/// True iff string-literal content opens a `DELETE` SQL statement —
+/// `DELETE <ident>` or `DELETE $rec`, NOT the word DELETE buried in prose.
+fn is_delete_statement(strs: &str) -> bool {
+    let head = strs.trim_start();
+    head.starts_with("DELETE ") || head.starts_with("DELETE $")
 }
 
 /// A test source: findings here are fixtures, not production mutations. Covers
@@ -237,5 +276,66 @@ fn foo() {
 "#;
         let findings = scan_source("test.rs", src);
         assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn io_fragment_inside_a_string_is_not_a_swallow() {
+        // Old code matched `.query(` inside the string literal: `log` returns
+        // () here, so there is no swallowed IO Result.
+        let src = "fn foo() {\n    let _ = log(\"query() failed\");\n}\n";
+        let findings = scan_source("src/a.rs", src);
+        assert!(
+            findings.is_empty(),
+            "got: {:?}",
+            findings.iter().map(|f| f.class.label()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn warn_inside_a_string_does_not_silence_a_real_swallow() {
+        // Old code saw "warn" inside the string and exempted the line (false
+        // negative); the code view has no warn, so this must still hit.
+        let src = "fn foo() {\n    db.query(\"warn: slow\").ok();\n}\n";
+        let findings = scan_source("src/a.rs", src);
+        assert!(
+            findings.iter().any(|f| f.class == Class::SwallowedResult),
+            "got: {:?}",
+            findings.iter().map(|f| f.class.label()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn delete_in_comment_prose_is_not_a_query() {
+        let src = "fn foo() {\n    // DELETE everything manually before deploy\n}\n";
+        let findings = scan_source("src/a.rs", src);
+        assert!(
+            findings.iter().all(|f| f.class != Class::DestructiveQuery),
+            "got: {:?}",
+            findings.iter().map(|f| f.class.label()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn delete_mid_string_is_not_a_statement() {
+        // Error/data prose mentioning DELETE must not flag — only content
+        // OPENING with DELETE is a statement.
+        let src = "fn foo() {\n    let e = \"failed after DELETE (partial)\";\n}\n";
+        let findings = scan_source("src/a.rs", src);
+        assert!(
+            findings.iter().all(|f| f.class != Class::DestructiveQuery),
+            "got: {:?}",
+            findings.iter().map(|f| f.class.label()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn real_delete_statement_still_flags() {
+        let src = "fn foo() {\n    db.exec(\"DELETE FROM events\");\n}\n";
+        let findings = scan_source("src/a.rs", src);
+        assert!(
+            findings.iter().any(|f| f.class == Class::DestructiveQuery),
+            "statement must flag: {:?}",
+            findings.iter().map(|f| f.class.label()).collect::<Vec<_>>()
+        );
     }
 }

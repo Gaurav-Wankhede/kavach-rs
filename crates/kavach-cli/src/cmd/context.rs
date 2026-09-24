@@ -84,16 +84,25 @@ async fn run_async(
     };
 
     // 3-state workflow band: ready → in-flight → completed-pending-verify.
-    let open_statuses = ["todo", "in_progress", "done"];
+    // Statuses as tokens: the `--status` keyword is lexed once into a
+    // predicate, and every row matches on its typed lane (discriminant
+    // compare) — the `== "todo"` string scans are gone. `Never` (unknown
+    // filter word) matches zero rows, preserving exact-match semantics.
+    let status_pred = kavach_db::StatusPred::from_opt(status_filter);
     let mut open: Vec<_> = roadmap
         .iter()
-        .filter(|e| open_statuses.contains(&e.entry_status_str()))
-        .filter(|e| status_filter.is_none_or(|s| e.entry_status_str() == s))
+        .filter(|e| {
+            e.effective_status_typed()
+                .is_some_and(|s| s != kavach_types::MemoryStatus::Verified)
+        })
+        .filter(|e| status_pred.matches_typed(e.effective_status_typed()))
         .filter(|e| key_filter.is_none_or(|k| e.entry_key.contains(k)))
         .collect();
 
     // Sort: in_progress first
-    open.sort_by_key(|e| i32::from(e.entry_status_str() != "in_progress"));
+    open.sort_by_key(|e| {
+        i32::from(e.effective_status_typed() != Some(kavach_types::MemoryStatus::InProgress))
+    });
 
     let total = open.len();
     let displayed: Vec<_> = if limit == 0 {
@@ -120,28 +129,47 @@ fn build_and_print_payload(
             format!(
                 r#"{{"key":"{}","status":"{}","title":"{}"}}"#,
                 e.entry_key.replace('"', r#"\""#),
-                e.entry_status_str(),
+                e.effective_status(),
                 e.title.replace('"', r#"\""#)
             )
         })
         .collect();
 
-    let in_progress_count = roadmap
-        .iter()
-        .filter(|e| e.entry_status_str() == "in_progress")
-        .count();
-    let todo_count = roadmap
-        .iter()
-        .filter(|e| e.entry_status_str() == "todo")
-        .count();
-    let done_count = roadmap
-        .iter()
-        .filter(|e| e.entry_status_str() == "done")
-        .count();
-    let verified_count = roadmap
-        .iter()
-        .filter(|e| e.entry_status_str() == "verified")
-        .count();
+    let mut todo_count = 0usize;
+    let mut in_progress_count = 0usize;
+    let mut done_count = 0usize;
+    let mut verified_count = 0usize;
+    let mut unparseable_count = 0usize;
+    for e in roadmap {
+        // Single typed tally: discriminant match, no string scans.
+        match e.effective_status_typed() {
+            Some(kavach_types::MemoryStatus::Todo) => {
+                todo_count = todo_count.saturating_add(1);
+            }
+            Some(kavach_types::MemoryStatus::InProgress) => {
+                in_progress_count = in_progress_count.saturating_add(1);
+            }
+            Some(kavach_types::MemoryStatus::Done) => {
+                done_count = done_count.saturating_add(1);
+            }
+            Some(kavach_types::MemoryStatus::Verified) => {
+                verified_count = verified_count.saturating_add(1);
+            }
+            // Unknown literals match no lane (same as the old string scans).
+            Some(_) | None => unparseable_count = unparseable_count.saturating_add(1),
+        }
+    }
+    // Self-consistency: every row lands in exactly one lane. A nonzero
+    // unparseable remainder means a new status literal reached the board.
+    debug_assert_eq!(
+        todo_count
+            .saturating_add(in_progress_count)
+            .saturating_add(done_count)
+            .saturating_add(verified_count)
+            .saturating_add(unparseable_count),
+        roadmap.len(),
+        "context kanban counts must partition the roadmap",
+    );
 
     let payload = format!(
         r#"{{"project":"{project_slug}","session":{{"id":"{sid}","turn":{turn},"phase":"{phase}"}},"loop":{{"active":{active},"target":"{target}","iteration":{iter},"max":{max}}},"kanban":{{"in_progress":{ip},"todo":{td},"done":{dn},"verified":{vf}}},"items":[{items}],"total":{total},"displayed":{disp},"has_more":{more}}}"#,

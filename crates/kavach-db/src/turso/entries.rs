@@ -571,11 +571,14 @@ impl EntryStore for TursoStore {
         path: &str,
         tags: Option<&str>,
     ) -> TursoResult<()> {
+        // K-6 unification: write BOTH `path` (canonical) and `workdir`/`display`
+        // (legacy readers) so slug lookups and path lookups agree no matter
+        // which register path wrote the row.
         let tags_json = tags.unwrap_or("[]");
         self.conn
             .execute(
-                "INSERT INTO projects (slug, path, tags) VALUES (?1, ?2, ?3)
-                 ON CONFLICT(slug) DO UPDATE SET path=excluded.path, tags=excluded.tags",
+                "INSERT INTO projects (slug, path, workdir, display, tags, updated_at) VALUES (?1, ?2, ?2, ?1, ?3, datetime('now'))
+                 ON CONFLICT(slug) DO UPDATE SET path=excluded.path, workdir=excluded.workdir, display=excluded.display, tags=excluded.tags, updated_at=datetime('now')",
                 libsql::params![slug, path, tags_json],
             )
             .await

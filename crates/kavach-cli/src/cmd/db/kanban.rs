@@ -4,6 +4,7 @@
 // are leaves (close.rs, render.rs) to keep each file ≤100 LOC.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 use kavach_db::turso::entries::EntryStore;
+use kavach_types::MemoryStatus;
 mod close;
 mod dag_render;
 mod render;
@@ -73,7 +74,8 @@ pub(super) fn run(
         }
     };
     let filters = KanbanFilters {
-        status: status_filter,
+        // Lexed once here: every row match below is a discriminant compare.
+        status: kavach_db::StatusPred::from_opt(status_filter),
         key: key_filter,
         lane: lane_filter,
         active_first,
@@ -115,8 +117,32 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
     if filters.json {
         return render_kanban(project_slug, &roadmap, limit, filters);
     }
+    // K-5: lane/status/key filters apply BEFORE the DAG render — previously the
+    // non-`--json` path ignored them and always rendered the full graph, so
+    // `--status done` showed the missing-refs view instead of done rows.
+    let has_filter =
+        filters.status != kavach_db::StatusPred::Any || filters.key.is_some() || filters.lane.is_some();
+    if !has_filter {
+        let fmt = filters.format.unwrap_or("dag");
+        return dag_render::render_dag_from_rows(&roadmap, fmt);
+    }
+    let filtered: Vec<kavach_db::MemoryEntry> = roadmap
+        .iter()
+        .filter(|e| {
+            filters.status.matches_typed(e.effective_status_typed())
+                && filters.key.is_none_or(|k| e.entry_key.contains(k))
+                && filters.lane.is_none_or(|l| e.lane.as_deref() == Some(l))
+        })
+        .cloned()
+        .collect();
+    // An explicit `--status done|verified` asks for closed rows: show them as
+    // tiers instead of hiding them as "already closed".
+    let show_closed = matches!(
+        filters.status,
+        kavach_db::StatusPred::Is(MemoryStatus::Done | MemoryStatus::Verified)
+    );
     let fmt = filters.format.unwrap_or("dag");
-    dag_render::render_dag_from_rows(&roadmap, fmt)
+    dag_render::render_dag_from_filtered(&filtered, fmt, show_closed, limit)
 }
 #[cfg(test)]
 #[path = "kanban_test.rs"]

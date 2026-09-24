@@ -118,6 +118,10 @@ const ROWS: &[(usize, Severity, &str, &str)] = {
 /// Scan each line for single-line anti-patterns. `base` is the file basename
 /// (so `process::exit` is allowed in `main.rs`); `has_serde` suppresses the
 /// dead-code arm when the struct derives `Deserialize`.
+///
+/// Regexes run on the per-line code view (comments + strings dropped):
+/// `unwrap()` inside a string or comment no longer fires, and 1-based line
+/// numbers cannot drift (single-line views preserve line count exactly).
 pub(super) fn scan(
     r: &[Regex],
     content: &str,
@@ -126,8 +130,9 @@ pub(super) fn scan(
     v: &mut Vec<Violation>,
 ) {
     use Severity::P0Block;
-    for (i, line) in content.lines().enumerate() {
-        let hit = |idx: usize| r.get(idx).is_some_and(|re| re.is_match(line));
+    for (i, raw) in content.lines().enumerate() {
+        let code = crate::lex::code_line(raw);
+        let hit = |idx: usize| r.get(idx).is_some_and(|re| re.is_match(&code));
         for &(idx, sev, pat, fix) in ROWS {
             if hit(idx) {
                 push(v, sev, pat, fix, i);

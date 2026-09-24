@@ -45,7 +45,7 @@ fn tiers_follow_dependency_depth() {
 
 #[test]
 fn tiered_text_marks_ready_and_blocked() {
-    let out = render_tiered_text(&chain());
+    let out = render_tiered_text(&chain(), false);
     // 'a' has no prereqs -> READY; 'b' depends on unfinished 'a' -> WAITING.
     assert!(out.contains("TIER 0 — ready now"));
     assert!(out.contains("a — title a  ✓READY"), "got:\n{out}");
@@ -63,7 +63,7 @@ fn ready_when_prereq_verified() {
         nodes: vec![node("a", "verified"), node("b", "todo")],
         edges: vec![dep("a", "b")],
     };
-    let out = render_tiered_text(&d);
+    let out = render_tiered_text(&d, false);
     assert!(
         out.contains("b — title b  ✓READY"),
         "verified prereq unblocks:\n{out}"
@@ -77,7 +77,7 @@ fn cycle_is_surfaced_not_tiered() {
         nodes: vec![node("a", "todo"), node("b", "todo")],
         edges: vec![dep("a", "b"), dep("b", "a")],
     };
-    let out = render_tiered_text(&d);
+    let out = render_tiered_text(&d, false);
     assert!(out.contains("⚠ CYCLE"), "cycle must be named:\n{out}");
     assert!(
         !out.contains("TIER"),
@@ -168,7 +168,7 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
 
 #[test]
 fn empty_dag_is_safe() {
-    let out = render_tiered_text(&RoadmapDag::default());
+    let out = render_tiered_text(&RoadmapDag::default(), false);
     assert!(
         out.contains("0 node(s), 0 edge(s)"),
         "empty boundary:\n{out}"
@@ -176,8 +176,7 @@ fn empty_dag_is_safe() {
 }
 
 #[test]
-fn closed_cards_not_in_ready_now() {
-    // Verify that verified/done cards do NOT appear in TIER 0 "ready now",
+fn closed_cards_not_in_ready_now() {    // Verify that verified/done cards do NOT appear in TIER 0 "ready now",
     // even if all their prerequisites are satisfied.
     // Bug: is_ready() checked prereqs only, ignoring node.entry_status.
     let d = RoadmapDag {
@@ -188,7 +187,7 @@ fn closed_cards_not_in_ready_now() {
         ],
         edges: vec![],
     };
-    let out = render_tiered_text(&d);
+    let out = render_tiered_text(&d, false);
     // 'a' is todo with no deps -> READY in TIER 0.
     assert!(
         out.contains("a — title a  ✓READY"),
@@ -203,5 +202,25 @@ fn closed_cards_not_in_ready_now() {
     assert!(
         !out.contains("c — title c"),
         "done card must NOT appear in tiers:\n{out}"
+    );
+}
+
+#[test]
+fn show_closed_keeps_done_tier_for_explicit_filter() {
+    // K-5: `--status done` asks for closed rows — they must render as tiers
+    // instead of being hidden as "already closed".
+    let d = RoadmapDag {
+        nodes: vec![node("a", "todo"), node("c", "done")],
+        edges: vec![],
+    };
+    let hidden = render_tiered_text(&d, false);
+    assert!(
+        !hidden.contains("c — title c"),
+        "default view hides done:\n{hidden}"
+    );
+    let shown = render_tiered_text(&d, true);
+    assert!(
+        shown.contains("c — title c"),
+        "explicit done filter shows done:\n{shown}"
     );
 }

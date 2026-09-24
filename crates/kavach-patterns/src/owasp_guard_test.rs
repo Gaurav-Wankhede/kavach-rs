@@ -62,3 +62,15 @@ fn skips_tests() {
 fn check_blocks_critical() {
     assert!(check("src/h.rs", &sql_delete_sample()).is_some());
 }
+
+#[test]
+fn commented_out_payload_does_not_hit() {
+    let src = "// let q = format!(\"SELECT * FROM users WHERE id = {}\", uid);";
+    assert!(detect("src/h.rs", src).is_empty());
+}
+
+#[test]
+fn string_data_inner_html_does_not_hit() {
+    // `"innerHTML"` as data (a Rust/JS string literal), not a DOM sink.
+    assert!(detect("src/c.tsx", "const k = \"innerHTML\";").is_empty());
+}

@@ -35,6 +35,7 @@ pub mod lease;
 pub mod nlm;
 pub mod parts;
 pub mod projects;
+pub mod query_lex;
 pub mod rag_trees;
 pub mod read;
 pub mod retry;
@@ -80,6 +81,8 @@ pub use graph::{
 };
 // L0 concept tier RPCs
 pub use graph::{
+    concept_query_words as graph_concept_query_words,
+    concept_text_matches as graph_concept_text_matches,
     delete_concept as graph_delete_concept,
     delete_concepts_by_prefix as graph_delete_concepts_by_prefix,
     find_concept as graph_find_concept, list_concepts as graph_list_concepts,
@@ -144,6 +147,7 @@ pub use projects::{
     list_all as projects_list_all, register as project_register,
     relative_to_parent as project_relative_to_parent, set_parent as project_set_parent,
 };
+pub use query_lex::{Lexer, QueryAst, StatusPred, Token, TokenKind};
 pub use rag_trees::{
     RagTreeLabel, RagTreeRefreshable, RagTreeRow, get as rag_tree_get, list as rag_tree_list,
     list_refreshable as rag_tree_list_refreshable, upsert_with_dir as rag_tree_upsert_with_dir,

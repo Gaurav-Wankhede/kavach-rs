@@ -73,6 +73,10 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
 
 /// Scan a file content for silent-failure patterns. Returns all hits (not just first)
 /// so the block message lists every site at once — `cargo clippy`-style.
+///
+/// Rules run on the code-only view of each line (comments + string literals
+/// dropped via [`rs_lex`]): a `let _ =` inside a block comment or a string no
+/// longer matches, while the reported snippet stays the raw trimmed line.
 pub fn detect(file_path: &str, content: &str) -> Vec<SilentIoHit> {
     if !crate::is_code_file(file_path) {
         return Vec::new();
@@ -85,12 +89,13 @@ pub fn detect(file_path: &str, content: &str) -> Vec<SilentIoHit> {
         if line_is_exempt(raw_line) {
             continue;
         }
+        let code = code_view(raw_line);
         for rule in RULES.iter() {
-            if let Some(m) = rule.re.find(raw_line) {
+            if rule.re.find(&code).is_some() {
                 hits.push(SilentIoHit {
                     line: i.saturating_add(1),
                     category: rule.category,
-                    matched: m.as_str().to_owned(),
+                    matched: raw_line.trim().to_owned(),
                     fix: rule.fix,
                 });
                 break;
@@ -98,6 +103,15 @@ pub fn detect(file_path: &str, content: &str) -> Vec<SilentIoHit> {
         }
     }
     hits
+}
+
+/// Code-only view of one line (comments + string literals dropped).
+fn code_view(line: &str) -> String {
+    super::lex::segments(line)
+        .iter()
+        .filter(|s| s.kind == super::lex::RsKind::Code)
+        .map(|s| super::lex::text(line, s))
+        .collect()
 }
 
 /// Returns Some(block-message) if any P0 violation exists, None if clean.
@@ -138,18 +152,33 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
     Some(msg)
 }
 
+/// Segment-aware exemptions: full-line comments stay exempt; `PhantomData` and
+/// the unit discard must appear in code (a mention inside a string excuses
+/// nothing); `SAFETY`/`ALLOW` markers must appear in a real comment (a string
+/// containing the marker text excuses nothing).
 fn line_is_exempt(line: &str) -> bool {
-    let trimmed = line.trim_start();
-    if trimmed.starts_with("//") {
+    let segs = super::lex::segments(line);
+    let code: String = segs
+        .iter()
+        .filter(|s| s.kind == super::lex::RsKind::Code)
+        .map(|s| super::lex::text(line, s))
+        .collect();
+    if code.trim_start().is_empty() {
         return true;
     }
-    if trimmed.contains("PhantomData") {
+    if code.contains("PhantomData") {
         return true;
     }
-    if trimmed.contains("// SAFETY:") || trimmed.contains("// ALLOW-SILENT-IO:") {
+    let in_comment = |marker: &str| {
+        segs.iter().any(|s| {
+            s.kind == super::lex::RsKind::Comment
+                && super::lex::text(line, s).contains(marker)
+        })
+    };
+    if in_comment("// SAFETY:") || in_comment("// ALLOW-SILENT-IO:") {
         return true;
     }
-    if trimmed.contains("let _ = ();") {
+    if code.contains("let _ = ();") {
         return true;
     }
     false

@@ -59,26 +59,13 @@ async fn fts_rank_one(
     Ok(out)
 }
 
-/// Concept-graph FTS rank source: BM25 over the concept description corpus,
-/// returning keyed `entity:…` ids most-relevant first.
+/// Concept-graph rank source: whole-word matches over concept name + text
+/// fields, most-relevant first. Shares the matcher with `concept search`, so
+/// `think` no longer substring-matches raw JSON (`LIKE '%auth%'` hitting
+/// "author" or the `"desc"` key itself).
 async fn concept_rank_one(db: &TursoStore, q: &str) -> Result<Vec<String>> {
-    // Concepts live in `entities` with `entity_type = 'concept'`; the description
-    // is inside the JSON `properties` column. FTS5 cannot index JSON text, so
-    // fall back to a LIKE scan over the serialized properties (bounded by the
-    // concept population, which is small).
-    let mut resp = db
-        .exec_params(
-            "SELECT id AS rid FROM entities \
-             WHERE entity_type = 'concept' AND properties LIKE $q \
-             LIMIT $limit",
-            libsql::params![format!("%{q}%"), 25_i64],
-        )
-        .await?;
-    let mut out = Vec::new();
-    while let Some(r) = resp.next().await? {
-        out.push(r.get::<String>(0)?);
-    }
-    Ok(out)
+    let entities = crate::graph::concepts::search_concepts_fts(db, q, 25).await?;
+    Ok(entities.into_iter().filter_map(|e| e.id).collect())
 }
 
 /// Hybrid keyword+graph retrieval: BM25 over every corpus table + concept FTS,

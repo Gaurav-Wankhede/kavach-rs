@@ -34,3 +34,12 @@ fn no_marker_is_not_exempt() {
     let p = write_tmp("plain", "fn x() {}\nfn y() {}\n");
     assert!(!has_exempt_marker(&p));
 }
+
+#[test]
+fn marker_inside_a_string_is_not_an_escape_hatch() {
+    let p = write_tmp(
+        "strdecoy",
+        "const M: &str = \"// split: not really\";\nfn x() {}\n",
+    );
+    assert!(!has_exempt_marker(&p));
+}

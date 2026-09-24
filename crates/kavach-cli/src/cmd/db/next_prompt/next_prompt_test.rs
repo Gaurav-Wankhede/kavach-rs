@@ -57,3 +57,28 @@ fn no_todo_card_is_empty() {
     let rows = [card("d", "done", Some("x")), card("v", "verified", None)];
     assert!(matches!(pick(&rows), Pick::Empty));
 }
+
+#[test]
+fn legacy_status_only_rows_read_through_the_typed_lane() {
+    // entry_status empty + legacy status set: the old raw-column scan served
+    // `status="done"` rows as todo and skipped `status="todo"` rows.
+    let mut done_legacy = card("d", "todo", Some("wrong"));
+    done_legacy.entry_status = None;
+    done_legacy.status = Some("done".to_owned());
+    let mut todo_legacy = card("t", "todo", Some("right"));
+    todo_legacy.entry_status = None;
+    todo_legacy.status = Some("todo".to_owned());
+    let rows = [done_legacy, todo_legacy];
+    match pick(&rows) {
+        Pick::Prompt(p) => assert_eq!(p, "right"),
+        _ => panic!("legacy done row must not be served as todo"),
+    }
+}
+
+#[test]
+fn empty_status_row_still_defaults_to_todo() {
+    let mut c = card("t", "todo", Some("p"));
+    c.entry_status = None;
+    c.status = None;
+    assert!(matches!(pick(&[c]), Pick::Prompt(_)));
+}

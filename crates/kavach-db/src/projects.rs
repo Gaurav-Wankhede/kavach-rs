@@ -30,7 +30,7 @@ pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project
     let mut cursor: Option<String> = Some(start_id.to_owned());
     for _ in 0..ANCESTRY_MAX_DEPTH {
         let Some(id) = cursor.take() else { break };
-        let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
+        let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
         let mut rows = db
             .exec_params(q, [id.clone()])
             .await
@@ -50,7 +50,7 @@ pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project
 /// # Errors
 /// Propagates `Error::Turso` from the SELECT.
 pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>> {
-    let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
+    let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
     let mut rows = db
         .exec_params(q, [slug.to_owned()])
         .await
@@ -61,14 +61,18 @@ pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>>
     Ok(Some(project_from_row(&row)))
 }
 
-/// Find a project where `path` matches `workdir` exactly or is in `aliases`.
+/// Find a project where `path` matches `workdir`/`path` exactly or is in `aliases`.
+/// Both path columns are checked: pre-K-6 rows may carry only one of them.
 ///
 /// # Errors
 /// Propagates `Error::Turso` from the SELECT.
 pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>> {
-    let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects WHERE workdir = ? OR aliases LIKE '%' || ? || '%' LIMIT 1";
+    let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects WHERE workdir = ? OR path = ? OR aliases LIKE '%' || ? || '%' LIMIT 1";
     let mut rows = db
-        .exec_params(q, [path.to_owned(), path.to_owned()])
+        .exec_params(
+            q,
+            [path.to_owned(), path.to_owned(), path.to_owned()],
+        )
         .await
         .map_err(Error::Turso)?;
     let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
@@ -82,7 +86,7 @@ pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>
 /// # Errors
 /// Propagates `Error::Turso` from the SELECT.
 pub async fn list_all(db: &TursoStore) -> Result<Vec<Project>> {
-    let q = "SELECT slug, display, workdir, stack, aliases, parent FROM projects ORDER BY slug";
+    let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects ORDER BY slug";
     let mut rows = db
         .exec_params(q, ())
         .await
@@ -144,16 +148,23 @@ pub async fn set_parent(
     Ok(())
 }
 
-/// Build a `Project` from a `libsql::Row`.
+/// Build a `Project` from a `libsql::Row` over [`PROJECT_COLS`].
+/// `workdir` falls back to the canonical `path` column so path-only rows
+/// (written by the pre-K-6 direct register path) still resolve.
 fn project_from_row(row: &libsql::Row) -> Project {
     let slug: String = row.get::<String>(0).unwrap_or_default();
     let display: String = row.get::<String>(1).unwrap_or_default();
-    let workdir: Option<String> = row.get::<Option<String>>(2).unwrap_or_default();
-    let stack: Option<String> = row.get::<Option<String>>(3).unwrap_or_default();
-    let aliases_str: Option<String> = row.get::<Option<String>>(4).unwrap_or_default();
-    let aliases: Option<Vec<String>> = aliases_str
-        .and_then(|s| serde_json::from_str(&s).unwrap_or_default());
-    let parent: Option<String> = row.get::<Option<String>>(5).unwrap_or_default();
+    let workdir_col: Option<String> = row.get::<Option<String>>(2).unwrap_or_default();
+    let path_col: Option<String> = row.get::<Option<String>>(3).unwrap_or_default();
+    let workdir = workdir_col.or(path_col);
+    let stack: Option<String> = row.get::<Option<String>>(4).unwrap_or_default();
+    let aliases_str: Option<String> = row.get::<Option<String>>(5).unwrap_or_default();
+    let aliases: Option<Vec<String>> =
+        aliases_str.and_then(|s| serde_json::from_str(&s).unwrap_or_default());
+    let parent_raw: Option<String> = row.get::<Option<String>>(6).unwrap_or_default();
+    // Guard against the pre-K-6 self-parent rows (`parent = slug`): a project
+    // is never its own parent, or forest assembly recurses forever.
+    let parent = parent_raw.filter(|p| !p.is_empty() && p != &slug);
     Project {
         id: Some(slug.clone()),
         slug,
@@ -255,6 +266,10 @@ pub fn relative_to_parent(parent_workdir: &str, child_workdir: &str) -> Option<S
 
 /// Register or update a project. Uses UPSERT to be idempotent on slug.
 ///
+/// Writes BOTH `path` (canonical) and `workdir` (legacy) so every reader —
+/// slug lookup, path lookup, forest — sees the same row (K-6 split-brain fix).
+/// New rows are parentless (NULL); the old self-parent default is gone.
+///
 /// # Errors
 /// `Error::Turso` on UPSERT failure.
 pub async fn register(
@@ -264,16 +279,16 @@ pub async fn register(
     workdir: &str,
     stack: Option<&str>,
 ) -> Result<String> {
-    let q = "INSERT INTO projects (slug, display, workdir, stack, aliases, parent) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO UPDATE SET display = excluded.display, workdir = excluded.workdir, stack = excluded.stack, updated_at = datetime('now')";
+    let q = "INSERT INTO projects (slug, display, workdir, path, stack, aliases, parent, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, datetime('now')) ON CONFLICT(slug) DO UPDATE SET display = excluded.display, workdir = excluded.workdir, path = excluded.path, stack = excluded.stack, updated_at = datetime('now')";
     db.exec_params(
         q,
         [
             slug.to_owned(),
             display.to_owned(),
             workdir.to_owned(),
+            workdir.to_owned(),
             stack.map(ToOwned::to_owned).unwrap_or_default(),
             String::new(),
-            slug.to_owned(),
         ],
     )
     .await
@@ -337,6 +352,87 @@ mod tests {
         assert_eq!(
             relative_to_parent("/root/nicole", "/elsewhere/Backend"),
             None
+        );
+    }
+
+    #[tokio::test]
+    async fn register_persists_path_and_workdir_together() {
+        // K-6: both register paths must leave `path` AND `workdir` populated
+        // so slug lookups and path lookups agree.
+        let db = crate::turso::TursoStore::open_memory()
+            .await
+            .expect("mem db");
+        super::register(&db, "proj", "proj", "/tmp/proj", None)
+            .await
+            .expect("register");
+        let got = super::get_by_slug(&db, "proj")
+            .await
+            .expect("lookup")
+            .expect("row present");
+        assert_eq!(got.workdir.as_deref(), Some("/tmp/proj"));
+        let by_path = super::find_by_path(&db, "/tmp/proj")
+            .await
+            .expect("path lookup")
+            .expect("path resolves");
+        assert_eq!(by_path.slug, "proj");
+        // Raw column check: `path` itself must not stay null.
+        let mut rows = db
+            .exec_params("SELECT path FROM projects WHERE slug = 'proj'", ())
+            .await
+            .expect("raw read");
+        let row = rows
+            .next()
+            .await
+            .expect("row iter")
+            .expect("row present");
+        assert_eq!(
+            row.get::<Option<String>>(0)
+                .expect("path decodes")
+                .as_deref(),
+            Some("/tmp/proj")
+        );
+    }
+
+    #[tokio::test]
+    async fn register_leaves_no_self_parent() {
+        // K-6: the old default wrote `parent = slug`, a self-loop that makes
+        // forest assembly recurse forever. New rows are parentless roots.
+        let db = crate::turso::TursoStore::open_memory()
+            .await
+            .expect("mem db");
+        super::register(&db, "solo", "solo", "/tmp/solo", None)
+            .await
+            .expect("register");
+        let got = super::get_by_slug(&db, "solo")
+            .await
+            .expect("lookup")
+            .expect("row present");
+        assert_eq!(got.parent, None, "no self-parent");
+        let forest = super::build_forest(&db).await.expect("forest");
+        assert!(forest.iter().any(|n| n.project.slug == "solo"));
+    }
+
+    #[tokio::test]
+    async fn entry_store_register_is_path_compatible() {
+        // The direct CLI fallback (`EntryStore::register_project`) must produce
+        // rows the slug/path readers resolve identically.
+        use crate::turso::entries::EntryStore;
+        let db = crate::turso::TursoStore::open_memory()
+            .await
+            .expect("mem db");
+        db.register_project("direct", "/tmp/direct", None)
+            .await
+            .expect("direct register");
+        let got = super::get_by_slug(&db, "direct")
+            .await
+            .expect("lookup")
+            .expect("row present");
+        assert_eq!(got.workdir.as_deref(), Some("/tmp/direct"));
+        assert!(
+            super::find_by_path(&db, "/tmp/direct")
+                .await
+                .expect("path lookup")
+                .is_some()
         );
     }
 }

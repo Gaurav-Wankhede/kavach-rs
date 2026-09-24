@@ -129,12 +129,13 @@ async fn run_async(
         return finalize_verified(&db, &project_id, key).await;
     }
 
-    // Cargo verify path: the standard contract is done → verified.
-    if entry.entry_status_str() != "done" {
+    // Cargo verify path: the standard contract is done → verified. Typed lane
+    // match, so legacy `status`-only rows read the same as on every board.
+    if entry.effective_status_typed() != Some(kavach_types::MemoryStatus::Done) {
         let msg = format!(
             "error: entry '{key}' has status '{}', expected 'done'. \
              Mark it done first: kavach db status-update --status done",
-            entry.entry_status_str()
+            entry.effective_status()
         );
         if let Err(io_err) = ewrite_or_exit(&msg) {
             return into_exit_code(io_err);

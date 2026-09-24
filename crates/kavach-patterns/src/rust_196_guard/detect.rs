@@ -1,6 +1,24 @@
 // split: cohesive 1.96 pattern-detector; the `async fn` tokens are fix-text strings, not handlers.
 use super::patterns::get_pattern;
 use super::types::{Rust196Severity, Rust196Violation};
+use regex::Regex;
+use std::sync::OnceLock;
+
+/// Binding-aware `Vec<i8|16|32|64>`-for-indices check: `let [mut] NAME` with
+/// `ind` in NAME plus an explicit small-int vector type (annotation or
+/// turbofish) — token-adjacent on the code view, never prose. Replaces the
+/// old trailing-comment sniff (`// indices…`), which fired on any comment
+/// mentioning indices.
+fn vec_smallint_for_indices(code: &str) -> bool {
+    static RE: OnceLock<Option<Regex>> = OnceLock::new();
+    let re = RE.get_or_init(|| {
+        Regex::new(
+            r"let\s+(?:mut\s+)?\w*ind\w*\s*(?::\s*Vec<i(?:8|16|32|64)>|=\s*Vec::\s*<\s*i(?:8|16|32|64)\s*>)",
+        )
+        .ok()
+    });
+    re.as_ref().is_some_and(|re| re.is_match(code))
+}
 
 #[must_use]
 #[expect(
@@ -57,7 +75,14 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
         return violations;
     }
 
-    if get_pattern(3).is_some_and(|p| p.is_match(content)) {
+    // From here on every pattern is a Rust-code construct: match the code
+    // view (comments + string literals dropped, comment gaps preserved), so
+    // prose or string text mentioning e.g. `static mut` no longer fires.
+    // (The Cargo.toml checks above intentionally stay on raw content, as does
+    // the `env::var("…")` rule below — its payload IS the string literal.)
+    let code = crate::lex::code_text(content);
+
+    if get_pattern(3).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "async_trait attribute",
@@ -65,7 +90,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(8).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(8).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "static mut",
@@ -73,7 +98,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(11).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(11).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "block_on in async fn",
@@ -81,7 +106,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(13).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(13).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "cfg_if! macro",
@@ -89,7 +114,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(12).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(12).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "Box<dyn Any>",
@@ -97,7 +122,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(7).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(7).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "Debug on sensitive type",
@@ -105,6 +130,8 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
+    // Payload rule: the env-var name lives in the string literal, so this
+    // stays on raw content (code view would erase the evidence).
     if get_pattern(16).is_some_and(|p| p.is_match(content)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
@@ -113,7 +140,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(17).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(17).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P0Block,
             pattern: "{self as Name} struct/enum import",
@@ -121,7 +148,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(18).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(18).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P1Advisory,
             pattern: "duplicate export_name/link_name/link_section",
@@ -130,7 +157,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
         });
     }
 
-    if get_pattern(10).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(10).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P1Advisory,
             pattern: "nested if let pyramid",
@@ -138,7 +165,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(14).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(14).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P1Advisory,
             pattern: "manual cfg target_os pairs",
@@ -146,7 +173,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(9).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(9).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P1Advisory,
             pattern: "unbounded spawn in loop",
@@ -154,7 +181,10 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(5).is_some_and(|p| p.is_match(content)) {
+    // Binding-aware check (replaces the old comment-sniffing alternative):
+    // a `Vec` of small ints bound to an indices-like name. `let [mut] NAME
+    // [: Vec<…>]` with `ind` in NAME — token-adjacent, never prose.
+    if vec_smallint_for_indices(&code) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P1Advisory,
             pattern: "Vec<i32> for indices",
@@ -162,7 +192,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(6).is_some_and(|p| p.is_match(content)) {
+    if get_pattern(6).is_some_and(|p| p.is_match(&code)) {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P1Advisory,
             pattern: "&str for filesystem path",
@@ -171,10 +201,10 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
         });
     }
 
-    super::detect_196::check(content, &mut violations);
+    super::detect_196::check(&code, &mut violations);
 
-    let has_safe_arith = content.contains("checked_") || content.contains("saturating_");
-    if get_pattern(4).is_some_and(|p| p.is_match(content)) && !has_safe_arith {
+    let has_safe_arith = code.contains("checked_") || code.contains("saturating_");
+    if get_pattern(4).is_some_and(|p| p.is_match(&code)) && !has_safe_arith {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P2Warning,
             pattern: "unchecked arithmetic on money/qty",
@@ -182,7 +212,7 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Rust196Violation> {
             line: 0,
         });
     }
-    if get_pattern(15).is_some_and(|p| p.is_match(content)) && !has_safe_arith {
+    if get_pattern(15).is_some_and(|p| p.is_match(&code)) && !has_safe_arith {
         violations.push(Rust196Violation {
             severity: Rust196Severity::P2Warning,
             pattern: "unchecked cents arithmetic",

@@ -98,6 +98,12 @@ fn build() -> Vec<Rule> {
 }
 
 /// Scan content for OWASP vulnerabilities.
+///
+/// Rules match per line but a hit counts only when the regex match touches
+/// executable code (segments for the file's language via [`lex`]): payload
+/// text inside strings still matches (SQLi needs the query literal), but a
+/// commented-out copy or a match entirely inside a string (e.g. `"innerHTML"`
+/// as data) does not.
 #[must_use]
 pub fn detect(file_path: &str, content: &str) -> Vec<Finding> {
     if content.is_empty() || crate::file_types::is_test_file(file_path) {
@@ -105,11 +111,25 @@ pub fn detect(file_path: &str, content: &str) -> Vec<Finding> {
     }
 
     let rules = &*RULES;
+    let lang = crate::lex::lang_for_path(file_path);
     let mut findings = Vec::new();
 
     for (i, line) in content.lines().enumerate() {
+        let segs = crate::lex::segments_for(lang, line);
         for rule in rules {
-            if rule.re.is_match(line) {
+            let mut touched_code = false;
+            for hit in rule.re.find_iter(line) {
+                let (start, end) = (hit.start(), hit.end());
+                if segs.iter().any(|s| {
+                    s.kind == crate::lex::RsKind::Code
+                        && (s.start as usize) < end
+                        && start < (s.end as usize)
+                }) {
+                    touched_code = true;
+                    break;
+                }
+            }
+            if touched_code {
                 findings.push(Finding {
                     severity: rule.sev.clone(),
                     category: rule.cat,

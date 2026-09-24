@@ -16,6 +16,7 @@ mod file_types;
 mod regex_patterns;
 pub mod rust_guard;
 pub(crate) mod rust_patterns;
+pub mod lex;
 pub mod severity;
 pub mod sql_guard;
 pub(crate) mod sql_patterns;

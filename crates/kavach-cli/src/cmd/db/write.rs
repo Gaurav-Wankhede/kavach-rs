@@ -41,7 +41,26 @@ pub(crate) const CATEGORY_HELP: &str = "Category (decision, research, roadmap, p
 /// Fuzzy-match threshold: titles with normalized Levenshtein similarity >=
 /// this value are flagged as likely duplicates when --new is used.
 const FUZZY_THRESHOLD: f64 = 0.85;
-/// Normalized Levenshtein similarity: 1.0 - (dist / `max_len`). Returns 0..=1.
+/// Integer form of [`FUZZY_THRESHOLD`] for the length-ratio pre-gate below
+/// (85/100). Keep in sync with it.
+const FUZZY_NUM: usize = 85;
+const FUZZY_DEN: usize = 100;
+/// Lowercase char vector: the DP core works on lowered chars, so the caller
+/// lowers each title exactly once instead of per comparison pair.
+fn lower_chars(s: &str) -> Vec<char> {
+    s.to_lowercase().chars().collect()
+}
+/// Integer length-ratio gate: normalized similarity ≥ threshold requires
+/// `min_len/max_len ≥ threshold` (edit distance is at least the length
+/// difference). Pairs that cannot reach threshold skip lowering + DP entirely.
+fn length_ratio_can_reach(a_len: usize, b_len: usize) -> bool {
+    let (mn, mx) = (a_len.min(b_len), a_len.max(b_len));
+    if mx == 0 {
+        return true;
+    }
+    mn.saturating_mul(FUZZY_DEN) >= mx.saturating_mul(FUZZY_NUM)
+}
+/// DP core over pre-lowered char slices (caller hoists lowering out of the loop).
 #[expect(
     clippy::indexing_slicing,
     clippy::arithmetic_side_effects,
@@ -49,11 +68,7 @@ const FUZZY_THRESHOLD: f64 = 0.85;
     clippy::cast_precision_loss,
     reason = "textbook Levenshtein DP: indices bounded by 1..=m / 1..=n loop invariants; similarity ratio is inherently float; string lengths far below f64 mantissa limit"
 )]
-fn similarity(a: &str, b: &str) -> f64 {
-    let a_lc = a.to_lowercase();
-    let b_lc = b.to_lowercase();
-    let a_chars: Vec<char> = a_lc.chars().collect();
-    let b_chars: Vec<char> = b_lc.chars().collect();
+fn similarity_lowered(a_chars: &[char], b_chars: &[char]) -> f64 {
     let (m, n) = (a_chars.len(), b_chars.len());
     if m == 0 && n == 0 {
         return 1.0;
@@ -100,15 +115,26 @@ const CLOSURE_PATTERNS: &[&str] = &[
 ];
 /// Check if a roadmap write is attempting to close a protected item.
 /// Returns Some(warning) if protected, None if safe to proceed.
+///
+/// Token-boundary matching (not substring): the key is lexed into segments on
+/// non-alphanumeric boundaries and the title into word tokens, so `"phase"`
+/// no longer fires on "emphasis", `"closed"` no longer fires on "disclosed",
+/// and `"blocking"` no longer fires on "nonblocking". Multi-segment patterns
+/// (`"market-gap"`) match contiguous segment runs; trailing dashes (`"todo-"`)
+/// are anchors, not literals.
 fn check_protected_closure(key: &str, title: &str) -> Option<String> {
     let key_lc = key.to_lowercase();
-    let title_lc = title.to_lowercase();
-    let is_protected = PROTECTED_KEY_PATTERNS.iter().any(|p| key_lc.contains(p));
+    let segs: Vec<&str> = key_lc
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let is_protected = PROTECTED_KEY_PATTERNS
+        .iter()
+        .any(|p| pattern_matches_segments(&segs, p));
     if !is_protected {
         return None;
     }
-    let is_closure = CLOSURE_PATTERNS.iter().any(|p| title_lc.contains(p));
-    if !is_closure {
+    if !title_has_closure_word(title) {
         return None;
     }
     Some(format!(
@@ -120,6 +146,43 @@ fn check_protected_closure(key: &str, title: &str) -> Option<String> {
          \n\
          To force closure via write, add '--force-close' or rename the key."
     ))
+}
+
+/// True when `pattern` matches the key segments: a dash-free pattern must
+/// equal a whole segment; a dashed pattern (`market-gap`, `todo-`) must equal
+/// a contiguous segment run. Spans only — no per-token allocation.
+fn pattern_matches_segments(segs: &[&str], pattern: &str) -> bool {
+    let core = pattern.trim_end_matches('-');
+    if !core.contains('-') {
+        return segs.contains(&core);
+    }
+    let subs: Vec<&str> = core.split('-').collect();
+    if subs.is_empty() || subs.len() > segs.len() {
+        return false;
+    }
+    segs.windows(subs.len()).any(|w| w == subs.as_slice())
+}
+
+/// True when the title holds a whole closure word (ASCII case-insensitive,
+/// punctuation-trimmed): `"Closed:"` hits, `"disclosed"` does not.
+fn title_has_closure_word(title: &str) -> bool {
+    let mut lexer = kavach_db::Lexer::new(title);
+    loop {
+        let token = lexer.next_token();
+        if token.kind == kavach_db::TokenKind::EndOfFile {
+            return false;
+        }
+        let word = lexer
+            .text(&token)
+            .trim_matches(|c: char| !c.is_ascii_alphanumeric());
+        if !word.is_empty()
+            && CLOSURE_PATTERNS
+                .iter()
+                .any(|p| word.eq_ignore_ascii_case(p))
+        {
+            return true;
+        }
+    }
 }
 /// Mirror `--depends-on` flag targets into a `DEPENDS_ON:` content line so the
 /// dispatch readiness check (which parses deps from CONTENT) honors them. Returns
@@ -346,11 +409,20 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                     return 1;
                 }
             } else if new {
-                // --new: title must not fuzzy-match existing rows.
+                // --new: title must not fuzzy-match existing rows. The new
+                // title is lowered once; per-row length-ratio gating skips
+                // pairs that cannot reach threshold before lowering + DP.
+                let title_lc = lower_chars(title);
                 let mut hits: Vec<(String, f64)> = rows
                     .iter()
-                    .map(|r| (r.entry_key.clone(), similarity(&r.title, title)))
-                    .filter(|(_, s)| *s >= FUZZY_THRESHOLD)
+                    .filter_map(|r| {
+                        let row_lc = lower_chars(&r.title);
+                        if !length_ratio_can_reach(title_lc.len(), row_lc.len()) {
+                            return None;
+                        }
+                        let s = similarity_lowered(&row_lc, &title_lc);
+                        (s >= FUZZY_THRESHOLD).then(|| (r.entry_key.clone(), s))
+                    })
                     .collect();
                 hits.sort_by(|a, b| {
                     b.1.partial_cmp(&a.1)

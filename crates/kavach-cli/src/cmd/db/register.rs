@@ -53,6 +53,35 @@ pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
             }
             return 1;
         }
+        // K-6: read back the stored row so a silently-dropped `path` fails
+        // loudly instead of reporting success while the column stays null.
+        match kavach_db::project_get_by_slug(&store, slug).await {
+            Ok(Some(p)) if p.workdir.as_deref() == Some(abs_path) => {}
+            Ok(Some(p)) => {
+                let msg = format!(
+                    "error: register wrote slug={slug} but stored path={:?}, expected {abs_path}",
+                    p.workdir
+                );
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+            Ok(None) => {
+                let msg = format!("error: register succeeded but {slug} not found on read-back");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+            Err(e) => {
+                let msg = format!("error: register read-back failed: {e}");
+                if let Err(io_err) = ewrite_or_exit(&msg) {
+                    return into_exit_code(io_err);
+                }
+                return 1;
+            }
+        }
         let msg = format!("registered project: {slug} at {abs_path}");
         if let Err(io_err) = print_or_exit(&msg) {
             return into_exit_code(io_err);

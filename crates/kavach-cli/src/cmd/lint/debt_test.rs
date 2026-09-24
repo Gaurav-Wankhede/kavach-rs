@@ -26,3 +26,8 @@ fn when_clause_counts_as_trigger() {
         marker_note("// kavach:intentional single impl; split when a 2nd caller appears").unwrap();
     assert!(has_trigger);
 }
+
+#[test]
+fn marker_inside_a_string_is_data_not_an_annotation() {
+    assert!(marker_note("    let m = \"kavach:intentional legacy\";").is_none());
+}

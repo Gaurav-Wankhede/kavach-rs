@@ -382,25 +382,24 @@ fn parse_event_record(val: &Value) -> NormalizedRecord {
 }
 
 /// Convert a libsql row into a JSON object keyed by column name (string values
-/// for TEXT, numbers for INTEGER/REAL, null otherwise). The parse_* functions
-/// read by key, so column names must match the record shapes.
+/// for TEXT, numbers for INTEGER/REAL, null otherwise). Decoded via the untyped
+/// `get_value` accessor (K-2): typed `get::<T>` panics inside libsql on BLOB
+/// columns (`embedding F32_BLOB`). The parse_* functions read by key, so column
+/// names must match the record shapes.
 fn row_to_value(row: &libsql::Row) -> Value {
     let mut obj = serde_json::Map::new();
     let ncols = row.column_count();
     for i in 0..ncols {
         let col = row.column_name(i).unwrap_or_default().to_owned();
-        let v = match row.get::<Option<String>>(i) {
-            Ok(Some(s)) => Value::String(s),
-            Ok(None) => Value::Null,
-            Err(_) => match row.get::<Option<i64>>(i) {
-                Ok(Some(n)) => Value::Number(n.into()),
-                Ok(None) => Value::Null,
-                Err(_) => match row.get::<Option<f64>>(i) {
-                    Ok(Some(f)) => serde_json::Number::from_f64(f)
-                        .map_or(Value::Null, Value::Number),
-                    Ok(None) | Err(_) => Value::Null,
-                },
-            },
+        let v = match row.get_value(i) {
+            Ok(libsql::Value::Text(s)) => Value::String(s),
+            Ok(libsql::Value::Integer(n)) => Value::Number(n.into()),
+            Ok(libsql::Value::Real(f)) => serde_json::Number::from_f64(f)
+                .map_or(Value::Null, Value::Number),
+            Ok(libsql::Value::Blob(b)) => {
+                Value::String(format!("<blob:{} bytes>", b.len()))
+            }
+            Ok(libsql::Value::Null) | Err(_) => Value::Null,
         };
         obj.insert(col, v);
     }

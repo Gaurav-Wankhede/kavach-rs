@@ -168,15 +168,25 @@ const ROWS: &[(usize, bool, Severity, &str, &str)] = {
     ]
 };
 
-/// True when regex `idx` matches: whole-content, or any single line when `line_scoped`.
-fn matches(regexes: &[Regex], idx: usize, line_scoped: bool, content: &str) -> bool {
+/// True when regex `idx` matches: whole content, or any single line when
+/// `line_scoped`. Matching runs on code views (comments + strings dropped)
+/// except index 84 (`+ ""` needs the empty-string literal); line numbers are
+/// never reported here (all pushes carry line 0), so views cannot drift them.
+fn matches(regexes: &[Regex], idx: usize, line_scoped: bool, content: &str, code: &str) -> bool {
+    // Payload exception: the `+ ""` arm needs string contents.
+    if idx == 84 {
+        let Some(re) = regexes.get(idx) else {
+            return false;
+        };
+        return re.is_match(content);
+    }
     let Some(re) = regexes.get(idx) else {
         return false;
     };
     if line_scoped {
-        content.lines().any(|l| re.is_match(l))
+        code.lines().any(|l| re.is_match(l))
     } else {
-        re.is_match(content)
+        re.is_match(code)
     }
 }
 
@@ -222,14 +232,20 @@ fn is_raii_name(name: &str) -> bool {
 }
 
 /// Index-78 arm: general named-underscore discard. Fires once per non-RAII
-/// `let _name = <expr>` line. Separate from the table because it captures the
-/// binding name to filter RAII guards (the table only does `is_match`).
+/// `let _name = <expr>` line (binding names are code, so per-line code views;
+/// a `_name` inside a string never binds). Separate from the table because it
+/// captures the binding name to filter RAII guards (the table only does
+/// `is_match`).
 fn scan_named_discard(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
     let Some(re) = r.get(78) else {
         return;
     };
     let mut fired = false;
-    for caps in content.lines().filter_map(|l| re.captures(l)) {
+    for raw in content.lines() {
+        let code = crate::lex::code_line(raw);
+        let Some(caps) = re.captures(&code) else {
+            continue;
+        };
         let Some(name) = caps.get(1).map(|m| m.as_str()) else {
             continue;
         };
@@ -253,8 +269,9 @@ fn scan_named_discard(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
 }
 
 pub(super) fn scan(r: &[Regex], content: &str, v: &mut Vec<Violation>) {
+    let code = crate::lex::code_text(content);
     for &(idx, line_scoped, sev, pat, fix) in ROWS {
-        if matches(r, idx, line_scoped, content) {
+        if matches(r, idx, line_scoped, content, &code) {
             one(v, sev, pat, fix);
         }
     }
