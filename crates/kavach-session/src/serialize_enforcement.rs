@@ -1,6 +1,6 @@
 use std::fmt::Write as FmtWrite;
 
-use crate::save::join_csv;
+use crate::save::{join_csv, join_json};
 use crate::serialize::write_kv;
 use crate::state::SessionState;
 
@@ -24,9 +24,15 @@ impl SessionState {
             s.push('\n');
         }
 
-        if !self.recent_commands.is_empty() {
+        // Loop-guard histories carry commas/colons/JSON — persisted as JSON
+        // arrays (naive CSV corrupted them on reload, so no fingerprint ever
+        // matched twice and the loop denies never fired). `recent_tool_calls`
+        // was previously not persisted at all: every hook process loaded it
+        // empty, so `check_tool_loop` counted zero forever.
+        if !self.recent_commands.is_empty() || !self.recent_tool_calls.is_empty() {
             s.push_str("[LOOP_GUARD]\n");
-            write_kv(s, "recent_commands", &join_csv(&self.recent_commands));
+            write_kv(s, "recent_commands", &join_json(&self.recent_commands));
+            write_kv(s, "recent_tool_calls", &join_json(&self.recent_tool_calls));
             s.push('\n');
         }
 

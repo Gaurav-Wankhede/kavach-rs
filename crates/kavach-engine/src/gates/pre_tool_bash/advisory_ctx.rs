@@ -27,6 +27,12 @@ pub(super) fn run(command: &str) -> Decision {
     let prod_ctx = super::super::prod_guard::check_prod_ops(command);
     let mut session = kavach_session::get_or_create_session();
 
+    // Tight-loop deny BEFORE the advisory: 5+ consecutive identical commands
+    // are refused outright (models ignore the advisory text and spam anyway).
+    // Advisory below still fires first at 3-in-window as an early warning.
+    if let Some(reason) = super::super::loop_guard::check_bash_loop_deny(&session, command) {
+        return Decision::Deny(reason);
+    }
     if let Some(reason) = super::super::loop_guard::check_bash_loop(&session, command) {
         return Decision::Allow(Some(format!("[ADVISORY:bash-loop] {reason}")));
     }

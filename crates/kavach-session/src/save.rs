@@ -142,3 +142,11 @@ impl SessionState {
 pub(crate) fn join_csv(items: &[String]) -> String {
     items.join(",")
 }
+
+/// Join history entries as a JSON array string. Histories carry commas,
+/// colons, and JSON payloads, so naive CSV corrupts them on reload (a tool
+/// fingerprint never matched twice → loop guards never fired). JSON has no
+/// newlines, keeping the INI one-value-per-line shape intact.
+pub(crate) fn join_json(items: &[String]) -> String {
+    serde_json::to_string(items).unwrap_or_default()
+}

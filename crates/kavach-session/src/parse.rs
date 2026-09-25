@@ -9,6 +9,21 @@ fn set_csv(target: &mut Vec<String>, value: &str) {
     }
 }
 
+/// History loader: JSON array first (current encoding, comma/colon-safe),
+/// legacy naive-CSV split second (session files written before the loop-guard
+/// persistence fix). Assigns unconditionally on successful JSON parse so a
+/// cleared history overwrites stale values instead of lingering.
+fn set_json_or_csv(target: &mut Vec<String>, value: &str) {
+    if value.is_empty() {
+        return;
+    }
+    if let Ok(items) = serde_json::from_str::<Vec<String>>(value) {
+        *target = items;
+    } else {
+        set_csv(target, value);
+    }
+}
+
 /// Safe i32 parse — kavach eats its own dogfood (no `unwrap_or` in production).
 fn pi32(value: &str, default: i32) -> i32 {
     value.parse().map_or(default, |v| v)
@@ -99,7 +114,8 @@ pub(crate) fn parse_field(state: &mut SessionState, key: &str, value: &str, in_f
         "last_subagent_turn" => state.last_subagent_turn = pi32(value, 0),
         "subagent_action_pending" => state.subagent_action_pending = value == "true",
         "subagent_action_turn" => state.subagent_action_turn = pi32(value, 0),
-        "recent_commands" => set_csv(&mut state.recent_commands, value),
+        "recent_commands" => set_json_or_csv(&mut state.recent_commands, value),
+        "recent_tool_calls" => set_json_or_csv(&mut state.recent_tool_calls, value),
         "test_files_pending" => set_csv(&mut state.test_files_pending, value),
         "test_nudge_count" => state.test_nudge_count = pi32(value, 0),
         "intent_risk" => state.intent_risk = value.into(),

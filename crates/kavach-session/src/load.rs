@@ -188,6 +188,32 @@ mod tests {
     }
 
     #[test]
+    fn loop_histories_survive_round_trip_with_commas_and_json() {
+        // Regression: naive-CSV histories corrupted any entry containing a
+        // comma (every tool fingerprint, most shell commands), so loop counts
+        // never reached threshold across hook processes.
+        let mut original = SessionState::new("/tmp/work");
+        original.recent_commands = vec![
+            "3:rtk rg -n -e 'a' -e 'b' src/".into(),
+            "3:rtk rg -n -e 'a' -e 'b' src/".into(),
+        ];
+        original.recent_tool_calls = vec![
+            "3:Bash:{\"command\":\"rtk rg -n\",\"timeout\":120}".into(),
+            "3:Bash:{\"command\":\"rtk rg -n\",\"timeout\":120}".into(),
+        ];
+        let parsed = parse_ini_str(&original.to_ini_full());
+        assert_eq!(parsed.recent_commands, original.recent_commands);
+        assert_eq!(parsed.recent_tool_calls, original.recent_tool_calls);
+    }
+
+    #[test]
+    fn legacy_csv_histories_still_parse() {
+        // Session files written before the JSON encoding keep loading.
+        let parsed = parse_ini_str("[LOOP_GUARD]\nrecent_commands: 1:cargo check, 1:cargo build\n");
+        assert_eq!(parsed.recent_commands, vec!["1:cargo check", "1:cargo build"]);
+    }
+
+    #[test]
     fn load_for_empty_session_id_falls_back_to_file_path() {
         // An empty session_id has no DB row to key on — must defer to the
         // file-only loader rather than panic or query with an empty key.
