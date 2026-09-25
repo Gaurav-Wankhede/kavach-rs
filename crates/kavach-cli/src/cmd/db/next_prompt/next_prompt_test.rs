@@ -60,18 +60,15 @@ fn no_todo_card_is_empty() {
 
 #[test]
 fn legacy_status_only_rows_read_through_the_typed_lane() {
-    // entry_status empty + legacy status set: the old raw-column scan served
-    // `status="done"` rows as todo and skipped `status="todo"` rows.
-    let mut done_legacy = card("d", "todo", Some("wrong"));
-    done_legacy.entry_status = None;
-    done_legacy.status = Some("done".to_owned());
-    let mut todo_legacy = card("t", "todo", Some("right"));
-    todo_legacy.entry_status = None;
-    todo_legacy.status = Some("todo".to_owned());
-    let rows = [done_legacy, todo_legacy];
-    match pick(&rows) {
+    // entry_status empty reads as todo no matter what the record-state
+    // `status` column holds (`active`/`done` there are not lanes — the lane
+    // is seeded at creation now, and this default covers older rows).
+    let mut legacy = card("t", "todo", Some("right"));
+    legacy.entry_status = None;
+    legacy.status = Some("active".to_owned());
+    match pick(&[legacy]) {
         Pick::Prompt(p) => assert_eq!(p, "right"),
-        _ => panic!("legacy done row must not be served as todo"),
+        _ => panic!("empty-lane row must serve as todo"),
     }
 }
 

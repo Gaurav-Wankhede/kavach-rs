@@ -35,16 +35,24 @@ pub async fn upsert_entry_full(
     let _ = event_source; // events table has no `source` column; kind carries the origin.
 
     crate::retry::with_retry(|| async {
+        // K-1 root cause: fresh roadmap rows used to store `entry_status =
+        // NULL` (only `status = 'active'` was written), so every board had to
+        // guess the lane. Seed the lane at creation for roadmap rows; other
+        // categories leave it NULL (their lifecycle lives in `status`).
+        // Computed inside the retry closure: it is consumed by the params
+        // below and the closure may run more than once.
+        let initial_lane: Option<String> = (category == "roadmap").then(|| "todo".to_owned());
         let txn = db.conn.transaction().await?;
         // `Connection::query` defers statement errors into the returned Rows
         // (they surface only on `next()`); these are INSERTs, so use `execute`,
         // which returns the error immediately (§no_silent_failure).
         txn.execute(
-            "INSERT INTO memories (project, category, entry_key, title, content, status, priority, exec_prompt, created_at, updated_at) \
-             VALUES (?1, ?2, ?3, ?4, ?5, 'active', ?6, ?7, ?8, ?8) \
+            "INSERT INTO memories (project, category, entry_key, title, content, status, entry_status, priority, exec_prompt, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, 'active', ?6, ?7, ?8, ?9, ?9) \
              ON CONFLICT(project, category, entry_key) DO UPDATE SET \
                  title = excluded.title, content = excluded.content, \
                  status = 'active', \
+                 entry_status = COALESCE(memories.entry_status, excluded.entry_status), \
                  priority = COALESCE(excluded.priority, memories.priority), \
                  exec_prompt = COALESCE(excluded.exec_prompt, memories.exec_prompt), \
                  updated_at = excluded.updated_at",
@@ -54,6 +62,7 @@ pub async fn upsert_entry_full(
                 entry_key.to_owned(),
                 title.to_owned(),
                 content.to_owned(),
+                initial_lane,
                 priority_i64,
                 exec_prompt.map(str::to_owned),
                 now.clone()

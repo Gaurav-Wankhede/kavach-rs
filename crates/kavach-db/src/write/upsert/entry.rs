@@ -26,13 +26,17 @@ pub async fn upsert_entry(
     }
     let now = crate::turso::now_rfc3339();
     let priority_i64 = priority.map(Priority::get);
+    // Same K-1 creation rule as `full.rs`: seed the roadmap lane, fill nulls
+    // only, never clobber a lane a status transition already set.
+    let initial_lane: Option<String> = (category == "roadmap").then(|| "todo".to_owned());
     let mut response = db
         .exec_params(
-            "INSERT INTO memories (project, category, entry_key, title, content, status, priority, created_at, updated_at) \
-             VALUES ($project, $cat, $key, $title, $content, 'active', $priority, $now, $now) \
+            "INSERT INTO memories (project, category, entry_key, title, content, status, entry_status, priority, created_at, updated_at) \
+             VALUES ($project, $cat, $key, $title, $content, 'active', $est, $priority, $now, $now) \
              ON CONFLICT(project, category, entry_key) DO UPDATE SET \
                  title = excluded.title, content = excluded.content, \
                  status = 'active', \
+                 entry_status = COALESCE(memories.entry_status, excluded.entry_status), \
                  priority = COALESCE(excluded.priority, memories.priority), \
                  updated_at = excluded.updated_at \
              RETURNING entry_key",
@@ -42,6 +46,7 @@ pub async fn upsert_entry(
                 entry_key.to_owned(),
                 title.to_owned(),
                 content.to_owned(),
+                initial_lane,
                 priority_i64,
                 now
             ],

@@ -139,46 +139,42 @@ impl MemoryEntry {
         }
     }
 
-    /// Single typed read path for board status (K-1 fix): `entry_status` wins,
-    /// then the legacy `status` column, then `"todo"`.
+    /// Single typed read path for board status (K-1 fix): `entry_status`,
+    /// defaulting to `"todo"` when absent.
     ///
     /// Three readers disagreed on empty-status rows — the RPC kanban defaulted
     /// them to `"todo"` while `context` dropped them entirely (empty matched no
-    /// open status and no counter), so one board showed 7 TODOs and the other
+    /// open status and no counter), so one board showed TODOs and the other
     /// showed `total: 0`. Every board/count path must use this accessor so
     /// counts, lists, and next-prompt agree by construction.
+    ///
+    /// Deliberately NOT falling back to the legacy `status` column: that
+    /// column carries record state (`active`), not a kanban lane — a previous
+    /// revision did fall back and made `active` rows vanish from every board.
+    /// The lane is seeded at creation (upsert writes `entry_status = 'todo'`
+    /// for roadmap rows) and this default covers older rows.
     #[must_use]
     pub const fn effective_status(&self) -> &str {
-        let entry = self.entry_status_str();
-        if !entry.is_empty() {
-            return entry;
+        match &self.entry_status {
+            Some(s) if !s.is_empty() => s.as_str(),
+            _ => "todo",
         }
-        let legacy = self.status_str();
-        if !legacy.is_empty() {
-            return legacy;
-        }
-        "todo"
     }
 
     /// Typed form of [`effective_status`](Self::effective_status) for
-    /// discriminant matching: `entry_status`, then legacy `status`, then
-    /// `Todo`. Unknown literals yield `None` (fail-closed: such rows match no
-    /// lane, exactly as the old `== "…"` scans behaved).
+    /// discriminant matching: `entry_status` parsed, `None` for absent or
+    /// unknown literals — except absent means `Todo`, matching the display
+    /// default above (fail-closed for typos, fail-open for legacy rows).
     ///
     /// Pair with [`StatusPred`](crate::query_lex::StatusPred): the filter
     /// keyword is lexed once at the CLI boundary, and every row after that is
     /// one `Option<MemoryStatus>` compare — no per-row string scan.
     #[must_use]
     pub fn effective_status_typed(&self) -> Option<kavach_types::MemoryStatus> {
-        let entry = self.entry_status_str();
-        if !entry.is_empty() {
-            return entry.parse().ok();
+        match self.entry_status.as_deref() {
+            Some(s) if !s.is_empty() => s.parse().ok(),
+            _ => Some(kavach_types::MemoryStatus::Todo),
         }
-        let legacy = self.status_str();
-        if !legacy.is_empty() {
-            return legacy.parse().ok();
-        }
-        Some(kavach_types::MemoryStatus::Todo)
     }
 
     /// Roadmap/kanban lifecycle status PARSED into the typed `MemoryStatus` enum.
@@ -269,15 +265,16 @@ mod lifecycle_tests {
     }
 
     #[test]
-    fn effective_status_unifies_empty_and_legacy_rows() {
+    fn effective_status_unifies_empty_rows_as_todo() {
         // K-1: the single board read path. Empty rows read as todo (RPC kanban
-        // and query already defaulted this way); legacy `status`-only rows
-        // surface their status instead of vanishing from every counter.
+        // and query always defaulted this way). The legacy `status` column
+        // carries record state (`active`), never a lane — it must not leak
+        // into the board (a previous revision did, hiding `active` rows).
         assert_eq!(with_status(Some("done")).effective_status(), "done");
         assert_eq!(with_status(None).effective_status(), "todo");
         let mut legacy = with_status(None);
-        legacy.status = Some("in_progress".to_owned());
-        assert_eq!(legacy.effective_status(), "in_progress");
+        legacy.status = Some("active".to_owned());
+        assert_eq!(legacy.effective_status(), "todo");
         // entry_status wins over the legacy column when both are set.
         let mut both = with_status(Some("verified"));
         both.status = Some("todo".to_owned());
@@ -295,16 +292,14 @@ mod lifecycle_tests {
             with_status(None).effective_status_typed(),
             Some(MemoryStatus::Todo)
         );
+        // Record-state legacy values never become lanes.
         let mut legacy = with_status(None);
-        legacy.status = Some("in_progress".to_owned());
+        legacy.status = Some("active".to_owned());
         assert_eq!(
             legacy.effective_status_typed(),
-            Some(MemoryStatus::InProgress)
+            Some(MemoryStatus::Todo)
         );
         // Unknown literals fail closed to None (match no lane).
         assert_eq!(with_status(Some("blocked")).effective_status_typed(), None);
-        let mut legacy_bad = with_status(None);
-        legacy_bad.status = Some("planned".to_owned());
-        assert_eq!(legacy_bad.effective_status_typed(), None);
     }
 }

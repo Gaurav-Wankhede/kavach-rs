@@ -51,8 +51,8 @@ async fn update_preserves_entry_status_and_access_count() {
     let created = read_card(&db, "card-1").await.expect("read created");
     assert_eq!(
         created.entry_status.as_deref(),
-        None,
-        "create leaves entry_status unset"
+        Some("todo"),
+        "create seeds the roadmap lane (K-1: no more NULL lanes)"
     );
     assert_eq!(created.access_count, 0, "create defaults access_count 0");
 
@@ -84,4 +84,64 @@ async fn update_preserves_entry_status_and_access_count() {
         updated.access_count, 7,
         "re-write must NOT zero access_count"
     );
+}
+
+#[tokio::test]
+async fn fresh_roadmap_upsert_seeds_todo_lane() {
+    // K-1 root cause: the daemon write path stored entry_status = NULL, so
+    // every board had to guess. Creation now seeds the lane.
+    let db = open_memory().await.expect("open in-memory db");
+    apply_schema(&db).await.expect("schema");
+    upsert(&db, "p", "fresh-card", "v1").await;
+    let row = read_card(&db, "fresh-card").await.expect("read");
+    assert_eq!(row.entry_status.as_deref(), Some("todo"));
+}
+
+#[tokio::test]
+async fn non_roadmap_upsert_leaves_lane_null() {
+    // Decisions/research live their lifecycle in `status`, not the kanban
+    // lane — seeding `todo` there would corrupt COALESCE status filters.
+    let db = open_memory().await.expect("open in-memory db");
+    apply_schema(&db).await.expect("schema");
+    upsert_entry_full()
+        .db(&db)
+        .category("decision")
+        .project_id("p")
+        .entry_key("d1")
+        .title("t")
+        .content("c")
+        .event_source("test")
+        .qualified_name("")
+        .references(&[])
+        .build_for_call()
+        .await
+        .expect("upsert");
+    let mut resp = db
+        .exec_params(
+            "SELECT entry_status FROM memories WHERE category = 'decision' AND entry_key = 'd1'",
+            (),
+        )
+        .await
+        .expect("select");
+    let row = resp.next().await.expect("next").expect("row exists");
+    let lane: Option<String> = row.get(0).expect("lane decodes");
+    assert_eq!(lane, None);
+}
+
+#[tokio::test]
+async fn rewrite_heals_legacy_null_lane() {
+    // Pre-fix rows carry (status='active', entry_status=NULL): the first
+    // re-write fills the lane instead of leaving it null forever.
+    let db = open_memory().await.expect("open in-memory db");
+    apply_schema(&db).await.expect("schema");
+    db.exec_params(
+        "INSERT INTO memories (project, category, entry_key, title, content, status, created_at, updated_at) \
+         VALUES ('p', 'roadmap', 'legacy', 't', 'c', 'active', datetime('now'), datetime('now'))",
+        (),
+    )
+    .await
+    .expect("legacy seed");
+    upsert(&db, "p", "legacy", "v2").await;
+    let row = read_card(&db, "legacy").await.expect("read");
+    assert_eq!(row.entry_status.as_deref(), Some("todo"));
 }
