@@ -26,6 +26,8 @@ serde_json = { workspace = true }
 # Hermetic fixture dirs for the skill-router tests — see
 # rca.non-hermetic-skill-router-tests (those tests must not read ~/.claude/skills).
 tempfile = { workspace = true }
+# Property tests for the lex/ trivia lexers (tiling + panic-freedom).
+proptest = { workspace = true }
 
 [lints]
 workspace = true

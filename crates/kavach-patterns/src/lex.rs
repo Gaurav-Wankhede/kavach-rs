@@ -9,11 +9,11 @@
 //! spec, JLS §3, Kotlin spec + strings docs, ECMA-262 + MDN, CPython lexical
 //! analysis, POSIX shell, Dockerfile reference, PostgreSQL lexical docs.
 //!
-//! Documented approximations (v1): shell heredocs inside `$(…)` are not
-//! tracked; Python f-string `{…}` fields nested inside other f-strings stay
-//! opaque; regex-vs-division uses the standard operand-position heuristic
-//! (`}` and line-start always allow regex — rare object-division cases
-//! mislex, documented at `regex_opens`).
+//! Documented approximations: regex-vs-division uses the standard
+//! operand-position heuristic (`}` and line-start always allow regex — rare
+//! object-division cases mislex, documented at the cursor); Python f-strings
+//! past the nesting cap stay opaque; shell heredocs inside backquotes (not
+//! `$(…)`) are untracked.
 pub mod c_like;
 pub mod dockerfile;
 pub mod python;
@@ -238,6 +238,16 @@ pub(crate) fn sat_u32(n: usize) -> u32 {
     u32::try_from(n).unwrap_or(u32::MAX)
 }
 
+/// Advance past a `\` escape (the escaped byte): clamped to `len` so a
+/// trailing backslash at EOF cannot overshoot into a past-EOF span.
+pub(crate) const fn adv_esc(bytes: &[u8], cur: usize) -> usize {
+    if cur.saturating_add(2) > bytes.len() {
+        bytes.len()
+    } else {
+        cur.saturating_add(2)
+    }
+}
+
 /// Consume to (not past) the end of line.
 pub(crate) fn consume_to_eol(bytes: &[u8], pos: usize) -> usize {
     let mut end = pos;
@@ -279,7 +289,7 @@ pub(crate) fn consume_escaped(bytes: &[u8], pos: usize, quote: u8) -> usize {
     let mut cur = pos.saturating_add(1);
     while let Some(&byte) = bytes.get(cur) {
         if byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = adv_esc(bytes, cur);
         } else if byte == quote {
             return cur.saturating_add(1);
         } else if byte == b'\n' {
@@ -318,7 +328,7 @@ pub(crate) fn skip_quoted_island(bytes: &[u8], pos: usize, quote: u8) -> usize {
     let mut cur = pos.saturating_add(1);
     while let Some(&byte) = bytes.get(cur) {
         if byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = adv_esc(bytes, cur);
         } else if byte == quote {
             return cur.saturating_add(1);
         } else {
@@ -326,4 +336,65 @@ pub(crate) fn skip_quoted_island(bytes: &[u8], pos: usize, quote: u8) -> usize {
         }
     }
     cur
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Lang, RsSeg, segments_for, text};
+
+    /// Every language the dispatch can serve (Rust included: one surface).
+    const ALL: [Lang; 9] = [
+        Lang::Rust,
+        Lang::Go,
+        Lang::Java,
+        Lang::Kotlin,
+        Lang::TsJs,
+        Lang::Python,
+        Lang::Shell,
+        Lang::Dockerfile,
+        Lang::Sql,
+    ];
+
+    /// Structural tiling invariants: spans ordered, in-bounds, gapless —
+    /// concatenation rebuilds the input byte-for-byte. Any cursor panic,
+    /// stall, or span error fails the case.
+    fn assert_tiles(lang: Lang, src: &str) {
+        let segs: Vec<RsSeg> = segments_for(lang, src);
+        let mut rebuilt = String::with_capacity(src.len());
+        let mut prev_end = 0usize;
+        for seg in &segs {
+            let (start, end) = (seg.start as usize, seg.end as usize);
+            assert!(start <= end, "{lang:?}: inverted span {seg:?}");
+            assert!(start >= prev_end, "{lang:?}: overlapping spans");
+            assert!(end <= src.len(), "{lang:?}: span past EOF");
+            rebuilt.push_str(text(src, seg));
+            prev_end = end;
+        }
+        assert_eq!(prev_end, src.len(), "{lang:?}: trailing gap");
+        assert_eq!(rebuilt, src, "{lang:?}: lossy tiling");
+    }
+
+    proptest::proptest! {
+        /// Syntax-heavy soup: every trivia character each language knows.
+        #[test]
+        fn all_lexers_tile_syntax_soup(
+            s in "[\"'#`$(){}\\[\\]/\\\\a-zA-Z0-9 _\\n\\t;.,:*+\\-=!&|<>?]{0,120}",
+        ) {
+            for lang in ALL {
+                assert_tiles(lang, &s);
+            }
+        }
+
+        /// Arbitrary unicode (multi-byte boundaries included): offsets must
+        /// stay on char boundaries for every language.
+        #[test]
+        fn all_lexers_tile_arbitrary_unicode(
+            chars in proptest::collection::vec(proptest::char::any(), 0..120),
+        ) {
+            let s: String = chars.into_iter().collect();
+            for lang in ALL {
+                assert_tiles(lang, &s);
+            }
+        }
+    }
 }

@@ -56,7 +56,7 @@ pub fn lex(src: &str) -> Vec<RsSeg> {
         if byte == b'$' && bytes.get(pos.saturating_add(1)).copied() == Some(b'(') {
             // `$(…)` is command text: one code island with paren nesting.
             push(&mut out, RsKind::Code, span_start, pos);
-            pos = lex_paren_island(bytes, &mut out, pos);
+            pos = lex_paren_island(bytes, &mut out, pos, bytes.len());
             span_start = pos;
             continue;
         }
@@ -85,7 +85,7 @@ pub fn lex(src: &str) -> Vec<RsSeg> {
             continue;
         }
         if byte == b'\\' {
-            pos = pos.saturating_add(2);
+            pos = super::adv_esc(bytes, pos);
             continue;
         }
         pos = pos.saturating_add(1);
@@ -96,22 +96,26 @@ pub fn lex(src: &str) -> Vec<RsSeg> {
 
 /// Split `$(…)` / backquote islands out of a `"` string span: islands become
 /// `Code`, the rest stays `Str`. Delimiters ride with the island spans.
+/// Islands are bounded by `end` (a consumer that cannot close inside the
+/// string stops there — the outer cursor resumes after it, so no byte is
+/// ever scanned twice).
 fn emit_sh_interp(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize) {
     let mut chunk = start;
     let mut cur = start;
     while cur < end {
         match bytes.get(cur).copied() {
             Some(b'\\') => {
-                cur = cur.saturating_add(2);
+                cur = super::adv_esc(bytes, cur).min(end);
             }
             Some(b'$') if bytes.get(cur.saturating_add(1)).copied() == Some(b'(') => {
                 push(out, RsKind::Str, chunk, cur);
-                cur = lex_paren_island(bytes, out, cur);
+                cur = lex_paren_island(bytes, out, cur, end);
                 chunk = cur;
             }
             Some(b'`') => {
                 push(out, RsKind::Str, chunk, cur);
-                let close = consume_until_unescaped(bytes, cur.saturating_add(1), b'`');
+                let close = consume_until_unescaped(bytes, cur.saturating_add(1), b'`')
+                    .min(end);
                 push(out, RsKind::Code, cur, close);
                 cur = close;
                 chunk = cur;
@@ -124,26 +128,35 @@ fn emit_sh_interp(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize) 
     push(out, RsKind::Str, chunk, end);
 }
 
-/// `$(` island from the `$` at `dollar`: paren-nested, quote-aware-lite.
-/// Emitted as `Code` spans, except heredoc bodies inside, which become `Str`
-/// (a `)` in a body must neither close the island nor read as code).
-fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize {
+/// `$(` island from the `$` at `dollar`, bounded by `bound`: paren-nested,
+/// quote-aware-lite. Emitted as `Code` spans, except heredoc bodies inside,
+/// which become `Str` (a `)` in a body must neither close the island nor read
+/// as code). Never scans past `bound`, so an enclosing span's end is always
+/// respected (no double-scan overlap).
+fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize, bound: usize) -> usize {
     let mut depth = 0usize;
     let mut cur = dollar;
     let mut seg_start = dollar;
-    while let Some(&byte) = bytes.get(cur) {
+    while cur < bound {
+        let Some(&byte) = bytes.get(cur) else {
+            break;
+        };
         if byte == b'"' || byte == b'\'' || byte == b'`' {
-            cur = skip_quoted_island(bytes, cur, byte);
+            cur = skip_quoted_island(bytes, cur, byte).min(bound);
             continue;
         }
         if byte == b'<'
             && bytes.get(cur.saturating_add(1)).copied() == Some(b'<')
             && bytes.get(cur.saturating_add(2)).copied() != Some(b'<')
             && let Some((dash, delim, body)) = parse_heredoc_header(bytes, cur)
+            && body < bound
             && let Some(end) = heredoc_end(bytes, body, delim, dash)
         {
-            push(out, RsKind::Code, seg_start, body);
-            push(out, RsKind::Str, body, end);
+            // Clamp to the island bound: an unterminated heredoc cannot
+            // swallow the enclosing span's end.
+            let end = end.min(bound);
+            push(out, RsKind::Code, seg_start, body.min(end));
+            push(out, RsKind::Str, body.min(end), end);
             seg_start = end;
             cur = end;
             continue;
@@ -157,7 +170,8 @@ fn lex_paren_island(bytes: &[u8], out: &mut Vec<RsSeg>, dollar: usize) -> usize 
                 return cur.saturating_add(1);
             }
         } else if byte == b'\\' {
-            cur = cur.saturating_add(1);
+            cur = super::adv_esc(bytes, cur).min(bound);
+            continue;
         }
         cur = cur.saturating_add(1);
     }
@@ -270,7 +284,7 @@ fn heredoc_end(bytes: &[u8], body: usize, delim: &[u8], dash: bool) -> Option<us
 fn consume_until_unescaped(bytes: &[u8], mut cur: usize, quote: u8) -> usize {
     while let Some(&byte) = bytes.get(cur) {
         if byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = super::adv_esc(bytes, cur);
         } else if byte == quote {
             return cur.saturating_add(1);
         } else {
@@ -400,6 +414,22 @@ mod tests {
             .collect::<Vec<_>>()
             .join("");
         assert!(code.contains("body with no terminator"), "got: {code}");
+    }
+
+    #[test]
+    fn island_overrun_never_double_scans() {
+        // Fuzzer-found: an island consumer running past its enclosing string
+        // end, then the outer cursor rescanning those bytes (overlap).
+        for src in ["a`\"`\"&", "x \"$(a{b\" y", "q=\"`u\"v"] {
+            let segs = lex(src);
+            let mut prev = 0usize;
+            for seg in &segs {
+                let (start, end) = (seg.start as usize, seg.end as usize);
+                assert!(start >= prev, "overlap in {src:?}: {segs:?}");
+                prev = end;
+            }
+            assert_eq!(prev, src.len(), "gap in {src:?}");
+        }
     }
 
     #[test]

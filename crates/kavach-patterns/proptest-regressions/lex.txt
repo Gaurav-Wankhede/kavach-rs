@@ -1,0 +1,13 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 7fcf3db8390e64a98e3a965dd2e93c9dcdb45c1da68dd864697d2c336d80a989 # shrinks to s = "\"\"\"`\n"
+cc 6f91ecb58e8318d6c4a50e6f70ae95c1f36b5fcc00d8fb6d8b99f0e575957240 # shrinks to chars = ['"', '`', '"', 'A']
+cc b48cc8bd9ec65814af49734e3ab880d7e22f311b73d75584eb673da2415d64b8 # shrinks to chars = [' ', '\\']
+cc 01a52135e8d341c9b2382b326dfa1ca0fda36f31cd5ec380add17a548c8abca1 # shrinks to s = "\\"
+cc f6106df56be4e886a4d3d5c4d4393b44a7f87baffa75f5d809ab187c886162d1 # shrinks to chars = ['t', '\'', '{', '¡', '"']
+cc 0763c853ee31a8c5c1f3a224fd48b1c2f4e40f6c8c8a2a180bd02b21ed8f10c9 # shrinks to s = "f'{(\""
+cc 4ce1b03ec84bb013edc6a2cedf18e7b5ea7aa475b81150d96fa3b79b796269d6 # shrinks to chars = ['T', '"', 'A', '{', '\'', '"']

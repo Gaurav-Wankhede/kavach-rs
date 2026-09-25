@@ -243,8 +243,8 @@ fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize,
             Some(b'"' | b'\'') => {
                 if let Some((lit, content, close, triple, quote)) = nested_fstring(bytes, cur, end)
                 {
-                    // The prefix letters belong to the nested literal: end the
-                    // pending code chunk before them so no byte emits twice.
+                    // Nested f-string: pending code ends before its prefix
+                    // letters so no byte emits twice, then recurse.
                     push(out, RsKind::Code, chunk, lit);
                     lex_fstring(
                         bytes,
@@ -262,8 +262,12 @@ fn partition_field(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize,
                     chunk = cur;
                     continue;
                 }
+                // Plain string: flush pending code first, then the literal,
+                // clamped to the field bound (an unterminated quote must not
+                // swallow the enclosing span's end and get rescanned).
+                push(out, RsKind::Code, chunk, cur);
                 let str_start = cur;
-                cur = skip_py_string(bytes, cur);
+                cur = skip_py_string(bytes, cur).min(end);
                 push(out, RsKind::Str, str_start, cur);
                 chunk = cur;
             }
@@ -455,6 +459,21 @@ mod tests {
             .collect::<Vec<_>>()
             .join("");
         assert!(!code.contains("not code"), "got: {code}");
+    }
+
+    #[test]
+    fn unterminated_quote_in_field_clamps_to_bound() {
+        // Fuzzer-found: a string skip escaping its field bound, then the
+        // outer cursor rescanning those bytes (overlap).
+        let src = "T\"A{'\"";
+        let segs = lex(src);
+        let mut prev = 0usize;
+        for seg in &segs {
+            let (start, end) = (seg.start as usize, seg.end as usize);
+            assert!(start >= prev, "overlap in {src:?}: {segs:?}");
+            prev = end;
+        }
+        assert_eq!(prev, src.len(), "gap in {src:?}");
     }
 
     #[test]

@@ -73,7 +73,7 @@ fn consume_sql_string(bytes: &[u8], pos: usize, escapes: bool) -> usize {
     let mut cur = pos.saturating_add(1);
     while let Some(&byte) = bytes.get(cur) {
         if escapes && byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = super::adv_esc(bytes, cur);
         } else if byte == b'\'' {
             if bytes.get(cur.saturating_add(1)).copied() == Some(b'\'') {
                 cur = cur.saturating_add(2);

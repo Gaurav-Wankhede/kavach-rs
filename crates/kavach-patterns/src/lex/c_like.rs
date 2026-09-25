@@ -243,13 +243,13 @@ fn emit_str_interp(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize,
             match bytes.get(cur.saturating_add(1)).copied() {
                 Some(b'{') => {
                     push(out, RsKind::Str, chunk, cur);
-                    cur = lex_brace_island(bytes, out, cur.saturating_add(2));
+                    cur = lex_brace_island(bytes, out, cur.saturating_add(2), end);
                     chunk = cur;
                     continue;
                 }
                 Some(next) if next.is_ascii_alphabetic() || next == b'_' => {
                     push(out, RsKind::Str, chunk, cur);
-                    let name_end = consume_ident(bytes, cur.saturating_add(1));
+                    let name_end = consume_ident(bytes, cur.saturating_add(1)).min(end);
                     push(out, RsKind::Code, cur, name_end);
                     cur = name_end;
                     chunk = cur;
@@ -367,7 +367,7 @@ fn try_consume_regex(bytes: &[u8], pos: usize) -> Option<usize> {
     let mut len = 0usize;
     while let Some(&byte) = bytes.get(cur) {
         if byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = super::adv_esc(bytes, cur);
             len = len.saturating_add(1);
             continue;
         }
@@ -406,7 +406,7 @@ fn lex_template(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usiz
     let mut chunk_start = pos;
     while let Some(&byte) = bytes.get(cur) {
         if byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = super::adv_esc(bytes, cur);
             continue;
         }
         if byte == b'`' {
@@ -415,7 +415,10 @@ fn lex_template(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usiz
         }
         if byte == b'$' && bytes.get(cur.saturating_add(1)).copied() == Some(b'{') {
             push(out, RsKind::Str, chunk_start, cur);
-            cur = lex_brace_island(bytes, out, cur.saturating_add(2));
+            // Unbounded: the template end is what this scan discovers; chunk
+            // bookkeeping follows `cur`, so spans cannot overlap (an unclosed
+            // island only extends `Code`, never rescans).
+            cur = lex_brace_island(bytes, out, cur.saturating_add(2), bytes.len());
             chunk_start = cur;
             continue;
         }
@@ -426,13 +429,18 @@ fn lex_template(bytes: &[u8], out: &mut Vec<RsSeg>, span_start: usize, pos: usiz
 }
 
 /// `${` island starting after the brace: balanced `{}` (nesting-aware,
-/// quote-skipping) emitted as `Code`; returns offset past `}`.
-fn lex_brace_island(bytes: &[u8], out: &mut Vec<RsSeg>, mut cur: usize) -> usize {
+/// quote-skipping) emitted as `Code`; returns offset past `}`. Bounded by
+/// `bound` (the enclosing string/template end) so an unclosed island cannot
+/// swallow it and get rescanned.
+fn lex_brace_island(bytes: &[u8], out: &mut Vec<RsSeg>, mut cur: usize, bound: usize) -> usize {
     let start = cur.saturating_sub(2);
     let mut depth = 1usize;
-    while let Some(&byte) = bytes.get(cur) {
+    while cur < bound {
+        let Some(&byte) = bytes.get(cur) else {
+            break;
+        };
         if byte == b'"' || byte == b'\'' || byte == b'`' {
-            cur = skip_quoted_island(bytes, cur, byte);
+            cur = skip_quoted_island(bytes, cur, byte).min(bound);
             continue;
         }
         // Comments and regexes inside substitutions must not corrupt brace
@@ -440,16 +448,16 @@ fn lex_brace_island(bytes: &[u8], out: &mut Vec<RsSeg>, mut cur: usize) -> usize
         if byte == b'/' {
             match bytes.get(cur.saturating_add(1)).copied() {
                 Some(b'/') => {
-                    cur = consume_to_eol(bytes, cur);
+                    cur = consume_to_eol(bytes, cur).min(bound);
                     continue;
                 }
                 Some(b'*') => {
-                    cur = consume_nested(bytes, cur, false);
+                    cur = consume_nested(bytes, cur, false).min(bound);
                     continue;
                 }
                 _ if regex_opens(bytes, cur) => {
                     if let Some(end) = try_consume_regex(bytes, cur) {
-                        cur = end;
+                        cur = end.min(bound);
                         continue;
                     }
                 }
@@ -467,8 +475,8 @@ fn lex_brace_island(bytes: &[u8], out: &mut Vec<RsSeg>, mut cur: usize) -> usize
         }
         cur = cur.saturating_add(1);
     }
-    push(out, RsKind::Code, start, cur);
-    cur
+    push(out, RsKind::Code, start, cur.min(bound));
+    cur.min(bound)
 }
 
 /// `'…'` end for Go runes / Java / Kotlin chars: same-line, no-whitespace

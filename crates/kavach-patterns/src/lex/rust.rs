@@ -138,7 +138,7 @@ fn consume_quoted(bytes: &[u8], pos: usize) -> usize {
 fn consume_quoted_tail(bytes: &[u8], mut cur: usize) -> usize {
     while let Some(byte) = at(bytes, cur) {
         if byte == b'\\' {
-            cur = cur.saturating_add(2);
+            cur = super::adv_esc(bytes, cur);
         } else if byte == b'"' {
             return cur.saturating_add(1);
         } else {
