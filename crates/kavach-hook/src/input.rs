@@ -1,6 +1,6 @@
 // SOURCE: doc.rust-lang.org/edition-guide/rust-2018/path-changes.html — 2018+ module paths need no mod.rs
-use std::io::{self, BufRead};
 use kavach_types::HookInput;
+use std::io::{self, BufRead};
 /// Read a hook input payload from stdin.
 /// # Errors
 pub fn read_hook_input() -> Result<HookInput, String> {

@@ -125,7 +125,9 @@ fn is_exempt(file_path: &str, line: &str) -> bool {
 }
 
 fn is_rust_type_decl(line: &str, field: &str) -> bool {
-    let pat = format!(r"(?i)\b{field}\s*:\s*(?:Option|Vec|String|Box|Arc|Cow|Result|&|[A-Z][A-Za-z0-9_]*)");
+    let pat = format!(
+        r"(?i)\b{field}\s*:\s*(?:Option|Vec|String|Box|Arc|Cow|Result|&|[A-Z][A-Za-z0-9_]*)"
+    );
     if let Ok(re) = Regex::new(&pat) {
         if !re.is_match(line) {
             return false;

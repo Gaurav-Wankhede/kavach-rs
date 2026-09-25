@@ -46,8 +46,7 @@ pub async fn kanban_close(
     }
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let result =
-        kavach_db::update_status(&ctx.db, ROADMAP_TABLE, &pid, &params.key, STATUS_VERIFIED)
-            .await;
+        kavach_db::update_status(&ctx.db, ROADMAP_TABLE, &pid, &params.key, STATUS_VERIFIED).await;
 
     match result {
         // FAIL CLOSED on a phantom key (matched-row count 0): a no-op move must not

@@ -114,8 +114,7 @@ fn emit_sh_interp(bytes: &[u8], out: &mut Vec<RsSeg>, start: usize, end: usize) 
             }
             Some(b'`') => {
                 push(out, RsKind::Str, chunk, cur);
-                let close = consume_until_unescaped(bytes, cur.saturating_add(1), b'`')
-                    .min(end);
+                let close = consume_until_unescaped(bytes, cur.saturating_add(1), b'`').min(end);
                 push(out, RsKind::Code, cur, close);
                 cur = close;
                 chunk = cur;

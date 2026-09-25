@@ -45,10 +45,10 @@ pub use get_or_create::{
 };
 pub use load::{load_session_state, load_session_state_for, parse_ini_str};
 // SOURCE: doc.rust-lang.org/reference/items/use-declarations.html (re-export for test/tooling).
-pub use paths::state_path_for;
 pub use mistake_ledger::{
     Mistake, RecordOutcome, record as record_mistake, record_and_surface as record_mistake_surfaced,
 };
+pub use paths::state_path_for;
 pub use paths::{canonicalize_iteration_path, state_dir, state_path, stm_path};
 pub use state::SessionState;
 pub use subset::SessionIdentity;

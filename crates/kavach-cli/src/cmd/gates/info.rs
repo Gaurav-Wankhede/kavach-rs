@@ -11,9 +11,7 @@ pub(super) fn print_gate_info(gate_name: &str) -> i32 {
         "intent" => "Intent classification + skill routing + CEO delegation (UserPromptSubmit)",
         "subagent-start" => "Subagent lifecycle start + budget injection",
         "subagent-stop" => "Subagent lifecycle stop + output tracking",
-        "session-start" => {
-            "Session initialization: kanban inject, mistake patterns"
-        }
+        "session-start" => "Session initialization: kanban inject, mistake patterns",
         "session-end" => "Session end lifecycle hook + memory flush",
         "pre-compact" => "Pre-compact lifecycle hook — preserve state before context trim",
         "stop" => {

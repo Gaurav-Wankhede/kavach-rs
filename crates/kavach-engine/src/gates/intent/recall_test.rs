@@ -3,7 +3,10 @@ use super::keep_hit;
 #[test]
 fn test_keep_hit_filters_invalid_categories() {
     assert!(!keep_hit("hacked:evil"), "hacked prefix must be rejected");
-    assert!(!keep_hit("malicious:data"), "malicious prefix must be rejected");
+    assert!(
+        !keep_hit("malicious:data"),
+        "malicious prefix must be rejected"
+    );
     assert!(!keep_hit("no_colon"), "id without colon must be rejected");
 }
 

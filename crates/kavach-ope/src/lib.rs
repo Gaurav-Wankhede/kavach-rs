@@ -30,7 +30,7 @@ pub mod doubly_robust;
 pub mod explore;
 pub mod ips;
 pub mod label;
-pub mod trust;
 #[cfg(test)]
 #[path = "lib_test.rs"]
 mod tests;
+pub mod trust;

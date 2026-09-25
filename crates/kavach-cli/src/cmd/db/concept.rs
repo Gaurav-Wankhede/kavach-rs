@@ -13,8 +13,12 @@ pub(super) fn add(
     tags: Option<&str>,
     sources: Option<&str>,
 ) -> i32 {
-    let tags_vec: Vec<String> = tags.map(|t| t.split(',').map(str::trim).map(str::to_owned).collect()).unwrap_or_default();
-    let sources_vec: Vec<String> = sources.map(|s| s.split(',').map(str::trim).map(str::to_owned).collect()).unwrap_or_default();
+    let tags_vec: Vec<String> = tags
+        .map(|t| t.split(',').map(str::trim).map(str::to_owned).collect())
+        .unwrap_or_default();
+    let sources_vec: Vec<String> = sources
+        .map(|s| s.split(',').map(str::trim).map(str::to_owned).collect())
+        .unwrap_or_default();
     let tags_vec_for_rpc = tags_vec.clone();
     let sources_vec_for_rpc = sources_vec.clone();
     match rpc_client::concept_add(name, display, desc, tags_vec_for_rpc, sources_vec_for_rpc) {
@@ -57,7 +61,9 @@ pub(super) fn add(
             }
         };
 
-        let properties = format!("{{\"desc\": \"{desc}\", \"tags\": {tags_vec:?}, \"sources\": {sources_vec:?}}}");
+        let properties = format!(
+            "{{\"desc\": \"{desc}\", \"tags\": {tags_vec:?}, \"sources\": {sources_vec:?}}}"
+        );
         let entity = kavach_db::turso::graph::GraphEntity::new(
             name,
             "concept",
@@ -84,7 +90,9 @@ pub(super) fn add(
 pub(super) fn link(from: &str, edge: &str, to: &str) -> i32 {
     match rpc_client::concept_link(from, edge, to) {
         Ok(_) => {
-            if let Err(io_err) = print_or_exit(&format!("ok — edge '{edge}' from '{from}' to '{to}'")) {
+            if let Err(io_err) =
+                print_or_exit(&format!("ok — edge '{edge}' from '{from}' to '{to}'"))
+            {
                 return into_exit_code(io_err);
             }
             return 0;
@@ -129,7 +137,8 @@ pub(super) fn link(from: &str, edge: &str, to: &str) -> i32 {
             }
             return 1;
         }
-        if let Err(io_err) = print_or_exit(&format!("ok — edge '{edge}' from '{from}' to '{to}'")) {
+        if let Err(io_err) = print_or_exit(&format!("ok — edge '{edge}' from '{from}' to '{to}'"))
+        {
             return into_exit_code(io_err);
         }
         0
@@ -184,7 +193,8 @@ pub(super) fn search(query: &str, limit: usize) -> i32 {
         }
         Ok(items) => {
             for item in items {
-                let desc = item.properties
+                let desc = item
+                    .properties
                     .as_ref()
                     .and_then(|v| v.get("desc"))
                     .and_then(|v| v.as_str())
@@ -267,7 +277,8 @@ pub(super) fn search(query: &str, limit: usize) -> i32 {
         }
 
         for entity in filtered {
-            let desc = entity.properties
+            let desc = entity
+                .properties
                 .as_ref()
                 .and_then(|p| {
                     serde_json::from_str::<serde_json::Value>(p)

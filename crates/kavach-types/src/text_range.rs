@@ -5,7 +5,9 @@
 use serde::{Deserialize, Serialize};
 
 /// 8-byte byte-offset span.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 #[non_exhaustive]
 #[repr(C)]
 pub struct TextRange {

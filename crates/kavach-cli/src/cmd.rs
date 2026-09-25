@@ -1,6 +1,6 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
-pub(crate) mod bulk;
 mod audit;
+pub(crate) mod bulk;
 mod commands;
 mod context;
 pub(crate) mod goal;
@@ -8,16 +8,16 @@ pub(crate) mod goal;
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
 pub(crate) mod db;
 pub(crate) mod deploy;
-mod hunt;
-mod origin;
 mod gates;
 pub(crate) mod harness_loop;
 mod heal;
+mod hunt;
 mod install;
 pub(crate) mod io_safe;
 mod lint;
 mod loophole;
 pub(crate) mod mistake;
+mod origin;
 mod oversized;
 mod phase;
 mod phase_registry;

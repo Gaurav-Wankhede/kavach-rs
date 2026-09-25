@@ -84,7 +84,9 @@ fn maybe_autoswitch(alias: &str) {
     let Ok(home) = std::env::var("HOME") else {
         return;
     };
-    let path = std::path::Path::new(&home).join(".claude").join("settings.json");
+    let path = std::path::Path::new(&home)
+        .join(".claude")
+        .join("settings.json");
     let Ok(data) = std::fs::read_to_string(&path) else {
         return;
     };
@@ -97,7 +99,10 @@ fn maybe_autoswitch(alias: &str) {
     if obj.get("model").and_then(serde_json::Value::as_str) == Some(alias) {
         return;
     }
-    obj.insert("model".to_owned(), serde_json::Value::String(alias.to_owned()));
+    obj.insert(
+        "model".to_owned(),
+        serde_json::Value::String(alias.to_owned()),
+    );
     if let Ok(out) = serde_json::to_string_pretty(&json) {
         drop(std::fs::write(&path, out));
     }

@@ -3,12 +3,12 @@
 //! `UnknownGate` only when no family claims it.
 mod core_gates;
 mod lifecycle_gates;
-mod util;
 #[cfg(test)]
 #[path = "gate_runner_test.rs"]
 mod tests;
-use kavach_types::HookInput;
+mod util;
 use crate::error::EngineError;
+use kavach_types::HookInput;
 /// Dispatch a gate by name. Called by the CLI with parsed `HookInput`.
 /// Each gate handler reads session state, runs checks, and writes
 /// JSON response to stdout via `kavach_hook` helpers.

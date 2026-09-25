@@ -4,8 +4,8 @@ mod defaults;
 #[path = "config_test.rs"]
 mod tests;
 mod types;
-pub use types::{AntiProdLevel, AntiProdResult, Config};
 use defaults::load_defaults;
+pub use types::{AntiProdLevel, AntiProdResult, Config};
 static CACHED_CONFIG: LazyLock<Mutex<Option<Config>>> = LazyLock::new(|| Mutex::new(None));
 pub fn load() -> std::sync::MutexGuard<'static, Option<Config>> {
     let mut guard = CACHED_CONFIG

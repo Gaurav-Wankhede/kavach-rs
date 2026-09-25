@@ -1,6 +1,6 @@
 //! Secret & Environment Redaction Layer (info-leak closed).
-use std::sync::OnceLock;
 use regex::Regex;
+use std::sync::OnceLock;
 
 #[cfg(test)]
 #[path = "secret_redactor_test.rs"]
@@ -80,7 +80,16 @@ fn is_safe_config_key(key: &str) -> bool {
     let upper = key.to_ascii_uppercase();
     let is_standard = matches!(
         upper.as_str(),
-        "PORT" | "HOST" | "NODE_ENV" | "STAGE" | "APP_ENV" | "DEBUG" | "LOG_LEVEL" | "RUST_LOG" | "ENVIRONMENT" | "TZ"
+        "PORT"
+            | "HOST"
+            | "NODE_ENV"
+            | "STAGE"
+            | "APP_ENV"
+            | "DEBUG"
+            | "LOG_LEVEL"
+            | "RUST_LOG"
+            | "ENVIRONMENT"
+            | "TZ"
     );
     let has_sensitive_word = upper.contains("SECRET")
         || upper.contains("KEY")
@@ -103,20 +112,26 @@ fn mask_env_value(val: &str) -> String {
         return String::new();
     }
 
-    let (quote, inner) = if (trimmed.starts_with('"') && trimmed.ends_with('"') && trimmed.len() >= 2)
-        || (trimmed.starts_with('\'') && trimmed.ends_with('\'') && trimmed.len() >= 2)
-    {
-        let q = trimmed.chars().next().unwrap_or('"');
-        let slice = trimmed.get(1..trimmed.len().saturating_sub(1)).unwrap_or("");
-        (Some(q), slice)
-    } else {
-        (None, trimmed)
-    };
+    let (quote, inner) =
+        if (trimmed.starts_with('"') && trimmed.ends_with('"') && trimmed.len() >= 2)
+            || (trimmed.starts_with('\'') && trimmed.ends_with('\'') && trimmed.len() >= 2)
+        {
+            let q = trimmed.chars().next().unwrap_or('"');
+            let slice = trimmed
+                .get(1..trimmed.len().saturating_sub(1))
+                .unwrap_or("");
+            (Some(q), slice)
+        } else {
+            (None, trimmed)
+        };
 
     let len = inner.len();
     let masked = inner.find("://").map_or_else(
         || {
-            if inner.starts_with("sk_live_") || inner.starts_with("sk_test_") || inner.starts_with("ghp_") {
+            if inner.starts_with("sk_live_")
+                || inner.starts_with("sk_test_")
+                || inner.starts_with("ghp_")
+            {
                 let prefix = inner.get(..8).unwrap_or("");
                 format!("[REDACTED: {prefix}... {len} chars]")
             } else {
@@ -145,7 +160,9 @@ pub fn redact_env_text(text: &str) -> (String, usize) {
             continue;
         }
 
-        let without_export = trimmed_start.strip_prefix("export ").unwrap_or(trimmed_start);
+        let without_export = trimmed_start
+            .strip_prefix("export ")
+            .unwrap_or(trimmed_start);
         if let Some(eq_idx) = without_export.find('=') {
             let key = without_export.get(..eq_idx).unwrap_or("").trim();
             let val = without_export.get(eq_idx.saturating_add(1)..).unwrap_or("");
@@ -155,8 +172,14 @@ pub fn redact_env_text(text: &str) -> (String, usize) {
             } else {
                 redacted_count = redacted_count.saturating_add(1);
                 let masked = mask_env_value(val);
-                let prefix = if trimmed_start.starts_with("export ") { "export " } else { "" };
-                let indent = line.get(..line.len().saturating_sub(trimmed_start.len())).unwrap_or("");
+                let prefix = if trimmed_start.starts_with("export ") {
+                    "export "
+                } else {
+                    ""
+                };
+                let indent = line
+                    .get(..line.len().saturating_sub(trimmed_start.len()))
+                    .unwrap_or("");
                 out.push(format!("{indent}{prefix}{key}={masked}"));
             }
         } else {

@@ -16,7 +16,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -62,7 +65,8 @@ fn add(
 /// Detect frontend security issues (console output, code execution, unsafe DOM).
 pub(super) fn detect_frontend_security(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,        idx_or_skip(r, 0),
+        res,
+        idx_or_skip(r, 0),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -82,7 +86,8 @@ pub(super) fn detect_frontend_security(res: &mut Vec<AntiProdResult>, r: &[Regex
         }
     }
     ck(
-        res,        idx_or_skip(r, 13),
+        res,
+        idx_or_skip(r, 13),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -90,7 +95,8 @@ pub(super) fn detect_frontend_security(res: &mut Vec<AntiProdResult>, r: &[Regex
         "Code injection.",
     );
     ck(
-        res,        idx_or_skip(r, 14),
+        res,
+        idx_or_skip(r, 14),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -98,7 +104,8 @@ pub(super) fn detect_frontend_security(res: &mut Vec<AntiProdResult>, r: &[Regex
         "eval equiv.",
     );
     ck(
-        res,        idx_or_skip(r, 15),
+        res,
+        idx_or_skip(r, 15),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -106,7 +113,8 @@ pub(super) fn detect_frontend_security(res: &mut Vec<AntiProdResult>, r: &[Regex
         "XSS risk.",
     );
     ck(
-        res,        idx_or_skip(r, 11),
+        res,
+        idx_or_skip(r, 11),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -114,7 +122,8 @@ pub(super) fn detect_frontend_security(res: &mut Vec<AntiProdResult>, r: &[Regex
         "XSS risk.",
     );
     ck(
-        res,        idx_or_skip(r, 12),
+        res,
+        idx_or_skip(r, 12),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",

@@ -17,7 +17,10 @@ use crate::gates::stop_dispatch::verify::witness::{
 };
 
 /// Whether a requested status promotion is allowed, given the objective witnesses.
-#[expect(clippy::exhaustive_enums, reason = "variants constructed only in this crate")]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "variants constructed only in this crate"
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StatusGateVerdict {
     /// Not a promotion to `done`/`verified` (e.g. `todo`/`in_progress`) — no proof

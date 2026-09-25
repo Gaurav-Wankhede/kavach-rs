@@ -22,13 +22,19 @@ pub(crate) fn run(input: &HookInput) {
     if ty_lower == "agent_completed" {
         let completed_ctx = kavach_hook::context_block(
             "AGENT_COMPLETED",
-            &[("guidance", "run three-witness verify: artifact exists, diff landed, build passes")],
+            &[(
+                "guidance",
+                "run three-witness verify: artifact exists, diff landed, build passes",
+            )],
         );
         full_context.push_str(&completed_ctx);
     } else if ty_lower == "agent_needs_input" {
         let input_ctx = kavach_hook::context_block(
             "AGENT_NEEDS_INPUT",
-            &[("guidance", "prefer querying kavach DB or reading code over asking")],
+            &[(
+                "guidance",
+                "prefer querying kavach DB or reading code over asking",
+            )],
         );
         full_context.push_str(&input_ctx);
     }

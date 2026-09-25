@@ -5,9 +5,9 @@
 //! submodules.
 mod dag_scheduler;
 mod predicates;
-mod types;
 #[cfg(test)]
 #[path = "scheduler_test.rs"]
 mod tests;
+mod types;
 pub use dag_scheduler::DagScheduler;
 pub use types::{DispatchPlan, Spawner, SpawnerKind, TeamDispatchError};

@@ -131,4 +131,3 @@ fn format_query_entry_compact_content() {
     let res = format_query_entry(&view, Depth::All, Some("content"), true).unwrap();
     assert!(!res[0].contains("kindly"));
 }
-

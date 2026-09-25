@@ -26,7 +26,10 @@ pub(super) fn extract_field(
         "content" => {
             let raw = view.content.unwrap_or_default();
             if compact {
-                Ok(kavach_toon::compact::compress(raw, kavach_toon::compact::Level::Lite))
+                Ok(kavach_toon::compact::compress(
+                    raw,
+                    kavach_toon::compact::Level::Lite,
+                ))
             } else {
                 Ok(raw.to_owned())
             }
@@ -39,7 +42,10 @@ pub(super) fn extract_field(
         "exec_prompt" => {
             let prompt = view.exec_prompt.unwrap_or_default();
             if compact {
-                Ok(kavach_toon::compact::compress(prompt, kavach_toon::compact::Level::Lite))
+                Ok(kavach_toon::compact::compress(
+                    prompt,
+                    kavach_toon::compact::Level::Lite,
+                ))
             } else {
                 Ok(prompt.to_owned())
             }

@@ -1,7 +1,7 @@
 mod field;
 
-use field::{FieldEntryView, extract_field};
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
+use field::{FieldEntryView, extract_field};
 use kavach_db::turso::entries::EntryStore;
 
 /// A single-key get is a DEPTH request → full content by default; `--snippet`
@@ -26,12 +26,7 @@ pub(super) fn run(
 ) -> i32 {
     let fetch_content = want_full_content(full, snippet)
         || field.is_some_and(|f| f.eq_ignore_ascii_case("content"));
-    match super::rpc_client::get(
-        project_slug,
-        category,
-        key,
-        fetch_content,
-    ) {
+    match super::rpc_client::get(project_slug, category, key, fetch_content) {
         Ok(result) if result.found => {
             if let Some(entry) = result.entry {
                 if let Some(f) = field {
@@ -156,10 +151,7 @@ pub(super) fn run(
                         }
                     }
                 }
-                let head = format!(
-                    "[{}] {} — {}",
-                    cat_str, entry.entry_key, entry.title
-                );
+                let head = format!("[{}] {} — {}", cat_str, entry.entry_key, entry.title);
                 if let Err(io_err) = print_or_exit(&head) {
                     return into_exit_code(io_err);
                 }
@@ -191,7 +183,10 @@ pub(super) fn run(
                         return into_exit_code(io_err);
                     }
                     let final_content = if compact {
-                        kavach_toon::compact::compress(&entry.content, kavach_toon::compact::Level::Lite)
+                        kavach_toon::compact::compress(
+                            &entry.content,
+                            kavach_toon::compact::Level::Lite,
+                        )
                     } else {
                         entry.content
                     };

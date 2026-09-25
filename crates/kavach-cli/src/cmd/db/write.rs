@@ -236,7 +236,11 @@ fn resolve_speculative_deps(
     let mut kept = Vec::new();
     let mut dropped = Vec::new();
     for rel in rels {
-        if !rel.speculative || known_keys.iter().any(|k| bare_tail(k) == bare_tail(&rel.target)) {
+        if !rel.speculative
+            || known_keys
+                .iter()
+                .any(|k| bare_tail(k) == bare_tail(&rel.target))
+        {
             kept.push(rel);
         } else {
             dropped.push(rel.target);
@@ -519,8 +523,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                 }
             }
         }
-        let (relationships, dropped) =
-            resolve_speculative_deps(relationships, &known_keys);
+        let (relationships, dropped) = resolve_speculative_deps(relationships, &known_keys);
         for target in dropped {
             let notice = format!("dep-guess dropped (no such card): {target}");
             if let Err(io_err) = print_or_exit(&notice) {

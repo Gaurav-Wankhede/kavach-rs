@@ -72,13 +72,11 @@ pub(in crate::cmd::db) fn render_kanban(
     } else {
         open.into_iter().take(limit).collect()
     };
-    let (hunt, roadmap_items): (
-        Vec<&kavach_db::MemoryEntry>,
-        Vec<&kavach_db::MemoryEntry>,
-    ) = displayed
-        .iter()
-        .copied()
-        .partition(|e| is_hunt_key(&e.entry_key));
+    let (hunt, roadmap_items): (Vec<&kavach_db::MemoryEntry>, Vec<&kavach_db::MemoryEntry>) =
+        displayed
+            .iter()
+            .copied()
+            .partition(|e| is_hunt_key(&e.entry_key));
     render_json(&displayed, &roadmap_items, &hunt, total, limit)
 }
 

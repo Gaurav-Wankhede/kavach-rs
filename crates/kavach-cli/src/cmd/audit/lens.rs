@@ -1,6 +1,6 @@
 //! Audit lenses — one detector family per file, all returning unified Findings.
-mod selection;
 pub(crate) mod security;
+mod selection;
 pub(crate) mod silent_fail;
 pub(crate) mod worst_practice;
 pub(crate) mod yagni;

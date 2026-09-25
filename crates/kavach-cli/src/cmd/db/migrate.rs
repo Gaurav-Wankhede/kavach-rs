@@ -10,12 +10,7 @@ use kavach_db::turso::migrate::{
 };
 
 /// Run the requested migrate verb. Returns the process exit code.
-pub(crate) fn run(
-    verb: &str,
-    from: &str,
-    to: &str,
-    overwrite: bool,
-) -> i32 {
+pub(crate) fn run(verb: &str, from: &str, to: &str, overwrite: bool) -> i32 {
     let rt = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
         Err(e) => {
@@ -36,7 +31,11 @@ pub(crate) fn run(
 
 /// Export from live SurrealDB into NDJSON.
 async fn export_cmd(out_path: &str) -> i32 {
-    let dest = if out_path.is_empty() { "kavach_export.ndjson" } else { out_path };
+    let dest = if out_path.is_empty() {
+        "kavach_export.ndjson"
+    } else {
+        out_path
+    };
     println!("connecting to SurrealDB...");
     let db = match kavach_db::open_default_resilient().await {
         Ok(d) => d,
@@ -58,7 +57,11 @@ async fn export_cmd(out_path: &str) -> i32 {
         Ok(rep) => {
             println!(
                 "export complete: {} memories, {} entities, {} edges, {} projects, {} parts",
-                rep.memory_count, rep.entity_count, rep.edge_count, rep.project_count, rep.part_count
+                rep.memory_count,
+                rep.entity_count,
+                rep.edge_count,
+                rep.project_count,
+                rep.part_count
             );
             0
         }
@@ -123,7 +126,10 @@ async fn import_cmd(from: &str, to: &str, overwrite: bool) -> i32 {
     match validate_store(&store, &counts).await {
         Ok(v) => {
             if v.is_clean {
-                println!("validation passed: {} memories, {} entities, {} edges", v.memory_count, v.entity_count, v.edge_count);
+                println!(
+                    "validation passed: {} memories, {} entities, {} edges",
+                    v.memory_count, v.entity_count, v.edge_count
+                );
                 0
             } else {
                 eprintln!(
@@ -190,7 +196,10 @@ async fn verify_cmd(from: &str, to: &str) -> i32 {
     match validate_store(&store, &counts).await {
         Ok(v) => {
             if v.is_clean {
-                println!("verification OK: {} memories, {} entities, {} edges match source", v.memory_count, v.entity_count, v.edge_count);
+                println!(
+                    "verification OK: {} memories, {} entities, {} edges match source",
+                    v.memory_count, v.entity_count, v.edge_count
+                );
                 0
             } else {
                 eprintln!(
@@ -217,8 +226,12 @@ async fn verify_cmd(from: &str, to: &str) -> i32 {
 /// Open target TursoStore, using default location if path is empty.
 async fn open_store(to: &str) -> Result<TursoStore, String> {
     if to.is_empty() {
-        TursoStore::open_default().await.map_err(|e| format!("open default turso db: {e}"))
+        TursoStore::open_default()
+            .await
+            .map_err(|e| format!("open default turso db: {e}"))
     } else {
-        TursoStore::open(Path::new(to)).await.map_err(|e| format!("open turso db {to}: {e}"))
+        TursoStore::open(Path::new(to))
+            .await
+            .map_err(|e| format!("open turso db {to}: {e}"))
     }
 }

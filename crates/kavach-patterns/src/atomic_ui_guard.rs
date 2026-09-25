@@ -1,10 +1,10 @@
 //! Atomic UI Production Gate — enforces Brad Frost's Atomic Design hierarchy across frameworks.
 mod detectors;
-mod types;
-mod util;
 #[cfg(test)]
 #[path = "atomic_ui_guard_test.rs"]
 mod tests;
+mod types;
+mod util;
 pub use types::{AtomicSeverity, AtomicViolation};
 use util::{classify_path, is_ui_file};
 #[must_use]

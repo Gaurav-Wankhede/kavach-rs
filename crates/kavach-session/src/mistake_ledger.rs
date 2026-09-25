@@ -128,8 +128,7 @@ pub fn record(m: &Mistake<'_>) -> RecordOutcome {
     // line is retained ABOVE the graph because read_hit_count + fetch_mistake_row
     // parse `hit_count=`/`origin_project=` tokens from it — dropping it would dark
     // the recurrence counter (the same silent-fail class fixed earlier).
-    let dag =
-        kavach_db::mistake_row_mermaid(m.gate, m.banned_sample, m.correct_action, new_hits);
+    let dag = kavach_db::mistake_row_mermaid(m.gate, m.banned_sample, m.correct_action, new_hits);
     let content = format!(
         "anti-pattern row | gate={gate} turn={turn} hit_count={hits} last_seen_unix={ts} origin_project={origin}\n\
          ```mermaid\n{dag}```\n",

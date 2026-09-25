@@ -100,7 +100,13 @@ fn lift_flat_tool_fields(obj: &mut serde_json::Map<String, serde_json::Value>) {
         .cloned()
         .unwrap_or_default();
 
-    for key in ["file_path", "content", "command", "old_string", "new_string"] {
+    for key in [
+        "file_path",
+        "content",
+        "command",
+        "old_string",
+        "new_string",
+    ] {
         if tool_input.contains_key(key) {
             continue;
         }
@@ -123,7 +129,10 @@ fn lift_flat_tool_fields(obj: &mut serde_json::Map<String, serde_json::Value>) {
     }
 
     if !tool_input.is_empty() {
-        obj.insert("tool_input".to_owned(), serde_json::Value::Object(tool_input));
+        obj.insert(
+            "tool_input".to_owned(),
+            serde_json::Value::Object(tool_input),
+        );
     }
 }
 

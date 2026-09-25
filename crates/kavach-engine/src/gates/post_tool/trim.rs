@@ -17,7 +17,11 @@ pub(super) fn check_trim(input: &HookInput) -> Option<String> {
     }
 
     let file_path = input.get_string("file_path");
-    let file_hint = if file_path.is_empty() { None } else { Some(file_path) };
+    let file_hint = if file_path.is_empty() {
+        None
+    } else {
+        Some(file_path)
+    };
     let sanitized = crate::gates::secret_redactor::sanitize_output(response_text, file_hint);
     let secrets_redacted = sanitized != response_text;
 

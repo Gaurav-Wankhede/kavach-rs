@@ -1,6 +1,6 @@
-use std::fmt::Write as _;
-use clap::CommandFactory;
 use crate::cli::Cli;
+use clap::CommandFactory;
+use std::fmt::Write as _;
 /// Full Markdown reference: every command, its flags/defaults, and examples.
 #[must_use]
 pub(crate) fn render() -> String {

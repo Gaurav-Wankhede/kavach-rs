@@ -38,7 +38,10 @@ fn dry_run_writes_nothing() {
     let dir = std::env::temp_dir().join(format!("kvinst-dry-{}", std::process::id()));
     let p = dir.join("cfg.json");
     fs::remove_dir_all(&dir).ok();
-    assert!(matches!(install(&p, "X", true).unwrap(), Outcome::DryRun(_)));
+    assert!(matches!(
+        install(&p, "X", true).unwrap(),
+        Outcome::DryRun(_)
+    ));
     assert!(!p.exists(), "dry-run must not create the file");
     fs::remove_dir_all(&dir).ok();
 }
@@ -63,7 +66,11 @@ fn directives_present_backs_up_and_skips() {
     fs::write(&p, "USER WRITTEN").unwrap();
     let msg = install_directives_if_absent(&p, "NEW BODY", false).unwrap();
     assert!(msg.contains("kept"), "{msg}");
-    assert_eq!(fs::read_to_string(&p).unwrap(), "USER WRITTEN", "never clobbered");
+    assert_eq!(
+        fs::read_to_string(&p).unwrap(),
+        "USER WRITTEN",
+        "never clobbered"
+    );
     let bak = fs::read_to_string(dir.join("CLAUDE.md.kavach.bak")).unwrap();
     assert_eq!(bak, "USER WRITTEN");
     fs::remove_dir_all(&dir).ok();

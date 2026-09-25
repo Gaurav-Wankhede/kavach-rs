@@ -25,8 +25,8 @@ mod flags;
 mod frontend;
 mod gateway;
 mod patterns;
-mod types;
-mod webhook;
 #[cfg(test)]
 #[path = "api_management_guard_test.rs"]
 mod tests;
+mod types;
+mod webhook;

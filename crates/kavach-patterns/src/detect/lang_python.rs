@@ -15,7 +15,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -45,7 +48,8 @@ fn ck(
 /// Detect Python language-specific issues.
 pub(super) fn detect_python_lang(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,        idx_or_skip(r, 33),
+        res,
+        idx_or_skip(r, 33),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -53,7 +57,8 @@ pub(super) fn detect_python_lang(res: &mut Vec<AntiProdResult>, r: &[Regex], con
         "Use logging.",
     );
     ck(
-        res,        idx_or_skip(r, 37),
+        res,
+        idx_or_skip(r, 37),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",

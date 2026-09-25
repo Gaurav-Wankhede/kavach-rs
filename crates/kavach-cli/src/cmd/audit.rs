@@ -2,10 +2,10 @@
 //! (lint-audit · doctor · hunt · loophole) behind ONE walker, ONE Finding type,
 //! and ONE command. No metered LLM. SOURCE: decision.audit.unify-four-into-one.
 mod finding;
+pub(crate) mod lens;
 mod report;
 mod scan;
 mod walk;
-pub(crate) mod lens;
 
 use std::path::Path;
 

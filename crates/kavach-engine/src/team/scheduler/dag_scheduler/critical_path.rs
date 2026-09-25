@@ -4,8 +4,8 @@
 //! transitively wait on it. Dispatching the longest-chain node first minimises
 //! the makespan: the bottleneck task starts as early as possible, so its tail
 //! of dependents is not the thing that ends up gating the whole project.
-use std::collections::HashMap;
 use kavach_db::graph::roadmap_dag::RoadmapDag;
+use std::collections::HashMap;
 /// Map each node id to its critical-path length (count of nodes on the longest
 /// dependency chain rooted at it, inclusive — a leaf is 1).
 ///

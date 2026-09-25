@@ -1,6 +1,6 @@
-use std::fmt::Write as _;
-use clap::CommandFactory;
 use crate::cli::Cli;
+use clap::CommandFactory;
+use std::fmt::Write as _;
 /// Print every command path (command → subcommand → leaf) with its summary.
 #[must_use]
 pub(crate) fn render() -> String {

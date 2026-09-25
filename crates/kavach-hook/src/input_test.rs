@@ -1,5 +1,5 @@
-use std::io::Cursor;
 use crate::*;
+use std::io::Cursor;
 
 #[test]
 fn test_read_hook_input_from_bytes() {

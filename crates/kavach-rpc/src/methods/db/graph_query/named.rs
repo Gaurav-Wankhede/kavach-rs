@@ -61,7 +61,8 @@ pub(super) async fn graph_query_named(
                 line,
                 "  ──{}──► [{}] {}",
                 r.rel_type, r.target.entity_type, r.target.name
-            ).ok();
+            )
+            .ok();
             lines.push(line);
         }
     }

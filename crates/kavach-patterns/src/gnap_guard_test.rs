@@ -109,11 +109,7 @@ fn check_returns_block_message() {
     let code = r"Authorization: Bearer token123";
     let result = check("src/api.rs", code);
     assert!(result.is_some());
-    assert!(
-        result
-            .as_ref()
-            .is_some_and(|m| m.contains("[GNAP_SAFETY]"))
-    );
+    assert!(result.as_ref().is_some_and(|m| m.contains("[GNAP_SAFETY]")));
 }
 
 #[test]

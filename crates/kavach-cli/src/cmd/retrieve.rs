@@ -1,6 +1,6 @@
 //! Retrieve cached CCR blob by hash or prefix.
-use std::io::{self, Write};
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
+use std::io::{self, Write};
 
 /// Run the `kavach retrieve <hash>` command.
 pub(crate) fn run(hash: &str) -> i32 {

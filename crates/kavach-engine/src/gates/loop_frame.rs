@@ -1,8 +1,8 @@
 //! `[LOOP]` and `[REWARD]` frame formatters + compact turn shadow builder.
 //! SOURCE: docs/loop-engineering-injection-strategy.md Part IV.
-use std::fmt::Write as _;
 use kavach_chain::IntentAnalysis;
 use kavach_session::SessionState;
+use std::fmt::Write as _;
 /// Byte cap for the per-turn shadow relayed on Cursor preToolUse.
 pub(crate) const TURN_SHADOW_CAP: usize = 800;
 /// Byte cap for session-start `[REWARD:stats]`.

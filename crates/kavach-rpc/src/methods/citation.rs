@@ -90,9 +90,7 @@ pub struct LinkParams {
 /// Turso layer keys edges by the full string id, not a parsed record.
 fn parse_record(s: &str) -> Result<String, ErrorObjectOwned> {
     match s.split_once(':') {
-        Some((table, key)) if !table.is_empty() && !key.is_empty() => {
-            Ok(format!("{table}:{key}"))
-        }
+        Some((table, key)) if !table.is_empty() && !key.is_empty() => Ok(format!("{table}:{key}")),
         Some(_) | None => Err(ErrorObjectOwned::owned(
             -32602,
             "expected 'table:key' record id",

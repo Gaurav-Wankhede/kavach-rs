@@ -230,9 +230,6 @@ mod decision_mermaid_tests {
         assert_eq!(retired.len(), 1, "exactly one retired pair: {retired:?}");
         let first = retired.first().expect("retired pattern exists");
         assert_eq!(first.0, "old pattern: web-sys gap", "retired title");
-        assert_eq!(
-            first.1, "new pattern: router hook",
-            "replacement title"
-        );
+        assert_eq!(first.1, "new pattern: router hook", "replacement title");
     }
 }

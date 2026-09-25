@@ -37,8 +37,8 @@ pub(crate) fn check_rewrite(command: &str) -> Option<String> {
     let mut reconstructed = String::with_capacity(trimmed.len().saturating_add(16));
 
     for (segment, sep) in segments {
-        if let Some(rewritten) = rewrite_single_rtk(segment, has_rtk)
-            .or_else(|| rewrite_single_toolbelt(segment))
+        if let Some(rewritten) =
+            rewrite_single_rtk(segment, has_rtk).or_else(|| rewrite_single_toolbelt(segment))
         {
             changed = true;
             reconstructed.push_str(&rewritten);
@@ -70,7 +70,9 @@ fn rewrite_single_rtk(cmd: &str, has_rtk: bool) -> Option<String> {
     if trimmed.is_empty() || trimmed.starts_with("rtk ") || trimmed == "rtk" {
         return None;
     }
-    let leading_ws = cmd.get(..cmd.len().saturating_sub(trimmed.len())).unwrap_or("");
+    let leading_ws = cmd
+        .get(..cmd.len().saturating_sub(trimmed.len()))
+        .unwrap_or("");
 
     // Map raw environment inspections to rtk env to avoid secret dumps.
     if trimmed == "env" || trimmed == "printenv" {

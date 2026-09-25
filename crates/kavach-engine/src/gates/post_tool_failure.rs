@@ -9,11 +9,11 @@ mod rpc;
 #[cfg(test)]
 #[path = "post_tool_failure_test.rs"]
 mod tests;
-use std::fmt::Write as _;
-use kavach_types::HookInput;
-use classify::{action_for_type, classify_failure, is_repeat_failure};
-use rpc::{find_autonomous_via_rpc, tier2_context, upsert_via_rpc};
 use crate::error::EngineError;
+use classify::{action_for_type, classify_failure, is_repeat_failure};
+use kavach_types::HookInput;
+use rpc::{find_autonomous_via_rpc, tier2_context, upsert_via_rpc};
+use std::fmt::Write as _;
 #[expect(
     clippy::unnecessary_wraps,
     reason = "uniform gate dispatch via gate_runner.rs"

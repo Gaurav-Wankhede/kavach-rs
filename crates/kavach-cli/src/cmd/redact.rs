@@ -1,7 +1,7 @@
 //! Redact environment files key-preserving or mask secrets from file/stdin.
+use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 use std::fs;
 use std::io::{self, Read, Write};
-use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
 
 /// Run the `kavach redact [FILE]` command.
 pub(crate) fn run(file_opt: Option<&str>) -> i32 {

@@ -72,7 +72,11 @@ pub(crate) fn format_query_entry(
                     raw.to_owned()
                 }
             }
-            unknown => return Err(format!("unknown field '{unknown}'. Supported: key, title, status, category, access, content")),
+            unknown => {
+                return Err(format!(
+                    "unknown field '{unknown}'. Supported: key, title, status, category, access, content"
+                ));
+            }
         };
         return Ok(vec![val]);
     }
@@ -105,8 +109,8 @@ pub(super) fn run(
     field: Option<&str>,
     compact: bool,
 ) -> i32 {
-    use kavach_db::turso::entries::EntryStore;
     use super::kanban::is_done_title;
+    use kavach_db::turso::entries::EntryStore;
     let depth = resolve_depth(
         depth_flag,
         std::env::var("KAVACH_NO_TRUNCATE").as_deref() == Ok("1"),
@@ -199,8 +203,7 @@ pub(super) fn run(
             entries
                 .into_iter()
                 .filter(|e| {
-                    e.category.as_deref().unwrap_or("") != "roadmap"
-                        || !is_done_title(&e.title)
+                    e.category.as_deref().unwrap_or("") != "roadmap" || !is_done_title(&e.title)
                 })
                 .collect()
         };

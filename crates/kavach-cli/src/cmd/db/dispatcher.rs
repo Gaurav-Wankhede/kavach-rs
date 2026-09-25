@@ -147,7 +147,9 @@ pub(crate) fn run(action: DbAction) -> i32 {
             url,
         } => citation::add(&project, &entry_key, &name, &slug, &url),
         DbAction::CitationList { project } => citation::list(&project),
-        DbAction::GateConfigGet { project, gate_key } => super::gate_config::get(&project, &gate_key),
+        DbAction::GateConfigGet { project, gate_key } => {
+            super::gate_config::get(&project, &gate_key)
+        }
         DbAction::GateConfigSet {
             project,
             gate_key,

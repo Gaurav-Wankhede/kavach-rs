@@ -31,7 +31,10 @@ impl Kind {
     }
 
     pub(super) const fn is_centralized(self) -> bool {
-        matches!(self, Self::EnvVar | Self::ConfigField | Self::Const | Self::Default)
+        matches!(
+            self,
+            Self::EnvVar | Self::ConfigField | Self::Const | Self::Default
+        )
     }
 }
 

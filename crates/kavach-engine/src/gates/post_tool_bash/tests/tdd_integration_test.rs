@@ -31,7 +31,9 @@ fn write_test_file_then_nextest_fail_records_red_integration() {
 
     // Step 1: Simulate what PostWrite:session hook does — populate files_modified_this_turn
     let test_file_path = "crates/kavach-cli/src/cmd/audit/lens/selection_test.rs";
-    session.files_modified_this_turn.push(test_file_path.to_owned());
+    session
+        .files_modified_this_turn
+        .push(test_file_path.to_owned());
 
     // Step 2: Run nextest, which fails (compile error)
     let compile_fail_output = "error[E0432]: cannot find module `selection` in this crate\n\

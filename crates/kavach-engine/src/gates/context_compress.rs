@@ -13,41 +13,64 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
         return context.to_owned();
     }
     let sections = parse_sections(context);
-    let scored: Vec<(Section, u8)> = sections.into_iter().map(|s| (s.clone(), score_section(&s))).collect();
+    let scored: Vec<(Section, u8)> = sections
+        .into_iter()
+        .map(|s| (s.clone(), score_section(&s)))
+        .collect();
     let mut output = String::with_capacity(max_chars);
     let mut used = 0usize;
     for (section, score) in &scored {
         if *score >= 90 {
             let needed = section.content.len();
-            if used.saturating_add(needed) > max_chars { break; }
+            if used.saturating_add(needed) > max_chars {
+                break;
+            }
             output.push_str(&section.header);
             output.push_str(&section.content);
-            used = used.saturating_add(needed).saturating_add(section.header.len());
+            used = used
+                .saturating_add(needed)
+                .saturating_add(section.header.len());
         }
     }
     for (section, score) in &scored {
         if *score >= 70 && *score < 90 {
             let remaining = max_chars.saturating_sub(used);
-            if remaining == 0 { break; }
+            if remaining == 0 {
+                break;
+            }
             let truncated = truncate_to_budget(&section.content, remaining);
             output.push_str(&section.header);
             output.push_str(&truncated);
-            used = used.saturating_add(truncated.len()).saturating_add(section.header.len());
+            used = used
+                .saturating_add(truncated.len())
+                .saturating_add(section.header.len());
         }
     }
     for (section, score) in &scored {
         if *score >= 40 && *score < 70 {
             let remaining = max_chars.saturating_sub(used);
-            if remaining < 200 { break; }
+            if remaining < 200 {
+                break;
+            }
             let truncated = truncate_to_budget(&section.content, remaining);
             output.push_str(&section.header);
             output.push_str(&truncated);
-            used = used.saturating_add(truncated.len()).saturating_add(section.header.len());
+            used = used
+                .saturating_add(truncated.len())
+                .saturating_add(section.header.len());
         }
     }
     if used < context.len() {
-        let saved = context.len().saturating_sub(used).saturating_div(CHARS_PER_TOKEN);
-        if let Err(e) = writeln!(output, "\n[COMPRESSED] {}B -> {}B ({saved} tokens saved)", context.len(), used) {
+        let saved = context
+            .len()
+            .saturating_sub(used)
+            .saturating_div(CHARS_PER_TOKEN);
+        if let Err(e) = writeln!(
+            output,
+            "\n[COMPRESSED] {}B -> {}B ({saved} tokens saved)",
+            context.len(),
+            used
+        ) {
             eprintln!("compress: write failed: {e}");
         }
     }
@@ -55,7 +78,10 @@ pub(crate) fn compress(context: &str, max_tokens: Option<usize>) -> String {
 }
 
 #[derive(Clone)]
-struct Section { header: String, content: String }
+struct Section {
+    header: String,
+    content: String,
+}
 
 fn parse_sections(context: &str) -> Vec<Section> {
     let mut sections = Vec::new();
@@ -64,7 +90,10 @@ fn parse_sections(context: &str) -> Vec<Section> {
     for line in context.lines() {
         if line.starts_with('[') && line.contains(']') {
             if !current_header.is_empty() {
-                sections.push(Section { header: current_header.clone(), content: current_content.clone() });
+                sections.push(Section {
+                    header: current_header.clone(),
+                    content: current_content.clone(),
+                });
             }
             current_header = format!("{line}\n");
             current_content.clear();
@@ -74,29 +103,70 @@ fn parse_sections(context: &str) -> Vec<Section> {
         }
     }
     if !current_header.is_empty() {
-        sections.push(Section { header: current_header, content: current_content });
+        sections.push(Section {
+            header: current_header,
+            content: current_content,
+        });
     } else if !current_content.is_empty() {
-        sections.push(Section { header: String::new(), content: current_content });
+        sections.push(Section {
+            header: String::new(),
+            content: current_content,
+        });
     }
     sections
 }
 
 fn score_section(section: &Section) -> u8 {
     let h = section.header.to_ascii_lowercase();
-    if h.contains("[autonomy_contract]") || h.contains("[memory_guard]") || h.contains("[reconcile]") || h.contains("[case_facts") { return 100; }
-    if h.contains("[kanban]") || h.contains("[intent]") || h.contains("[session_start]") || h.contains("[pre_compact]") || h.contains("[post_compact]") || h.contains("[temporal_awareness]") || h.contains("[memory_db]") { return 80; }
-    if h.contains("[practice_delta]") || h.contains("[decision_map]") || h.contains("[pattern_dag]") || h.contains("[carry_forward]") || h.contains("[research:") { return 60; }
-    if h.contains("[hot_patterns]") || h.contains("[mistake_ledger]") || h.contains("[learned_policy]") || h.contains("[flow]") || h.contains("[stack_fit]") || h.contains("[lld]") || h.contains("[zero_grep_tools]") { return 30; }
+    if h.contains("[autonomy_contract]")
+        || h.contains("[memory_guard]")
+        || h.contains("[reconcile]")
+        || h.contains("[case_facts")
+    {
+        return 100;
+    }
+    if h.contains("[kanban]")
+        || h.contains("[intent]")
+        || h.contains("[session_start]")
+        || h.contains("[pre_compact]")
+        || h.contains("[post_compact]")
+        || h.contains("[temporal_awareness]")
+        || h.contains("[memory_db]")
+    {
+        return 80;
+    }
+    if h.contains("[practice_delta]")
+        || h.contains("[decision_map]")
+        || h.contains("[pattern_dag]")
+        || h.contains("[carry_forward]")
+        || h.contains("[research:")
+    {
+        return 60;
+    }
+    if h.contains("[hot_patterns]")
+        || h.contains("[mistake_ledger]")
+        || h.contains("[learned_policy]")
+        || h.contains("[flow]")
+        || h.contains("[stack_fit]")
+        || h.contains("[lld]")
+        || h.contains("[zero_grep_tools]")
+    {
+        return 30;
+    }
     50
 }
 
 fn truncate_to_budget(content: &str, max_bytes: usize) -> String {
-    if content.len() <= max_bytes { return content.to_owned(); }
+    if content.len() <= max_bytes {
+        return content.to_owned();
+    }
     let mut out = String::with_capacity(max_bytes);
     let mut used = 0usize;
     for ch in content.chars() {
         let next = used.saturating_add(ch.len_utf8());
-        if next > max_bytes.saturating_sub(20) { break; }
+        if next > max_bytes.saturating_sub(20) {
+            break;
+        }
         out.push(ch);
         used = next;
     }
@@ -109,11 +179,19 @@ pub(crate) fn deduplicate_lines(context: &str) -> String {
     let mut output = String::with_capacity(context.len());
     for line in context.lines() {
         let trimmed = line.trim();
-        if trimmed.is_empty() { output.push('\n'); continue; }
-        if trimmed.starts_with('[') || trimmed.starts_with("---") {
-            output.push_str(line); output.push('\n'); continue;
+        if trimmed.is_empty() {
+            output.push('\n');
+            continue;
         }
-        if seen.insert(trimmed.to_owned()) { output.push_str(line); output.push('\n'); }
+        if trimmed.starts_with('[') || trimmed.starts_with("---") {
+            output.push_str(line);
+            output.push('\n');
+            continue;
+        }
+        if seen.insert(trimmed.to_owned()) {
+            output.push_str(line);
+            output.push('\n');
+        }
     }
     output
 }
@@ -124,19 +202,35 @@ pub(crate) fn compress_hook_context(context: &str) -> String {
 }
 
 // SOURCE: kavach decision.context-rot-surrealdb-pipeline
-const DB_NOISE_KEYS: &[&str] = &["id", "created_at", "updated_at", "_id", "_key", "_meta", "timestamp", "session_id", "project_id", "owner", "permissions"];
+const DB_NOISE_KEYS: &[&str] = &[
+    "id",
+    "created_at",
+    "updated_at",
+    "_id",
+    "_key",
+    "_meta",
+    "timestamp",
+    "session_id",
+    "project_id",
+    "owner",
+    "permissions",
+];
 
 pub(crate) fn compress_db_json(value: &serde_json::Value) -> serde_json::Value {
     match value {
         serde_json::Value::Object(map) => {
             let mut out = serde_json::Map::new();
             for (k, v) in map {
-                if DB_NOISE_KEYS.contains(&k.as_str()) { continue; }
+                if DB_NOISE_KEYS.contains(&k.as_str()) {
+                    continue;
+                }
                 out.insert(k.clone(), compress_db_json(v));
             }
             serde_json::Value::Object(out)
         }
-        serde_json::Value::Array(arr) => serde_json::Value::Array(arr.iter().map(compress_db_json).collect()),
+        serde_json::Value::Array(arr) => {
+            serde_json::Value::Array(arr.iter().map(compress_db_json).collect())
+        }
         _ => value.clone(),
     }
 }
@@ -150,7 +244,10 @@ pub(crate) fn compress_db_json_string(json_str: &str) -> String {
     serde_json::to_string(&compressed).unwrap_or_else(|_| json_str.to_owned())
 }
 
-pub(crate) fn compress_db_rows(rows: &[serde_json::Value], max_rows: usize) -> Vec<serde_json::Value> {
+pub(crate) fn compress_db_rows(
+    rows: &[serde_json::Value],
+    max_rows: usize,
+) -> Vec<serde_json::Value> {
     let capped = rows.get(..max_rows).unwrap_or(rows);
     capped.iter().map(compress_db_json).collect()
 }

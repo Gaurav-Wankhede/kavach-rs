@@ -23,10 +23,9 @@ pub async fn kanban(
     params: KanbanParams,
 ) -> Result<KanbanResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
-    let entries: Vec<MemoryEntry> =
-        kavach_db::read::list_by_project(&ctx.db, ROADMAP_TABLE, &pid)
-            .await
-            .map_err(|e| internal(e.to_string()))?;
+    let entries: Vec<MemoryEntry> = kavach_db::read::list_by_project(&ctx.db, ROADMAP_TABLE, &pid)
+        .await
+        .map_err(|e| internal(e.to_string()))?;
 
     let mut counts = KanbanCounts::default();
     let mut items: Vec<KanbanItem> = Vec::with_capacity(params.limit.min(entries.len()));

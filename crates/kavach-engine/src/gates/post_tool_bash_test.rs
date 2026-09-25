@@ -7,9 +7,9 @@ mod classify;
 mod scope;
 #[path = "post_tool_bash/tests/tdd_compile_fail_test.rs"]
 mod tdd_compile_fail_test;
-#[path = "post_tool_bash/tests/tdd_nested_path_test.rs"]
-mod tdd_nested_path_test;
 #[path = "post_tool_bash/tests/tdd_integration_test.rs"]
 mod tdd_integration_test;
+#[path = "post_tool_bash/tests/tdd_nested_path_test.rs"]
+mod tdd_nested_path_test;
 #[path = "post_tool_bash/tests/tests_track_test.rs"]
 mod tests_track_test;

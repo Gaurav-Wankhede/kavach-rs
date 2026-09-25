@@ -171,8 +171,7 @@ fn line_is_exempt(line: &str) -> bool {
     }
     let in_comment = |marker: &str| {
         segs.iter().any(|s| {
-            s.kind == super::lex::RsKind::Comment
-                && super::lex::text(line, s).contains(marker)
+            s.kind == super::lex::RsKind::Comment && super::lex::text(line, s).contains(marker)
         })
     };
     if in_comment("// SAFETY:") || in_comment("// ALLOW-SILENT-IO:") {

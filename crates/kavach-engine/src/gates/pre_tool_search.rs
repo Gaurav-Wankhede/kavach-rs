@@ -2,11 +2,11 @@
 //! knowledge — block/advise when a query names an older year (`year`) or an
 //! older major version than installed (`version`, reading manifests via `deps`).
 mod deps;
-mod version;
-mod year;
 #[cfg(test)]
 #[path = "pre_tool_search_test.rs"]
 mod tests;
+mod version;
+mod year;
 use kavach_types::HookInput;
 use version::check_stale_version_in_query;
 use year::check_stale_year_in_query;

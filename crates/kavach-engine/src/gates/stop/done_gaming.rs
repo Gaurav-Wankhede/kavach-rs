@@ -16,10 +16,10 @@
 //! fail-OPEN (never wedge on an unobservable board). NEG-arm: narration that
 //! ACCOMPANIES real proof (`git diff --stat` / `cargo check` / an `rg` `file:line`
 //! / a `claim`/`status-update`) never fires.
-use core::ops::ControlFlow;
-use std::path::Path;
-use kavach_patterns::stop_vocab::DoneGamingVocab;
 use super::shared::StopCtx;
+use core::ops::ControlFlow;
+use kavach_patterns::stop_vocab::DoneGamingVocab;
+use std::path::Path;
 /// Proof tokens whose presence means real work accompanies the prose — NEG-arm.
 /// Any one present → the turn cited an artifact, so it is NOT pure gaming.
 const PROOF_TOKENS: &[&str] = &[

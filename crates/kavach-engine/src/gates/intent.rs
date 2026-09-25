@@ -9,27 +9,27 @@ mod model_route;
 mod pattern_dag;
 mod phase;
 mod practice_delta;
-mod recall;
-mod version_pin;
 #[cfg(test)]
 mod rag_tests;
+mod recall;
 #[cfg(test)]
 #[path = "intent_tests.rs"]
 mod tests;
+mod version_pin;
 use kavach_types::HookInput;
 // Re-export so `session_start` can inject the SAME live `[KANBAN]` block at
 // SessionStart that the UserPromptSubmit hook injects — both read the live board.
 pub(in crate::gates) use context::append_live_kanban_block;
 // SINGLE canonical emitter of the DECISION_MAP/PRACTICE_DELTA/PATTERN_DAG triad —
 // both this hook and SessionStart call it, so the triad can never drift out of one.
-pub(in crate::gates) use context::append_mermaid_views;
 use super::intent_context::extract_research_topic;
+use crate::error::EngineError;
 use classify::{
     apply_focus_marker, collapse_required_via_rag, filter_invocable_skills, prompt_injection_block,
 };
 use context::append_context_blocks;
+pub(in crate::gates) use context::append_mermaid_views;
 use kvs::build_base_context;
-use crate::error::EngineError;
 /// Intent gate entry point. Classifies the prompt, mutates session enforcement
 /// state, and emits the `[INTENT]` context block.
 #[expect(
@@ -99,7 +99,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // any dependency named in the prompt, so a query can never drift to stale weights.
     context.push_str(&version_pin::version_pin_block(prompt));
     if let Some(topic) = research_pending {
-        let pending = format!("\n[RESEARCH:PENDING] topic={topic}. Cite a source URL or [RESEARCH] block before editing.\n");
+        let pending = format!(
+            "\n[RESEARCH:PENDING] topic={topic}. Cite a source URL or [RESEARCH] block before editing.\n"
+        );
         context.push_str(&pending);
     }
     context.push_str(&harness_block);

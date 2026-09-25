@@ -1,3 +1,2 @@
 #[test]
-fn placeholder() {
-}
+fn placeholder() {}

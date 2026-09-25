@@ -1,6 +1,6 @@
-use std::fmt::Write as _;
-use kavach_types::HookInput;
 use crate::error::EngineError;
+use kavach_types::HookInput;
+use std::fmt::Write as _;
 /// True when the `agent_type` identifies a code-reviewer specialist.
 /// Matches namespaced `subagent_type` strings like `pr-review-toolkit:code-reviewer`
 /// (Claude Code plugin marketplace convention) as well as `code-reviewer`,

@@ -119,8 +119,9 @@ pub fn call<P: Serialize, R: for<'de> Deserialize<'de>>(
             .block_on(async { ip.module.raw_json_request(&request_str, 1).await })
     };
     let raw_result = if tokio::runtime::Handle::try_current().is_ok() {
-        std::thread::scope(|s| s.spawn(dispatch).join())
-            .map_err(|e| ClientError::NotReachable(format!("dispatch {method}: worker panicked: {e:?}")))?
+        std::thread::scope(|s| s.spawn(dispatch).join()).map_err(|e| {
+            ClientError::NotReachable(format!("dispatch {method}: worker panicked: {e:?}"))
+        })?
     } else {
         dispatch()
     };

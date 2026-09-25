@@ -4,7 +4,10 @@ use crate::cmd::audit::finding::{Lens, Severity};
 #[test]
 fn findings_are_silent_fail_block() {
     let f = scan("a.rs", "fn z() { let _ = client.send(req); }\n");
-    assert!(f.iter().all(|x| x.lens == Lens::SilentFail && x.severity == Severity::Block));
+    assert!(
+        f.iter()
+            .all(|x| x.lens == Lens::SilentFail && x.severity == Severity::Block)
+    );
 }
 
 #[test]

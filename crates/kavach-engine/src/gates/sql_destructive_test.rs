@@ -32,7 +32,5 @@ fn blocks_destructive_ops() {
 fn identifier_substrings_do_not_trigger() {
     assert!(destructive_sql_keyword("psql $DSN -c 'SELECT deleted_at FROM users'").is_none());
     assert!(destructive_sql_keyword("psql $DSN -c 'SELECT * FROM dropdown_options'").is_none());
-    assert!(
-        destructive_sql_keyword("psql $DSN -c 'SELECT truncate_log FROM settings'").is_none()
-    );
+    assert!(destructive_sql_keyword("psql $DSN -c 'SELECT truncate_log FROM settings'").is_none());
 }

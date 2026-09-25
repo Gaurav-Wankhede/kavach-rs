@@ -56,7 +56,9 @@ fn validate_edit_q(q: &EditQ) -> Result<(), &'static str> {
 /// `GET /entries/edit?project=&category=&key=` — the prefilled edit form.
 pub async fn edit(Query(q): Query<EditQ>) -> Html<String> {
     if let Err(msg) = validate_edit_q(&q) {
-        return Html(format!("<div class=\"panel panel-error\"><h2>Validation error</h2><pre>{msg}</pre></div>"));
+        return Html(format!(
+            "<div class=\"panel panel-error\"><h2>Validation error</h2><pre>{msg}</pre></div>"
+        ));
     }
     render(form(q).await)
 }
@@ -137,8 +139,7 @@ fn result_panel(r: Result<WriteResult, RpcError>, project: &str, category: &str)
                 Some(err) => err,
                 None => "write failed".to_string(),
             };
-            html! { div.panel.panel-error { (err_msg) } }
-                .into_string()
+            html! { div.panel.panel-error { (err_msg) } }.into_string()
         }
         Err(e) => error_panel(&e).into_string(),
     }

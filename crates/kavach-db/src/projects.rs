@@ -69,10 +69,7 @@ pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>>
 pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>> {
     let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects WHERE workdir = ? OR path = ? OR aliases LIKE '%' || ? || '%' LIMIT 1";
     let mut rows = db
-        .exec_params(
-            q,
-            [path.to_owned(), path.to_owned(), path.to_owned()],
-        )
+        .exec_params(q, [path.to_owned(), path.to_owned(), path.to_owned()])
         .await
         .map_err(Error::Turso)?;
     let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
@@ -86,11 +83,9 @@ pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>
 /// # Errors
 /// Propagates `Error::Turso` from the SELECT.
 pub async fn list_all(db: &TursoStore) -> Result<Vec<Project>> {
-    let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects ORDER BY slug";
-    let mut rows = db
-        .exec_params(q, ())
-        .await
-        .map_err(Error::Turso)?;
+    let q =
+        "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects ORDER BY slug";
+    let mut rows = db.exec_params(q, ()).await.map_err(Error::Turso)?;
     let mut projects = Vec::new();
     while let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? {
         projects.push(project_from_row(&row));
@@ -380,11 +375,7 @@ mod tests {
             .exec_params("SELECT path FROM projects WHERE slug = 'proj'", ())
             .await
             .expect("raw read");
-        let row = rows
-            .next()
-            .await
-            .expect("row iter")
-            .expect("row present");
+        let row = rows.next().await.expect("row iter").expect("row present");
         assert_eq!(
             row.get::<Option<String>>(0)
                 .expect("path decodes")

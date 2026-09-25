@@ -37,11 +37,11 @@ pub(super) fn recall_block(prompt: &str) -> String {
     let params = serde_json::json!({ "query": trimmed, "limit": RECALL_LIMIT });
     // Go through the RPC server (single-writer invariant): the gate never opens
     // the DB directly. A daemon blip is non-fatal — recall is best-effort.
-    let hits: Vec<kavach_db::BrainHit> =
-        match kavach_rpc::client::call("brain.think", Some(params)) {
-            Ok(h) => h,
-            Err(_) => return String::new(),
-        };
+    let hits: Vec<kavach_db::BrainHit> = match kavach_rpc::client::call("brain.think", Some(params))
+    {
+        Ok(h) => h,
+        Err(_) => return String::new(),
+    };
     if hits.is_empty() {
         return String::new();
     }

@@ -18,7 +18,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -82,7 +85,8 @@ pub(super) fn detect_general_patterns(
     }
     if is_non_config_file(fp) {
         ck(
-            res,            idx_or_skip(r, 2),
+            res,
+            idx_or_skip(r, 2),
             content,
             AntiProdLevel::P1ProdLeak,
             "PROD_LEAK",
@@ -91,7 +95,8 @@ pub(super) fn detect_general_patterns(
         );
     }
     ck(
-        res,        idx_or_skip(r, 51),
+        res,
+        idx_or_skip(r, 51),
         content,
         AntiProdLevel::P0MockData,
         "STUB_501",
@@ -99,7 +104,8 @@ pub(super) fn detect_general_patterns(
         "Implement handler NOW — no 501 stubs.",
     );
     ck(
-        res,        idx_or_skip(r, 42),
+        res,
+        idx_or_skip(r, 42),
         content,
         AntiProdLevel::P1ProdLeak,
         "PROD_LEAK",
@@ -108,7 +114,8 @@ pub(super) fn detect_general_patterns(
     );
     if is_dockerfile(fp) || is_shell_file(fp) {
         ck(
-            res,            idx_or_skip(r, 43),
+            res,
+            idx_or_skip(r, 43),
             content,
             AntiProdLevel::P1ProdLeak,
             "PROD_LEAK",

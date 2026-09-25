@@ -76,7 +76,10 @@ pub fn detect_shallow_verdict(msg: &str) -> Option<String> {
         return None;
     }
     // Explicit uncertainty qualifier is an honest hedge → not shallow.
-    if lower.contains("not verified") || lower.contains("unverified") || lower.contains("unconfirmed") {
+    if lower.contains("not verified")
+        || lower.contains("unverified")
+        || lower.contains("unconfirmed")
+    {
         return None;
     }
     Some(

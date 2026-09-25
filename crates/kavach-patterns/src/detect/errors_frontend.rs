@@ -15,7 +15,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -61,7 +64,8 @@ fn add(
 /// Detect frontend error handling issues (silent catches, missing error handlers).
 pub(super) fn detect_frontend_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,        idx_or_skip(r, 4),
+        res,
+        idx_or_skip(r, 4),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -69,14 +73,18 @@ pub(super) fn detect_frontend_errors(res: &mut Vec<AntiProdResult>, r: &[Regex],
         "Handle errors.",
     );
     ck(
-        res,        idx_or_skip(r, 5),
+        res,
+        idx_or_skip(r, 5),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
         "non-null (!.)",
         "Use ?..",
     );
-    if idx_or_skip(r, 6).is_match(content) && !content.contains(".catch") && !content.contains("try") {
+    if idx_or_skip(r, 6).is_match(content)
+        && !content.contains(".catch")
+        && !content.contains("try")
+    {
         add(
             res,
             AntiProdLevel::P2ErrorBlind,

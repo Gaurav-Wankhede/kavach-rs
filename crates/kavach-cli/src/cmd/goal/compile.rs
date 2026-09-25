@@ -18,10 +18,10 @@ mod generate_filter;
 mod loop_until_done;
 mod model_tier;
 mod pairwise_tournament;
-mod worker_critic;
 #[cfg(test)]
 #[path = "compile_test.rs"]
 mod tests;
+mod worker_critic;
 use super::loop_yaml::{GoalLoopYaml, Harness};
 use std::path::{Path, PathBuf};
 /// Render a goal as a Claude Code Workflow script, dispatching on its harness

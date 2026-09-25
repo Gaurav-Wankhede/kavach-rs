@@ -308,7 +308,9 @@ fn build_video_wrong_vs_right_patterns() -> Vec<Regex> {
         // 82 P1: Overusing Arc<Mutex<T>> when no lock or different lock is needed
         mk(r"Arc\s*<\s*Mutex\s*<|Arc::new\s*\(\s*Mutex::new"),
         // 83 P1: Primitive obsession: consecutive identical primitives in fn declaration
-        mk(r"fn\s+\w+\s*\([^)]*:\s*(?:u32|i32|u64|i64|usize)\s*,[^)]*:\s*(?:u32|i32|u64|i64|usize)\s*[,)]"),
+        mk(
+            r"fn\s+\w+\s*\([^)]*:\s*(?:u32|i32|u64|i64|usize)\s*,[^)]*:\s*(?:u32|i32|u64|i64|usize)\s*[,)]",
+        ),
         // 84 P1: String concatenation with +
         mk(r#"\w+\s*\+\s*&\w+|\w+\s*\+\s*""#),
         // 85 P1: Fighting the borrow checker: complex nested shared structures

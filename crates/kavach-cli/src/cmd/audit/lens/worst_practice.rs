@@ -6,13 +6,34 @@ use kavach_patterns::{owasp_guard, rust_196_guard, rust_guard, silent_io_guard};
 pub(crate) fn scan(file: &str, content: &str) -> Vec<Finding> {
     let mut out = Vec::new();
     for h in silent_io_guard::detect(file, content) {
-        out.push(mk("silent_io", file, h.line, Severity::Block, h.category, h.fix));
+        out.push(mk(
+            "silent_io",
+            file,
+            h.line,
+            Severity::Block,
+            h.category,
+            h.fix,
+        ));
     }
     for f in owasp_guard::detect(file, content) {
-        out.push(mk("owasp", file, f.line, Severity::Block, f.category, f.fix));
+        out.push(mk(
+            "owasp",
+            file,
+            f.line,
+            Severity::Block,
+            f.category,
+            f.fix,
+        ));
     }
     for v in rust_guard::detect(file, content) {
-        out.push(mk("rust", file, v.line, Severity::Advisory, &v.pattern, &v.fix));
+        out.push(mk(
+            "rust",
+            file,
+            v.line,
+            Severity::Advisory,
+            &v.pattern,
+            &v.fix,
+        ));
     }
     for v in rust_196_guard::detect(file, content) {
         use kavach_patterns::rust_196_guard::Rust196Severity as S;
@@ -26,7 +47,14 @@ pub(crate) fn scan(file: &str, content: &str) -> Vec<Finding> {
     out
 }
 
-fn mk(detector: &str, file: &str, line: usize, severity: Severity, hint: &str, fix: &str) -> Finding {
+fn mk(
+    detector: &str,
+    file: &str,
+    line: usize,
+    severity: Severity,
+    hint: &str,
+    fix: &str,
+) -> Finding {
     Finding {
         lens: Lens::WorstPractice,
         detector: detector.to_owned(),

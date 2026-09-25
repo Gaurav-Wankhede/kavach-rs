@@ -25,14 +25,22 @@ pub(super) fn rank(q: &RoleQuery, cands: Vec<Candidate>) -> Vec<Scored> {
         b.score
             .total_cmp(&a.score)
             .then_with(|| a.cand.kind.cmp(&b.cand.kind))
-            .then_with(|| (a.cand.file.clone(), a.cand.line).cmp(&(b.cand.file.clone(), b.cand.line)))
+            .then_with(|| {
+                (a.cand.file.clone(), a.cand.line).cmp(&(b.cand.file.clone(), b.cand.line))
+            })
     });
     out
 }
 
 // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#float_arithmetic
-#[expect(clippy::float_arithmetic, reason = "relevance scoring weights, not money or safety-critical")]
-#[expect(clippy::suboptimal_flops, reason = "readable weighted sum; mul_add would obscure the scoring formula")]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "relevance scoring weights, not money or safety-critical"
+)]
+#[expect(
+    clippy::suboptimal_flops,
+    reason = "readable weighted sum; mul_add would obscure the scoring formula"
+)]
 fn score_one(q: &RoleQuery, c: &Candidate) -> f32 {
     let val = signals::value::score(q.value_regex.as_deref(), c.value.as_deref());
     let cons = signals::consumption::score(&q.consumed_by, c);

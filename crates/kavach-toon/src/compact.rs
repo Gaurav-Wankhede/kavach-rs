@@ -32,7 +32,10 @@ pub fn compress(text: &str, level: Level) -> String {
     preserve::unmask(&dropped, &originals)
 }
 
-#[expect(clippy::missing_errors_doc, reason = "single-sentence summary above covers it")]
+#[expect(
+    clippy::missing_errors_doc,
+    reason = "single-sentence summary above covers it"
+)]
 pub fn assert_lossless(original: &str, compressed: &str) -> Result<(), CompactError> {
     verify::check_lossless(original, compressed)
 }

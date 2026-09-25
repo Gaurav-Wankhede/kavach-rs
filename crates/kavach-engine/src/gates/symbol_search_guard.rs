@@ -16,7 +16,9 @@ fn is_symbol_shaped(p: &str) -> bool {
     let p = p.trim();
     !p.is_empty()
         && p.len() <= 64
-        && p.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && p.chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
         && p.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 

@@ -17,7 +17,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -80,7 +83,8 @@ pub(super) fn detect_rust_errors(
         );
     }
     ck(
-        res,        idx_or_skip(r, 26),
+        res,
+        idx_or_skip(r, 26),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -118,7 +122,8 @@ pub(super) fn detect_go_errors(
         );
     }
     ck(
-        res,        idx_or_skip(r, 30),
+        res,
+        idx_or_skip(r, 30),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -130,7 +135,8 @@ pub(super) fn detect_go_errors(
 /// Detect Python error handling issues.
 pub(super) fn detect_python_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,        idx_or_skip(r, 34),
+        res,
+        idx_or_skip(r, 34),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -138,7 +144,8 @@ pub(super) fn detect_python_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], c
         "Handle explicitly.",
     );
     ck(
-        res,        idx_or_skip(r, 35),
+        res,
+        idx_or_skip(r, 35),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -150,7 +157,8 @@ pub(super) fn detect_python_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], c
 /// Detect Java error handling issues.
 pub(super) fn detect_java_errors(res: &mut Vec<AntiProdResult>, r: &[Regex], content: &str) {
     ck(
-        res,        idx_or_skip(r, 39),
+        res,
+        idx_or_skip(r, 39),
         content,
         AntiProdLevel::P2ErrorBlind,
         "ERROR_BLIND",
@@ -168,7 +176,8 @@ pub(super) fn detect_docker_errors(
 ) {
     if crate::file_types::is_dockerfile(fp) {
         ck(
-            res,            idx_or_skip(r, 44),
+            res,
+            idx_or_skip(r, 44),
             content,
             AntiProdLevel::P2ErrorBlind,
             "ERROR_BLIND",

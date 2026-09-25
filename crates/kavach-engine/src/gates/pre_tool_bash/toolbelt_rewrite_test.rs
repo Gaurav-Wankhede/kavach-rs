@@ -7,10 +7,7 @@ fn test_grep_rewrites_to_rg() {
         rewrite_toolbelt("grep -rn foo src/").as_deref(),
         Some("rg -rn foo src/")
     );
-    assert_eq!(
-        rewrite_toolbelt("grep foo").as_deref(),
-        Some("rg foo")
-    );
+    assert_eq!(rewrite_toolbelt("grep foo").as_deref(), Some("rg foo"));
 }
 
 #[test]

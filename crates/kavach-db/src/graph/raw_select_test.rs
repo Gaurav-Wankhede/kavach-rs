@@ -82,12 +82,9 @@ async fn select_star_over_blob_columns_does_not_panic() {
     // BLOB probe table proves the untyped path renders them as markers, and a
     // star-select over `memories` (home of `embedding F32_BLOB`) runs clean.
     let db = open_memory().await.expect("mem db");
-    db.exec_params(
-        "CREATE TABLE blob_probe (name TEXT, data BLOB)",
-        (),
-    )
-    .await
-    .expect("probe table");
+    db.exec_params("CREATE TABLE blob_probe (name TEXT, data BLOB)", ())
+        .await
+        .expect("probe table");
     db.exec_params(
         "INSERT INTO blob_probe (name, data) VALUES ('v', randomblob(32))",
         (),
@@ -114,9 +111,12 @@ async fn select_star_over_blob_columns_does_not_panic() {
 async fn group_by_status_runs() {
     // K-2 second repro shape: aggregation over the store must not abort.
     let db = open_memory().await.expect("mem db");
-    let out = raw_select(&db, "SELECT status, count(*) AS n FROM memories GROUP BY status")
-        .await
-        .expect("group-by runs");
+    let out = raw_select(
+        &db,
+        "SELECT status, count(*) AS n FROM memories GROUP BY status",
+    )
+    .await
+    .expect("group-by runs");
     assert!(out.contains('[') || out.contains('{'), "json shape: {out}");
 }
 

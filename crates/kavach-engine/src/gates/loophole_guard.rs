@@ -95,13 +95,11 @@ pub(crate) fn changed_rust_files() -> Vec<(String, String)> {
         .map(str::trim)
         .filter(|p| is_scannable_rust(p))
         .take(MAX_FILES_SCANNED)
-        .filter_map(|p| {
-            match std::fs::read_to_string(p) {
-                Ok(c) => Some((p.to_owned(), c)),
-                Err(e) => {
-                    eprintln!("[loophole_guard] cannot read {p}: {e}");
-                    None
-                }
+        .filter_map(|p| match std::fs::read_to_string(p) {
+            Ok(c) => Some((p.to_owned(), c)),
+            Err(e) => {
+                eprintln!("[loophole_guard] cannot read {p}: {e}");
+                None
             }
         })
         .collect()

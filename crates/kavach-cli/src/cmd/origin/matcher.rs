@@ -11,13 +11,25 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
         (Kind::Const, re(&format!(r"\bconst\s+{n}\b"))),
         (Kind::Static, re(&format!(r"\bstatic\s+(?:mut\s+)?{n}\b"))),
         (Kind::Default, re(&format!(r"impl\s+Default\s+for\s+{n}\b"))),
-        (Kind::Type, re(&format!(r"\b(?:struct|enum|trait|type|union)\s+{n}\b"))),
+        (
+            Kind::Type,
+            re(&format!(r"\b(?:struct|enum|trait|type|union)\s+{n}\b")),
+        ),
         (Kind::Function, re(&format!(r"\bfn\s+{n}\s*[(<]"))),
         (Kind::Param, re(&format!(r"\bfn\s+\w+\s*\([^)]*\b{n}\s*:"))),
         (Kind::Variant, re(&format!(r"^\s*{n}\s*(?:,|\(|\{{|=|$)"))),
-        (Kind::Variant, re(&format!(r"\benum\s+\w+[^;]*[{{,]\s*{n}\s*(?:,|\(|\}}|=)"))),
-        (Kind::ConfigField, re(&format!(r"^\s*(?:pub\s+)?{n}\s*:\s*[A-Za-z]"))),
-        (Kind::LetBinding, re(&format!(r"\blet\s+(?:mut\s+)?{n}\s*[:=]"))),
+        (
+            Kind::Variant,
+            re(&format!(r"\benum\s+\w+[^;]*[{{,]\s*{n}\s*(?:,|\(|\}}|=)")),
+        ),
+        (
+            Kind::ConfigField,
+            re(&format!(r"^\s*(?:pub\s+)?{n}\s*:\s*[A-Za-z]")),
+        ),
+        (
+            Kind::LetBinding,
+            re(&format!(r"\blet\s+(?:mut\s+)?{n}\s*[:=]")),
+        ),
     ];
     let mut out = Vec::new();
     for (i, line) in content.lines().enumerate() {
@@ -37,7 +49,10 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
 fn re(pat: &str) -> Regex {
     // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#expect_used
     Regex::new(pat).unwrap_or_else(|_| {
-        #[expect(clippy::unwrap_used, reason = "literal '$.^' is a compile-time-constant valid regex")]
+        #[expect(
+            clippy::unwrap_used,
+            reason = "literal '$.^' is a compile-time-constant valid regex"
+        )]
         Regex::new("$.^").unwrap()
     })
 }

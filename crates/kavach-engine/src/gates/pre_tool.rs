@@ -2,8 +2,8 @@ use kavach_types::HookInput;
 
 use crate::error::EngineError;
 use crate::gates::{
-    loop_guard, pre_tool_agent, pre_tool_bash, pre_tool_edit_guard, pre_tool_question, pre_tool_read,
-    pre_tool_search, pre_tool_skill, pre_tool_task, rule_eval,
+    loop_guard, pre_tool_agent, pre_tool_bash, pre_tool_edit_guard, pre_tool_question,
+    pre_tool_read, pre_tool_search, pre_tool_skill, pre_tool_task, rule_eval,
 };
 
 fn perturn_nudge(session: &mut kavach_session::SessionState) -> Option<String> {
@@ -65,7 +65,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
         .unwrap_or_default();
     {
         let mut session = kavach_session::get_or_create_session();
-        if let Some(block_reason) = loop_guard::check_tool_loop(&session, &input.tool_name, &tool_input_json) {
+        if let Some(block_reason) =
+            loop_guard::check_tool_loop(&session, &input.tool_name, &tool_input_json)
+        {
             super::turn_relay::exit_pre_tool_deny(&block_reason);
             return Ok(());
         }
@@ -115,7 +117,9 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 .and_then(|ti| ti.get("pattern"))
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
-            if let Some(advisory) = super::symbol_search_guard::check_tool_search(&input.tool_name, pattern) {
+            if let Some(advisory) =
+                super::symbol_search_guard::check_tool_search(&input.tool_name, pattern)
+            {
                 let mut session = kavach_session::get_or_create_session();
                 super::turn_relay::exit_pre_tool_allow_relay(&mut session, Some(&advisory));
                 return Ok(());

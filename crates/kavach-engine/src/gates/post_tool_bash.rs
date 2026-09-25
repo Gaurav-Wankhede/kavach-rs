@@ -5,10 +5,10 @@
 mod detect;
 mod handle;
 mod progress;
-mod tests_track;
 #[cfg(test)]
 #[path = "post_tool_bash_test.rs"]
 mod tests;
+mod tests_track;
 pub(crate) use handle::handle;
 /// Public accessor for the trimming path (`track_state_only`).
 #[must_use]

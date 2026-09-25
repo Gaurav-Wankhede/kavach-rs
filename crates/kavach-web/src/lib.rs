@@ -14,8 +14,8 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 
 use axum::Router;
-use axum::routing::{get, post};
 use axum::extract::DefaultBodyLimit;
+use axum::routing::{get, post};
 use tower_http::services::ServeDir;
 
 /// Default loopback port for the web UI. Unprivileged (>1024) so it binds

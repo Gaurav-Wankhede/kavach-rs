@@ -3,7 +3,10 @@ use super::run;
 
 #[test]
 fn finds_silent_io_worst_practice() {
-    let hits = scan_file("crates/x/src/h.rs", "pub fn f() {\n    let _ = do_io();\n}\n");
+    let hits = scan_file(
+        "crates/x/src/h.rs",
+        "pub fn f() {\n    let _ = do_io();\n}\n",
+    );
     assert!(
         hits.iter().any(|f| f.detector == "silent_io"),
         "silent-IO let _ = must be flagged"
@@ -13,13 +16,20 @@ fn finds_silent_io_worst_practice() {
 #[test]
 fn clean_file_has_no_findings() {
     let hits = scan_file("crates/x/src/h.rs", "pub fn f() -> u8 {\n    1\n}\n");
-    assert!(hits.is_empty(), "a clean file yields no worst-practice hits");
+    assert!(
+        hits.is_empty(),
+        "a clean file yields no worst-practice hits"
+    );
 }
 
 #[test]
 fn run_on_missing_path_exits_2() {
     let missing = std::path::Path::new("/nonexistent/kavach/hunt/path");
-    assert_eq!(run(missing, false), 2, "unreadable root must exit 2, never silent 0");
+    assert_eq!(
+        run(missing, false),
+        2,
+        "unreadable root must exit 2, never silent 0"
+    );
 }
 
 #[test]

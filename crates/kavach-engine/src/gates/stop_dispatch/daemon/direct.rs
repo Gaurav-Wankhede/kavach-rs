@@ -44,11 +44,15 @@ pub(super) fn next(method: &str, project_slug: &str) -> Result<Option<serde_json
         let state = open_state().await?;
         let params = dispatch_params(project_slug)?;
         let task = match method {
-            "roadmap.next_open_task" => next_open_task(&state, params).await.map_err(|e| format!("next_open_task failed: {e}"))?,
-            "roadmap.next_open_hunt" => next_open_hunt(&state, params).await.map_err(|e| format!("next_open_hunt failed: {e}"))?,
-            "roadmap.promote_next_backlog" => {
-                promote_next_backlog(&state, params).await.map_err(|e| format!("promote_next_backlog failed: {e}"))?
-            }
+            "roadmap.next_open_task" => next_open_task(&state, params)
+                .await
+                .map_err(|e| format!("next_open_task failed: {e}"))?,
+            "roadmap.next_open_hunt" => next_open_hunt(&state, params)
+                .await
+                .map_err(|e| format!("next_open_hunt failed: {e}"))?,
+            "roadmap.promote_next_backlog" => promote_next_backlog(&state, params)
+                .await
+                .map_err(|e| format!("promote_next_backlog failed: {e}"))?,
             _ => return Err(format!("unknown dispatch method: {method}")),
         };
         Ok(task.as_ref().map(task_to_json))
@@ -83,13 +87,18 @@ pub(super) fn census(project_slug: &str) -> Result<Option<(u64, u64, u64)>, Stri
     rt.block_on(async {
         let state = open_state().await?;
         let params = dispatch_params(project_slug)?;
-        let census = open_set_census(&state, params).await.map_err(|e| format!("census failed: {e}"))?;
+        let census = open_set_census(&state, params)
+            .await
+            .map_err(|e| format!("census failed: {e}"))?;
         // Dispatch-reachable (roadmap-only) counts, matching `parse_census` on the
         // RPC path — never the TaskList-inflated totals, which would trap the loop.
         Ok(Some((
-            u64::try_from(census.roadmap_runnable).map_err(|e| format!("roadmap_runnable conversion failed: {e}"))?,
-            u64::try_from(census.roadmap_blocked).map_err(|e| format!("roadmap_blocked conversion failed: {e}"))?,
-            u64::try_from(census.roadmap_cyclic).map_err(|e| format!("roadmap_cyclic conversion failed: {e}"))?,
+            u64::try_from(census.roadmap_runnable)
+                .map_err(|e| format!("roadmap_runnable conversion failed: {e}"))?,
+            u64::try_from(census.roadmap_blocked)
+                .map_err(|e| format!("roadmap_blocked conversion failed: {e}"))?,
+            u64::try_from(census.roadmap_cyclic)
+                .map_err(|e| format!("roadmap_cyclic conversion failed: {e}"))?,
         )))
     })
 }

@@ -2,9 +2,9 @@
 //! re-block breaker and emit the census-aware DB-rescan verdict (never a
 //! hardcoded self-stop — the loop yields only to the user's `Esc`), plus any
 //! ride-along advisories. Always Breaks (terminal for THIS turn, not the loop).
-use core::ops::ControlFlow;
 use super::super::shared::StopCtx;
 use crate::gates::bandit::{emit, explore_emit};
+use core::ops::ControlFlow;
 use kavach_patterns::bandit_log::{BanditContext, GateAction};
 pub(crate) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
     // Clean exit = GREEDY Allow, logged via epsilon-greedy (explore only when

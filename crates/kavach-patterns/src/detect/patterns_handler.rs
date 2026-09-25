@@ -16,7 +16,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -88,7 +91,8 @@ pub(super) fn detect_handler_patterns(
         return;
     }
     ck(
-        res,        idx_or_skip(r, 52),
+        res,
+        idx_or_skip(r, 52),
         content,
         AntiProdLevel::P0MockData,
         "STUB_BODY",
@@ -96,7 +100,8 @@ pub(super) fn detect_handler_patterns(
         "Implement real response — no placeholder text.",
     );
     ck(
-        res,        idx_or_skip(r, 53),
+        res,
+        idx_or_skip(r, 53),
         content,
         AntiProdLevel::P0MockData,
         "STATUS_MISUSE",
@@ -104,7 +109,8 @@ pub(super) fn detect_handler_patterns(
         "Use 401/403 not 500 for auth failures.",
     );
     ck(
-        res,        idx_or_skip(r, 54),
+        res,
+        idx_or_skip(r, 54),
         content,
         AntiProdLevel::P0MockData,
         "STATUS_MISUSE",
@@ -112,7 +118,8 @@ pub(super) fn detect_handler_patterns(
         "Use 403 not 404 for authorization failures.",
     );
     ck(
-        res,        idx_or_skip(r, 55),
+        res,
+        idx_or_skip(r, 55),
         content,
         AntiProdLevel::P0MockData,
         "STATUS_MISUSE",
@@ -120,7 +127,8 @@ pub(super) fn detect_handler_patterns(
         "Return proper 4xx/5xx, not 200 with error JSON.",
     );
     ck(
-        res,        idx_or_skip(r, 56),
+        res,
+        idx_or_skip(r, 56),
         content,
         AntiProdLevel::P0MockData,
         "N_PLUS_1",
@@ -128,7 +136,8 @@ pub(super) fn detect_handler_patterns(
         "Extract query before loop — N+1 causes O(n) DB round trips.",
     );
     ck(
-        res,        idx_or_skip(r, 57),
+        res,
+        idx_or_skip(r, 57),
         content,
         AntiProdLevel::P1ProdLeak,
         "NESTED_LOOP",
@@ -136,7 +145,8 @@ pub(super) fn detect_handler_patterns(
         "Use HashMap lookup, index, or single-pass algorithm.",
     );
     ck(
-        res,        idx_or_skip(r, 58),
+        res,
+        idx_or_skip(r, 58),
         content,
         AntiProdLevel::P0MockData,
         "EMPTY_RESPONSE",

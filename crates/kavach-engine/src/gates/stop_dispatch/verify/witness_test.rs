@@ -25,13 +25,17 @@ fn verify_cmd_failure_is_failed() {
 
 #[test]
 fn per_call_verify_cmd_overrides_env() {
-    temp_env::with_var("KAVACH_VERIFY_CMD", Some(std::ffi::OsStr::new("exit 1")), || {
-        // Per-call command wins and passes.
-        assert_eq!(
-            run_workspace_witnesses(None, Some("exit 0")),
-            WitnessRun::Passed
-        );
-    });
+    temp_env::with_var(
+        "KAVACH_VERIFY_CMD",
+        Some(std::ffi::OsStr::new("exit 1")),
+        || {
+            // Per-call command wins and passes.
+            assert_eq!(
+                run_workspace_witnesses(None, Some("exit 0")),
+                WitnessRun::Passed
+            );
+        },
+    );
 }
 
 #[test]

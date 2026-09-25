@@ -146,10 +146,7 @@ mod tests {
     // The freshness window is the citation canon, not redefined here.
     #[test]
     fn window_is_citation_canon() {
-        assert_eq!(
-            kavach_db::citation::FRESHNESS_WINDOW_SECS,
-            24 * 60 * 60
-        );
+        assert_eq!(kavach_db::citation::FRESHNESS_WINDOW_SECS, 24 * 60 * 60);
     }
 
     // No RPC server in unit-test context ⇒ fetch returns None ⇒ literal serves.

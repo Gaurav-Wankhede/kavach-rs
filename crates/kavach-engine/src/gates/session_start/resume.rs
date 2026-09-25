@@ -62,7 +62,8 @@ fn card_title_status(project: &str, key: &str) -> Option<(String, String)> {
 // Live harness for `(project, key)` via `db.get_harness`, `None` on any miss.
 fn card_harness(project: &str, key: &str) -> Option<String> {
     let params = serde_json::json!({ "project": project, "key": key });
-    let v = kavach_rpc::client::call::<_, serde_json::Value>("db.get_harness", Some(params)).ok()?;
+    let v =
+        kavach_rpc::client::call::<_, serde_json::Value>("db.get_harness", Some(params)).ok()?;
     v.get("harness")
         .and_then(serde_json::Value::as_str)
         .filter(|s| !s.is_empty())

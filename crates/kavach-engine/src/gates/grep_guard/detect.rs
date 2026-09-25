@@ -90,6 +90,8 @@ fn extract_symbol_term(command: &str) -> Option<String> {
 fn is_symbol_shaped(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= 64
-        && s.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && s.chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
         && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }

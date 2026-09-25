@@ -85,7 +85,14 @@ fn sweep_round(project: &str, run_id: &str, round: u32) -> Result<RoundOutcome, 
             f.hint,
             f.file,
         );
-        let code = capture_incident(project, &incident, &summary, &body, "HEAD~1", Some(&exec_prompt));
+        let code = capture_incident(
+            project,
+            &incident,
+            &summary,
+            &body,
+            "HEAD~1",
+            Some(&exec_prompt),
+        );
         if code == 0 {
             if !keys.contains(&incident) {
                 keys.push(incident);

@@ -30,7 +30,9 @@ fn bash_input_with_output(command: &str, output: &str) -> HookInput {
 fn cargo_nextest_compile_error_classifies_as_failure() {
     let mut session = kavach_session::SessionState::default();
     session.session_id = "test_compile_err".to_owned();
-    session.files_modified_this_turn.push("src/foo_test.rs".to_owned());
+    session
+        .files_modified_this_turn
+        .push("src/foo_test.rs".to_owned());
 
     let compile_fail_output = "error[E0433]: cannot find module `foo` in this crate\n\
          --> src/foo_test.rs:1:5\n\
@@ -56,7 +58,9 @@ fn cargo_nextest_compile_error_classifies_as_failure() {
 fn cargo_test_compile_error_classifies_as_failure() {
     let mut session = kavach_session::SessionState::default();
     session.session_id = "test_compile_err2".to_owned();
-    session.files_modified_this_turn.push("src/bar_test.rs".to_owned());
+    session
+        .files_modified_this_turn
+        .push("src/bar_test.rs".to_owned());
 
     let compile_fail_output = "error[E0432]: unresolved import `bar`\n\
          --> src/bar_test.rs:5:5\n\
@@ -65,10 +69,7 @@ fn cargo_test_compile_error_classifies_as_failure() {
            |     ^^^ could not find `bar` in this crate\n\
          error: could not compile `my-crate`";
 
-    let input = bash_input_with_output(
-        "cargo test -p my-crate bar_test",
-        compile_fail_output,
-    );
+    let input = bash_input_with_output("cargo test -p my-crate bar_test", compile_fail_output);
     drop(handle(&input, &mut session));
 
     assert!(
@@ -82,12 +83,11 @@ fn cargo_test_compile_error_classifies_as_failure() {
 fn cargo_nextest_with_no_output_on_compile_fail_records_red() {
     let mut session = kavach_session::SessionState::default();
     session.session_id = "test_compile_err3".to_owned();
-    session.files_modified_this_turn.push("src/baz_test.rs".to_owned());
+    session
+        .files_modified_this_turn
+        .push("src/baz_test.rs".to_owned());
 
-    let input = bash_input_with_output(
-        "cargo nextest run -p my-crate baz_test",
-        "",
-    );
+    let input = bash_input_with_output("cargo nextest run -p my-crate baz_test", "");
     drop(handle(&input, &mut session));
 
     assert!(
@@ -101,7 +101,9 @@ fn cargo_nextest_with_no_output_on_compile_fail_records_red() {
 fn cargo_nextest_with_host_error_flag_on_compile_fail_records_red() {
     let mut session = kavach_session::SessionState::default();
     session.session_id = "test_compile_err4".to_owned();
-    session.files_modified_this_turn.push("src/qux_test.rs".to_owned());
+    session
+        .files_modified_this_turn
+        .push("src/qux_test.rs".to_owned());
 
     let mut tool_input = HashMap::new();
     tool_input.insert(
@@ -113,10 +115,7 @@ fn cargo_nextest_with_host_error_flag_on_compile_fail_records_red() {
         "output".to_owned(),
         serde_json::Value::String(String::new()),
     );
-    resp.insert(
-        "is_error".to_owned(),
-        serde_json::Value::Bool(true),
-    );
+    resp.insert("is_error".to_owned(), serde_json::Value::Bool(true));
     let input = HookInput {
         tool_name: "Bash".to_owned(),
         tool_input: Some(tool_input),

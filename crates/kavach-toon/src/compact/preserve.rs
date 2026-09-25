@@ -22,7 +22,10 @@ fn fenced_blocks(text: &str) -> Vec<String> {
         let Some(end) = after_open.find("```") else {
             break;
         };
-        let end_abs = start.saturating_add(3).saturating_add(end).saturating_add(3);
+        let end_abs = start
+            .saturating_add(3)
+            .saturating_add(end)
+            .saturating_add(3);
         let Some(block) = rest.get(start..end_abs) else {
             break;
         };
@@ -43,7 +46,10 @@ fn inline_code(text: &str) -> Vec<String> {
         if bytes.get(i) == Some(&b'`')
             && let Some(rel_end) = text.get(i.saturating_add(1)..).and_then(|t| t.find('`'))
         {
-            let end = i.saturating_add(1).saturating_add(rel_end).saturating_add(1);
+            let end = i
+                .saturating_add(1)
+                .saturating_add(rel_end)
+                .saturating_add(1);
             if let Some(span) = text.get(i..end) {
                 out.push(span.to_owned());
             }

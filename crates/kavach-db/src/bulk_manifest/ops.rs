@@ -86,17 +86,14 @@ pub async fn create(db: &TursoStore, params: CreateParams<'_>) -> Result<BulkMan
             ],
         )
         .await?;
-    response
-        .next()
-        .await?
-        .map_or_else(
-            || {
-                Err(Error::RecordNotFound(
-                    "bulk_manifest create returned no row".to_owned(),
-                ))
-            },
-            |row| manifest_from_row(&row),
-        )
+    response.next().await?.map_or_else(
+        || {
+            Err(Error::RecordNotFound(
+                "bulk_manifest create returned no row".to_owned(),
+            ))
+        },
+        |row| manifest_from_row(&row),
+    )
 }
 
 /// Fetch manifest by `sweep_id`. Ok(None) on miss.

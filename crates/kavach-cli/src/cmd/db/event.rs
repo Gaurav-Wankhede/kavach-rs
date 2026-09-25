@@ -82,7 +82,10 @@ pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
                 Err(_) => "default".to_owned(),
             }
         };
-        match store.append_event(&project_slug, event_type, payload.unwrap_or("")).await {
+        match store
+            .append_event(&project_slug, event_type, payload.unwrap_or(""))
+            .await
+        {
             Ok(id) => {
                 let msg = format!("event {event_type} logged (id={id:?})");
                 if let Err(io_err) = print_or_exit(&msg) {

@@ -16,15 +16,27 @@ fn extracts_basic_fields() {
     };
 
     assert_eq!(extract_field(&view, "title", false).unwrap(), "Test Title");
-    assert_eq!(extract_field(&view, "status", false).unwrap(), "in_progress");
-    assert_eq!(extract_field(&view, "entry_status", false).unwrap(), "in_progress");
+    assert_eq!(
+        extract_field(&view, "status", false).unwrap(),
+        "in_progress"
+    );
+    assert_eq!(
+        extract_field(&view, "entry_status", false).unwrap(),
+        "in_progress"
+    );
     assert_eq!(extract_field(&view, "key", false).unwrap(), "test.key");
     assert_eq!(extract_field(&view, "category", false).unwrap(), "roadmap");
     assert_eq!(extract_field(&view, "access", false).unwrap(), "42");
     assert_eq!(extract_field(&view, "priority", false).unwrap(), "10");
     assert_eq!(extract_field(&view, "lane", false).unwrap(), "core");
-    assert_eq!(extract_field(&view, "content", false).unwrap(), "Sample content for test");
-    assert_eq!(extract_field(&view, "exec_prompt", false).unwrap(), "Execute task cleanly");
+    assert_eq!(
+        extract_field(&view, "content", false).unwrap(),
+        "Sample content for test"
+    );
+    assert_eq!(
+        extract_field(&view, "exec_prompt", false).unwrap(),
+        "Execute task cleanly"
+    );
 }
 
 #[test]

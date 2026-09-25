@@ -20,9 +20,9 @@ mod state;
 mod tests;
 // Shared with the Stop gate: an auto-compact can fire a Stop before the next
 // SessionStart reconciles the seam, so the Stop terminal also checks it.
-pub(in crate::gates) use reconcile::reconcile_context;
-use kavach_types::HookInput;
 use crate::error::EngineError;
+use kavach_types::HookInput;
+pub(in crate::gates) use reconcile::reconcile_context;
 /// `SessionStart` gate: detect model ID, set token budget, init session.
 /// Claude Code sends `model` field in `SessionStart` hook input.
 ///

@@ -3,14 +3,14 @@
 mod bypass;
 mod detect;
 mod rules;
-mod transcript;
 #[cfg(test)]
 #[path = "pre_write_rca_guard_test.rs"]
 mod tests;
-pub(in crate::gates) use detect::has_rca_block;
-pub(in crate::gates) use transcript::scan_transcript_for_rca;
+mod transcript;
 use bypass::active_bulk_sweep;
+pub(in crate::gates) use detect::has_rca_block;
 use rules::{REQUIRES_RCA, is_rca_exempt_path, risk_requires_rca};
+pub(in crate::gates) use transcript::scan_transcript_for_rca;
 /// Returns `Some(reason)` when the gate should block, `None` when allow.
 /// SOURCE: pattern matches existing `pre_write_*_guard.rs` return convention.
 /// `session_rca_present` carries persistent multi-turn signal from session state.

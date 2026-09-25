@@ -1,6 +1,6 @@
 //! Unit tests for tabular JSON compactor.
-use serde_json::json;
 use super::{compact_tabular, json_to_table, table_to_json};
+use serde_json::json;
 
 #[test]
 fn test_json_to_table_roundtrip() {

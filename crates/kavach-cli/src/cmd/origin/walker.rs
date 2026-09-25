@@ -6,7 +6,10 @@ use super::{matcher, site::Site, source_files};
 use std::path::Path;
 
 #[must_use]
-#[expect(clippy::arithmetic_side_effects, reason = "line index i+1 for 1-based display; bounded by file line count")]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "line index i+1 for 1-based display; bounded by file line count"
+)]
 pub(super) fn walk(root: &Path) -> Vec<Candidate> {
     let mut out = Vec::new();
     for path in source_files(root) {
@@ -14,7 +17,10 @@ pub(super) fn walk(root: &Path) -> Vec<Candidate> {
             continue;
         };
         // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#map_unwrap_or
-        let rel_path = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty())
+        let rel_path = path
+            .strip_prefix(root)
+            .ok()
+            .filter(|r| !r.as_os_str().is_empty())
             .map_or_else(|| path.clone(), Path::to_path_buf);
         let rel = rel_path.to_string_lossy().into_owned();
         for (i, line) in src.lines().enumerate() {
@@ -43,13 +49,35 @@ fn candidates_on_line(line: &str, file: &str, line_no: usize) -> Vec<Candidate> 
         .collect()
 }
 
-#[expect(clippy::string_slice, reason = "byte offsets come from .find()/.len() so they land on valid UTF-8 boundaries")]
-#[expect(clippy::arithmetic_side_effects, reason = "offsets bounded by the .find() match position")]
+#[expect(
+    clippy::string_slice,
+    reason = "byte offsets come from .find()/.len() so they land on valid UTF-8 boundaries"
+)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "offsets bounded by the .find() match position"
+)]
 fn declared_name(line: &str) -> Option<String> {
     let t = line.trim_start();
-    for kw in ["pub const ", "pub static ", "pub fn ", "pub struct ", "const ", "static ", "let ", "fn ", "struct ", "enum ", "type "] {
+    for kw in [
+        "pub const ",
+        "pub static ",
+        "pub fn ",
+        "pub struct ",
+        "const ",
+        "static ",
+        "let ",
+        "fn ",
+        "struct ",
+        "enum ",
+        "type ",
+    ] {
         if let Some(rest) = t.strip_prefix(kw) {
-            let ident: String = rest.trim_start().chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect();
+            let ident: String = rest
+                .trim_start()
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .collect();
             if !ident.is_empty() {
                 return Some(ident);
             }
@@ -67,8 +95,14 @@ fn declared_name(line: &str) -> Option<String> {
     None
 }
 
-#[expect(clippy::string_slice, reason = "eq comes from .find('=') so eq+1 is a valid char boundary")]
-#[expect(clippy::arithmetic_side_effects, reason = "eq+1 bounded by the '=' match position")]
+#[expect(
+    clippy::string_slice,
+    reason = "eq comes from .find('=') so eq+1 is a valid char boundary"
+)]
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "eq+1 bounded by the '=' match position"
+)]
 fn capture_value(line: &str) -> Option<String> {
     let eq = line.find('=')?;
     let rhs = line[eq + 1..].trim().trim_end_matches([';', ',']).trim();

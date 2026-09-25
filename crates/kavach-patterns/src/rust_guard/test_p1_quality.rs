@@ -79,6 +79,12 @@ fn p1_string_concat_with_plus() {
 
 #[test]
 fn p1_fighting_borrow_checker_nested_lock() {
-    let v = detect("src/lib.rs", "let cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));");
-    assert!(v.iter().any(|x| x.pattern == "fighting the borrow checker (nested shared lock)"));
+    let v = detect(
+        "src/lib.rs",
+        "let cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));",
+    );
+    assert!(
+        v.iter()
+            .any(|x| x.pattern == "fighting the borrow checker (nested shared lock)")
+    );
 }

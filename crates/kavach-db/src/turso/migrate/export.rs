@@ -394,11 +394,10 @@ fn row_to_value(row: &libsql::Row) -> Value {
         let v = match row.get_value(i) {
             Ok(libsql::Value::Text(s)) => Value::String(s),
             Ok(libsql::Value::Integer(n)) => Value::Number(n.into()),
-            Ok(libsql::Value::Real(f)) => serde_json::Number::from_f64(f)
-                .map_or(Value::Null, Value::Number),
-            Ok(libsql::Value::Blob(b)) => {
-                Value::String(format!("<blob:{} bytes>", b.len()))
+            Ok(libsql::Value::Real(f)) => {
+                serde_json::Number::from_f64(f).map_or(Value::Null, Value::Number)
             }
+            Ok(libsql::Value::Blob(b)) => Value::String(format!("<blob:{} bytes>", b.len())),
             Ok(libsql::Value::Null) | Err(_) => Value::Null,
         };
         obj.insert(col, v);

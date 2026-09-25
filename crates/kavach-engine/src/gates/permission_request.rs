@@ -7,10 +7,10 @@ mod destructive;
 #[cfg(test)]
 #[path = "permission_request_test.rs"]
 mod tests;
-use kavach_types::HookInput;
+use crate::error::EngineError;
 use allow::{is_kavach_command, is_safe_auto_allow, is_safe_rm_target};
 use destructive::is_destructive_command;
-use crate::error::EngineError;
+use kavach_types::HookInput;
 #[expect(clippy::unnecessary_wraps, reason = "uniform gate dispatch signature")]
 pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let tool_name = &input.tool_name;

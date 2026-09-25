@@ -16,7 +16,10 @@ fn idx_or_skip(r: &[Regex], i: usize) -> &Regex {
         debug_assert!(false, "regex table index {i} out of range");
         r.first().unwrap_or_else(|| {
             NEVER_MATCH.get_or_init(|| {
-                #[expect(clippy::expect_used, reason = "static regex string is a compile-time constant")]
+                #[expect(
+                    clippy::expect_used,
+                    reason = "static regex string is a compile-time constant"
+                )]
                 Regex::new("\\b\\B").expect("never-match fallback regex compiles")
             })
         })
@@ -70,7 +73,8 @@ pub(super) fn detect_api_client_errors(
         return;
     }
     ck(
-        res,        idx_or_skip(r, 59),
+        res,
+        idx_or_skip(r, 59),
         content,
         AntiProdLevel::P1ProdLeak,
         "API_DRIFT",
@@ -87,7 +91,8 @@ pub(super) fn detect_api_client_errors(
         );
     }
     ck(
-        res,        idx_or_skip(r, 61),
+        res,
+        idx_or_skip(r, 61),
         content,
         AntiProdLevel::P1ProdLeak,
         "EMPTY_FETCH",

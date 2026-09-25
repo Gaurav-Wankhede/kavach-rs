@@ -189,7 +189,10 @@ fn test_file_skipped() {
 #[test]
 fn detects_assert_matches_idiom() {
     let v = detect("src/x.rs", "assert!(matches!(roll(), 1..=6));");
-    assert!(v.iter().any(|x| x.pattern == "assert!(matches!) over assert_matches!"));
+    assert!(
+        v.iter()
+            .any(|x| x.pattern == "assert!(matches!) over assert_matches!")
+    );
 }
 
 #[test]
@@ -204,7 +207,10 @@ fn detects_manual_range_struct() {
         "src/x.rs",
         "struct Span {\n    start: usize,\n    end: usize,\n}",
     );
-    assert!(v.iter().any(|x| x.pattern == "manual range struct over core::range"));
+    assert!(
+        v.iter()
+            .any(|x| x.pattern == "manual range struct over core::range")
+    );
 }
 
 #[test]

@@ -13,8 +13,8 @@
 mod datetime;
 mod parse;
 mod record;
-mod verify;
 #[cfg(test)]
 #[path = "post_tool_algo_recorder_test.rs"]
 mod tests;
+mod verify;
 pub(in crate::gates) use record::record;

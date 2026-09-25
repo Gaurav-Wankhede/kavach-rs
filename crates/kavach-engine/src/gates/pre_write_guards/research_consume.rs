@@ -29,11 +29,11 @@ fn is_local_analysis_intent(intent: &str) -> bool {
 
 fn brain_local_analysis_synonyms() -> Vec<String> {
     let params = serde_json::json!({ "query": "local code analysis intent synonyms no external research", "limit": 8 });
-    let hits: Vec<kavach_db::BrainHit> =
-        match kavach_rpc::client::call("brain.think", Some(params)) {
-            Ok(h) => h,
-            Err(_) => return Vec::new(),
-        };
+    let hits: Vec<kavach_db::BrainHit> = match kavach_rpc::client::call("brain.think", Some(params))
+    {
+        Ok(h) => h,
+        Err(_) => return Vec::new(),
+    };
     hits.into_iter()
         .filter_map(|h| h.id.rsplit('.').next().map(str::to_owned))
         .filter(|s| !s.is_empty())

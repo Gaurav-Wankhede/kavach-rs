@@ -1,7 +1,7 @@
 use crate::chain_state::ChainState;
 use crate::types::{IntentAnalysis, ResearchStatus, VerificationResult};
-use std::collections::HashMap;
 use chrono::Local;
+use std::collections::HashMap;
 /// Consult the process-wide loader (scanned once at first use) and return
 /// `is_research_class()` for `agent_type`. Returns false on missing dir, missing
 /// file, parse error — safe-fail: gate falls through to normal tabula-rasa

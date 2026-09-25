@@ -7,19 +7,17 @@
 //! reward-hacking audit (reused verbatim from `db.ope_audit`), GATE-C a STRICT
 //! lower-confidence-bound win over the persisted incumbent. Persistence happens
 //! NOWHERE else — that conjunction is the reward-hacking + ope-validity mitigation.
+use super::ope_audit::{OpeAuditParams, ope_audit};
+use super::ope_shared::sample_from_row;
 use crate::state::AppState;
+use derive::derive_candidate;
 use jsonrpsee::types::ErrorObjectOwned;
+use kavach_db::{DeployedPolicyProps, graph_top_deployed_policies, graph_upsert_deployed_policy};
 use kavach_ope::Estimate;
 use kavach_ope::controller::promote;
 use kavach_ope::ips::FixedPolicy;
-use kavach_db::{
-    DeployedPolicyProps, graph_top_deployed_policies, graph_upsert_deployed_policy,
-};
-use serde::{Deserialize, Serialize};
-use derive::derive_candidate;
 use result::{Metrics, blocked_reason, finish, load_failed};
-use super::ope_audit::{OpeAuditParams, ope_audit};
-use super::ope_shared::sample_from_row;
+use serde::{Deserialize, Serialize};
 mod derive;
 mod result;
 #[cfg(test)]

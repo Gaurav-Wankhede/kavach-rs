@@ -15,7 +15,9 @@ pub fn validate_recalled_row(
     actual_project_slug: &str,
     category: &str,
 ) -> ValidityCheck {
-    const VALID_CATEGORIES: &[&str] = &["decision", "research", "pattern", "proposal", "roadmap", "app_spec"];
+    const VALID_CATEGORIES: &[&str] = &[
+        "decision", "research", "pattern", "proposal", "roadmap", "app_spec",
+    ];
     if actual_project_slug != expected_project_slug {
         return ValidityCheck::ForeignProject;
     }

@@ -1,6 +1,6 @@
 // split: intentional - single command handler for wipe-project
-use kavach_rpc::methods::db::wipe_confirm_phrase;
 use kavach_db::turso::entries::EntryStore;
+use kavach_rpc::methods::db::wipe_confirm_phrase;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_line_or_exit};
 
@@ -111,7 +111,11 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
             Ok(report) => {
                 let prefix = if dry_run { "[dry-run]" } else { "[wipe]" };
                 let action = if dry_run { "would remove" } else { "removed" };
-                let action_past = if dry_run { "would be removed" } else { "removed" };
+                let action_past = if dry_run {
+                    "would be removed"
+                } else {
+                    "removed"
+                };
                 let head = format!("{} project: {}", prefix, report.project_slug);
                 if let Err(io_err) = print_or_exit(&head) {
                     return into_exit_code(io_err);
@@ -133,14 +137,14 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
                     }
                 }
                 let count = report.tables.len();
-                let summary = format!(
-                    "{prefix} total: {total} rows {action_past} across {count} tables"
-                );
+                let summary =
+                    format!("{prefix} total: {total} rows {action_past} across {count} tables");
                 if let Err(io_err) = print_or_exit(&summary) {
                     return into_exit_code(io_err);
                 }
                 if dry_run {
-                    let res = print_or_exit("[dry-run] NO CHANGES MADE — run with --confirm to execute");
+                    let res =
+                        print_or_exit("[dry-run] NO CHANGES MADE — run with --confirm to execute");
                     if let Err(io_err) = res {
                         return into_exit_code(io_err);
                     }
@@ -177,7 +181,9 @@ async fn wipe_project_turso(
     };
 
     // Categories to wipe
-    let categories = ["decision", "research", "roadmap", "pattern", "app_spec", "mistake"];
+    let categories = [
+        "decision", "research", "roadmap", "pattern", "app_spec", "mistake",
+    ];
 
     for cat in categories {
         let rows = store

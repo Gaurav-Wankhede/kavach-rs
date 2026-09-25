@@ -62,11 +62,12 @@ pub(crate) fn print_raw_or_exit(line: &str) -> Result<(), IoExit> {
 pub(crate) fn print_or_exit(line: &str) -> Result<(), IoExit> {
     if is_agent_consumer() {
         let sanitized = kavach_engine::gates::secret_redactor::sanitize_output(line, None);
-        let compacted = if sanitized.trim_start().starts_with('[') && sanitized.trim_end().ends_with(']') {
-            kavach_toon::compact::tabular::compact_tabular(&sanitized, 20).unwrap_or(sanitized)
-        } else {
-            sanitized
-        };
+        let compacted =
+            if sanitized.trim_start().starts_with('[') && sanitized.trim_end().ends_with(']') {
+                kavach_toon::compact::tabular::compact_tabular(&sanitized, 20).unwrap_or(sanitized)
+            } else {
+                sanitized
+            };
         let (processed, _) = kavach_engine::ccr::process_ccr(&compacted);
         let mut h = io::stdout().lock();
         h.write_all(processed.as_bytes())?;

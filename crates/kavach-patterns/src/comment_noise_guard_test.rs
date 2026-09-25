@@ -42,14 +42,17 @@ fn two_line_comment_is_clean() {
 
 #[test]
 fn module_header_and_safety_exempt() {
-    let c = "//! header\n//! more\n//! lines\nfn f() {}\n// SAFETY: a\n// SAFETY: b\n// SAFETY: c\n";
+    let c =
+        "//! header\n//! more\n//! lines\nfn f() {}\n// SAFETY: a\n// SAFETY: b\n// SAFETY: c\n";
     assert!(advise("src/x.rs", c).is_none());
 }
 
 #[test]
 fn source_marker_run_stays_exempt() {
     let url = "https://doc.rust-lang.org/book/ch07-05-separating-modules-into-different-files.html";
-    let c = format!("//! New child module. SOURCE: {url}\n//! second line of doc here for the split\nfn f() {{}}\n");
+    let c = format!(
+        "//! New child module. SOURCE: {url}\n//! second line of doc here for the split\nfn f() {{}}\n"
+    );
     assert!(advise("src/x.rs", &c).is_none());
 }
 
@@ -94,7 +97,8 @@ fn python_short_hash_block_is_clean() {
 #[test]
 fn python_long_prose_paragraph_flagged() {
     let prose = "y".repeat(70);
-    let c = format!("def f():\n    # {prose}\n    # b\n    # c\n    # d\n    # e\n    # f\n    pass\n");
+    let c =
+        format!("def f():\n    # {prose}\n    # b\n    # c\n    # d\n    # e\n    # f\n    pass\n");
     assert!(advise("x.py", &c).is_some());
 }
 

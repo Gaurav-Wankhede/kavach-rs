@@ -1,3 +1,4 @@
+use crate::lex::{Lang, RsKind, code_text_for_lang, segments_for, text};
 use crate::ts_patterns::TS_P;
 use regex::Regex;
 
@@ -38,12 +39,43 @@ pub fn detect(file_path: &str, content: &str) -> Vec<TsViolation> {
     violations
 }
 
+/// Per-line segment views for rule routing: executable code vs comment
+/// prose. String contents are visible to neither (payload rules 15/17 below
+/// stay on the raw line).
+struct LineViews {
+    /// Code-only text (comments + strings dropped).
+    code: String,
+    /// Comment-only text (directive rules live here).
+    comments: String,
+}
+
+/// Split one source line into its code and comment views (TsJs trivia).
+fn line_views(line: &str) -> LineViews {
+    let mut code = String::with_capacity(line.len());
+    let mut comments = String::new();
+    for seg in segments_for(Lang::TsJs, line) {
+        match seg.kind {
+            RsKind::Code => code.push_str(text(line, &seg)),
+            RsKind::Comment => {
+                comments.push_str(text(line, &seg));
+                comments.push(' ');
+            }
+            RsKind::Str => {}
+        }
+    }
+    // Gap rule (same as `code_line`): non-code spans leave a space so
+    // `a/*x*/b` cannot fuse into `ab`.
+    LineViews { code, comments }
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "pattern detection requires checking 20+ regex rules per line"
 )]
 fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content: &str) {
-    for (i, line) in content.lines().enumerate() {
+    for (i, raw) in content.lines().enumerate() {
+        let views = line_views(raw);
+        let line = views.code.as_str();
         if r.first().is_some_and(|re| re.is_match(line)) {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
@@ -79,7 +111,9 @@ fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content:
                 line: i.saturating_add(1),
             });
         }
-        if r.get(6).is_some_and(|re| re.is_match(line)) {
+        if r.get(6)
+            .is_some_and(|re| re.is_match(views.comments.as_str()))
+        {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
                 pattern: "@ts-ignore".into(),
@@ -87,7 +121,9 @@ fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content:
                 line: i.saturating_add(1),
             });
         }
-        if r.get(7).is_some_and(|re| re.is_match(line)) {
+        if r.get(7)
+            .is_some_and(|re| re.is_match(views.comments.as_str()))
+        {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
                 pattern: "eslint-disable".into(),
@@ -95,7 +131,9 @@ fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content:
                 line: i.saturating_add(1),
             });
         }
-        if r.get(8).is_some_and(|re| re.is_match(line)) {
+        if r.get(8)
+            .is_some_and(|re| re.is_match(views.comments.as_str()))
+        {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
                 pattern: "@ts-nocheck".into(),
@@ -143,7 +181,7 @@ fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content:
                 line: i.saturating_add(1),
             });
         }
-        if r.get(15).is_some_and(|re| re.is_match(line)) {
+        if r.get(15).is_some_and(|re| re.is_match(raw)) {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
                 pattern: "mock/hardcoded data".into(),
@@ -161,7 +199,7 @@ fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content:
                 line: i.saturating_add(1),
             });
         }
-        if r.get(17).is_some_and(|re| re.is_match(line)) {
+        if r.get(17).is_some_and(|re| re.is_match(raw)) {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
                 pattern: "fake engagement metrics".into(),
@@ -191,9 +229,14 @@ fn detect_line_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content:
 }
 
 fn detect_content_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], content: &str) {
+    // Whole-content triggers AND exemption needles match the code view
+    // (every rule here is an API-shape check: setInterval, addEventListener,
+    // setLoading, fetch, AbortSignal — all code idents, never payloads).
+    let code = code_text_for_lang(Lang::TsJs, content);
+    let has = |idx: usize| r.get(idx).is_some_and(|re| re.is_match(&code));
     // Timer without cleanup: setInterval present but no clearInterval
-    let has_interval = r.get(20).is_some_and(|re| re.is_match(content));
-    let has_clear = r.get(29).is_some_and(|re| re.is_match(content));
+    let has_interval = has(20);
+    let has_clear = has(29);
     if has_interval && !has_clear {
         violations.push(TsViolation {
             severity: TsSeverity::P0Block,
@@ -204,8 +247,8 @@ fn detect_content_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], conte
     }
 
     // Event listener without cleanup
-    let has_listener = r.get(22).is_some_and(|re| re.is_match(content));
-    let has_remove = r.get(30).is_some_and(|re| re.is_match(content));
+    let has_listener = has(22);
+    let has_remove = has(30);
     if has_listener && !has_remove {
         violations.push(TsViolation {
             severity: TsSeverity::P0Block,
@@ -216,9 +259,14 @@ fn detect_content_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], conte
         });
     }
 
-    // Line-level checks for new patterns
-    for (i, line) in content.lines().enumerate() {
-        if r.get(23).is_some_and(|re| re.is_match(line)) {
+    // Line-level checks for new patterns: the suppression directive lives in
+    // comments, the type/assertion rules in code.
+    for (i, raw) in content.lines().enumerate() {
+        let views = line_views(raw);
+        let line = views.code.as_str();
+        if r.get(23)
+            .is_some_and(|re| re.is_match(views.comments.as_str()))
+        {
             violations.push(TsViolation {
                 severity: TsSeverity::P0Block,
                 pattern: "@ts-expect-error".into(),
@@ -245,7 +293,7 @@ fn detect_content_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], conte
     }
 
     // Empty function body (content-level)
-    if r.get(27).is_some_and(|re| re.is_match(content)) {
+    if has(27) {
         violations.push(TsViolation {
             severity: TsSeverity::P0Block,
             pattern: "empty function body".into(),
@@ -255,8 +303,8 @@ fn detect_content_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], conte
     }
 
     // Loading state without error recovery: setLoading(true) without setLoading(false)
-    let has_loading_true = r.get(31).is_some_and(|re| re.is_match(content));
-    let has_loading_false = r.get(32).is_some_and(|re| re.is_match(content));
+    let has_loading_true = has(31);
+    let has_loading_false = has(32);
     if has_loading_true && !has_loading_false {
         violations.push(TsViolation {
             severity: TsSeverity::P0Block,
@@ -267,9 +315,9 @@ fn detect_content_patterns(violations: &mut Vec<TsViolation>, r: &[Regex], conte
     }
 
     // Fetch without AbortSignal.timeout: fetch present but no timeout signal
-    let has_fetch = r.get(28).is_some_and(|re| re.is_match(content));
-    let has_abort = r.get(30).is_some_and(|re| re.is_match(content));
-    let has_timeout_signal = r.get(33).is_some_and(|re| re.is_match(content));
+    let has_fetch = has(28);
+    let has_abort = has(30);
+    let has_timeout_signal = has(33);
     if has_fetch && !has_abort && !has_timeout_signal {
         violations.push(TsViolation {
             severity: TsSeverity::P1Advisory,
@@ -347,5 +395,37 @@ mod tests {
         let code = j(&["// @ts", "-", "expect", "-", "error"]);
         let v = detect("a.ts", &code);
         assert!(v.iter().any(|x| x.pattern.contains("expect-error")));
+    }
+
+    #[test]
+    fn code_in_comments_does_not_fire_code_rules() {
+        // Commented-out code is prose: no console/innerHTML hits.
+        let v = detect(
+            "a.ts",
+            "// console.log(x);\n// el.innerHTML = y;\nconst ok = 1;",
+        );
+        assert!(
+            v.iter()
+                .all(|x| !x.pattern.contains("console") && x.pattern != "innerHTML"),
+            "got: {:?}",
+            v.iter().map(|x| &x.pattern).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn string_data_does_not_fire_code_rules() {
+        // `"innerHTML"` as data, not a DOM sink.
+        let v = detect("a.ts", "const k = \"innerHTML\";");
+        assert!(
+            v.iter().all(|x| x.pattern != "innerHTML"),
+            "got: {:?}",
+            v.iter().map(|x| &x.pattern).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn suppression_directive_in_comment_still_fires() {
+        let v = detect("a.ts", "const x = 1; // @ts-ignore next line");
+        assert!(v.iter().any(|x| x.pattern.contains("ts-ignore")));
     }
 }

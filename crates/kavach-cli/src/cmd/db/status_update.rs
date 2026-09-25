@@ -121,7 +121,10 @@ pub(super) fn run(
         };
         // Use CAS update for safety - only update if current status matches expected
         // For now, we'll use the simple update_status (non-CAS) since we don't have the current status
-        match store.update_status(project_slug, category, key, status).await {
+        match store
+            .update_status(project_slug, category, key, status)
+            .await
+        {
             Ok(n) if n > 0 => {
                 let msg = format!("status: [{category}] {key} → {status}");
                 if let Err(io_err) = print_or_exit(&msg) {

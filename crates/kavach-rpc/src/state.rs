@@ -1,8 +1,8 @@
+use kavach_db::turso::TursoStore;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::sync::Notify;
-use kavach_db::turso::TursoStore;
 
 /// In-process change channel: a monotonic version counter plus a `Notify`.
 ///

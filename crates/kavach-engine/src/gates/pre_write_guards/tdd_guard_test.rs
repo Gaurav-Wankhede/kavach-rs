@@ -183,10 +183,22 @@ fn comment_only_ignores_unchanged_context_lines() {
 }
 #[test]
 fn production_stem_of_inverts_every_test_convention() {
-    assert_eq!(production_stem_of("a/b/widget_test.rs").as_deref(), Some("widget"));
-    assert_eq!(production_stem_of("a/b/widget_tests.rs").as_deref(), Some("widget"));
-    assert_eq!(production_stem_of("a/b/widget/tests.rs").as_deref(), Some("widget"));
-    assert_eq!(production_stem_of("crates/foo/tests/widget.rs").as_deref(), Some("widget"));
+    assert_eq!(
+        production_stem_of("a/b/widget_test.rs").as_deref(),
+        Some("widget")
+    );
+    assert_eq!(
+        production_stem_of("a/b/widget_tests.rs").as_deref(),
+        Some("widget")
+    );
+    assert_eq!(
+        production_stem_of("a/b/widget/tests.rs").as_deref(),
+        Some("widget")
+    );
+    assert_eq!(
+        production_stem_of("crates/foo/tests/widget.rs").as_deref(),
+        Some("widget")
+    );
     assert_eq!(production_stem_of("a/b/widget.rs"), None);
     assert_eq!(production_stem_of("a/src/tests.rs"), None);
 }

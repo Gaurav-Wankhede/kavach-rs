@@ -18,10 +18,7 @@ pub use status_check::{is_needs_decomposition, is_runnable_status, is_umbrella};
 /// waits its turn. There is no operator-gate / block path — a card that cannot be
 /// built is deleted, never flagged (operator directive 2026-06-16).
 #[must_use]
-pub fn deps_satisfied(
-    entry: &kavach_db::MemoryEntry,
-    dep_pool: &[kavach_db::MemoryEntry],
-) -> bool {
+pub fn deps_satisfied(entry: &kavach_db::MemoryEntry, dep_pool: &[kavach_db::MemoryEntry]) -> bool {
     parse_declared_deps(&entry.content)
         .iter()
         .all(|dep| dep_key_satisfied(dep, dep_pool))

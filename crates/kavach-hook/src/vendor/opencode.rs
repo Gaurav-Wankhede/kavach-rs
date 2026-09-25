@@ -4,9 +4,9 @@
 //! `{"decision":"allow"|"deny","reason":...,"updated_input":...}` object.
 //! It maps plugin events like `tool.execute.before` onto canonical `PreToolUse`.
 
-use std::collections::HashMap;
 use kavach_types::{HookInput, HookResponse};
 use serde::Serialize;
+use std::collections::HashMap;
 
 #[cfg(test)]
 #[path = "opencode_test.rs"]

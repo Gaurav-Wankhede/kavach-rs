@@ -125,16 +125,30 @@ pub fn code_text_for(src: &str, segs: &[RsSeg]) -> String {
     out
 }
 
+/// Code-only text of a source in language `lang` (same comment rule as
+/// [`code_text`], which is the Rust shorthand for this with `Lang::Rust`).
+#[must_use]
+pub fn code_text_for_lang(lang: Lang, src: &str) -> String {
+    let segs = segments_for(lang, src);
+    code_text_for(src, &segs)
+}
+
 /// Code-only view of ONE line for per-line regex oracles.
 ///
 /// `Code` spans verbatim, every other span replaced by a single space (no
 /// newlines can occur, so line numbering never drifts). Payload rules that
 /// need string contents stay on the raw line — this is strictly the
-/// code-match view.
+/// code-match view. Rust shorthand; other languages use [`code_line_for`].
 #[must_use]
 pub fn code_line(line: &str) -> String {
+    code_line_for(Lang::Rust, line)
+}
+
+/// Language-parameterized [`code_line`].
+#[must_use]
+pub fn code_line_for(lang: Lang, line: &str) -> String {
     let mut out = String::with_capacity(line.len());
-    for seg in segments(line) {
+    for seg in segments_for(lang, line) {
         match seg.kind {
             RsKind::Code => out.push_str(text(line, &seg)),
             RsKind::Str | RsKind::Comment => out.push(' '),

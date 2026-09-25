@@ -1,7 +1,7 @@
 // `kavach lint audit` — over-engineering scan, ranked biggest-cut first; report-only.
-use std::path::Path;
 use crate::cmd::io_safe;
 use crate::cmd::lint::walk::walk_rs;
+use std::path::Path;
 /// One over-engineering finding. `weight` orders the ranking (bigger cut first).
 struct Finding {
     tag: &'static str,

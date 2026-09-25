@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-use chrono::Local;
 use crate::types::{
     AegisVerification, CEODecision, IntentAnalysis, ResearchStatus, VerificationResult,
 };
+use chrono::Local;
+use std::collections::HashSet;
 //   {"name":"Vec<String> + .contains","reason":"O(N) lookup per gate-check; N small enough to be fine but HashSet is idiomatic and read-dominated"},
 //   {"name":"BTreeSet<String>","reason":"O(log N) ordered lookup unneeded; we don't iterate in order; HashSet's O(1) average wins"},
 //   {"name":"HashSet<&'static str>","reason":"would force gate-name allowlist at compile-time; we want runtime extensibility per §13 inviolable"}

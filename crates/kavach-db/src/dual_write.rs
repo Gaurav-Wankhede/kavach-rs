@@ -30,7 +30,13 @@ pub struct MemoryEntry {
     pub entry_key: String,
     pub title: String,
     pub content: String,
+    // Record state (`active`), NOT a kanban lane — boards must read
+    // `entry_status` via `effective_status()` (verified live: falling back to
+    // this column hid `active` rows from every board).
     pub status: Option<String>,
+    // The kanban lane (`todo`/`in_progress`/`done`/`verified`) for roadmap
+    // rows; seeded at creation, moved only by status transitions. Absent
+    // reads as `todo` via `effective_status()`.
     pub entry_status: Option<String>,
     #[serde(default)]
     pub tags: Option<Vec<String>>,
@@ -295,10 +301,7 @@ mod lifecycle_tests {
         // Record-state legacy values never become lanes.
         let mut legacy = with_status(None);
         legacy.status = Some("active".to_owned());
-        assert_eq!(
-            legacy.effective_status_typed(),
-            Some(MemoryStatus::Todo)
-        );
+        assert_eq!(legacy.effective_status_typed(), Some(MemoryStatus::Todo));
         // Unknown literals fail closed to None (match no lane).
         assert_eq!(with_status(Some("blocked")).effective_status_typed(), None);
     }

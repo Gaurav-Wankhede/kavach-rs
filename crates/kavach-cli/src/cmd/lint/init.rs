@@ -1,10 +1,10 @@
 // `kavach lint init` core — detect each stack at the workspace root and install
 // its strict-rules manifest, fail-soft + never clobber an existing manifest.
 // SOURCE: decision.lint.language-profile-template.
-use std::path::Path;
 use crate::cmd::io_safe;
 use crate::cmd::lint::detect::{Stack, detect};
 use crate::cmd::lint::profiles::{go, rust, ts};
+use std::path::Path;
 /// Install (or report) the strict profile for every detected stack at `root`.
 /// `dry_run` reports what WOULD be written without touching disk.
 pub(crate) fn run(root: &Path, dry_run: bool) -> i32 {

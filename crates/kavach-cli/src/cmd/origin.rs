@@ -48,7 +48,10 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
             continue;
         };
         // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#map_unwrap_or
-        let rel = path.strip_prefix(root).ok().filter(|r| !r.as_os_str().is_empty())
+        let rel = path
+            .strip_prefix(root)
+            .ok()
+            .filter(|r| !r.as_os_str().is_empty())
             .map_or_else(|| path.clone(), PathBuf::from);
         out.extend(matcher::sites_in(name, &rel.to_string_lossy(), &src));
     }
@@ -59,7 +62,11 @@ const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", "dist", "build", 
 
 fn source_files(root: &Path) -> Vec<PathBuf> {
     if root.is_file() {
-        return if kavach_patterns::is_code_file(&root.to_string_lossy()) { vec![root.to_path_buf()] } else { Vec::new() };
+        return if kavach_patterns::is_code_file(&root.to_string_lossy()) {
+            vec![root.to_path_buf()]
+        } else {
+            Vec::new()
+        };
     }
     let mut out = Vec::new();
     collect(root, &mut out);
@@ -88,7 +95,9 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
 
 fn report(name: &str, sites: &[Site], root: &Path, all: bool) {
     if sites.is_empty() {
-        println!("[KAVACH_ORIGIN] {name}: no declaration site found (it may be imported, generated, or a usage only)");
+        println!(
+            "[KAVACH_ORIGIN] {name}: no declaration site found (it may be imported, generated, or a usage only)"
+        );
         if let Some(hint) = refine::tool_hint(root) {
             println!("  {hint}");
         }
@@ -108,7 +117,12 @@ fn report(name: &str, sites: &[Site], root: &Path, all: bool) {
     );
     if all {
         for site in sites.iter().skip(1) {
-            println!("  also: {} at {}:{}", site.kind.label(), site.file, site.line);
+            println!(
+                "  also: {} at {}:{}",
+                site.kind.label(),
+                site.file,
+                site.line
+            );
         }
     } else {
         let extra = sites.len().saturating_sub(1);

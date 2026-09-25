@@ -6,18 +6,17 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_db::turso::entries::EntryStore;
 
 /// Pin an official-docs citation to a (project, entry-key).
-pub(super) fn add(
-    project: &str,
-    entry_key: &str,
-    name: &str,
-    slug: &str,
-    url: &str,
-) -> i32 {
+pub(super) fn add(project: &str, entry_key: &str, name: &str, slug: &str, url: &str) -> i32 {
     // RPC-first
-    let metadata = vec![kavach_db::CitationMeta::new(slug.to_owned(), url.to_owned())];
+    let metadata = vec![kavach_db::CitationMeta::new(
+        slug.to_owned(),
+        url.to_owned(),
+    )];
     match rpc_client::citation_add(project, entry_key, name, metadata) {
         Ok(_) => {
-            if let Err(io_err) = print_or_exit(&format!("ok — citation '{name}' pinned to {project}/{entry_key}")) {
+            if let Err(io_err) = print_or_exit(&format!(
+                "ok — citation '{name}' pinned to {project}/{entry_key}"
+            )) {
                 return into_exit_code(io_err);
             }
             return 0;
@@ -55,14 +54,19 @@ pub(super) fn add(
             }
         };
 
-        if let Err(e) = store.upsert_citation(project, entry_key, name, slug, url).await {
+        if let Err(e) = store
+            .upsert_citation(project, entry_key, name, slug, url)
+            .await
+        {
             let msg = format!("error: {e}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);
             }
             return 1;
         }
-        if let Err(io_err) = print_or_exit(&format!("ok — citation '{name}' pinned to {project}/{entry_key}")) {
+        if let Err(io_err) = print_or_exit(&format!(
+            "ok — citation '{name}' pinned to {project}/{entry_key}"
+        )) {
             return into_exit_code(io_err);
         }
         0

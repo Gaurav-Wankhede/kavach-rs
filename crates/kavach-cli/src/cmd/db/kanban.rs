@@ -120,8 +120,9 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
     // K-5: lane/status/key filters apply BEFORE the DAG render — previously the
     // non-`--json` path ignored them and always rendered the full graph, so
     // `--status done` showed the missing-refs view instead of done rows.
-    let has_filter =
-        filters.status != kavach_db::StatusPred::Any || filters.key.is_some() || filters.lane.is_some();
+    let has_filter = filters.status != kavach_db::StatusPred::Any
+        || filters.key.is_some()
+        || filters.lane.is_some();
     if !has_filter {
         let fmt = filters.format.unwrap_or("dag");
         return dag_render::render_dag_from_rows(&roadmap, fmt);

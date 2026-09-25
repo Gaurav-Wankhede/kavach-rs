@@ -1,6 +1,6 @@
 pub mod agents;
-pub mod blocklist;
 pub mod blocking_util;
+pub mod blocklist;
 pub mod bounty_secrets;
 mod cache;
 pub mod factual_trigger;

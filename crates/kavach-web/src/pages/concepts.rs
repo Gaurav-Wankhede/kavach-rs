@@ -53,7 +53,9 @@ pub async fn search(Query(q): Query<SearchQ>) -> Html<String> {
         return render(list_section().await);
     }
     if query_str.len() > 256 {
-        return Html("<p class=\"empty\">Search query is too long (max 256 chars).</p>".to_string());
+        return Html(
+            "<p class=\"empty\">Search query is too long (max 256 chars).</p>".to_string(),
+        );
     }
     let params = json!({ "query": query_str, "limit": 100 });
     render(

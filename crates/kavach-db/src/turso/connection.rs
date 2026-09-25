@@ -137,7 +137,11 @@ impl TursoStore {
     /// # Errors
     /// Returns [`TursoError`] on SQL failure or if integrity check fails.
     pub async fn integrity_check(&self) -> TursoResult<Vec<String>> {
-        let mut rows = self.conn.query("PRAGMA integrity_check;", ()).await.map_err(TursoError::from)?;
+        let mut rows = self
+            .conn
+            .query("PRAGMA integrity_check;", ())
+            .await
+            .map_err(TursoError::from)?;
         let mut results = Vec::new();
         while let Some(row) = rows.next().await.map_err(TursoError::from)? {
             if let Ok(msg) = row.get::<String>(0) {

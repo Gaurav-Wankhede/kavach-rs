@@ -22,7 +22,7 @@ pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
             }
         }
     };
-// SOURCE: https://rust-lang.github.io/rustc/lints/listing/allowed-by-default.html
+    // SOURCE: https://rust-lang.github.io/rustc/lints/listing/allowed-by-default.html
     match super::super::rpc_client::kanban_close(project_slug, key, Some(receipt)) {
         Ok(result) if result.success => {
             let ok = format!(
@@ -65,7 +65,10 @@ async fn close_direct(project_slug: &str, key: &str) -> i32 {
         Ok(None) => return write_err(&format!("error: no roadmap entry with key: {key}")),
         Err(e) => return write_err(&format!("error: {e}")),
     };
-    if let Err(e) = store.update_status(project_slug, "roadmap", key, "verified").await {
+    if let Err(e) = store
+        .update_status(project_slug, "roadmap", key, "verified")
+        .await
+    {
         return write_err(&format!("error: {e}"));
     }
     let ok = format!("closed [roadmap] {key} — {}", entry.title);

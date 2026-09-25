@@ -1,6 +1,6 @@
 //! Lossless Tabular JSON Compactor (SmartCrusher principle).
-use std::fmt::Write as _;
 use serde_json::Value;
+use std::fmt::Write as _;
 
 #[cfg(test)]
 #[path = "tabular_test.rs"]
@@ -101,7 +101,8 @@ pub fn table_to_json(table_str: &str) -> Result<Value, TabularError> {
             } else if let Ok(num) = val_str.parse::<i64>() {
                 Value::Number(num.into())
             } else if let Ok(num) = val_str.parse::<f64>() {
-                serde_json::Number::from_f64(num).map_or_else(|| Value::String((*val_str).to_owned()), Value::Number)
+                serde_json::Number::from_f64(num)
+                    .map_or_else(|| Value::String((*val_str).to_owned()), Value::Number)
             } else {
                 Value::String(val_str.replace("\\t", "\t").replace("\\n", "\n"))
             };

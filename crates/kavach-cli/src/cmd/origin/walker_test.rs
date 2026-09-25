@@ -2,7 +2,10 @@ use super::declared_name;
 
 #[test]
 fn extract_const_name() {
-    assert_eq!(declared_name("const DATABASE_URL: &str"), Some("DATABASE_URL".into()));
+    assert_eq!(
+        declared_name("const DATABASE_URL: &str"),
+        Some("DATABASE_URL".into())
+    );
 }
 
 #[test]

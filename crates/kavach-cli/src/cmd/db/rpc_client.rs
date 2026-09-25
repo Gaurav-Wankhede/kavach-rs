@@ -1,22 +1,25 @@
 // Pre-existing WIP (not from the Turso migration): dispatcher arms for several
 // RPC wrappers below were removed in an uncommitted working-tree refactor,
 // leaving them dead. Allowed so Phase 4 (migrate) compiles alongside that WIP.
-#![expect(dead_code, reason = "orphaned RPC wrappers from in-flight CLI refactor")]
+#![expect(
+    dead_code,
+    reason = "orphaned RPC wrappers from in-flight CLI refactor"
+)]
 mod error;
 mod resilience;
 mod witness;
 mod write_request;
 pub(crate) use error::{format_err, should_fallback_to_direct};
+use kavach_rpc::client::call;
+use kavach_rpc::methods::db::{
+    DeleteParams, DeleteResult, EventParams, EventResult, GetParams, GetResult, KanbanCloseParams,
+    KanbanCloseResult, KanbanParams, KanbanResult, QueryParams, QueryResult, RegisterParams,
+    RegisterResult, SearchParams, SearchResult, StatusUpdateParams, StatusUpdateResult,
+    WipeProjectParams, WipeProjectResult,
+};
 pub(crate) use resilience::{open_turso_resilient, or_str};
 pub(crate) use witness::mint_receipt;
 pub(crate) use write_request::{WriteRequest, write};
-use kavach_rpc::client::call;
-use kavach_rpc::methods::db::{
-    DeleteParams, DeleteResult, EventParams, EventResult, GetParams, GetResult,
-    KanbanCloseParams, KanbanCloseResult, KanbanParams, KanbanResult, QueryParams,
-    QueryResult, RegisterParams, RegisterResult, SearchParams, SearchResult,
-    StatusUpdateParams, StatusUpdateResult, WipeProjectParams, WipeProjectResult,
-};
 #[expect(
     dead_code,
     reason = "RPC API surface — kanban::run staged for RPC fallback wiring (Phase 2 of CLI->RPC migration)"
@@ -211,10 +214,7 @@ pub(super) fn concept_delete_by_prefix(prefix: &str, confirm: bool) -> Result<i6
         .map(|r| r.removed)
         .map_err(format_err)
 }
-pub(super) fn concept_search(
-    query: &str,
-    limit: usize,
-) -> Result<Vec<kavach_db::Entity>, String> {
+pub(super) fn concept_search(query: &str, limit: usize) -> Result<Vec<kavach_db::Entity>, String> {
     let params = kavach_rpc::methods::concept::SearchParams {
         query: query.to_owned(),
         limit: Some(limit),
@@ -282,15 +282,11 @@ pub(super) fn bridge_create(
 }
 pub(super) fn bridge_concepts_for(project: &str) -> Result<Vec<kavach_db::BridgeHit>, String> {
     let params = kavach_rpc::methods::bridge::ConceptsForParams::new(project.to_owned());
-    call::<_, Vec<kavach_db::BridgeHit>>("bridge.concepts_for", Some(params))
-        .map_err(format_err)
+    call::<_, Vec<kavach_db::BridgeHit>>("bridge.concepts_for", Some(params)).map_err(format_err)
 }
-pub(super) fn bridge_projects_for(
-    concept: &str,
-) -> Result<Vec<kavach_db::ProjectHit>, String> {
+pub(super) fn bridge_projects_for(concept: &str) -> Result<Vec<kavach_db::ProjectHit>, String> {
     let params = kavach_rpc::methods::bridge::ProjectsForParams::new(concept.to_owned());
-    call::<_, Vec<kavach_db::ProjectHit>>("bridge.projects_for", Some(params))
-        .map_err(format_err)
+    call::<_, Vec<kavach_db::ProjectHit>>("bridge.projects_for", Some(params)).map_err(format_err)
 }
 pub(super) fn mistake_hit_count(
     name: &str,

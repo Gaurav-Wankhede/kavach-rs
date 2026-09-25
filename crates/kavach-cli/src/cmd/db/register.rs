@@ -46,7 +46,10 @@ pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
 
         // Insert or update project in the projects table
         let tags_json = stack.map(|s| format!("[\"{s}\"]"));
-        if let Err(e) = store.register_project(slug, abs_path, tags_json.as_deref()).await {
+        if let Err(e) = store
+            .register_project(slug, abs_path, tags_json.as_deref())
+            .await
+        {
             let msg = format!("error: {e}");
             if let Err(io_err) = ewrite_or_exit(&msg) {
                 return into_exit_code(io_err);

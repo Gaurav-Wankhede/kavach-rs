@@ -20,12 +20,20 @@ pub(super) fn run(json: &str, root: &Path, all: bool) -> i32 {
     };
     let ranked = scorer::rank(&q, walker::walk(root));
     if ranked.is_empty() {
-        println!("[KAVACH_ORIGIN] role '{}': no candidate >= {:.2} (broaden value_regex / env_key_hints, or try sg / rust-analyzer)", q.role, scorer::THRESHOLD);
+        println!(
+            "[KAVACH_ORIGIN] role '{}': no candidate >= {:.2} (broaden value_regex / env_key_hints, or try sg / rust-analyzer)",
+            q.role,
+            scorer::THRESHOLD
+        );
         return 1;
     }
     // SOURCE: rust-lang.github.io/rust-clippy/master/index.html#indexing_slicing
     let Some(top) = ranked.first() else { return 1 };
-    let top_shape = if top.cand.is_secret { " [secret: location only]" } else { "" };
+    let top_shape = if top.cand.is_secret {
+        " [secret: location only]"
+    } else {
+        ""
+    };
     println!(
         "[KAVACH_ORIGIN] role '{}' -> {} '{}' at {}:{} (score {:.2}){top_shape}",
         q.role,
@@ -37,10 +45,17 @@ pub(super) fn run(json: &str, root: &Path, all: bool) -> i32 {
     );
     if all {
         for ranked_cand in ranked.iter().skip(1) {
-            let shape = if ranked_cand.cand.is_secret { " [secret]" } else { "" };
+            let shape = if ranked_cand.cand.is_secret {
+                " [secret]"
+            } else {
+                ""
+            };
             println!(
                 "  also: '{}' at {}:{} (score {:.2}){shape}",
-                ranked_cand.cand.name, ranked_cand.cand.file, ranked_cand.cand.line, ranked_cand.score
+                ranked_cand.cand.name,
+                ranked_cand.cand.file,
+                ranked_cand.cand.line,
+                ranked_cand.score
             );
         }
     } else {

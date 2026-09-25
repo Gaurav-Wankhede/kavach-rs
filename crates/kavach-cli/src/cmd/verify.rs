@@ -190,13 +190,8 @@ fn run_cargo_stage(sub: &[&str], crate_name: Option<&str>) -> Option<i32> {
 
 /// Flip roadmap row done → verified and print PASS. Shared by the cargo and the
 /// external-verified paths.
-async fn finalize_verified(
-    db: &kavach_db::turso::TursoStore,
-    project_id: &str,
-    key: &str,
-) -> i32 {
-    if let Err(e) = kavach_db::update_status(db, "roadmap", project_id, key, "verified").await
-    {
+async fn finalize_verified(db: &kavach_db::turso::TursoStore, project_id: &str, key: &str) -> i32 {
+    if let Err(e) = kavach_db::update_status(db, "roadmap", project_id, key, "verified").await {
         let msg = format!("error: status transition failed: {e}");
         return ewrite_or_exit(&msg).map_or_else(into_exit_code, |()| 1);
     }

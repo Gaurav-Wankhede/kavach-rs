@@ -107,4 +107,3 @@ fn string_text_mentions_do_not_fire() {
         "got: {v:?}"
     );
 }
-

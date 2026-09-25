@@ -38,9 +38,13 @@ pub(crate) fn check_bash_loop(session: &SessionState, command: &str) -> Option<S
 
 const TOOL_HISTORY_SIZE: usize = 30;
 
-pub(crate) fn check_tool_loop(session: &SessionState, tool_name: &str, tool_input: &str) -> Option<String> {
+pub(crate) fn check_tool_loop(
+    session: &SessionState,
+    tool_name: &str,
+    tool_input: &str,
+) -> Option<String> {
     let normalized_input = normalize_command(tool_input);
-// SOURCE: https://rust.code-maven.com/automatically-fixing-issues-in-rust
+    // SOURCE: https://rust.code-maven.com/automatically-fixing-issues-in-rust
     let key = format!("{tool_name}:{normalized_input}");
     let window_start = session.turn_count.saturating_sub(WINDOW_TURNS);
 

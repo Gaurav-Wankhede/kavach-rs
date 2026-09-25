@@ -52,7 +52,11 @@ fn codex_blocks_via_exit_code_two_not_the_body() {
 
 #[test]
 fn kimi_blocks_via_exit_code_two_and_renders_canonical_json() {
-    assert_eq!(Vendor::Kimi.block_exit_code(), 2, "Kimi hard-block = exit 2");
+    assert_eq!(
+        Vendor::Kimi.block_exit_code(),
+        2,
+        "Kimi hard-block = exit 2"
+    );
     let json = Vendor::Kimi.render(&HookResponse::new_block("x"));
     assert!(
         json.contains(r#""decision":"block""#),

@@ -6,13 +6,13 @@ mod config;
 #[cfg(test)]
 #[path = "blocklist_test.rs"]
 mod tests;
-use config::config_blocklists;
 use super::advisories::is_git_add_all;
 use super::decision::Decision;
 use super::test_tracker::check_unscoped_test_run;
 use super::write_bypass::{
     check_psql_blocked, check_sqlx_migrate_requires_rca, is_write_bypass, targets_tracked_source,
 };
+use config::config_blocklists;
 pub(super) fn check(command: &str) -> Option<Decision> {
     destructive_cli(command)
         .or_else(|| config_blocklists(command))

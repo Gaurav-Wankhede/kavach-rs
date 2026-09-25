@@ -75,7 +75,9 @@ where
     F: FnOnce(&str, &str) -> Option<GateValueDto>,
 {
     match fetch(call, project, gate_key) {
-        Some(GateValueDto { boolean: Some(v), .. }) => v,
+        Some(GateValueDto {
+            boolean: Some(v), ..
+        }) => v,
         Some(_) | None => default,
     }
 }
@@ -96,7 +98,8 @@ pub fn gate_patterns<F>(call: F, project: &str, gate_key: &str, default: &[&str]
 where
     F: FnOnce(&str, &str) -> Option<GateValueDto>,
 {
-    let mut seen: std::collections::HashSet<String> = default.iter().map(|s| (*s).to_owned()).collect();
+    let mut seen: std::collections::HashSet<String> =
+        default.iter().map(|s| (*s).to_owned()).collect();
     let mut out: Vec<String> = default.iter().map(|s| (*s).to_owned()).collect();
     if let Some(extra) = fetch(call, project, gate_key).and_then(|d| d.list) {
         for p in extra {

@@ -1,6 +1,6 @@
 //! Single choke for gate injection: compress + fire-and-forget metric record.
 // SOURCE: anthropic.com/engineering/effective-context-engineering-for-ai-agents
-use kavach_toon::compact::{compress, Level};
+use kavach_toon::compact::{Level, compress};
 
 /// Compress `text` at Ultra level, fire-and-forget a rot-savings metric, return the text.
 #[must_use]
@@ -13,9 +13,9 @@ pub fn compact_inject(text: &str) -> String {
 fn record_metric(input: &str, output: &str) {
     let tokens_in = input.split_whitespace().count();
     let tokens_out = output.split_whitespace().count();
-    let delta = i64::try_from(tokens_in).unwrap_or(i64::MAX).saturating_sub(
-        i64::try_from(tokens_out).unwrap_or(i64::MAX),
-    );
+    let delta = i64::try_from(tokens_in)
+        .unwrap_or(i64::MAX)
+        .saturating_sub(i64::try_from(tokens_out).unwrap_or(i64::MAX));
     let session_id = kavach_session::resolved_session_id();
     if session_id.is_empty() {
         return;

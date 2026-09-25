@@ -44,11 +44,11 @@ fn relevant_keys(prompt: &str) -> Vec<String> {
         return Vec::new();
     }
     let params = serde_json::json!({ "query": prompt, "limit": 8 });
-    let hits: Vec<kavach_db::BrainHit> =
-        match kavach_rpc::client::call("brain.think", Some(params)) {
-            Ok(h) => h,
-            Err(_) => return Vec::new(),
-        };
+    let hits: Vec<kavach_db::BrainHit> = match kavach_rpc::client::call("brain.think", Some(params))
+    {
+        Ok(h) => h,
+        Err(_) => return Vec::new(),
+    };
     hits.into_iter()
         .map(|h| h.id)
         .filter(|id| id.starts_with("decision.") || id.starts_with("roadmap."))

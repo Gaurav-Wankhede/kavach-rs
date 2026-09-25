@@ -7,11 +7,11 @@
 // Two emit formats: `dag` = topo-tiered text (tier 0 = ready now), `mermaid` =
 // flowchart TD for human/GUI viewing. Mermaid is a picture; tiered text is the
 // awareness signal (cheap to inject, names READY/BLOCKED/CYCLE inline).
-use std::collections::HashMap;
-use std::fmt::Write as _;
+use crate::cmd::io_safe::{into_exit_code, print_or_exit};
 use kavach_db::graph::roadmap_dag::TopoOrder;
 use kavach_db::{DagEdge, DagNode, MemoryEntry, RoadmapDag};
-use crate::cmd::io_safe::{into_exit_code, print_or_exit};
+use std::collections::HashMap;
+use std::fmt::Write as _;
 /// Build a `RoadmapDag` from the roadmap ROWS (`list_by_project`) — the same
 /// source the flat board and the scheduler read — instead of the entity-graph
 /// mirror, which is unpopulated for roadmap cards. Edges come from the cards'
@@ -257,7 +257,8 @@ pub(in crate::cmd::db) fn render_dag_from_filtered(
     limit: usize,
 ) -> i32 {
     if rows.is_empty() {
-        return match print_or_exit("[KANBAN DAG] 0 node(s), 0 edge(s) — no rows match the filters") {
+        return match print_or_exit("[KANBAN DAG] 0 node(s), 0 edge(s) — no rows match the filters")
+        {
             Ok(()) => 0,
             Err(io_err) => into_exit_code(io_err),
         };

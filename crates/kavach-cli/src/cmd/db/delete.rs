@@ -1,6 +1,6 @@
 // split: intentional - single command handler for granular delete
-use kavach_rpc::methods::db::delete_confirm_phrase;
 use kavach_db::turso::entries::EntryStore;
+use kavach_rpc::methods::db::delete_confirm_phrase;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_line_or_exit};
 

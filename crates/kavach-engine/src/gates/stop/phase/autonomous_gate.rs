@@ -2,8 +2,8 @@
 //! ONLY in Auto (`permission_mode=="auto"`) or `bypassPermissions`; every other
 //! mode (plan/default/manual/acceptEdits/dontAsk) allows a clean stop. See
 //! decision.engine.stop-autonomous-mode-only.
-use core::ops::ControlFlow;
 use super::super::shared::StopCtx;
+use core::ops::ControlFlow;
 /// True iff the harness reports an autonomous mode where the Stop gate's
 /// auto-continue dispatch should run: dedicated Auto or `bypassPermissions`
 /// (pure → unit-testable). SOURCE: code.claude.com/docs/en/permissions.

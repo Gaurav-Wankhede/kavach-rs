@@ -2,7 +2,10 @@ use super::sites_in;
 use crate::cmd::origin::site::Kind;
 
 fn kinds(name: &str, src: &str) -> Vec<Kind> {
-    sites_in(name, "x.rs", src).into_iter().map(|s| s.kind).collect()
+    sites_in(name, "x.rs", src)
+        .into_iter()
+        .map(|s| s.kind)
+        .collect()
 }
 
 #[test]
@@ -24,7 +27,10 @@ fn finds_inline_enum_variant() {
 
 #[test]
 fn finds_static_declaration() {
-    let k = kinds("REGISTRY", "static REGISTRY: Lazy<Map> = Lazy::new(|| Map::new());");
+    let k = kinds(
+        "REGISTRY",
+        "static REGISTRY: Lazy<Map> = Lazy::new(|| Map::new());",
+    );
     assert!(k.contains(&Kind::Static));
 }
 
@@ -44,8 +50,15 @@ fn config_struct_field_is_centralized() {
 #[test]
 fn ignores_a_mere_usage_not_a_declaration() {
     // A bare reference is NOT a declaration site.
-    let sites = sites_in("MAX_RETRIES", "x.rs", "if attempts < MAX_RETRIES { retry(); }");
-    assert!(sites.is_empty(), "a usage must not be reported as an origin");
+    let sites = sites_in(
+        "MAX_RETRIES",
+        "x.rs",
+        "if attempts < MAX_RETRIES { retry(); }",
+    );
+    assert!(
+        sites.is_empty(),
+        "a usage must not be reported as an origin"
+    );
 }
 
 #[test]

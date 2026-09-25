@@ -48,7 +48,9 @@ pub(crate) fn rewrite_single_toolbelt(cmd: &str) -> Option<String> {
     if trimmed.is_empty() {
         return None;
     }
-    let leading_ws = cmd.get(..cmd.len().saturating_sub(trimmed.len())).unwrap_or("");
+    let leading_ws = cmd
+        .get(..cmd.len().saturating_sub(trimmed.len()))
+        .unwrap_or("");
 
     let (env_prefix, command_body) = extract_env_prefix(trimmed);
 
@@ -73,7 +75,10 @@ fn extract_env_prefix(s: &str) -> (&str, &str) {
             && let Some(pos) = s.get(offset..).and_then(|sub| sub.find(part))
         {
             offset = offset.saturating_add(pos).saturating_add(part.len());
-            while s.get(offset..).is_some_and(|sub| sub.starts_with(char::is_whitespace)) {
+            while s
+                .get(offset..)
+                .is_some_and(|sub| sub.starts_with(char::is_whitespace))
+            {
                 offset = offset.saturating_add(1);
             }
             continue;
@@ -115,7 +120,8 @@ pub(crate) fn split_pipeline(cmd: &str) -> Vec<(&str, Option<&str>)> {
         prev_backslash = ch == '\\' && !prev_backslash;
 
         // Check 2-character operators: && or ||
-        if let (Some(&(_, ch1)), Some(&(idx2, ch2))) = (chars.get(i), chars.get(i.saturating_add(1)))
+        if let (Some(&(_, ch1)), Some(&(idx2, ch2))) =
+            (chars.get(i), chars.get(i.saturating_add(1)))
             && ((ch1 == '&' && ch2 == '&') || (ch1 == '|' && ch2 == '|'))
         {
             let sep_end = idx2.saturating_add(1);

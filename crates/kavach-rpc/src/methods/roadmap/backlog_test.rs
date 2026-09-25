@@ -81,11 +81,7 @@ fn entry(key: &str, status: &str, content: &str) -> kavach_db::MemoryEntry {
     }
 }
 
-fn entry_with_priority(
-    key: &str,
-    status: &str,
-    priority: Option<i64>,
-) -> kavach_db::MemoryEntry {
+fn entry_with_priority(key: &str, status: &str, priority: Option<i64>) -> kavach_db::MemoryEntry {
     kavach_db::MemoryEntry {
         id: None,
         project: "t".to_owned(),

@@ -18,7 +18,8 @@ pub(crate) fn run_idle(input: &HookInput) -> Result<(), EngineError> {
     // Quality gate: block idle if recent failure — force fix before stopping
     if session.has_recent_failure() {
         let tool = session.last_failure_tool.clone();
-        let reason = format!("[TEAM_POLICY] {tool} failed -> {teammate_name} fix before idle -> retry.");
+        let reason =
+            format!("[TEAM_POLICY] {tool} failed -> {teammate_name} fix before idle -> retry.");
         drop(kavach_hook::exit_stop_block(&reason));
         return Ok(());
     }

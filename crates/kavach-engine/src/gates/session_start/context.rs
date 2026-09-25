@@ -48,7 +48,11 @@ fn resolve_section_budget(project: &str) -> usize {
             "session.optional_section_budget",
             default,
         );
-        let safe = if resolved.is_finite() { resolved } else { default };
+        let safe = if resolved.is_finite() {
+            resolved
+        } else {
+            default
+        };
         let clamped = safe.clamp(BUDGET_FLOOR as f64, BUDGET_CEIL as f64);
         clamped as usize
     }

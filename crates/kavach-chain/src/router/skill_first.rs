@@ -1,6 +1,6 @@
 // SOURCE: https://docs.rs/dashmap/latest/dashmap/struct.DashMap.html (DashMap 6.1)
-use dashmap::DashMap;
 use super::types::RoutingDecision;
+use dashmap::DashMap;
 #[derive(Debug)]
 pub struct SkillFirstRouter {
     skill_triggers: DashMap<String, String>,

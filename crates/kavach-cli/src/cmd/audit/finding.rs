@@ -52,7 +52,13 @@ pub(crate) struct Finding {
 
 impl Finding {
     pub(crate) fn dedup_key(&self) -> String {
-        format!("{}|{}|{}|{}", self.lens.slug(), self.detector, self.file, self.line)
+        format!(
+            "{}|{}|{}|{}",
+            self.lens.slug(),
+            self.detector,
+            self.file,
+            self.line
+        )
     }
 }
 

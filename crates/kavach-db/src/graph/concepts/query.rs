@@ -44,8 +44,7 @@ pub async fn find_concept(db: &TursoStore, name: &str) -> Result<Option<Entity>>
             libsql::params![name.to_owned()],
         )
         .await?;
-    resp
-        .next()
+    resp.next()
         .await?
         .map_or_else(|| Ok(None), |row| entity_from_row(&row).map(Some))
 }
@@ -127,7 +126,11 @@ pub async fn search_concepts_fts(
     while let Some(row) = resp.next().await? {
         rows.push(entity_from_row(&row)?);
     }
-    let want = if limit == 0 { rows.len() } else { limit.min(rows.len()) };
+    let want = if limit == 0 {
+        rows.len()
+    } else {
+        limit.min(rows.len())
+    };
     let mut out = Vec::new();
     for entity in &rows {
         if out.len() >= want {

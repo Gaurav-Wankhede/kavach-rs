@@ -1,4 +1,4 @@
-use super::{rank, THRESHOLD};
+use super::{THRESHOLD, rank};
 use crate::cmd::origin::role_query::{Candidate, RoleQuery};
 use crate::cmd::origin::site::Kind;
 

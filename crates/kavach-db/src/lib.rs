@@ -82,8 +82,7 @@ pub use graph::{
 // L0 concept tier RPCs
 pub use graph::{
     concept_query_words as graph_concept_query_words,
-    concept_text_matches as graph_concept_text_matches,
-    delete_concept as graph_delete_concept,
+    concept_text_matches as graph_concept_text_matches, delete_concept as graph_delete_concept,
     delete_concepts_by_prefix as graph_delete_concepts_by_prefix,
     find_concept as graph_find_concept, list_concepts as graph_list_concepts,
     relate_concepts as graph_relate_concepts, search_concepts_fts as graph_search_concepts_fts,

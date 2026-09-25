@@ -98,9 +98,9 @@ fn assert_read_only(sql: &str) -> Result<()> {
             // `PRAGMA table_list`. Anything else (e.g. `PRAGMA journal_mode`
             // writes) stays rejected.
             let rest = words.next().unwrap_or("").to_lowercase();
-            let allowed = READ_PRAGMAS.iter().any(|p| {
-                rest == *p || rest.starts_with(&format!("{p}(")) || rest.starts_with(p)
-            });
+            let allowed = READ_PRAGMAS
+                .iter()
+                .any(|p| rest == *p || rest.starts_with(&format!("{p}(")) || rest.starts_with(p));
             if !allowed {
                 return Err(Error::Validation(format!(
                     "raw query is read-only: PRAGMA `{rest}` is not allowlisted \

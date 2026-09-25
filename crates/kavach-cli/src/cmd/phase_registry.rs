@@ -36,7 +36,9 @@ pub(super) fn is_valid(name: &str) -> bool {
 #[must_use]
 pub(super) fn next_after(current: &str) -> Option<String> {
     let ordered = phases();
-    let idx = ordered.iter().position(|p| p.eq_ignore_ascii_case(current))?;
+    let idx = ordered
+        .iter()
+        .position(|p| p.eq_ignore_ascii_case(current))?;
     ordered.get(idx.saturating_add(1)).cloned()
 }
 

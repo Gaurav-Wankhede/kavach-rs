@@ -11,8 +11,14 @@ fn tdd_missing_test_advises_but_does_not_block() {
     let mut input = HookInput::default();
     input.tool_name = "Write".into();
     input.tool_input = Some(HashMap::from([
-        ("file_path".into(), serde_json::json!("crates/foo/src/widget.rs")),
-        ("content".into(), serde_json::json!("pub fn build() -> i32 { 42 }\n")),
+        (
+            "file_path".into(),
+            serde_json::json!("crates/foo/src/widget.rs"),
+        ),
+        (
+            "content".into(),
+            serde_json::json!("pub fn build() -> i32 { 42 }\n"),
+        ),
     ]));
     let ctx = WriteContext::extract(&input);
     let mut session = kavach_session::SessionState::default();
@@ -34,7 +40,10 @@ fn guard_chain_blocks_silent_io_let_underscore() {
     let mut input = HookInput::default();
     input.tool_name = "Write".into();
     input.tool_input = Some(HashMap::from([
-        ("file_path".into(), serde_json::json!("crates/core/x/src/h.rs")),
+        (
+            "file_path".into(),
+            serde_json::json!("crates/core/x/src/h.rs"),
+        ),
         (
             "content".into(),
             serde_json::json!("pub fn f() {\n    let _ = do_io();\n}\n"),

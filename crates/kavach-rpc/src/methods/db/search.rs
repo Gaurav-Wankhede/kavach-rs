@@ -39,15 +39,10 @@ pub async fn search(
 
     let mut hits = Vec::new();
     for table in &tables {
-        let rows = kavach_db::list_with_filter(
-            &ctx.db,
-            table,
-            &pid,
-            filter.as_ref(),
-            Some(params.limit),
-        )
-        .await
-        .map_err(|e| internal(format!("reading {table}: {e}")))?;
+        let rows =
+            kavach_db::list_with_filter(&ctx.db, table, &pid, filter.as_ref(), Some(params.limit))
+                .await
+                .map_err(|e| internal(format!("reading {table}: {e}")))?;
         for e in rows {
             let status = if e.entry_status_str().is_empty() {
                 e.status_str()

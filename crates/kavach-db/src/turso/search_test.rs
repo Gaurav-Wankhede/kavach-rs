@@ -161,7 +161,9 @@ async fn empty_query_yields_no_hits() {
 #[tokio::test]
 async fn search_corpus_project_prioritizes_scoped_project_and_handles_hyphens() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("fts_project.db")).await.unwrap();
+    let s = TursoStore::open(dir.path().join("fts_project.db"))
+        .await
+        .unwrap();
     s.upsert_entry(&entry(
         "webfind",
         "decision",
