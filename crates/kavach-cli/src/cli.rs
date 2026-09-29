@@ -13,6 +13,7 @@ mod rules;
 mod security;
 mod session;
 mod todos;
+mod working_state;
 
 pub(crate) use db::DbAction;
 pub(crate) use harness_loop::LoopAction;
@@ -22,6 +23,7 @@ pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
 pub(crate) use todos::TodosAction;
+pub(crate) use working_state::WorkingStateAction;
 // PipelineAction is defined inline in this file (initializer→subagent pipeline).
 
 /// Build version string emitted by build.rs as `<iso>+git:<sha>`.
@@ -33,8 +35,8 @@ pub(crate) const KAVACH_GIT_SHA: &str = env!("KAVACH_GIT_SHA");
 #[derive(Parser)]
 #[command(
     name = "kavach",
-    about = "Kavach harness — hooks, SurrealDB kanban, SDLC phases, agent loop control",
-    long_about = "Kavach wraps AI agent sessions with enforcement hooks, a SurrealDB \
+    about = "Kavach harness — hooks, embedded Turso kanban, SDLC phases, agent loop control",
+    long_about = "Kavach wraps AI agent sessions with enforcement hooks, an embedded Turso \
 memory store (projects, roadmap/kanban, decisions, graph), and SDLC phase gates.\n\n\
 WORKFLOWS (common agent paths):\n  \
 Session start:  kavach db kanban --project <slug>\n  \
@@ -62,7 +64,7 @@ pub(crate) enum Commands {
         after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates."
     )]
     Status,
-    /// Start/stop/inspect the background servers (`SurrealDB` store + web UI).
+    /// Start/stop/inspect the background servers (Turso DB store + web UI).
     #[command(
         after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel."
     )]
@@ -94,7 +96,7 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: SessionAction,
     },
-    /// Manage the SurrealDB-backed memory store (projects, kanban, decisions, graph).
+    /// Manage the embedded Turso memory store (projects, kanban, decisions, graph).
     #[command(
         after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  kavach db get --project P --category roadmap --key K --full\n  kavach db write --project P --category roadmap --key K --title T --new\n\nWHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks."
     )]
@@ -264,7 +266,7 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
     #[command(
         long_about = "Emits one JSON object for agent harness startup: project slug, \
 session id/phase, loop active flag, kanban status histogram, and top roadmap rows.\n\n\
-Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is sandboxed.",
+Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is sandboxed.",
         after_help = "EXAMPLES:\n  kavach context --project nicole-carpenter --limit 10\n  kavach context --project P --status in_progress --key backend\n\nWHEN: Prefer over piping stop hooks when you only need backlog visibility."
     )]
     Context {
@@ -280,6 +282,9 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         /// Filter kanban by key substring
         #[arg(long)]
         key: Option<String>,
+        /// Return only changed fields since last call in this session
+        #[arg(long)]
+        delta: bool,
     },
     /// Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks).
     Mistake(crate::cmd::mistake::MistakeArgs),
@@ -305,6 +310,9 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         /// Max fused hits to return (default: 10).
         #[arg(long, default_value_t = 10)]
         limit: usize,
+        /// Weight scoring by session recency and recall frequency
+        #[arg(long)]
+        session_weighted: bool,
     },
     /// Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …)
     /// via `cargo binstall` — ships *with* kavach, no per-machine setup.
@@ -336,6 +344,15 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
         /// Path to file to redact, or '-' for stdin (defaults to stdin if omitted).
         file: Option<String>,
     },
+    /// Bounded working-state scratchpad (zero-heap K/V, max 10 slots).
+    /// Inject at turn start to defeat lost-in-the-middle amnesia.
+    #[command(
+        after_help = "EXAMPLES:\n  kavach working-state set target fn_fetch_url\n  kavach working-state get target\n  kavach working-state inject\n\nWHEN: after any sg/kavach discovery, write the found symbol+location to working-state. Inject at every turn start for O(1) recall."
+    )]
+    WorkingState {
+        #[command(subcommand)]
+        action: WorkingStateAction,
+    },
     /// Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference.
     #[command(
         name = "commands",
@@ -353,19 +370,19 @@ Uses direct SurrealDB (same path as `db kanban`) — reliable when RPC socket is
 
 #[derive(Subcommand)]
 pub(crate) enum ServersAction {
-    /// Ensure the `SurrealDB` store + web UI are running; print the URL.
+    /// Ensure the Turso DB store + web UI are running; print the URL.
     Up {
         /// Web UI port (loopback). Default 7777 (unprivileged).
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
     },
-    /// Stop the web UI (the launchd-owned `SurrealDB` server is left running).
+    /// Stop the web UI (the launchd-owned Turso store is embedded — no separate server).
     Down {
         /// Web UI port to stop. Default 7777.
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
     },
-    /// Report up/down for the `SurrealDB` store + web UI.
+    /// Report up/down for the Turso DB store + web UI.
     Status {
         /// Web UI port to probe. Default 7777.
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]

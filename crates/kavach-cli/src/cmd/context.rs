@@ -8,6 +8,7 @@ pub(super) fn run(
     limit: usize,
     status_filter: Option<&str>,
     key_filter: Option<&str>,
+    delta: bool,
 ) -> i32 {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
@@ -19,7 +20,7 @@ pub(super) fn run(
             return 1;
         }
     };
-    runtime.block_on(async { run_async(project, limit, status_filter, key_filter).await })
+    runtime.block_on(async { run_async(project, limit, status_filter, key_filter, delta).await })
 }
 
 async fn run_async(
@@ -27,6 +28,7 @@ async fn run_async(
     limit: usize,
     status_filter: Option<&str>,
     key_filter: Option<&str>,
+    delta: bool,
 ) -> i32 {
     // Session state
     let session = kavach_session::get_or_create_session();
@@ -111,7 +113,18 @@ async fn run_async(
         open.into_iter().take(limit).cloned().collect()
     };
 
-    build_and_print_payload(project_slug, &session, &roadmap, &displayed, limit, total)
+    build_and_print_payload(project_slug, &session, &roadmap, &displayed, limit, total, delta)
+}
+
+fn snapshot_file(project: &str) -> std::path::PathBuf {
+    let home = std::env::var("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::var("USERPROFILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        });
+    home.join(".kavach").join(format!("last_context_{project}.json"))
 }
 
 fn build_and_print_payload(
@@ -121,6 +134,7 @@ fn build_and_print_payload(
     displayed: &[kavach_db::MemoryEntry],
     limit: usize,
     total: usize,
+    delta: bool,
 ) -> i32 {
     // Build kanban JSON items
     let items_json: Vec<String> = displayed
@@ -189,7 +203,41 @@ fn build_and_print_payload(
         more = limit > 0 && total > limit,
     );
 
-    if let Err(io_err) = print_or_exit(&payload) {
+    let output = if delta {
+        let snap_path = snapshot_file(project_slug);
+        let prev = std::fs::read_to_string(&snap_path).unwrap_or_default();
+        if let Some(parent) = snap_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(&snap_path, &payload);
+
+        if prev.trim() == payload.trim() {
+            format!(r#"{{"project":"{project_slug}","delta":true,"changed":{{}}}}"#)
+        } else if let (Ok(prev_val), Ok(curr_val)) = (
+            serde_json::from_str::<serde_json::Value>(&prev),
+            serde_json::from_str::<serde_json::Value>(&payload),
+        ) {
+            let mut diff = serde_json::Map::new();
+            if let (Some(prev_obj), Some(curr_obj)) = (prev_val.as_object(), curr_val.as_object()) {
+                for (k, v) in curr_obj {
+                    if prev_obj.get(k) != Some(v) {
+                        diff.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+            serde_json::json!({
+                "project": project_slug,
+                "delta": true,
+                "changed": diff
+            }).to_string()
+        } else {
+            payload
+        }
+    } else {
+        payload
+    };
+
+    if let Err(io_err) = print_or_exit(&output) {
         return into_exit_code(io_err);
     }
     0

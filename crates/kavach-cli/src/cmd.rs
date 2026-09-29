@@ -35,6 +35,7 @@ mod toolbelt;
 pub(crate) mod verify;
 pub(crate) mod verify_frontend;
 pub(crate) mod verify_frontend_detect;
+mod working_state;
 
 use crate::cli::Commands;
 
@@ -121,7 +122,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             limit,
             status,
             key,
-        } => context::run(&project, limit, status.as_deref(), key.as_deref()),
+            delta,
+        } => context::run(&project, limit, status.as_deref(), key.as_deref(), delta),
         Commands::Mistake(args) => mistake::run(args),
         Commands::Bulk(args) => bulk::run(args),
         Commands::Goal(args) => goal::run(args),
@@ -129,11 +131,13 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             project,
             query,
             limit,
-        } => think::run(&project, &query, limit),
+            session_weighted,
+        } => think::run(&project, &query, limit, session_weighted),
         Commands::Toolbelt { action } => toolbelt::run(action),
         Commands::Lint { action } => lint::run(action),
         Commands::Retrieve { hash } => retrieve::run(&hash),
         Commands::Redact { file } => redact::run(file.as_deref()),
+        Commands::WorkingState { action } => working_state::run(&action),
         Commands::CommandTree { tree, markdown } => commands::run(tree, markdown),
     }
 }

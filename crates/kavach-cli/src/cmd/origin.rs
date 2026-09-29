@@ -9,6 +9,7 @@ mod secret_hints;
 mod signals;
 mod site;
 mod walker;
+mod cache;
 
 use site::Site;
 use std::path::{Path, PathBuf};
@@ -30,6 +31,14 @@ pub(crate) fn run(name: &str, root: &Path, all: bool) -> i32 {
         eprintln!("origin: target path missing: {}", root.display());
         return 2;
     }
+
+    if !all {
+        if let Some(cached_site) = cache::get(name, root) {
+            report(name, &[cached_site], root, false);
+            return 0;
+        }
+    }
+
     let mut sites = collect_sites(name, root);
     sites.sort_by(|a, b| {
         a.kind
@@ -37,6 +46,11 @@ pub(crate) fn run(name: &str, root: &Path, all: bool) -> i32 {
             .then_with(|| (a.file.clone(), a.line).cmp(&(b.file.clone(), b.line)))
     });
     sites.dedup_by(|a, b| a.dedup_key() == b.dedup_key());
+
+    if let Some(top) = sites.first() {
+        cache::put(name, top);
+    }
+
     report(name, &sites, root, all);
     i32::from(sites.is_empty())
 }
@@ -58,11 +72,37 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
     out
 }
 
-const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", "dist", "build", ".venv"];
+const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", "dist", "build", ".venv", ".cache"];
+
+const ORIGIN_EXTENSIONS: &[&str] = &[
+    // Modern Code
+    "rs", "ts", "tsx", "js", "jsx", "py", "go", "java", "c", "cpp", "h", "hpp", "cs", "swift", "kt", "rb", "php", "zig", "lua",
+    // Config & Secrets
+    "env", "toml", "yaml", "yml", "json", "jsonc", "ini", "properties", "conf", "cfg",
+    // Schemas & Databases
+    "sql", "ddl", "surql", "prisma", "proto", "graphql", "gql",
+    // Documentation & Specs
+    "md", "markdown", "mdx", "adoc", "org",
+    // Web & Markup
+    "html", "xml", "svg", "vue", "svelte", "astro", "css", "scss",
+    // Infra & Toolchains
+    "tf", "hcl", "dockerfile", "containerfile", "makefile", "justfile",
+];
+
+fn is_origin_indexable(path: &Path) -> bool {
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+    if name == "dockerfile" || name == "containerfile" || name == "makefile" || name == "justfile" || name.starts_with(".env") {
+        return true;
+    }
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(str::to_lowercase)
+        .is_some_and(|e| ORIGIN_EXTENSIONS.contains(&e.as_str()))
+}
 
 fn source_files(root: &Path) -> Vec<PathBuf> {
     if root.is_file() {
-        return if kavach_patterns::is_code_file(&root.to_string_lossy()) {
+        return if is_origin_indexable(root) {
             vec![root.to_path_buf()]
         } else {
             Vec::new()
@@ -87,7 +127,7 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
             if !skip {
                 collect(&path, out);
             }
-        } else if kavach_patterns::is_code_file(&path.to_string_lossy()) {
+        } else if is_origin_indexable(&path) {
             out.push(path);
         }
     }

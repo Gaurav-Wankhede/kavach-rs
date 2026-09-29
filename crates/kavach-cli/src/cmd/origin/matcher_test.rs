@@ -84,3 +84,39 @@ fn handles_invalid_regex_pattern_gracefully() {
     // rather than panicking.
     assert!(sites.is_empty());
 }
+
+#[test]
+fn finds_sql_schema_table() {
+    let k = kinds("users", "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY);");
+    assert!(k.contains(&Kind::Schema));
+}
+
+#[test]
+fn finds_markdown_doc_anchor() {
+    let k = kinds("Architecture", "# Architecture Overview\nSome text");
+    assert!(k.contains(&Kind::DocAnchor));
+}
+
+#[test]
+fn finds_yaml_and_json_config_fields() {
+    let k1 = kinds("database_url", "database_url: postgres://localhost/db");
+    assert!(k1.contains(&Kind::ConfigField));
+
+    let k2 = kinds("port", "  \"port\": 8080,");
+    assert!(k2.contains(&Kind::ConfigField));
+}
+
+#[test]
+fn finds_polyglot_functions() {
+    let py = kinds("execute_query", "def execute_query(conn, sql):");
+    assert!(py.contains(&Kind::Function));
+
+    let ts = kinds("fetchUser", "export const fetchUser = async (id: string) => {");
+    assert!(ts.contains(&Kind::Function));
+}
+
+#[test]
+fn finds_node_process_env() {
+    let k = kinds("SECRET_KEY", "const key = process.env.SECRET_KEY || 'default';");
+    assert!(k.contains(&Kind::EnvVar));
+}

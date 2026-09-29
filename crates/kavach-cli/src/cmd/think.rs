@@ -7,23 +7,87 @@ use crate::cmd::io_safe::{into_exit_code, print_or_exit};
 /// Below this many hits the query is treated as a knowledge gap (auto-filed).
 const GAP_FLOOR: usize = 3;
 
-pub(super) fn run(project: &str, query: &str, limit: usize) -> i32 {
+pub(super) fn run(project: &str, query: &str, limit: usize, session_weighted: bool) -> i32 {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
         Err(e) => return emit(&format!(r#"{{"error":"tokio: {e}"}}"#)),
     };
-    runtime.block_on(async { run_async(project, query, limit).await })
+    runtime.block_on(async { run_async(project, query, limit, session_weighted).await })
 }
 
-async fn run_async(project_slug: &str, query: &str, limit: usize) -> i32 {
+fn recall_file() -> std::path::PathBuf {
+    let home = std::env::var("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::var("USERPROFILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        });
+    home.join(".kavach").join("recall_frequency.json")
+}
+
+fn working_state_file() -> std::path::PathBuf {
+    let home = std::env::var("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::var("USERPROFILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        });
+    home.join(".kavach").join("working_state.json")
+}
+
+fn apply_session_weighting(query: &str, hits: &mut Vec<kavach_db::BrainHit>) {
+    let ws_content = std::fs::read_to_string(working_state_file()).unwrap_or_default();
+    let ws_lower = ws_content.to_lowercase();
+
+    let r_path = recall_file();
+    let mut freq_map: std::collections::HashMap<String, u32> = std::fs::read_to_string(&r_path)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default();
+
+    let q_count = freq_map.entry(query.to_string()).or_insert(0);
+    *q_count = q_count.saturating_add(1);
+
+    for hit in hits.iter_mut() {
+        let count = freq_map.entry(hit.id.clone()).or_insert(0);
+        *count = count.saturating_add(1);
+
+        let freq_mult = 1.0 + (*count as f64 * 0.2);
+        hit.score *= freq_mult;
+
+        if !ws_lower.is_empty() && (ws_lower.contains(&hit.id.to_lowercase()) || hit.id.to_lowercase().contains(query)) {
+            hit.score *= 10.0;
+        }
+    }
+
+    if let Some(parent) = r_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(json) = serde_json::to_string(&freq_map) {
+        let _ = std::fs::write(&r_path, json);
+    }
+
+    hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+}
+
+async fn run_async(project_slug: &str, query: &str, limit: usize, session_weighted: bool) -> i32 {
     let db = match kavach_db::open_default_resilient().await {
         Ok(d) => d,
         Err(e) => return emit(&format!(r#"{{"error":"db: {e}"}}"#)),
     };
-    let hits = match kavach_db::search_corpus_project(&db, Some(project_slug), query, limit).await {
+    let fetch_limit = if session_weighted { limit.max(10) * 2 } else { limit };
+    let mut hits = match kavach_db::search_corpus_project(&db, Some(project_slug), query, fetch_limit).await {
         Ok(h) => h,
         Err(e) => return emit(&format!(r#"{{"error":"{e}"}}"#)),
     };
+
+    if session_weighted {
+        apply_session_weighting(query, &mut hits);
+        hits.truncate(limit);
+    }
+
     let filed = if hits.len() < GAP_FLOOR {
         file_gap(&db, project_slug, query).await
     } else {

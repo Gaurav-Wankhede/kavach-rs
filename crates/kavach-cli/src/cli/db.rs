@@ -191,7 +191,7 @@ pub(crate) enum DbAction {
     },
     /// Show kanban board for a project (todo / `in_progress` / done)
     #[command(
-        long_about = "Direct SurrealDB read (no RPC). Primary health check for agents.\n\n\
+        long_about = "Direct Turso DB read (no RPC). Primary health check for agents.\n\n\
 Open lanes: todo, in_progress, done. Use --include-verified for terminal verified rows.",
         after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  kavach db kanban --project P --status in_progress --key backend --json\n\nWHEN: Session start and after every card close — prefer over stop-hook pipes."
     )]
@@ -372,7 +372,7 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
     },
     /// Add or refresh a citation (official-docs context) keyed by (project, entry-key)
     #[command(
-        after_help = "EXAMPLES:\n  kavach db citation-add --project P --entry-key surreal --name SurrealDB --slug records --url https://surrealdb.com/docs\n\nWHEN: Pin an official-docs citation to a (project, entry-key)."
+        after_help = "EXAMPLES:\n  kavach db citation-add --project P --entry-key turso --name Turso --slug records --url https://docs.turso.tech\n\nWHEN: Pin an official-docs citation to a (project, entry-key)."
     )]
     CitationAdd {
         /// Project slug
@@ -381,7 +381,7 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         /// Stable entry key (`snake_case`)
         #[arg(long = "entry-key")]
         entry_key: String,
-        /// Display name (e.g. `SurrealDB`)
+        /// Display name (e.g. `Turso`)
         #[arg(long)]
         name: String,
         /// One metadata slug (e.g. "records")
@@ -400,13 +400,13 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         #[arg(long)]
         project: String,
     },
-    /// Run a read-only `SurrealQL` query against the store (`SELECT`/`INFO` only).
+    /// Run a read-only SQL query against the store (`SELECT` only).
     /// Ad-hoc graph inspection; mutations go through typed verbs (write, mistake-purge, …).
     #[command(
-        after_help = "EXAMPLES:\n  kavach db query-raw --query 'SELECT name FROM entity LIMIT 5'\n\nWHEN: Ad-hoc read-only SurrealQL (SELECT/INFO only); mutations go through typed verbs."
+        after_help = "EXAMPLES:\n  kavach db query-raw --query 'SELECT name FROM entity LIMIT 5'\n\nWHEN: Ad-hoc read-only SQL (SELECT only); mutations go through typed verbs."
     )]
     QueryRaw {
-        /// The read-only `SurrealQL` to execute, e.g. `SELECT name FROM entity LIMIT 5`.
+        /// The read-only SQL to execute, e.g. `SELECT name FROM entity LIMIT 5`.
         #[arg(long)]
         query: String,
     },
@@ -419,12 +419,12 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         #[arg(long)]
         project: String,
     },
-    /// SurrealDB → embedded Turso migration (PRD_SURREALDB_TO_TURSO_MIGRATION Phase 4)
+    /// [ARCHIVED] SurrealDB → Turso migration — migration complete, this command is a noop
     #[command(
         after_help = "EXAMPLES:\n  kavach db migrate --verb import --from dump.ndjson --to ~/.kavach/kavach.db\n  kavach db migrate --verb verify --from dump.ndjson --to ~/.kavach/kavach.db\n\nWHEN: One-time migration. Export via `kavach db query-raw` per table; import validates dangling edges + counts before reporting success."
     )]
     Migrate {
-        /// Which migrate step: `export` (dump live SurrealDB), `import` (build DB from NDJSON), or `verify`
+        /// Migration step (noop — migration complete): `export`, `import`, or `verify`
         #[arg(long, default_value = "import")]
         verb: String,
         /// NDJSON export path (source of truth for import/verify)
