@@ -256,7 +256,6 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
         full: bool,
     },
     /// Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks).
-    Mistake(crate::cmd::mistake::MistakeArgs),
     /// Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus.
     /// Emits cited, RRF-ranked hits as JSON; auto-files a research card when the
     /// corpus is thin for the query (gap-analysis closes the self-improving loop).

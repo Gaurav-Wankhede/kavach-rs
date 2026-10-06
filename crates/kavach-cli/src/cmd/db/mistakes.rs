@@ -31,11 +31,11 @@ kavach mistake clear-all --project P --confirm"
 )]
 pub(crate) struct MistakeArgs {
     #[command(subcommand)]
-    pub action: MistakeAction,
+    pub action: MistakesAction,
 }
 
 #[derive(Debug, Subcommand)]
-pub(crate) enum MistakeAction {
+pub(crate) enum MistakesAction {
     /// List mistake ledger rows sorted by `hit_count` (most recurring first).
     List {
         /// Project slug whose mistake rows to list.
@@ -101,22 +101,22 @@ pub(crate) enum MistakeAction {
     },
 }
 
-pub(crate) fn run(args: MistakeArgs) -> i32 {
-    match args.action {
-        MistakeAction::List {
+pub(crate) fn run(action: MistakesAction) -> i32 {
+    match action {
+        MistakesAction::List {
             project,
             limit,
             gate,
         } => list(&project, limit, gate.as_deref()),
-        MistakeAction::Inspect { project, key } => inspect(&project, &key),
-        MistakeAction::Clear {
+        MistakesAction::Inspect { project, key } => inspect(&project, &key),
+        MistakesAction::Clear {
             project,
             key,
             confirm,
         } => clear(&project, &key, confirm),
-        MistakeAction::ClearAll { project, confirm } => clear_all(&project, confirm),
-        MistakeAction::Stats { project } => stats(&project),
-        MistakeAction::Record {
+        MistakesAction::ClearAll { project, confirm } => clear_all(&project, confirm),
+        MistakesAction::Stats { project } => stats(&project),
+        MistakesAction::Record {
             gate,
             banned,
             instead,

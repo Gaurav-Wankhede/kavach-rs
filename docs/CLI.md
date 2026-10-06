@@ -76,19 +76,9 @@ WHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for healt
 
 ## `kavach db backup`
 
-Backup database snapshot with integrity check to ~/.kavach/backups/
-
 | Flag | Description | Default |
 |---|---|---|
 | `--keep` | Number of recent backups to keep (default: 10) | 10 |
-
-```
-EXAMPLES:
-  kavach db backup
-  kavach db backup --keep 5
-
-WHEN: Create a point-in-time snapshot of kavach.db.
-```
 
 ## `kavach db checkpoint`
 
@@ -345,6 +335,74 @@ EXAMPLES:
 
 WHEN: Mark a roadmap card verified once `kavach verify` has passed.
 ```
+
+## `kavach db mistakes`
+
+Backup database snapshot with integrity check to ~/.kavach/backups/ Inspect, record, or clear anti-pattern mistakes in the Knowledge Graph
+
+```
+EXAMPLES:
+  kavach db backup
+  kavach db backup --keep 5
+
+WHEN: Create a point-in-time snapshot of kavach.db.
+```
+
+## `kavach db mistakes clear`
+
+Delete one mistake row after human review (--confirm required)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--key` | Mistake row key to delete |  |
+| `--confirm` | Required safety flag — refuses without it |  |
+
+## `kavach db mistakes clear-all`
+
+Wipe all mistake rows for a project (--confirm required)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--confirm` | Required safety flag — refuses without it |  |
+
+## `kavach db mistakes inspect`
+
+Show full content for one mistake row (gate block detail + metadata)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--key` | Mistake row key (from `mistake list` or stop-gate advisory) |  |
+
+## `kavach db mistakes list`
+
+List mistake ledger rows sorted by `hit_count` (most recurring first)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug whose mistake rows to list |  |
+| `--limit` | Max rows to print (default 10) | 10 |
+| `--gate` | Filter to one gate name (e.g. `behavioral_breaker_tripped`) |  |
+
+## `kavach db mistakes record`
+
+Self-file a mistake the stop-gate detectors did NOT catch. The LLM-facing door into the ledger: when you realize you erred, categorize + persist it HERE so SessionStart reinjects it next session. Writes to the shared global namespace (visible to every project). SOURCE: decision.mistake-llm-self-report
+
+| Flag | Description | Default |
+|---|---|---|
+| `--gate` | Short gate/category name (e.g. `assumed_without_verifying`). Sanitized |  |
+| `--banned` | The banned sample — the phrase/behavior that was the mistake |  |
+| `--instead` | The correct action to take instead next time |  |
+
+## `kavach db mistakes stats`
+
+Aggregate hit counts by gate (dashboard for recurring failures)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
 
 ## `kavach db next-prompt`
 
@@ -721,75 +779,6 @@ Run ONE loophole-hunt round: emit the iteration YAML to /tmp, scan the six attac
 | `--run-id` | Sweep run id (groups iterations; defaults to a fixed `adhoc` id so a re-run is idempotent on the same findings). Override per scheduled run | adhoc |
 | `--round` | 1-based round number within the run (the loop-until-dry counter) | 1 |
 
-## `kavach mistake`
-
-Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks)
-
-```
-EXAMPLES:
-  kavach mistake stats --project nicole-carpenter
-  kavach mistake list --project P --limit 10 [--gate behavioral_breaker_tripped]
-  kavach mistake inspect --project P --key mistake.<gate>.<slug>
-  kavach mistake clear --project P --key K --confirm
-  kavach mistake clear-all --project P --confirm
-```
-
-## `kavach mistake clear`
-
-Delete one mistake row after human review (--confirm required)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--key` | Mistake row key to delete |  |
-| `--confirm` | Required safety flag — refuses without it |  |
-
-## `kavach mistake clear-all`
-
-Wipe all mistake rows for a project (--confirm required)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--confirm` | Required safety flag — refuses without it |  |
-
-## `kavach mistake inspect`
-
-Show full content for one mistake row (gate block detail + metadata)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--key` | Mistake row key (from `mistake list` or stop-gate advisory) |  |
-
-## `kavach mistake list`
-
-List mistake ledger rows sorted by `hit_count` (most recurring first)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug whose mistake rows to list |  |
-| `--limit` | Max rows to print (default 10) | 10 |
-| `--gate` | Filter to one gate name (e.g. `behavioral_breaker_tripped`) |  |
-
-## `kavach mistake record`
-
-Self-file a mistake the stop-gate detectors did NOT catch. The LLM-facing door into the ledger: when you realize you erred, categorize + persist it HERE so SessionStart reinjects it next session. Writes to the shared global namespace (visible to every project). SOURCE: decision.mistake-llm-self-report
-
-| Flag | Description | Default |
-|---|---|---|
-| `--gate` | Short gate/category name (e.g. `assumed_without_verifying`). Sanitized |  |
-| `--banned` | The banned sample — the phrase/behavior that was the mistake |  |
-| `--instead` | The correct action to take instead next time |  |
-
-## `kavach mistake stats`
-
-Aggregate hit counts by gate (dashboard for recurring failures)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-
 ## `kavach origin`
 
 Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse file:line)
@@ -1000,7 +989,7 @@ WHEN: session-start sanity check; confirms project slug and pending gates.
 
 ## `kavach think`
 
-Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus. Emits cited, RRF-ranked hits as JSON; auto-files a research card when the corpus is thin for the query (gap-analysis closes the self-improving loop). SOURCE: roadmap.unit.harness.brain-os.g2-think-mode
+Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks). Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus. Emits cited, RRF-ranked hits as JSON; auto-files a research card when the corpus is thin for the query (gap-analysis closes the self-improving loop). SOURCE: roadmap.unit.harness.brain-os.g2-think-mode
 
 | Flag | Description | Default |
 |---|---|---|

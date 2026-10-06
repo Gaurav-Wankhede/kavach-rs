@@ -444,6 +444,11 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
     #[command(
         after_help = "EXAMPLES:\n  kavach db backup\n  kavach db backup --keep 5\n\nWHEN: Create a point-in-time snapshot of kavach.db."
     )]
+    /// Inspect, record, or clear anti-pattern mistakes in the Knowledge Graph
+    Mistakes {
+        #[command(subcommand)]
+        action: crate::cmd::db::mistakes::MistakesAction,
+    },
     Backup {
         /// Number of recent backups to keep (default: 10)
         #[arg(long, default_value_t = 10)]

@@ -15,6 +15,7 @@ mod event;
 mod gate_config;
 mod get;
 mod kanban;
+pub(crate) mod mistakes;
 mod next_prompt;
 mod query;
 mod query_raw;

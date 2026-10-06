@@ -14,7 +14,7 @@ mod install;
 pub(crate) mod io_safe;
 mod lint;
 mod loophole;
-pub(crate) mod mistake;
+
 mod origin;
 mod oversized;
 
@@ -101,7 +101,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             delta,
             full,
         } => context::run(&project, limit, status.as_deref(), key.as_deref(), delta, full),
-        Commands::Mistake(args) => mistake::run(args),
+
         Commands::Think {
             project,
             query,
