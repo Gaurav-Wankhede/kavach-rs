@@ -9,6 +9,7 @@ pub(super) fn run(
     status_filter: Option<&str>,
     key_filter: Option<&str>,
     delta: bool,
+    full: bool,
 ) -> i32 {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(r) => r,
@@ -20,7 +21,7 @@ pub(super) fn run(
             return 1;
         }
     };
-    runtime.block_on(async { run_async(project, limit, status_filter, key_filter, delta).await })
+    runtime.block_on(async { run_async(project, limit, status_filter, key_filter, delta, full).await })
 }
 
 async fn run_async(
@@ -29,6 +30,7 @@ async fn run_async(
     status_filter: Option<&str>,
     key_filter: Option<&str>,
     delta: bool,
+    full: bool,
 ) -> i32 {
     // Session state
     let session = kavach_session::get_or_create_session();
@@ -113,7 +115,21 @@ async fn run_async(
         open.into_iter().take(limit).cloned().collect()
     };
 
-    build_and_print_payload(project_slug, &session, &roadmap, &displayed, limit, total, delta)
+    let opts = PayloadOpts {
+        limit,
+        total,
+        delta,
+        full,
+    };
+    build_and_print_payload(project_slug, &session, &roadmap, &displayed, opts)
+}
+
+#[derive(Clone, Copy)]
+struct PayloadOpts {
+    limit: usize,
+    total: usize,
+    delta: bool,
+    full: bool,
 }
 
 fn snapshot_file(project: &str) -> std::path::PathBuf {
@@ -127,14 +143,16 @@ fn snapshot_file(project: &str) -> std::path::PathBuf {
     home.join(".kavach").join(format!("last_context_{project}.json"))
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "Constructs comprehensive context payload with optional JSON delta computation"
+)]
 fn build_and_print_payload(
     project_slug: &str,
     session: &kavach_session::SessionState,
     roadmap: &[kavach_db::MemoryEntry],
     displayed: &[kavach_db::MemoryEntry],
-    limit: usize,
-    total: usize,
-    delta: bool,
+    opts: PayloadOpts,
 ) -> i32 {
     // Build kanban JSON items
     let items_json: Vec<String> = displayed
@@ -199,46 +217,62 @@ fn build_and_print_payload(
         dn = done_count,
         vf = verified_count,
         items = items_json.join(","),
+        total = opts.total,
         disp = displayed.len(),
-        more = limit > 0 && total > limit,
+        more = opts.limit > 0 && opts.total > opts.limit,
     );
 
-    let output = if delta {
-        let snap_path = snapshot_file(project_slug);
-        let prev = std::fs::read_to_string(&snap_path).unwrap_or_default();
-        if let Some(parent) = snap_path.parent()
-            && let Err(e) = std::fs::create_dir_all(parent)
-        {
-            eprintln!("warning: failed to create context snap dir: {e}");
-        }
-        if let Err(e) = std::fs::write(&snap_path, &payload) {
-            eprintln!("warning: failed to write context snapshot: {e}");
-        }
+    let output = if opts.full {
+        if opts.delta {
+            let snap_path = snapshot_file(project_slug);
+            let prev = std::fs::read_to_string(&snap_path).unwrap_or_default();
+            if let Some(parent) = snap_path.parent()
+                && let Err(e) = std::fs::create_dir_all(parent)
+            {
+                eprintln!("warning: failed to create context snap dir: {e}");
+            }
+            if let Err(e) = std::fs::write(&snap_path, &payload) {
+                eprintln!("warning: failed to write context snapshot: {e}");
+            }
 
-        if prev.trim() == payload.trim() {
-            format!(r#"{{"project":"{project_slug}","delta":true,"changed":{{}}}}"#)
-        } else if let (Ok(prev_val), Ok(curr_val)) = (
-            serde_json::from_str::<serde_json::Value>(&prev),
-            serde_json::from_str::<serde_json::Value>(&payload),
-        ) {
-            let mut diff = serde_json::Map::new();
-            if let (Some(prev_obj), Some(curr_obj)) = (prev_val.as_object(), curr_val.as_object()) {
-                for (k, v) in curr_obj {
-                    if prev_obj.get(k) != Some(v) {
-                        diff.insert(k.clone(), v.clone());
+            if prev.trim() == payload.trim() {
+                format!(r#"{{"project":"{project_slug}","delta":true,"changed":{{}}}}"#)
+            } else if let (Ok(prev_val), Ok(curr_val)) = (
+                serde_json::from_str::<serde_json::Value>(&prev),
+                serde_json::from_str::<serde_json::Value>(&payload),
+            ) {
+                let mut diff = serde_json::Map::new();
+                if let (Some(prev_obj), Some(curr_obj)) = (prev_val.as_object(), curr_val.as_object()) {
+                    for (k, v) in curr_obj {
+                        if prev_obj.get(k) != Some(v) {
+                            diff.insert(k.clone(), v.clone());
+                        }
                     }
                 }
+                serde_json::json!({
+                    "project": project_slug,
+                    "delta": true,
+                    "changed": diff
+                }).to_string()
+            } else {
+                payload
             }
-            serde_json::json!({
-                "project": project_slug,
-                "delta": true,
-                "changed": diff
-            }).to_string()
         } else {
             payload
         }
     } else {
-        payload
+        let active_target = if session.loop_target.is_empty() {
+            displayed.first().map_or("none", |c| c.entry_key.as_str())
+        } else {
+            &session.loop_target
+        };
+        format!(
+            "[STATE] project={project_slug} phase={} target={active_target} kanban={{ip:{in_progress_count},td:{todo_count},dn:{done_count},vf:{verified_count}}} loop={{active:{},iter:{}/{}}}",
+            session.current_phase,
+            session.loop_active,
+            session.loop_iteration,
+            session.loop_max_iterations
+        )
     };
 
     if let Err(io_err) = print_or_exit(&output) {

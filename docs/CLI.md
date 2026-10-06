@@ -51,6 +51,7 @@ Unified JSON snapshot: kanban counts, session, phase, loop state
 | `--status` | Filter kanban by status |  |
 | `--key` | Filter kanban by key substring |  |
 | `--delta` | Return only changed fields since last call in this session |  |
+| `--full` | Emit full raw JSON payload instead of default 1-line badge |  |
 
 ```
 EXAMPLES:

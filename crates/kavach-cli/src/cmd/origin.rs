@@ -72,8 +72,6 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
     out
 }
 
-const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", "dist", "build", ".venv", ".cache"];
-
 const ORIGIN_EXTENSIONS: &[&str] = &[
     // Modern Code
     "rs", "ts", "tsx", "js", "jsx", "py", "go", "java", "c", "cpp", "h", "hpp", "cs", "swift", "kt", "rb", "php", "zig", "lua",
@@ -109,28 +107,25 @@ fn source_files(root: &Path) -> Vec<PathBuf> {
         };
     }
     let mut out = Vec::new();
-    collect(root, &mut out);
-    out
-}
+    let walker = ignore::WalkBuilder::new(root)
+        .hidden(true)
+        .parents(true)
+        .ignore(true)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true)
+        .build();
 
-fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(dir_iter) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for item in dir_iter.flatten() {
-        let path = item.path();
-        if path.is_dir() {
-            let skip = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| SKIP_DIRS.contains(&n));
-            if !skip {
-                collect(&path, out);
-            }
-        } else if is_origin_indexable(&path) {
-            out.push(path);
+    for result in walker {
+        let Ok(entry) = result else {
+            continue;
+        };
+        let path = entry.path();
+        if path.is_file() && is_origin_indexable(path) {
+            out.push(path.to_path_buf());
         }
     }
+    out
 }
 
 fn report(name: &str, sites: &[Site], root: &Path, all: bool) {

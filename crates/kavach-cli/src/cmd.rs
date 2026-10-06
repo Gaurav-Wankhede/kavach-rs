@@ -121,7 +121,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             status,
             key,
             delta,
-        } => context::run(&project, limit, status.as_deref(), key.as_deref(), delta),
+            full,
+        } => context::run(&project, limit, status.as_deref(), key.as_deref(), delta, full),
         Commands::Mistake(args) => mistake::run(args),
         Commands::Think {
             project,

@@ -285,6 +285,9 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
         /// Return only changed fields since last call in this session
         #[arg(long)]
         delta: bool,
+        /// Emit full raw JSON payload instead of default 1-line badge
+        #[arg(long)]
+        full: bool,
     },
     /// Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks).
     Mistake(crate::cmd::mistake::MistakeArgs),

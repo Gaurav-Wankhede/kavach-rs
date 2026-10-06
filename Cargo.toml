@@ -29,6 +29,9 @@ native-tls = "0.2"
 tempfile = "3"
 glob-match = "0.2"
 dirs = "6"
+ignore = "0.4"
+ast-grep-core = "0.45"
+pulldown-cmark = "0.13"
 # [RCA] symptom: 9-arg positional fns risk silent-miscompile (same-type args swappable).
 # root_cause: positional API · class: contract_violation · blast_radius: 4 callers
 # fix_strategy: bon #[builder] adds compile-time typestate (eliminates arg-order errors)
