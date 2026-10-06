@@ -1,6 +1,6 @@
 [package]
 name = "kavach-dtree"
-version = "1.0.1"
+version = "1.1.0"
 edition = "2024"
 description = "Decision tree classifier for intent routing and gate decisions"
 # Inherit publish=false from [workspace.package] so cargo-deny's

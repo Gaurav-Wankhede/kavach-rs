@@ -28,6 +28,27 @@ Context-rot hardening release: six-file gate code fully removed, SurrealDB→LLM
 - **Loop-on-denial bug** — when a gate denial (e.g., `[RESEARCH_EVIDENCE]`) was triggered, the executor previously re-ran the same tool call verbatim instead of acting on the verdict's `[NEXT_ACTION]` trailer. The anti-loop guard now detects this pattern and forces a corrective action before retry.
 - **Context rot from SurrealDB interactions** — DB query results (kanban cards, decisions, patterns) were injected raw into LLM context, consuming 400–2,000 tokens per query. Now compressed at the source before gate injection.
 
+## [1.1.0] — 2026-10-06
+
+### Added
+- **Native Parallel AST & Search Engine (`kavach-engine::ast`)**:
+  - In-process, gitignore-aware parallel source file traversal using `ignore::WalkBuilder` (`ast::walker`).
+  - Native `ast-grep-core` tree-sitter AST symbol querying with pre-filter short-circuiting (`ast::scan`).
+- **Sub-Millisecond Fast-Path Gate Bypass (`kavach-hook`)**:
+  - In-memory fast-path approval for read-only actions and developer queries (<1ms execution without DB lock acquisition).
+- **Tri-Modal Embedded Database Schema**:
+  - Native vector embeddings with `F32_BLOB(768)` and cosine index on `graph_nodes`.
+  - DAG edge constraints on `graph_edges` and daemonless registration on `expert_capabilities`.
+
+### Changed
+- **CLI Surface Consolidation**:
+  - Pruned obsolete subcommands (`kavach hunt`, `kavach verify-frontend`).
+  - Unified multi-lens auditing under `kavach audit` (`--lens`, `--deep`, `--fix-cards`).
+  - Compressed `kavach context` into single-line high-density `[STATE]` badges.
+- **Dependency Noise Elimination**:
+  - Purged dead dependencies from `kavach-toon` (`serde`) and `kavach-patterns` (`kavach-config`).
+  - Cleaned quality gates (`cargo machete` exiting 0 with zero unused dependencies).
+
 ## [26.7.0] — 2026-07-06
 
 Context-rot engineering release: injection compaction blended into every gate,

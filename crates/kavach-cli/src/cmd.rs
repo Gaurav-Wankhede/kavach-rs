@@ -5,7 +5,7 @@ mod context;
 // `pub(crate)` so `cli::db` reaches `db::write::CATEGORY_HELP` (SSoT for the
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
 pub(crate) mod db;
-pub(crate) mod deploy;
+
 mod gates;
 pub(crate) mod harness_loop;
 mod heal;
@@ -20,7 +20,7 @@ mod oversized;
 mod phase;
 mod phase_registry;
 pub(crate) mod pipeline;
-mod redact;
+
 mod retrieve;
 mod rules;
 mod security;
@@ -29,7 +29,7 @@ mod session;
 mod status;
 mod think;
 
-mod toolbelt;
+
 pub(crate) mod verify;
 
 
@@ -88,7 +88,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Phase { action } => phase::run(action),
         Commands::Loop { action } => harness_loop::run(action),
         v @ Commands::Verify { .. } => dispatch_verify(v),
-        Commands::Deploy { skip_tests } => deploy::run(skip_tests),
+
 
         Commands::Pipeline { action } => pipeline::run(action),
         Commands::Security { action } => security::run(action),
@@ -108,10 +108,10 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             limit,
             session_weighted,
         } => think::run(&project, &query, limit, session_weighted),
-        Commands::Toolbelt { action } => toolbelt::run(action),
+
         Commands::Lint { action } => lint::run(action),
         Commands::Retrieve { hash } => retrieve::run(&hash),
-        Commands::Redact { file } => redact::run(file.as_deref()),
+
         Commands::WorkingState { action } => working_state::run(&action),
         Commands::CommandTree { tree, markdown } => commands::run(tree, markdown),
     }

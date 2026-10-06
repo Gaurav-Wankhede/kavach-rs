@@ -214,11 +214,7 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
     #[command(
         after_help = "EXAMPLES:\n  just install              # from kavach-rs (plain CLI)\n  kavach deploy --skip-tests\n\nWHEN: After engine/cli changes; restarts RPC daemon on success."
     )]
-    Deploy {
-        /// Skip the cargo nextest step (build + install only).
-        #[arg(long)]
-        skip_tests: bool,
-    },
+
 
     /// Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow.
     /// SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent.
@@ -284,13 +280,8 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
         #[arg(long)]
         session_weighted: bool,
     },
-    /// Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …)
-    /// via `cargo binstall` — ships *with* kavach, no per-machine setup.
-    /// SOURCE: arch.decision.toolbelt-binstall-subcommand.
-    Toolbelt {
-        #[command(subcommand)]
-        action: ToolbeltAction,
-    },
+
+
     /// Install the per-language strict-rules profile (Rust/TS/Go) so the build
     /// FAILS on bad patterns — language-agnostic, no suppression.
     /// SOURCE: decision.lint.language-profile-template.
@@ -302,18 +293,13 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
     #[command(
         after_help = "EXAMPLES:\n  kavach retrieve <hash>\n\nWHEN: inspect full tool output or payload that was cached to save LLM context budget."
     )]
+    #[command(hide = true)]
     Retrieve {
         /// Hash or prefix of the cached CCR blob.
         hash: String,
     },
-    /// Redact environment files key-preserving or mask secrets from file/stdin.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach redact .env\n  cat output.log | kavach redact -\n\nWHEN: sanitize files or command output before LLM consumption."
-    )]
-    Redact {
-        /// Path to file to redact, or '-' for stdin (defaults to stdin if omitted).
-        file: Option<String>,
-    },
+
+
     /// Bounded working-state scratchpad (zero-heap K/V, max 10 slots).
     /// Inject at turn start to defeat lost-in-the-middle amnesia.
     #[command(

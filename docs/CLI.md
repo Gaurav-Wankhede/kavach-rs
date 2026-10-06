@@ -499,22 +499,6 @@ EXAMPLES:
 WHEN: Persist a decision/roadmap/research row. Always pass --new (create) or --update-key (edit).
 ```
 
-## `kavach deploy`
-
-One-shot deploy: build, test, install binary to ~/.cargo/bin/kavach
-
-| Flag | Description | Default |
-|---|---|---|
-| `--skip-tests` | Skip the cargo nextest step (build + install only) |  |
-
-```
-EXAMPLES:
-  just install              # from kavach-rs (plain CLI)
-  kavach deploy --skip-tests
-
-WHEN: After engine/cli changes; restarts RPC daemon on success.
-```
-
 ## `kavach gates`
 
 Run a gate hook (called by Claude Code / Cursor hooks)
@@ -901,7 +885,7 @@ Set project tier (refactor, feature, platform)
 
 ## `kavach pipeline`
 
-Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow. SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent
+One-shot deploy: build, test, install binary to ~/.cargo/bin/kavach. Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow. SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent
 
 ```
 EXAMPLES:
@@ -927,22 +911,6 @@ Show counts of {todo, `in_progress`, done, verified, blocked, deferred} for a pr
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
-
-## `kavach redact`
-
-Redact environment files key-preserving or mask secrets from file/stdin
-
-| Flag | Description | Default |
-|---|---|---|
-| `<file>` | Path to file to redact, or '-' for stdin (defaults to stdin if omitted) |  |
-
-```
-EXAMPLES:
-  kavach redact .env
-  cat output.log | kavach redact -
-
-WHEN: sanitize files or command output before LLM consumption.
-```
 
 ## `kavach retrieve`
 
@@ -1117,23 +1085,6 @@ EXAMPLES:
 
 WHEN: recover prior decisions/research before re-researching from scratch.
 ```
-
-## `kavach toolbelt`
-
-Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …) via `cargo binstall` — ships *with* kavach, no per-machine setup. SOURCE: arch.decision.toolbelt-binstall-subcommand
-
-## `kavach toolbelt install`
-
-Fetch + install the toolbelt's prebuilt binaries into the cargo bin dir
-
-| Flag | Description | Default |
-|---|---|---|
-| `--yes` | Pass `--no-confirm` to `cargo binstall` (non-interactive) |  |
-| `--only` | Restrict to a comma-separated subset of bin names (e.g. `rg,fd,bat`) |  |
-
-## `kavach toolbelt list`
-
-List every toolbelt tool with its provider crate + upstream license
 
 ## `kavach verify`
 
