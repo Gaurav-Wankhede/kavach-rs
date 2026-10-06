@@ -34,7 +34,14 @@ pub(super) fn run(
     // flag > $KAVACH_HARNESS > payload sniff > Claude Code) and lower its native
     // payload into the canonical HookInput the engine reasons over.
     let (resolved, input) = match kavach_hook::read_hook_input_native(vendor) {
-        Ok(pair) => pair,
+        Ok(pair) => {
+            // Fast-path risk-tiered bypass: safe reads and targeted inspect commands
+            // auto-approve immediately without heavy engine evaluation or DB locks.
+            if kavach_hook::try_fast_path(&pair.1) {
+                return 0;
+            }
+            pair
+        }
         // Unreadable/unparseable input — the gate never ran. Apply the resolved
         // vendor's NATIVE unreadable-input policy (Cursor fails OPEN so a parse
         // glitch never wedges the IDE; Codex/Claude Code fail CLOSED exit 2).

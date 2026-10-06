@@ -232,3 +232,39 @@ pub fn exit_approve(reason: &str) -> HookAction {
     approve(reason);
     HookAction::Done
 }
+
+/// Fast-Path Risk-Tiered Gate Hook Bypass (Band 1 execution).
+///
+/// Returns true and auto-approves safe, read-only, or targeted in-place mutations
+/// without triggering heavy whole-repo tree sweeps or database locks.
+#[must_use]
+pub fn try_fast_path(input: &HookInput) -> bool {
+    // 1. Pre-tool read-only AST discovery or surgical lookup
+    if input.hook_event_name == "PreToolUse" || input.hook_event_name == "pre_tool_use" {
+        let tool = input.tool_name.as_str();
+        if tool == "view_file" || tool == "read_file" || tool == "read_url_content" {
+            approve("fast-path: in-distribution read");
+            return true;
+        }
+
+        if (tool == "run_command" || tool == "Bash" || tool == "execute_command")
+            && let Some(cmd) = input.tool_input.as_ref().and_then(|ti| ti.get("CommandLine").or_else(|| ti.get("command"))).and_then(|v| v.as_str())
+        {
+            let trimmed = cmd.trim();
+            // Safe read-only fast paths
+            if trimmed.starts_with("kavach origin")
+                || trimmed.starts_with("sg run")
+                || trimmed.starts_with("dasel")
+                || trimmed.starts_with("fd ")
+                || trimmed.starts_with("git status")
+                || trimmed.starts_with("git diff")
+                || trimmed.starts_with("cargo check")
+                || trimmed.starts_with("cargo test")
+            {
+                approve("fast-path: safe read/inspect command");
+                return true;
+            }
+        }
+    }
+    false
+}

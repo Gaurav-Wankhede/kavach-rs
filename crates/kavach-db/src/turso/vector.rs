@@ -20,6 +20,7 @@ pub const EMBEDDING_DIMS: usize = 384;
 /// DDL owned by the vector domain. Executed best-effort by `connection::init_schema`.
 pub const DDL: &[&str] = &[
     "CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories(libsql_vector_idx(embedding, 'metric=cosine'))",
+    "CREATE INDEX IF NOT EXISTS idx_graph_nodes_embedding ON graph_nodes(libsql_vector_idx(embedding, 'metric=cosine'))",
 ];
 
 /// Brute-force cosine similarity — `[-1, 1]`; higher ⇒ more similar.

@@ -268,6 +268,41 @@ pub(crate) const SCHEMA_DDL: &[&str] = &[
               closed_at           TEXT
             )",
     "CREATE INDEX IF NOT EXISTS idx_bulk_manifest_status ON bulk_manifest(status)",
+    // Tri-modal schema refinement: expert capabilities registry for daemonless contracts.
+    "CREATE TABLE IF NOT EXISTS expert_capabilities (
+              capability_id TEXT PRIMARY KEY,
+              expert_name   TEXT NOT NULL,
+              method_name   TEXT NOT NULL,
+              input_schema  TEXT NOT NULL,
+              output_schema TEXT NOT NULL,
+              timeout_ms    INTEGER NOT NULL DEFAULT 5000,
+              updated_at    TEXT NOT NULL
+            )",
+    "CREATE INDEX IF NOT EXISTS idx_expert_capabilities_expert ON expert_capabilities(expert_name)",
+    // Tri-modal schema refinement: unified graph_nodes & graph_edges.
+    "CREATE TABLE IF NOT EXISTS graph_nodes (
+              id          TEXT PRIMARY KEY,
+              project     TEXT NOT NULL,
+              node_type   TEXT NOT NULL,
+              label       TEXT NOT NULL,
+              properties  TEXT NOT NULL DEFAULT '{}',
+              embedding   F32_BLOB(768),
+              created_at  TEXT NOT NULL,
+              updated_at  TEXT NOT NULL
+            )",
+    "CREATE INDEX IF NOT EXISTS idx_graph_nodes_project ON graph_nodes(project, node_type)",
+    "CREATE TABLE IF NOT EXISTS graph_edges (
+              from_id     TEXT NOT NULL,
+              rel_type    TEXT NOT NULL,
+              to_id       TEXT NOT NULL,
+              is_dag      INTEGER NOT NULL DEFAULT 0,
+              weight      REAL NOT NULL DEFAULT 1.0,
+              metadata    TEXT NOT NULL DEFAULT '{}',
+              created_at  TEXT NOT NULL,
+              PRIMARY KEY (from_id, rel_type, to_id)
+            )",
+    "CREATE INDEX IF NOT EXISTS idx_graph_edges_to ON graph_edges(to_id)",
+    "CREATE INDEX IF NOT EXISTS idx_graph_edges_dag ON graph_edges(is_dag) WHERE is_dag = 1",
 ];
 
 pub(crate) fn now_rfc3339() -> String {
