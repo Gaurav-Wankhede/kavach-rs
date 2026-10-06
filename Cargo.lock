@@ -1799,7 +1799,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-advisor"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1809,7 +1809,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-chain"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "dashmap",
@@ -1823,7 +1823,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "chrono",
@@ -1858,7 +1858,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-config"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dirs",
  "indexmap",
@@ -1872,7 +1872,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-db"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "bon",
@@ -1893,7 +1893,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-dtree"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1902,7 +1902,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-engine"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "dirs",
@@ -1932,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-hook"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "insta",
@@ -1946,14 +1946,14 @@ dependencies = [
 
 [[package]]
 name = "kavach-ope"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "kavach-patterns"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aho-corasick",
  "dirs",
@@ -1970,7 +1970,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rpc"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "dirs",
@@ -1988,14 +1988,14 @@ dependencies = [
 
 [[package]]
 name = "kavach-rule-ast"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "kavach-rule-engine"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "glob-match",
  "kavach-config",
@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rule-generator"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "kavach-patterns",
  "kavach-rule-ast",
@@ -2016,7 +2016,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rule-parser"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "kavach-toon",
  "serde",
@@ -2026,7 +2026,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rule-storage"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "chrono",
@@ -2043,7 +2043,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-session"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "chrono",
@@ -2058,7 +2058,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-toon"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2067,7 +2067,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-types"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proptest",
  "serde",
@@ -2077,7 +2077,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-web"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "futures",
