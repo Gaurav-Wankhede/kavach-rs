@@ -116,11 +116,7 @@ pub(crate) enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Self-healing pipeline (Kavach replaces N8N). `capture` gathers CI/bug-hunt
-    /// failure context and writes a self-heal roadmap card the loop will dispatch.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach heal capture --project P --incident run-42 --summary 'smoke test failed' --log ci.log\n\nWHEN: a CI run failed or a bug-hunt found a defect — enqueue it for the autonomous loop to fix. Kavach never calls an LLM; the subscription agent heals."
-    )]
+    #[command(hide = true)]
     Heal {
         #[command(subcommand)]
         action: HealAction,
@@ -168,7 +164,7 @@ pub(crate) enum Commands {
         #[arg(long)]
         all: bool,
     },
-    /// Autonomous execution loop across pending roadmap units
+    #[command(hide = true)]
     Loop {
         #[command(subcommand)]
         action: LoopAction,

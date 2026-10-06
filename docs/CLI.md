@@ -568,15 +568,6 @@ WHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach contex
 
 ## `kavach heal`
 
-Self-healing pipeline (Kavach replaces N8N). `capture` gathers CI/bug-hunt failure context and writes a self-heal roadmap card the loop will dispatch
-
-```
-EXAMPLES:
-  kavach heal capture --project P --incident run-42 --summary 'smoke test failed' --log ci.log
-
-WHEN: a CI run failed or a bug-hunt found a defect — enqueue it for the autonomous loop to fix. Kavach never calls an LLM; the subscription agent heals.
-```
-
 ## `kavach heal capture`
 
 Gather a failure's context (logs, changed files) and write its self-heal roadmap card. Idempotent on `--incident` (re-capture updates one card)
@@ -702,7 +693,7 @@ Scan a directory for files whose code-LOC exceeds the threshold
 
 ## `kavach loop`
 
-Autonomous execution loop across pending roadmap units
+Autonomous execution loop (harness engineering — loop until target met)
 
 ```
 EXAMPLES:
