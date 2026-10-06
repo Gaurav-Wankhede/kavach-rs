@@ -14,7 +14,7 @@ use crate::rrf::{RRF_K, rrf_fuse};
 
 /// Categories that carry searchable title/content corpora (mirrors
 /// `CORPUS_TABLES` in brain_query.rs).
-pub const CORPUS_CATEGORIES: [&str; 5] = ["decision", "roadmap", "research", "pattern", "app_spec"];
+pub const CORPUS_CATEGORIES: [&str; 6] = ["decision", "roadmap", "research", "pattern", "mistake", "app_spec"];
 
 /// FTS-owned DDL, executed by `connection::init_schema`.
 pub const DDL: &[&str] = &[
