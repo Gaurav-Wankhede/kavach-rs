@@ -16,28 +16,28 @@ pub(super) fn run(project: &str, query: &str, limit: usize, session_weighted: bo
 }
 
 fn recall_file() -> std::path::PathBuf {
-    let home = std::env::var("HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
+    let home = std::env::var("HOME").map_or_else(
+        |_| {
             std::env::var("USERPROFILE")
-                .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from("."))
-        });
+                .map_or_else(|_| std::path::PathBuf::from("."), std::path::PathBuf::from)
+        },
+        std::path::PathBuf::from,
+    );
     home.join(".kavach").join("recall_frequency.json")
 }
 
 fn working_state_file() -> std::path::PathBuf {
-    let home = std::env::var("HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
+    let home = std::env::var("HOME").map_or_else(
+        |_| {
             std::env::var("USERPROFILE")
-                .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from("."))
-        });
+                .map_or_else(|_| std::path::PathBuf::from("."), std::path::PathBuf::from)
+        },
+        std::path::PathBuf::from,
+    );
     home.join(".kavach").join("working_state.json")
 }
 
-fn apply_session_weighting(query: &str, hits: &mut Vec<kavach_db::BrainHit>) {
+fn apply_session_weighting(query: &str, hits: &mut [kavach_db::BrainHit]) {
     let ws_content = std::fs::read_to_string(working_state_file()).unwrap_or_default();
     let ws_lower = ws_content.to_lowercase();
 
@@ -47,26 +47,36 @@ fn apply_session_weighting(query: &str, hits: &mut Vec<kavach_db::BrainHit>) {
         .and_then(|s| serde_json::from_str(&s).ok())
         .unwrap_or_default();
 
-    let q_count = freq_map.entry(query.to_string()).or_insert(0);
+    let q_count = freq_map.entry(query.to_owned()).or_insert(0);
     *q_count = q_count.saturating_add(1);
 
     for hit in hits.iter_mut() {
         let count = freq_map.entry(hit.id.clone()).or_insert(0);
         *count = count.saturating_add(1);
 
-        let freq_mult = 1.0 + (*count as f64 * 0.2);
-        hit.score *= freq_mult;
+        #[expect(
+            clippy::float_arithmetic,
+            reason = "session recency scoring heuristic"
+        )]
+        {
+            let freq_mult = 1.0 + (f64::from(*count) * 0.2);
+            hit.score *= freq_mult;
 
-        if !ws_lower.is_empty() && (ws_lower.contains(&hit.id.to_lowercase()) || hit.id.to_lowercase().contains(query)) {
-            hit.score *= 10.0;
+            if !ws_lower.is_empty() && (ws_lower.contains(&hit.id.to_lowercase()) || hit.id.to_lowercase().contains(query)) {
+                hit.score *= 10.0;
+            }
         }
     }
 
-    if let Some(parent) = r_path.parent() {
-        let _ = std::fs::create_dir_all(parent);
+    if let Some(parent) = r_path.parent()
+        && let Err(e) = std::fs::create_dir_all(parent)
+    {
+        eprintln!("warning: failed to create research cache dir: {e}");
     }
-    if let Ok(json) = serde_json::to_string(&freq_map) {
-        let _ = std::fs::write(&r_path, json);
+    if let Ok(json) = serde_json::to_string(&freq_map)
+        && let Err(e) = std::fs::write(&r_path, json)
+    {
+        eprintln!("warning: failed to write research cache: {e}");
     }
 
     hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
@@ -77,7 +87,7 @@ async fn run_async(project_slug: &str, query: &str, limit: usize, session_weight
         Ok(d) => d,
         Err(e) => return emit(&format!(r#"{{"error":"db: {e}"}}"#)),
     };
-    let fetch_limit = if session_weighted { limit.max(10) * 2 } else { limit };
+    let fetch_limit = if session_weighted { limit.max(10).saturating_mul(2) } else { limit };
     let mut hits = match kavach_db::search_corpus_project(&db, Some(project_slug), query, fetch_limit).await {
         Ok(h) => h,
         Err(e) => return emit(&format!(r#"{{"error":"{e}"}}"#)),

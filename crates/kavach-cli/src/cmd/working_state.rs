@@ -45,24 +45,21 @@ impl WorkingState {
             std::fs::create_dir_all(parent)?;
         }
         let json = serde_json::to_vec_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
         std::fs::write(path, &json)
     }
 
     /// Insert or overwrite a key. Evicts the oldest entry when over the cap.
     fn set(&mut self, key: String, value: String) {
-        if self.values.contains_key(&key) {
-            // Overwrite in-place; order stays unchanged.
-            self.values.insert(key, value);
-        } else {
+        if !self.values.contains_key(&key) {
             // New key: evict oldest if at cap.
             while self.order.len() >= MAX_SLOTS {
                 let oldest = self.order.remove(0);
                 self.values.remove(&oldest);
             }
             self.order.push(key.clone());
-            self.values.insert(key, value);
         }
+        self.values.insert(key, value);
     }
 
     /// Return the value for `key`, or `None` if absent.
@@ -96,13 +93,12 @@ impl WorkingState {
 fn state_file() -> PathBuf {
     // Mirror the pattern in kavach-session/src/paths.rs: use HOME (or USERPROFILE
     // on Windows), then fall back to ".". Never panic — bad HOME degrades gracefully.
-    let home = std::env::var("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            std::env::var("USERPROFILE")
-                .map(PathBuf::from)
-                .unwrap_or_else(|_| PathBuf::from("."))
-        });
+    let home = std::env::var("HOME").map_or_else(
+        |_| {
+            std::env::var("USERPROFILE").map_or_else(|_| PathBuf::from("."), PathBuf::from)
+        },
+        PathBuf::from,
+    );
     home.join(".kavach").join("working_state.json")
 }
 
@@ -141,22 +137,19 @@ fn handle_set(key: &str, value: &str) -> i32 {
 fn handle_get(key: &str) -> i32 {
     let path = state_file();
     let state = WorkingState::load(&path);
-    match state.get(key) {
-        Some(val) => {
-            // Print via locked stdout to avoid SIGPIPE swallow.
-            let mut stdout = std::io::stdout().lock();
-            if let Err(e) = writeln!(stdout, "{val}") {
-                return into_exit_code(e.into());
-            }
-            0
+    if let Some(val) = state.get(key) {
+        // Print via locked stdout to avoid SIGPIPE swallow.
+        let mut stdout = std::io::stdout().lock();
+        if let Err(e) = writeln!(stdout, "{val}") {
+            return into_exit_code(e.into());
         }
-        None => {
-            let msg = format!("working-state: key not found: {key}");
-            if let Err(io_err) = ewrite_or_exit(&msg) {
-                return into_exit_code(io_err);
-            }
-            1
+        0
+    } else {
+        let msg = format!("working-state: key not found: {key}");
+        if let Err(io_err) = ewrite_or_exit(&msg) {
+            return into_exit_code(io_err);
         }
+        1
     }
 }
 
@@ -207,7 +200,7 @@ mod tests {
         state.set("a".into(), "1".into());
         state.set("b".into(), "2".into());
         state.set("a".into(), "updated".into());
-        assert_eq!(state.order, vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(state.order, vec!["a".to_owned(), "b".to_owned()]);
         assert_eq!(state.get("a"), Some("updated"));
     }
 

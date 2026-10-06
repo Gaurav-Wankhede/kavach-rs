@@ -21,51 +21,6 @@ Unified zero-LLM code auditor: one command over all four lenses (yagni · self �
 Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM.
 ```
 
-## `kavach bulk`
-
-Bulk-mode: one [RCA] binds N edits in a mechanical sweep. SOURCE: roadmap.unit.kavach-bulk-mode
-
-```
-EXAMPLES:
-  kavach bulk start --sweep-id lint-unused --project P --rca-file docs/rca.md \
-    --scope-glob 'src/**/*.rs' --lint-class clippy --fix-strategy auto --blast-estimate 40
-  kavach bulk status --project P
-  kavach bulk close --sweep-id lint-unused [--reason closed|expired]
-```
-
-## `kavach bulk close`
-
-Close a manifest. --reason {closed|expired}
-
-| Flag | Description | Default |
-|---|---|---|
-| `--sweep-id` | Sweep id to close (from `bulk start` or `bulk status`) |  |
-| `--reason` | Close reason: closed (success) or expired (TTL) | closed |
-
-## `kavach bulk start`
-
-Open a manifest binding N edits to ONE shared [RCA]
-
-| Flag | Description | Default |
-|---|---|---|
-| `--sweep-id` | Unique sweep id (reuse blocked while manifest is open) |  |
-| `--project` | Project slug the sweep applies to |  |
-| `--rca-file` | Path to the RCA markdown file (absolute or repo-relative) |  |
-| `--scope-glob` | Glob of files in scope (e.g. `src/**/*.rs`) |  |
-| `--lint-class` | Lint or defect class being swept (e.g. clippy, `dead_code`) |  |
-| `--fix-strategy` | Fix strategy label (e.g. auto, manual-review) |  |
-| `--blast-estimate` | Estimated number of files touched (blast-radius hint for gates) |  |
-| `--ttl-seconds` | Manifest TTL in seconds (default 3600); auto-expires if not closed | 3600 |
-| `--approved-by` | Who approved the sweep (audit field, default \"user\") | user |
-
-## `kavach bulk status`
-
-List active manifests for a project
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug whose open manifests to list |  |
-
 ## `kavach commands`
 
 Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference
@@ -390,25 +345,6 @@ EXAMPLES:
 WHEN: Mark a roadmap card verified once `kavach verify` has passed.
 ```
 
-## `kavach db migrate`
-
-[ARCHIVED] SurrealDB → Turso migration — migration complete, this command is a noop
-
-| Flag | Description | Default |
-|---|---|---|
-| `--verb` | Migration step (noop — migration complete): `export`, `import`, or `verify` | import |
-| `--from` | NDJSON export path (source of truth for import/verify) |  |
-| `--to` | Target libSQL database path (or output NDJSON for export) |  |
-| `--overwrite` | Overwrite target database if it already contains memories | false |
-
-```
-EXAMPLES:
-  kavach db migrate --verb import --from dump.ndjson --to ~/.kavach/kavach.db
-  kavach db migrate --verb verify --from dump.ndjson --to ~/.kavach/kavach.db
-
-WHEN: One-time migration. Export via `kavach db query-raw` per table; import validates dangling edges + counts before reporting success.
-```
-
 ## `kavach db next-prompt`
 
 Print the top-priority todo card's exec_prompt to stdout (pipe to an executor model)
@@ -596,66 +532,6 @@ EXAMPLES:
 
 WHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.
 ```
-
-## `kavach goal`
-
-Goal-mode: declare a condition for CC 2.1.139+ /goal cross-turn loops. SOURCE: roadmap.unit.kavach-goal-bridge
-
-```
-EXAMPLES:
-  kavach goal start --project P --condition 'kanban todo lane is empty'
-  kavach goal start --project P --condition 'cargo test green' --oracle-check 'cargo nextest run -p foo'
-  kavach goal status --project P
-  kavach goal stop --project P --condition 'kanban todo lane is empty'
-  kavach goal compile --goal-id <slug>
-  kavach goal reconcile --goal-id <slug> --oracle-result pass
-```
-
-## `kavach goal compile`
-
-Compile a goal's `.kavach/goals/<id>/loop.yaml` into a Claude Code Workflow `workflow.js` (the oracle-gated loop runner)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--goal-id` | Goal id slug (directory under `.kavach/goals/`) |  |
-
-## `kavach goal reconcile`
-
-Apply an oracle verdict to the proof-gated completion flag. The Workflow loop calls this after each oracle run: `pass` lets the goal close, anything else keeps the stop gate blocking
-
-| Flag | Description | Default |
-|---|---|---|
-| `--goal-id` | Goal id slug (same as `goal compile --goal-id`) |  |
-| `--oracle-result` | Oracle verdict: pass \| fail \| skip (only pass closes the goal) |  |
-
-## `kavach goal start`
-
-Declare a goal condition. Prints `/goal <condition>` for the agent to paste into a CC session — kavach records the goal in kavach-db for audit
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug the goal belongs to |  |
-| `--condition` | Natural-language done condition (also the /goal string) |  |
-| `--evaluator` | Evaluator model tier for goal checks (default haiku) | haiku |
-| `--roadmap-key` | Optional roadmap key the goal closes (e.g. roadmap.unit.strict-lint-zero) |  |
-| `--oracle-check` | Optional oracle command whose exit code 0 proves the goal is done. When set, emits `.kavach/goals/<slug>/loop.yaml` (oracle-gated loop) |  |
-
-## `kavach goal status`
-
-List active goals for a project
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug whose active goals to list |  |
-
-## `kavach goal stop`
-
-Stop tracking the goal (emits `/goal clear` for the agent)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--condition` | Condition string matching the row to stop (from `goal status`) |  |
 
 ## `kavach heal`
 

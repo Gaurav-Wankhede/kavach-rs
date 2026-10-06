@@ -1,9 +1,7 @@
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod audit;
-pub(crate) mod bulk;
 mod commands;
 mod context;
-pub(crate) mod goal;
 // `pub(crate)` so `cli::db` reaches `db::write::CATEGORY_HELP` (SSoT for the
 // --category clap help — rca.kavach-db-write-category-enum-inconsistent).
 pub(crate) mod db;
@@ -125,8 +123,6 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             delta,
         } => context::run(&project, limit, status.as_deref(), key.as_deref(), delta),
         Commands::Mistake(args) => mistake::run(args),
-        Commands::Bulk(args) => bulk::run(args),
-        Commands::Goal(args) => goal::run(args),
         Commands::Think {
             project,
             query,

@@ -2,7 +2,7 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    backup, checkpoint, citation, concept, delete, embed_backfill, event, get, kanban, migrate,
+    backup, checkpoint, citation, concept, delete, embed_backfill, event, get, kanban,
     next_prompt, query, query_raw, register, search, status_update, wipe_project, write,
 };
 use crate::cli::DbAction;
@@ -161,12 +161,6 @@ pub(crate) fn run(action: DbAction) -> i32 {
         } => super::gate_config::set(&project, &gate_key, &kind, num, boolean, list, text),
         DbAction::QueryRaw { query } => query_raw::run(&query),
         DbAction::NextPrompt { project } => next_prompt::run(&project),
-        DbAction::Migrate {
-            verb,
-            from,
-            to,
-            overwrite,
-        } => migrate::run(&verb, &from, &to, overwrite),
         DbAction::EmbedBackfill { batch, json } => embed_backfill::run(batch, json),
         DbAction::Checkpoint { truncate } => checkpoint::run(truncate),
         DbAction::Backup { keep } => backup::run(keep),

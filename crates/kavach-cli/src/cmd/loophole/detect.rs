@@ -6,7 +6,7 @@
 //! Kavach DETECTS + RECORDS; it never calls an LLM.
 //! SOURCE: decision.meta.loophole-loop-extends-goal-yaml · CLAUDE.md `loophole_self_interrogation`.
 
-use crate::cmd::goal::Lens;
+use super::types::Lens;
 
 /// One suspected loophole: which lens, which file, which 1-based line, and a hint.
 pub(super) struct Finding {

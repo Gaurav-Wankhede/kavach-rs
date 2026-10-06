@@ -1,10 +1,14 @@
-// Meta-Harness Loophole Loop data model (extends loop_yaml). The per-iteration
-// YAML artifact emitted to a /tmp working dir so each round PRECISELY targets one
-// unit of work. The six attack lenses mirror CLAUDE.md §loophole_self_interrogation.
+// Meta-Harness Loophole Loop data model. The per-iteration YAML artifact emitted
+// to a /tmp working dir so each round PRECISELY targets one unit of work.
+// The six attack lenses mirror AGENTS.md §loophole_self_interrogation.
 //
 // YAML (not Markdown) for the loop pipeline: deterministic, diffable, machine-
 // targetable — SOURCE research.yaml-vs-markdown-meta-harness-loop ·
 // decision.meta.loophole-loop-extends-goal-yaml.
+//
+// Migrated here from cmd/goal/loop_yaml/loophole.rs during CLI surface
+// consolidation (roadmap.kavach.cli-surface-consolidation): the goal CLI command
+// was removed; these types belong with the loophole sweep that uses them.
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -160,7 +164,6 @@ mod tests {
     fn tmp_path_is_per_run_per_round_under_tmp() {
         let it = LoopholeIteration::new("run-9", 3, "kavach-rs");
         let p = it.tmp_path();
-        // Canonical, predictable /tmp root (not the per-process macOS temp dir).
         assert!(
             p.starts_with("/tmp/kavach-loophole"),
             "fixed /tmp root: {p:?}"

@@ -16,13 +16,12 @@ struct CacheEntry {
 }
 
 fn cache_file() -> PathBuf {
-    let home = std::env::var("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            std::env::var("USERPROFILE")
-                .map(PathBuf::from)
-                .unwrap_or_else(|_| PathBuf::from("."))
-        });
+    let home = std::env::var("HOME").map_or_else(
+        |_| {
+            std::env::var("USERPROFILE").map_or_else(|_| PathBuf::from("."), PathBuf::from)
+        },
+        PathBuf::from,
+    );
     home.join(".kavach").join("origin_cache.json")
 }
 
@@ -36,11 +35,15 @@ fn load_cache() -> HashMap<String, CacheEntry> {
 
 fn save_cache(cache: &HashMap<String, CacheEntry>) {
     let path = cache_file();
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
+    if let Some(parent) = path.parent()
+        && let Err(e) = fs::create_dir_all(parent)
+    {
+        eprintln!("warning: failed to create cache dir: {e}");
     }
-    if let Ok(json) = serde_json::to_string_pretty(cache) {
-        let _ = fs::write(path, json);
+    if let Ok(json) = serde_json::to_string_pretty(cache)
+        && let Err(e) = fs::write(path, json)
+    {
+        eprintln!("warning: failed to write cache: {e}");
     }
 }
 
@@ -61,17 +64,17 @@ pub(super) fn get(name: &str, root: &Path) -> Option<Site> {
 
 pub(super) fn put(name: &str, site: &Site) {
     let mut cache = load_cache();
-    if cache.len() >= MAX_CACHE_ENTRIES && !cache.contains_key(name) {
-        if let Some(key) = cache.keys().next().cloned() {
-            cache.remove(&key);
-        }
+    if cache.len() >= MAX_CACHE_ENTRIES && !cache.contains_key(name)
+        && let Some(key) = cache.keys().next().cloned()
+    {
+        cache.remove(&key);
     }
     cache.insert(
-        name.to_string(),
+        name.to_owned(),
         CacheEntry {
             file: site.file.clone(),
             line: site.line,
-            kind: site.kind.label().to_string(),
+            kind: site.kind.label().to_owned(),
         },
     );
     save_cache(&cache);
@@ -86,7 +89,7 @@ mod tests {
         let temp_dir = std::env::temp_dir();
         let site = Site {
             kind: Kind::Function,
-            file: "Cargo.toml".to_string(),
+            file: "Cargo.toml".to_owned(),
             line: 1,
         };
         put("test_symbol", &site);

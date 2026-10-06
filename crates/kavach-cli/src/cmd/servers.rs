@@ -26,7 +26,7 @@ fn err(msg: &str) -> i32 {
 }
 
 /// Retained for call-site compatibility. Turso is embedded — no server autostart needed.
-pub(crate) fn ensure_db_up() {
+pub(crate) const fn ensure_db_up() {
     // Turso DB is embedded (libsql in-process). No server autostart needed.
 }
 

@@ -288,12 +288,6 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
     },
     /// Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks).
     Mistake(crate::cmd::mistake::MistakeArgs),
-    /// Bulk-mode: one [RCA] binds N edits in a mechanical sweep.
-    /// SOURCE: roadmap.unit.kavach-bulk-mode.
-    Bulk(crate::cmd::bulk::BulkArgs),
-    /// Goal-mode: declare a condition for CC 2.1.139+ /goal cross-turn loops.
-    /// SOURCE: roadmap.unit.kavach-goal-bridge.
-    Goal(crate::cmd::goal::GoalArgs),
     /// Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus.
     /// Emits cited, RRF-ranked hits as JSON; auto-files a research card when the
     /// corpus is thin for the query (gap-analysis closes the self-improving loop).

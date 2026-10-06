@@ -32,11 +32,11 @@ pub(crate) fn run(name: &str, root: &Path, all: bool) -> i32 {
         return 2;
     }
 
-    if !all {
-        if let Some(cached_site) = cache::get(name, root) {
-            report(name, &[cached_site], root, false);
-            return 0;
-        }
+    if !all
+        && let Some(cached_site) = cache::get(name, root)
+    {
+        report(name, &[cached_site], root, false);
+        return 0;
     }
 
     let mut sites = collect_sites(name, root);

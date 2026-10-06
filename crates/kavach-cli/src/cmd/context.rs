@@ -117,13 +117,13 @@ async fn run_async(
 }
 
 fn snapshot_file(project: &str) -> std::path::PathBuf {
-    let home = std::env::var("HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
+    let home = std::env::var("HOME").map_or_else(
+        |_| {
             std::env::var("USERPROFILE")
-                .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from("."))
-        });
+                .map_or_else(|_| std::path::PathBuf::from("."), std::path::PathBuf::from)
+        },
+        std::path::PathBuf::from,
+    );
     home.join(".kavach").join(format!("last_context_{project}.json"))
 }
 
@@ -206,10 +206,14 @@ fn build_and_print_payload(
     let output = if delta {
         let snap_path = snapshot_file(project_slug);
         let prev = std::fs::read_to_string(&snap_path).unwrap_or_default();
-        if let Some(parent) = snap_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+        if let Some(parent) = snap_path.parent()
+            && let Err(e) = std::fs::create_dir_all(parent)
+        {
+            eprintln!("warning: failed to create context snap dir: {e}");
         }
-        let _ = std::fs::write(&snap_path, &payload);
+        if let Err(e) = std::fs::write(&snap_path, &payload) {
+            eprintln!("warning: failed to write context snapshot: {e}");
+        }
 
         if prev.trim() == payload.trim() {
             format!(r#"{{"project":"{project_slug}","delta":true,"changed":{{}}}}"#)

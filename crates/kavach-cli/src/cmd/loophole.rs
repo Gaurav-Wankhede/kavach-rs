@@ -8,11 +8,12 @@
 
 pub(crate) mod cron;
 mod detect;
+mod types;
 
-use crate::cmd::goal::LoopholeIteration;
 use crate::cmd::heal::capture_incident;
 use crate::cmd::io_safe::{IoExit, into_exit_code, print_or_exit};
 use detect::{Finding, scan_file};
+use types::LoopholeIteration;
 
 /// Cap on findings turned into cards per sweep round — a runaway match count must
 /// not flood the board (boundary brake). Excess is reported, not silently dropped.

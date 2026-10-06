@@ -419,24 +419,6 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         #[arg(long)]
         project: String,
     },
-    /// [ARCHIVED] SurrealDB → Turso migration — migration complete, this command is a noop
-    #[command(
-        after_help = "EXAMPLES:\n  kavach db migrate --verb import --from dump.ndjson --to ~/.kavach/kavach.db\n  kavach db migrate --verb verify --from dump.ndjson --to ~/.kavach/kavach.db\n\nWHEN: One-time migration. Export via `kavach db query-raw` per table; import validates dangling edges + counts before reporting success."
-    )]
-    Migrate {
-        /// Migration step (noop — migration complete): `export`, `import`, or `verify`
-        #[arg(long, default_value = "import")]
-        verb: String,
-        /// NDJSON export path (source of truth for import/verify)
-        #[arg(long, default_value = "")]
-        from: String,
-        /// Target libSQL database path (or output NDJSON for export)
-        #[arg(long, default_value = "")]
-        to: String,
-        /// Overwrite target database if it already contains memories
-        #[arg(long, default_value_t = false)]
-        overwrite: bool,
-    },
     /// Backfill vector embeddings for existing memories (Phase 5)
     #[command(
         after_help = "EXAMPLES:\n  kavach db embed-backfill --batch 50\n  kavach db embed-backfill --batch 64 --json\n\nWHEN: Populate `embedding` column for pre-vector rows; idempotent and resumable."

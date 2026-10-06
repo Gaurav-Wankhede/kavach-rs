@@ -15,7 +15,6 @@ mod event;
 mod gate_config;
 mod get;
 mod kanban;
-mod migrate;
 mod next_prompt;
 mod query;
 mod query_raw;
