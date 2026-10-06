@@ -22,7 +22,7 @@ pub(crate) use phase::PhaseAction;
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
-pub(crate) use todos::TodosAction;
+
 pub(crate) use working_state::WorkingStateAction;
 // PipelineAction is defined inline in this file (initializer→subagent pipeline).
 
@@ -153,17 +153,7 @@ pub(crate) enum Commands {
         #[arg(long)]
         fix_cards: bool,
     },
-    /// Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice signatures
-    #[command(
-        after_help = "Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.\n\nUSE THIS INSTEAD OF grepping for bug patterns by hand — zero LLM tokens."
-    )]
-    Hunt {
-        /// Directory to scan (default: workspace root / current dir)
-        path: Option<std::path::PathBuf>,
-        /// Also run the rustc + clippy backend (requires a compilable cargo project; slower)
-        #[arg(long)]
-        deep: bool,
-    },
+
     /// Find a symbol's ACTUAL declaration / centralized-config origin (zero-LLM, terse file:line)
     #[command(
         after_help = "Resolves where NAME(s) are declared (env-var/const/config-field/fn/type/let/param/enum-variant), config-origins first.\n\nEXAMPLES:\n  kavach origin DATABASE_URL\n  kavach origin DATABASE_URL retry_limit\n  kavach origin DATABASE_URL --all\n  kavach origin --query '{\"value_regex\":\"^postgres://\",\"consumed_by\":[\"PgPool\"],\"env_key_hints\":[\"db\"],\"name_aliases\":[\"DATABASE_URL\"]}'\n\nUSE THIS INSTEAD OF grep/rg to find where a symbol lives — zero LLM tokens. Role-query fields are all optional; a value_regex alone resolves an arbitrarily-named var."
@@ -229,20 +219,7 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[arg(long)]
         skip_tests: bool,
     },
-    /// Strict TS/frontend gate: detect biome/eslint/tsc, auto-fix safe rewrites,
-    /// fail on any warning. Mirror of `kavach deploy` for non-Rust projects.
-    /// Self-healing harness for production codes per CLAUDE.md §10.
-    VerifyFrontend {
-        /// Project root (must contain biome.json / eslint.config.* / tsconfig.json)
-        #[arg(long)]
-        path: String,
-        /// Skip the test runner step (still runs auto-fix + strict lint + tsc)
-        #[arg(long)]
-        skip_tests: bool,
-        /// Tool preference when multiple configs are present: auto | biome | eslint
-        #[arg(long, default_value = "auto")]
-        prefer: String,
-    },
+
     /// Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow.
     /// SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent.
     #[command(
@@ -257,11 +234,7 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[command(subcommand)]
         action: SecurityAction,
     },
-    /// Sync `kavach_todo`!() macros from source to kanban
-    Todos {
-        #[command(subcommand)]
-        action: TodosAction,
-    },
+
     /// Unified JSON snapshot: kanban counts, session, phase, loop state.
     #[command(
         long_about = "Emits one JSON object for agent harness startup: project slug, \

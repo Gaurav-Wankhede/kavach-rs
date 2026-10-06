@@ -9,7 +9,7 @@ pub(crate) mod deploy;
 mod gates;
 pub(crate) mod harness_loop;
 mod heal;
-mod hunt;
+
 mod install;
 pub(crate) mod io_safe;
 mod lint;
@@ -28,11 +28,11 @@ mod servers;
 mod session;
 mod status;
 mod think;
-mod todos;
+
 mod toolbelt;
 pub(crate) mod verify;
-pub(crate) mod verify_frontend;
-pub(crate) mod verify_frontend_detect;
+
+
 mod working_state;
 
 use crate::cli::Commands;
@@ -77,9 +77,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             audit::lens::Selection::from_flag(&lens),
             fix_cards,
         ),
-        Commands::Hunt { path, deep } => {
-            hunt::run(&path.unwrap_or_else(doctor_workspace_root), deep)
-        }
+
         Commands::Origin {
             names,
             path,
@@ -91,30 +89,10 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Loop { action } => harness_loop::run(action),
         v @ Commands::Verify { .. } => dispatch_verify(v),
         Commands::Deploy { skip_tests } => deploy::run(skip_tests),
-        Commands::VerifyFrontend {
-            path,
-            skip_tests,
-            prefer,
-        } => {
-            let prefer_enum = match prefer.as_str() {
-                "biome" => verify_frontend_detect::Prefer::Biome,
-                "eslint" => verify_frontend_detect::Prefer::Eslint,
-                "auto" => verify_frontend_detect::Prefer::Auto,
-                other => {
-                    let msg = format!(
-                        "kavach: --prefer must be one of: auto | biome | eslint (got {other})"
-                    );
-                    if let Err(io_err) = io_safe::ewrite_or_exit(&msg) {
-                        return io_safe::into_exit_code(io_err);
-                    }
-                    return 1;
-                }
-            };
-            verify_frontend::run(&path, skip_tests, prefer_enum)
-        }
+
         Commands::Pipeline { action } => pipeline::run(action),
         Commands::Security { action } => security::run(action),
-        Commands::Todos { action } => todos::run(action),
+
         Commands::Context {
             project,
             limit,

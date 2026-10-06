@@ -582,21 +582,6 @@ Proactive bug-hunt: run the repo's non-AI quality gates (cargo check, clippy -D 
 |---|---|---|
 | `--project` | Project slug the cards belong to |  |
 
-## `kavach hunt`
-
-Antivirus-for-code: zero-LLM regex sweep over a source tree for worst-practice signatures
-
-| Flag | Description | Default |
-|---|---|---|
-| `<path>` | Directory to scan (default: workspace root / current dir) |  |
-| `--deep` | Also run the rustc + clippy backend (requires a compilable cargo project; slower) |  |
-
-```
-Scans [PATH] (default: workspace root). Exit 1 if findings. Runs the kavach-patterns detector set in parallel, no LLM.
-
-USE THIS INSTEAD OF grepping for bug patterns by hand — zero LLM tokens.
-```
-
 ## `kavach install`
 
 Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…)
@@ -1133,20 +1118,6 @@ EXAMPLES:
 WHEN: recover prior decisions/research before re-researching from scratch.
 ```
 
-## `kavach todos`
-
-Sync `kavach_todo`!() macros from source to kanban
-
-## `kavach todos sync`
-
-Scan source for `kavach_todo`!() invocations and sync to kanban
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--path` | Project root path | . |
-| `--dry-run` | Preview changes without writing |  |
-
 ## `kavach toolbelt`
 
 Provision the Rust CLI toolbelt the gates enforce (rg, fd, bat, eza, …) via `cargo binstall` — ships *with* kavach, no per-machine setup. SOURCE: arch.decision.toolbelt-binstall-subcommand
@@ -1182,16 +1153,6 @@ EXAMPLES:
 
 WHEN: After implementation is done and `db status-update … --status done`.
 ```
-
-## `kavach verify-frontend`
-
-Strict TS/frontend gate: detect biome/eslint/tsc, auto-fix safe rewrites, fail on any warning. Mirror of `kavach deploy` for non-Rust projects. Self-healing harness for production codes per CLAUDE.md §10
-
-| Flag | Description | Default |
-|---|---|---|
-| `--path` | Project root (must contain biome.json / eslint.config.* / tsconfig.json) |  |
-| `--skip-tests` | Skip the test runner step (still runs auto-fix + strict lint + tsc) |  |
-| `--prefer` | Tool preference when multiple configs are present: auto \| biome \| eslint | auto |
 
 ## `kavach working-state`
 
