@@ -52,6 +52,18 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
         (Kind::EnvVar, re(&format!(r"^{n}\s*="))),
         (Kind::Function, re(&format!(r"\b{n}\s*\([^)]*\)\s*\{{"))),
     ];
+
+    let is_md = std::path::Path::new(file)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+    if is_md {
+        let md_sites = parse_markdown_sites(name, file, content);
+        if !md_sites.is_empty() {
+            return md_sites;
+        }
+    }
+
     let mut out = Vec::new();
     for (i, line) in content.lines().enumerate() {
         for (kind, re) in &rules {
@@ -65,6 +77,47 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
         }
     }
     out
+}
+
+fn parse_markdown_sites(name: &str, file: &str, content: &str) -> Vec<Site> {
+    use pulldown_cmark::{Event, Parser, Tag, TagEnd};
+    let mut sites = Vec::new();
+    let mut in_heading = false;
+    let mut heading_text = String::new();
+
+    let parser = Parser::new(content);
+    for (event, range) in parser.into_offset_iter() {
+        match event {
+            Event::Start(Tag::Heading { .. }) => {
+                in_heading = true;
+                heading_text.clear();
+            }
+            Event::End(TagEnd::Heading(_)) => {
+                in_heading = false;
+                if heading_text.split_whitespace().any(|word| word.trim_matches(|c: char| !c.is_alphanumeric() && c != '_' && c != '-') == name) {
+                    let mut current_offset = 0usize;
+                    let mut line = 1usize;
+                    for l in content.lines() {
+                        if current_offset >= range.start {
+                            break;
+                        }
+                        current_offset = current_offset.saturating_add(l.len()).saturating_add(1);
+                        line = line.saturating_add(1);
+                    }
+                    sites.push(Site {
+                        kind: Kind::DocAnchor,
+                        file: file.to_owned(),
+                        line,
+                    });
+                }
+            }
+            Event::Text(t) if in_heading => {
+                heading_text.push_str(&t);
+            }
+            _ => {}
+        }
+    }
+    sites
 }
 
 fn re(pat: &str) -> Regex {
