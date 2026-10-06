@@ -2056,9 +2056,12 @@ dependencies = [
 name = "kavach-engine"
 version = "1.0.1"
 dependencies = [
+ "ast-grep-core",
+ "ast-grep-language",
  "blake3",
  "dirs",
  "fs2",
+ "ignore",
  "kavach-advisor",
  "kavach-chain",
  "kavach-config",

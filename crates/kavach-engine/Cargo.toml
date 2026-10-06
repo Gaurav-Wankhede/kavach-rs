@@ -8,6 +8,9 @@ publish = false
 workspace = true
 
 [dependencies]
+ast-grep-core = { workspace = true }
+ast-grep-language = { workspace = true }
+ignore = { workspace = true }
 kavach-types = { path = "../kavach-types" }
 kavach-hook = { path = "../kavach-hook" }
 kavach-session = { path = "../kavach-session" }
