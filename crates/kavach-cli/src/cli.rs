@@ -41,7 +41,7 @@ memory store (projects, roadmap/kanban, decisions, graph), and SDLC phase gates.
 WORKFLOWS (common agent paths):\n  \
 Session start:  kavach db kanban --project <slug>\n  \
                 kavach db get --project <slug> --category roadmap --key <unit> --full\n  \
-                kavach phase status && kavach context --project <slug>\n  \
+                kavach context --project <slug>\n  \
 Close a card:   kavach db status-update … --status done\n  \
                 kavach verify --project <slug> --key <unit> --crate-name <crate>\n  \
                 kavach db kanban-close --project <slug> --key <unit>\n  \
