@@ -179,7 +179,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // phase::iteration kept only for stale-file auto-recovery (halt arm disabled).
     // See decision.engine.stop-no-halt-dispatch-only.
     let pipeline: &[fn(&mut StopCtx<'_>) -> ControlFlow<()>] = &[
-        phase::iteration,
+
         // AUTONOMOUS-MODE GATE: dispatch fires ONLY in Auto/bypassPermissions; every
         // other mode allows a clean stop. decision.engine.stop-autonomous-mode-only.
         phase::autonomous_gate,

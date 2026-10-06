@@ -17,8 +17,8 @@ mod loophole;
 pub(crate) mod mistake;
 mod origin;
 mod oversized;
-mod phase;
-mod phase_registry;
+
+
 pub(crate) mod pipeline;
 
 mod retrieve;
@@ -85,7 +85,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             stdin,
             all,
         } => dispatch_origin(&names, path, query, stdin, all),
-        Commands::Phase { action } => phase::run(action),
+
         Commands::Loop { action } => harness_loop::run(action),
         v @ Commands::Verify { .. } => dispatch_verify(v),
 

@@ -656,7 +656,7 @@ Scan a directory for files whose code-LOC exceeds the threshold
 
 ## `kavach loop`
 
-Manage autonomous execution loop (harness engineering)
+Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN) Manage autonomous execution loop (harness engineering)
 
 ```
 See: kavach loop --help
@@ -813,75 +813,6 @@ EXAMPLES:
 
 USE THIS INSTEAD OF grep/rg to find where a symbol lives — zero LLM tokens. Role-query fields are all optional; a value_regex alone resolves an arbitrarily-named var.
 ```
-
-## `kavach phase`
-
-Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
-
-```
-See: kavach phase --help
-```
-
-## `kavach phase advance`
-
-Advance to the next phase (if Definition of Done is met)
-
-## `kavach phase iteration-done`
-
-Mark the current iteration file as done
-
-## `kavach phase iteration-list`
-
-List files completed in the current phase
-
-## `kavach phase iteration-start`
-
-Start an iteration. With a file path, binds that file. With NO arg, auto-pulls the next runnable DAG card from the roadmap (kanban-driven)
-
-| Flag | Description | Default |
-|---|---|---|
-| `<file>` | File path to work on. Omit to auto-pull the next runnable roadmap card |  |
-
-## `kavach phase set`
-
-Set the current phase (admin override)
-
-| Flag | Description | Default |
-|---|---|---|
-| `<phase>` | Phase name: PLAN, IMPLEMENT, TEST, or HARDEN |  |
-
-## `kavach phase spike-end`
-
-End spike mode
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-
-## `kavach phase spike-start`
-
-Start spike mode (bypass spec gates)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--project` | Project slug |  |
-| `--hours` | Duration in hours |  |
-| `--reason` | Spike reason |  |
-
-## `kavach phase status`
-
-Show current phase and iteration status
-
-## `kavach phase tier-set`
-
-Set project tier (refactor, feature, platform)
-
-| Flag | Description | Default |
-|---|---|---|
-| `<tier>` | Target tier: refactor, feature, or platform |  |
-| `--project` | Project slug |  |
-| `--reason` | Change reason |  |
-| `--override-flag` | Allow downgrade (otherwise promotion-only) |  |
 
 ## `kavach pipeline`
 

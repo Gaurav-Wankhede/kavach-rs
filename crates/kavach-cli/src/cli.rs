@@ -8,7 +8,7 @@ pub(crate) mod help_md;
 mod help_stack;
 pub(crate) mod help_tree;
 mod oversized;
-mod phase;
+
 mod rules;
 mod security;
 mod session;
@@ -18,7 +18,7 @@ mod working_state;
 pub(crate) use db::DbAction;
 pub(crate) use harness_loop::LoopAction;
 pub(crate) use oversized::OversizedFormat;
-pub(crate) use phase::PhaseAction;
+
 pub(crate) use rules::RulesAction;
 pub(crate) use security::SecurityAction;
 pub(crate) use session::SessionAction;
@@ -176,10 +176,7 @@ pub(crate) enum Commands {
     },
     /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
     #[command(after_help = "See: kavach phase --help")]
-    Phase {
-        #[command(subcommand)]
-        action: PhaseAction,
-    },
+
     /// Manage autonomous execution loop (harness engineering)
     #[command(after_help = "See: kavach loop --help")]
     Loop {
