@@ -14,6 +14,7 @@ pub(super) fn run(action: &SessionAction) -> i32 {
         SessionAction::Land => handle_land(),
         SessionAction::EndHook => handle_end_hook(),
         SessionAction::ClearTestLocks => handle_clear_test_locks(),
+        SessionAction::State { action } => crate::cmd::working_state::run(action),
     }
 }
 

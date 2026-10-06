@@ -18,6 +18,11 @@ pub(crate) enum SessionAction {
     EndHook,
     /// Clear stale test run locks (use when a test was interrupted and the lock is stuck)
     ClearTestLocks,
+    /// Manage bounded working-state scratchpad slots (max 10 slots)
+    State {
+        #[command(subcommand)]
+        action: super::WorkingStateAction,
+    },
 }
 
 #[cfg(test)]

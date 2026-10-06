@@ -125,13 +125,7 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: HealAction,
     },
-    /// Meta-Harness Loophole Loop: hunt loopholes in the SYSTEM ITSELF across the
-    /// six attack lenses, record each to the Kavach DB, and capture a heal card so
-    /// the loop fixes it — then re-hunt until dry. Emits a per-iteration YAML to a
-    /// /tmp working dir to precisely target each round's unit of work.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach loophole sweep --project P\n\nWHEN: continuously self-interrogate the codebase for concurrency/failure/malformed/authz/replay/boundary loopholes. Kavach detects (non-AI) + records; the subscription agent fixes."
-    )]
+    #[command(hide = true)]
     Loophole {
         #[command(subcommand)]
         action: LoopholeAction,
@@ -174,11 +168,7 @@ pub(crate) enum Commands {
         #[arg(long)]
         all: bool,
     },
-    /// Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN)
-    #[command(after_help = "See: kavach phase --help")]
-
-    /// Manage autonomous execution loop (harness engineering)
-    #[command(after_help = "See: kavach loop --help")]
+    /// Autonomous execution loop across pending roadmap units
     Loop {
         #[command(subcommand)]
         action: LoopAction,
@@ -207,34 +197,18 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[arg(long)]
         proof: Option<String>,
     },
-    /// One-shot deploy: build, test, install binary to ~/.cargo/bin/kavach.
-    #[command(
-        after_help = "EXAMPLES:\n  just install              # from kavach-rs (plain CLI)\n  kavach deploy --skip-tests\n\nWHEN: After engine/cli changes; restarts RPC daemon on success."
-    )]
-
-
-    /// Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow.
-    /// SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach pipeline plan --project P --spec-key app_spec.build\n  kavach pipeline status --project nicole-carpenter\n\nWHEN: Bootstrap roadmap from app_spec; track multi-stage workflow counts."
-    )]
+    #[command(hide = true)]
     Pipeline {
         #[command(subcommand)]
         action: PipelineAction,
     },
-    /// DeepSec-style security scanner: regex pre-filter → LLM deep analysis → report
+    #[command(hide = true)]
     Security {
         #[command(subcommand)]
         action: SecurityAction,
     },
 
-    /// Unified JSON snapshot: kanban counts, session, phase, loop state.
-    #[command(
-        long_about = "Emits one JSON object for agent harness startup: project slug, \
-session id/phase, loop active flag, kanban status histogram, and top roadmap rows.\n\n\
-Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is sandboxed.",
-        after_help = "EXAMPLES:\n  kavach context --project nicole-carpenter --limit 10\n  kavach context --project P --status in_progress --key backend\n\nWHEN: Prefer over piping stop hooks when you only need backlog visibility."
-    )]
+    #[command(hide = true)]
     Context {
         /// Project slug
         #[arg(long)]
@@ -255,14 +229,7 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
         #[arg(long)]
         full: bool,
     },
-    /// Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks).
-    /// Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus.
-    /// Emits cited, RRF-ranked hits as JSON; auto-files a research card when the
-    /// corpus is thin for the query (gap-analysis closes the self-improving loop).
-    /// SOURCE: roadmap.unit.harness.brain-os.g2-think-mode.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach think --project kavach-rs \"hybrid retrieval design\"\n  kavach think --project P --limit 5 \"lease fencing epoch\"\n\nWHEN: recover prior decisions/research before re-researching from scratch."
-    )]
+    /// Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus
     Think {
         /// Project slug (scopes the gap-file write).
         #[arg(long)]
@@ -278,9 +245,7 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
     },
 
 
-    /// Install the per-language strict-rules profile (Rust/TS/Go) so the build
-    /// FAILS on bad patterns — language-agnostic, no suppression.
-    /// SOURCE: decision.lint.language-profile-template.
+    #[command(hide = true)]
     Lint {
         #[command(subcommand)]
         action: LintAction,
@@ -296,11 +261,7 @@ Uses direct Turso DB (same path as `db kanban`) — reliable when RPC socket is 
     },
 
 
-    /// Bounded working-state scratchpad (zero-heap K/V, max 10 slots).
-    /// Inject at turn start to defeat lost-in-the-middle amnesia.
-    #[command(
-        after_help = "EXAMPLES:\n  kavach working-state set target fn_fetch_url\n  kavach working-state get target\n  kavach working-state inject\n\nWHEN: after any sg/kavach discovery, write the found symbol+location to working-state. Inject at every turn start for O(1) recall."
-    )]
+    #[command(hide = true)]
     WorkingState {
         #[command(subcommand)]
         action: WorkingStateAction,

@@ -42,8 +42,6 @@ WHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the
 
 ## `kavach context`
 
-Unified JSON snapshot: kanban counts, session, phase, loop state
-
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
@@ -52,14 +50,6 @@ Unified JSON snapshot: kanban counts, session, phase, loop state
 | `--key` | Filter kanban by key substring |  |
 | `--delta` | Return only changed fields since last call in this session |  |
 | `--full` | Emit full raw JSON payload instead of default 1-line badge |  |
-
-```
-EXAMPLES:
-  kavach context --project nicole-carpenter --limit 10
-  kavach context --project P --status in_progress --key backend
-
-WHEN: Prefer over piping stop hooks when you only need backlog visibility.
-```
 
 ## `kavach db`
 
@@ -643,8 +633,6 @@ WHEN: one-time onboarding — makes each tool load Kavach via its OWN official h
 
 ## `kavach lint`
 
-Install the per-language strict-rules profile (Rust/TS/Go) so the build FAILS on bad patterns — language-agnostic, no suppression. SOURCE: decision.lint.language-profile-template
-
 ## `kavach lint audit`
 
 Whole-repo over-engineering scan: ranked delete/stdlib/native/yagni/shrink
@@ -714,10 +702,15 @@ Scan a directory for files whose code-LOC exceeds the threshold
 
 ## `kavach loop`
 
-Manage SDLC development phases (PLAN/IMPLEMENT/TEST/HARDEN) Manage autonomous execution loop (harness engineering)
+Autonomous execution loop across pending roadmap units
 
 ```
-See: kavach loop --help
+EXAMPLES:
+  kavach loop start --target 'kanban:empty' --max 50
+  kavach loop status
+  kavach loop stop
+
+WHEN: Long autonomous sessions with a clear stop condition.
 ```
 
 ## `kavach loop start`
@@ -738,15 +731,6 @@ Show current loop status
 Stop the current autonomous loop
 
 ## `kavach loophole`
-
-Meta-Harness Loophole Loop: hunt loopholes in the SYSTEM ITSELF across the six attack lenses, record each to the Kavach DB, and capture a heal card so the loop fixes it — then re-hunt until dry. Emits a per-iteration YAML to a /tmp working dir to precisely target each round's unit of work
-
-```
-EXAMPLES:
-  kavach loophole sweep --project P
-
-WHEN: continuously self-interrogate the codebase for concurrency/failure/malformed/authz/replay/boundary loopholes. Kavach detects (non-AI) + records; the subscription agent fixes.
-```
 
 ## `kavach loophole cron`
 
@@ -805,16 +789,6 @@ USE THIS INSTEAD OF grep/rg to find where a symbol lives — zero LLM tokens. Ro
 
 ## `kavach pipeline`
 
-One-shot deploy: build, test, install binary to ~/.cargo/bin/kavach. Pipeline operations: plan from `AppSpec`, show status of multi-stage workflow. SOURCE: 42-pattern catalog §5.1 Agent-Skill-Command Triad — initializer→subagent
-
-```
-EXAMPLES:
-  kavach pipeline plan --project P --spec-key app_spec.build
-  kavach pipeline status --project nicole-carpenter
-
-WHEN: Bootstrap roadmap from app_spec; track multi-stage workflow counts.
-```
-
 ## `kavach pipeline plan`
 
 Read an `app_spec` entry and emit roadmap items (status=todo) from its tasks
@@ -848,8 +822,6 @@ WHEN: inspect full tool output or payload that was cached to save LLM context bu
 ```
 
 ## `kavach security`
-
-DeepSec-style security scanner: regex pre-filter → LLM deep analysis → report
 
 ## `kavach security init`
 
@@ -972,6 +944,35 @@ Land session (finalize)
 
 Resume a previous session
 
+## `kavach session state`
+
+Manage bounded working-state scratchpad slots (max 10 slots)
+
+## `kavach session state clear`
+
+Clear all working-state slots
+
+## `kavach session state get`
+
+Read a slot by key. Exit 1 if missing
+
+| Flag | Description | Default |
+|---|---|---|
+| `<key>` |  |  |
+
+## `kavach session state inject`
+
+Print a [STATE] block of all slots to stdout (inject at harness turn start)
+
+## `kavach session state set`
+
+Write a key-value slot (overwrites existing; max 10 slots)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<key>` |  |  |
+| `<value>` |  |  |
+
 ## `kavach session validate`
 
 Validate current session
@@ -989,7 +990,7 @@ WHEN: session-start sanity check; confirms project slug and pending gates.
 
 ## `kavach think`
 
-Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral blocks). Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus. Emits cited, RRF-ranked hits as JSON; auto-files a research card when the corpus is thin for the query (gap-analysis closes the self-improving loop). SOURCE: roadmap.unit.harness.brain-os.g2-think-mode
+Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus
 
 | Flag | Description | Default |
 |---|---|---|
@@ -997,14 +998,6 @@ Inspect / clear the K-PRI mistake ledger (auto-populated by stop-gate behavioral
 | `<query>` | Free-text retrieval query (BM25 over title/content + concept FTS) |  |
 | `--limit` | Max fused hits to return (default: 10) | 10 |
 | `--session-weighted` | Weight scoring by session recency and recall frequency |  |
-
-```
-EXAMPLES:
-  kavach think --project kavach-rs "hybrid retrieval design"
-  kavach think --project P --limit 5 "lease fencing epoch"
-
-WHEN: recover prior decisions/research before re-researching from scratch.
-```
 
 ## `kavach verify`
 
@@ -1026,17 +1019,6 @@ WHEN: After implementation is done and `db status-update … --status done`.
 ```
 
 ## `kavach working-state`
-
-Bounded working-state scratchpad (zero-heap K/V, max 10 slots). Inject at turn start to defeat lost-in-the-middle amnesia
-
-```
-EXAMPLES:
-  kavach working-state set target fn_fetch_url
-  kavach working-state get target
-  kavach working-state inject
-
-WHEN: after any sg/kavach discovery, write the found symbol+location to working-state. Inject at every turn start for O(1) recall.
-```
 
 ## `kavach working-state clear`
 

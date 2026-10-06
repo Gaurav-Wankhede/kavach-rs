@@ -22,7 +22,7 @@ pub(crate) fn keep_hit(id: &str) -> bool {
     id.split_once(':').is_some_and(|(category, _)| {
         matches!(
             category,
-            "decision" | "research" | "pattern" | "proposal" | "roadmap" | "app_spec"
+            "decision" | "research" | "pattern" | "proposal" | "roadmap" | "app_spec" | "mistake"
         )
     })
 }
