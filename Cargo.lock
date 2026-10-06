@@ -2109,7 +2109,6 @@ version = "1.0.1"
 dependencies = [
  "aho-corasick",
  "dirs",
- "kavach-config",
  "kavach-types",
  "proptest",
  "regex",
@@ -2212,7 +2211,6 @@ dependencies = [
 name = "kavach-toon"
 version = "1.0.1"
 dependencies = [
- "serde",
  "serde_json",
  "thiserror 2.0.18",
 ]
