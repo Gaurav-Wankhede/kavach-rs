@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 /// Configuration for source file discovery.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct WalkConfig {
     pub hidden: bool,
     pub git_ignore: bool,
@@ -18,10 +19,10 @@ impl Default for WalkConfig {
             hidden: true,
             git_ignore: true,
             custom_excludes: vec![
-                "!target/**".to_string(),
-                "!.fastembed_cache/**".to_string(),
-                "!node_modules/**".to_string(),
-                "!.git/**".to_string(),
+                "!target/**".to_owned(),
+                "!.fastembed_cache/**".to_owned(),
+                "!node_modules/**".to_owned(),
+                "!.git/**".to_owned(),
             ],
         }
     }
@@ -68,7 +69,7 @@ pub fn walk_source_files(root: &Path, config: &WalkConfig) -> Vec<PathBuf> {
     }
 
     let mut out = Vec::new();
-    for entry in builder.build().into_iter().filter_map(Result::ok) {
+    for entry in builder.build().filter_map(Result::ok) {
         let p = entry.path();
         if p.is_file() && is_indexable(p) {
             out.push(p.to_path_buf());

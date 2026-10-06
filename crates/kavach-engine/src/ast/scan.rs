@@ -5,6 +5,7 @@ use ast_grep_core::AstGrep;
 
 /// An AST search match location.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AstMatch {
     pub file: String,
     pub line: usize,
@@ -35,8 +36,7 @@ pub fn lang_for_path(path: &str) -> Option<SupportLang> {
         "rs" => Some(SupportLang::Rust),
         "ts" => Some(SupportLang::TypeScript),
         "tsx" => Some(SupportLang::Tsx),
-        "js" | "mjs" | "cjs" => Some(SupportLang::JavaScript),
-        "jsx" => Some(SupportLang::JavaScript),
+        "js" | "mjs" | "cjs" | "jsx" => Some(SupportLang::JavaScript),
         "py" => Some(SupportLang::Python),
         "go" => Some(SupportLang::Go),
         "java" => Some(SupportLang::Java),
@@ -92,11 +92,11 @@ mod tests {
 
     #[test]
     fn test_scan_ast_rust() {
-        let code = r#"
+        let code = r"
             pub fn run_worker() {
                 let status = 1;
             }
-        "#;
+        ";
         let patterns = &[("fn", "pub fn $NAME($$$) { $$$ }")];
         let res = scan_ast("run_worker", "worker.rs", code, SupportLang::Rust, patterns);
         assert_eq!(res.len(), 1);
