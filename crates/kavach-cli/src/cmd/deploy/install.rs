@@ -82,11 +82,11 @@ pub(crate) fn binary_filename() -> String {
     }
 }
 
-/// Resolve `~/.local/bin/kavach[.exe]` without panicking on a missing home dir.
+/// Resolve `~/.cargo/bin/kavach[.exe]` without panicking on a missing home dir.
 pub(crate) fn install_dest() -> Option<PathBuf> {
     Some(
         dirs::home_dir()?
-            .join(".local")
+            .join(".cargo")
             .join("bin")
             .join(binary_filename()),
     )

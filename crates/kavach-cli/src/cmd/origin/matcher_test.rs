@@ -1,11 +1,15 @@
 use super::sites_in;
 use crate::cmd::origin::site::Kind;
 
-fn kinds(name: &str, src: &str) -> Vec<Kind> {
-    sites_in(name, "x.rs", src)
+fn kinds_ext(name: &str, file: &str, src: &str) -> Vec<Kind> {
+    sites_in(name, file, src)
         .into_iter()
         .map(|s| s.kind)
         .collect()
+}
+
+fn kinds(name: &str, src: &str) -> Vec<Kind> {
+    kinds_ext(name, "x.rs", src)
 }
 
 #[test]
@@ -69,54 +73,55 @@ fn finds_fn_param() {
 
 #[test]
 fn finds_enum_variant() {
-    let k = kinds("EnvVar", "    EnvVar,");
+    let k = kinds("EnvVar", "enum Foo {\n    EnvVar,\n}");
     assert!(k.contains(&Kind::Variant));
 }
 
 #[test]
 fn handles_invalid_regex_pattern_gracefully() {
-    // When an invalid regex pattern is encountered (e.g., from a name with
-    // metacharacters), the function must not panic. Currently panics because
-    // the fallback expect() is not suppressed. This test will pass once
-    // #[expect(clippy::expect_used)] is added to justify the fallback.
     let sites = sites_in("X", "x.rs", "let [invalid( = 5;");
-    // Should return sites matching the fallback pattern $.^ (which matches nothing)
-    // rather than panicking.
     assert!(sites.is_empty());
 }
 
 #[test]
 fn finds_sql_schema_table() {
-    let k = kinds("users", "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY);");
+    let k = kinds_ext("users", "schema.sql", "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY);");
     assert!(k.contains(&Kind::Schema));
 }
 
 #[test]
 fn finds_markdown_doc_anchor() {
-    let k = kinds("Architecture", "# Architecture Overview\nSome text");
+    let k = kinds_ext("Architecture", "README.md", "# Architecture Overview\nSome text");
     assert!(k.contains(&Kind::DocAnchor));
 }
 
 #[test]
 fn finds_yaml_and_json_config_fields() {
-    let k1 = kinds("database_url", "database_url: postgres://localhost/db");
+    let k1 = kinds_ext("database_url", "config.yaml", "database_url: postgres://localhost/db");
     assert!(k1.contains(&Kind::ConfigField));
 
-    let k2 = kinds("port", "  \"port\": 8080,");
+    let k2 = kinds_ext("port", "config.json", "{\n  \"port\": 8080\n}");
     assert!(k2.contains(&Kind::ConfigField));
 }
 
 #[test]
 fn finds_polyglot_functions() {
-    let py = kinds("execute_query", "def execute_query(conn, sql):");
+    let py = kinds_ext("execute_query", "db.py", "def execute_query(conn, sql):\n    pass\n");
     assert!(py.contains(&Kind::Function));
 
-    let ts = kinds("fetchUser", "export const fetchUser = async (id: string) => {");
+    let ts = kinds_ext("fetchUser", "api.ts", "export const fetchUser = async (id: string) => {\n    return id;\n};\n");
     assert!(ts.contains(&Kind::Function));
 }
 
 #[test]
+fn ast_ignores_comments_and_strings() {
+    let rs = sites_in("fake_fn", "test.rs", "// fn fake_fn() {}\nlet s = \"fn fake_fn() {}\";\n");
+    println!("DEBUG SITES: {rs:?}");
+    assert!(rs.is_empty(), "comments and strings must never match as declarations");
+}
+
+#[test]
 fn finds_node_process_env() {
-    let k = kinds("SECRET_KEY", "const key = process.env.SECRET_KEY || 'default';");
+    let k = kinds_ext("SECRET_KEY", "app.js", "const key = process.env.SECRET_KEY || 'default';");
     assert!(k.contains(&Kind::EnvVar));
 }

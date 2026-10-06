@@ -5,6 +5,7 @@ exclude = ["crates/kavach-nlm"]
 
 
 [workspace.package]
+version = "1.0.1"
 publish = false
 license = "MIT"
 

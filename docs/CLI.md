@@ -501,7 +501,7 @@ WHEN: Persist a decision/roadmap/research row. Always pass --new (create) or --u
 
 ## `kavach deploy`
 
-One-shot deploy: build, test, install binary to ~/.local/bin/kavach
+One-shot deploy: build, test, install binary to ~/.cargo/bin/kavach
 
 | Flag | Description | Default |
 |---|---|---|

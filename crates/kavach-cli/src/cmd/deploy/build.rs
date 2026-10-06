@@ -115,7 +115,7 @@ pub(super) fn deploy_cli(skip_tests: bool) -> i32 {
         return 1;
     }
 
-    if let Err(io_err) = print_or_exit("[DEPLOY] step 7/8: install to ~/.local/bin/kavach") {
+    if let Err(io_err) = print_or_exit("[DEPLOY] step 7/8: install to ~/.cargo/bin/kavach") {
         return into_exit_code(io_err);
     }
     let Some(root) = super::workspace_root() else {

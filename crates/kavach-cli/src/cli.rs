@@ -210,7 +210,7 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[arg(long)]
         proof: Option<String>,
     },
-    /// One-shot deploy: build, test, install binary to ~/.local/bin/kavach.
+    /// One-shot deploy: build, test, install binary to ~/.cargo/bin/kavach.
     #[command(
         after_help = "EXAMPLES:\n  just install              # from kavach-rs (plain CLI)\n  kavach deploy --skip-tests\n\nWHEN: After engine/cli changes; restarts RPC daemon on success."
     )]

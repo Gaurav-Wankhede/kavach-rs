@@ -1,5 +1,6 @@
 //! `kavach origin <NAME> [path]` — deterministic symbol-origin / config-source finder.
 
+mod ast_scan;
 mod matcher;
 mod query;
 mod refine;
@@ -107,19 +108,23 @@ fn source_files(root: &Path) -> Vec<PathBuf> {
         };
     }
     let mut out = Vec::new();
-    let walker = ignore::WalkBuilder::new(root)
-        .hidden(true)
+    let mut builder = ignore::WalkBuilder::new(root);
+    builder.hidden(true)
         .parents(true)
         .ignore(true)
         .git_ignore(true)
         .git_global(true)
-        .git_exclude(true)
-        .build();
+        .git_exclude(true);
+    let mut overrides = ignore::overrides::OverrideBuilder::new(root);
+    for pat in &["!target/**", "!.fastembed_cache/**", "!node_modules/**", "!.git/**"] {
+        overrides.add(pat).ok();
+    }
+    if let Ok(ov) = overrides.build() {
+        builder.overrides(ov);
+    }
+    let walker = builder.build();
 
-    for result in walker {
-        let Ok(entry) = result else {
-            continue;
-        };
+    for entry in walker.into_iter().filter_map(Result::ok) {
         let path = entry.path();
         if path.is_file() && is_origin_indexable(path) {
             out.push(path.to_path_buf());

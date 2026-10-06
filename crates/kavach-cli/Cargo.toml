@@ -1,6 +1,6 @@
 [package]
 name = "kavach-cli"
-version = "0.2.0"
+version = "1.0.1"
 edition = "2024"
 publish = false
 
@@ -41,6 +41,7 @@ thiserror = { workspace = true }
 ignore = { workspace = true }
 ast-grep-core = { workspace = true }
 pulldown-cmark = { workspace = true }
+ast-grep-language = "0.45.3"
 
 [lints]
 workspace = true

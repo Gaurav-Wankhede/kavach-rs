@@ -1,10 +1,35 @@
-//! Per-line declaration matcher: classify where `name` is DECLARED, config-first.
+//! Per-line and AST declaration matcher: classify where `name` is DECLARED, config-first.
 
 use super::site::{Kind, Site};
 use regex::Regex;
 
+use super::ast_scan;
+
 /// All declaration sites of `name` in `content` (one file). Usages are ignored.
 pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
+    // Fast pre-filter: if literal symbol is not present anywhere in content bytes,
+    // skip tree-sitter AST building and regex parsing entirely.
+    if !content.contains(name) {
+        return Vec::new();
+    }
+
+    // 1. Markdown documents parsed via pulldown-cmark
+    let is_md = std::path::Path::new(file)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+    if is_md {
+        return parse_markdown_sites(name, file, content);
+    }
+
+    // 2. Syntax-tree AST parsing via ast-grep-core and Tree-sitter
+    // When a file is a recognized programming language, ONLY AST declaration nodes
+    // are queried — comments and string literals are strictly ignored by the parser.
+    if let Some(lang) = ast_scan::detect_lang(file) {
+        return ast_scan::scan_ast(name, file, content, lang);
+    }
+
+    // 3. Fallback to resilient schema/config/regex rules for non-AST formats (SQL, env, etc.)
     let n = regex::escape(name);
     let rules: [(Kind, Regex); 20] = [
         (Kind::EnvVar, re(&format!(r#"(?:env::var\w*|os\.environ(?:\.get)?|getenv)\s*\(?\s*["']{n}["']|process\.env(?:\.{n}|\[\s*["']{n}["']\s*\])"#))),
@@ -53,19 +78,12 @@ pub(super) fn sites_in(name: &str, file: &str, content: &str) -> Vec<Site> {
         (Kind::Function, re(&format!(r"\b{n}\s*\([^)]*\)\s*\{{"))),
     ];
 
-    let is_md = std::path::Path::new(file)
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
-    if is_md {
-        let md_sites = parse_markdown_sites(name, file, content);
-        if !md_sites.is_empty() {
-            return md_sites;
-        }
-    }
-
     let mut out = Vec::new();
     for (i, line) in content.lines().enumerate() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("//") || trimmed.starts_with('#') || trimmed.starts_with('*') {
+            continue;
+        }
         for (kind, re) in &rules {
             if re.is_match(line) {
                 out.push(Site {
