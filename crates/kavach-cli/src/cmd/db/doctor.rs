@@ -13,7 +13,7 @@
 //! IDEMPOTENT: a second run reports zero changes.
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_db::repair_dep_lines::repair_dep_lines;
+use kavach_db::repair_dep_lines::{repair_dep_lines, strip_prose_deps};
 use kavach_db::turso::entries::EntryStore;
 
 fn fetch_roadmap(project: &str) -> Result<Vec<kavach_db::MemoryEntry>, String> {
@@ -28,6 +28,88 @@ fn fetch_roadmap(project: &str) -> Result<Vec<kavach_db::MemoryEntry>, String> {
             .await
             .map_err(|e| e.to_string())
     })
+}
+
+/// Drop NLU-harvested prose tokens that were mirrored into `DEPENDS_ON:` lines
+/// as if they were dependencies (`their`, `dedup`, `rename`, `read-back`).
+///
+/// SAFE BY CONSTRUCTION: only tokens that cannot be a card key under any
+/// spelling are removed — flat lowercase alphabetic text with no `-`, `.`, `_` or
+/// `/`. A key-shaped token is KEPT even when its target is absent, because that
+/// is a genuine typo an operator should fix, not garbage to delete. Every
+/// dropped token is printed; the repair never decides silently.
+pub(crate) fn strip_prose(project: &str, apply: bool) -> i32 {
+    let rows = match fetch_roadmap(project) {
+        Ok(r) => r,
+        Err(e) => {
+            return match ewrite_or_exit(&format!("error: {e}")) {
+                Ok(()) => 1,
+                Err(io_err) => into_exit_code(io_err),
+            };
+        }
+    };
+
+    let mut planned: Vec<(kavach_db::MemoryEntry, String, Vec<String>)> = Vec::new();
+    for row in &rows {
+        let (new_body, removed) = strip_prose_deps(&row.content);
+        if !removed.is_empty() {
+            planned.push((row.clone(), new_body, removed));
+        }
+    }
+
+    if planned.is_empty() {
+        return match print_or_exit("no prose tokens in DEPENDS_ON lines — nothing to strip") {
+            Ok(()) => 0,
+            Err(io_err) => into_exit_code(io_err),
+        };
+    }
+
+    let verb = if apply { "stripping" } else { "would strip" };
+    if let Err(io_err) = ewrite_or_exit(&format!(
+        "{verb} prose deps from {} row(s):",
+        planned.len()
+    )) {
+        return into_exit_code(io_err);
+    }
+    let mut total = 0usize;
+    for (row, _, removed) in &planned {
+        total = total.saturating_add(removed.len());
+        let line = format!("  {} — {}", row.entry_key, removed.join(", "));
+        if let Err(io_err) = ewrite_or_exit(&line) {
+            return into_exit_code(io_err);
+        }
+    }
+    if !apply {
+        return match ewrite_or_exit("dry run — re-run with --apply to write") {
+            Ok(()) => 0,
+            Err(io_err) => into_exit_code(io_err),
+        };
+    }
+
+    let mut written = 0usize;
+    for (row, new_body, _) in &planned {
+        let code = crate::cmd::db::write::run(&crate::cmd::db::rpc_client::WriteRequest {
+            project,
+            category: "roadmap",
+            key: &row.entry_key,
+            title: &row.title,
+            content: Some(new_body.as_str()),
+            new: false,
+            update_key: Some(row.entry_key.as_str()),
+            priority: row.priority,
+            exec_prompt: row.exec_prompt.as_deref(),
+            depends_on: &[],
+        });
+        if code == 0 {
+            written = written.saturating_add(1);
+        }
+    }
+    match print_or_exit(&format!(
+        "stripped {total} prose token(s) across {written} row(s)"
+    )) {
+        Ok(()) => 0,
+        Err(io_err) => into_exit_code(io_err),
+    }
 }
 
 pub(crate) fn repair_deps(project: &str, apply: bool) -> i32 {

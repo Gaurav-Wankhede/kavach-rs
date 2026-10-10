@@ -176,6 +176,7 @@ fn doctor_dispatch(action: crate::cli::db::DoctorAction) -> i32 {
     use crate::cli::db::DoctorAction;
     match action {
         DoctorAction::RepairDeps { project, apply } => doctor::repair_deps(&project, apply),
+        DoctorAction::StripProseDeps { project, apply } => doctor::strip_prose(&project, apply),
     }
 }
 

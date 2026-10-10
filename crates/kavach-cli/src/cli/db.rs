@@ -491,6 +491,18 @@ pub(crate) enum DoctorAction {
         #[arg(long, default_value_t = false)]
         apply: bool,
     },
+/// Drop prose tokens harvested from card text out of DEPENDS_ON lines
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db doctor strip-prose-deps --project P\n  kavach db doctor strip-prose-deps --project P --apply\n\nWHEN: The NLU scanner read \"depends on their model\" in a card body and mirrored `their` into a DEPENDS_ON line, creating a permanent (unresolved) DAG node.\n\nSAFETY: only tokens that cannot be a key under any spelling are removed (flat lowercase text with no - . _ /). An absent-but-key-shaped dep is KEPT — that is a real typo to fix, not garbage to delete."
+    )]
+    StripProseDeps {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Write the repairs (default is a dry run that prints the plan)
+        #[arg(long, default_value_t = false)]
+        apply: bool,
+    },
 }
 
 const MT_AFTER_HELP: &str = "\

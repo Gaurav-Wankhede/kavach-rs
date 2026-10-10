@@ -19,10 +19,22 @@ use std::fmt::Write as _;
 /// (`parse_declared_deps`), so the awareness DAG and dispatch order agree by
 /// construction. A declared dep whose key is absent from the project is dropped
 /// (it cannot be a node), mirroring the scheduler's tolerance.
-fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
+///
+/// `other_categories` names every NON-roadmap `entry_key` in the project. A dep
+/// resolving to one of those is a real edge to a card that simply lives in a
+/// different table (a `decision`, a `research` row) — it must NOT become an
+/// `(unresolved)` phantom. Without this, `model-shift-router-advisory` (a
+/// verified DECISION) rendered as a missing prerequisite and would have been
+/// deleted by any "remove phantoms" repair, losing a genuine edge.
+fn dag_from_roadmap(rows: &[MemoryEntry], other_categories: &[String]) -> RoadmapDag {
     use kavach_rpc::methods::roadmap::readiness::{bare_dep_key, parse_declared_deps};
     let present: std::collections::HashSet<&str> =
         rows.iter().map(|e| e.entry_key.as_str()).collect();
+    // Bare tails of non-roadmap keys, so a qualified form resolves too.
+    let external: std::collections::HashSet<&str> = other_categories
+        .iter()
+        .map(|k| bare_dep_key(k.as_str()))
+        .collect();
     let nodes: Vec<DagNode> = rows
         .iter()
         .map(|e| DagNode {
@@ -52,6 +64,19 @@ fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
                 continue;
             }
             if !present.contains(dep.as_str()) {
+                // Present, but in ANOTHER category (decision/research/...). This
+                // is a real dependency on a real card, not a missing one. Emit
+                // the edge with no node: the dependent correctly WAITS (the
+                // other card is not done), but no phantom is invented and no
+                // repair would ever delete the edge.
+                if external.contains(dep.as_str()) {
+                    edges.push(DagEdge {
+                        source: dep,
+                        target: e.entry_key.clone(),
+                        rel: "depends_on".to_owned(),
+                    });
+                    continue;
+                }
                 // Absent in THIS project's rows — most often a cross-project
                 // prerequisite the scheduler resolves against the GLOBAL pool and
                 // would BLOCK on. Drop-the-edge would falsely mark `e` ready
@@ -356,9 +381,14 @@ fn render_mermaid(dag: &RoadmapDag) -> String {
 /// Entry point: build the DAG from roadmap `rows`, render it in the requested
 /// `format`, and print it. `format` is `"dag"` (tiered text) or `"mermaid"`;
 /// any other value is treated as `"dag"` (clap restricts the flag, so this is
-/// defense-in-depth).
-pub(in crate::cmd::db) fn render_dag_from_rows(rows: &[MemoryEntry], format: &str) -> i32 {
-    render_dag_from_filtered(rows, format, false, 0)
+/// defense-in-depth). `other_categories` lists non-roadmap `entry_key`s so a dep
+/// on a decision/research card resolves instead of becoming a phantom.
+pub(in crate::cmd::db) fn render_dag_from_rows(
+    rows: &[MemoryEntry],
+    format: &str,
+    other_categories: &[String],
+) -> i32 {
+    render_dag_from_filtered(rows, format, false, 0, other_categories)
 }
 
 /// Filtered entry point (K-5): render the DAG over pre-filtered `rows`
@@ -371,6 +401,7 @@ pub(in crate::cmd::db) fn render_dag_from_filtered(
     format: &str,
     show_closed: bool,
     limit: usize,
+    other_categories: &[String],
 ) -> i32 {
     if rows.is_empty() {
         return match print_or_exit("[KANBAN DAG] 0 node(s), 0 edge(s) — no rows match the filters")
@@ -384,7 +415,7 @@ pub(in crate::cmd::db) fn render_dag_from_filtered(
     } else {
         rows.iter().take(limit).cloned().collect()
     };
-    let dag = dag_from_roadmap(&scoped);
+    let dag = dag_from_roadmap(&scoped, other_categories);
     let body = if format == "mermaid" {
         render_mermaid(&dag)
     } else {

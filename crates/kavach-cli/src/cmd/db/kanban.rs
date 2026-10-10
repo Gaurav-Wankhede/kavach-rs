@@ -107,6 +107,18 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
             return 1;
         }
     };
+    // Non-roadmap `entry_key`s, so a dep on a DECISION or RESEARCH row resolves
+    // instead of rendering as a missing prerequisite. Without this a genuine
+    // cross-category edge (`model-shift-router-advisory`, a verified decision)
+    // showed as an `(unresolved)` phantom and looked deletable.
+    let other_keys: Vec<String> = match store.list_by_project(project_slug).await {
+        Ok(all) => all
+            .into_iter()
+            .filter(|e| e.category.as_deref() != Some("roadmap"))
+            .map(|e| e.entry_key)
+            .collect(),
+        Err(_) => Vec::new(),
+    };
     // The DAG is the ALWAYS-ON default awareness surface: every `kavach db kanban`
     // read projects the dependency graph (tiered text by default, or mermaid via
     // `--format mermaid`) so the agent always sees the exact task graph + which
@@ -125,7 +137,7 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
         || filters.lane.is_some();
     if !has_filter {
         let fmt = filters.format.unwrap_or("dag");
-        return dag_render::render_dag_from_rows(&roadmap, fmt);
+        return dag_render::render_dag_from_rows(&roadmap, fmt, &other_keys);
     }
     let filtered: Vec<kavach_db::MemoryEntry> = roadmap
         .iter()
@@ -143,7 +155,7 @@ async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>
         kavach_db::StatusPred::Is(MemoryStatus::Done | MemoryStatus::Verified)
     );
     let fmt = filters.format.unwrap_or("dag");
-    dag_render::render_dag_from_filtered(&filtered, fmt, show_closed, limit)
+    dag_render::render_dag_from_filtered(&filtered, fmt, show_closed, limit, &other_keys)
 }
 #[cfg(test)]
 #[path = "kanban_test.rs"]

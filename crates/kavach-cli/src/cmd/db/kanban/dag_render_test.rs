@@ -136,7 +136,7 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         row("u2", "DEPENDS_ON: u1"),
         row("u3", "DEPENDS_ON: u2 ghost"),
     ];
-    let dag = dag_from_roadmap(&rows);
+    let dag = dag_from_roadmap(&rows, &[]);
     assert_eq!(
         dag.nodes.len(),
         4,
@@ -189,7 +189,7 @@ fn project_qualified_dep_does_not_create_a_phantom_node() {
             "DEPENDS_ON: vectron/roadmap/roadmap.stage1-backend",
         ),
     ];
-    let dag = dag_from_roadmap(&rows);
+    let dag = dag_from_roadmap(&rows, &[]);
     assert_eq!(
         dag.nodes.len(),
         2,
@@ -228,7 +228,7 @@ fn qualified_but_absent_dep_still_yields_one_phantom() {
         "roadmap.child",
         "DEPENDS_ON: other-project/roadmap/roadmap.truly-absent",
     )];
-    let dag = dag_from_roadmap(&rows);
+    let dag = dag_from_roadmap(&rows, &[]);
     assert_eq!(dag.nodes.len(), 2, "1 card + 1 phantom");
     let phantom = dag
         .nodes
@@ -281,7 +281,7 @@ fn conflicting_cards_are_never_both_ready() {
         row("mt.a.one", &ticket_body(&["mt.a.two"])),
         row("mt.a.two", "no deps"),
     ];
-    let dag = dag_from_roadmap(&rows);
+    let dag = dag_from_roadmap(&rows, &[]);
     let by_id: HashMap<&str, &DagNode> =
         dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
     assert!(
@@ -306,7 +306,7 @@ fn closing_one_side_unblocks_the_other() {
     let mut closed = row("mt.a.two", "no deps");
     closed.entry_status = Some("done".to_owned());
     rows.push(closed);
-    let dag = dag_from_roadmap(&rows);
+    let dag = dag_from_roadmap(&rows, &[]);
     let by_id: HashMap<&str, &DagNode> =
         dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
     let survivor = by_id.get("mt.a.one").expect("node");
@@ -324,7 +324,7 @@ fn non_ticket_body_contributes_no_conflicts() {
         row("mt.a.one", "DEPENDS_ON: mt.a.two"),
         row("mt.a.two", "plain prose, not a ticket"),
     ];
-    let dag = dag_from_roadmap(&rows);
+    let dag = dag_from_roadmap(&rows, &[]);
     assert!(
         !dag.edges.iter().any(|e| e.rel == "conflicts_with"),
         "no ticket body means no conflict edges"
@@ -333,6 +333,76 @@ fn non_ticket_body_contributes_no_conflicts() {
         dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
     let two = by_id.get("mt.a.two").expect("node");
     assert!(is_ready(two, &dag.edges, &by_id), "dep satisfied, no conflict");
+}
+
+/// REGRESSION (Class B): a dep naming a card that exists in ANOTHER category
+/// (`model-shift-router-advisory` is a verified DECISION) is a REAL edge, not a
+/// missing prerequisite. It rendered as `(unresolved)` and looked deletable —
+/// a repair pass would have destroyed a genuine dependency.
+#[test]
+fn cross_category_dep_is_not_a_phantom() {
+    let rows = vec![row("mt.a.consumer", "DEPENDS_ON: model-shift-router-advisory")];
+    let external = vec!["model-shift-router-advisory".to_owned()];
+    let dag = dag_from_roadmap(&rows, &external);
+    assert!(
+        !dag.nodes
+            .iter()
+            .any(|n| n.entry_status == "missing"),
+        "a cross-category dep must not invent a phantom node:\n{:?}",
+        dag.nodes
+    );
+    assert!(
+        dag.edges.iter().any(|e| e.source == "model-shift-router-advisory"),
+        "the real edge is retained:\n{:?}",
+        dag.edges
+    );
+    let by_id: HashMap<&str, &DagNode> =
+        dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+    let consumer = by_id.get("mt.a.consumer").expect("node");
+    // A cross-category prereq is deliberately NOT a hard block: `is_ready`
+    // treats an off-board source as satisfied (`is_none_or`) so a dangling dep
+    // cannot wedge the whole board — matching decision
+    // `roadmap.depends-on-is-the-only-edge-no-parked-block`. The consumer is
+    // therefore dispatchable, and the EDGE is still recorded.
+    assert!(
+        is_ready(consumer, &dag.edges, &by_id),
+        "an off-board cross-category prereq does not wedge the consumer"
+    );
+    assert!(
+        dag.edges.iter().any(|e| e.target == "mt.a.consumer"
+            && e.source == "model-shift-router-advisory"),
+        "the dependency is still recorded even though it does not block"
+    );
+}
+
+/// The qualified spelling of a cross-category key resolves too.
+#[test]
+fn qualified_cross_category_dep_resolves() {
+    let rows = vec![row(
+        "mt.a.consumer",
+        "DEPENDS_ON: kavach-rs/decision/model-shift-router-advisory",
+    )];
+    let external = vec!["model-shift-router-advisory".to_owned()];
+    let dag = dag_from_roadmap(&rows, &external);
+    assert!(
+        !dag.nodes.iter().any(|n| n.entry_status == "missing"),
+        "bare-tail normalization must apply to the external set too"
+    );
+}
+
+/// A genuinely absent key is STILL a phantom even when other categories exist —
+/// the cross-category allowance must not swallow real absences.
+#[test]
+fn genuinely_absent_dep_is_still_a_phantom() {
+    let rows = vec![row("mt.a.consumer", "DEPENDS_ON: their")];
+    let external = vec!["model-shift-router-advisory".to_owned()];
+    let dag = dag_from_roadmap(&rows, &external);
+    assert_eq!(
+        dag.nodes.len(),
+        2,
+        "1 card + 1 phantom for the truly-absent key"
+    );
+    assert!(dag.nodes.iter().any(|n| n.entry_status == "missing"));
 }
 
 #[test]

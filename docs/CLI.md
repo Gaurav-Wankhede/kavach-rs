@@ -216,6 +216,25 @@ WHEN: Two mirrors (CLI + daemon) each appended a DEPENDS_ON line, and 52 rows ca
 SAFETY: dry-run by default. Dependencies are MERGED, never dropped — a row whose qualified line names MORE targets than its bare line would lose edges if the qualified line were simply deleted.
 ```
 
+## `kavach db doctor strip-prose-deps`
+
+Drop prose tokens harvested from card text out of DEPENDS_ON lines
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--apply` | Write the repairs (default is a dry run that prints the plan) | false |
+
+```
+EXAMPLES:
+  kavach db doctor strip-prose-deps --project P
+  kavach db doctor strip-prose-deps --project P --apply
+
+WHEN: The NLU scanner read "depends on their model" in a card body and mirrored `their` into a DEPENDS_ON line, creating a permanent (unresolved) DAG node.
+
+SAFETY: only tokens that cannot be a key under any spelling are removed (flat lowercase text with no - . _ /). An absent-but-key-shaped dep is KEPT — that is a real typo to fix, not garbage to delete.
+```
+
 ## `kavach db embed-backfill`
 
 Backfill vector embeddings for existing memories (Phase 5)

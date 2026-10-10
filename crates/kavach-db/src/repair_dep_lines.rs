@@ -69,16 +69,12 @@ pub struct RepairReport {
 pub fn repair_dep_lines(entry_key: &str, body: &str) -> (String, RepairReport) {
     let mut deps: Vec<String> = Vec::new();
     let mut dep_line_count = 0usize;
-    let mut first_dep_line: Option<usize> = None;
     let mut kept: Vec<&str> = Vec::with_capacity(body.lines().count());
 
-    for (i, line) in body.lines().enumerate() {
+    for line in body.lines() {
         let t = line.trim();
         if let Some(payload) = t.strip_prefix("DEPENDS_ON:") {
             dep_line_count += 1;
-            if first_dep_line.is_none() {
-                first_dep_line = Some(i);
-            }
             for d in parse_dep_line(payload) {
                 if !deps.contains(&d) {
                     deps.push(d);
@@ -91,7 +87,23 @@ pub fn repair_dep_lines(entry_key: &str, body: &str) -> (String, RepairReport) {
     }
 
     let deps_before = deps.len();
-    // Nothing to do: no dep lines, exactly one, and it is already canonical.
+    // Nothing declared at all — leave the body completely alone. Without this
+    // guard the join below would rewrite EVERY dep-free row merely to drop its
+    // trailing newline, so a dry run would list hundreds of clean rows as
+    // "changed" and `--apply` would churn them all.
+    if dep_line_count == 0 {
+        return (
+            body.to_owned(),
+            RepairReport {
+                entry_key: entry_key.to_owned(),
+                changed: false,
+                deps_before: 0,
+                deps_after: 0,
+            },
+        );
+    }
+    // Already canonical: exactly one dep line whose parsed set equals the
+    // collected set. Byte-for-byte unchanged.
     let already_canonical = dep_line_count == 1
         && deps_before > 0
         && body
@@ -113,17 +125,19 @@ pub fn repair_dep_lines(entry_key: &str, body: &str) -> (String, RepairReport) {
         );
     }
 
+    // Preserve the body's trailing-newline convention so a repair never alters
+    // a byte the author did not ask us to touch.
+    let trailing_newline = body.ends_with('\n');
     let mut out: Vec<String> = Vec::new();
     if !deps.is_empty() {
         out.push(format!("DEPENDS_ON: {}", deps.join(", ")));
-        if let Some(pos) = first_dep_line {
-            // Preserve blank-line separation where the body had one.
-            let _ = pos;
-        }
     }
     out.extend(kept.iter().map(|l| (*l).to_owned()));
 
-    let new_body = out.join("\n");
+    let mut new_body = out.join("\n");
+    if trailing_newline && !new_body.ends_with('\n') {
+        new_body.push('\n');
+    }
     // Guard: never return a body that lost a dependency.
     debug_assert!(parse_all(&new_body).len() == deps_before);
     let changed = new_body != body;
@@ -151,6 +165,90 @@ fn parse_all(body: &str) -> Vec<String> {
         }
     }
     deps
+}
+
+/// A `DEPENDS_ON` token that is prose, not a card key.
+///
+/// ## Why this is a SHAPE rule, not a word list
+///
+/// These tokens were harvested by the NLU prose scanner ("depends on their
+/// model", "after dedup", "blocks rename") and were permanently mirrored into
+/// card bodies as if they were dependencies. A stop-list cannot keep pace —
+/// English is unbounded. So the test is structural: a real kavach card key
+/// ALWAYS carries a slug separator (kebab/dot/underscore) or is project-qualified.
+/// Flat lowercase alphabetic text is prose.
+///
+/// ## What this deliberately does NOT remove
+///
+/// A qualified key (`kavach-rs/roadmap/x`) and any token with a separator are
+/// kept even when the target is absent — an absent-but-real key is a genuine
+/// typo to fix, not garbage to delete. Deleting those would silently drop live
+/// edges. Only tokens that cannot be a key under any spelling are removed.
+#[must_use]
+pub fn is_prose_token(tok: &str) -> bool {
+    let t = tok.trim();
+    // Empty or obviously not a key.
+    if t.is_empty() {
+        return false;
+    }
+    // A separator anywhere means it was written as a key — absent or not, it is
+    // a legitimate (if unresolvable) reference.
+    if t.contains('-') || t.contains('.') || t.contains('_') || t.contains('/') {
+        return false;
+    }
+    // Flat lowercase alphabetic => English prose. This is the NLU-harvest shape.
+    t.chars().all(|c| c.is_ascii_alphabetic()) && t.chars().all(|c| !c.is_uppercase())
+}
+
+/// Drop prose tokens from every `DEPENDS_ON:` line, keeping genuine keys.
+///
+/// Returns `(new_body, removed)` where `removed` lists each dropped token so the
+/// operator can see exactly what was discarded — a silent deletion of a
+/// "dependency" is the same silent-wrongness class as the phantom node itself.
+pub fn strip_prose_deps(body: &str) -> (String, Vec<String>) {
+    let mut removed: Vec<String> = Vec::new();
+    let mut deps: Vec<String> = Vec::new();
+    for line in body.lines() {
+        if let Some(payload) = line.trim().strip_prefix("DEPENDS_ON:") {
+            for tok in payload.split([',', ' ', '\t']) {
+                let t = tok.trim();
+                if t.is_empty() || t == "DEPENDS_ON" {
+                    continue;
+                }
+                let bare = bare_tail(t).to_owned();
+                if is_prose_token(&bare) {
+                    if !removed.contains(&bare) {
+                        removed.push(bare);
+                    }
+                    continue;
+                }
+                if !deps.contains(&bare) {
+                    deps.push(bare);
+                }
+            }
+        }
+    }
+    if removed.is_empty() {
+        return (body.to_owned(), removed);
+    }
+
+    // Rebuild: drop every dep line, re-emit at most one carrying the survivors.
+    // If ALL deps were prose the card simply has no dependencies.
+    let kept: Vec<&str> = body
+        .lines()
+        .filter(|l| !l.trim().starts_with("DEPENDS_ON:"))
+        .collect();
+    let mut out: Vec<String> = Vec::new();
+    if !deps.is_empty() {
+        out.push(format!("DEPENDS_ON: {}", deps.join(", ")));
+    }
+    out.extend(kept.iter().map(|l| (*l).to_owned()));
+    let trailing = body.ends_with('\n');
+    let mut new_body = out.join("\n");
+    if trailing && !new_body.ends_with('\n') {
+        new_body.push('\n');
+    }
+    (new_body, removed)
 }
 
 #[cfg(test)]
