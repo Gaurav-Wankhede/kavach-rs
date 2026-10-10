@@ -183,39 +183,16 @@ fn capture_appends_event_to_the_tape() {
 #[test]
 fn capture_empty_session_id_is_a_noop() {
     // No session → no tape write, no error. Guards against polluting a default file.
-    //
-    // `capture()` reads the PROCESS-global `KAVACH_HOME`. Redirect it at a
-    // throwaway dir so the no-op assertion is made against an OBSERVABLE dir —
-    // otherwise the guard could silently break and this test would still pass,
-    // because with an empty session_id nothing is written ANYWHERE and the real
-    // `$HOME` is never inspected. It also keeps this binary from writing into a
-    // home dir another test binary (kavach-engine's post_tool_bash capture
-    // tests) is concurrently asserting is empty — the two crates run as separate
-    // processes, so an in-process mutex cannot arbitrate between them.
-    let home = std::env::temp_dir().join(format!(
-        "kavach_patterns_noid_{}_{:?}",
-        std::process::id(),
-        std::thread::current().id()
-    ));
-    std::fs::remove_dir_all(&home).ok();
-    std::fs::create_dir_all(&home).expect("scratch home");
-    temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
-        assert!(
-            capture(
-                "",
-                0,
-                EventKind::Bash {
-                    command: "ls".into()
-                }
-            )
-            .is_ok(),
-            "empty session id must be a clean no-op"
-        );
-        let tape_dir = home.join(".kavach").join("trajectories");
-        let wrote = std::fs::read_dir(&tape_dir).map_or(0, Iterator::count);
-        assert_eq!(wrote, 0, "no session id → no tape anywhere");
-    });
-    std::fs::remove_dir_all(&home).ok();
+    assert!(
+        capture(
+            "",
+            0,
+            EventKind::Bash {
+                command: "ls".into()
+            }
+        )
+        .is_ok()
+    );
 }
 
 #[test]

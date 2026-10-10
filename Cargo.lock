@@ -2131,7 +2131,6 @@ dependencies = [
  "serde_json",
  "shell-words",
  "strsim",
- "temp-env",
  "tempfile",
 ]
 

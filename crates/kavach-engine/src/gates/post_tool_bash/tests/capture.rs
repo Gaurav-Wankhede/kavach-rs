@@ -150,15 +150,29 @@ fn failed_build_then_done_claim_nets_negative_through_the_oracle() {
 #[test]
 fn empty_session_id_writes_no_tape() {
     // The no-op guard: a missing session id must not pollute a default path.
+    //
+    // Assert on the tape THIS call would have produced — named `.jsonl`, since
+    // `default_trajectory_path` formats `{session_id}.jsonl` and the id is
+    // empty. Counting the whole directory was unsound: `KAVACH_HOME` is
+    // process-global, and other tests in this binary (`post_write` capture
+    // tests) legitimately write tapes through it while this test runs, so the
+    // directory count raced and intermittently read 2 instead of 0. Those files
+    // belong to other tests; this test's claim is exactly "an empty session id
+    // writes no tape", and that is nameable.
     let _guard = KAVACH_HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let home = fresh_home("noid");
     temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
         let mut session = kavach_session::SessionState::default();
         session.session_id.clear();
         drop(handle(&bash_input("cargo check"), &mut session));
-        let dir = home.join(".kavach").join("trajectories");
-        let count = std::fs::read_dir(&dir).map_or(0, Iterator::count);
-        assert_eq!(count, 0, "no session id → no tape");
+        let leaked = home
+            .join(".kavach")
+            .join("trajectories")
+            .join(".jsonl");
+        assert!(
+            !leaked.exists(),
+            "empty session id must write no tape; found {leaked:?}"
+        );
     });
     std::fs::remove_dir_all(&home).ok();
 }

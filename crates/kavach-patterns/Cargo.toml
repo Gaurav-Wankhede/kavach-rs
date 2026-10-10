@@ -27,13 +27,6 @@ serde_json = { workspace = true }
 tempfile = { workspace = true }
 # Property tests for the lex/ trivia lexers (tiling + panic-freedom).
 proptest = { workspace = true }
-# Scoped KAVACH_HOME redirection for the capture() no-op guard. A crate-local
-# env guard keeps the assertion observable AND stops this test binary from
-# writing into a home dir another crate's tests (kavach-engine post_tool_bash)
-# concurrently assert is empty — separate processes, so no in-process mutex can
-# arbitrate. SOURCE: the cross-crate KAVACH_HOME race in
-# r-kavach-three-bugs-fixed-and-deployed.
-temp-env = { workspace = true }
 
 [lints]
 workspace = true
