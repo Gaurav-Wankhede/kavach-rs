@@ -20,6 +20,10 @@ pub mod search;
 pub mod vector;
 
 #[cfg(test)]
+#[path = "turso/probe_test.rs"]
+mod probe_test;
+
+#[cfg(test)]
 #[path = "turso/entries_test.rs"]
 mod entries_test;
 
