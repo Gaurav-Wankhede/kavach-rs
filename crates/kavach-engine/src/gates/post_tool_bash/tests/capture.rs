@@ -7,6 +7,29 @@ use crate::gates::post_tool_bash::handle;
 use kavach_types::HookInput;
 use std::collections::HashMap;
 
+/// `default_trajectory_path` reads `KAVACH_HOME` from the PROCESS env, and
+/// `temp_env::with_var` mutates that process-global. Cargo runs the tests in this
+/// file on parallel threads, so without this lock each test's
+/// `with_var` clobbers its siblings' value mid-flight: a test then reads another
+/// test's home, writes its tape THERE, and counts files it does not own. That
+/// produced a nondeterministic `no tape` assertion failure that passed in
+/// isolation and failed in the full-workspace run. Serializing is the fix;
+/// per-test UNIQUE dirs stop the tests from sharing state even when serialized.
+static KAVACH_HOME_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// A fresh, guaranteed-empty KAVACH_HOME for one test. Caller must hold
+/// [`KAVACH_HOME_LOCK`].
+fn fresh_home(label: &str) -> std::path::PathBuf {
+    let home = std::env::temp_dir().join(format!(
+        "kavach_capture_{label}_{}_{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    std::fs::remove_dir_all(&home).ok();
+    std::fs::create_dir_all(&home).expect("create scratch home");
+    home
+}
+
 fn bash_input(command: &str) -> HookInput {
     let mut tool_input = HashMap::new();
     tool_input.insert(
@@ -25,8 +48,8 @@ fn handle_appends_a_bash_event_to_the_session_tape() {
     // `default_trajectory_path` roots the tape at KAVACH_HOME/.kavach/trajectories/.
     // KAVACH_HOME is the portable seam: `dirs::home_dir()` ignores env vars on
     // Windows (it calls SHGetKnownFolderPath), so setting HOME would not redirect it.
-    let home = std::env::temp_dir().join(format!("kavach_capture_e2e_{}", std::process::id()));
-    std::fs::create_dir_all(&home).unwrap();
+    let _guard = KAVACH_HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let home = fresh_home("e2e");
 
     let sid = "sess_capture_proof";
     temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
@@ -81,8 +104,8 @@ fn failed_build_then_done_claim_nets_negative_through_the_oracle() {
     // Failure on the tape — then a done-claiming Stop is appended. The oracle reads
     // the recorded outcome (not the prose) and drives the score negative, killing
     // the RLAIF self-preference bias. SOURCE: decision.harness-reward-ground-truth-oracle.
-    let home = std::env::temp_dir().join(format!("kavach_oracle_e2e_{}", std::process::id()));
-    std::fs::create_dir_all(&home).unwrap();
+    let _guard = KAVACH_HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let home = fresh_home("oracle");
     let sid = "sess_oracle_proof";
     temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
         let mut session = kavach_session::SessionState::default();
@@ -127,21 +150,8 @@ fn failed_build_then_done_claim_nets_negative_through_the_oracle() {
 #[test]
 fn empty_session_id_writes_no_tape() {
     // The no-op guard: a missing session id must not pollute a default path.
-    //
-    // The dir MUST be unique per RUN, not per process: `process::id()` is stable
-    // across repeated `cargo test` invocations, so a leaked tape from an earlier
-    // run was still counted here and the count grew 0 -> 2 -> 4 on successive
-    // full-workspace runs (while passing in isolation, because the isolated run
-    // started from a clean dir). `create_dir_all` on an existing dir is a no-op
-    // and the trailing `remove_dir_all` only fires on the SUCCESS path, so a
-    // failing run leaves its tapes behind for the next one to trip over.
-    let home = std::env::temp_dir().join(format!(
-        "kavach_capture_noid_{}_{:?}",
-        std::process::id(),
-        std::thread::current().id()
-    ));
-    std::fs::remove_dir_all(&home).ok();
-    std::fs::create_dir_all(&home).unwrap();
+    let _guard = KAVACH_HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let home = fresh_home("noid");
     temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
         let mut session = kavach_session::SessionState::default();
         session.session_id.clear();
