@@ -49,10 +49,6 @@ unmaintained = "all"
 # WHY this advisory is accepted (typically: unfixable upstream, no
 # patched version available). Empty by default; add only with a row.
 ignore = [
-    # bincode 1.x unmaintained (2.x is the active line). Transitive via
-    # surrealdb-core; surrealdb has not bumped. Filed:
-    # decision crate.bincode.1x-unmaintained-transitive.
-    "RUSTSEC-2025-0141",
     # proc-macro-error unmaintained (2+ years). Transitive via
     # maud_macros → maud → kavach-web. No safe upgrade path; awaits
     # maud migration to a maintained proc-macro error crate.
@@ -97,12 +93,6 @@ allow = [
     # SPDX 2.1+ allows the `LicenseRef-<name>` form for licenses outside
     # the standard list; clarify entries below tie a LicenseRef to a
     # specific crate via its license-file hash.
-    # BUSL-1.1 = SPDX identifier for Business Source License 1.1
-    # (source-available, converts to Apache-2.0 after change date).
-    # Used by surrealdb 3.x via license-file. Acceptable for kavach-rs
-    # internal embedding (we are not redistributing the database).
-    # Decision: crate.surrealdb.busl-1.1-accepted.
-    "BUSL-1.1",
     # CDLA-Permissive-2.0 — Community Data License Agreement, permissive
     # variant. Apache-2.0-style license for data + code; OSI-equivalent
     # permissions. Used by some transitive deps. Safe.
@@ -127,48 +117,14 @@ ignore = true
 # error — copy it here. Each clarify MUST have a paired decision row.
 # ─────────────────────────────────────────────────────────────
 
-# surrealdb 3.x ships BUSL-1.1 (Business Source License, SPDX
-# identifier) via a LICENSE file (not SPDX `license = "..."` field).
-# BUSL-1.1 is source-available, converts to Apache-2.0 after the
-# change date, and is acceptable for kavach-rs's internal-use
-# embedding (we are not redistributing the database itself).
-# Hash 0xbb1191d7 is the FNV-1a of the LICENSE file shipped in
-# surrealdb 3.1.4 (verified by cargo-deny; identical file across the
-# 3.x line). All four surreal crates ship the identical LICENSE file.
-# Decision: crate.surrealdb.busl-1.1-accepted.
-[[licenses.clarify]]
-crate = "surrealdb"
-expression = "BUSL-1.1"
-license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
-
-[[licenses.clarify]]
-crate = "surrealdb-core"
-expression = "BUSL-1.1"
-license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
-
-[[licenses.clarify]]
-crate = "surrealdb-types"
-expression = "BUSL-1.1"
-license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
-
-[[licenses.clarify]]
-crate = "surrealdb-types-derive"
-expression = "BUSL-1.1"
-license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
-
-# surrealdb 3.1 split internals into two new crates that ship the same
-# BUSL-1.1 LICENSE file but omit the manifest `license` field -> cargo-deny
-# flags them `unlicensed` until clarified. Same license + same file hash as
-# the surreal crates above. Decision: crate.surrealdb.busl-1.1-accepted.
-[[licenses.clarify]]
-crate = "surrealdb-collections"
-expression = "BUSL-1.1"
-license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
-
-[[licenses.clarify]]
-crate = "surrealdb-strand"
-expression = "BUSL-1.1"
-license-files = [{ path = "LICENSE", hash = 0xbb1191d7 }]
+# REMOVED: six BUSL-1.1 license carve-outs for surrealdb, surrealdb-core,
+# surrealdb-types, surrealdb-types-derive, surrealdb-collections and
+# surrealdb-strand. The DB engine is Turso/libSQL (embedded); those crates were
+# unreferenced by any workspace member (`cargo tree -i surrealdb` did not
+# resolve) once the migration completed. A license clarification for a crate that
+# is not in the tree is a silent hole: it looks like an approved exception and
+# would mask a future accidental re-introduction. If surrealdb ever returns, its
+# BUSL-1.1 status must be re-assessed then, against the version actually used.
 
 # ─────────────────────────────────────────────────────────────
 # [bans] — banned crates + duplicate-version detection
