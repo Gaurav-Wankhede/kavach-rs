@@ -434,6 +434,9 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         #[arg(long)]
         verify_cmd: Option<String>,
     },
+    /// Author/validate machine-actionable micro-tickets (MicroTicket v1)
+    #[command(subcommand)]
+    Mt(MtAction),
     /// Backfill vector embeddings for existing memories (Phase 5)
     #[command(
         after_help = "EXAMPLES:\n  kavach db embed-backfill --batch 50\n  kavach db embed-backfill --batch 64 --json\n\nWHEN: Populate `embedding` column for pre-vector rows; idempotent and resumable."
@@ -468,5 +471,133 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         /// Number of recent backups to keep (default: 10)
         #[arg(long, default_value_t = 10)]
         keep: usize,
+    },
+}
+
+const MT_AFTER_HELP: &str = "\
+MICROTICKET v1 — a machine-actionable ticket. Every field is validated; a
+malformed ticket is REJECTED, not stored.
+
+  kavach db mt new --project P --key mt.graph.assertions-table \\
+    --kind bug --title 'Hand-roll the assertions log (no CDC in embedded libsql)' \\
+    --goal 'Card history is queryable by sequence without native change capture.' \\
+    --modality MUST --op add \\
+    --when 'a roadmap row commits' --then 'an assertions row is appended with a monotonic seq' \\
+    --scope crates/kavach-db/src/microticket.rs --do-not-touch crates/kavach-cli/src/cli/db.rs \\
+    --verify-cmd 'cargo test -p kavach-db microticket::the test passes and asserts seq is monotonic' \\
+    --source-kind file --source-ref crates/kavach-db/src/turso.rs:177
+
+CONTRACT (caps are enforced, fail-closed):
+  title        <=90   one line, imperative verb first
+  goal         <=200  ONE sentence of intent
+  change.when  <=120  trigger
+  change.then  <=120  observable outcome
+  scope        1-5    repo-relative paths this ticket may touch
+  do_not_touch 1-5    out-of-scope globs — mandatory, it is what stops scope creep
+  verify       1-5    RUN::EXPECT pairs; at least one is mandatory
+  source       optional typed provenance: crate|file|url|doc|test|db
+  depends_on / conflicts_with / supersedes   0-5 keys each
+  conflicts_with is ENFORCED at dispatch: two conflicting tickets never share a tier.
+
+CHARACTER CAPS ARE A DESIGN CHOICE, NOT A STANDARD. There is no published
+convention for agent-ticket caps; GitHub ships min_length and omits max_length.
+If a ticket does not fit, SPLIT IT — never enlarge the cap.
+
+A VALID TICKET IS NOT A GOOD TICKET. Schema validity was measured to rise
+61.5%->100% while answer accuracy FELL 19.7%->11.0% under hard decoding
+(arXiv:2605.26128). Review the content; `mt new` only guarantees the shape.";
+
+#[derive(Subcommand)]
+pub(crate) enum MtAction {
+    /// Create or update a micro-ticket (validated, fail-closed)
+    #[command(after_help = MT_AFTER_HELP)]
+    New {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Stable ticket key (kebab, <=48 chars)
+        #[arg(long)]
+        key: String,
+        /// bug|feature|chore|refactor|perf|docs|test
+        #[arg(long)]
+        kind: String,
+        /// One line, imperative verb first (<=90 chars)
+        #[arg(long)]
+        title: String,
+        /// ONE sentence of intent (<=200 chars)
+        #[arg(long)]
+        goal: String,
+        /// RFC 2119 level: MUST|SHOULD|MAY
+        #[arg(long)]
+        modality: String,
+        /// add|edit|delete|move — exactly one operation
+        #[arg(long)]
+        op: String,
+        /// Trigger condition (<=120 chars)
+        #[arg(long)]
+        when: String,
+        /// Observable outcome (<=120 chars)
+        #[arg(long)]
+        then: String,
+        /// Repo-relative path this ticket may touch (repeatable, 1-5)
+        #[arg(long = "scope")]
+        scope: Vec<String>,
+        /// Out-of-scope glob (repeatable, 1-5, mandatory)
+        #[arg(long = "do-not-touch")]
+        do_not_touch: Vec<String>,
+        /// 'RUN::EXPECT' pair for a shell command (repeatable)
+        #[arg(long = "verify-cmd")]
+        verify_cmd: Vec<String>,
+        /// 'RUN::EXPECT' pair for a test path (repeatable)
+        #[arg(long = "verify-test")]
+        verify_test: Vec<String>,
+        /// 'RUN::EXPECT' pair for an assertion (repeatable)
+        #[arg(long = "verify-assert")]
+        verify_assert: Vec<String>,
+        /// EXPECT for a manual check (repeatable; requires --manual-by)
+        #[arg(long = "verify-manual")]
+        verify_manual: Vec<String>,
+        /// crate|file|url|doc|test|db — provenance kind
+        #[arg(long = "source-kind")]
+        source_kind: Option<String>,
+        /// The crate name, path[:line], or URL
+        #[arg(long = "source-ref")]
+        source_ref: Option<String>,
+        /// Why this is the right origin (<=100 chars)
+        #[arg(long = "source-note")]
+        source_note: Option<String>,
+        /// Ticket key that must finish first (repeatable)
+        #[arg(long = "depends-on")]
+        depends_on: Vec<String>,
+        /// Mutually-exclusive ticket key (repeatable; enforced at dispatch)
+        #[arg(long = "conflicts-with")]
+        conflicts_with: Vec<String>,
+        /// Ticket key this one replaces (repeatable)
+        #[arg(long = "supersedes")]
+        supersedes: Vec<String>,
+        /// Who verifies a 'manual' step
+        #[arg(long = "manual-by")]
+        manual_by: Option<String>,
+        /// Dispatch priority (lower runs first)
+        #[arg(long)]
+        priority: Option<i64>,
+        /// Executor prompt served by `db next-prompt`
+        #[arg(long = "exec-prompt")]
+        exec_prompt: Option<String>,
+        /// Validate and print without writing
+        #[arg(long, default_value_t = false)]
+        dry_run: bool,
+    },
+    /// Revalidate stored micro-tickets; non-zero exit if any are invalid
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db mt check --project P\n  kavach db mt check --project P --key mt.graph\n\nWHEN: A ticket may have been written before the schema tightened, or by a loose path. Re-validate rather than trust."
+    )]
+    Check {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Only check keys containing this substring
+        #[arg(long)]
+        key: Option<String>,
     },
 }

@@ -2,7 +2,7 @@
 // ARCH: see kavach db get --category decision --key arch.decision.fourteen_prefix_const_table
 use clap::{Parser, Subcommand};
 
-mod db;
+pub(crate) mod db;
 mod harness_loop;
 pub(crate) mod help_md;
 mod help_stack;

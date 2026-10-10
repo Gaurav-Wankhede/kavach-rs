@@ -74,12 +74,74 @@ fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
                 rel: "depends_on".to_owned(),
             });
         }
+        // `conflicts_with` is declared ONLY inside a MicroTicket body (it is not a
+        // `DEPENDS_ON:` line), so it is extracted here rather than by the shared
+        // dep parser. Unknown-field tolerance is intentional: a malformed or
+        // non-ticket body simply contributes no conflict edges rather than
+        // failing the whole board render.
+        for other in declared_conflicts(&e.content) {
+            // Normalize to the bare entry_key tail — `conflicts_with` is written
+            // by `kavach db mt new` as a bare key, but a hand-edited body may
+            // carry a qualified one, and an unmatched key would silently fail to
+            // block anything.
+            edges.push(DagEdge {
+                source: e.entry_key.clone(),
+                target: bare_dep_key(other.trim()).to_owned(),
+                rel: CONFLICT_REL.to_owned(),
+            });
+        }
     }
     RoadmapDag { nodes, edges }
+}
+
+/// Pull `conflicts_with` keys out of a `MTICKET v1` body.
+///
+/// Returns bare keys (the caller normalizes). An unparseable body yields an
+/// empty vec — a card written before the schema existed must not break the board.
+fn declared_conflicts(content: &str) -> Vec<String> {
+    let Some(json) = content
+        .trim_start()
+        .strip_prefix("MTICKET v1")
+        .map(str::trim)
+    else {
+        return Vec::new();
+    };
+    kavach_db::microticket::MicroTicket::from_json(json)
+        .map(|t| t.conflicts_with)
+        .unwrap_or_default()
 }
 /// Only these relations are dependency edges (prerequisite -> dependent). Mirror
 /// of the scheduler's edge filter in `roadmap_dag.rs::toposort_or_cycle`.
 const DEP_RELS: &[&str] = &["depends_on", "blocks"];
+
+/// Mutual exclusion: two tickets linked by `conflicts_with` must NEVER be
+/// dispatchable at the same time. Distinct from `alternative_to` in the ontology
+/// set — that means "both are valid options", this means "doing A makes B wrong".
+/// A parallel runner that picks both is precisely the bug this relation exists
+/// to prevent, so it is enforced in `is_ready`, not merely displayed.
+const CONFLICT_REL: &str = "conflicts_with";
+
+/// A node is conflict-blocked if an OPEN card claims conflict with it.
+///
+/// Symmetry: `A conflicts_with B` is written on A, but the exclusion must apply
+/// to BOTH, or the pairing could be dodged by declaring it on whichever side is
+/// dispatched second.
+fn conflict_blocked(node_id: &str, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) -> bool {
+    edges
+        .iter()
+        .filter(|e| e.rel == CONFLICT_REL)
+        .any(|e| {
+            // Either endpoint is this node...
+            let touches = e.source == node_id || e.target == node_id;
+            // ...and the OTHER endpoint is still open (conflict resolves on close).
+            touches
+                && [e.source.as_str(), e.target.as_str()]
+                    .iter()
+                    .filter(|k| **k != node_id)
+                    .filter_map(|k| by_id.get(k))
+                    .any(|n| !matches!(n.entry_status.as_str(), "verified" | "done"))
+        })
+}
 /// Assign each node its dependency depth (tier): tier 0 has no unmet
 /// prerequisite among the dependency edges; tier N unlocks once tier <N closes.
 ///
@@ -120,6 +182,13 @@ fn is_ready(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) 
     if matches!(node.entry_status.as_str(), "verified" | "done") {
         return false;
     }
+    // Mutual exclusion beats everything: a card that conflicts with another
+    // OPEN card is never dispatchable, whatever its dependencies say. Enforced
+    // here rather than only rendered, so `parallel-run` (which picks from this
+    // same readiness signal) can never select both sides of a conflict.
+    if conflict_blocked(&node.id, edges, by_id) {
+        return false;
+    }
     // All prerequisites must be satisfied.
     edges
         .iter()
@@ -130,6 +199,32 @@ fn is_ready(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) 
                 .is_none_or(|src| matches!(src.entry_status.as_str(), "verified" | "done"))
         })
 }
+/// Inline `conflicts-with` suffix naming the OPEN card(s) that block this one,
+/// or empty when unblocked. Mirrors [`deps_suffix`].
+fn conflicts_suffix(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) -> String {
+    let others: Vec<&str> = edges
+        .iter()
+        .filter(|e| e.rel == CONFLICT_REL && (e.source == node.id || e.target == node.id))
+        .filter_map(|e| {
+            [e.source.as_str(), e.target.as_str()]
+                .into_iter()
+                .find(|k| *k != node.id)
+                .and_then(|k| by_id.get(k))
+                .map(|n| n.entry_key.as_str())
+        })
+        .filter(|k| {
+            by_id
+                .get(*k)
+                .is_none_or(|n| !matches!(n.entry_status.as_str(), "verified" | "done"))
+        })
+        .collect();
+    if others.is_empty() {
+        String::new()
+    } else {
+        format!("  ⊘ conflicts-with: {}", others.join(", "))
+    }
+}
+
 /// Inline `depends-on` suffix for a node (the prereq keys), or empty when none.
 fn deps_suffix(node: &DagNode, edges: &[DagEdge], by_id: &HashMap<&str, &DagNode>) -> String {
     let prereqs: Vec<&str> = edges
@@ -198,13 +293,22 @@ fn render_tiered_text(dag: &RoadmapDag, show_closed: bool) -> String {
                 } else {
                     "⏳WAITING"
                 };
+                // A blocked-by-conflict card says WHY it is waiting — an
+                // unexplained WAITING on a card with no unmet deps is the same
+                // silent-wrongness class as the phantom-node bug.
+                let conflict_note = if conflict_blocked(&n.id, &dag.edges, &by_id) {
+                    conflicts_suffix(n, &dag.edges, &by_id)
+                } else {
+                    String::new()
+                };
                 writeln!(
                     out,
-                    "  [{}] {} — {}  {marker}{}",
+                    "  [{}] {} — {}  {marker}{}{}",
                     n.entry_status,
                     n.entry_key,
                     n.title,
-                    deps_suffix(n, &dag.edges, &by_id)
+                    deps_suffix(n, &dag.edges, &by_id),
+                    conflict_note
                 )
                 .ok();
             }

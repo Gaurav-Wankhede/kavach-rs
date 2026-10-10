@@ -241,6 +241,100 @@ fn qualified_but_absent_dep_still_yields_one_phantom() {
     );
 }
 
+/// Build a `MTICKET v1` body declaring `conflicts_with`.
+fn ticket_body(conflicts: &[&str]) -> String {
+    let mut t = kavach_db::microticket::MicroTicket {
+        kind: kavach_db::microticket::TicketKind::Chore,
+        title: "A micro ticket that stands alone".to_owned(),
+        goal: "The conflict relation is honoured at dispatch.".to_owned(),
+        modality: kavach_db::microticket::Modality::Must,
+        change: kavach_db::microticket::Change {
+            op: kavach_db::microticket::Op::Edit,
+            when: "a sibling card declares a conflict".to_owned(),
+            then: "neither card reports READY".to_owned(),
+        },
+        scope: vec!["crates/kavach-cli/src/cmd/db/kanban/dag_render.rs".to_owned()],
+        do_not_touch: vec!["crates/kavach-cli/src/cli/db.rs".to_owned()],
+        verify: vec![kavach_db::microticket::VerifyStep {
+            method: kavach_db::microticket::VerifyMethod::Test,
+            run: Some("cargo test -p kavach-cli dag_render".to_owned()),
+            expect: "neither conflicting card is marked ready".to_owned(),
+        }],
+        source: None,
+        depends_on: vec![],
+        conflicts_with: conflicts.iter().map(|s| (*s).to_owned()).collect(),
+        supersedes: vec![],
+        manual_by: None,
+    };
+    // `do_not_touch` must not overlap `scope` or validation fails; adjust the
+    // sample so the body is genuinely valid, not merely parseable.
+    t.do_not_touch = vec!["crates/kavach-cli/src/cli/db.rs".to_owned()];
+    format!("MTICKET v1\n{}", t.to_json().expect("serialize ticket"))
+}
+
+/// REGRESSION: mutual exclusion is ENFORCED, not merely displayed. Two open
+/// cards declaring `conflicts_with` must never both be dispatchable, whatever
+/// their dependencies say — otherwise a parallel runner selects both sides.
+#[test]
+fn conflicting_cards_are_never_both_ready() {
+    let rows = vec![
+        row("mt.a.one", &ticket_body(&["mt.a.two"])),
+        row("mt.a.two", "no deps"),
+    ];
+    let dag = dag_from_roadmap(&rows);
+    let by_id: HashMap<&str, &DagNode> =
+        dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+    assert!(
+        dag.edges.iter().any(|e| e.rel == "conflicts_with"),
+        "the conflict edge must reach the DAG:\n{:?}",
+        dag.edges
+    );
+    for id in ["mt.a.one", "mt.a.two"] {
+        let n = by_id.get(id).expect("node");
+        assert!(
+            !is_ready(n, &dag.edges, &by_id),
+            "{id} conflicts with an OPEN card and must not be dispatchable"
+        );
+    }
+}
+
+/// Closing one side resolves the conflict for the other — otherwise a conflict
+/// would be permanent and the pair could never be worked.
+#[test]
+fn closing_one_side_unblocks_the_other() {
+    let mut rows = vec![row("mt.a.one", &ticket_body(&["mt.a.two"]))];
+    let mut closed = row("mt.a.two", "no deps");
+    closed.entry_status = Some("done".to_owned());
+    rows.push(closed);
+    let dag = dag_from_roadmap(&rows);
+    let by_id: HashMap<&str, &DagNode> =
+        dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+    let survivor = by_id.get("mt.a.one").expect("node");
+    assert!(
+        is_ready(survivor, &dag.edges, &by_id),
+        "the remaining open card is unblocked once its rival is done"
+    );
+}
+
+/// A non-ticket body must not break the board: unknown shapes contribute no
+/// conflict edges rather than failing the whole render.
+#[test]
+fn non_ticket_body_contributes_no_conflicts() {
+    let rows = vec![
+        row("mt.a.one", "DEPENDS_ON: mt.a.two"),
+        row("mt.a.two", "plain prose, not a ticket"),
+    ];
+    let dag = dag_from_roadmap(&rows);
+    assert!(
+        !dag.edges.iter().any(|e| e.rel == "conflicts_with"),
+        "no ticket body means no conflict edges"
+    );
+    let by_id: HashMap<&str, &DagNode> =
+        dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+    let two = by_id.get("mt.a.two").expect("node");
+    assert!(is_ready(two, &dag.edges, &by_id), "dep satisfied, no conflict");
+}
+
 #[test]
 fn empty_dag_is_safe() {
     let out = render_tiered_text(&RoadmapDag::default(), false);

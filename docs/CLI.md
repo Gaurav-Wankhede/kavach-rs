@@ -394,6 +394,93 @@ Aggregate hit counts by gate (dashboard for recurring failures)
 |---|---|---|
 | `--project` | Project slug |  |
 
+## `kavach db mt`
+
+Author/validate machine-actionable micro-tickets (MicroTicket v1)
+
+## `kavach db mt check`
+
+Revalidate stored micro-tickets; non-zero exit if any are invalid
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--key` | Only check keys containing this substring |  |
+
+```
+EXAMPLES:
+  kavach db mt check --project P
+  kavach db mt check --project P --key mt.graph
+
+WHEN: A ticket may have been written before the schema tightened, or by a loose path. Re-validate rather than trust.
+```
+
+## `kavach db mt new`
+
+Create or update a micro-ticket (validated, fail-closed)
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--key` | Stable ticket key (kebab, <=48 chars) |  |
+| `--kind` | bug\|feature\|chore\|refactor\|perf\|docs\|test |  |
+| `--title` | One line, imperative verb first (<=90 chars) |  |
+| `--goal` | ONE sentence of intent (<=200 chars) |  |
+| `--modality` | RFC 2119 level: MUST\|SHOULD\|MAY |  |
+| `--op` | add\|edit\|delete\|move — exactly one operation |  |
+| `--when` | Trigger condition (<=120 chars) |  |
+| `--then` | Observable outcome (<=120 chars) |  |
+| `--scope` | Repo-relative path this ticket may touch (repeatable, 1-5) |  |
+| `--do-not-touch` | Out-of-scope glob (repeatable, 1-5, mandatory) |  |
+| `--verify-cmd` | 'RUN::EXPECT' pair for a shell command (repeatable) |  |
+| `--verify-test` | 'RUN::EXPECT' pair for a test path (repeatable) |  |
+| `--verify-assert` | 'RUN::EXPECT' pair for an assertion (repeatable) |  |
+| `--verify-manual` | EXPECT for a manual check (repeatable; requires --manual-by) |  |
+| `--source-kind` | crate\|file\|url\|doc\|test\|db — provenance kind |  |
+| `--source-ref` | The crate name, path[:line], or URL |  |
+| `--source-note` | Why this is the right origin (<=100 chars) |  |
+| `--depends-on` | Ticket key that must finish first (repeatable) |  |
+| `--conflicts-with` | Mutually-exclusive ticket key (repeatable; enforced at dispatch) |  |
+| `--supersedes` | Ticket key this one replaces (repeatable) |  |
+| `--manual-by` | Who verifies a 'manual' step |  |
+| `--priority` | Dispatch priority (lower runs first) |  |
+| `--exec-prompt` | Executor prompt served by `db next-prompt` |  |
+| `--dry-run` | Validate and print without writing | false |
+
+```
+MICROTICKET v1 — a machine-actionable ticket. Every field is validated; a
+malformed ticket is REJECTED, not stored.
+
+  kavach db mt new --project P --key mt.graph.assertions-table \
+    --kind bug --title 'Hand-roll the assertions log (no CDC in embedded libsql)' \
+    --goal 'Card history is queryable by sequence without native change capture.' \
+    --modality MUST --op add \
+    --when 'a roadmap row commits' --then 'an assertions row is appended with a monotonic seq' \
+    --scope crates/kavach-db/src/microticket.rs --do-not-touch crates/kavach-cli/src/cli/db.rs \
+    --verify-cmd 'cargo test -p kavach-db microticket::the test passes and asserts seq is monotonic' \
+    --source-kind file --source-ref crates/kavach-db/src/turso.rs:177
+
+CONTRACT (caps are enforced, fail-closed):
+  title        <=90   one line, imperative verb first
+  goal         <=200  ONE sentence of intent
+  change.when  <=120  trigger
+  change.then  <=120  observable outcome
+  scope        1-5    repo-relative paths this ticket may touch
+  do_not_touch 1-5    out-of-scope globs — mandatory, it is what stops scope creep
+  verify       1-5    RUN::EXPECT pairs; at least one is mandatory
+  source       optional typed provenance: crate|file|url|doc|test|db
+  depends_on / conflicts_with / supersedes   0-5 keys each
+  conflicts_with is ENFORCED at dispatch: two conflicting tickets never share a tier.
+
+CHARACTER CAPS ARE A DESIGN CHOICE, NOT A STANDARD. There is no published
+convention for agent-ticket caps; GitHub ships min_length and omits max_length.
+If a ticket does not fit, SPLIT IT — never enlarge the cap.
+
+A VALID TICKET IS NOT A GOOD TICKET. Schema validity was measured to rise
+61.5%->100% while answer accuracy FELL 19.7%->11.0% under hard decoding
+(arXiv:2605.26128). Review the content; `mt new` only guarantees the shape.
+```
+
 ## `kavach db next-prompt`
 
 Print the top-priority todo card's exec_prompt to stdout (pipe to an executor model)

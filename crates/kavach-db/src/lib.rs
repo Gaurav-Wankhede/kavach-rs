@@ -32,6 +32,7 @@ pub mod graph;
 pub mod harness_link;
 pub mod key_str; // SOURCE: decision.bug.recordid-nested-key-str
 pub mod lease;
+pub mod microticket;
 pub mod nlm;
 pub mod parts;
 pub mod projects;
