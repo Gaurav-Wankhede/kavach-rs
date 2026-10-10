@@ -127,7 +127,20 @@ fn failed_build_then_done_claim_nets_negative_through_the_oracle() {
 #[test]
 fn empty_session_id_writes_no_tape() {
     // The no-op guard: a missing session id must not pollute a default path.
-    let home = std::env::temp_dir().join(format!("kavach_capture_noid_{}", std::process::id()));
+    //
+    // The dir MUST be unique per RUN, not per process: `process::id()` is stable
+    // across repeated `cargo test` invocations, so a leaked tape from an earlier
+    // run was still counted here and the count grew 0 -> 2 -> 4 on successive
+    // full-workspace runs (while passing in isolation, because the isolated run
+    // started from a clean dir). `create_dir_all` on an existing dir is a no-op
+    // and the trailing `remove_dir_all` only fires on the SUCCESS path, so a
+    // failing run leaves its tapes behind for the next one to trip over.
+    let home = std::env::temp_dir().join(format!(
+        "kavach_capture_noid_{}_{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    std::fs::remove_dir_all(&home).ok();
     std::fs::create_dir_all(&home).unwrap();
     temp_env::with_var("KAVACH_HOME", Some(home.as_os_str()), || {
         let mut session = kavach_session::SessionState::default();
