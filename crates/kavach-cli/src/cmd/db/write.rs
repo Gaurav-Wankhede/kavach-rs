@@ -229,6 +229,26 @@ fn bare_tail(key: &str) -> &str {
 /// Resolve-or-drop gate for NLU-harvested (speculative) dependency edges.
 /// Non-speculative edges pass through unchanged; a speculative edge is kept
 /// only if its target's bare tail matches a known `entry_key`'s bare tail.
+/// Every `entry_key` across the strict categories, for speculative-edge
+/// resolve-or-drop. Read-only against the embedded store (WAL allows concurrent
+/// readers), so it is safe to call before the single-writer RPC write.
+fn collect_known_keys(project_slug: &str) -> Result<Vec<String>, String> {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| e.to_string())?;
+    rt.block_on(async {
+        let store = super::rpc_client::open_turso_resilient().await?;
+        let mut keys = Vec::new();
+        for tbl in STRICT_CATEGORIES {
+            if let Ok(rows) = store.list_by_category(project_slug, tbl).await {
+                keys.extend(rows.into_iter().map(|r| r.entry_key));
+            }
+        }
+        Ok(keys)
+    })
+}
+
 fn resolve_speculative_deps(
     rels: Vec<kavach_engine::ExtractedRelationship>,
     known_keys: &[String],
@@ -325,12 +345,36 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         }
         return 1;
     }
+    // Resolve-or-drop for SPECULATIVE (NLU-prose) dependency edges, applied on
+    // the RPC path — the ONLY path that actually persists graph edges.
+    //
+    // This is a READ against the embedded store (readers never take the fcntl
+    // write lock, so this does not violate the single-writer invariant the RPC
+    // call below protects). It must happen before `db.write` because
+    // `WriteParams.relationships` is a bare `Vec<(String, String)>` that carries
+    // NO speculative flag: once an edge crosses the RPC boundary the daemon can
+    // no longer tell a prose guess from a declared dependency, so the decision
+    // has to be made here.
+    let known_keys: Vec<String> = match collect_known_keys(project_slug) {
+        Ok(keys) => keys,
+        Err(e) => {
+            // Fail-OPEN on the lookup, never fail the write: if the key set
+            // cannot be read we cannot prove a guess is bogus, and refusing to
+            // write would be worse than a speculative edge. The render-side
+            // `bare_dep_key` normalization keeps a stray edge non-fatal.
+            let warn = format!("warning: dep resolve lookup failed: {e}");
+            if let Err(io_err) = ewrite_or_exit(&warn) {
+                return into_exit_code(io_err);
+            }
+            Vec::new()
+        }
+    };
     // RPC-FIRST (single_writer invariant): route the write through the daemon
     // — the sole RocksDB writer — so the CLI never opens a second handle and
     // races the lock. Only when the daemon is unreachable (DAEMON_UNAVAILABLE)
     // is a direct open safe (no other process holds the fcntl lock). Any other
     // RPC error means the daemon is up; propagate it, do not race the lock.
-    match super::rpc_client::write(eff) {
+    match super::rpc_client::write(eff, &known_keys) {
         Ok(res) => {
             if res.success {
                 let id = super::rpc_client::or_str(res.id, "?");

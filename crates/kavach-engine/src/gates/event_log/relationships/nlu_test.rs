@@ -61,14 +61,53 @@ fn stopwords_after_verb_are_rejected() {
 }
 
 #[test]
-fn short_bare_token_rejected_long_slug_accepted() {
+fn short_bare_token_rejected_key_shaped_token_accepted() {
     assert!(rels("after ab").is_empty(), "2-char token too short");
-    // a long single bare token with no separator is still accepted (could be a key)
+    // Key-shaped bare tokens are accepted: a digit-bearing id (`g1a`, the w2
+    // wave-label convention) and internal-case identifiers.
+    assert!(has(&rels("depends on g1a"), "depends_on", "g1a"));
     assert!(has(
-        &rels("depends on edgeauthoring"),
+        &rels("depends on dagGap1"),
         "depends_on",
-        "edgeauthoring"
+        "dagGap1"
     ));
+}
+
+/// REGRESSION: live kavach-rs data carried speculative edges to ordinary English
+/// words that merely followed a cue verb. Each became a permanent `(unresolved)`
+/// DAG node. The stop list could not keep up; the gate is now structural.
+///
+/// NOTE: `read-back` is deliberately NOT in the rejected set — it is
+/// kebab-shaped and therefore indistinguishable from a real key at this layer.
+/// That case is caught downstream by `resolve_speculative_deps` (resolve-or-drop
+/// against known keys), which is why FIX A matters as much as this one.
+#[test]
+fn prose_words_after_a_verb_are_rejected() {
+    // Real targets harvested from live kavach-rs rows before the fix.
+    for word in ["their", "dedup", "every", "model", "rename", "binary", "hooks"] {
+        let out = rels(&format!("Parent cleaned exit.rs; blocks {word} now."));
+        assert!(
+            !has(&out, "blocks", word),
+            "prose word {word:?} must not become an edge, got {out:?}"
+        );
+    }
+}
+
+/// The structural rule must not over-reject: qnames, kebab, dotted, snake and
+/// digit-bearing keys all remain valid targets.
+#[test]
+fn key_shaped_targets_still_harvested() {
+    assert!(has(
+        &rels("depends on kavach-rs/roadmap/tf-entity-extraction"),
+        "depends_on",
+        "kavach-rs/roadmap/tf-entity-extraction"
+    ));
+    assert!(has(&rels("after stage1-backend"), "depends_on", "stage1-backend"));
+    assert!(has(&rels("requires v0.3.cli"), "depends_on", "v0.3.cli"));
+    assert!(has(&rels("requires v0_3_cli"), "depends_on", "v0_3_cli"));
+    // ≥3 chars (the length floor) AND digit-bearing.
+    assert!(has(&rels("after g1a"), "depends_on", "g1a"));
+    assert!(has(&rels("after w12"), "depends_on", "w12"));
 }
 
 #[test]

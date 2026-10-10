@@ -57,41 +57,42 @@ pub(super) fn extract_nlu_rels(content: &str, out: &mut Vec<ExtractedRelationshi
     }
 }
 /// A target is plausible only if it looks like a card key, not an English
-/// stop-word the verb happened to precede ("after that", "requires it"). A key
-/// has a slug separator (`-`, `/`, `.`) OR is a long single token; bare common
-/// words are rejected to keep precision high (false edges poison the DAG).
+/// word the verb happened to precede. A key has a slug separator (`-`, `/`,
+/// `.`) OR is a long single token; bare common words are rejected to keep
+/// precision high (false edges poison the DAG).
+///
+/// A hand-rolled 17-word stop list was NOT enough: live kavach-rs data carried
+/// speculative edges to `their`, `dedup`, `every`, `model`, `rename`, `binary`,
+/// `hooks` — ordinary prose words that followed a cue verb ("after the parent
+/// did ...", "requires model ...", "blocks rename ..."). Every one became a
+/// permanent `(unresolved)` DAG node. So the gate is now STRUCTURAL, not lexical:
+///
+/// 1. A qname (`proj/cat/key`, ≥2 slashes) is accepted — it cannot be prose.
+/// 2. Otherwise the token MUST carry a slug separator (`-`/`.`) OR be ≥4 chars
+///    AND camelCase/snake/digit-bearing — a real card key is kebab/snake/dotted
+///    (`dag-gap1`, `v0_3_cli`, `stage1-backend`), whereas English prose is
+///    lowercase alphabetic.
+/// 3. Single lowercase alphabetic tokens are rejected outright unless they carry
+///    a digit (e.g. `g1a`, `p9`), which prose essentially never does in a key
+///    position.
 fn is_plausible_key(t: &str) -> bool {
-    // Bare common words the verb may precede ("after that", "requires it") —
-    // rejected to keep precision high (false edges poison the DAG).
-    const STOP: &[&str] = &[
-        "the",
-        "that",
-        "this",
-        "it",
-        "them",
-        "a",
-        "an",
-        "all",
-        "some",
-        "any",
-        "completion",
-        "review",
-        "approval",
-        "merge",
-        "build",
-        "tests",
-        "you",
-        "me",
-        "us",
-    ];
     if t.is_empty() || t.len() < 3 {
         return false;
     }
-    let has_sep = t.contains('-') || t.contains('/') || t.contains('.');
-    if has_sep {
+    // A qualified qname is unambiguous by construction.
+    if t.matches('/').count() >= 2 {
         return true;
     }
-    !STOP.contains(&t.to_lowercase().as_str())
+    // Kebab / dotted / snake keys are the house convention.
+    if t.contains('-') || t.contains('.') || t.contains('_') {
+        return true;
+    }
+    // No separator: only accept if it looks deliberately key-shaped — a digit
+    // (`g1a`, `w2`), or internal case (`dagGap1`). Prose words are flat
+    // lowercase alphabetic and get rejected here.
+    let has_digit = t.chars().any(|c| c.is_ascii_digit());
+    let has_inner_upper = t.chars().skip(1).any(char::is_uppercase);
+    has_digit || has_inner_upper
 }
 #[cfg(test)]
 #[path = "nlu_test.rs"]
