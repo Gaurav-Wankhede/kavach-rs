@@ -253,8 +253,37 @@ fn citation_from_row(row: &libsql::Row) -> Result<Citation> {
         updated_unix,
     })
 }
-/// Upsert a citation row keyed by (`project`, `entry_key`). Refreshes `name` +
-/// `metadata` and bumps `updated_at` on an existing row; creates one otherwise.
+/// Merge incoming `metadata` entries into an existing citation's array, keyed by
+/// `slug` (the stable per-source identity). An incoming `slug` already present
+/// REPLACES that entry (refresh); a new `slug` APPENDS (accumulate).
+///
+/// This is what makes `citation-add` additive: pinning N sources to one
+/// `entry_key` must yield N rows in `metadata`, not 1 (regression:
+/// `r-kavach-citation-add-upsert-by-entry-key` — six adds, six `ok` messages,
+/// one surviving source).
+pub(crate) fn merge_metadata(
+    existing: &[CitationMeta],
+    incoming: &[CitationMeta],
+) -> Vec<CitationMeta> {
+    let mut merged = existing.to_vec();
+    for meta in incoming {
+        match merged.iter_mut().find(|m| m.slug == meta.slug) {
+            Some(slot) => *slot = meta.clone(),
+            None => merged.push(meta.clone()),
+        }
+    }
+    merged
+}
+
+/// Upsert a citation row keyed by (`project`, `entry_key`). Refreshes `name`,
+/// MERGES `metadata` (by slug — see [`merge_metadata`]), re-syncs the denormalized
+/// `slug`/`url` columns to `metadata[0]`, and bumps `updated_at` on an existing
+/// row; creates one otherwise.
+///
+/// The denormalized sync is load-bearing: `slug`/`url` are a legacy projection of
+/// `metadata[0]` read directly by `list_citations` (the direct-store path). Leaving
+/// them frozen on UPDATE produced a row whose `name`/`slug`/`url` came from three
+/// different inserts — a silently WRONG citation, worse than a missing one.
 ///
 /// # Errors
 /// Returns `Error::Turso` on query failure, `Error::Migration` when the CREATE
@@ -266,9 +295,8 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
             "citation metadata URL must not be empty".to_owned(),
         ));
     }
-    let metadata_json = serde_json::to_string(&c.metadata)?;
     let now = crate::turso::now_rfc3339();
-    let find = "SELECT entry_key FROM citations \
+    let find = "SELECT entry_key, metadata FROM citations \
                 WHERE project = $project AND entry_key = $key LIMIT 1";
     let mut response = db
         .exec_params(
@@ -276,17 +304,36 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
             libsql::params![c.project.clone(), c.entry_key.to_owned()],
         )
         .await?;
-    let existing: Option<String> = match response.next().await? {
-        Some(row) => Some(row.get::<String>(0)?),
+    let existing: Option<(String, Vec<CitationMeta>)> = match response.next().await? {
+        Some(row) => {
+            let key = row.get::<String>(0)?;
+            let meta_json = row
+                .get::<Option<String>>(1)?
+                .unwrap_or_else(|| "[]".to_owned());
+            let meta = serde_json::from_str(&meta_json).unwrap_or_default();
+            Some((key, meta))
+        }
         None => None,
     };
-    if let Some(id) = existing {
+    let metadata_json = serde_json::to_string(&c.metadata)?;
+    if let Some((id, prior)) = existing {
+        // MERGE, never replace: an incoming slug refreshes in place, a new slug
+        // accumulates. Replace-semantics silently discarded every previously
+        // pinned source on each `citation-add`.
+        let merged = merge_metadata(&prior, &c.metadata);
+        let metadata_json = serde_json::to_string(&merged)?;
+        // Denormalized columns track metadata[0] on EVERY path, so the direct
+        // store's `list_citations` never reports a stale slug/url.
+        let primary_slug = merged.first().map_or("", |m| m.slug.as_str());
+        let primary_url = merged.first().map_or("", |m| m.url.as_str());
         db.exec_params(
-            "UPDATE citations SET name = $name, metadata = $meta, updated_at = $now \
-             WHERE project = $project AND entry_key = $key",
+            "UPDATE citations SET name = $name, metadata = $meta, slug = $slug, url = $url, \
+             updated_at = $now WHERE project = $project AND entry_key = $key",
             libsql::params![
                 c.name.to_owned(),
                 metadata_json,
+                primary_slug,
+                primary_url,
                 now,
                 c.project.clone(),
                 c.entry_key.to_owned()
@@ -295,9 +342,14 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
         .await?;
         Ok(id)
     } else {
+        // The INSERT must persist the FULL `metadata` array, not just
+        // `metadata[0]` into the denormalized columns. Omitting it meant the
+        // first pin left `metadata = '[]'` (the column default), so the second
+        // pin's read-modify-write merged into an empty base and the first source
+        // was silently lost — the exact accumulate-failure this fixes.
         db.exec_params(
-            "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at) \
-             VALUES ($project, $key, $name, $slug, $url, $now, $now)",
+            "INSERT INTO citations (project, entry_key, name, slug, url, metadata, created_at, updated_at) \
+             VALUES ($project, $key, $name, $slug, $url, $meta, $now, $now)",
             libsql::params![
                 c.project.clone(),
                 c.entry_key.to_owned(),
@@ -310,6 +362,7 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
                     .first()
                     .map(|m| m.url.clone())
                     .unwrap_or_default(),
+                metadata_json,
                 now.clone(),
                 now
             ],

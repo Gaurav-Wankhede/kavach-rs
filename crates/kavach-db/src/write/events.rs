@@ -50,7 +50,11 @@ pub async fn append_event(
         )
         .await?;
     match response.next().await? {
-        Some(r) => Ok(r.get::<String>(0)?),
+        // `events.id` is `INTEGER PRIMARY KEY AUTOINCREMENT`. Reading it as
+        // `String` hits libsql's `unreachable!("invalid value type")` and takes
+        // the whole process down with a panic — `kavach db event` crashed on
+        // EVERY payload, including `{}`. Read the declared type, then render.
+        Some(r) => Ok(r.get::<i64>(0)?.to_string()),
         None => Err(crate::error::Error::RecordNotFound("event create".into())),
     }
 }

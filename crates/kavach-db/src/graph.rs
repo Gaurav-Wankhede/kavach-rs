@@ -1,9 +1,13 @@
 pub mod bridges;
 pub mod concepts;
 pub mod dynamic;
+pub mod entity;
 pub mod flow_dag;
+pub mod language;
 pub mod list_with_links;
 pub mod mistakes;
+pub mod parser;
+pub mod patterns;
 pub mod raw_select;
 pub mod relationships;
 pub mod roadmap_dag;
@@ -12,6 +16,7 @@ pub mod service;
 pub mod stack_fit;
 pub mod traverse;
 pub mod types;
+pub mod unified;
 
 pub use bridges::{
     BridgeHit, ProjectHit, bridge_to_concept, concepts_for_project, projects_for_concept,
@@ -45,3 +50,11 @@ pub use service::{create_entity, delete_edge, get_entity, relate};
 pub use stack_fit::{StackInvariant, stack_fit_mermaid, stack_invariants};
 pub use traverse::{backward, forward};
 pub use types::{Edge, Entity, RelateParams, RelationType};
+pub use unified::{
+    build_transitive_closure, create_cross_category_edges, extract_depends_on,
+    get_ancestors, get_cross_category_edges, get_descendants, hybrid_search, populate_fts,
+    populate_nodes, populate_vector_index, vector_search,
+};
+pub use language::{batch_detect, detect_language, detect_language_with_validation, validate_language};
+pub use parser::{MultiLanguageParser, ParseResult, SupportedLanguage};
+pub use patterns::{GraphPattern, GraphPatternMatcher, PatternMatch};

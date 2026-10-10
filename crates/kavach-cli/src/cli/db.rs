@@ -419,6 +419,21 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         #[arg(long)]
         project: String,
     },
+    /// Run multiple runnable roadmap cards in parallel, respecting dependencies
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db parallel-run --project P --max-parallel 3\n  kavach db parallel-run --project P --max-parallel 2 --verify-cmd 'cargo test'\n\nWHEN: Run multiple runnable roadmap cards in parallel respecting dependencies."
+    )]
+    ParallelRun {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Maximum number of cards to run concurrently
+        #[arg(long, default_value_t = 3)]
+        max_parallel: usize,
+        /// Override verification command (e.g. 'cargo test -p kavach-db')
+        #[arg(long)]
+        verify_cmd: Option<String>,
+    },
     /// Backfill vector embeddings for existing memories (Phase 5)
     #[command(
         after_help = "EXAMPLES:\n  kavach db embed-backfill --batch 50\n  kavach db embed-backfill --batch 64 --json\n\nWHEN: Populate `embedding` column for pre-vector rows; idempotent and resumable."

@@ -28,6 +28,66 @@ Context-rot hardening release: six-file gate code fully removed, SurrealDB→LLM
 - **Loop-on-denial bug** — when a gate denial (e.g., `[RESEARCH_EVIDENCE]`) was triggered, the executor previously re-ran the same tool call verbatim instead of acting on the verdict's `[NEXT_ACTION]` trailer. The anti-loop guard now detects this pattern and forces a corrective action before retry.
 - **Context rot from SurrealDB interactions** — DB query results (kanban cards, decisions, patterns) were injected raw into LLM context, consuming 400–2,000 tokens per query. Now compressed at the source before gate injection.
 
+## [1.2.0] — 2026-10-07
+
+CLI surface hardening, `mistake` corpus integration into hybrid recall, and full noise purge.
+
+### Install
+
+```bash
+# Install latest from crates.io
+cargo install kavach-cli
+
+# Or install from source
+cargo install --git https://github.com/gauravwankhede/kavach-rs --bin kavach --locked
+```
+
+### Added
+
+- **`kavach db mistakes`** — Anti-pattern ledger promoted from top-level `kavach mistake` into the unified DB namespace (`kavach db mistakes list|inspect|stats|record|clear|clear-all`). All six subcommands available.
+- **Mistake corpus in hybrid vector search** — `CORPUS_CATEGORIES` in `kavach-db::turso::search` expanded from 5 → 6; `"mistake"` entries now participate in BM25 ∪ Vector ∪ Graph RRF retrieval via `kavach think`.
+- **Auto-recall `keep_hit` allowlist** — `kavach-engine::gates::intent::recall` now auto-surfaces mistake entries on every pre-action prompt (added `"mistake"` to `keep_hit` pattern list). Anti-patterns fire before any destructive tool call.
+- **`kavach session state`** — `WorkingStateAction` wired under `SessionAction::State` for clean turn-state access via `kavach session state get|set|clear|inject`. Removes the need for the hidden `kavach working-state` alias.
+
+### Changed
+
+- **CLI surface consolidated 24 → 10 visible commands** — the following were hidden or purged from the public surface:
+
+  | Command | Disposition | Replacement |
+  |---|---|---|
+  | `kavach loop` | Hidden | Internal only |
+  | `kavach heal` | Hidden | Internal only |
+  | `kavach loophole` | Hidden | Internal only |
+  | `kavach phase` | **Purged** | `kavach verify` covers SDLC gating |
+  | `kavach security` | Hidden | `kavach audit --lens security` |
+  | `kavach lint` | Hidden | `kavach audit --lens yagni` |
+  | `kavach pipeline` | Hidden | `kavach gates` |
+  | `kavach context` | Hidden | `kavach session state` |
+  | `kavach working-state` | Hidden | `kavach session state` |
+
+- **Final visible CLI surface (10 commands)**:
+
+  ```
+  kavach status        Session health, build identity, enforcement flags
+  kavach servers       Background daemon lifecycle (Turso DB + Web UI)
+  kavach gates         AI agent firewall (pre-tool|post-tool|intent|stop)
+  kavach session       Lifecycle + turn state (init, resume, end, state)
+  kavach db            Single Source of Truth (kanban, mistakes, memory, graph, vectors)
+  kavach install       Hook config installer (Claude Code / Cursor / Codex)
+  kavach audit         Multi-lens auditor (bug|security|attack|yagni)
+  kavach origin        <5ms AST/LSP symbol resolver (file:line)
+  kavach verify        Zero-trust gate: cargo test + clippy → done→verified
+  kavach think         3-Signal Hybrid Retrieval (BM25 ∪ Vector ∪ Graph → RRF)
+  ```
+
+### Fixed
+
+- `kavach mistake` (top-level) removed — prevented namespace collision with `kavach db mistakes`.
+- `MistakesAction` enum rename: all three references in `mistakes.rs` updated (was `MistakeAction`).
+- `WorkingStateAction` visibility corrected to `super::WorkingStateAction` path in `cli/session.rs`.
+
+---
+
 ## [1.1.0] — 2026-10-06
 
 ### Added

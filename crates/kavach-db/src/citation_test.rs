@@ -11,10 +11,32 @@
 use super::{
     Citation, CitationMeta, FRESHNESS_WINDOW_SECS, Freshness, STALE_MARKER, UpsertCitation,
     citations_cited_by, citations_for_nodes, freshness, get_citation, list_citations_by_project,
-    mark_if_stale, merge_node_into_citation, plan_refresh, reward_citation_edges, upsert_citation,
+    mark_if_stale, merge_metadata, merge_node_into_citation, plan_refresh,
+    reward_citation_edges, upsert_citation,
 };
 use crate::turso::TursoStore;
+use crate::turso::entries::EntryStore;
 use crate::{apply_schema, open_memory};
+
+/// `merge_metadata` is the pure core of the accumulate-not-replace fix; pin its
+/// contract directly so a regression names the rule, not just the round-trip.
+#[test]
+fn merge_metadata_accumulates_by_slug_and_refreshes_in_place() {
+    let a = meta("a", "https://example.com/a1");
+    let b = meta("b", "https://example.com/b");
+    // Fresh slug appends.
+    let m = merge_metadata(&[a.clone()], &[b.clone()]);
+    assert_eq!(m.len(), 2, "new slug accumulates");
+    assert_eq!(m[0].slug, "a", "prior entry stays at its position");
+    // Existing slug refreshes in place, does not duplicate.
+    let a2 = meta("a", "https://example.com/a2");
+    let m = merge_metadata(&m, &[a2.clone()]);
+    assert_eq!(m.len(), 2, "same slug does not duplicate");
+    assert_eq!(m[0].url, "https://example.com/a2", "refresh wins");
+    assert_eq!(m[1].slug, "b", "the other entry is untouched");
+    // Empty base accepts the first entry.
+    assert_eq!(merge_metadata(&[], &[a.clone()]).len(), 1);
+}
 
 async fn seed() -> TursoStore {
     let db = open_memory().await.expect("mem db");
@@ -72,9 +94,116 @@ async fn upsert_creates_then_updates_on_same_key() {
         .expect("list");
     assert_eq!(rows.len(), 1, "the UNIQUE index kept exactly one row");
     assert_eq!(rows[0].name, "TursoStoreDB v3", "name refreshed on update");
+    // MERGE by slug, not replace: pinning a second source to the same entry_key
+    // must ACCUMULATE. Replace-semantics silently discarded every previously
+    // pinned source (`r-kavach-citation-add-upsert-by-entry-key`: six `citation-add`
+    // calls, six `ok` messages, one surviving URL).
+    let slugs: Vec<&str> = rows[0].metadata.iter().map(|m| m.slug.as_str()).collect();
     assert_eq!(
-        rows[0].metadata[0].slug, "graph",
-        "metadata replaced on update"
+        slugs,
+        vec!["records", "graph"],
+        "distinct slugs accumulate in pin order; none discarded"
+    );
+    assert_eq!(
+        rows[0].metadata[0].url, "https://surrealdb.com/docs",
+        "the earlier source is untouched, not clobbered"
+    );
+}
+
+/// REGRESSION (`r-kavach-citation-add-upsert-by-entry-key`): pinning N sources to
+/// ONE `entry_key` must store all N. The bug reported `ok` for each insert while
+/// keeping one, and left `name`/`slug`/`url` from three different inserts —
+/// a silently WRONG citation.
+#[tokio::test]
+async fn six_sources_on_one_entry_key_all_survive() {
+    let db = seed().await;
+    let project = "p".to_owned();
+    let sources = [
+        ("fusion-3d-nodes", "https://example.com/3d-nodes"),
+        ("fusion-spline-editor", "https://example.com/spline"),
+        ("fusion-transform-3d", "https://example.com/transform"),
+        ("fusion-sdk-euler", "https://example.com/euler"),
+        ("blackmagic-forum", "https://example.com/forum"),
+        ("resolve-scripting", "https://example.com/scripting"),
+    ];
+    for (slug, url) in sources {
+        upsert_citation(
+            &db,
+            &UpsertCitation {
+                project: project.clone(),
+                entry_key: "research.canon",
+                name: "Fusion Canon",
+                metadata: vec![meta(slug, url)],
+            },
+        )
+        .await
+        .expect("each add reports success");
+    }
+    let rows = list_citations_by_project(&db, &project)
+        .await
+        .expect("list");
+    assert_eq!(rows.len(), 1, "still ONE row (one entry_key)");
+    assert_eq!(
+        rows[0].metadata.len(),
+        sources.len(),
+        "all six sources survive — the whole point"
+    );
+    let stored: Vec<(&str, &str)> = rows[0]
+        .metadata
+        .iter()
+        .map(|m| (m.slug.as_str(), m.url.as_str()))
+        .collect();
+    assert_eq!(
+        stored,
+        sources.to_vec(),
+        "every (slug, url) round-trips exactly"
+    );
+}
+
+/// Re-pinning an EXISTING slug refreshes that entry in place rather than
+/// appending a duplicate.
+#[tokio::test]
+async fn repinning_same_slug_refreshes_in_place() {
+    let db = seed().await;
+    let project = "p".to_owned();
+    for url in ["https://example.com/v1", "https://example.com/v2"] {
+        upsert_citation(
+            &db,
+            &UpsertCitation {
+                project: project.clone(),
+                entry_key: "k",
+                name: "n",
+                metadata: vec![meta("only", url)],
+            },
+        )
+        .await
+        .expect("upsert");
+    }
+    let rows = list_citations_by_project(&db, &project).await.expect("list");
+    assert_eq!(rows[0].metadata.len(), 1, "same slug does not duplicate");
+    assert_eq!(
+        rows[0].metadata[0].url, "https://example.com/v2",
+        "the refresh wins"
+    );
+}
+
+/// The denormalized `slug`/`url` columns are a legacy projection of `metadata[0]`
+/// read directly by the direct-store `list_citations`. They must track it on EVERY
+/// path, or the direct listing reports a source that is not what `name` claims.
+#[tokio::test]
+async fn denormalized_slug_url_track_metadata_zero() {
+    let db = seed().await;
+    for (slug, url) in [("first", "https://example.com/1"), ("second", "https://example.com/2")] {
+        db.upsert_citation("p", "k", "N", slug, url)
+            .await
+            .expect("direct-store upsert");
+    }
+    let rows = db.list_citations("p").await.expect("direct list");
+    assert_eq!(rows.len(), 1, "one row");
+    assert_eq!(rows[0].slug, "first", "denormalized slug tracks metadata[0]");
+    assert_eq!(
+        rows[0].url, "https://example.com/1",
+        "denormalized url tracks metadata[0] — not the LAST pin"
     );
 }
 

@@ -17,6 +17,7 @@ mod get;
 mod kanban;
 pub(crate) mod mistakes;
 mod next_prompt;
+mod parallel_run;
 mod query;
 mod query_raw;
 mod register;

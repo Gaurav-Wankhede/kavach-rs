@@ -20,7 +20,7 @@ use std::fmt::Write as _;
 /// construction. A declared dep whose key is absent from the project is dropped
 /// (it cannot be a node), mirroring the scheduler's tolerance.
 fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
-    use kavach_rpc::methods::roadmap::readiness::parse_declared_deps;
+    use kavach_rpc::methods::roadmap::readiness::{bare_dep_key, parse_declared_deps};
     let present: std::collections::HashSet<&str> =
         rows.iter().map(|e| e.entry_key.as_str()).collect();
     let nodes: Vec<DagNode> = rows
@@ -38,7 +38,19 @@ fn dag_from_roadmap(rows: &[MemoryEntry]) -> RoadmapDag {
     let mut phantom_seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     for e in rows {
         // prerequisite -> dependent: each declared dep must finish before `e`.
+        //
+        // Normalize EVERY declared dep to its bare `entry_key` tail first. The
+        // daemon sink mirrors graph-edge targets into the `DEPENDS_ON:` line, and
+        // those targets arrive project-qualified (`<project>/<category>/<key>`),
+        // while `present` holds bare keys. Without this the qualified form never
+        // matched, so every `--depends-on` edge ALSO rendered as a phantom
+        // "(unresolved)" node — a permanent 230-node/165-edge DAG with half its
+        // nodes bogus (`r-kavach-depends-on-ghost-nodes`).
         for dep in parse_declared_deps(&e.content) {
+            let dep = bare_dep_key(dep.trim()).to_owned();
+            if dep.is_empty() {
+                continue;
+            }
             if !present.contains(dep.as_str()) {
                 // Absent in THIS project's rows — most often a cross-project
                 // prerequisite the scheduler resolves against the GLOBAL pool and

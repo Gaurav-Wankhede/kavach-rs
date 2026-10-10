@@ -409,6 +409,24 @@ EXAMPLES:
 WHEN: Get the exec_prompt for the top runnable card — feed to a cheaper model.
 ```
 
+## `kavach db parallel-run`
+
+Run multiple runnable roadmap cards in parallel, respecting dependencies
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--max-parallel` | Maximum number of cards to run concurrently | 3 |
+| `--verify-cmd` | Override verification command (e.g. 'cargo test -p kavach-db') |  |
+
+```
+EXAMPLES:
+  kavach db parallel-run --project P --max-parallel 3
+  kavach db parallel-run --project P --max-parallel 2 --verify-cmd 'cargo test'
+
+WHEN: Run multiple runnable roadmap cards in parallel respecting dependencies.
+```
+
 ## `kavach db query`
 
 Query memory entries for a project

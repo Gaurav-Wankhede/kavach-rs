@@ -26,7 +26,10 @@ pub struct RunRecord {
 /// [`RunRecord`].
 fn run_from_row(r: &libsql::Row) -> Result<RunRecord> {
     Ok(RunRecord {
-        id: Some(r.get::<String>(0)?),
+        // `run.id` is `INTEGER PRIMARY KEY AUTOINCREMENT`. Reading it as `String`
+        // panics inside libsql (`unreachable!("invalid value type")`). Read the
+        // declared type, then render.
+        id: Some(r.get::<i64>(0)?.to_string()),
         project: r.get::<Option<String>>(1)?,
         entry_key: r.get::<String>(2)?,
         branch: r.get::<Option<String>>(3)?,
@@ -66,7 +69,7 @@ pub async fn run_insert(db: &TursoStore, run: &RunRecord) -> Result<String> {
         )
         .await?;
     match response.next().await? {
-        Some(r) => Ok(r.get::<String>(0)?),
+        Some(r) => Ok(r.get::<i64>(0)?.to_string()),
         None => Err(crate::error::Error::SchemaViolation(
             "INSERT returned no id".into(),
         )),

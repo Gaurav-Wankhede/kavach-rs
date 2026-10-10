@@ -303,6 +303,54 @@ pub(crate) const SCHEMA_DDL: &[&str] = &[
             )",
     "CREATE INDEX IF NOT EXISTS idx_graph_edges_to ON graph_edges(to_id)",
     "CREATE INDEX IF NOT EXISTS idx_graph_edges_dag ON graph_edges(is_dag) WHERE is_dag = 1",
+    // Unified graph: cross-category nodes (references memories, never modifies)
+    "CREATE TABLE IF NOT EXISTS unified_nodes (
+              id          TEXT PRIMARY KEY,
+              project     TEXT NOT NULL,
+              category    TEXT NOT NULL,
+              entry_key   TEXT NOT NULL,
+              title       TEXT NOT NULL,
+              status      TEXT DEFAULT 'todo',
+              content     TEXT,
+              embedding   F32_BLOB(384),
+              metadata    TEXT,
+              created_at  TEXT,
+              updated_at  TEXT,
+              FOREIGN KEY (project, category, entry_key)
+                REFERENCES memories(project, category, entry_key)
+                ON DELETE CASCADE
+            )",
+    "CREATE INDEX IF NOT EXISTS idx_unified_nodes_project ON unified_nodes(project)",
+    "CREATE INDEX IF NOT EXISTS idx_unified_nodes_category ON unified_nodes(category)",
+    "CREATE INDEX IF NOT EXISTS idx_unified_nodes_status ON unified_nodes(status)",
+    // Unified graph: cross-category edges
+    "CREATE TABLE IF NOT EXISTS unified_edges (
+              source_id   TEXT NOT NULL,
+              target_id   TEXT NOT NULL,
+              edge_type   TEXT NOT NULL,
+              weight      REAL DEFAULT 1.0,
+              metadata    TEXT,
+              PRIMARY KEY (source_id, target_id, edge_type),
+              FOREIGN KEY (source_id) REFERENCES unified_nodes(id) ON DELETE CASCADE,
+              FOREIGN KEY (target_id) REFERENCES unified_nodes(id) ON DELETE CASCADE
+            )",
+    "CREATE INDEX IF NOT EXISTS idx_unified_edges_source ON unified_edges(source_id)",
+    "CREATE INDEX IF NOT EXISTS idx_unified_edges_target ON unified_edges(target_id)",
+    // Unified graph: transitive closure for O(1) ancestor/descendant queries
+    "CREATE TABLE IF NOT EXISTS unified_closure (
+              ancestor_id    TEXT NOT NULL,
+              descendant_id  TEXT NOT NULL,
+              depth          INTEGER NOT NULL,
+              PRIMARY KEY (ancestor_id, descendant_id),
+              FOREIGN KEY (ancestor_id) REFERENCES unified_nodes(id) ON DELETE CASCADE,
+              FOREIGN KEY (descendant_id) REFERENCES unified_nodes(id) ON DELETE CASCADE
+            )",
+    "CREATE INDEX IF NOT EXISTS idx_unified_closure_ancestor ON unified_closure(ancestor_id)",
+    "CREATE INDEX IF NOT EXISTS idx_unified_closure_descendant ON unified_closure(descendant_id)",
+    // Unified graph: FTS5 full-text index for BM25 search
+    "CREATE VIRTUAL TABLE IF NOT EXISTS unified_nodes_fts USING fts5(
+              title, content, content='unified_nodes', content_rowid='rowid'
+            )",
 ];
 
 pub(crate) fn now_rfc3339() -> String {

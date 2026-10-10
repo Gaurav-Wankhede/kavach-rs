@@ -1,0 +1,49 @@
+schema: kavach-agent-manifest-v2
+kind: AgentGovernanceNode
+id: kavach-root
+version: "2.0"
+metadata:
+  name: kavach-rs
+  description: "Runtime engine governor, SDLC phase gates, and memory bank in Rust"
+core_principles:
+  zero_bloat: "Metadata indexes and fail-closed boundaries only"
+  zero_permission: "Autonomously route and execute specialized skills/plugins based on intent metadata"
+  zero_assumption: "Never assume file layout; read, execute, and verify live evidence directly"
+  single_card_sequential: "Exactly ONE card in progress; NO bulk verification (done_gaming ban)"
+  three_witness_verification:
+    witness_1: "Physical artifact exists (fd)"
+    witness_2: "Atomic diff clean (rtk git diff --stat)"
+    witness_3: "Strict compiler & test pass (rtk cargo clippy --workspace -- -D warnings && rtk cargo nextest run)"
+architecture_stages:
+  stage_1_perimeter:
+    fail_closed: "P0 deny on legacy POSIX inspection tools (cat, head, tail)"
+    spec_driven: "Reject tasks lacking contract or roadmap card"
+  stage_2_intent:
+    yagni_ladder: "Need now -> reuse codebase helper -> standard library first -> native dependency -> single line before fifty"
+    fast_path: "Deterministic queries bypass intermediate reasoning loops"
+  stage_3_execution:
+    tdd_guard: "Failing test required before production code edit"
+    context_protocol:
+      tier_1_topology: "rtk tree -L <depth>"
+      tier_2_coordinates: "rtk rg -n '<pattern>' paired with sg run -p '<pattern>' --json=compact"
+      tier_3_slicing: "bat -p -r <start>:<end> <file>"
+      tier_4_mutation: "replace_file_content or sd in place"
+  stage_4_verification:
+    dod: "Verify 3 physical witnesses"
+    edd: "Continuous benchmark/trace validation"
+toolbelt:
+  proxy: "rtk"
+  banned: ["cat", "head", "tail", "grep", "sed", "find", "jq", "du", "ps", "curl"]
+  permitted:
+    token_proxy: "rtk"
+    ast_matcher: "sg"
+    in_place_edit: "sd"
+    structured_data: "dasel"
+    file_find: "fd"
+    testing: "rtk cargo nextest run"
+database_querying:
+  rule: "Never dump entire tables or broad result sets into LLM context"
+  retrieval:
+    tier_1_keys: "kavach db query --project <slug> --category <cat> --field key"
+    tier_2_bounded: "kavach db query ... --depth <chars>"
+    tier_3_surgical: "kavach db get --key <key> --full"

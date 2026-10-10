@@ -586,6 +586,14 @@ impl EntryStore for TursoStore {
         Ok(())
     }
 
+    /// Pin ONE source onto a citation, keyed by (`project`, `entry_key`).
+    ///
+    /// Mirrors `kavach_db::citation::upsert_citation`'s merge semantics: an
+    /// existing `metadata` array is extended by `slug`, not replaced, and the
+    /// denormalized `slug`/`url` columns are re-synced to `metadata[0]` on the
+    /// UPDATE path. Both stores must agree — a divergence here is what let
+    /// `citation-add` report `ok` while discarding previously pinned sources
+    /// (`r-kavach-citation-add-upsert-by-entry-key`).
     async fn upsert_citation(
         &self,
         project: &str,
@@ -594,15 +602,51 @@ impl EntryStore for TursoStore {
         slug: &str,
         url: &str,
     ) -> TursoResult<()> {
+        if url.trim().is_empty() {
+            return Err(TursoError::Mapping(
+                "citation metadata URL must not be empty".to_owned(),
+            ));
+        }
+        let incoming = crate::citation::CitationMeta::new(slug.to_owned(), url.to_owned());
+        // Read-modify-write through the SAME `merge_metadata` helper the RPC path
+        // uses, so the two stores cannot drift. (A single-statement SQL merge was
+        // attempted and rejected: `json_each` over an empty array yields no rows,
+        // so `json_group_array` collapses to `[]` and drops the new source.)
+        let prior: Vec<crate::citation::CitationMeta> = {
+            let mut rows = self
+                .conn
+                .query(
+                    "SELECT metadata FROM citations WHERE project = ?1 AND entry_key = ?2 LIMIT 1",
+                    libsql::params![project, entry_key],
+                )
+                .await
+                .map_err(map_err)?;
+            match rows.next().await.map_err(TursoError::from)? {
+                Some(row) => serde_json::from_str(
+                    &row.get::<Option<String>>(0)
+                        .map_err(map_err)?
+                        .unwrap_or_else(|| "[]".to_owned()),
+                )
+                .unwrap_or_default(),
+                None => Vec::new(),
+            }
+        };
+        let merged = crate::citation::merge_metadata(&prior, std::slice::from_ref(&incoming));
+        let metadata_json = serde_json::to_string(&merged)
+            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+        let primary_slug = merged.first().map_or("", |m| m.slug.as_str());
+        let primary_url = merged.first().map_or("", |m| m.url.as_str());
+
         let now = super::now_rfc3339();
         let now2 = now.clone();
         self.conn
             .execute(
-                "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                "INSERT INTO citations (project, entry_key, name, slug, url, metadata, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
                  ON CONFLICT(project, entry_key) DO UPDATE SET
-                   name=excluded.name, slug=excluded.slug, url=excluded.url, updated_at=excluded.updated_at",
-                libsql::params![project, entry_key, name, slug, url, now, now2],
+                   name=excluded.name, metadata=excluded.metadata,
+                   slug=excluded.slug, url=excluded.url, updated_at=excluded.updated_at",
+                libsql::params![project, entry_key, name, primary_slug, primary_url, metadata_json, now, now2],
             )
             .await
             .map_err(map_err)?;

@@ -3,7 +3,7 @@
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
     backup, checkpoint, citation, concept, delete, embed_backfill, event, get, kanban, mistakes,
-    next_prompt, query, query_raw, register, search, status_update, wipe_project, write,
+    next_prompt, parallel_run, query, query_raw, register, search, status_update, wipe_project, write,
 };
 use crate::cli::DbAction;
 
@@ -161,6 +161,7 @@ pub(crate) fn run(action: DbAction) -> i32 {
         } => super::gate_config::set(&project, &gate_key, &kind, num, boolean, list, text),
         DbAction::QueryRaw { query } => query_raw::run(&query),
         DbAction::NextPrompt { project } => next_prompt::run(&project),
+        DbAction::ParallelRun { project, max_parallel, verify_cmd } => parallel_run::run(&project, max_parallel, verify_cmd),
         DbAction::EmbedBackfill { batch, json } => embed_backfill::run(batch, json),
         DbAction::Checkpoint { truncate } => checkpoint::run(truncate),
         DbAction::Mistakes { action } => mistakes::run(action),

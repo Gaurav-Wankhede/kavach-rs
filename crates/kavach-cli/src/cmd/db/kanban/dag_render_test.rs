@@ -1,8 +1,11 @@
 //! Proves the DAG projection: tier assignment by dependency depth, READY vs
 //! BLOCKED markers from prereq status, cycle is surfaced (not placed on a tier),
 //! and the mermaid emit is a well-formed `flowchart TD`.
-use super::{render_mermaid, render_tiered_text, tiers};
-use kavach_db::{DagEdge, DagNode, RoadmapDag};
+use super::{
+    dag_from_roadmap, is_ready, render_mermaid, render_tiered_text, tiers,
+};
+use kavach_db::{DagEdge, DagNode, MemoryEntry, RoadmapDag};
+use std::collections::HashMap;
 
 fn node(key: &str, status: &str) -> DagNode {
     DagNode {
@@ -95,11 +98,9 @@ fn mermaid_emits_flowchart_with_edges() {
     assert_eq!(m.matches("-->").count(), 2, "two dep edges:\n{m}");
 }
 
-#[test]
-fn builds_dag_from_roadmap_rows_via_declared_deps() {
-    use super::dag_from_roadmap;
-    use kavach_db::MemoryEntry;
-    let row = |key: &str, content: &str| MemoryEntry {
+/// A minimal roadmap `MemoryEntry` (`todo`) carrying `content`.
+fn row(key: &str, content: &str) -> MemoryEntry {
+    MemoryEntry {
         id: None,
         project: "p".to_owned(),
         category: Some("roadmap".to_owned()),
@@ -118,7 +119,14 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
         exec_prompt: None,
         occupied_by: None,
         occupied_until: None,
-    };
+    }
+}
+
+#[test]
+fn builds_dag_from_roadmap_rows_via_declared_deps() {
+    use super::dag_from_roadmap;
+    use kavach_db::MemoryEntry;
+    let _ = std::marker::PhantomData::<MemoryEntry>;
     // u2 declares DEPENDS_ON: u1; u3 depends on u2 + an absent 'ghost' key.
     // An absent key is NOT dropped (that falsely marked the dependent ready —
     // Finding B): it becomes a phantom prereq node so the dependent shows BLOCKED,
@@ -163,6 +171,73 @@ fn builds_dag_from_roadmap_rows_via_declared_deps() {
     assert_eq!(
         ghost.entry_status, "missing",
         "phantom never verified/done -> dependent stays blocked"
+    );
+}
+
+/// REGRESSION (`r-kavach-depends-on-ghost-nodes`): the daemon sink mirrors
+/// graph-edge targets into the `DEPENDS_ON:` line PROJECT-QUALIFIED
+/// (`<project>/<category>/<key>`), while node ids are bare `entry_key`s.
+/// Without `bare_dep_key` normalization every real dep ALSO matched nothing,
+/// so each `--depends-on` edge produced a bogus "(unresolved)" phantom node —
+/// which is why `kavach db kanban` reported 230 nodes for ~120 real cards.
+#[test]
+fn project_qualified_dep_does_not_create_a_phantom_node() {
+    let rows = vec![
+        row("roadmap.stage1-backend", "no deps"),
+        row(
+            "roadmap.fusion-canon",
+            "DEPENDS_ON: vectron/roadmap/roadmap.stage1-backend",
+        ),
+    ];
+    let dag = dag_from_roadmap(&rows);
+    assert_eq!(
+        dag.nodes.len(),
+        2,
+        "a real prerequisite in qualified form must NOT add a phantom node"
+    );
+    assert!(
+        !dag.nodes
+            .iter()
+            .any(|n| n.title.contains("unresolved")),
+        "no phantom '(unresolved)' node for a dep that IS present:\n{:?}",
+        dag.nodes
+    );
+    assert!(
+        dag.edges
+            .iter()
+            .any(|e| e.source == "roadmap.stage1-backend"
+                && e.target == "roadmap.fusion-canon"),
+        "the edge is real and points at the bare key:\n{:?}",
+        dag.edges
+    );
+    // And the dependent must be BLOCKED, not falsely READY, while its prereq is open.
+    let by_id: HashMap<&str, &DagNode> =
+        dag.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+    let dependent = by_id.get("roadmap.fusion-canon").expect("dependent");
+    assert!(
+        !is_ready(dependent, &dag.edges, &by_id),
+        "prereq is still todo, so the dependent is not ready"
+    );
+}
+
+/// A qualified dep that genuinely does not exist anywhere still yields exactly
+/// ONE phantom — normalization must not collapse or duplicate it.
+#[test]
+fn qualified_but_absent_dep_still_yields_one_phantom() {
+    let rows = vec![row(
+        "roadmap.child",
+        "DEPENDS_ON: other-project/roadmap/roadmap.truly-absent",
+    )];
+    let dag = dag_from_roadmap(&rows);
+    assert_eq!(dag.nodes.len(), 2, "1 card + 1 phantom");
+    let phantom = dag
+        .nodes
+        .iter()
+        .find(|n| n.entry_status == "missing")
+        .expect("phantom");
+    assert_eq!(
+        phantom.entry_key, "roadmap.truly-absent",
+        "phantom is keyed by the BARE tail so it is nameable and matchable"
     );
 }
 
