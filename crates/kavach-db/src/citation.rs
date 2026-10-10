@@ -275,10 +275,11 @@ pub(crate) fn merge_metadata(
     merged
 }
 
-/// Upsert a citation row keyed by (`project`, `entry_key`). Refreshes `name`,
-/// MERGES `metadata` (by slug — see [`merge_metadata`]), re-syncs the denormalized
-/// `slug`/`url` columns to `metadata[0]`, and bumps `updated_at` on an existing
-/// row; creates one otherwise.
+/// Upsert a citation row keyed by (`project`, `entry_key`).
+///
+/// Refreshes `name`, MERGES `metadata` (by slug — see [`merge_metadata`]),
+/// re-syncs the denormalized `slug`/`url` columns to `metadata[0]`, and bumps
+/// `updated_at` on an existing row; creates one otherwise.
 ///
 /// The denormalized sync is load-bearing: `slug`/`url` are a legacy projection of
 /// `metadata[0]` read directly by `list_citations` (the direct-store path). Leaving
@@ -315,13 +316,13 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
         }
         None => None,
     };
-    let metadata_json = serde_json::to_string(&c.metadata)?;
+    let incoming_json = serde_json::to_string(&c.metadata)?;
     if let Some((id, prior)) = existing {
         // MERGE, never replace: an incoming slug refreshes in place, a new slug
         // accumulates. Replace-semantics silently discarded every previously
         // pinned source on each `citation-add`.
         let merged = merge_metadata(&prior, &c.metadata);
-        let metadata_json = serde_json::to_string(&merged)?;
+        let merged_json = serde_json::to_string(&merged)?;
         // Denormalized columns track metadata[0] on EVERY path, so the direct
         // store's `list_citations` never reports a stale slug/url.
         let primary_slug = merged.first().map_or("", |m| m.slug.as_str());
@@ -331,7 +332,7 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
              updated_at = $now WHERE project = $project AND entry_key = $key",
             libsql::params![
                 c.name.to_owned(),
-                metadata_json,
+                merged_json,
                 primary_slug,
                 primary_url,
                 now,
@@ -362,7 +363,7 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
                     .first()
                     .map(|m| m.url.clone())
                     .unwrap_or_default(),
-                metadata_json,
+                incoming_json,
                 now.clone(),
                 now
             ],

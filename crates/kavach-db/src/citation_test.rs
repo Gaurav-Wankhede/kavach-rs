@@ -25,17 +25,21 @@ fn merge_metadata_accumulates_by_slug_and_refreshes_in_place() {
     let a = meta("a", "https://example.com/a1");
     let b = meta("b", "https://example.com/b");
     // Fresh slug appends.
-    let m = merge_metadata(&[a.clone()], &[b.clone()]);
+    let m = merge_metadata(std::slice::from_ref(&a), std::slice::from_ref(&b));
     assert_eq!(m.len(), 2, "new slug accumulates");
     assert_eq!(m[0].slug, "a", "prior entry stays at its position");
     // Existing slug refreshes in place, does not duplicate.
     let a2 = meta("a", "https://example.com/a2");
-    let m = merge_metadata(&m, &[a2.clone()]);
+    let m = merge_metadata(&m, std::slice::from_ref(&a2));
     assert_eq!(m.len(), 2, "same slug does not duplicate");
     assert_eq!(m[0].url, "https://example.com/a2", "refresh wins");
     assert_eq!(m[1].slug, "b", "the other entry is untouched");
     // Empty base accepts the first entry.
-    assert_eq!(merge_metadata(&[], &[a.clone()]).len(), 1);
+    assert_eq!(
+        merge_metadata(&[], std::slice::from_ref(&a)).len(),
+        1,
+        "empty base seeds from the incoming entry"
+    );
 }
 
 async fn seed() -> TursoStore {
