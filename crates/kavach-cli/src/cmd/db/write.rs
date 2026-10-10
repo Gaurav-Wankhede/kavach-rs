@@ -192,13 +192,23 @@ fn title_has_closure_word(title: &str) -> bool {
 /// targets are appended as one `DEPENDS_ON: a, b` line at the top of the body
 /// (the parser scans all lines, so position is immaterial; top keeps it visible).
 fn mirror_depends_on_into_content(body: String, depends_on: &[String]) -> String {
-    let fresh: Vec<&str> = depends_on
-        .iter()
-        .map(|d| d.trim())
-        .filter(|d| !d.is_empty())
-        // Skip any target the body already declares on a dep line (idempotent).
-        .filter(|d| !body_declares_dep(&body, d))
-        .collect();
+    let mut fresh: Vec<String> = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
+    for d in depends_on {
+        let t = d.trim();
+        if t.is_empty() {
+            continue;
+        }
+        // Compare by BARE TAIL. A literal comparison let a line already carrying
+        // `kavach-rs/roadmap/foo` fail to match an incoming bare `foo`, so the
+        // mirror appended a SECOND `DEPENDS_ON:` line — 52 roadmap rows carry both.
+        let bare = bare_tail(t).to_owned();
+        if body_declares_dep(&body, &bare) || seen.contains(&bare) {
+            continue;
+        }
+        seen.push(bare.clone());
+        fresh.push(bare);
+    }
     if fresh.is_empty() {
         return body;
     }
@@ -210,15 +220,18 @@ fn mirror_depends_on_into_content(body: String, depends_on: &[String]) -> String
     }
 }
 /// `true` iff `body` already names `dep` on a `DEPENDS_ON:` line —
-/// the same lines the readiness parser reads. Whitespace/comma tolerant.
+/// the same lines the readiness parser reads. Whitespace/comma tolerant, and
+/// BARE-TAIL tolerant so a qualified token on the line matches a bare key.
 fn body_declares_dep(body: &str, dep: &str) -> bool {
+    let want = bare_tail(dep);
     body.lines()
         .map(str::trim)
         .filter(|l| l.starts_with("DEPENDS_ON:"))
         .any(|l| {
             l.split([':', ',', ' ', '\t'])
                 .map(str::trim)
-                .any(|tok| tok == dep)
+                .filter(|tok| !tok.is_empty())
+                .any(|tok| bare_tail(tok) == want)
         })
 }
 /// Bare tail of a dep key: strip up to and including the last `/`. Duplicated

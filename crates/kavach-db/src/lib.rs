@@ -39,6 +39,7 @@ pub mod projects;
 pub mod query_lex;
 pub mod rag_trees;
 pub mod read;
+pub mod repair_dep_lines;
 pub mod retry;
 pub mod rrf;
 pub mod runs;

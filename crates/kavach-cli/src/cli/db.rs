@@ -437,6 +437,9 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
     /// Author/validate machine-actionable micro-tickets (MicroTicket v1)
     #[command(subcommand)]
     Mt(MtAction),
+    /// Diagnose and repair store-level drift
+    #[command(subcommand)]
+    Doctor(DoctorAction),
     /// Backfill vector embeddings for existing memories (Phase 5)
     #[command(
         after_help = "EXAMPLES:\n  kavach db embed-backfill --batch 50\n  kavach db embed-backfill --batch 64 --json\n\nWHEN: Populate `embedding` column for pre-vector rows; idempotent and resumable."
@@ -471,6 +474,22 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         /// Number of recent backups to keep (default: 10)
         #[arg(long, default_value_t = 10)]
         keep: usize,
+    },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum DoctorAction {
+    /// Collapse duplicate DEPENDS_ON lines into one canonical bare-key line
+    #[command(
+        after_help = "EXAMPLES:\n  kavach db doctor repair-deps --project P\n  kavach db doctor repair-deps --project P --apply\n\nWHEN: Two mirrors (CLI + daemon) each appended a DEPENDS_ON line, and 52 rows carry both a project-qualified and a bare spelling of the same dependency.\n\nSAFETY: dry-run by default. Dependencies are MERGED, never dropped — a row whose qualified line names MORE targets than its bare line would lose edges if the qualified line were simply deleted."
+    )]
+    RepairDeps {
+        /// Project slug
+        #[arg(long)]
+        project: String,
+        /// Write the repairs (default is a dry run that prints the plan)
+        #[arg(long, default_value_t = false)]
+        apply: bool,
     },
 }
 

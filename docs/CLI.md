@@ -193,6 +193,29 @@ EXAMPLES:
 WHEN: Granular removal of one row or a whole category. Prefer over wipe-project.
 ```
 
+## `kavach db doctor`
+
+Diagnose and repair store-level drift
+
+## `kavach db doctor repair-deps`
+
+Collapse duplicate DEPENDS_ON lines into one canonical bare-key line
+
+| Flag | Description | Default |
+|---|---|---|
+| `--project` | Project slug |  |
+| `--apply` | Write the repairs (default is a dry run that prints the plan) | false |
+
+```
+EXAMPLES:
+  kavach db doctor repair-deps --project P
+  kavach db doctor repair-deps --project P --apply
+
+WHEN: Two mirrors (CLI + daemon) each appended a DEPENDS_ON line, and 52 rows carry both a project-qualified and a bare spelling of the same dependency.
+
+SAFETY: dry-run by default. Dependencies are MERGED, never dropped — a row whose qualified line names MORE targets than its bare line would lose edges if the qualified line were simply deleted.
+```
+
 ## `kavach db embed-backfill`
 
 Backfill vector embeddings for existing memories (Phase 5)

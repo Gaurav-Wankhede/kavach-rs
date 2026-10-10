@@ -2,6 +2,7 @@
 //! db.write RPC method — create or update entry.
 
 use super::util::resolve_project_id;
+use crate::methods::roadmap::readiness::bare_dep_key;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_types::Priority;
@@ -48,16 +49,30 @@ pub struct WriteResult {
 /// Mirror `depends_on` edge targets from `relationships` into a `DEPENDS_ON:`
 /// content line so the dispatch readiness check (which parses deps from CONTENT)
 /// honors them. Returns `content` unchanged when there are no `depends_on` edges.
-/// Idempotent: a target already named on a `DEPENDS_ON:` content
-/// line is not re-added, so re-running an update never duplicates the line.
+///
+/// Idempotent by BARE KEY, not by literal token. A previous version compared
+/// tokens literally, so a content line already carrying `kavach-rs/roadmap/foo`
+/// never matched an incoming bare `foo` — and the mirror appended a SECOND
+/// `DEPENDS_ON:` line. 52 roadmap rows carry exactly that pair. Dep targets
+/// reach this function in both forms (the CLI qualifies flag targets; the NLU
+/// extractor emits bare keys), so the comparison must be form-insensitive.
 fn mirror_depends_on_into_content(content: &str, relationships: &[(String, String)]) -> String {
-    let fresh: Vec<&str> = relationships
-        .iter()
-        .filter(|(rel, _)| rel == "depends_on")
-        .map(|(_, target)| target.trim())
-        .filter(|t| !t.is_empty())
-        .filter(|t| !content_declares_dep(content, t))
-        .collect();
+    // Dedupe within the batch too: two edges naming the same dep by different
+    // forms must yield one line entry.
+    let mut fresh: Vec<String> = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
+    for (_, target) in relationships.iter().filter(|(rel, _)| rel == "depends_on") {
+        let t = target.trim();
+        if t.is_empty() {
+            continue;
+        }
+        let bare = bare_dep_key(t).to_owned();
+        if content_declares_dep(content, &bare) || seen.contains(&bare) {
+            continue;
+        }
+        seen.push(bare.clone());
+        fresh.push(bare);
+    }
     if fresh.is_empty() {
         return content.to_owned();
     }
@@ -70,8 +85,11 @@ fn mirror_depends_on_into_content(content: &str, relationships: &[(String, Strin
 }
 
 /// `true` iff `content` already names `dep` on a `DEPENDS_ON:` line
-/// — the same lines the readiness parser reads. Whitespace/comma tolerant.
+/// — the same lines the readiness parser reads. Whitespace/comma tolerant, and
+/// BARE-TAIL tolerant so a project-qualified token on the line matches a bare
+/// incoming key (and vice versa).
 fn content_declares_dep(content: &str, dep: &str) -> bool {
+    let want = bare_dep_key(dep);
     content
         .lines()
         .map(str::trim)
@@ -79,7 +97,8 @@ fn content_declares_dep(content: &str, dep: &str) -> bool {
         .any(|l| {
             l.split([':', ',', ' ', '\t'])
                 .map(str::trim)
-                .any(|tok| tok == dep)
+                .filter(|tok| !tok.is_empty())
+                .any(|tok| bare_dep_key(tok) == want)
         })
 }
 
@@ -208,5 +227,62 @@ mod tests {
     #[test]
     fn no_deps_leaves_content_unchanged() {
         assert_eq!(mirror_depends_on_into_content("body", &[]), "body");
+    }
+
+    /// REGRESSION: a content line already carrying the PROJECT-QUALIFIED
+    /// spelling of a dep must block the incoming BARE spelling from appending a
+    /// second line. Both mirrors run here (the CLI qualifies flag targets, the
+    /// NLU extractor emits bare keys) and the literal token compare let both
+    /// spellings through — 52 roadmap rows now carry the pair.
+    #[test]
+    fn qualified_dep_on_line_blocks_the_bare_spelling() {
+        let content = "DEPENDS_ON: kavach-rs/roadmap/roadmap.unit.x\nrest";
+        let out = mirror_depends_on_into_content(content, &[dep("roadmap.unit.x")]);
+        assert_eq!(
+            out, content,
+            "bare key must match the qualified token already on the line"
+        );
+        assert_eq!(
+            out.lines().filter(|l| l.starts_with("DEPENDS_ON:")).count(),
+            1,
+            "exactly one dep line"
+        );
+    }
+
+    /// The mirror normalises to the BARE tail, so the line it writes is the same
+    /// spelling the readiness parser and `db doctor repair-deps` agree on.
+    #[test]
+    fn mirrored_line_uses_the_bare_tail() {
+        let out = mirror_depends_on_into_content("body", &[dep("kavach-rs/roadmap/unit.x")]);
+        assert!(out.starts_with("DEPENDS_ON: unit.x"), "got: {out}");
+    }
+
+    /// Two edges naming the same dep by different forms yield ONE line entry.
+    #[test]
+    fn same_dep_in_two_forms_yields_one_entry() {
+        let rels = [dep("kavach-rs/roadmap/unit.x"), dep("unit.x")];
+        let out = mirror_depends_on_into_content("body", &rels);
+        assert_eq!(
+            out.lines().filter(|l| l.starts_with("DEPENDS_ON:")).count(),
+            1
+        );
+        assert_eq!(out.matches("unit.x").count(), 1, "got: {out}");
+    }
+
+    /// A genuinely new dep alongside an already-declared one is still added, and
+    /// the existing one is not repeated.
+    #[test]
+    fn a_new_dep_is_added_alongside_an_existing_one() {
+        let content = "DEPENDS_ON: kavach-rs/roadmap/unit.x\nrest";
+        let out = mirror_depends_on_into_content(content, &[dep("unit.y")]);
+        assert_eq!(
+            out, "DEPENDS_ON: unit.y\nDEPENDS_ON: kavach-rs/roadmap/unit.x\nrest",
+            "new dep prepended, existing preserved verbatim"
+        );
+    }
+
+    #[test]
+    fn empty_target_is_ignored() {
+        assert_eq!(mirror_depends_on_into_content("body", &[dep("  ")]), "body");
     }
 }

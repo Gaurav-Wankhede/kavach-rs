@@ -10,6 +10,7 @@ mod citation;
 mod concept;
 mod delete;
 mod dispatcher;
+mod doctor;
 mod embed_backfill;
 mod event;
 mod gate_config;

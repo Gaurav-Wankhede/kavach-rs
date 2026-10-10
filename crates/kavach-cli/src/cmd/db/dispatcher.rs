@@ -2,8 +2,9 @@
 //! per CLI verb routing to its `cmd/db/*` handler. Cohesive routing surface;
 //! splitting arms across files fragments one match with no reuse gain.
 use super::{
-    backup, checkpoint, citation, concept, delete, embed_backfill, event, get, kanban, mistakes, mt,
-    next_prompt, parallel_run, query, query_raw, register, search, status_update, wipe_project, write,
+    backup, checkpoint, citation, concept, delete, doctor, embed_backfill, event, get, kanban,
+    mistakes, mt, next_prompt, parallel_run, query, query_raw, register, search, status_update,
+    wipe_project, write,
 };
 use crate::cli::DbAction;
 
@@ -166,7 +167,15 @@ pub(crate) fn run(action: DbAction) -> i32 {
         DbAction::Checkpoint { truncate } => checkpoint::run(truncate),
         DbAction::Mistakes { action } => mistakes::run(action),
         DbAction::Mt(action) => mt_dispatch(action),
+        DbAction::Doctor(action) => doctor_dispatch(action),
         DbAction::Backup { keep } => backup::run(keep),
+    }
+}
+
+fn doctor_dispatch(action: crate::cli::db::DoctorAction) -> i32 {
+    use crate::cli::db::DoctorAction;
+    match action {
+        DoctorAction::RepairDeps { project, apply } => doctor::repair_deps(&project, apply),
     }
 }
 
