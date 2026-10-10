@@ -141,16 +141,11 @@ kavach think --project myapp "how did we handle auth token refresh?"
 
 ## ✅ Prerequisites
 
-Install these **before** running Kavach. The harness fails closed — if its memory store is unreachable, gates deny by default — so the SurrealDB server is not optional.
+Install these **before** running Kavach. The harness fails closed — if its memory store is unreachable, gates deny by default — but the store is **embedded**: there is no database server to install, download, or keep running. Nothing to do here for the database.
 
 <div align="center">
 <table>
 <tr><th>Requirement</th><th>Why</th><th>Install</th></tr>
-<tr>
-<td><strong>SurrealDB</strong> ≥ 3.1<br><sub>(the memory <em>server</em>)</sub></td>
-<td>Kavach's durable store. A standalone <code>surreal start</code> server owns the DB and serializes all writers; every <code>kavach</code> process is a thin WebSocket client of it (default <code>ws://127.0.0.1:7710</code>).</td>
-<td><strong>macOS / Linux:</strong> <code>curl -sSf https://install.surrealdb.com | sh</code><br><strong>macOS (brew):</strong> <code>brew install surrealdb/tap/surreal</code><br><strong>Windows:</strong> <code>iwr https://windows.surrealdb.com -useb | iex</code><br><sub>or grab a binary from <a href="https://surrealdb.com/install">surrealdb.com/install</a></sub></td>
-</tr>
 <tr>
 <td><strong>An AI harness</strong></td>
 <td>Kavach wraps a coding agent. Use any one: <strong>Claude Code</strong> v2.0+, <strong>Codex</strong>, or <strong>Cursor</strong>. One binary serves all three.</td>
@@ -200,7 +195,7 @@ irm https://raw.githubusercontent.com/Wankhede-Brothers/kavach-rs/main/install.p
 
 What the installer does, in order:
 
-1. **Bootstraps prerequisites** — `git` (must be present), the **Rust toolchain** via `rustup` (the pinned channel from `rust-toolchain.toml` installs itself on build), and **SurrealDB 3.1.4** (hard-pinned on every platform).
+1. **Bootstraps prerequisites** — `git` (must be present) and the **Rust toolchain** via `rustup` (the pinned channel from `rust-toolchain.toml` installs itself on build). No database server: the store is embedded.
 2. **Clones** the repo shallow into a temp dir and runs `cargo build --release`.
 3. **Installs** the `kavach` binary to `~/.local/bin` (override with `KAVACH_INSTALL_DIR`).
 4. **Provisions the enforced Rust toolbelt** (`rg`, `fd`, `bat`, `sd`, `xh`, `jaq`, …) via `kavach toolbelt install` — required, because Kavach's `pre-tool` gate **blocks the legacy POSIX equivalents** (`grep`/`find`/`cat`/`curl`/`sed`) on Linux, macOS, and Windows.

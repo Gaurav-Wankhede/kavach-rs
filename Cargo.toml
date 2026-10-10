@@ -84,8 +84,12 @@ tokio-util = { version = "0.7", features = ["rt"] }
 parking_lot = "0.12"
 aho-corasick = "1"
 tracing = "0.1"
-surrealdb = { version = "3.1.4", default-features = false, features = ["kv-rocksdb", "kv-mem", "protocol-ws"] }
-surrealdb-types = "3.1.4"
+# NOTE: surrealdb / surrealdb-types were REMOVED here. The DB engine is Turso
+# (libsql) embedded — `kavach-db` depends solely on `libsql`. The migration is
+# complete and documented in docs/PRD_SURREALDB_TO_TURSO_MIGRATION.md; these two
+# lines were the last residue, unreferenced by any crate (`cargo tree -i
+# surrealdb` did not resolve), so they cost nothing but kept a BUSL-1.1 license
+# carve-out alive in deny.toml for a dependency nothing used.
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "signal", "net"] }
 jsonrpsee = { version = "0.24", features = ["server", "macros"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

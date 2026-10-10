@@ -16,12 +16,11 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 }
 if (Get-Command rustup -ErrorAction SilentlyContinue) { rustup update 2>$null }
 
-if (-not (Get-Command surreal -ErrorAction SilentlyContinue)) {
-  # pin SurrealDB to 3.1.4 via the direct release asset (the iex installer takes no version arg)
-  Write-Host "kavach: installing SurrealDB 3.1.4 …"
-  New-Item -ItemType Directory -Force -Path $dest | Out-Null
-  Invoke-WebRequest -Uri "https://github.com/surrealdb/surrealdb/releases/download/v3.1.4/surreal-v3.1.4.windows-amd64.exe" -OutFile "$dest\surreal.exe"
-}
+# NOTE: the SurrealDB bootstrap that used to live here was removed. The memory
+# store is Turso/libSQL, EMBEDDED in the kavach binary (kavach-db -> libsql);
+# there is no database server to install, download, or keep running. The old
+# block fetched a pinned `surreal.exe` into $dest on every Windows install of a
+# build that no longer used it.
 
 $tmp = New-Item -ItemType Directory -Path (Join-Path $env:TEMP ([System.Guid]::NewGuid()))
 
@@ -34,7 +33,7 @@ try {
   Pop-Location
   New-Item -ItemType Directory -Force -Path $dest | Out-Null
   Copy-Item "$tmp\src\target\release\kavach.exe" "$dest\kavach.exe" -Force
-  $datadir = "$env:LOCALAPPDATA\SharedAI"; Write-Host "kavach: memory store will live in $datadir (SurrealDB 3.1.4)"
+  $datadir = "$env:LOCALAPPDATA\SharedAI"; Write-Host "kavach: memory store will live in $datadir (embedded Turso/libSQL — no server required)"
   Write-Host "kavach: installed to $dest\kavach.exe"
   Write-Host "kavach: provisioning the Rust toolbelt (rg, fd, bat, sd, xh, ...) ..."
   try { & "$dest\kavach.exe" toolbelt install --yes } catch { Write-Host "kavach: toolbelt provisioning skipped — run 'kavach toolbelt install' manually" }
