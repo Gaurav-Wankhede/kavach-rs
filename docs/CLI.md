@@ -741,7 +741,7 @@ High-precision polyglot AST and structural code search (replaces sg/rg)
 | `--max-count` | Max matches to emit (default: 50) | 50 |
 | `--ignore-case` | Show NUM lines of trailing and leading context (retains exact line spacing) Case-insensitive search |  |
 | `--word-regexp` | Match whole words only |  |
-| `--context` | Show NUM lines of trailing and leading context (retains exact line spacing) | 0 |
+| `--scope` | Extract full enclosing AST semantic scope (fn, struct, class) instead of raw line numbers |  |
 
 ## `kavach heal`
 

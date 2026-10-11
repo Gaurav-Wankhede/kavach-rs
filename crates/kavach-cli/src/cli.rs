@@ -109,9 +109,10 @@ pub(crate) enum Commands {
         /// Match whole words only
         #[arg(short = 'w', long = "word-regexp")]
         word_regexp: bool,
-        /// Show NUM lines of trailing and leading context (retains exact line spacing)
-        #[arg(short = 'C', long = "context", default_value_t = 0)]
-        context: usize,
+        /// Extract full enclosing AST semantic scope (fn, struct, class) instead of raw line numbers
+        #[arg(short = 's', long = "scope")]
+        scope: bool,
+
     },
 
     /// Surgical in-place file text/regex replacement (replaces sd).

@@ -62,10 +62,10 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             glob,
             ignore_case,
             word_regexp,
+            scope,
             json,
             max_count,
-            context,
-        } => grep::run(&pattern, &path, ast, lang.as_deref(), glob.as_deref(), ignore_case, word_regexp, json, max_count, context),
+        } => grep::run(&pattern, &path, ast, lang.as_deref(), glob.as_deref(), ignore_case, word_regexp, scope, json, max_count),
 
         Commands::Replace {
             find,

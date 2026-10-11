@@ -303,12 +303,9 @@ pub(crate) fn run(
         if callees.is_empty() {
             println!("    └── <none located>");
         } else {
-            for (idx, callee) in callees.iter().take(15).enumerate() {
-                let prefix = if idx == callees.len().min(15) - 1 { "└──" } else { "├──" };
+            for (idx, callee) in callees.iter().enumerate() {
+                let prefix = if idx == callees.len() - 1 { "└──" } else { "├──" };
                 println!("    {} {} at {}:{}:{}", prefix, callee.symbol, callee.path, callee.line, callee.col);
-            }
-            if callees.len() > 15 {
-                println!("    └── ... ({} more omitted for brevity)", callees.len() - 15);
             }
         }
     }

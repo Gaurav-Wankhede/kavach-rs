@@ -61,8 +61,9 @@ pub(crate) fn run(
         let path_str = p.to_string_lossy();
         let file_name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-        // Match against full path or file name
-        let matched = glob_match(pattern, &path_str) || glob_match(pattern, file_name);
+        // Match against normalized path (without leading ./) or file name
+        let clean_path = path_str.strip_prefix("./").unwrap_or(&path_str);
+        let matched = glob_match(pattern, clean_path) || glob_match(pattern, &path_str) || glob_match(pattern, file_name);
 
         if matched {
             let _ = writeln!(out, "{}", path_str);

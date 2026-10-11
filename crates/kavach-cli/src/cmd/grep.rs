@@ -1,4 +1,5 @@
-use ast_grep_core::AstGrep;
+use ast_grep_core::{AstGrep, Node};
+use ast_grep_core::tree_sitter::StrDoc;
 use ast_grep_language::SupportLang;
 use glob_match::glob_match;
 use ignore::WalkBuilder;
@@ -16,9 +17,9 @@ pub(crate) fn run(
     glob_filter: Option<&str>,
     ignore_case: bool,
     word_regexp: bool,
+    scope: bool,
     json_mode: bool,
     _max_count: usize,
-    context_lines: usize,
 ) -> i32 {
     let p = Path::new(path);
     if !p.exists() {
@@ -39,8 +40,8 @@ pub(crate) fn run(
             lang,
             ignore_case,
             word_regexp,
+            scope,
             json_mode,
-            context_lines,
             &mut total_matches,
             &mut out,
         );
@@ -60,8 +61,9 @@ pub(crate) fn run(
 
             let file_path = entry.path().to_string_lossy();
             if let Some(glob_pat) = glob_filter {
+                let clean_file_path = file_path.strip_prefix("./").unwrap_or(&file_path);
                 let file_name = entry.file_name().to_string_lossy();
-                if !glob_match(glob_pat, &file_name) {
+                if !glob_match(glob_pat, clean_file_path) && !glob_match(glob_pat, &file_path) && !glob_match(glob_pat, &file_name) {
                     continue;
                 }
             }
@@ -74,8 +76,8 @@ pub(crate) fn run(
                 lang,
                 ignore_case,
                 word_regexp,
+                scope,
                 json_mode,
-                context_lines,
                 &mut total_matches,
                 &mut out,
             );
@@ -150,6 +152,36 @@ fn is_word_char(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
+fn find_enclosing_declaration(node: &Node<'_, StrDoc<SupportLang>>) -> Option<(usize, usize)> {
+    let mut current = Some(node.clone());
+    while let Some(curr) = current {
+        let kind = curr.kind();
+        if matches!(
+            kind.as_ref(),
+            "function_item"
+                | "struct_item"
+                | "enum_item"
+                | "impl_item"
+                | "trait_item"
+                | "type_item"
+                | "const_item"
+                | "static_item"
+                | "function_declaration"
+                | "class_declaration"
+                | "interface_declaration"
+                | "type_alias_declaration"
+                | "method_definition"
+                | "function_definition"
+                | "class_definition"
+        ) {
+            let range = curr.range();
+            return Some((range.start, range.end));
+        }
+        current = curr.parent();
+    }
+    None
+}
+
 fn matches_word_boundary(line: &str, start_col: usize, match_len: usize) -> bool {
     let before = if start_col > 1 {
         line.chars().nth(start_col - 2)
@@ -176,12 +208,12 @@ fn matches_word_boundary(line: &str, start_col: usize, match_len: usize) -> bool
 fn process_file(
     file_path: &str,
     pattern: &str,
-    _is_ast: bool,
+    is_ast: bool,
     lang_opt: Option<SupportLang>,
     ignore_case: bool,
     word_regexp: bool,
+    scope: bool,
     json_mode: bool,
-    context_lines: usize,
     total_matches: &mut usize,
     out: &mut BufWriter<io::StdoutLock<'_>>,
 ) {
@@ -195,25 +227,35 @@ fn process_file(
         return;
     }
 
-    // Try AST search if grammar language is recognized
-    let ast_matches: Vec<(usize, usize, usize, usize)> = if let Some(lang) = lang_opt {
+    // Try AST search if user requested AST search and grammar language is recognized
+    let (ast_matches, scope_intervals): (Vec<(usize, usize, usize, usize)>, Vec<(usize, usize)>) = if is_ast && lang_opt.is_some() {
+        let lang = lang_opt.unwrap();
         match ast_grep_core::Pattern::try_new(pattern, lang) {
             Ok(p) => {
                 let grep = AstGrep::new(&content, lang);
                 let root = grep.root();
-                root.find_all(&p)
-                    .map(|m| {
-                        let range = m.range();
-                        let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                        let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                        (s_line, s_col, e_line, e_col)
-                    })
-                    .collect()
+                let mut matches = Vec::new();
+                let mut scopes = Vec::new();
+                for m in root.find_all(&p) {
+                    let range = m.range();
+                    let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                    let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                    matches.push((s_line, s_col, e_line, e_col));
+
+                    if scope {
+                        if let Some((scope_start, scope_end)) = find_enclosing_declaration(&m) {
+                            let (sc_s_line, _) = offset_to_line_and_col(&content, scope_start);
+                            let (sc_e_line, _) = offset_to_line_and_col(&content, scope_end);
+                            scopes.push((sc_s_line, sc_e_line));
+                        }
+                    }
+                }
+                (matches, scopes)
             }
-            Err(_) => Vec::new(),
+            Err(_) => (Vec::new(), Vec::new()),
         }
     } else {
-        Vec::new()
+        (Vec::new(), Vec::new())
     };
 
     let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || (pattern.contains("$") && lang_opt.is_some()) {
@@ -274,32 +316,41 @@ fn process_file(
         match_first_col.entry(s_line).or_insert(s_col);
     }
 
-    let mut intervals: Vec<(usize, usize)> = Vec::new();
-    for &m_line in &matched_lines {
-        let start = m_line.saturating_sub(context_lines).max(1);
-        let end = (m_line + context_lines).min(all_lines.len());
-        if let Some(last) = intervals.last_mut() {
-            if start <= last.1 + 1 {
-                last.1 = last.1.max(end);
-                continue;
+    if scope && !scope_intervals.is_empty() {
+        let mut intervals: Vec<(usize, usize)> = Vec::new();
+        for &(sc_start, sc_end) in &scope_intervals {
+            let start = sc_start.max(1);
+            let end = sc_end.min(all_lines.len());
+            if let Some(last) = intervals.last_mut() {
+                if start <= last.1 + 1 {
+                    last.1 = last.1.max(end);
+                    continue;
+                }
+            }
+            intervals.push((start, end));
+        }
+        for (int_idx, &(start_line, end_line)) in intervals.iter().enumerate() {
+            if int_idx > 0 {
+                let _ = writeln!(out, "--");
+            }
+            for l_num in start_line..=end_line {
+                let l_idx = l_num - 1;
+                let line_content = all_lines.get(l_idx).copied().unwrap_or("");
+                if matched_lines.contains(&l_num) {
+                    let col = match_first_col.get(&l_num).copied().unwrap_or(1);
+                    let _ = writeln!(out, "{}:{}:{}", l_num, col, line_content);
+                } else {
+                    let _ = writeln!(out, "{}-{}", l_num, line_content);
+                }
             }
         }
-        intervals.push((start, end));
-    }
-
-    for (int_idx, &(start_line, end_line)) in intervals.iter().enumerate() {
-        if int_idx > 0 {
-            let _ = writeln!(out, "--");
-        }
-        for l_num in start_line..=end_line {
-            let l_idx = l_num - 1;
+    } else {
+        // Precise file:line,col with exact line and indentation (zero range spam)
+        for &m_line in &matched_lines {
+            let l_idx = m_line - 1;
             let line_content = all_lines.get(l_idx).copied().unwrap_or("");
-            if matched_lines.contains(&l_num) {
-                let col = match_first_col.get(&l_num).copied().unwrap_or(1);
-                let _ = writeln!(out, "{}:{}:{}", l_num, col, line_content);
-            } else {
-                let _ = writeln!(out, "{}-{}", l_num, line_content);
-            }
+            let col = match_first_col.get(&m_line).copied().unwrap_or(1);
+            let _ = writeln!(out, "{}:{}:{}", m_line, col, line_content);
         }
     }
     let _ = writeln!(out);
