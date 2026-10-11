@@ -3,6 +3,7 @@ use ast_grep_language::SupportLang;
 use glob_match::glob_match;
 use ignore::WalkBuilder;
 use serde_json::json;
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::{self, BufWriter, Write};
 use std::path::Path;
@@ -14,7 +15,7 @@ pub(crate) fn run(
     lang_opt: Option<&str>,
     glob_filter: Option<&str>,
     json_mode: bool,
-    max_count: usize,
+    _max_count: usize,
     context_lines: usize,
 ) -> i32 {
     let p = Path::new(path);
@@ -38,7 +39,6 @@ pub(crate) fn run(
                 json_mode,
                 context_lines,
                 &mut total_matches,
-                max_count,
                 &mut out,
             );
         }
@@ -77,12 +77,8 @@ pub(crate) fn run(
                 json_mode,
                 context_lines,
                 &mut total_matches,
-                max_count,
                 &mut out,
             );
-            if total_matches >= max_count {
-                break;
-            }
         }
     }
 
@@ -158,7 +154,6 @@ fn process_file(
     json_mode: bool,
     context_lines: usize,
     total_matches: &mut usize,
-    max_count: usize,
     out: &mut BufWriter<io::StdoutLock<'_>>,
 ) {
     let content = match fs::read_to_string(file_path) {
@@ -167,6 +162,9 @@ fn process_file(
     };
 
     let all_lines: Vec<&str> = content.lines().collect();
+    if all_lines.is_empty() {
+        return;
+    }
 
     let ast_matches: Vec<(usize, usize, usize, usize)> = match ast_grep_core::Pattern::try_new(pattern, lang) {
         Ok(p) => {
@@ -189,22 +187,30 @@ fn process_file(
     } else {
         let mut literal_spans = Vec::new();
         for (idx, line) in all_lines.iter().enumerate() {
-            if let Some(col_idx) = line.find(pattern) {
+            let mut search_start = 0;
+            while let Some(rel_col) = line[search_start..].find(pattern) {
+                let col_idx = search_start + rel_col;
                 let start_line = idx + 1;
                 let start_col = col_idx + 1;
                 let end_line = start_line;
                 let end_col = start_col + pattern.len();
                 literal_spans.push((start_line, start_col, end_line, end_col));
+                search_start = col_idx + pattern.len().max(1);
             }
         }
         literal_spans
     };
 
-    for &(start_line, start_col, end_line, end_col) in &spans {
-        let line_idx = start_line.saturating_sub(1);
-        let exact_raw_line = all_lines.get(line_idx).copied().unwrap_or("");
+    if spans.is_empty() {
+        return;
+    }
 
-        if json_mode {
+    *total_matches = total_matches.saturating_add(spans.len());
+
+    if json_mode {
+        for &(start_line, start_col, end_line, end_col) in &spans {
+            let line_idx = start_line.saturating_sub(1);
+            let exact_raw_line = all_lines.get(line_idx).copied().unwrap_or("");
             let record = json!({
                 "file": file_path,
                 "line": start_line,
@@ -214,31 +220,50 @@ fn process_file(
                 "exact_line": exact_raw_line,
             });
             let _ = writeln!(out, "{}", record);
-        } else {
-            if context_lines > 0 {
-                let start_ctx = line_idx.saturating_sub(context_lines);
-                for i in start_ctx..line_idx {
-                    if let Some(ctx_line) = all_lines.get(i) {
-                        let _ = writeln!(out, "{}-{}-{}", file_path, i + 1, ctx_line);
-                    }
-                }
-            }
+        }
+        return;
+    }
 
-            let _ = writeln!(out, "{}:{}:{}:{}", file_path, start_line, start_col, exact_raw_line);
+    // High-yield grouped heading format: Path printed ONCE at the top
+    let _ = writeln!(out, "{}", file_path);
 
-            if context_lines > 0 {
-                let end_ctx = (line_idx + 1 + context_lines).min(all_lines.len());
-                for i in (line_idx + 1)..end_ctx {
-                    if let Some(ctx_line) = all_lines.get(i) {
-                        let _ = writeln!(out, "{}-{}-{}", file_path, i + 1, ctx_line);
-                    }
-                }
+    // Collect matched lines
+    let mut matched_lines = BTreeSet::new();
+    let mut match_first_col = std::collections::BTreeMap::new();
+    for &(s_line, s_col, _, _) in &spans {
+        matched_lines.insert(s_line);
+        match_first_col.entry(s_line).or_insert(s_col);
+    }
+
+    // Merge intervals
+    let mut intervals: Vec<(usize, usize)> = Vec::new();
+    for &m_line in &matched_lines {
+        let start = m_line.saturating_sub(context_lines).max(1);
+        let end = (m_line + context_lines).min(all_lines.len());
+        if let Some(last) = intervals.last_mut() {
+            if start <= last.1 + 1 {
+                last.1 = last.1.max(end);
+                continue;
             }
         }
+        intervals.push((start, end));
+    }
 
-        *total_matches = total_matches.saturating_add(1);
-        if *total_matches >= max_count {
-            break;
+    // Stream lines with deduplicated intervals
+    for (int_idx, &(start_line, end_line)) in intervals.iter().enumerate() {
+        if int_idx > 0 {
+            let _ = writeln!(out, "--");
+        }
+        for l_num in start_line..=end_line {
+            let l_idx = l_num - 1;
+            let line_content = all_lines.get(l_idx).copied().unwrap_or("");
+            if matched_lines.contains(&l_num) {
+                let col = match_first_col.get(&l_num).copied().unwrap_or(1);
+                let _ = writeln!(out, "{}:{}:{}", l_num, col, line_content);
+            } else {
+                let _ = writeln!(out, "{}-{}", l_num, line_content);
+            }
         }
     }
+    let _ = writeln!(out); // blank line between files
 }
