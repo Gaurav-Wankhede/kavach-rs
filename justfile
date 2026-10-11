@@ -24,7 +24,7 @@ default:
 # fresh-inode + xattr-clear + ad-hoc codesign + exec-witness that prevents the
 # exit-137 amfid SIGKILL, then restarts the RPC daemon onto the new binary.
 install *ARGS:
-    cargo run --release -p kavach-cli -- deploy {{ARGS}}
+    cargo install --path crates/kavach-cli --force
 
 # Build + install the GUI app bundle (KavachApp.app + .dmg) with the CLI embedded
 # as a sidecar, codesign --deep, install to /Applications, and symlink the
