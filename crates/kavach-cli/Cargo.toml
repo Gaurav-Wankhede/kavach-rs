@@ -1,6 +1,6 @@
 [package]
 name = "kavach-cli"
-version = "1.3.0"
+version = "1.3.4"
 edition = "2024"
 publish = false
 
