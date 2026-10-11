@@ -1171,6 +1171,15 @@ Write a key-value slot (overwrites existing; max 10 slots)
 
 Validate current session
 
+## `kavach slice`
+
+Trace symbol definition, callers, and dependency context network (aliases: graph, network). Surgically extract exact line ranges from text and prose files without whole-file reads
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | Target file path |  |
+| `<range>` | Line range to slice (e.g. 50:80 or 100) |  |
+
 ## `kavach status`
 
 Show session status, build identity, and enforcement flags
@@ -1194,8 +1203,6 @@ Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus
 | `--session-weighted` | Weight scoring by session recency and recall frequency |  |
 
 ## `kavach trace`
-
-Trace symbol definition, callers, and dependency context network (aliases: graph, network)
 
 | Flag | Description | Default |
 |---|---|---|

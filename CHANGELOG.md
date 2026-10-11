@@ -6,18 +6,22 @@ and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the
 
 ## [1.3.0] — 2026-10-11
 
-Sovereign agent proxy suite (`kavach glob`, `kavach grep`, `kavach replace`) for anti-context-rot agentic workflows, zero-heap path matching, polyglot AST grep with exact line & indentation preservation across 28 languages, and full `webfind` live grounding across all gates.
+Sovereign agent proxy suite (`kavach grep`, `kavach trace`, `kavach json`, `kavach slice`, `kavach glob`, `kavach replace`) for anti-context-rot agentic workflows, zero-heap path matching, polyglot semantic AST code search across 28 Tree-Sitter grammars, Tab-indented TOON dependency graphs with Unix colon locations, zero-bloat state projections replacing `jaq`/`jq`, and full `webfind` live grounding across all gates.
 
 ### Added
 
-- **`kavach glob`** — Sovereign agent proxy for `fd`/`find`. Zero-heap path matcher using `ignore::WalkBuilder` and `glob_match`. Gitignore-aware, supports `-t/--type` (file/dir), `-H/--hidden`, `-d/--max-depth`, and `-m/--max-count`.
-- **`kavach grep`** — Sovereign agent proxy for `ast-grep` (`sg`) and `rg`. Multi-language AST pattern search across 28 languages via `ast-grep-core` and `ast_grep_language`. Preserves exact raw line content and leading indentation bit-for-bit to enable flawless agent code replacements. Configurable context lines (`-C, --context`), 1-indexed `file:line:col` spans, and structured JSON output.
-- **`kavach trace`** *(aliases: `graph`, `network`)* — Symbol context network and blast-radius inspector. Discovers symbol definitions, inbound callers, and outbound dependencies with exact 1-indexed `file:line:col` spans and `--json` support.
+- **`kavach grep`** — Sovereign polyglot AST code search engine across 28 languages via Tree-Sitter (`--def <NAME>`, `--call <NAME>`, `--type <NAME>`). Automatically ignores comments and string literals in code to eliminate false positives, while routing documentation/prose files to fast byte/word matching. Features `-s, --scope` to extract entire enclosing AST declarations in 1 turn and outputs clean, grouped Unix colon lines (`line:col:<exact_code>`).
+- **`kavach trace`** — Symbol context network and blast-radius inspector. Discovers definitions, inbound callers, and outbound dependencies formatted in a token-optimized, Tab-indented TOON hierarchy with standard clickable Unix `path:line:col` locations (saving >65% tokens vs JSON/ASCII trees).
+- **`kavach json`** — Sovereign JSON state and configuration projector. Navigates dot-path queries (`.field[0].sub`), emitting official TOON v4.4 tabular representations (`[N]{fields}:`), bare unquoted keys (`-k`), or raw scalar strings (`-r`), completely replacing `jaq` and `jq`.
+- **`kavach slice`** — Zero-bloat surgical line-range reader (`kavach slice <path> <start>:<end>`) for streaming exact line ranges without whole-file reads or heap buffering.
+- **`kavach glob`** — Sovereign agent proxy for `fd`/`find`. Zero-heap path matcher using `ignore::WalkBuilder` and `glob_match`. Gitignore-aware, normalizes path prefixes by stripping leading `./`, and supports `-t/--type` (file/dir), `-H/--hidden`, `-d/--max-depth`, and `-m/--max-count`.
 - **`kavach replace`** — Sovereign agent proxy for `sd`. High-throughput in-place atomic string and multi-pattern replacement via `aho_corasick` and atomic file persistence (`tempfile`). Includes `--dry-run` safety inspection and match limits.
 
 ### Changed
 
-- **Live Internet Grounding Across All Gates** — Replaced legacy model hallucination risks and generic web search directives across `kavach-engine` (`research_guard`, `hallucination_guard`, `assumption_guard`, `api_gateway_guard`, `pre_write_sql_guard`, `advisory_detectors`, `drained`, `clean_exit`, `terminal`) and `kavach-patterns` (`owasp_guard`, `crypto_guard`, `gnap_guard`, `laziness_guard`) with explicit `webfind search --live "<query>"`.
+- **Purged Command Aliases** — Removed `graph` and `network` aliases from `kavach trace` to enforce a single canonical command.
+- **Trace Limits Uncapped** — Removed hardcoded truncation limits (`take(15)`) in `kavach trace` to emit complete caller/dependency networks.
+- **Live Internet Grounding Across All Gates** — Replaced legacy model hallucination risks and generic web search directives across `kavach-engine` and `kavach-patterns` with explicit `webfind search --live "<query>"`.
 - **Cross-Language AST Safety** — `kavach grep` gracefully compiles language patterns via `Pattern::try_new(pattern, lang)`, skipping unparseable grammars during multi-language directory walks rather than panicking.
 
 ## [26.7.1] — 2026-07-21

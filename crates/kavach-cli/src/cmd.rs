@@ -2,6 +2,7 @@ pub(crate) mod glob;
 pub(crate) mod grep;
 pub(crate) mod replace;
 pub(crate) mod trace;
+pub(crate) mod slice;
 pub(crate) mod json;
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod audit;
@@ -85,6 +86,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             max_count,
         ),
 
+        Commands::Slice { path, range } => slice::run(&path, &range),
         Commands::Replace {
             find,
             replace,

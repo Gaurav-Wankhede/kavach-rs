@@ -198,7 +198,7 @@ What the installer does, in order:
 1. **Bootstraps prerequisites** — `git` (must be present) and the **Rust toolchain** via `rustup` (the pinned channel from `rust-toolchain.toml` installs itself on build). No database server: the store is embedded.
 2. **Clones** the repo shallow into a temp dir and runs `cargo build --release`.
 3. **Installs** the `kavach` binary to `~/.local/bin` (override with `KAVACH_INSTALL_DIR`).
-4. **Provisions the enforced Rust toolbelt** (`rg`, `fd`, `bat`, `sd`, `xh`, `jaq`, …) via `kavach toolbelt install` — required, because Kavach's `pre-tool` gate **blocks the legacy POSIX equivalents** (`grep`/`find`/`cat`/`curl`/`sed`) on Linux, macOS, and Windows.
+4. **Provisions the enforced Rust toolbelt & sovereign proxies** (`kavach grep`, `kavach trace`, `kavach json`, `kavach glob`, `kavach replace`, `kavach slice`, `xh`, …) — required, because Kavach's `pre-tool` gate **blocks the legacy POSIX and bloated CLI equivalents** (`grep`/`find`/`cat`/`curl`/`sed`/`jq`/`jaq`) on Linux, macOS, and Windows.
 5. **Wires the hooks** — merges Kavach's gate hooks into each AI harness's own `settings.json` (Claude Code, Cursor, Codex, …) via `kavach install --vendor all`; idempotent and backs up the originals, so the lifecycle gates actually fire.
 6. **Deletes the clone** — nothing is left behind but the installed binary and its toolbelt.
 
@@ -311,7 +311,7 @@ Kavach tracks Claude Code's hook surface as it evolves — the binary also dispa
 
 <br>
 
-Kavach's `pre-tool` gate steers shell commands toward faster Rust equivalents (`grep`→`rg`, `find`→`fd`, `cat`→`bat`, `sed`→`sd`, …). One command provisions the whole set:
+Kavach's `pre-tool` gate steers AI shell commands toward sovereign, low-context Rust proxies (`grep`→`kavach grep`, `find`→`kavach glob`, `cat`/`bat`→`kavach slice`, `sed`→`kavach replace`, `jq`/`jaq`→`kavach json`). One command provisions the whole toolbelt:
 
 ```bash
 kavach toolbelt install --yes      # fetch all tools via cargo binstall (prebuilt binaries)
@@ -374,13 +374,15 @@ A multi-tier graph: global **concepts** (L0) link to project **entities** (L1), 
 
 A dedicated crate family (`kavach-rule-*`) parses, stores, and evaluates rule definitions — the declarative layer that drives skill keyword routing and gate advisories.
 
-### Sovereign Agent Proxy Suite (`glob`, `grep`, `trace`/`graph`, `replace`)
+### Sovereign Agent Proxy Suite (`glob`, `grep`, `trace`, `json`, `slice`, `replace`)
 
 High-precision, zero-heap CLI proxies designed specifically for AI agents to combat context rot, hallucination, and bloated file reads:
-- **`kavach glob <PATTERN> [PATH]`**: Zero-allocation, gitignore-aware path finding using `ignore::WalkBuilder` and `glob_match`. Eliminates broad whole-directory dumps.
-- **`kavach grep <PATTERN> [PATH] [-C <N>]`**: Polyglot AST-Grep pattern search across 28 languages via `ast-grep-core`. Preserves exact raw line content, indentation, and column positions bit-for-bit, delivering surgically targeted context with 1-indexed `file:line:col` spans.
-- **`kavach trace <SYMBOL> [PATH]`** *(aliases: `graph`, `network`)*: Symbol context network and blast-radius inspector. Discovers symbol definitions, inbound callers, and outbound dependencies without dumping full files or requiring heavy external LSPs.
-- **`kavach replace <FIND> <REPLACE> <PATH> [--dry-run]`**: High-throughput multi-string replacement engine powered by `aho_corasick` with atomic `tempfile` persistence. Guarantees safe, bit-accurate in-place file mutation.
+- **`kavach grep [OPTIONS] [PATTERN] [PATH]`**: Universal polyglot AST code search across 28 languages via Tree-Sitter (`--def <NAME>`, `--call <NAME>`, `--type <NAME>`). Automatically ignores comments and string literals in code to eliminate false positives. Includes `-s, --scope` for complete AST declaration block extraction and standard Unix colon-delimited `line:col:<exact_code>` output.
+- **`kavach trace <SYMBOL> [PATH]`**: Context network & blast-radius graph inspector (zero aliases). Discovers definitions, inbound callers, and outbound callees in a token-optimized, Tab-indented TOON hierarchy with standard Unix `path:line:col` clickable locations.
+- **`kavach json [QUERY] [PATH]`**: Zero-bloat JSON dot-path projection (`.item[0].field`). Emits official TOON v4.4 tabular format (`[N]{fields}:`), bare unquoted keys (`-k`), or raw scalar strings (`-r`), permanently replacing `jaq` and `jq` while cutting context token consumption by >65%.
+- **`kavach slice <PATH> <START>:<END>`**: Surgical line-range prose extractor. Streams exact line ranges without whole-file reads or heap buffering.
+- **`kavach glob <PATTERN> [PATH]`**: Zero-heap, gitignore-aware path finding using `ignore::WalkBuilder` and normalized glob matching.
+- **`kavach replace <FIND> <REPLACE> <PATH> [--dry-run]`**: High-throughput multi-string replacement engine powered by `aho_corasick` with atomic `tempfile` persistence.
 
 ### Injection Compaction
 
