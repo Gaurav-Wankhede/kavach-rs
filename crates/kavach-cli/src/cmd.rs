@@ -1,6 +1,7 @@
 pub(crate) mod glob;
 pub(crate) mod grep;
 pub(crate) mod replace;
+pub(crate) mod trace;
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod audit;
 mod commands;
@@ -72,6 +73,14 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             regex,
             dry_run,
         } => replace::run(&find, &replace, &path, fixed_strings, regex, dry_run),
+        Commands::Trace {
+            symbol,
+            path,
+            depth,
+            callers,
+            callees,
+            json,
+        } => trace::run(&symbol, &path, depth, callers, callees, json),
         Commands::Status => status::run(),
         Commands::Servers { action } => servers::run(&action),
         Commands::Gates {

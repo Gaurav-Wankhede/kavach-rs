@@ -126,6 +126,28 @@ pub(crate) enum Commands {
         dry_run: bool,
     },
 
+    /// Trace symbol definition, callers, and dependency context network (aliases: graph, network).
+    #[command(alias = "graph", alias = "network")]
+    Trace {
+        /// Symbol identifier to trace (function, struct, type, const)
+        symbol: String,
+        /// Target directory or file to analyze (default: current directory)
+        #[arg(default_value = ".")]
+        path: String,
+        /// Maximum hop depth for relationships
+        #[arg(short = 'd', long = "depth", default_value_t = 1)]
+        depth: usize,
+        /// Show only inbound callers/references
+        #[arg(long)]
+        callers: bool,
+        /// Show only outbound callees/dependencies
+        #[arg(long)]
+        callees: bool,
+        /// Emit structured JSON output
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Show session status, build identity, and enforcement flags.
     #[command(
         after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates."

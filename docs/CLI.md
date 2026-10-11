@@ -1178,6 +1178,19 @@ Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus
 | `--limit` | Max fused hits to return (default: 10) | 10 |
 | `--session-weighted` | Weight scoring by session recency and recall frequency |  |
 
+## `kavach trace`
+
+Trace symbol definition, callers, and dependency context network (aliases: graph, network)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<symbol>` | Symbol identifier to trace (function, struct, type, const) |  |
+| `<path>` | Target directory or file to analyze (default: current directory) | . |
+| `--depth` | Maximum hop depth for relationships | 1 |
+| `--callers` | Show only inbound callers/references |  |
+| `--callees` | Show only outbound callees/dependencies |  |
+| `--json` | Emit structured JSON output |  |
+
 ## `kavach verify`
 
 Verify a roadmap entry: cargo check + tests, then done→verified
