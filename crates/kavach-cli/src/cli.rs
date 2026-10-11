@@ -103,6 +103,13 @@ pub(crate) enum Commands {
         #[arg(short = 'm', long = "max-count", default_value_t = 50)]
         max_count: usize,
         /// Show NUM lines of trailing and leading context (retains exact line spacing)
+        /// Case-insensitive search
+        #[arg(short = 'i', long = "ignore-case")]
+        ignore_case: bool,
+        /// Match whole words only
+        #[arg(short = 'w', long = "word-regexp")]
+        word_regexp: bool,
+        /// Show NUM lines of trailing and leading context (retains exact line spacing)
         #[arg(short = 'C', long = "context", default_value_t = 0)]
         context: usize,
     },

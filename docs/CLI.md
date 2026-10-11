@@ -739,6 +739,8 @@ High-precision polyglot AST and structural code search (replaces sg/rg)
 | `--glob` | File glob filter (e.g. "*.rs") |  |
 | `--json` | Emit compact JSON records instead of file:line text |  |
 | `--max-count` | Max matches to emit (default: 50) | 50 |
+| `--ignore-case` | Show NUM lines of trailing and leading context (retains exact line spacing) Case-insensitive search |  |
+| `--word-regexp` | Match whole words only |  |
 | `--context` | Show NUM lines of trailing and leading context (retains exact line spacing) | 0 |
 
 ## `kavach heal`

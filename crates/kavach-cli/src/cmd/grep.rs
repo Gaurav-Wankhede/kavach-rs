@@ -14,6 +14,8 @@ pub(crate) fn run(
     is_ast: bool,
     lang_opt: Option<&str>,
     glob_filter: Option<&str>,
+    ignore_case: bool,
+    word_regexp: bool,
     json_mode: bool,
     _max_count: usize,
     context_lines: usize,
@@ -30,18 +32,18 @@ pub(crate) fn run(
     if p.is_file() {
         let path_str = p.to_string_lossy();
         let lang = resolve_lang(&path_str, lang_opt);
-        if let Some(l) = lang {
-            process_file(
-                &path_str,
-                pattern,
-                is_ast,
-                l,
-                json_mode,
-                context_lines,
-                &mut total_matches,
-                &mut out,
-            );
-        }
+        process_file(
+            &path_str,
+            pattern,
+            is_ast,
+            lang,
+            ignore_case,
+            word_regexp,
+            json_mode,
+            context_lines,
+            &mut total_matches,
+            &mut out,
+        );
     } else {
         let mut builder = WalkBuilder::new(path);
         builder.hidden(false).git_ignore(true).git_global(true).git_exclude(true);
@@ -64,16 +66,14 @@ pub(crate) fn run(
                 }
             }
 
-            let lang = match resolve_lang(&file_path, lang_opt) {
-                Some(l) => l,
-                None => continue,
-            };
-
+            let lang = resolve_lang(&file_path, lang_opt);
             process_file(
                 &file_path,
                 pattern,
                 is_ast,
                 lang,
+                ignore_case,
+                word_regexp,
                 json_mode,
                 context_lines,
                 &mut total_matches,
@@ -146,11 +146,40 @@ fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
     (line, col)
 }
 
+fn is_word_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
+fn matches_word_boundary(line: &str, start_col: usize, match_len: usize) -> bool {
+    let before = if start_col > 1 {
+        line.chars().nth(start_col - 2)
+    } else {
+        None
+    };
+    if let Some(c) = before {
+        if is_word_char(c) {
+            return false;
+        }
+    }
+
+    let after_idx = start_col - 1 + match_len;
+    let after = line.chars().nth(after_idx);
+    if let Some(c) = after {
+        if is_word_char(c) {
+            return false;
+        }
+    }
+
+    true
+}
+
 fn process_file(
     file_path: &str,
     pattern: &str,
     _is_ast: bool,
-    lang: SupportLang,
+    lang_opt: Option<SupportLang>,
+    ignore_case: bool,
+    word_regexp: bool,
     json_mode: bool,
     context_lines: usize,
     total_matches: &mut usize,
@@ -166,35 +195,46 @@ fn process_file(
         return;
     }
 
-    let ast_matches: Vec<(usize, usize, usize, usize)> = match ast_grep_core::Pattern::try_new(pattern, lang) {
-        Ok(p) => {
-            let grep = AstGrep::new(&content, lang);
-            let root = grep.root();
-            root.find_all(&p)
-                .map(|m| {
-                    let range = m.range();
-                    let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                    let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                    (s_line, s_col, e_line, e_col)
-                })
-                .collect()
+    // Try AST search if grammar language is recognized
+    let ast_matches: Vec<(usize, usize, usize, usize)> = if let Some(lang) = lang_opt {
+        match ast_grep_core::Pattern::try_new(pattern, lang) {
+            Ok(p) => {
+                let grep = AstGrep::new(&content, lang);
+                let root = grep.root();
+                root.find_all(&p)
+                    .map(|m| {
+                        let range = m.range();
+                        let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                        let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                        (s_line, s_col, e_line, e_col)
+                    })
+                    .collect()
+            }
+            Err(_) => Vec::new(),
         }
-        Err(_) => Vec::new(),
+    } else {
+        Vec::new()
     };
 
-    let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || pattern.contains("$") {
+    let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || (pattern.contains("$") && lang_opt.is_some()) {
         ast_matches
     } else {
         let mut literal_spans = Vec::new();
+        let target_pat = if ignore_case { pattern.to_lowercase() } else { pattern.to_string() };
+
         for (idx, line) in all_lines.iter().enumerate() {
+            let search_line = if ignore_case { line.to_lowercase() } else { line.to_string() };
             let mut search_start = 0;
-            while let Some(rel_col) = line[search_start..].find(pattern) {
+            while let Some(rel_col) = search_line[search_start..].find(&target_pat) {
                 let col_idx = search_start + rel_col;
                 let start_line = idx + 1;
                 let start_col = col_idx + 1;
                 let end_line = start_line;
                 let end_col = start_col + pattern.len();
-                literal_spans.push((start_line, start_col, end_line, end_col));
+
+                if !word_regexp || matches_word_boundary(line, start_col, pattern.len()) {
+                    literal_spans.push((start_line, start_col, end_line, end_col));
+                }
                 search_start = col_idx + pattern.len().max(1);
             }
         }
@@ -224,10 +264,9 @@ fn process_file(
         return;
     }
 
-    // High-yield grouped heading format: Path printed ONCE at the top
+    // Grouped header format
     let _ = writeln!(out, "{}", file_path);
 
-    // Collect matched lines
     let mut matched_lines = BTreeSet::new();
     let mut match_first_col = std::collections::BTreeMap::new();
     for &(s_line, s_col, _, _) in &spans {
@@ -235,7 +274,6 @@ fn process_file(
         match_first_col.entry(s_line).or_insert(s_col);
     }
 
-    // Merge intervals
     let mut intervals: Vec<(usize, usize)> = Vec::new();
     for &m_line in &matched_lines {
         let start = m_line.saturating_sub(context_lines).max(1);
@@ -249,7 +287,6 @@ fn process_file(
         intervals.push((start, end));
     }
 
-    // Stream lines with deduplicated intervals
     for (int_idx, &(start_line, end_line)) in intervals.iter().enumerate() {
         if int_idx > 0 {
             let _ = writeln!(out, "--");
@@ -265,5 +302,5 @@ fn process_file(
             }
         }
     }
-    let _ = writeln!(out); // blank line between files
+    let _ = writeln!(out);
 }
