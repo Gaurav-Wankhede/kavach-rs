@@ -481,6 +481,12 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[arg(long)]
         markdown: bool,
     },
+
+    /// Sovereign, zero-bloat in-process Git inspection suite (log, show, diff, status)
+    Git {
+        #[command(subcommand)]
+        action: GitAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -695,4 +701,39 @@ pub(crate) enum PipelineAction {
         #[arg(long)]
         project: String,
     },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum GitAction {
+    /// Zero-bloat commit log in clean TOON format
+    Log {
+        /// Number of commits to show (default: 5)
+        #[arg(short = 'n', default_value_t = 5)]
+        limit: usize,
+        /// Format as compact single-line hashes and subjects
+        #[arg(long)]
+        oneline: bool,
+    },
+    /// Surgical revision object retrieval with AST semantic scoping (zero whole-file spam)
+    Show {
+        /// Target revision and path (<rev>:<path>, e.g. HEAD:src/main.rs)
+        target: String,
+        /// Extract definition of function, struct, or enum
+        #[arg(long)]
+        def: Option<String>,
+        /// Find callers of symbol in historical file
+        #[arg(long)]
+        call: Option<String>,
+    },
+    /// Working tree diff telemetry and status without raw unbounded diff dumps
+    Diff {
+        /// Output summary line only (files changed, insertions, deletions)
+        #[arg(long)]
+        stat: bool,
+        /// List modified file paths only
+        #[arg(long)]
+        files: bool,
+    },
+    /// In-process working tree clean/modified status
+    Status,
 }
