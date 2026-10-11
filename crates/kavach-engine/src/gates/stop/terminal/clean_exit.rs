@@ -132,7 +132,7 @@ fn try_refuse_stop(ctx: &mut StopCtx<'_>, full: &str) -> ControlFlow<()> {
              RE-READ the user's exact words NOW. UNDERSTAND the intent behind them. OBEY \
              it THIS turn — the user's instruction is a TRIGGER to ACT, never a position \
              to argue with (global CLAUDE.md §No-Fence). Do NOT manufacture a strawman to \
-             refute. If a factual claim is in dispute, WebSearch and CITE the URL — NEVER \
+             refute. If a factual claim is in dispute, `webfind search --live` and CITE the URL — NEVER \
              answer from training weights (§internet-first, §No-Hallucination). DO the \
              mandated action, then stop.\n{full}"
         )));
@@ -163,7 +163,7 @@ fn try_refuse_stop(ctx: &mut StopCtx<'_>, full: &str) -> ControlFlow<()> {
             "[RESEARCH_FIRST] Do NOT stop. This turn asserted a current-knowledge \
              fact (latest/version/API/pricing/supports) from memory with NO source \
              URL. Tabula rasa: the weights are stale, the web is truth (global \
-             CLAUDE.md §internet-first). WebSearch a real source THIS turn and cite \
+             CLAUDE.md §internet-first). `webfind search --live` a real source THIS turn and cite \
              its URL, persist the finding (`kavach db write --category research`), or \
              DROP the claim. No source -> no claim.\n{full}"
         )));

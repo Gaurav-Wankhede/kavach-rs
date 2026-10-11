@@ -65,7 +65,7 @@ pub(crate) fn check_for_assumptions(content: &str) -> Option<String> {
     // Tag + matched phrases literal; the remediation imperative is research-refreshed.
     let remedy = dyn_directive(
         "assumption.grounding-remedy",
-        "WebSearch to verify the claim, then cite the source explicitly. \
+        "Execute `webfind search --live` to verify the claim, then cite the source explicitly. \
          Replace with: \"According to [source]\", \"Docs show\", \"Verified via\".",
     );
     Some(format!(

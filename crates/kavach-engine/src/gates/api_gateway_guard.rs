@@ -33,7 +33,7 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
     let year = crate::gates::directive_cache::current_year();
     writeln!(
         msg,
-        "RESEARCH: WebSearch \"api gateway middleware patterns {year}\""
+        "RESEARCH: `webfind search --live \"api gateway middleware patterns {year}\"`"
     )
     .ok();
     msg.push_str("SKILL: Invoke `arch` skill for gateway layer design.\n");

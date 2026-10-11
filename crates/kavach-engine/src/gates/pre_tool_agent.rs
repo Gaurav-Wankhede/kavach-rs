@@ -62,7 +62,7 @@ pub(crate) fn handle_agent(input: &HookInput) -> Result<(), crate::error::Engine
             &session.research_topic
         };
         drop(kavach_hook::exit_pre_tool_allow(Some(&format!(
-            "[ADVISORY:research-agent-spawn] WebSearch recommended before \
+            "[ADVISORY:research-agent-spawn] `webfind search --live` recommended before \
              spawning agents. Topic: {topic}."
         ))));
         return Ok(());

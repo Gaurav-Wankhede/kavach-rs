@@ -161,7 +161,7 @@ fn next_task_verdicts_mandate_research_mode_against_truth() {
     // never trust training weights. The drained-plan next-task verdict carries it.
     let c = board_drained_plan_context(Some((0, 0, 0)));
     assert!(c.contains("RESEARCH MODE"), "names Research Mode: {c}");
-    assert!(c.contains("WebSearch"), "directs an internet search: {c}");
+    assert!(c.contains("webfind"), "directs an internet search via webfind: {c}");
     assert!(
         c.contains("TABULA RASA = TRUTH"),
         "asserts truth over weights: {c}"

@@ -59,6 +59,73 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand)]
 pub(crate) enum Commands {
+    /// Fast, gitignore-aware path and file search (zero-LLM, replaces fd/find/origin).
+    Glob {
+        /// Glob pattern to match against paths (e.g. "*.rs", "**/*.ts")
+        pattern: String,
+        /// Root path to search (default: workspace root / current dir)
+        #[arg(default_value = ".")]
+        path: String,
+        /// Filter by entry type: f (file) or d (directory)
+        #[arg(short = 't', long = "type")]
+        entry_type: Option<char>,
+        /// Search hidden files
+        #[arg(long)]
+        hidden: bool,
+        /// Maximum directory depth
+        #[arg(long)]
+        max_depth: Option<usize>,
+        /// Max results to emit (default: 100)
+        #[arg(short = 'm', long = "max-count", default_value_t = 100)]
+        max_count: usize,
+    },
+
+    /// High-precision polyglot AST and structural code search (replaces sg/rg).
+    Grep {
+        /// AST or text pattern to match
+        pattern: String,
+        /// Path to search (file or directory, defaults to current dir)
+        #[arg(default_value = ".")]
+        path: String,
+        /// Treat pattern as an AST-grep pattern (default: true)
+        #[arg(short = 'p', long = "ast", default_value_t = true)]
+        ast: bool,
+        /// Target language (rust, python, typescript, javascript, go, c, cpp, java, bash, etc.)
+        #[arg(short = 'l', long = "lang")]
+        lang: Option<String>,
+        /// File glob filter (e.g. "*.rs")
+        #[arg(short = 'g', long = "glob")]
+        glob: Option<String>,
+        /// Emit compact JSON records instead of file:line text
+        #[arg(long)]
+        json: bool,
+        /// Max matches to emit (default: 50)
+        #[arg(short = 'm', long = "max-count", default_value_t = 50)]
+        max_count: usize,
+        /// Show NUM lines of trailing and leading context (retains exact line spacing)
+        #[arg(short = 'C', long = "context", default_value_t = 0)]
+        context: usize,
+    },
+
+    /// Surgical in-place file text/regex replacement (replaces sd).
+    Replace {
+        /// String or regex pattern to search for
+        find: String,
+        /// Replacement content
+        replace: String,
+        /// Target file path
+        path: String,
+        /// Treat pattern as literal fixed string (default: true)
+        #[arg(short = 'F', long = "fixed-strings", default_value_t = true)]
+        fixed_strings: bool,
+        /// Treat pattern as regular expression
+        #[arg(short = 'r', long = "regex")]
+        regex: bool,
+        /// Show diff without modifying file
+        #[arg(long)]
+        dry_run: bool,
+    },
+
     /// Show session status, build identity, and enforcement flags.
     #[command(
         after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates."

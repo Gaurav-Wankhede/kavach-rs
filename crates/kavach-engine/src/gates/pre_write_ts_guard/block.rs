@@ -33,7 +33,7 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
     }
     msg.push_str(
         "\n-> fix all P0 violations before this write can proceed.\n\n\
-         RESEARCH: WebSearch \"typescript type safety best practices {search_year}\"\n\
+         RESEARCH: `webfind search --live \"typescript type safety best practices {search_year}\"`\n\
          SKILL: Invoke `interface-design` skill for frontend patterns.\n\
          FIX: Fetch data from API. Replace `as any` with explicit types.\n\
          Use Zod/io-ts for runtime validation at API boundaries -> retry.",

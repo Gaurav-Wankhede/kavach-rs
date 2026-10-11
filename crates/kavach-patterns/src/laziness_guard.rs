@@ -255,7 +255,7 @@ fn researchable_advisory() -> String {
      (a library / API / version / flag / algorithm choice) whose authoritative \
      answer lives on the internet — official docs, the dependency's own \
      --help/source, the upstream RFC/issue — NOT in the user's head. Do NOT ask: \
-     WebSearch the current authoritative source, corroborate across 2+ references \
+     `webfind search --live` on the current authoritative source, corroborate across 2+ references \
      (2026), adopt the precise contract, and sync the finding to the kavach DB. \
      Ask the user ONLY for a genuine DIRECTION tradeoff or IRREVERSIBLE \
      authorization (global CLAUDE.md §research_before_building / §act_not_narrate)."

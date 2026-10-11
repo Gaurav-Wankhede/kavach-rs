@@ -36,8 +36,7 @@ pub(super) fn build_agent_context(
         ));
     }
     ctx.push(
-        "[AGENT_RESEARCH] invoke the precise skill for the task; WebSearch the CURRENT \
-         authoritative source before deciding — NEVER trust training weights, they are stale."
+        "[AGENT_RESEARCH] invoke the precise skill for the task; Run `webfind search --live \"<topic>\"` for the CURRENT authoritative contract — NEVER trust training weights, they are stale."
             .to_owned(),
     );
     if let Some(c) = contract {

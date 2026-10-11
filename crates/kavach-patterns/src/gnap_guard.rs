@@ -203,7 +203,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
         )
         .ok();
     }
-    msg.push_str("RESEARCH: WebSearch \"GNAP RFC 9635 implementation {search_year}\"\n");
+    msg.push_str("RESEARCH: `webfind search --live \"GNAP RFC 9635 implementation {search_year}\"`\n");
     msg.push_str("SKILL: Invoke `domain-specialist` skill (gnap-paseto section)\n");
     msg.push_str("SPEC: RFC 9635 (GNAP Core) + RFC 9767 (Resource Servers)\n");
     msg.push_str("STACK: GNAP grants + httpsig (RFC 9421) + PASETO v4 + Ed25519\n");

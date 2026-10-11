@@ -713,6 +713,34 @@ EXAMPLES:
 WHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.
 ```
 
+## `kavach glob`
+
+Fast, gitignore-aware path and file search (zero-LLM, replaces fd/find/origin)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<pattern>` | Glob pattern to match against paths (e.g. "*.rs", "**/*.ts") |  |
+| `<path>` | Root path to search (default: workspace root / current dir) | . |
+| `--type` | Filter by entry type: f (file) or d (directory) |  |
+| `--hidden` | Search hidden files |  |
+| `--max-depth` | Maximum directory depth |  |
+| `--max-count` | Max results to emit (default: 100) | 100 |
+
+## `kavach grep`
+
+High-precision polyglot AST and structural code search (replaces sg/rg)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<pattern>` | AST or text pattern to match |  |
+| `<path>` | Path to search (file or directory, defaults to current dir) | . |
+| `--ast` | Treat pattern as an AST-grep pattern (default: true) | true |
+| `--lang` | Target language (rust, python, typescript, javascript, go, c, cpp, java, bash, etc.) |  |
+| `--glob` | File glob filter (e.g. "*.rs") |  |
+| `--json` | Emit compact JSON records instead of file:line text |  |
+| `--max-count` | Max matches to emit (default: 50) | 50 |
+| `--context` | Show NUM lines of trailing and leading context (retains exact line spacing) | 0 |
+
 ## `kavach heal`
 
 ## `kavach heal capture`
@@ -943,6 +971,19 @@ Show counts of {todo, `in_progress`, done, verified, blocked, deferred} for a pr
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug |  |
+
+## `kavach replace`
+
+Surgical in-place file text/regex replacement (replaces sd)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<find>` | String or regex pattern to search for |  |
+| `<replace>` | Replacement content |  |
+| `<path>` | Target file path |  |
+| `--fixed-strings` | Treat pattern as literal fixed string (default: true) | true |
+| `--regex` | Treat pattern as regular expression |  |
+| `--dry-run` | Show diff without modifying file |  |
 
 ## `kavach retrieve`
 

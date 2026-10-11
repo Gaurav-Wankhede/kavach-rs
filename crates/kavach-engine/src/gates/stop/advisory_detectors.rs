@@ -181,8 +181,8 @@ const TABLE: &[Entry] = &[
         needs_write: false,
         gate: "argued_with_user_at_stop",
         banned: "dismissed what the user reported/asked (\"you reported X\", \"this is expected behavior\", \"working as designed\") instead of obeying the user's stated intent",
-        correct: "RE-READ the user's exact words, UNDERSTAND the intent behind them, and OBEY it THIS turn — never refute the user with a strawman; if a fact is in dispute, WebSearch and cite a URL, never assert from memory",
-        advisory: "[ARGUED_WITH_USER] last turn dismissed/refuted what the user reported or asked instead of obeying the stated intent. RE-READ the user's exact words. UNDERSTAND the intent. OBEY it THIS turn (global CLAUDE.md §No-Fence). The user's instruction is a TRIGGER to ACT, not a position to argue with. If a factual claim is in dispute, WebSearch and cite the URL — NEVER answer from training weights (§internet-first, §No-Hallucination). Do the mandated action, then stop.",
+        correct: "RE-READ the user's exact words, UNDERSTAND the intent behind them, and OBEY it THIS turn — never refute the user with a strawman; if a fact is in dispute, `webfind search --live` and cite a URL, never assert from memory",
+        advisory: "[ARGUED_WITH_USER] last turn dismissed/refuted what the user reported or asked instead of obeying the stated intent. RE-READ the user's exact words. UNDERSTAND the intent. OBEY it THIS turn (global CLAUDE.md §No-Fence). The user's instruction is a TRIGGER to ACT, not a position to argue with. If a factual claim is in dispute, `webfind search --live` and cite the URL — NEVER answer from training weights (§internet-first, §No-Hallucination). Do the mandated action, then stop.",
     },
     Entry {
         detect: detect_value_gating,

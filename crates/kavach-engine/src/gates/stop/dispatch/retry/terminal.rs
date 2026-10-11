@@ -145,7 +145,7 @@ pub(super) fn check(ctx: &mut StopCtx<'_>) -> ControlFlow<()> {
                 "action",
                 "Do NOT stop. Re-scan the DB for the next task across statuses — \
                  `kavach db query --category roadmap` and `--category decision` for \
-                 any todo/unexecuted row. RESEARCH MODE FIRST: WebSearch the current \
+                 any todo/unexecuted row. RESEARCH MODE FIRST: `webfind search --live` on the current \
                  authoritative source to scope it — TABULA RASA = TRUTH, never trust \
                  training weights — then claim and START it THIS turn. When the DB \
                  holds nothing actionable, keep the loop open and yield to the user's \

@@ -65,8 +65,7 @@ pub(crate) fn check(
     // fixed list — the system decides WHAT to research from context.
     let topic = super::topic::derive(intent_type, prompt);
     Some(format!(
-        "RESEARCH_ADVISORY (now: {now}) — RESEARCH FIRST, then build. WebSearch \
-         the live internet for: \"{topic}\". Pull the EXACT current contract \
+        "RESEARCH_ADVISORY (now: {now}) — RESEARCH FIRST, then build. Execute `webfind search --live \"{topic}\"` to ground real-world contracts. Pull the EXACT current contract \
          (flags, signatures, versions, edge cases). DISTRUST your training \
          weights — they are frozen at a cutoff and have drifted; treat them as a \
          guess, not a source. CORROBORATE across 2+ current sources before you \

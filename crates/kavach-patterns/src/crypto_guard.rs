@@ -140,7 +140,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
         )
         .ok();
     }
-    msg.push_str("\nRESEARCH: WebSearch \"modern cryptography best practices {search_year}\"\n");
+    msg.push_str("\nRESEARCH: `webfind search --live \"modern cryptography best practices {search_year}\"`\n");
     msg.push_str("SKILL: Invoke `rust` skill (security section) for approved crypto stack.\n");
     msg.push_str("STACK: BLAKE3 (hash), XChaCha20Poly1305 (AEAD), Ed25519 (sign), X25519 (KEX), PASETO v4 (tokens)\n");
     Some(msg)

@@ -165,7 +165,7 @@ pub fn check(file_path: &str, content: &str) -> Option<String> {
         )
         .ok();
     }
-    msg.push_str("\nRESEARCH: WebSearch \"OWASP top 10 prevention {search_year}\"\n");
+    msg.push_str("\nRESEARCH: `webfind search --live \"OWASP top 10 prevention {search_year}\"`\n");
     msg.push_str("SKILL: Invoke `bug-bounty` skill for security audit patterns.\n");
     Some(msg)
 }

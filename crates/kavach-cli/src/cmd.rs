@@ -1,3 +1,6 @@
+pub(crate) mod glob;
+pub(crate) mod grep;
+pub(crate) mod replace;
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod audit;
 mod commands;
@@ -40,6 +43,35 @@ use crate::cli::Commands;
 /// Dispatch CLI command and return exit code (0 = success, 1 = error).
 pub(crate) fn dispatch(command: Commands) -> i32 {
     match command {
+        
+        Commands::Glob {
+            pattern,
+            path,
+            entry_type,
+            hidden,
+            max_depth,
+            max_count,
+        } => glob::run(&pattern, &path, entry_type, hidden, max_depth, max_count),
+
+        Commands::Grep {
+            pattern,
+            path,
+            ast,
+            lang,
+            glob,
+            json,
+            max_count,
+            context,
+        } => grep::run(&pattern, &path, ast, lang.as_deref(), glob.as_deref(), json, max_count, context),
+
+        Commands::Replace {
+            find,
+            replace,
+            path,
+            fixed_strings,
+            regex,
+            dry_run,
+        } => replace::run(&find, &replace, &path, fixed_strings, regex, dry_run),
         Commands::Status => status::run(),
         Commands::Servers { action } => servers::run(&action),
         Commands::Gates {

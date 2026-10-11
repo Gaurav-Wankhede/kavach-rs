@@ -1973,6 +1973,7 @@ dependencies = [
 name = "kavach-cli"
 version = "1.2.0"
 dependencies = [
+ "aho-corasick",
  "ast-grep-core",
  "ast-grep-language",
  "blake3",
@@ -1980,6 +1981,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "dirs",
+ "glob-match",
  "ignore",
  "kavach-advisor",
  "kavach-config",
@@ -2003,6 +2005,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
 ]

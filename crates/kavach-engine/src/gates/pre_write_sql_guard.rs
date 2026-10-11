@@ -18,7 +18,7 @@ pub(crate) fn check(file_path: &str, content: &str) -> Option<String> {
     Some(format!(
         "[SQL_SAFETY] Production code violations detected\n\n\
          P0 VIOLATIONS:\n{}\n\n\
-         RESEARCH: WebSearch \"sql injection prevention parameterized queries {{search_year}}\"\n\
+         RESEARCH: `webfind search --live \"sql injection prevention parameterized queries {{search_year}}\"`\n\
          SKILL: Invoke `data` skill (SQL section) for safe query patterns.\n\
          FIX: Use $1/$2 params with sqlx::query!(). Never format!() into SQL -> retry.",
         lines.join("\n")

@@ -168,7 +168,7 @@ pub(in crate::gates::stop) fn blocker_walk_context() -> String {
 /// model's training weights (which are stale by construction). Mirrors the global
 /// `research_before_building` directive.
 const RESEARCH_MODE_DIRECTIVE: &str = "\nRESEARCH MODE (built-in next-task step): before scoping or \
-     claiming the next task, enter Research Mode — WebSearch the CURRENT authoritative source \
+     claiming the next task, enter Research Mode — `webfind search --live` on the CURRENT authoritative source \
      (official docs, the dependency's own --help/source, the upstream RFC/issue, 2026 references) \
      and corroborate across 2+. TABULA RASA = TRUTH: NEVER trust training weights — knowledge ages, \
      the precise contract lives on the internet, not in the model. Sync the resolved finding to the \

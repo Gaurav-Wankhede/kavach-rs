@@ -47,7 +47,7 @@ pub(crate) fn check_for_hallucinations(content: &str) -> Option<String> {
     Some(format!(
         "[HALLUCINATION_WARNING]\n\
          Suspicious patterns detected:\n{}\n\
-         WebSearch each URL, package name, and API endpoint to confirm it exists.\n\
+         Execute `webfind search --live \"<item>\"` or `webfind fetch --compact \"<url>\"` to verify reality.\n\
          Replace placeholders with verified docs.rs/crates.io links.",
         issues.join("\n")
     ))

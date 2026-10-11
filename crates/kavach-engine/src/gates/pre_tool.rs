@@ -157,7 +157,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 };
                 let reason = format!(
                     "[ADVISORY:research-agent-spawn] STOP. Hit the internet FIRST. \
-                     Run WebSearch on \"{topic}\" NOW, THEN spawn the agent. \
+                     Run `webfind search --live \"{topic}\"` NOW, THEN spawn the agent. \
                      TABULA RASA: assume your training weights are STALE and WRONG — \
                      trust nothing from memory. Internet-first, always: SEARCH, \
                      corroborate across 2+ current sources, THEN delegate."
@@ -174,8 +174,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
                 session.research_advisory_sent = true;
                 session.save().ok();
                 let ctx = format!(
-                    "[RESEARCH_PENDING] STOP. Hit the internet FIRST. Run WebSearch on \
-                     \"{topic}\" NOW, BEFORE you write a single line. TABULA RASA: \
+                    "[RESEARCH_PENDING] STOP. Hit the internet FIRST. Run `webfind search --live \"{topic}\"` NOW, BEFORE you write a single line. TABULA RASA: \
                      your training weights are STALE — generate NOTHING from memory. \
                      SEARCH the current authoritative source, corroborate, THEN write."
                 );
