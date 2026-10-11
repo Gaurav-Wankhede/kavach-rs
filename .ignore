@@ -1,0 +1,3 @@
+# Vendor & minified assets (tracked in git for embedding, excluded from AST & text search)
+crates/kavach-web/assets/*.min.js
+crates/kavach-web/assets/*.min.css

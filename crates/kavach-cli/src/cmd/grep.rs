@@ -167,9 +167,6 @@ pub(crate) fn run(
             }
 
             let file_path = entry.path().to_string_lossy();
-            if file_path.ends_with(".min.js") || file_path.ends_with(".min.css") || file_path.ends_with(".bundle.js") || file_path.ends_with(".map") {
-                continue;
-            }
             if let Some(glob_pat) = glob_filter {
                 let clean_file_path = file_path.strip_prefix("./").unwrap_or(&file_path);
                 let file_name = entry.file_name().to_string_lossy();
@@ -334,10 +331,7 @@ fn process_file(
     if all_lines.is_empty() {
         return;
     }
-    // Safeguard: refuse files where average line length indicates minified bundle (> 500 chars)
-    if all_lines.len() > 0 && (content.len() / all_lines.len()) > 500 {
-        return;
-    }
+
 
     // Polyglot AST search: check --def, --call, --type, or AST pattern
     let (ast_matches, scope_intervals): (Vec<(usize, usize, usize, usize)>, Vec<(usize, usize)>) = if lang_opt.is_some() && (def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || (is_ast && !pattern.is_empty())) {
