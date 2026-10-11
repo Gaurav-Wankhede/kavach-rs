@@ -59,6 +59,62 @@ pub(crate) fn run(
 
     if p.is_file() {
         let path_str = p.to_string_lossy();
+        let p_path = Path::new(&*path_str);
+        if let Some(ext) = p_path.extension().and_then(|e| e.to_str()) {
+            let e = ext.to_lowercase();
+            match e.as_str() {
+                "json" | "jsonl" | "jsonc" => {
+                    eprintln!(
+                        "error: 'kavach grep' does not operate on JSON files ('{}').\n                         Use the sovereign JSON tool instead:\n                             kavach json \"<query>\" {}",
+                        path_str, path_str
+                    );
+                    return 2;
+                }
+                "yaml" | "yml" => {
+                    eprintln!(
+                        "error: 'kavach grep' does not operate on YAML files ('{}').\n                         Use the sovereign YAML tool instead:\n                             kavach yaml \"<query>\" {}",
+                        path_str, path_str
+                    );
+                    return 2;
+                }
+                "toml" => {
+                    eprintln!(
+                        "error: 'kavach grep' does not operate on TOML files ('{}').\n                         Use the sovereign TOML tool instead:\n                             kavach toml \"<query>\" {}",
+                        path_str, path_str
+                    );
+                    return 2;
+                }
+                "html" | "htm" => {
+                    eprintln!(
+                        "error: 'kavach grep' does not operate on HTML files ('{}').\n                         Use the sovereign HTML tool instead:\n                             kavach html \"<selector>\" {}",
+                        path_str, path_str
+                    );
+                    return 2;
+                }
+                "svg" => {
+                    eprintln!(
+                        "error: 'kavach grep' does not operate on SVG vector files ('{}').\n                         Use the sovereign SVG tool instead:\n                             kavach svg {}",
+                        path_str, path_str
+                    );
+                    return 2;
+                }
+                "env" => {
+                    eprintln!(
+                        "error: 'kavach grep' is forbidden on .env files to eliminate secret leakage ('{}').\n                         Use the sovereign zero-leak ENV tool instead:\n                             kavach env {}",
+                        path_str, path_str
+                    );
+                    return 2;
+                }
+                _ => {}
+            }
+        }
+        if p_path.file_name().and_then(|n| n.to_str()).map_or(false, |n| n.starts_with(".env")) {
+            eprintln!(
+                "error: 'kavach grep' is forbidden on .env files to eliminate secret leakage ('{}').\n                 Use the sovereign zero-leak ENV tool instead:\n                     kavach env {}",
+                path_str, path_str
+            );
+            return 2;
+        }
         if is_executable_code_file(&path_str, lang_opt) && !has_ast_intent {
             eprintln!(
                 "error: arbitrary text pattern search is forbidden in code files ('{}').
