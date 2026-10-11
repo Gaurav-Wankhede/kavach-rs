@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::path::Path;
 use serde_json::Value;
 
@@ -9,17 +9,8 @@ pub(crate) fn run(
     keys_only: bool,
     raw_mode: bool,
     json_mode: bool,
-    set_expr: Option<&str>,
-    dry_run: bool,
 ) -> i32 {
-    let target_path = match path_opt {
-        Some(p) => p,
-        None if set_expr.is_some() => {
-            eprintln!("kavach yaml: --set requires a target file path");
-            return 2;
-        }
-        None => "",
-    };
+    let target_path = path_opt.unwrap_or("");
 
     let input_content = if !target_path.is_empty() {
         let path = Path::new(target_path);
@@ -43,7 +34,7 @@ pub(crate) fn run(
         buf
     };
 
-    let mut root_val: Value = match serde_yaml::from_str(&input_content) {
+    let root_val: Value = match serde_yaml::from_str(&input_content) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("kavach yaml: invalid YAML: {}", e);
@@ -51,59 +42,6 @@ pub(crate) fn run(
         }
     };
 
-    // Safe in-place mutation mode
-    if let Some(set) = set_expr {
-        let (path_part, val_part) = match set.split_once('=') {
-            Some((p, v)) => (p.trim(), v.trim()),
-            None => {
-                eprintln!("kavach yaml: invalid --set expression '{}'. Expected '.path=value'", set);
-                return 2;
-            }
-        };
-
-        let parsed_val: Value = serde_json::from_str(val_part).unwrap_or_else(|_| Value::String(val_part.to_string()));
-        if !set_value(&mut root_val, path_part, parsed_val) {
-            eprintln!("kavach yaml: failed to set value at path '{}'", path_part);
-            return 1;
-        }
-
-        let mutated_yaml = match serde_yaml::to_string(&root_val) {
-            Ok(y) => y,
-            Err(e) => {
-                eprintln!("kavach yaml: error serializing mutated YAML: {}", e);
-                return 1;
-            }
-        };
-
-        if dry_run {
-            println!("{}", mutated_yaml);
-            return 0;
-        }
-
-        // Atomic write via tempfile in same directory
-        let p = Path::new(target_path);
-        let parent = p.parent().unwrap_or_else(|| Path::new("."));
-        let mut temp = match tempfile::NamedTempFile::new_in(parent) {
-            Ok(t) => t,
-            Err(e) => {
-                eprintln!("kavach yaml: failed to create temporary file: {}", e);
-                return 1;
-            }
-        };
-
-        if let Err(e) = temp.write_all(mutated_yaml.as_bytes()) {
-            eprintln!("kavach yaml: failed to write to temporary file: {}", e);
-            return 1;
-        }
-
-        if let Err(e) = temp.persist(p) {
-            eprintln!("kavach yaml: failed to atomically replace file '{}': {}", target_path, e);
-            return 1;
-        }
-
-        println!("[OK] Atomically updated {}", target_path);
-        return 0;
-    }
 
     let projected = project_value(&root_val, query);
 
@@ -195,36 +133,3 @@ fn project_value<'a>(root: &'a Value, query: &str) -> Option<&'a Value> {
     Some(current)
 }
 
-fn set_value(root: &mut Value, query: &str, new_val: Value) -> bool {
-    let clean_query = query.trim();
-    let stripped = clean_query.strip_prefix('.').unwrap_or(clean_query);
-    let parts: Vec<&str> = stripped.split('.').filter(|p| !p.is_empty()).collect();
-
-    if parts.is_empty() {
-        *root = new_val;
-        return true;
-    }
-
-    let mut current = root;
-    for (i, part) in parts.iter().enumerate() {
-        if i == parts.len() - 1 {
-            if let Value::Object(map) = current {
-                map.insert((*part).to_string(), new_val);
-                return true;
-            }
-            return false;
-        } else {
-            if !current.is_object() {
-                *current = Value::Object(serde_json::Map::new());
-            }
-            current = match current {
-                Value::Object(map) => {
-                    map.entry((*part).to_string())
-                        .or_insert_with(|| Value::Object(serde_json::Map::new()))
-                }
-                _ => return false,
-            };
-        }
-    }
-    true
-}

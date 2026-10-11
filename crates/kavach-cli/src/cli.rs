@@ -189,12 +189,7 @@ pub(crate) enum Commands {
         /// Emit compact standard JSON instead of TOON tabular format
         #[arg(short = 'j', long = "json")]
         json: bool,
-        /// Safely update a dot-path key in-place (e.g. --set ".version=\"1.2.0\"")
-        #[arg(long)]
-        set: Option<String>,
-        /// Preview mutated JSON without writing to disk
-        #[arg(long)]
-        dry_run: bool,
+
     },
 
     /// High-precision YAML projection to clean TOON output with atomic in-place mutation
@@ -213,12 +208,7 @@ pub(crate) enum Commands {
         /// Emit JSON representation instead of clean TOON
         #[arg(long)]
         json: bool,
-        /// Safely update a dot-path key in-place (e.g. --set ".services.db.image=\"postgres:16\"")
-        #[arg(long)]
-        set: Option<String>,
-        /// Preview mutated YAML without writing to disk
-        #[arg(long)]
-        dry_run: bool,
+
     },
 
     /// High-precision TOML projection to clean TOON output with atomic in-place mutation
@@ -237,12 +227,7 @@ pub(crate) enum Commands {
         /// Emit JSON representation instead of clean TOON
         #[arg(long)]
         json: bool,
-        /// Safely update a dot-path key in-place (e.g. --set ".package.version=\"1.4.0\"")
-        #[arg(long)]
-        set: Option<String>,
-        /// Preview mutated TOML without writing to disk
-        #[arg(long)]
-        dry_run: bool,
+
     },
 
     /// Zero-secret leakage environment variable manager for safe LLM inspection & refactoring
@@ -287,15 +272,7 @@ pub(crate) enum Commands {
         /// Extract path definition coordinates (d="...") only
         #[arg(long)]
         paths: bool,
-        /// Swap color palettes in-place (format: #FROM:#TO, e.g. "#000000:#3b82f6")
-        #[arg(long)]
-        recolor: Option<String>,
-        /// Update or insert viewBox coordinates (e.g. "0 0 24 24")
-        #[arg(long)]
-        view_box: Option<String>,
-        /// Preview mutated SVG without writing to disk
-        #[arg(long)]
-        dry_run: bool,
+
     },
     Servers {
         #[command(subcommand)]

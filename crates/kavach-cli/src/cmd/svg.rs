@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::Write;
 use std::path::Path;
 use svg::node::element::tag::Type;
 use svg::parser::Event;
@@ -7,9 +6,6 @@ use svg::parser::Event;
 pub(crate) fn run(
     path_str: &str,
     paths_only: bool,
-    recolor: Option<&str>,
-    set_view_box: Option<&str>,
-    dry_run: bool,
 ) -> i32 {
     let p = Path::new(path_str);
     if !p.exists() {
@@ -64,54 +60,6 @@ pub(crate) fn run(
         return 0;
     }
 
-    // In-place vector modifications
-    if recolor.is_some() || set_view_box.is_some() {
-        let mut modified = content.clone();
-
-        if let Some(vb) = set_view_box {
-            if let Some(existing_vb) = &view_box {
-                modified = modified.replace(&format!("viewBox=\"{existing_vb}\""), &format!("viewBox=\"{vb}\""));
-            } else if let Some(idx) = modified.find("<svg") {
-                modified.insert_str(idx + 4, &format!(" viewBox=\"{vb}\""));
-            }
-        }
-
-        if let Some(rec) = recolor {
-            if let Some((from_color, to_color)) = rec.split_once(':') {
-                modified = modified.replace(from_color.trim(), to_color.trim());
-            } else {
-                eprintln!("kavach svg: invalid --recolor format. Expected '#FROM:#TO' (e.g. '#000000:#3b82f6')");
-                return 2;
-            }
-        }
-
-        if dry_run {
-            println!("{}", modified);
-            return 0;
-        }
-
-        let parent = p.parent().unwrap_or_else(|| Path::new("."));
-        let mut temp = match tempfile::NamedTempFile::new_in(parent) {
-            Ok(t) => t,
-            Err(e) => {
-                eprintln!("kavach svg: failed to create temporary file: {}", e);
-                return 1;
-            }
-        };
-
-        if let Err(e) = temp.write_all(modified.as_bytes()) {
-            eprintln!("kavach svg: failed to write to temporary file: {}", e);
-            return 1;
-        }
-
-        if let Err(e) = temp.persist(p) {
-            eprintln!("kavach svg: failed to atomically replace file '{}': {}", path_str, e);
-            return 1;
-        }
-
-        println!("[OK] Atomically updated SVG {}", path_str);
-        return 0;
-    }
 
     // Default inspection summary
     println!("── SVG Vector Profile: {} ──", path_str);
