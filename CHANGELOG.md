@@ -4,6 +4,23 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
 
+## [1.3.1] - 2026-10-11
+
+### Removed
+- **`kavach slice`**: Permanently purged to eliminate sliding-window and chunk paging context spam. Zero whole-file reads strictly enforced.
+
+### Changed
+- **Strict AST Boundary in `kavach grep`**: Arbitrary text search is now strictly forbidden in executable code files (`.rs`, `.ts`, `.py`, etc.) and returns exit code 2. Code files require AST semantic queries (`--def`, `--call`, `--type`, or AST pattern with `--scope`). Arbitrary text patterns are strictly reserved for documentation and prose files (`.md`, `.txt`).
+- **Rust Toolchain Modernization**: Upgraded `rust-toolchain.toml` to tracking `channel = "stable"` (resolving to Rust 1.99.0).
+- **Workspace Dependency Upgrades**:
+  - `ast-grep-core` upgraded to `0.50.0`
+  - `ast-grep-language` upgraded to `0.50.0`
+  - `jsonrpsee` upgraded to `0.26.1`
+  - `dirs` upgraded to `7.0.0`
+  - `itertools` upgraded to `0.15.0`
+  - `maud` upgraded to `0.27.0`
+  - `tower-http` upgraded to `0.7.1`
+
 ## [1.3.0] — 2026-10-11
 
 Sovereign agent proxy suite (`kavach grep`, `kavach trace`, `kavach json`, `kavach slice`, `kavach glob`, `kavach replace`) for anti-context-rot agentic workflows, zero-heap path matching, polyglot semantic AST code search across 28 Tree-Sitter grammars, Tab-indented TOON dependency graphs with Unix colon locations, zero-bloat state projections replacing `jaq`/`jq`, and full `webfind` live grounding across all gates.

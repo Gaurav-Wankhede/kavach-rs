@@ -144,13 +144,6 @@ pub(crate) enum Commands {
     },
 
     /// Trace symbol definition, callers, and dependency context network (aliases: graph, network).
-    /// Surgically extract exact line ranges from text and prose files without whole-file reads
-    Slice {
-        /// Target file path
-        path: String,
-        /// Line range to slice (e.g. 50:80 or 100)
-        range: String,
-    },
     Trace {
         /// Symbol identifier to trace (function, struct, type, const)
         symbol: String,

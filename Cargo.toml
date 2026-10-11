@@ -10,7 +10,7 @@ publish = false
 license = "MIT"
 
 [workspace.dependencies]
-ast-grep-language = "0.45.3"
+ast-grep-language = "0.50"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
@@ -30,9 +30,9 @@ postgres-native-tls = "0.5"
 native-tls = "0.2"
 tempfile = "3"
 glob-match = "0.2"
-dirs = "6"
+dirs = "7"
 ignore = "0.4"
-ast-grep-core = "0.45"
+ast-grep-core = "0.50"
 pulldown-cmark = "0.13"
 # [RCA] symptom: 9-arg positional fns risk silent-miscompile (same-type args swappable).
 # root_cause: positional API · class: contract_violation · blast_radius: 4 callers
@@ -52,7 +52,7 @@ color-eyre = "0.6"
 strum = { version = "0.28", features = ["derive"] }
 # itertools: combinators (chunk_by, sorted_by, group, join) over std iterators
 # SOURCE: https://docs.rs/itertools/0.13 (MSRV 1.63)
-itertools = "0.13"
+itertools = "0.15"
 # smart-default: per-field default values via derive (vs manual impl Default)
 # SOURCE: https://docs.rs/smart-default/0.7 (2026)
 smart-default = "0.7"
@@ -91,7 +91,7 @@ tracing = "0.1"
 # surrealdb` did not resolve), so they cost nothing but kept a BUSL-1.1 license
 # carve-out alive in deny.toml for a dependency nothing used.
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "signal", "net"] }
-jsonrpsee = { version = "0.24", features = ["server", "macros"] }
+jsonrpsee = { version = "0.26", features = ["server", "macros"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # kavach-web — server-rendered HTMX UI (replaces the removed Dioxus desktop GUI).
 # axum 0.8 HTTP server on 127.0.0.1:777; maud for compile-time-checked HTML
@@ -99,8 +99,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Markup::into_string(), sidestepping maud<->axum version coupling).
 # SOURCE: https://docs.rs/axum/0.8 + https://docs.rs/maud/0.26
 axum = { version = "0.8", features = ["macros"] }
-maud = "0.26"
-tower-http = { version = "0.6", features = ["fs", "cors", "validate-request", "limit"] }
+maud = "0.27"
+tower-http = { version = "0.7", features = ["fs", "cors", "validate-request", "limit"] }
 # Pinned to 0.4 to match jsonrpsee 0.24's tower — set_http_middleware takes
 # jsonrpsee's tower::ServiceBuilder; a 0.5 ServiceBuilder is a distinct type.
 tower = { version = "0.4", features = ["util"] }

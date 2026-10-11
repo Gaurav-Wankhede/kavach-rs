@@ -1,3 +1,25 @@
+fn is_executable_code_file(path_str: &str, lang_opt: Option<&str>) -> bool {
+    let p = Path::new(path_str);
+    if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
+        let e = ext.to_lowercase();
+        // Explicitly exclude data, config, markup and prose
+        if matches!(e.as_str(), "json" | "yaml" | "yml" | "toml" | "xml" | "md" | "txt" | "markdown" | "rst" | "adoc" | "log" | "csv" | "tsv") {
+            return false;
+        }
+        // Known programming languages
+        if matches!(e.as_str(), "rs" | "ts" | "tsx" | "js" | "jsx" | "py" | "go" | "c" | "cpp" | "cc" | "cxx" | "h" | "hpp" | "cs" | "java" | "sh" | "bash" | "swift" | "kt" | "kts" | "lua" | "rb" | "php" | "sol" | "ex" | "exs" | "dart" | "scala" | "hs") {
+            return true;
+        }
+    }
+    if let Some(l) = lang_opt {
+        let l_low = l.to_lowercase();
+        if !matches!(l_low.as_str(), "json" | "yaml" | "yml" | "toml" | "markdown" | "text") {
+            return resolve_lang(path_str, Some(l)).is_some();
+        }
+    }
+    false
+}
+
 use ast_grep_core::{AstGrep, Node};
 use ast_grep_core::tree_sitter::StrDoc;
 use ast_grep_language::SupportLang;
@@ -33,8 +55,23 @@ pub(crate) fn run(
     let mut out = BufWriter::new(stdout.lock());
     let mut total_matches = 0usize;
 
+    let has_ast_intent = def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || pattern.contains("$");
+
     if p.is_file() {
         let path_str = p.to_string_lossy();
+        if is_executable_code_file(&path_str, lang_opt) && !has_ast_intent {
+            eprintln!(
+                "error: arbitrary text pattern search is forbidden in code files ('{}').
+                 Code files require AST semantic flags:
+                     kavach grep --def <symbol> [path]
+                     kavach grep --call <symbol> [path]
+                     kavach grep --type <symbol> [path]
+                 For full declaration extraction, add --scope.
+                 Arbitrary text patterns are strictly reserved for documentation and prose (.md, .txt).",
+                path_str
+            );
+            return 2;
+        }
         let lang = resolve_lang(&path_str, lang_opt);
         process_file(
             &path_str,
@@ -325,6 +362,9 @@ fn process_file(
 
     let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || (pattern.contains("$") && lang_opt.is_some()) {
         ast_matches
+    } else if is_executable_code_file(file_path, None) {
+        // Strict boundary: code files are never searched via arbitrary literal text fallback!
+        Vec::new()
     } else {
         let mut literal_spans = Vec::new();
         let target_pat = if ignore_case { pattern.to_lowercase() } else { pattern.to_string() };

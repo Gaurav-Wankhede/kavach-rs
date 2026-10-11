@@ -44,7 +44,7 @@ thiserror = { workspace = true }
 ignore = { workspace = true }
 ast-grep-core = { workspace = true }
 pulldown-cmark = { workspace = true }
-ast-grep-language = "0.45.3"
+ast-grep-language = { workspace = true }
 
 [lints]
 workspace = true

@@ -131,7 +131,7 @@ pub fn call<P: Serialize, R: for<'de> Deserialize<'de>>(
     // Parse the JSON-RPC response: distinguish present-but-null `result` (valid
     // empty answer) from an absent `result` key (protocol error). Mirrors the
     // prior client's null-vs-absent fix.
-    let raw: serde_json::Value = serde_json::from_str(&response)?;
+    let raw: serde_json::Value = serde_json::from_str(response.get())?;
     if let Some(err_obj) = raw.get("error").filter(|e| !e.is_null()) {
         let code = err_obj
             .get("code")
