@@ -13,6 +13,11 @@ pub(crate) fn run(
     max_depth: Option<usize>,
     max_count: usize,
 ) -> i32 {
+    let target_path = std::path::Path::new(path);
+    if !target_path.exists() {
+        eprintln!("kavach glob: path '{}' does not exist", path);
+        return 2;
+    }
     let mut builder = WalkBuilder::new(path);
     builder
         .hidden(!hidden)

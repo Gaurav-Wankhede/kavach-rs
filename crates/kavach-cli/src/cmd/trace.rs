@@ -137,6 +137,12 @@ pub(crate) fn run(
     callees_only: bool,
     json: bool,
 ) -> i32 {
+    let target_path = Path::new(path);
+    if !target_path.exists() {
+        eprintln!("kavach trace: path '{}' does not exist", path);
+        return 2;
+    }
+
     let mut definitions = Vec::new();
     let mut callers = Vec::new();
     let mut callees = Vec::new();

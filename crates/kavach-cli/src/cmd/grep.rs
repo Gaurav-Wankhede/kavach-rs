@@ -1,7 +1,3 @@
-//! High-precision polyglot AST and structural code search using `ast-grep-core`.
-//! Covers 28 languages without whole-file reads or comment/string false positives.
-//! Preserves exact line-spacing and indentation bit-for-bit for surgical agentic context.
-
 use ast_grep_core::AstGrep;
 use ast_grep_language::SupportLang;
 use glob_match::glob_match;
@@ -22,6 +18,10 @@ pub(crate) fn run(
     context_lines: usize,
 ) -> i32 {
     let p = Path::new(path);
+    if !p.exists() {
+        eprintln!("kavach grep: path '{}' does not exist", path);
+        return 2;
+    }
     let stdout = io::stdout();
     let mut out = BufWriter::new(stdout.lock());
     let mut total_matches = 0usize;
@@ -52,28 +52,25 @@ pub(crate) fn run(
                 Ok(e) => e,
                 Err(_) => continue,
             };
-
-            let entry_path = entry.path();
-            if !entry_path.is_file() {
+            if !entry.file_type().map_or(false, |ft| ft.is_file()) {
                 continue;
             }
 
-            let path_str = entry_path.to_string_lossy();
-            let file_name = entry_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
+            let file_path = entry.path().to_string_lossy();
             if let Some(glob_pat) = glob_filter {
-                if !glob_match(glob_pat, &path_str) && !glob_match(glob_pat, file_name) {
+                let file_name = entry.file_name().to_string_lossy();
+                if !glob_match(glob_pat, &file_name) {
                     continue;
                 }
             }
 
-            let lang = match resolve_lang(&path_str, lang_opt) {
+            let lang = match resolve_lang(&file_path, lang_opt) {
                 Some(l) => l,
                 None => continue,
             };
 
             process_file(
-                &path_str,
+                &file_path,
                 pattern,
                 is_ast,
                 lang,
@@ -95,7 +92,7 @@ pub(crate) fn run(
 
 fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
     if let Some(l) = lang_opt {
-        match l.to_ascii_lowercase().as_str() {
+        match l.to_lowercase().as_str() {
             "rs" | "rust" => return Some(SupportLang::Rust),
             "ts" | "typescript" => return Some(SupportLang::TypeScript),
             "tsx" => return Some(SupportLang::Tsx),
@@ -111,17 +108,17 @@ fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
             "yaml" | "yml" => return Some(SupportLang::Yaml),
             "html" => return Some(SupportLang::Html),
             "css" => return Some(SupportLang::Css),
-            _ => {}
+            _ => return None,
         }
     }
 
-    let ext = Path::new(path).extension()?.to_str()?.to_ascii_lowercase();
-    match ext.as_str() {
+    let ext = Path::new(path).extension()?.to_str()?;
+    match ext {
         "rs" => Some(SupportLang::Rust),
         "ts" | "mts" | "cts" => Some(SupportLang::TypeScript),
         "tsx" => Some(SupportLang::Tsx),
-        "js" | "mjs" | "cjs" | "jsx" => Some(SupportLang::JavaScript),
-        "py" | "pyi" => Some(SupportLang::Python),
+        "js" | "mjs" | "cjs" => Some(SupportLang::JavaScript),
+        "py" => Some(SupportLang::Python),
         "go" => Some(SupportLang::Go),
         "c" | "h" => Some(SupportLang::C),
         "cpp" | "cc" | "cxx" | "hpp" => Some(SupportLang::Cpp),
@@ -143,11 +140,11 @@ fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
         if idx >= byte_offset {
             break;
         }
-        if b == b'\n' {
-            line = line.saturating_add(1);
+        if b == b"\n"[0] {
+            line += 1;
             col = 1;
         } else {
-            col = col.saturating_add(1);
+            col += 1;
         }
     }
     (line, col)
@@ -169,23 +166,41 @@ fn process_file(
         Err(_) => return,
     };
 
-    let compiled_pattern = match ast_grep_core::Pattern::try_new(pattern, lang) {
-        Ok(p) => p,
-        Err(_) => return,
-    };
-
-    let grep = AstGrep::new(&content, lang);
-    let root = grep.root();
-
-    // Split file into exact lines preserving raw leading spacing
     let all_lines: Vec<&str> = content.lines().collect();
 
-    for m in root.find_all(&compiled_pattern) {
-        let range = m.range();
-        let (start_line, start_col) = offset_to_line_and_col(&content, range.start);
-        let (end_line, end_col) = offset_to_line_and_col(&content, range.end);
+    let ast_matches: Vec<(usize, usize, usize, usize)> = match ast_grep_core::Pattern::try_new(pattern, lang) {
+        Ok(p) => {
+            let grep = AstGrep::new(&content, lang);
+            let root = grep.root();
+            root.find_all(&p)
+                .map(|m| {
+                    let range = m.range();
+                    let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                    let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                    (s_line, s_col, e_line, e_col)
+                })
+                .collect()
+        }
+        Err(_) => Vec::new(),
+    };
 
-        // 1-indexed to 0-indexed line index
+    let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || pattern.contains("$") {
+        ast_matches
+    } else {
+        let mut literal_spans = Vec::new();
+        for (idx, line) in all_lines.iter().enumerate() {
+            if let Some(col_idx) = line.find(pattern) {
+                let start_line = idx + 1;
+                let start_col = col_idx + 1;
+                let end_line = start_line;
+                let end_col = start_col + pattern.len();
+                literal_spans.push((start_line, start_col, end_line, end_col));
+            }
+        }
+        literal_spans
+    };
+
+    for &(start_line, start_col, end_line, end_col) in &spans {
         let line_idx = start_line.saturating_sub(1);
         let exact_raw_line = all_lines.get(line_idx).copied().unwrap_or("");
 
@@ -197,11 +212,9 @@ fn process_file(
                 "end_line": end_line,
                 "end_col": end_col,
                 "exact_line": exact_raw_line,
-                "matched_text": m.text()
             });
             let _ = writeln!(out, "{}", record);
         } else {
-            // If context lines requested, print leading context
             if context_lines > 0 {
                 let start_ctx = line_idx.saturating_sub(context_lines);
                 for i in start_ctx..line_idx {
@@ -211,10 +224,8 @@ fn process_file(
                 }
             }
 
-            // Print matching line with exact whitespace preserved
             let _ = writeln!(out, "{}:{}:{}:{}", file_path, start_line, start_col, exact_raw_line);
 
-            // If context lines requested, print trailing context
             if context_lines > 0 {
                 let end_ctx = (line_idx + 1 + context_lines).min(all_lines.len());
                 for i in (line_idx + 1)..end_ctx {
