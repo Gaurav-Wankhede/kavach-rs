@@ -12,6 +12,7 @@ Sovereign agent proxy suite (`kavach glob`, `kavach grep`, `kavach replace`) for
 
 - **`kavach glob`** — Sovereign agent proxy for `fd`/`find`. Zero-heap path matcher using `ignore::WalkBuilder` and `glob_match`. Gitignore-aware, supports `-t/--type` (file/dir), `-H/--hidden`, `-d/--max-depth`, and `-m/--max-count`.
 - **`kavach grep`** — Sovereign agent proxy for `ast-grep` (`sg`) and `rg`. Multi-language AST pattern search across 28 languages via `ast-grep-core` and `ast_grep_language`. Preserves exact raw line content and leading indentation bit-for-bit to enable flawless agent code replacements. Configurable context lines (`-C, --context`), 1-indexed `file:line:col` spans, and structured JSON output.
+- **`kavach trace`** *(aliases: `graph`, `network`)* — Symbol context network and blast-radius inspector. Discovers symbol definitions, inbound callers, and outbound dependencies with exact 1-indexed `file:line:col` spans and `--json` support.
 - **`kavach replace`** — Sovereign agent proxy for `sd`. High-throughput in-place atomic string and multi-pattern replacement via `aho_corasick` and atomic file persistence (`tempfile`). Includes `--dry-run` safety inspection and match limits.
 
 ### Changed

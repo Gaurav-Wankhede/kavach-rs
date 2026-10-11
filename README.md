@@ -374,11 +374,12 @@ A multi-tier graph: global **concepts** (L0) link to project **entities** (L1), 
 
 A dedicated crate family (`kavach-rule-*`) parses, stores, and evaluates rule definitions — the declarative layer that drives skill keyword routing and gate advisories.
 
-### Sovereign Agent Proxy Suite (`glob`, `grep`, `replace`)
+### Sovereign Agent Proxy Suite (`glob`, `grep`, `trace`/`graph`, `replace`)
 
 High-precision, zero-heap CLI proxies designed specifically for AI agents to combat context rot, hallucination, and bloated file reads:
 - **`kavach glob <PATTERN> [PATH]`**: Zero-allocation, gitignore-aware path finding using `ignore::WalkBuilder` and `glob_match`. Eliminates broad whole-directory dumps.
 - **`kavach grep <PATTERN> [PATH] [-C <N>]`**: Polyglot AST-Grep pattern search across 28 languages via `ast-grep-core`. Preserves exact raw line content, indentation, and column positions bit-for-bit, delivering surgically targeted context with 1-indexed `file:line:col` spans.
+- **`kavach trace <SYMBOL> [PATH]`** *(aliases: `graph`, `network`)*: Symbol context network and blast-radius inspector. Discovers symbol definitions, inbound callers, and outbound dependencies without dumping full files or requiring heavy external LSPs.
 - **`kavach replace <FIND> <REPLACE> <PATH> [--dry-run]`**: High-throughput multi-string replacement engine powered by `aho_corasick` with atomic `tempfile` persistence. Guarantees safe, bit-accurate in-place file mutation.
 
 ### Injection Compaction
