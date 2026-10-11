@@ -65,6 +65,7 @@ smart-default = "0.7"
 indexmap = { version = "2", features = ["serde"] }
 # insta: snapshot testing for stable output formats (CLI text, JSON envelopes)
 # SOURCE: https://docs.rs/insta/1.40 (2026)
+similar = { version = "2.6", default-features = false, features = ["text"] }
 insta = { version = "1.40", features = ["json"] }
 # proptest: property-based testing — random inputs find edge cases manual tests miss
 # SOURCE: https://docs.rs/proptest/1.5 (2026)

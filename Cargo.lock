@@ -2146,6 +2146,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "similar",
  "svg",
  "tempfile",
  "thiserror 2.0.21",

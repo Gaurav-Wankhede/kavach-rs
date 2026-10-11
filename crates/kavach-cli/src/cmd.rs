@@ -19,6 +19,7 @@ pub(crate) mod db;
 
 mod gates;
 pub(crate) mod git;
+pub(crate) mod diff;
 pub(crate) mod harness_loop;
 mod heal;
 
@@ -266,6 +267,14 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 
         Commands::WorkingState { action } => working_state::run(&action),
         Commands::CommandTree { tree, markdown } => commands::run(tree, markdown),
+        Commands::Diff {
+            path_a,
+            path_b,
+            stat,
+            brief,
+            symbols,
+            context,
+        } => diff::run(&path_a, &path_b, stat, brief, symbols, context),
         Commands::Git { action } => match action {
             crate::cli::GitAction::Log { limit, oneline } => git::log::run(limit, oneline),
             crate::cli::GitAction::Show { target, def, call } => git::show::run(&target, def.as_deref(), call.as_deref()),

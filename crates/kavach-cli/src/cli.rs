@@ -486,6 +486,26 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         markdown: bool,
     },
 
+    /// Compare any two files with AST and unified diff telemetry (replaces diff/difft)
+    Diff {
+        /// First file to compare
+        path_a: String,
+        /// Second file to compare
+        path_b: String,
+        /// Output summary line only (insertions, deletions)
+        #[arg(long)]
+        stat: bool,
+        /// Report only whether files differ (zero line output)
+        #[arg(short, long)]
+        brief: bool,
+        /// Extract altered AST symbols (functions, structs, enums)
+        #[arg(long)]
+        symbols: bool,
+        /// Context lines around changes (default: 3)
+        #[arg(short = 'C', long, default_value_t = 3)]
+        context: usize,
+    },
+
     /// Sovereign, zero-bloat in-process Git inspection suite (log, show, diff, status)
     Git {
         #[command(subcommand)]
