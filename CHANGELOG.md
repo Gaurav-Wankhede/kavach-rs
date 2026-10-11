@@ -4,6 +4,21 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
 
+## [1.3.0] — 2026-10-11
+
+Sovereign agent proxy suite (`kavach glob`, `kavach grep`, `kavach replace`) for anti-context-rot agentic workflows, zero-heap path matching, polyglot AST grep with exact line & indentation preservation across 28 languages, and full `webfind` live grounding across all gates.
+
+### Added
+
+- **`kavach glob`** — Sovereign agent proxy for `fd`/`find`. Zero-heap path matcher using `ignore::WalkBuilder` and `glob_match`. Gitignore-aware, supports `-t/--type` (file/dir), `-H/--hidden`, `-d/--max-depth`, and `-m/--max-count`.
+- **`kavach grep`** — Sovereign agent proxy for `ast-grep` (`sg`) and `rg`. Multi-language AST pattern search across 28 languages via `ast-grep-core` and `ast_grep_language`. Preserves exact raw line content and leading indentation bit-for-bit to enable flawless agent code replacements. Configurable context lines (`-C, --context`), 1-indexed `file:line:col` spans, and structured JSON output.
+- **`kavach replace`** — Sovereign agent proxy for `sd`. High-throughput in-place atomic string and multi-pattern replacement via `aho_corasick` and atomic file persistence (`tempfile`). Includes `--dry-run` safety inspection and match limits.
+
+### Changed
+
+- **Live Internet Grounding Across All Gates** — Replaced legacy model hallucination risks and generic web search directives across `kavach-engine` (`research_guard`, `hallucination_guard`, `assumption_guard`, `api_gateway_guard`, `pre_write_sql_guard`, `advisory_detectors`, `drained`, `clean_exit`, `terminal`) and `kavach-patterns` (`owasp_guard`, `crypto_guard`, `gnap_guard`, `laziness_guard`) with explicit `webfind search --live "<query>"`.
+- **Cross-Language AST Safety** — `kavach grep` gracefully compiles language patterns via `Pattern::try_new(pattern, lang)`, skipping unparseable grammars during multi-language directory walks rather than panicking.
+
 ## [26.7.1] — 2026-07-21
 
 Context-rot hardening release: six-file gate code fully removed, SurrealDB→LLM pipeline compressed, global anti-loop enforcement, and session-start injection diet.
