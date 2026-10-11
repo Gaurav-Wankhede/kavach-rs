@@ -189,6 +189,113 @@ pub(crate) enum Commands {
         /// Emit compact standard JSON instead of TOON tabular format
         #[arg(short = 'j', long = "json")]
         json: bool,
+        /// Safely update a dot-path key in-place (e.g. --set ".version=\"1.2.0\"")
+        #[arg(long)]
+        set: Option<String>,
+        /// Preview mutated JSON without writing to disk
+        #[arg(long)]
+        dry_run: bool,
+    },
+
+    /// High-precision YAML projection to clean TOON output with atomic in-place mutation
+    Yaml {
+        /// Dot-path query projection (e.g. .services.db.image)
+        #[arg(default_value = ".")]
+        query: String,
+        /// Target YAML file (omit to read from stdin)
+        path: Option<String>,
+        /// Emit bare keys for targeted mapping
+        #[arg(short = 'k', long)]
+        keys: bool,
+        /// Emit raw unquoted scalar strings
+        #[arg(short = 'r', long)]
+        raw: bool,
+        /// Emit JSON representation instead of clean TOON
+        #[arg(long)]
+        json: bool,
+        /// Safely update a dot-path key in-place (e.g. --set ".services.db.image=\"postgres:16\"")
+        #[arg(long)]
+        set: Option<String>,
+        /// Preview mutated YAML without writing to disk
+        #[arg(long)]
+        dry_run: bool,
+    },
+
+    /// High-precision TOML projection to clean TOON output with atomic in-place mutation
+    Toml {
+        /// Dot-path query projection (e.g. .package.version, .dependencies)
+        #[arg(default_value = ".")]
+        query: String,
+        /// Target TOML file (omit to read from stdin)
+        path: Option<String>,
+        /// Emit bare keys for targeted table
+        #[arg(short = 'k', long)]
+        keys: bool,
+        /// Emit raw unquoted scalar strings
+        #[arg(short = 'r', long)]
+        raw: bool,
+        /// Emit JSON representation instead of clean TOON
+        #[arg(long)]
+        json: bool,
+        /// Safely update a dot-path key in-place (e.g. --set ".package.version=\"1.4.0\"")
+        #[arg(long)]
+        set: Option<String>,
+        /// Preview mutated TOML without writing to disk
+        #[arg(long)]
+        dry_run: bool,
+    },
+
+    /// Zero-secret leakage environment variable manager for safe LLM inspection & refactoring
+    Env {
+        /// Target .env file (default: .env)
+        path: Option<String>,
+        /// Emit bare variable keys only (zero secret tokens)
+        #[arg(short = 'k', long)]
+        keys: bool,
+        /// Safely rename a key in-place preserving its secret value byte-for-byte (format: OLD:NEW)
+        #[arg(long)]
+        rename: Option<String>,
+        /// Atomically remove a variable key and value from .env
+        #[arg(long)]
+        unset: Option<String>,
+        /// Audit code lookups (std::env::var, process.env) against .env without reading secret values
+        #[arg(long)]
+        diff: Option<String>,
+    },
+
+    /// High-precision HTML DOM extraction using CSS selectors (powered by scraper)
+    Html {
+        /// CSS Selector to match (e.g. "h1", "div.card > a", "meta[property='og:title']")
+        selector: String,
+        /// Target HTML file path (or stdin)
+        path: Option<String>,
+        /// Extract specific attribute value instead of inner HTML (e.g. href, src, content)
+        #[arg(long)]
+        attr: Option<String>,
+        /// Strip inner HTML tags and emit plain text only
+        #[arg(short = 't', long)]
+        text: bool,
+        /// Output count of matched elements only
+        #[arg(short = 'c', long)]
+        count: bool,
+    },
+
+    /// Specialized 2D vector graphic DOM inspection, color mutation, and viewBox scaling
+    Svg {
+        /// Target SVG file path
+        path: String,
+        /// Extract path definition coordinates (d="...") only
+        #[arg(long)]
+        paths: bool,
+        /// Swap color palettes in-place (format: #FROM:#TO, e.g. "#000000:#3b82f6")
+        #[arg(long)]
+        recolor: Option<String>,
+        /// Update or insert viewBox coordinates (e.g. "0 0 24 24")
+        #[arg(long)]
+        view_box: Option<String>,
+        /// Preview mutated SVG without writing to disk
+        #[arg(long)]
+        dry_run: bool,
     },
     Servers {
         #[command(subcommand)]

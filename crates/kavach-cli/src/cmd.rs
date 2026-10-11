@@ -1,3 +1,8 @@
+pub(crate) mod html;
+pub(crate) mod svg;
+pub(crate) mod yaml;
+pub(crate) mod toml;
+pub(crate) mod env;
 pub(crate) mod glob;
 pub(crate) mod grep;
 pub(crate) mod replace;
@@ -109,7 +114,100 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             keys,
             raw,
             json,
-        } => json::run(&query, path.as_deref(), keys, raw, json),
+            set,
+            dry_run,
+        } => json::run(
+            &query,
+            path.as_deref(),
+            keys,
+            raw,
+            json,
+            set.as_deref(),
+            dry_run,
+        ),
+        Commands::Yaml {
+            query,
+            path,
+            keys,
+            raw,
+            json,
+            set,
+            dry_run,
+        } => yaml::run(
+            &query,
+            path.as_deref(),
+            keys,
+            raw,
+            json,
+            set.as_deref(),
+            dry_run,
+        ),
+        Commands::Toml {
+            query,
+            path,
+            keys,
+            raw,
+            json,
+            set,
+            dry_run,
+        } => toml::run(
+            &query,
+            path.as_deref(),
+            keys,
+            raw,
+            json,
+            set.as_deref(),
+            dry_run,
+        ),
+        Commands::Env {
+            path,
+            keys,
+            rename,
+            unset,
+            diff,
+        } => {
+            let rename_pair = rename.and_then(|r| {
+                let parts: Vec<&str> = r.split(':').collect();
+                if parts.len() == 2 {
+                    Some((parts[0].to_string(), parts[1].to_string()))
+                } else {
+                    None
+                }
+            });
+            env::run(
+                path.as_deref(),
+                keys,
+                rename_pair,
+                unset.as_deref(),
+                diff.as_deref(),
+            )
+        },
+        Commands::Html {
+            selector,
+            path,
+            attr,
+            text,
+            count,
+        } => html::run(
+            &selector,
+            path.as_deref(),
+            attr.as_deref(),
+            text,
+            count,
+        ),
+        Commands::Svg {
+            path,
+            paths,
+            recolor,
+            view_box,
+            dry_run,
+        } => svg::run(
+            &path,
+            paths,
+            recolor.as_deref(),
+            view_box.as_deref(),
+            dry_run,
+        ),
         Commands::Status => status::run(),
         Commands::Servers { action } => servers::run(&action),
         Commands::Gates {

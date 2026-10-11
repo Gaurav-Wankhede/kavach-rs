@@ -4,6 +4,16 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
 
+## [1.3.2] - 2026-10-11
+
+### Added
+- **`kavach yaml`**: Dot-path projection to clean TOON v4.4 (`-k` bare keys, `-r` raw scalar) and safe atomic in-place mutation via `--set`.
+- **`kavach toml`**: TOML table and array projection to TOON v4.4 and safe atomic in-place mutation via `--set`.
+- **`kavach env`**: Zero-Secret Leakage Environment Variable Manager. Values after `=` are permanently masked as `[SET]` to prevent credential exfiltration into LLM context; supports `-k` bare keys, Tree-Sitter AST code-to-env drift auditing via `--diff`, and safe in-place key renaming via `--rename` (preserving secret values byte-for-byte).
+- **`kavach html`**: High-precision HTML DOM extraction powered by `scraper` and CSS Selectors (`--attr` attribute value, `-t` text stripping, `-c` element count).
+- **`kavach svg`**: Specialized 2D vector DOM inspection and manipulation powered by the `svg` crate (path coordinate extraction `--paths`, in-place palette swapping `--recolor`, and viewport scaling `--view-box`).
+- **Atomic `--set` in `kavach json`**: Safe in-place mutation with syntax pre-validation and tempfile atomic swapping.
+
 ## [1.3.1] - 2026-10-11
 
 ### Removed
