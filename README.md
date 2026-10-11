@@ -52,6 +52,14 @@ The harness auto-<strong>feeds</strong> its memory and auto-<strong>recalls</str
 
 <hr>
 
+<div align="center">
+  <a href="docs/assets/kavach-demo.mp4">
+    <strong>▶ Watch the Kavach demo (MP4, 89s)</strong>
+  </a>
+</div>
+
+<hr>
+
 ## Why Kavach?
 
 AI coding agents are powerful but **stateless between sessions** and easily slip into anti-patterns: asking permission instead of acting, skipping research, repeating past mistakes, leaving work half-done. Kavach fixes this with a **Rust hook engine** that runs at every lifecycle event.

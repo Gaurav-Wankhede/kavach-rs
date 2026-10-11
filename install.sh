@@ -1,7 +1,7 @@
 # Kavach source installer: clone, build from source, install to ~/.local/bin, delete the clone.
 set -euo pipefail
 
-REPO_URL="https://github.com/Wankhede-Brothers/kavach-rs"
+REPO_URL="https://github.com/Gaurav-Wankhede/kavach-rs"
 DEST="${KAVACH_INSTALL_DIR:-$HOME/.local/bin}"
 
 if ! command -v git >/dev/null 2>&1; then

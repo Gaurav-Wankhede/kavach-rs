@@ -1,7 +1,5 @@
-use git2::Repository;
-
 pub(crate) fn run(target: &str, def_symbol: Option<&str>, call_symbol: Option<&str>) -> i32 {
-    let repo = match Repository::discover(".") {
+    let repo = match gix::open(".") {
         Ok(r) => r,
         Err(e) => {
             eprintln!("kavach git: not in a git repository: {}", e);
@@ -17,18 +15,26 @@ pub(crate) fn run(target: &str, def_symbol: Option<&str>, call_symbol: Option<&s
         }
     };
 
-    let obj = match repo.revparse_single(rev) {
-        Ok(o) => o,
+    let spec = match repo.rev_parse_single(rev) {
+        Ok(s) => s,
         Err(e) => {
             eprintln!("kavach git show: revision '{}' not found: {}", rev, e);
             return 1;
         }
     };
 
-    let commit = match obj.peel_to_commit() {
+    let object = match spec.object() {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("kavach git show: object not found for revision '{}': {}", rev, e);
+            return 1;
+        }
+    };
+
+    let commit = match object.try_into_commit() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("kavach git show: object is not a commit: {}", e);
+            eprintln!("kavach git show: revision '{}' is not a commit: {}", rev, e);
             return 1;
         }
     };
@@ -41,31 +47,34 @@ pub(crate) fn run(target: &str, def_symbol: Option<&str>, call_symbol: Option<&s
         }
     };
 
-    let entry = match tree.get_path(std::path::Path::new(file_path)) {
-        Ok(e) => e,
+    let entry = match tree.lookup_entry_by_path(file_path) {
+        Ok(Some(e)) => e,
+        Ok(None) => {
+            eprintln!("kavach git show: file '{}' not found in revision '{}'", file_path, rev);
+            return 1;
+        }
         Err(e) => {
-            eprintln!("kavach git show: file '{}' not found in revision '{}': {}", file_path, rev, e);
+            eprintln!("kavach git show: error looking up '{}': {}", file_path, e);
             return 1;
         }
     };
 
-    let blob = match repo.find_blob(entry.id()) {
-        Ok(b) => b,
+    let object = match entry.object() {
+        Ok(o) => o,
         Err(e) => {
-            eprintln!("kavach git show: failed to read blob: {}", e);
+            eprintln!("kavach git show: cannot read blob '{}': {}", file_path, e);
             return 1;
         }
     };
 
-    let content = match std::str::from_utf8(blob.content()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("kavach git show: file content is not valid utf-8: {}", e);
+    let content = match std::str::from_utf8(&object.data) {
+        Ok(c) => c,
+        Err(_) => {
+            eprintln!("kavach git show: '{}' is a binary file", file_path);
             return 1;
         }
     };
 
-    // If AST filtering is requested
     if let Some(def) = def_symbol {
         let mut found = false;
         let mut lines_iter = content.lines().enumerate();
@@ -107,11 +116,11 @@ pub(crate) fn run(target: &str, def_symbol: Option<&str>, call_symbol: Option<&s
         return 0;
     }
 
-    // Default: refuse whole-file dump without explicit confirmation or limit to first 50 lines
     let line_count = content.lines().count();
     if line_count > 60 {
-        eprintln!("kavach git show: file has {} lines. Whole-file dump denied to preserve context.\n                 Specify an AST target:\n                     kavach git show {}:{} --def <symbol>\n                     kavach git show {}:{} --call <symbol>",
-            line_count, rev, file_path, rev, file_path
+        eprintln!(
+            "kavach git show: file has {} lines. Whole-file dump denied to preserve context.\n                 Specify an AST target:\n                     kavach git show {} --def <symbol>\n                     kavach git show {} --call <symbol>",
+            line_count, target, target
         );
         return 2;
     }

@@ -1,10 +1,9 @@
-use git2::{Patch, Repository};
-use serde_json::json;
 use ast_grep_core::AstGrep;
-use std::collections::BTreeSet;
+use serde_json::json;
+
 
 pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 {
-    let repo = match Repository::discover(".") {
+    let repo = match gix::open(".") {
         Ok(r) => r,
         Err(e) => {
             eprintln!("kavach git: not in a git repository: {}", e);
@@ -12,74 +11,47 @@ pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 
         }
     };
 
-    let head = repo.head().and_then(|h| h.peel_to_tree()).ok();
-    let diff = match repo.diff_tree_to_workdir_with_index(head.as_ref(), None) {
-        Ok(d) => d,
-        Err(e) => {
-            eprintln!("kavach git: failed to compute diff: {}", e);
-            return 1;
-        }
-    };
-
-    let stats = match diff.stats() {
+    let status_platform = match repo.status(gix::progress::Discard) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("kavach git: failed to compute diff stats: {}", e);
+            eprintln!("kavach git: failed to inspect status: {}", e);
             return 1;
         }
     };
 
-    if files_only {
-        let mut files = Vec::new();
-        for delta in diff.deltas() {
-            if let Some(path) = delta.new_file().path().and_then(|p| p.to_str()) {
-                files.push(path.to_string());
+    let mut modified_files = Vec::new();
+
+    if let Ok(iter) = status_platform.into_index_worktree_iter(Vec::new()) {
+        for item_res in iter {
+            if let Ok(item) = item_res {
+                let path = item.rela_path().to_string();
+                modified_files.push(path);
             }
         }
-        for f in files {
+    }
+
+    if files_only {
+        for f in &modified_files {
             println!("{}", f);
         }
+        return 0;
+    }
+
+    if stat_only {
+        println!("{} files modified", modified_files.len());
         return 0;
     }
 
     if symbols_only {
         let mut symbol_hits = Vec::new();
 
-        for (idx, _delta) in diff.deltas().enumerate() {
-            let patch = match Patch::from_diff(&diff, idx) {
-                Ok(Some(p)) => p,
-                _ => continue,
-            };
-
-            let delta = patch.delta();
-            let file_path = match delta.new_file().path().and_then(|p| p.to_str()) {
-                Some(p) => p.to_string(),
-                None => continue,
-            };
-
-            let lang = match crate::cmd::trace::resolve_lang(&file_path) {
+        for file_path in &modified_files {
+            let lang = match crate::cmd::trace::resolve_lang(file_path) {
                 Some(l) => l,
                 None => continue,
             };
 
-            // Collect modified line ranges in the new file
-            let mut modified_lines = BTreeSet::new();
-            let num_hunks = patch.num_hunks();
-            for h_idx in 0..num_hunks {
-                if let Ok((hunk, _)) = patch.hunk(h_idx) {
-                    let start = hunk.new_start() as usize;
-                    let count = hunk.new_lines() as usize;
-                    for l in start..(start + count) {
-                        modified_lines.insert(l);
-                    }
-                }
-            }
-
-            if modified_lines.is_empty() {
-                continue;
-            }
-
-            let content = match std::fs::read_to_string(&file_path) {
+            let content = match std::fs::read_to_string(file_path) {
                 Ok(c) => c,
                 Err(_) => continue,
             };
@@ -91,16 +63,11 @@ pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 
                 if let Some((kind, name)) = crate::cmd::trace::any_definition_node(&node) {
                     let range = node.range();
                     let (start_line, _) = crate::cmd::trace::offset_to_line_and_col(&content, range.start);
-                    let (end_line, _) = crate::cmd::trace::offset_to_line_and_col(&content, range.end);
-
-                    let intersects = (start_line..=end_line).any(|line_num| modified_lines.contains(&line_num));
-                    if intersects {
-                        symbol_hits.push(json!({
-                            "kind": kind,
-                            "symbol": name,
-                            "loc": format!("{}:{}:{}", file_path, start_line, 1),
-                        }));
-                    }
+                    symbol_hits.push(json!({
+                        "kind": kind,
+                        "symbol": name,
+                        "loc": format!("{}:{}:{}", file_path, start_line, 1),
+                    }));
                 }
             }
         }
@@ -115,23 +82,11 @@ pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 
         return 0;
     }
 
-    if stat_only {
-        println!("{} files changed, {} insertions(+), {} deletions(-)",
-            stats.files_changed(),
-            stats.insertions(),
-            stats.deletions()
-        );
-        return 0;
-    }
-
-    // Default compact diff summary in TOON
     let mut deltas = Vec::new();
-    for delta in diff.deltas() {
-        let status = format!("{:?}", delta.status());
-        let path = delta.new_file().path().and_then(|p| p.to_str()).unwrap_or("").to_string();
+    for f in &modified_files {
         deltas.push(json!({
-            "status": status,
-            "path": path,
+            "status": "M",
+            "path": f,
         }));
     }
 
@@ -140,7 +95,7 @@ pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 
         let toon = kavach_toon::encode_toon(&v);
         println!("{}", toon.trim_end());
     }
-    println!("── Summary: {} files changed, +{}, -{} ──", stats.files_changed(), stats.insertions(), stats.deletions());
+    println!("── Summary: {} files modified ──", modified_files.len());
 
     0
 }

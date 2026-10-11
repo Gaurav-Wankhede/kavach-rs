@@ -2,7 +2,20 @@
 
 All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and Kavach versions by **CalVer** (`YY.M.patch` — e.g. `26.7.0`), matching the release tags.
+and Kavach follows **Semantic Versioning** (`MAJOR.MINOR.PATCH` — e.g. `1.3.4`), matching Cargo package versions and release tags.
+
+## [1.3.4] - 2026-10-12
+
+### Added
+- **`kavach script`**: Sovereign in-memory pseudo-code scripting engine with zero compiler overhead powered by Rhai. Includes pre-bound live web discovery probes (`api_llms_txt`, `api_sitemap`, `api_openapi`, `http_get`, `http_get_json`, `html_select`) and local file helpers (`fs_read`, `fs_write`, `fs_lines`, `fs_exists`, `hash_blake3`).
+- **`kavach cargo`**: Context-defending compiler proxy that automatically routes `kavach cargo test` to `cargo nextest run` with compiler scroll and banner suppression.
+- **`kavach grep` Formatter**: Clean deduplicated single file headers with 4-space tab-indented matching lines (`    <line>\t<code>`).
+- **Full-Production SaaS Commercial Video**: Authored in 1080p landscape adhering to YouTube motion doctrines, GSAP 3.15.0, and Tailwind CSS v4.
+
+## [1.3.3] - 2026-10-11
+
+### Changed
+- Refactored in-process Git suite to 100% Pure-Rust `gix` v0.89.
 
 ## [1.3.2] - 2026-10-11
 
@@ -281,5 +294,5 @@ knowledge graph.
 - Destructive shell operations (`rm -rf`, etc.) blocked or asked at the
   `PreToolUse` gate; fail-closed on uncertainty.
 
-[26.7.0]: https://github.com/Wankhede-Brothers/kavach-rs/releases/tag/26.7.0
-[26.6.0]: https://github.com/Wankhede-Brothers/kavach-rs/releases/tag/26.6.0
+[26.7.0]: https://github.com/Gaurav-Wankhede/kavach-rs/releases/tag/26.7.0
+[26.6.0]: https://github.com/Gaurav-Wankhede/kavach-rs/releases/tag/26.6.0

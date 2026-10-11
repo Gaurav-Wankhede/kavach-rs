@@ -1,7 +1,7 @@
 # Kavach source installer (Windows): bootstrap prereqs, clone, build, install to %USERPROFILE%\.local\bin, delete the clone.
 $ErrorActionPreference = "Stop"
 
-$repoUrl = "https://github.com/Wankhede-Brothers/kavach-rs"
+$repoUrl = "https://github.com/Gaurav-Wankhede/kavach-rs"
 $dest = if ($env:KAVACH_INSTALL_DIR) { $env:KAVACH_INSTALL_DIR } else { "$env:USERPROFILE\.local\bin" }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {

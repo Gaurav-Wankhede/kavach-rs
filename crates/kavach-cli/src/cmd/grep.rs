@@ -501,26 +501,19 @@ fn process_file(
         }
         for (int_idx, &(start_line, end_line)) in intervals.iter().enumerate() {
             if int_idx > 0 {
-                let _ = writeln!(out, "--");
+                let _ = writeln!(out, "    --");
             }
             for l_num in start_line..=end_line {
                 let l_idx = l_num - 1;
                 let line_content = all_lines.get(l_idx).copied().unwrap_or("");
-                if matched_lines.contains(&l_num) {
-                    let col = match_first_col.get(&l_num).copied().unwrap_or(1);
-                    let _ = writeln!(out, "{}:{}:{}", l_num, col, line_content);
-                } else {
-                    let _ = writeln!(out, "{}-{}", l_num, line_content);
-                }
+                let _ = writeln!(out, "    {}\t{}", l_num, line_content);
             }
         }
     } else {
-        // Precise file:line,col with exact line and indentation (zero range spam)
         for &m_line in &matched_lines {
             let l_idx = m_line - 1;
             let line_content = all_lines.get(l_idx).copied().unwrap_or("");
-            let col = match_first_col.get(&m_line).copied().unwrap_or(1);
-            let _ = writeln!(out, "{}:{}:{}", m_line, col, line_content);
+            let _ = writeln!(out, "    {}\t{}", m_line, line_content);
         }
     }
     let _ = writeln!(out);

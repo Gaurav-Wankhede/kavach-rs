@@ -1,8 +1,7 @@
-use git2::Repository;
 use serde_json::json;
 
 pub(crate) fn run(limit: usize, oneline: bool) -> i32 {
-    let repo = match Repository::discover(".") {
+    let repo = match gix::open(".") {
         Ok(r) => r,
         Err(e) => {
             eprintln!("kavach git: not in a git repository: {}", e);
@@ -10,51 +9,60 @@ pub(crate) fn run(limit: usize, oneline: bool) -> i32 {
         }
     };
 
-    let mut revwalk = match repo.revwalk() {
-        Ok(rw) => rw,
+    let head = match repo.head_commit() {
+        Ok(c) => c,
         Err(e) => {
-            eprintln!("kavach git: failed to traverse revisions: {}", e);
+            eprintln!("kavach git: failed to get HEAD commit: {}", e);
             return 1;
         }
     };
 
-    if let Err(e) = revwalk.push_head() {
-        eprintln!("kavach git: failed to read HEAD: {}", e);
-        return 1;
-    }
+    let commits = match head.ancestors().all() {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("kavach git: failed to traverse commit history: {}", e);
+            return 1;
+        }
+    };
 
-    let mut commits = Vec::new();
+    let mut records = Vec::new();
 
-    for oid_res in revwalk.take(limit) {
-        let oid = match oid_res {
-            Ok(id) => id,
+    for commit_info_res in commits.take(limit) {
+        let commit_info = match commit_info_res {
+            Ok(c) => c,
             Err(_) => continue,
         };
 
-        if let Ok(commit) = repo.find_commit(oid) {
-            let short_id = format!("{:.8}", commit.id());
-            let summary = commit.summary().unwrap_or(Some("")).unwrap_or("").to_string();
-            let author = commit.author().name().unwrap_or("unknown").to_string();
-            let time = commit.time().seconds();
-            let naive = chrono::DateTime::from_timestamp(time, 0)
-                .map(|dt| dt.format("%Y-%m-%d").to_string())
-                .unwrap_or_default();
+        let commit = match commit_info.object() {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
 
-            if oneline {
-                println!("{} {}", short_id, summary);
-            } else {
-                commits.push(json!({
-                    "commit": short_id,
-                    "date": naive,
-                    "author": author,
-                    "message": summary,
-                }));
-            }
+        let short_id = &commit.id.to_hex().to_string()[..8];
+        let author_ref = commit.author().ok();
+        let author_name = author_ref.as_ref().map(|a| a.name.to_string()).unwrap_or_else(|| "Unknown".to_string());
+        let date_str = author_ref.as_ref().map(|a| {
+            let secs = a.time().map(|t| t.seconds).unwrap_or_default();
+            chrono::DateTime::from_timestamp(secs, 0)
+                .map(|dt| dt.format("%Y-%m-%d").to_string())
+                .unwrap_or_default()
+        }).unwrap_or_default();
+        let summary = commit.message().ok().map(|m| m.summary().to_string()).unwrap_or_default();
+
+        if oneline {
+            println!("{} {}", short_id, summary);
+        } else {
+            records.push(json!({
+                "commit": short_id,
+                "author": author_name,
+                "date": date_str,
+                "message": summary,
+            }));
         }
     }
 
-    if !oneline && !commits.is_empty() {
-        let v = json!(commits);
+    if !oneline && !records.is_empty() {
+        let v = json!(records);
         let toon = kavach_toon::encode_toon(&v);
         println!("{}", toon.trim_end());
     }

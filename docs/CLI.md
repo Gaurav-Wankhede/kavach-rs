@@ -21,6 +21,26 @@ Unified zero-LLM code auditor: one command over all four lenses (yagni · self �
 Consolidates `lint audit` + `doctor` + `hunt` + `loophole` into ONE walker / Finding / command. Exit 1 if findings. No LLM.
 ```
 
+## `kavach cargo`
+
+Sovereign Cargo proxy with streamlined compilation telemetry and nextest routing
+
+| Flag | Description | Default |
+|---|---|---|
+| `<subcommand>` | Cargo subcommand (check, test, build, nextest, clippy, run, etc.) |  |
+| `<args>` | Arguments and flags forwarded to cargo |  |
+
+```
+EXAMPLES:
+  kavach cargo check
+  kavach cargo test
+  kavach cargo nextest run
+  kavach cargo build --release
+  kavach cargo clippy
+
+WHEN: run cargo commands without context rot or terminal scroll spam.
+```
+
 ## `kavach commands`
 
 Print the FULL command tree (every command → subcommand → leaf) or a complete Markdown reference
@@ -694,6 +714,31 @@ EXAMPLES:
 WHEN: Persist a decision/roadmap/research row. Always pass --new (create) or --update-key (edit).
 ```
 
+## `kavach diff`
+
+Compare any two files with AST and unified diff telemetry (replaces diff/difft)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path_a>` | First file to compare |  |
+| `<path_b>` | Second file to compare |  |
+| `--stat` | Output summary line only (insertions, deletions) |  |
+| `--brief` | Report only whether files differ (zero line output) |  |
+| `--symbols` | Extract altered AST symbols (functions, structs, enums) |  |
+| `--context` | Context lines around changes (default: 3) | 3 |
+
+## `kavach env`
+
+Zero-secret leakage environment variable manager for safe LLM inspection & refactoring
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | Target .env file (default: .env) |  |
+| `--keys` | Emit bare variable keys only (zero secret tokens) |  |
+| `--rename` | Safely rename a key in-place preserving its secret value byte-for-byte (format: OLD:NEW) |  |
+| `--unset` | Atomically remove a variable key and value from .env |  |
+| `--diff` | Audit code lookups (std::env::var, process.env) against .env without reading secret values |  |
+
 ## `kavach gates`
 
 Run a gate hook (called by Claude Code / Cursor hooks)
@@ -712,6 +757,56 @@ EXAMPLES:
 
 WHEN: IDE hooks only. For kanban health use `kavach db kanban` or `kavach context`.
 ```
+
+## `kavach git`
+
+Sovereign, zero-bloat in-process Git inspection suite (log, show, diff, status)
+
+## `kavach git branch`
+
+In-process branch listing and current branch telemetry
+
+## `kavach git commit`
+
+In-process commit of staged or modified tracked files
+
+| Flag | Description | Default |
+|---|---|---|
+| `--message` | Commit message |  |
+| `--all` | Automatically stage all modified tracked files |  |
+
+## `kavach git diff`
+
+Working tree diff telemetry and status without raw unbounded diff dumps
+
+| Flag | Description | Default |
+|---|---|---|
+| `--stat` | Output summary line only (files changed, insertions, deletions) |  |
+| `--files` | List modified file paths only |  |
+| `--symbols` | Extract modified symbols (functions, structs, enums) using AST |  |
+
+## `kavach git log`
+
+Zero-bloat commit log in clean TOON format
+
+| Flag | Description | Default |
+|---|---|---|
+| `<limit>` | Number of commits to show (default: 5) | 5 |
+| `--oneline` | Format as compact single-line hashes and subjects |  |
+
+## `kavach git show`
+
+Surgical revision object retrieval with AST semantic scoping (zero whole-file spam)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<target>` | Target revision and path (<rev>:<path>, e.g. HEAD:src/main.rs) |  |
+| `--def` | Extract definition of function, struct, or enum |  |
+| `--call` | Find callers of symbol in historical file |  |
+
+## `kavach git status`
+
+In-process working tree clean/modified status
 
 ## `kavach glob`
 
@@ -732,7 +827,7 @@ High-precision polyglot AST and structural code search (replaces sg/rg)
 
 | Flag | Description | Default |
 |---|---|---|
-| `<pattern>` | AST or text pattern to match |  |
+| `<pattern>` | AST or text pattern to match (optional when --def, --call, or --type is supplied) |  |
 | `<path>` | Path to search (file or directory, defaults to current dir) | . |
 | `--ast` | Treat pattern as an AST-grep pattern (default: true) | true |
 | `--lang` | Target language (rust, python, typescript, javascript, go, c, cpp, java, bash, etc.) |  |
@@ -784,6 +879,18 @@ Proactive bug-hunt: run the repo's non-AI quality gates (cargo check, clippy -D 
 | Flag | Description | Default |
 |---|---|---|
 | `--project` | Project slug the cards belong to |  |
+
+## `kavach html`
+
+High-precision HTML DOM extraction using CSS selectors (powered by scraper)
+
+| Flag | Description | Default |
+|---|---|---|
+| `<selector>` | CSS Selector to match (e.g. "h1", "div.card > a", "meta[property='og:title']") |  |
+| `<path>` | Target HTML file path (or stdin) |  |
+| `--attr` | Extract specific attribute value instead of inner HTML (e.g. href, src, content) |  |
+| `--text` | Strip inner HTML tags and emit plain text only |  |
+| `--count` | Output count of matched elements only |  |
 
 ## `kavach install`
 
@@ -1026,6 +1133,24 @@ EXAMPLES:
 WHEN: inspect full tool output or payload that was cached to save LLM context budget.
 ```
 
+## `kavach script`
+
+Sovereign pseudo-code scripting & live web API discovery engine
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | Script file path (or omitted if using -e) |  |
+| `--expr` | Inline pseudo-code expression to evaluate |  |
+
+```
+EXAMPLES:
+  kavach script -e 'let x = 40 + 2; print(x);'
+  kavach script -e 'let d = api_llms_txt("https://docs.anthropic.com"); print(d.len());'
+  kavach script my_script.kvc
+
+WHEN: run in-memory pseudo-code, fetch web APIs, or discover llms.txt/sitemaps.
+```
+
 ## `kavach security`
 
 ## `kavach security init`
@@ -1171,15 +1296,6 @@ Write a key-value slot (overwrites existing; max 10 slots)
 
 Validate current session
 
-## `kavach slice`
-
-Trace symbol definition, callers, and dependency context network (aliases: graph, network). Surgically extract exact line ranges from text and prose files without whole-file reads
-
-| Flag | Description | Default |
-|---|---|---|
-| `<path>` | Target file path |  |
-| `<range>` | Line range to slice (e.g. 50:80 or 100) |  |
-
 ## `kavach status`
 
 Show session status, build identity, and enforcement flags
@@ -1190,6 +1306,15 @@ EXAMPLES:
 
 WHEN: session-start sanity check; confirms project slug and pending gates.
 ```
+
+## `kavach svg`
+
+Specialized 2D vector graphic DOM inspection, color mutation, and viewBox scaling
+
+| Flag | Description | Default |
+|---|---|---|
+| `<path>` | Target SVG file path |  |
+| `--paths` | Extract path definition coordinates (d="...") only |  |
 
 ## `kavach think`
 
@@ -1202,7 +1327,21 @@ Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus
 | `--limit` | Max fused hits to return (default: 10) | 10 |
 | `--session-weighted` | Weight scoring by session recency and recall frequency |  |
 
+## `kavach toml`
+
+High-precision TOML projection to clean TOON output with atomic in-place mutation
+
+| Flag | Description | Default |
+|---|---|---|
+| `<query>` | Dot-path query projection (e.g. .package.version, .dependencies) | . |
+| `<path>` | Target TOML file (omit to read from stdin) |  |
+| `--keys` | Emit bare keys for targeted table |  |
+| `--raw` | Emit raw unquoted scalar strings |  |
+| `--json` | Emit JSON representation instead of clean TOON |  |
+
 ## `kavach trace`
+
+Trace symbol definition, callers, and dependency context network (aliases: graph, network)
 
 | Flag | Description | Default |
 |---|---|---|
@@ -1212,6 +1351,7 @@ Think-mode: hybrid keyword+graph retrieval over the kavach memory corpus
 | `--callers` | Show only inbound callers/references |  |
 | `--callees` | Show only outbound callees/dependencies |  |
 | `--json` | Emit structured JSON output |  |
+| `--mermaid` | Emit Mermaid graph/flowchart format |  |
 
 ## `kavach verify`
 
@@ -1258,3 +1398,15 @@ Write a key-value slot (overwrites existing; max 10 slots)
 |---|---|---|
 | `<key>` |  |  |
 | `<value>` |  |  |
+
+## `kavach yaml`
+
+High-precision YAML projection to clean TOON output with atomic in-place mutation
+
+| Flag | Description | Default |
+|---|---|---|
+| `<query>` | Dot-path query projection (e.g. .services.db.image) | . |
+| `<path>` | Target YAML file (omit to read from stdin) |  |
+| `--keys` | Emit bare keys for targeted mapping |  |
+| `--raw` | Emit raw unquoted scalar strings |  |
+| `--json` | Emit JSON representation instead of clean TOON |  |

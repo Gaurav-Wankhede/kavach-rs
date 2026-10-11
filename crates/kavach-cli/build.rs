@@ -37,8 +37,9 @@ fn main() {
     let iso = format_iso(&epoch);
     println!("cargo::rustc-env=KAVACH_BUILD_TIMESTAMP={iso}");
 
-    // Combined version string for clap: "<iso>+git:<sha>"
-    println!("cargo::rustc-env=KAVACH_VERSION={iso}+git:{git_sha}");
+    let pkg_version = env!("CARGO_PKG_VERSION");
+    // Standard version string: "x.x.x (git:<sha>, <iso>)"
+    println!("cargo::rustc-env=KAVACH_VERSION={pkg_version} (git:{git_sha}, {iso})");
 }
 
 fn format_iso(epoch_str: &str) -> String {

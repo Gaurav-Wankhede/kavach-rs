@@ -37,8 +37,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 toml = { workspace = true }
-git2 = { workspace = true }
+gix = { workspace = true }
 similar = { workspace = true }
+rhai = { workspace = true }
+ureq = { workspace = true }
 svg = { workspace = true }
 scraper = { workspace = true }
 blake3 = { workspace = true }

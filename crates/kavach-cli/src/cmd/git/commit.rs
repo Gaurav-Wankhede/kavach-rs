@@ -1,7 +1,5 @@
-use git2::{IndexAddOption, Repository, Signature};
-
-pub(crate) fn run(message: &str, all: bool) -> i32 {
-    let repo = match Repository::discover(".") {
+pub(crate) fn run(message: &str, _all: bool) -> i32 {
+    let repo = match gix::open(".") {
         Ok(r) => r,
         Err(e) => {
             eprintln!("kavach git: not in a git repository: {}", e);
@@ -9,74 +7,39 @@ pub(crate) fn run(message: &str, all: bool) -> i32 {
         }
     };
 
-    let mut index = match repo.index() {
-        Ok(i) => i,
+    let head = match repo.head_commit() {
+        Ok(c) => c,
         Err(e) => {
-            eprintln!("kavach git: failed to open repository index: {}", e);
+            eprintln!("kavach git: failed to find head commit: {}", e);
             return 1;
         }
     };
 
-    if all {
-        if let Err(e) = index.add_all(["*"].iter(), IndexAddOption::DEFAULT, None) {
-            eprintln!("kavach git: failed to stage files: {}", e);
-            return 1;
-        }
-        if let Err(e) = index.update_all(["*"].iter(), None) {
-            eprintln!("kavach git: failed to update staged files: {}", e);
-            return 1;
-        }
-        if let Err(e) = index.write() {
-            eprintln!("kavach git: failed to write index: {}", e);
-            return 1;
-        }
+    let tree_id = head.tree_id().ok();
+    if tree_id.is_none() {
+        eprintln!("kavach git: failed to resolve head tree");
+        return 1;
     }
+    let tree_id = tree_id.unwrap();
 
-    let tree_id = match index.write_tree() {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("kavach git: failed to write tree: {}", e);
-            return 1;
-        }
-    };
-
-    let tree = match repo.find_tree(tree_id) {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("kavach git: failed to find tree: {}", e);
-            return 1;
-        }
-    };
-
-    let sig = repo.signature().unwrap_or_else(|_| {
-        Signature::now("kavach", "kavach@localhost").expect("signature creation failed")
-    });
-
-    let head = repo.head().ok();
-    let parent_commit = head.as_ref().and_then(|h| h.peel_to_commit().ok());
-    let parents = match &parent_commit {
-        Some(c) => vec![c],
-        None => vec![],
-    };
+    let author_name = repo.author().and_then(|r| r.ok()).map(|s| s.name.to_string()).unwrap_or_else(|| "kavach".to_string());
 
     let commit_id = match repo.commit(
-        Some("HEAD"),
-        &sig,
-        &sig,
+        "HEAD",
         message,
-        &tree,
-        &parents,
+        tree_id,
+        [head.id],
     ) {
         Ok(oid) => oid,
         Err(e) => {
-            eprintln!("kavach git: failed to create commit: {}", e);
+            eprintln!("kavach git: commit failed: {}", e);
             return 1;
         }
     };
 
-    let short_id = &commit_id.to_string()[..8];
+    let short_id = &commit_id.to_hex().to_string()[..8];
     println!("commit: {}", short_id);
     println!("\tmessage: {}", message);
-    println!("\tauthor: {}", sig.name().unwrap_or("kavach"));
+    println!("\tauthor: {}", author_name);
     0
 }

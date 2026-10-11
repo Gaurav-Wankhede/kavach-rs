@@ -19,6 +19,8 @@ pub(crate) mod db;
 
 mod gates;
 pub(crate) mod git;
+pub(crate) mod cargo;
+pub(crate) mod script;
 pub(crate) mod diff;
 pub(crate) mod harness_loop;
 mod heal;
@@ -283,6 +285,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             crate::cli::GitAction::Branch => git::branch::run(),
             crate::cli::GitAction::Commit { message, all } => git::commit::run(&message, all),
         },
+        Commands::Cargo { subcommand, args } => cargo::run(&subcommand, &args),
+        Commands::Script { path, expr } => script::run(path.as_deref(), expr.as_deref()),
     }
 }
 

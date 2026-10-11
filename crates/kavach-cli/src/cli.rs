@@ -511,6 +511,30 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
         #[command(subcommand)]
         action: GitAction,
     },
+
+    /// Sovereign Cargo proxy with streamlined compilation telemetry and nextest routing
+    #[command(
+        after_help = "EXAMPLES:\n  kavach cargo check\n  kavach cargo test\n  kavach cargo nextest run\n  kavach cargo build --release\n  kavach cargo clippy\n\nWHEN: run cargo commands without context rot or terminal scroll spam."
+    )]
+    Cargo {
+        /// Cargo subcommand (check, test, build, nextest, clippy, run, etc.)
+        subcommand: String,
+        /// Arguments and flags forwarded to cargo
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+
+    /// Sovereign pseudo-code scripting & live web API discovery engine
+    #[command(
+        after_help = "EXAMPLES:\n  kavach script -e 'let x = 40 + 2; print(x);'\n  kavach script -e 'let d = api_llms_txt(\"https://docs.anthropic.com\"); print(d.len());'\n  kavach script my_script.kvc\n\nWHEN: run in-memory pseudo-code, fetch web APIs, or discover llms.txt/sitemaps."
+    )]
+    Script {
+        /// Script file path (or omitted if using -e)
+        path: Option<String>,
+        /// Inline pseudo-code expression to evaluate
+        #[arg(short = 'e', long)]
+        expr: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
