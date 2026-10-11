@@ -82,7 +82,8 @@ pub(crate) enum Commands {
 
     /// High-precision polyglot AST and structural code search (replaces sg/rg).
     Grep {
-        /// AST or text pattern to match
+        /// AST or text pattern to match (optional when --def, --call, or --type is supplied)
+        #[arg(default_value = "")]
         pattern: String,
         /// Path to search (file or directory, defaults to current dir)
         #[arg(default_value = ".")]
@@ -162,6 +163,9 @@ pub(crate) enum Commands {
         /// Emit structured JSON output
         #[arg(long)]
         json: bool,
+        /// Emit Mermaid graph/flowchart format
+        #[arg(long)]
+        mermaid: bool,
     },
 
     /// Show session status, build identity, and enforcement flags.
@@ -733,7 +737,21 @@ pub(crate) enum GitAction {
         /// List modified file paths only
         #[arg(long)]
         files: bool,
+        /// Extract modified symbols (functions, structs, enums) using AST
+        #[arg(long)]
+        symbols: bool,
     },
     /// In-process working tree clean/modified status
     Status,
+    /// In-process branch listing and current branch telemetry
+    Branch,
+    /// In-process commit of staged or modified tracked files
+    Commit {
+        /// Commit message
+        #[arg(short, long)]
+        message: String,
+        /// Automatically stage all modified tracked files
+        #[arg(short, long)]
+        all: bool,
+    },
 }

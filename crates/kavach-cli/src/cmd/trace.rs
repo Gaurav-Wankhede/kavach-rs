@@ -41,7 +41,7 @@ pub(crate) struct TraceReport {
     pub files_scanned: usize,
 }
 
-fn resolve_lang(path: &str) -> Option<SupportLang> {
+pub(crate) fn resolve_lang(path: &str) -> Option<SupportLang> {
     let ext = Path::new(path).extension()?.to_str()?;
     match ext {
         "rs" => Some(SupportLang::Rust),
@@ -58,7 +58,7 @@ fn resolve_lang(path: &str) -> Option<SupportLang> {
     }
 }
 
-fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
+pub(crate) fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
     let mut line = 1usize;
     let mut col = 1usize;
     for (idx, b) in content.bytes().enumerate() {
@@ -75,7 +75,7 @@ fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
     (line, col)
 }
 
-fn is_definition_node(node: &Node<'_, StrDoc<SupportLang>>, symbol: &str) -> Option<String> {
+pub(crate) fn is_definition_node(node: &Node<'_, StrDoc<SupportLang>>, symbol: &str) -> Option<String> {
     let kind = node.kind();
     
     // Rust definitions
@@ -114,6 +114,37 @@ fn is_definition_node(node: &Node<'_, StrDoc<SupportLang>>, symbol: &str) -> Opt
     None
 }
 
+pub(crate) fn any_definition_node(node: &Node<'_, StrDoc<SupportLang>>) -> Option<(String, String)> {
+    let kind = node.kind();
+    
+    // Rust definitions
+    if kind == "function_item" || kind == "struct_item" || kind == "enum_item" || kind == "trait_item" || kind == "type_item" || kind == "const_item" {
+        if let Some(id_node) = node.field("name") {
+            return Some((kind.to_string(), id_node.text().to_string()));
+        }
+    }
+    // TypeScript / JS
+    if kind == "function_declaration" || kind == "class_declaration" || kind == "interface_declaration" || kind == "type_alias_declaration" || kind == "method_definition" {
+        if let Some(id_node) = node.field("name") {
+            return Some((kind.to_string(), id_node.text().to_string()));
+        }
+    }
+    // Python
+    if kind == "function_definition" || kind == "class_definition" {
+        if let Some(id_node) = node.field("name") {
+            return Some((kind.to_string(), id_node.text().to_string()));
+        }
+    }
+    // Go
+    if kind == "function_declaration" || kind == "method_declaration" || kind == "type_spec" {
+        if let Some(id_node) = node.field("name") {
+            return Some((kind.to_string(), id_node.text().to_string()));
+        }
+    }
+
+    None
+}
+
 fn find_enclosing_scope(node: &Node<'_, StrDoc<SupportLang>>) -> String {
     let mut current = node.parent();
     while let Some(p) = current {
@@ -136,6 +167,7 @@ pub(crate) fn run(
     callers_only: bool,
     callees_only: bool,
     json: bool,
+    mermaid: bool,
 ) -> i32 {
     let target_path = Path::new(path);
     if !target_path.exists() {
@@ -250,6 +282,35 @@ pub(crate) fn run(
                 }
             }
         }
+    }
+
+    if mermaid {
+        println!("flowchart TD");
+        let safe_symbol_id = symbol.replace(|c: char| !c.is_alphanumeric(), "_");
+        println!("    subgraph Target[\"{}\"]", symbol);
+        println!("        node_{}[\"{}\"]:::target", safe_symbol_id, symbol);
+        println!("    end");
+
+        if !callees_only && !callers.is_empty() {
+            println!("    subgraph Callers[\"Inbound Callers\"]");
+            for (idx, caller) in callers.iter().enumerate() {
+                let caller_id = format!("c_{}_{}", idx, caller.caller_scope.replace(|c: char| !c.is_alphanumeric(), "_"));
+                println!("        {}[\"{}\"] --> node_{}", caller_id, caller.caller_scope, safe_symbol_id);
+            }
+            println!("    end");
+        }
+
+        if !callers_only && !callees.is_empty() {
+            println!("    subgraph Callees[\"Outbound Dependencies\"]");
+            for (idx, callee) in callees.iter().enumerate() {
+                let callee_id = format!("e_{}_{}", idx, callee.symbol.replace(|c: char| !c.is_alphanumeric(), "_"));
+                println!("        node_{} --> {}[\"{}\"]", safe_symbol_id, callee_id, callee.symbol);
+            }
+            println!("    end");
+        }
+
+        println!("    classDef target fill:#4f46e5,stroke:#312e81,stroke-width:2px,color:#fff;");
+        return 0;
     }
 
     if json {

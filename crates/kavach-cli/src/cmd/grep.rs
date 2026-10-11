@@ -57,6 +57,14 @@ pub(crate) fn run(
 
     let has_ast_intent = def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || pattern.contains("$");
 
+    // If an AST flag is set, handle cases where user passed a file as first argument
+    let (effective_pattern, effective_path) = if (def_opt.is_some() || call_opt.is_some() || type_opt.is_some()) && path == "." && !pattern.is_empty() && Path::new(pattern).exists() {
+        ("", pattern)
+    } else {
+        (pattern, path)
+    };
+    let p = Path::new(effective_path);
+
     if p.is_file() {
         let path_str = p.to_string_lossy();
         let p_path = Path::new(&*path_str);
@@ -131,7 +139,7 @@ pub(crate) fn run(
         let lang = resolve_lang(&path_str, lang_opt);
         process_file(
             &path_str,
-            pattern,
+            effective_pattern,
             def_opt,
             call_opt,
             type_opt,
@@ -145,7 +153,7 @@ pub(crate) fn run(
             &mut out,
         );
     } else {
-        let mut builder = WalkBuilder::new(path);
+        let mut builder = WalkBuilder::new(effective_path);
         builder.hidden(false).git_ignore(true).git_global(true).git_exclude(true);
         let walker = builder.build();
 
@@ -159,6 +167,9 @@ pub(crate) fn run(
             }
 
             let file_path = entry.path().to_string_lossy();
+            if file_path.ends_with(".min.js") || file_path.ends_with(".min.css") || file_path.ends_with(".bundle.js") || file_path.ends_with(".map") {
+                continue;
+            }
             if let Some(glob_pat) = glob_filter {
                 let clean_file_path = file_path.strip_prefix("./").unwrap_or(&file_path);
                 let file_name = entry.file_name().to_string_lossy();
@@ -170,7 +181,7 @@ pub(crate) fn run(
             let lang = resolve_lang(&file_path, lang_opt);
             process_file(
                 &file_path,
-                pattern,
+                effective_pattern,
                 def_opt,
                 call_opt,
                 type_opt,
@@ -321,6 +332,10 @@ fn process_file(
 
     let all_lines: Vec<&str> = content.lines().collect();
     if all_lines.is_empty() {
+        return;
+    }
+    // Safeguard: refuse files where average line length indicates minified bundle (> 500 chars)
+    if all_lines.len() > 0 && (content.len() / all_lines.len()) > 500 {
         return;
     }
 

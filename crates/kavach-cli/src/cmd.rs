@@ -108,7 +108,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             callers,
             callees,
             json,
-        } => trace::run(&symbol, &path, depth, callers, callees, json),
+            mermaid,
+        } => trace::run(&symbol, &path, depth, callers, callees, json, mermaid),
         Commands::Json {
             query,
             path,
@@ -268,8 +269,10 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Git { action } => match action {
             crate::cli::GitAction::Log { limit, oneline } => git::log::run(limit, oneline),
             crate::cli::GitAction::Show { target, def, call } => git::show::run(&target, def.as_deref(), call.as_deref()),
-            crate::cli::GitAction::Diff { stat, files } => git::diff::run(stat, files),
+            crate::cli::GitAction::Diff { stat, files, symbols } => git::diff::run(stat, files, symbols),
             crate::cli::GitAction::Status => git::status::run(),
+            crate::cli::GitAction::Branch => git::branch::run(),
+            crate::cli::GitAction::Commit { message, all } => git::commit::run(&message, all),
         },
     }
 }
