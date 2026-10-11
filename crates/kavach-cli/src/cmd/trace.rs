@@ -271,42 +271,29 @@ pub(crate) fn run(
         return 0;
     }
 
-    // Human & Agent ASCII format
-    println!("Symbol: {} (scanned {} candidate files)", symbol, files_scanned);
+    // Tab-indented TOON output with Unix colon locations
+    println!("trace:");
+    println!("\tsymbol: {}", symbol);
+    println!("\tscanned: {}", files_scanned);
     
     if !callees_only {
-        println!("├── DEFINITIONS ({})", definitions.len());
-        if definitions.is_empty() {
-            println!("│   └── <none located>");
-        } else {
-            for (idx, def) in definitions.iter().enumerate() {
-                let prefix = if idx == definitions.len() - 1 && callers.is_empty() && callees.is_empty() { "└──" } else { "├──" };
-                println!("│   {} [{}] {}:{}:{}: {}", prefix, def.kind, def.path, def.line, def.col, def.snippet);
-            }
+        println!("\tdefinitions[{}]{{kind,loc,snippet}}:", definitions.len());
+        for def in &definitions {
+            println!("\t\t{}\t{}:{}:{}\t{}", def.kind, def.path, def.line, def.col, def.snippet);
         }
     }
 
     if !callees_only {
-        println!("├── CALLED BY / INBOUND REFERENCES ({})", callers.len());
-        if callers.is_empty() {
-            println!("│   └── <none located>");
-        } else {
-            for (idx, caller) in callers.iter().enumerate() {
-                let prefix = if idx == callers.len() - 1 && callees.is_empty() { "└──" } else { "├──" };
-                println!("│   {} [{}] {}:{}:{}: {}", prefix, caller.caller_scope, caller.path, caller.line, caller.col, caller.snippet);
-            }
+        println!("\tcallers[{}]{{caller_scope,loc,snippet}}:", callers.len());
+        for caller in &callers {
+            println!("\t\t{}\t{}:{}:{}\t{}", caller.caller_scope, caller.path, caller.line, caller.col, caller.snippet);
         }
     }
 
     if !callers_only {
-        println!("└── OUTBOUND CALLEES / DEPENDENCIES ({})", callees.len());
-        if callees.is_empty() {
-            println!("    └── <none located>");
-        } else {
-            for (idx, callee) in callees.iter().enumerate() {
-                let prefix = if idx == callees.len() - 1 { "└──" } else { "├──" };
-                println!("    {} {} at {}:{}:{}", prefix, callee.symbol, callee.path, callee.line, callee.col);
-            }
+        println!("\tcallees[{}]{{symbol,loc}}:", callees.len());
+        for callee in &callees {
+            println!("\t\t{}\t{}:{}:{}", callee.symbol, callee.path, callee.line, callee.col);
         }
     }
 

@@ -742,6 +742,9 @@ High-precision polyglot AST and structural code search (replaces sg/rg)
 | `--ignore-case` | Show NUM lines of trailing and leading context (retains exact line spacing) Case-insensitive search |  |
 | `--word-regexp` | Match whole words only |  |
 | `--scope` | Extract full enclosing AST semantic scope (fn, struct, class) instead of raw line numbers |  |
+| `--def` | Match definitions/declarations of a symbol across 28 AST languages |  |
+| `--call` | Match invocation/call sites of a symbol across 28 AST languages |  |
+| `--type` | Match type definitions or type annotations across 28 AST languages |  |
 
 ## `kavach heal`
 
@@ -797,6 +800,27 @@ EXAMPLES:
   kavach install --vendor cursor
 
 WHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent.
+```
+
+## `kavach json`
+
+Start/stop/inspect the background servers (Turso DB store + web UI). Query and project JSON state with zero-bloat TOON tabular formatting
+
+| Flag | Description | Default |
+|---|---|---|
+| `<query>` | Dot-path query projection (e.g. .rust_toolbelt.mapping[0].tool) | . |
+| `<path>` | Target JSON file path (or stdin) |  |
+| `--keys` | Emit newline-separated keys without quotes |  |
+| `--raw` | Emit unquoted raw string scalar |  |
+| `--json` | Emit compact standard JSON instead of TOON tabular format |  |
+
+```
+EXAMPLES:
+  kavach servers up        # ensure DB + GUI running, print URL
+  kavach servers status
+  kavach servers down
+
+WHEN: bring the GUI online, or check why pages show the offline panel.
 ```
 
 ## `kavach lint`
@@ -1041,17 +1065,6 @@ Fast regex pre-filter scan for security-sensitive patterns
 | `--output` | Output file for filtered results (default: .kavach/security-scan.json) |  |
 
 ## `kavach servers`
-
-Start/stop/inspect the background servers (Turso DB store + web UI)
-
-```
-EXAMPLES:
-  kavach servers up        # ensure DB + GUI running, print URL
-  kavach servers status
-  kavach servers down
-
-WHEN: bring the GUI online, or check why pages show the offline panel.
-```
 
 ## `kavach servers down`
 

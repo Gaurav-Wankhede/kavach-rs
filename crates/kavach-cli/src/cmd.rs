@@ -2,6 +2,7 @@ pub(crate) mod glob;
 pub(crate) mod grep;
 pub(crate) mod replace;
 pub(crate) mod trace;
+pub(crate) mod json;
 // hub: CLI dispatch hub — dispatch() fn is intentionally here as the top-level router
 mod audit;
 mod commands;
@@ -57,6 +58,9 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         Commands::Grep {
             pattern,
             path,
+            def,
+            call,
+            type_name,
             ast,
             lang,
             glob,
@@ -65,7 +69,21 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             scope,
             json,
             max_count,
-        } => grep::run(&pattern, &path, ast, lang.as_deref(), glob.as_deref(), ignore_case, word_regexp, scope, json, max_count),
+        } => grep::run(
+            &pattern,
+            &path,
+            def.as_deref(),
+            call.as_deref(),
+            type_name.as_deref(),
+            ast,
+            lang.as_deref(),
+            glob.as_deref(),
+            ignore_case,
+            word_regexp,
+            scope,
+            json,
+            max_count,
+        ),
 
         Commands::Replace {
             find,
@@ -83,6 +101,13 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             callees,
             json,
         } => trace::run(&symbol, &path, depth, callers, callees, json),
+        Commands::Json {
+            query,
+            path,
+            keys,
+            raw,
+            json,
+        } => json::run(&query, path.as_deref(), keys, raw, json),
         Commands::Status => status::run(),
         Commands::Servers { action } => servers::run(&action),
         Commands::Gates {

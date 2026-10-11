@@ -12,6 +12,9 @@ use std::path::Path;
 pub(crate) fn run(
     pattern: &str,
     path: &str,
+    def_opt: Option<&str>,
+    call_opt: Option<&str>,
+    type_opt: Option<&str>,
     is_ast: bool,
     lang_opt: Option<&str>,
     glob_filter: Option<&str>,
@@ -36,6 +39,9 @@ pub(crate) fn run(
         process_file(
             &path_str,
             pattern,
+            def_opt,
+            call_opt,
+            type_opt,
             is_ast,
             lang,
             ignore_case,
@@ -72,6 +78,9 @@ pub(crate) fn run(
             process_file(
                 &file_path,
                 pattern,
+                def_opt,
+                call_opt,
+                type_opt,
                 is_ast,
                 lang,
                 ignore_case,
@@ -89,6 +98,7 @@ pub(crate) fn run(
 }
 
 fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
+    use ast_grep_language::Language;
     if let Some(l) = lang_opt {
         match l.to_lowercase().as_str() {
             "rs" | "rust" => return Some(SupportLang::Rust),
@@ -106,29 +116,20 @@ fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
             "yaml" | "yml" => return Some(SupportLang::Yaml),
             "html" => return Some(SupportLang::Html),
             "css" => return Some(SupportLang::Css),
+            "swift" => return Some(SupportLang::Swift),
+            "kotlin" => return Some(SupportLang::Kotlin),
+            "lua" => return Some(SupportLang::Lua),
+            "ruby" | "rb" => return Some(SupportLang::Ruby),
+            "php" => return Some(SupportLang::Php),
+            "solidity" | "sol" => return Some(SupportLang::Solidity),
+            "elixir" | "ex" => return Some(SupportLang::Elixir),
+            "dart" => return Some(SupportLang::Dart),
+            "scala" => return Some(SupportLang::Scala),
+            "haskell" | "hs" => return Some(SupportLang::Haskell),
             _ => return None,
         }
     }
-
-    let ext = Path::new(path).extension()?.to_str()?;
-    match ext {
-        "rs" => Some(SupportLang::Rust),
-        "ts" | "mts" | "cts" => Some(SupportLang::TypeScript),
-        "tsx" => Some(SupportLang::Tsx),
-        "js" | "mjs" | "cjs" => Some(SupportLang::JavaScript),
-        "py" => Some(SupportLang::Python),
-        "go" => Some(SupportLang::Go),
-        "c" | "h" => Some(SupportLang::C),
-        "cpp" | "cc" | "cxx" | "hpp" => Some(SupportLang::Cpp),
-        "cs" => Some(SupportLang::CSharp),
-        "java" => Some(SupportLang::Java),
-        "sh" | "bash" => Some(SupportLang::Bash),
-        "json" => Some(SupportLang::Json),
-        "yaml" | "yml" => Some(SupportLang::Yaml),
-        "html" => Some(SupportLang::Html),
-        "css" => Some(SupportLang::Css),
-        _ => None,
-    }
+    SupportLang::from_path(Path::new(path))
 }
 
 fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
@@ -208,6 +209,9 @@ fn matches_word_boundary(line: &str, start_col: usize, match_len: usize) -> bool
 fn process_file(
     file_path: &str,
     pattern: &str,
+    def_opt: Option<&str>,
+    call_opt: Option<&str>,
+    type_opt: Option<&str>,
     is_ast: bool,
     lang_opt: Option<SupportLang>,
     ignore_case: bool,
@@ -227,21 +231,83 @@ fn process_file(
         return;
     }
 
-    // Try AST search if user requested AST search and grammar language is recognized
-    let (ast_matches, scope_intervals): (Vec<(usize, usize, usize, usize)>, Vec<(usize, usize)>) = if is_ast && lang_opt.is_some() {
+    // Polyglot AST search: check --def, --call, --type, or AST pattern
+    let (ast_matches, scope_intervals): (Vec<(usize, usize, usize, usize)>, Vec<(usize, usize)>) = if lang_opt.is_some() && (def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || (is_ast && !pattern.is_empty())) {
         let lang = lang_opt.unwrap();
-        match ast_grep_core::Pattern::try_new(pattern, lang) {
-            Ok(p) => {
-                let grep = AstGrep::new(&content, lang);
-                let root = grep.root();
-                let mut matches = Vec::new();
-                let mut scopes = Vec::new();
+        let grep = AstGrep::new(&content, lang);
+        let root = grep.root();
+        let mut matches = Vec::new();
+        let mut scopes = Vec::new();
+
+        if let Some(def_sym) = def_opt {
+            for node in root.dfs() {
+                let k = node.kind();
+                if k.contains("declaration") || k.contains("definition") || k.ends_with("_item") || k.contains("type_spec") {
+                    if let Some(name_node) = node.field("name").or_else(|| node.field("identifier")) {
+                        if def_sym == "$NAME" || def_sym == "*" || name_node.text() == def_sym {
+                            let range = name_node.range();
+                            let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                            let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                            matches.push((s_line, s_col, e_line, e_col));
+                            if scope {
+                                let decl_range = node.range();
+                                let (sc_s_line, _) = offset_to_line_and_col(&content, decl_range.start);
+                                let (sc_e_line, _) = offset_to_line_and_col(&content, decl_range.end);
+                                scopes.push((sc_s_line, sc_e_line));
+                            }
+                        }
+                    }
+                }
+            }
+        } else if let Some(call_sym) = call_opt {
+            for node in root.dfs() {
+                let k = node.kind();
+                if k == "call_expression" || k == "method_call_expression" || k == "call" {
+                    if let Some(fn_node) = node.field("function") {
+                        let fn_txt = fn_node.text();
+                        if call_sym == "$NAME" || call_sym == "*" || fn_txt == call_sym || fn_txt.ends_with(&format!(".{}", call_sym)) || fn_txt.ends_with(&format!("::{}", call_sym)) {
+                            let range = fn_node.range();
+                            let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                            let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                            matches.push((s_line, s_col, e_line, e_col));
+                            if scope {
+                                if let Some((scope_start, scope_end)) = find_enclosing_declaration(&node) {
+                                    let (sc_s_line, _) = offset_to_line_and_col(&content, scope_start);
+                                    let (sc_e_line, _) = offset_to_line_and_col(&content, scope_end);
+                                    scopes.push((sc_s_line, sc_e_line));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if let Some(type_sym) = type_opt {
+            for node in root.dfs() {
+                let k = node.kind();
+                if k.contains("struct") || k.contains("class") || k.contains("interface") || k.contains("enum") || k.contains("type") {
+                    if let Some(name_node) = node.field("name").or_else(|| node.field("identifier")) {
+                        if type_sym == "$NAME" || type_sym == "*" || name_node.text() == type_sym {
+                            let range = name_node.range();
+                            let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                            let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                            matches.push((s_line, s_col, e_line, e_col));
+                            if scope {
+                                let decl_range = node.range();
+                                let (sc_s_line, _) = offset_to_line_and_col(&content, decl_range.start);
+                                let (sc_e_line, _) = offset_to_line_and_col(&content, decl_range.end);
+                                scopes.push((sc_s_line, sc_e_line));
+                            }
+                        }
+                    }
+                }
+            }
+        } else if is_ast && !pattern.is_empty() {
+            if let Ok(p) = ast_grep_core::Pattern::try_new(pattern, lang) {
                 for m in root.find_all(&p) {
                     let range = m.range();
                     let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
                     let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
                     matches.push((s_line, s_col, e_line, e_col));
-
                     if scope {
                         if let Some((scope_start, scope_end)) = find_enclosing_declaration(&m) {
                             let (sc_s_line, _) = offset_to_line_and_col(&content, scope_start);
@@ -250,15 +316,14 @@ fn process_file(
                         }
                     }
                 }
-                (matches, scopes)
             }
-            Err(_) => (Vec::new(), Vec::new()),
         }
+        (matches, scopes)
     } else {
         (Vec::new(), Vec::new())
     };
 
-    let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || (pattern.contains("$") && lang_opt.is_some()) {
+    let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || (pattern.contains("$") && lang_opt.is_some()) {
         ast_matches
     } else {
         let mut literal_spans = Vec::new();

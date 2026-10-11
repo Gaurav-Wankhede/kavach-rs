@@ -18,6 +18,126 @@ pub enum TabularError {
 
 /// Convert a JSON array of uniform objects into a dense, token-saving TSV table.
 #[must_use]
+/// Encode any serde_json::Value into official TOON (Token-Oriented Object Notation).
+pub fn encode_toon(val: &Value) -> String {
+    let mut out = String::new();
+    encode_toon_value(val, 0, &mut out);
+    out
+}
+
+fn encode_toon_value(val: &Value, indent: usize, out: &mut String) {
+    let pad = " ".repeat(indent);
+    match val {
+        Value::Null => out.push_str("null"),
+        Value::Bool(b) => out.push_str(&b.to_string()),
+        Value::Number(n) => out.push_str(&n.to_string()),
+        Value::String(s) => {
+            if s.contains(',') || s.contains('\n') || s.contains(':') || s.contains('"') {
+                out.push('"');
+                out.push_str(&s.replace('\"', "\\\"").replace('"', "\""));
+                out.push('"');
+            } else {
+                out.push_str(s);
+            }
+        }
+        Value::Array(arr) => {
+            if arr.is_empty() {
+                out.push_str("[]");
+                return;
+            }
+            // Check if uniform array of objects for tabular form
+            if let Some(first) = arr.first().and_then(Value::as_object) {
+                let keys: Vec<&String> = first.keys().collect();
+                let is_uniform = arr.iter().all(|item| {
+                    if let Some(obj) = item.as_object() {
+                        obj.len() == keys.len() && keys.iter().all(|k| obj.contains_key(*k))
+                    } else {
+                        false
+                    }
+                });
+                if is_uniform && !keys.is_empty() {
+                    let key_names: Vec<&str> = keys.iter().map(|k| k.as_str()).collect();
+                    out.push_str(&format!("[{}]{{{{{}}}}}:\n", arr.len(), key_names.join(",")));
+                    for item in arr {
+                        let obj = item.as_object().unwrap();
+                        out.push_str(&format!("{}  ", pad));
+                        for (idx, k) in keys.iter().enumerate() {
+                            if idx > 0 {
+                                out.push(',');
+                            }
+                            let v = obj.get(*k).unwrap();
+                            match v {
+                                Value::String(s) => {
+                                    if s.contains(',') || s.contains('\n') || s.contains('"') {
+                                        out.push('"');
+                                        out.push_str(&s.replace('"', "\""));
+                                        out.push('"');
+                                    } else {
+                                        out.push_str(s);
+                                    }
+                                }
+                                Value::Null => {}
+                                _ => out.push_str(&v.to_string()),
+                            }
+                        }
+                        out.push('\n');
+                    }
+                    return;
+                }
+            }
+
+            // Primitive inline array or generic array
+            let all_primitive = arr.iter().all(|v| !v.is_object() && !v.is_array());
+            if all_primitive {
+                out.push_str(&format!("[{}] ", arr.len()));
+                for (idx, item) in arr.iter().enumerate() {
+                    if idx > 0 {
+                        out.push(',');
+                    }
+                    if let Value::String(s) = item {
+                        if s.contains(',') || s.contains('"') {
+                            out.push('"');
+                            out.push_str(&s.replace('"', "\""));
+                            out.push('"');
+                        } else {
+                            out.push_str(s);
+                        }
+                    } else {
+                        out.push_str(&item.to_string());
+                    }
+                }
+            } else {
+                out.push_str(&format!("[{}]\n", arr.len()));
+                for item in arr {
+                    out.push_str(&format!("{}- ", pad));
+                    encode_toon_value(item, indent + 2, out);
+                    out.push('\n');
+                }
+            }
+        }
+        Value::Object(obj) => {
+            if obj.is_empty() {
+                out.push_str("{}");
+                return;
+            }
+            let mut first = true;
+            for (k, v) in obj {
+                if !first {
+                    out.push('\n');
+                }
+                first = false;
+                out.push_str(&format!("{}{}: ", pad, k));
+                if v.is_object() {
+                    out.push('\n');
+                    encode_toon_value(v, indent + 2, out);
+                } else {
+                    encode_toon_value(v, indent + 2, out);
+                }
+            }
+        }
+    }
+}
+
 pub fn json_to_table(items: &[Value]) -> Option<String> {
     if items.len() < 3 {
         return None;

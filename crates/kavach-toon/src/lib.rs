@@ -5,6 +5,7 @@ use thiserror::Error;
 
 // SOURCE: doc.rust-lang.org/reference/items/modules.html
 pub mod compact;
+pub use compact::tabular::encode_toon;
 
 // Typed error via thiserror (vs Result<T,String>/Box<dyn Error>/anyhow).
 // See decision.toon.typed-error.

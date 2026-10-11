@@ -112,6 +112,15 @@ pub(crate) enum Commands {
         /// Extract full enclosing AST semantic scope (fn, struct, class) instead of raw line numbers
         #[arg(short = 's', long = "scope")]
         scope: bool,
+        /// Match definitions/declarations of a symbol across 28 AST languages
+        #[arg(long = "def")]
+        def: Option<String>,
+        /// Match invocation/call sites of a symbol across 28 AST languages
+        #[arg(long = "call")]
+        call: Option<String>,
+        /// Match type definitions or type annotations across 28 AST languages
+        #[arg(long = "type")]
+        type_name: Option<String>,
 
     },
 
@@ -135,7 +144,6 @@ pub(crate) enum Commands {
     },
 
     /// Trace symbol definition, callers, and dependency context network (aliases: graph, network).
-    #[command(alias = "graph", alias = "network")]
     Trace {
         /// Symbol identifier to trace (function, struct, type, const)
         symbol: String,
@@ -165,6 +173,23 @@ pub(crate) enum Commands {
     #[command(
         after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel."
     )]
+    /// Query and project JSON state with zero-bloat TOON tabular formatting
+    Json {
+        /// Dot-path query projection (e.g. .rust_toolbelt.mapping[0].tool)
+        #[arg(default_value = ".")]
+        query: String,
+        /// Target JSON file path (or stdin)
+        path: Option<String>,
+        /// Emit newline-separated keys without quotes
+        #[arg(short = 'k', long = "keys")]
+        keys: bool,
+        /// Emit unquoted raw string scalar
+        #[arg(short = 'r', long = "raw")]
+        raw: bool,
+        /// Emit compact standard JSON instead of TOON tabular format
+        #[arg(short = 'j', long = "json")]
+        json: bool,
+    },
     Servers {
         #[command(subcommand)]
         action: ServersAction,
