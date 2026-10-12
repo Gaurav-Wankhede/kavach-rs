@@ -120,7 +120,7 @@ fn kickoff_refresh(key: &str, c: &Citation) {
             urls.join(", ")
         )
     };
-    kavach_advisor::kickoff(&refresh_session_id(key), &topic);
+    crate::research::kickoff(&refresh_session_id(key), &topic);
 }
 
 /// Kick off the FIRST research for a directive that has no row yet, so the
@@ -130,7 +130,7 @@ fn kickoff_first(key: &str, fallback: &str) {
         "Establish the kavach gate directive '{key}'. Current guidance is: \"{fallback}\". \
          Confirm or improve it against current authoritative web sources; include source URLs."
     );
-    kavach_advisor::kickoff(&refresh_session_id(key), &topic);
+    crate::research::kickoff(&refresh_session_id(key), &topic);
 }
 
 /// Session id under which a directive's background research is cached. Namespaced

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use kavach_rule_storage::RuleStore;
+use kavach_rule_engine::RuleStore;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 

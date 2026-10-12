@@ -7,7 +7,7 @@ use super::extract_features;
 fn destructive(prompt: &str) -> bool {
     extract_features(prompt)
         .get("has_destructive")
-        .and_then(kavach_dtree::Feature::as_bool)
+        .and_then(crate::dtree::Feature::as_bool)
         .expect("feature present")
 }
 
@@ -49,13 +49,13 @@ fn extracts_debug_features() {
     assert_eq!(
         features
             .get("has_debug")
-            .and_then(kavach_dtree::Feature::as_bool),
+            .and_then(crate::dtree::Feature::as_bool),
         Some(true)
     );
     assert_eq!(
         features
             .get("has_implement")
-            .and_then(kavach_dtree::Feature::as_bool),
+            .and_then(crate::dtree::Feature::as_bool),
         Some(false)
     );
 }
@@ -66,7 +66,7 @@ fn extracts_deploy_features() {
     assert_eq!(
         features
             .get("has_deploy")
-            .and_then(kavach_dtree::Feature::as_bool),
+            .and_then(crate::dtree::Feature::as_bool),
         Some(true)
     );
 }
@@ -77,7 +77,7 @@ fn extracts_word_count() {
     assert_eq!(
         features
             .get("word_count")
-            .and_then(kavach_dtree::Feature::as_numeric),
+            .and_then(crate::dtree::Feature::as_numeric),
         Some(3.0)
     );
 }

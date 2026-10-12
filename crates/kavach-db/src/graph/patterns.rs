@@ -126,8 +126,12 @@ impl GraphPatternMatcher {
             cmd.arg("--lang").arg(lang);
         }
 
-        // Run ast-grep CLI
-        let output = cmd.output()?;
+        // Run ast-grep CLI if installed; fail gracefully if not present
+        let output = match cmd.output() {
+            Ok(out) => out,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(e.into()),
+        };
 
         // Check for errors
         if !output.status.success() {

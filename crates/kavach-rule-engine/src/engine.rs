@@ -4,7 +4,7 @@ use crate::context::EvalContext;
 use crate::matcher::{match_config_skills, match_rules};
 use crate::research::check_research_gate;
 use crate::result::{RuleAction, RuleResult};
-use kavach_rule_ast::SkillDefinition;
+use crate::ast::SkillDefinition;
 use std::io::{self, Write};
 use std::path::PathBuf;
 /// Central rule engine that loads and evaluates TOON skill rules.
@@ -101,19 +101,19 @@ impl RuleEngine {
     }
     fn parse_skill_file(path: &PathBuf) -> Result<SkillDefinition, String> {
         let content = std::fs::read_to_string(path).map_err(|e| format!("read: {e}"))?;
-        let fm = kavach_rule_parser::parse_frontmatter(&content)
+        let fm = crate::parser::parse_frontmatter(&content)
             .map_err(|e| format!("frontmatter: {e}"))?;
         let file_patterns = fm.effective_patterns().to_vec();
         Ok(SkillDefinition {
-            metadata: kavach_rule_ast::SkillMetadata {
+            metadata: crate::ast::SkillMetadata {
                 name: fm.name,
                 description: fm.description,
                 protocol: "SP/3.0".into(),
                 triggers: fm.metadata.triggers,
                 file_patterns,
-                priority: kavach_rule_ast::SkillPriority::parse_str(&fm.priority),
+                priority: crate::ast::SkillPriority::parse_str(&fm.priority),
             },
-            research_gate: kavach_rule_ast::ResearchGate {
+            research_gate: crate::ast::ResearchGate {
                 mandatory: true,
                 rule: "WebSearch before code".into(),
             },

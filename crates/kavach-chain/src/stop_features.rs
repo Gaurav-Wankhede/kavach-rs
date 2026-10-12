@@ -62,7 +62,7 @@
 // input) so RUSTSEC-2022-0013 (untrusted-regex ReDoS) does not apply; the
 // high-level `regex` crate also enforces default size limits + linear time.
 
-use kavach_dtree::FeatureSet;
+use crate::dtree::FeatureSet;
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -231,25 +231,25 @@ mod tests {
         assert_eq!(
             feats("wrote the plan", false)
                 .get("authored_artifact")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             feats("a fresh session", false)
                 .get("resume_elsewhere")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             feats("your call here?", false)
                 .get("strong_scope_ask")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             feats("tests pass", false)
                 .get("impl_evidence")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
     }
@@ -261,17 +261,17 @@ mod tests {
         let f = feats(msg, false);
         assert_eq!(
             f.get("authored_artifact")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             f.get("resume_elsewhere")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             f.get("had_write_this_turn")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(false)
         );
     }
@@ -289,7 +289,7 @@ mod tests {
             assert_eq!(
                 feats(m, false)
                     .get("resume_elsewhere")
-                    .and_then(kavach_dtree::Feature::as_bool),
+                    .and_then(crate::dtree::Feature::as_bool),
                 Some(true),
                 "paraphrase not caught: {m}"
             );
@@ -303,12 +303,12 @@ mod tests {
         let f = feats(msg, false);
         assert_eq!(
             f.get("strong_scope_ask")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             f.get("resume_elsewhere")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(false)
         );
     }
@@ -320,17 +320,17 @@ mod tests {
         let f = feats(msg, true);
         assert_eq!(
             f.get("authored_artifact")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             f.get("impl_evidence")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
         assert_eq!(
             f.get("had_write_this_turn")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(true)
         );
     }
@@ -340,12 +340,12 @@ mod tests {
         let f = feats("", false);
         assert_eq!(
             f.get("authored_artifact")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(false)
         );
         assert_eq!(
             f.get("resume_elsewhere")
-                .and_then(kavach_dtree::Feature::as_bool),
+                .and_then(crate::dtree::Feature::as_bool),
             Some(false)
         );
     }

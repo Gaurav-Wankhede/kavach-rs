@@ -1,4 +1,5 @@
 [package]
+readme = "README.md"
 name = "kavach-cli"
 version = "1.3.4"
 edition = "2024"
@@ -20,7 +21,6 @@ kavach-toon = { path = "../kavach-toon" }
 kavach-session = { path = "../kavach-session" }
 kavach-config = { path = "../kavach-config" }
 kavach-rule-engine = { path = "../kavach-rule-engine" }
-kavach-rule-storage = { path = "../kavach-rule-storage" }
 kavach-rule-generator = { path = "../kavach-rule-generator" }
 kavach-db = { path = "../kavach-db" }
 kavach-rpc = { path = "../kavach-rpc" }
@@ -28,7 +28,6 @@ kavach-web = { path = "../kavach-web" }
 kavach-patterns = { path = "../kavach-patterns" }
 regex = { workspace = true }
 chrono = { workspace = true }
-kavach-advisor = { path = "../kavach-advisor" }
 postgres = { workspace = true }
 postgres-native-tls = { workspace = true }
 native-tls = { workspace = true }

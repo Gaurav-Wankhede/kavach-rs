@@ -40,6 +40,7 @@ name = "kavach_web"
 path = "src/lib.rs"
 
 [package]
+readme = "README.md"
 name = "kavach-web"
 publish = false
 

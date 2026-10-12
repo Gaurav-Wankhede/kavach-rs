@@ -1,5 +1,22 @@
-//! Rule engine for evaluating TOON skill rules during hook execution.
-//! Bridges kavach-rule-ast + kavach-rule-parser with the gate system.
+//! Unified Rule Engine for evaluating TOON skill rules during hook execution.
+//! Incorporates AST models, parsing, disk storage, and compliance enforcement.
+
+pub mod ast;
+pub mod parser;
+pub mod storage;
+
+pub use ast::{
+    SkillDefinition, SkillMetadata, SkillPriority,
+    ResearchGate, ErrorHandling, PendingTasks,
+};
+pub use parser::{
+    parse_frontmatter, extract_sections, FrontmatterMetadata,
+};
+pub use storage::{
+    RuleIndex, SkillRegistry, RuleStore, StoredRule, RuleVersion, StorageError,
+    build_from_rules, is_stale, load_or_rebuild, load_registry, save_registry,
+};
+
 
 pub mod compliance;
 pub mod context;

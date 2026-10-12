@@ -2,7 +2,7 @@
 
 use crate::context::EvalContext;
 use kavach_config::get_skills_by_priority;
-use kavach_rule_ast::SkillDefinition;
+use crate::ast::SkillDefinition;
 
 /// A matched rule with its source skill and match score.
 #[derive(Debug, Clone)]
@@ -74,7 +74,7 @@ pub fn match_config_skills(ctx: &EvalContext) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kavach_rule_ast::{ResearchGate, SkillDefinition, SkillMetadata};
+    use crate::ast::{ResearchGate, SkillDefinition, SkillMetadata};
 
     fn test_skill(name: &str, triggers: &[&str]) -> SkillDefinition {
         SkillDefinition {
@@ -84,7 +84,7 @@ mod tests {
                 protocol: "SP/1.0".into(),
                 triggers: triggers.iter().map(ToString::to_string).collect(),
                 file_patterns: Vec::new(),
-                priority: kavach_rule_ast::SkillPriority::default(),
+                priority: crate::ast::SkillPriority::default(),
             },
             research_gate: ResearchGate {
                 mandatory: true,

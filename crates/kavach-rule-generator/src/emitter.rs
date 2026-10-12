@@ -1,7 +1,7 @@
 //! Emits TOON-formatted skill file content from `SkillDefinition`.
 use crate::detector::DetectedPattern;
 use crate::template::{generate_error_handling, generate_pending_tasks};
-use kavach_rule_ast::SkillDefinition;
+use kavach_rule_engine::SkillDefinition;
 use std::fmt::Write;
 #[must_use]
 pub fn emit_skill(skill: &SkillDefinition) -> String {

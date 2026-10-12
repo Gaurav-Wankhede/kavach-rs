@@ -7,6 +7,9 @@
     reason = "nursery lint conflicts with workspace unreachable_pub=deny: pub(crate) fns in private modules satisfy unreachable_pub; redundant_pub_crate's pub suggestion would re-trigger it"
 )]
 
+pub mod dtree;
+pub use dtree::{DecisionNode, DecisionTree, Outcome, Predicate, Feature, FeatureSet, DTreeError};
+
 pub mod chain_state;
 pub mod context_output;
 pub mod gates;

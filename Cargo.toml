@@ -2,7 +2,6 @@
 strip = true
 
 [workspace]
-exclude = ["crates/kavach-nlm"]
 members = ["crates/*"]
 resolver = "3"
 

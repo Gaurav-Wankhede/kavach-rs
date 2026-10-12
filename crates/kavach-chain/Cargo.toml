@@ -10,9 +10,6 @@ workspace = true
 [dependencies.kavach-config]
 path = "../kavach-config"
 
-[dependencies.kavach-dtree]
-path = "../kavach-dtree"
-
 [dependencies.kavach-patterns]
 path = "../kavach-patterns"
 
@@ -26,6 +23,7 @@ workspace = true
 workspace = true
 
 [package]
+readme = "README.md"
 name = "kavach-chain"
 publish = false
 
@@ -39,4 +37,7 @@ workspace = true
 workspace = true
 
 [package.version]
+workspace = true
+
+[dependencies.thiserror]
 workspace = true

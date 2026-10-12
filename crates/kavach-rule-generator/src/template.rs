@@ -1,6 +1,6 @@
 //! Generates `SkillDefinition` from detected code patterns.
 use crate::detector::{DetectedPattern, PatternType};
-use kavach_rule_ast::{ErrorHandling, PendingTasks, ResearchGate, SkillDefinition, SkillMetadata};
+use kavach_rule_engine::{ErrorHandling, PendingTasks, ResearchGate, SkillDefinition, SkillMetadata};
 #[must_use]
 pub fn generate_skill(pattern: &DetectedPattern) -> SkillDefinition {
     SkillDefinition {
@@ -69,7 +69,7 @@ fn build_metadata(pattern: &DetectedPattern) -> SkillMetadata {
         protocol: "SP/3.0".into(),
         triggers,
         file_patterns: Vec::new(),
-        priority: kavach_rule_ast::SkillPriority::default(),
+        priority: kavach_rule_engine::SkillPriority::default(),
     }
 }
 fn build_research_gate(pattern: &DetectedPattern) -> ResearchGate {

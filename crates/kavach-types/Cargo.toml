@@ -14,6 +14,7 @@ workspace = true
 workspace = true
 
 [package]
+readme = "README.md"
 description = "Core domain types, AST models, and error schemas for Kavach"
 name = "kavach-types"
 

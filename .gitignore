@@ -3,7 +3,6 @@ target/
 *.rlib
 
 # kavach-nlm: standalone NLM helper subsystem — kept local, not pushed (no other crate depends on it)
-/crates/kavach-nlm/
 
 # Local SurrealDB query/REPL scratch — not source
 /history.txt

@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies.kavach-types]
 path = "../kavach-types"
+version = "1.3.4"
 
 [dependencies.serde]
 workspace = true
@@ -28,8 +29,9 @@ workspace = true
 workspace = true
 
 [package]
+description = "Quote-aware POSIX tokenization and multi-pattern anti-pattern detection for Kavach"
 name = "kavach-patterns"
-publish = false
+readme = "README.md"
 
 [package.edition]
 workspace = true

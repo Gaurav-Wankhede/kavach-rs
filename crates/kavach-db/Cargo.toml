@@ -28,6 +28,7 @@ workspace = true
 
 [dependencies.kavach-types]
 path = "../kavach-types"
+version = "1.3.4"
 
 [dependencies.libsql]
 default-features = false
@@ -104,8 +105,9 @@ workspace = true
 workspace = true
 
 [package]
+description = "Embedded Turso/libSQL memory substrate, DAG scheduler, and mistakes ledger for Kavach"
 name = "kavach-db"
-publish = false
+readme = "README.md"
 
 [package.edition]
 workspace = true

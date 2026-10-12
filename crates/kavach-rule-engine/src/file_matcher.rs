@@ -1,7 +1,7 @@
 //! Match file paths against skill registry patterns.
 
-use kavach_rule_ast::SkillPriority;
-use kavach_rule_storage::RegistryEntry;
+use crate::ast::SkillPriority;
+use crate::storage::RegistryEntry;
 
 /// Result of matching a file path against all registry entries.
 #[derive(Debug, Default)]

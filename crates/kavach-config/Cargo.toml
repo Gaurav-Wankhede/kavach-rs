@@ -26,8 +26,9 @@ workspace = true
 workspace = true
 
 [package]
+description = "Hierarchical configuration management for the Kavach sovereign engine"
 name = "kavach-config"
-publish = false
+readme = "README.md"
 
 [package.edition]
 workspace = true

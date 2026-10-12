@@ -5,7 +5,7 @@ pub(super) fn build_skill_registry() {
     let skills_dir = kavach_config::skills_dir();
     let cache_path = kavach_config::registry_cache_path();
 
-    let mut store = kavach_rule_storage::RuleStore::new(skills_dir);
+    let mut store = kavach_rule_engine::RuleStore::new(skills_dir);
     if store.load_all().is_err() {
         return;
     }
@@ -16,9 +16,9 @@ pub(super) fn build_skill_registry() {
         .filter_map(|name| store.get(name).cloned())
         .collect();
 
-    let registry = kavach_rule_storage::build_from_rules(&rules);
+    let registry = kavach_rule_engine::build_from_rules(&rules);
 
-    if kavach_rule_storage::is_stale(&cache_path, &registry.hash) {
-        kavach_rule_storage::save_registry(&cache_path, &registry).ok();
+    if kavach_rule_engine::is_stale(&cache_path, &registry.hash) {
+        kavach_rule_engine::save_registry(&cache_path, &registry).ok();
     }
 }

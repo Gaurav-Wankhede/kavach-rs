@@ -1,3 +1,5 @@
+[dependencies.kavach-rule-engine]
+path = "../kavach-rule-engine"
 [dependencies]
 memchr = "2.7"
 which = "7.0"
@@ -20,9 +22,6 @@ workspace = true
 [dependencies.ignore]
 workspace = true
 
-[dependencies.kavach-advisor]
-path = "../kavach-advisor"
-
 [dependencies.kavach-chain]
 path = "../kavach-chain"
 
@@ -44,11 +43,6 @@ path = "../kavach-patterns"
 [dependencies.kavach-rpc]
 path = "../kavach-rpc"
 
-[dependencies.kavach-rule-engine]
-path = "../kavach-rule-engine"
-
-[dependencies.kavach-rule-storage]
-path = "../kavach-rule-storage"
 
 [dependencies.kavach-session]
 path = "../kavach-session"
@@ -85,6 +79,7 @@ workspace = true
 workspace = true
 
 [package]
+readme = "README.md"
 name = "kavach-engine"
 publish = false
 
@@ -98,4 +93,7 @@ workspace = true
 workspace = true
 
 [package.version]
+workspace = true
+
+[dependencies.serde]
 workspace = true

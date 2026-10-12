@@ -76,8 +76,8 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     let research_pending = intent.requires_research.then(|| {
         let topic = extract_research_topic(prompt, &intent.intent_type);
         session.set_research_topic(&topic);
-        kavach_advisor::clear(&session.session_id);
-        kavach_advisor::kickoff(&session.session_id, &topic);
+        crate::research::clear(&session.session_id);
+        crate::research::kickoff(&session.session_id, &topic);
         topic
     });
     session.set_intent_risk(&intent.risk_level);

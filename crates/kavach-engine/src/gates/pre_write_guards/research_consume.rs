@@ -2,7 +2,7 @@
 //! `requires_research`, a Write/Edit to production code without research evidence is
 //! BLOCKED at write time, not merely advised. "No source → no claim" is a P0 LAW, not
 //! a nudge — an unsourced production write never lands. The gate still DRIVES the
-//! Internet (kicks `kavach_advisor::kickoff` so findings arrive fast), but the write
+//! Internet (kicks `crate::research::kickoff` so findings arrive fast), but the write
 //! is refused until the agent cites a source URL / [RESEARCH] / SOURCE: marker, or the
 //! live research cache reports `done`. SOURCE: ~/.claude/CLAUDE.md §Internet-first.
 //!
@@ -92,7 +92,7 @@ pub(super) fn check(
 fn block_for_missing_research(session: &kavach_session::SessionState) -> String {
     let topic = session.research_topic.as_str();
     let sid = session.session_id.as_str();
-    let tail = match kavach_advisor::read_findings(sid) {
+    let tail = match crate::research::read_findings(sid) {
         Some(f) if f.status == "done" => format!(
             "Internet-first lookup is COMPLETE for \"{topic}\" — cite a source URL \
              from these findings in the file or [RCA], then retry:\n{}",
@@ -103,7 +103,7 @@ fn block_for_missing_research(session: &kavach_session::SessionState) -> String 
              in the session cache, cite a source URL, then retry the write."
         ),
         _ => {
-            kavach_advisor::kickoff(sid, topic);
+            crate::research::kickoff(sid, topic);
             format!(
                 "Launched an internet-first lookup for \"{topic}\". Cite a source URL \
                  once it lands, then retry the write."
@@ -119,7 +119,7 @@ fn block_for_missing_research(session: &kavach_session::SessionState) -> String 
 }
 
 fn cache_is_done(session_id: &str) -> bool {
-    kavach_advisor::read_findings(session_id).is_some_and(|f| f.status == "done")
+    crate::research::read_findings(session_id).is_some_and(|f| f.status == "done")
 }
 
 fn is_comment_only(changed: &str) -> bool {

@@ -1,7 +1,7 @@
 // SOURCE: https://docs.rs/linfa-trees/ — decision tree classification pattern
 // SOURCE: https://github.com/Entscheider/stamm — generic decision trees for Rust
 
-use kavach_dtree::{DecisionNode, DecisionTree, Outcome, Predicate};
+use crate::dtree::{DecisionNode, DecisionTree, Outcome, Predicate};
 
 /// Build the default intent classification tree.
 /// Tree structure:
@@ -158,7 +158,7 @@ pub fn build_intent_tree() -> DecisionTree {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kavach_dtree::FeatureSet;
+    use crate::dtree::FeatureSet;
 
     #[test]
     fn classifies_destructive_as_critical() {

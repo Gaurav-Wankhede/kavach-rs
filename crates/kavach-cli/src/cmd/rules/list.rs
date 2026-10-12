@@ -4,7 +4,7 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 /// Show skill registry entries with enforcement tiers and file patterns.
 pub(super) fn run() -> i32 {
     let cache_path = kavach_config::registry_cache_path();
-    let registry = match kavach_rule_storage::load_registry(&cache_path) {
+    let registry = match kavach_rule_engine::load_registry(&cache_path) {
         Ok(r) => r,
         Err(_) => {
             if let Some(r) = build_registry(&cache_path) {
@@ -65,9 +65,9 @@ pub(super) fn run() -> i32 {
 /// Builder returns None on any error; caller (`run`) maps None→exit 1.
 /// All stderr writes use `.ok()` (rust-lang.org documented explicit discard)
 /// because this builder's caller already has a typed-error path on None.
-fn build_registry(cache_path: &std::path::Path) -> Option<kavach_rule_storage::SkillRegistry> {
+fn build_registry(cache_path: &std::path::Path) -> Option<kavach_rule_engine::SkillRegistry> {
     let skills_dir = kavach_config::skills_dir();
-    let mut store = kavach_rule_storage::RuleStore::new(skills_dir);
+    let mut store = kavach_rule_engine::RuleStore::new(skills_dir);
     if let Err(e) = store.load_all() {
         let msg = format!("rules list: failed to load skills: {e}");
         ewrite_or_exit(&msg).ok();
@@ -78,8 +78,8 @@ fn build_registry(cache_path: &std::path::Path) -> Option<kavach_rule_storage::S
         .iter()
         .filter_map(|name| store.get(name).cloned())
         .collect();
-    let registry = kavach_rule_storage::build_from_rules(&rules);
-    if let Err(e) = kavach_rule_storage::save_registry(cache_path, &registry) {
+    let registry = kavach_rule_engine::build_from_rules(&rules);
+    if let Err(e) = kavach_rule_engine::save_registry(cache_path, &registry) {
         let msg = format!("rules list: failed to save registry: {e}");
         ewrite_or_exit(&msg).ok();
     }

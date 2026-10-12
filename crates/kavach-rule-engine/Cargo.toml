@@ -7,22 +7,35 @@ path = "../kavach-config"
 [dependencies.kavach-patterns]
 path = "../kavach-patterns"
 
-[dependencies.kavach-rule-ast]
-path = "../kavach-rule-ast"
-
-[dependencies.kavach-rule-parser]
-path = "../kavach-rule-parser"
-
-[dependencies.kavach-rule-storage]
-path = "../kavach-rule-storage"
+[dependencies.kavach-toon]
+path = "../kavach-toon"
 
 [dependencies.serde]
 workspace = true
+[dependencies.blake3]
+workspace = true
+
+[dependencies.chrono]
+workspace = true
+
+[dependencies.fs2]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.serde_yaml]
+workspace = true
+
+[dependencies.thiserror]
+workspace = true
+
 
 [lints]
 workspace = true
 
 [package]
+readme = "README.md"
 name = "kavach-rule-engine"
 publish = false
 
@@ -36,4 +49,10 @@ workspace = true
 workspace = true
 
 [package.version]
+workspace = true
+
+[dependencies.tracing]
+workspace = true
+
+[dev-dependencies.tempfile]
 workspace = true

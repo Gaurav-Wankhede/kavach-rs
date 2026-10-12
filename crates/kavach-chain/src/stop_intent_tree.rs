@@ -25,7 +25,7 @@
 //        session" with no artifact and no ask — ordinary deferral)
 //   5. else                                  → CLEAN
 
-use kavach_dtree::{DecisionNode, DecisionTree, Outcome, Predicate};
+use crate::dtree::{DecisionNode, DecisionTree, Outcome, Predicate};
 
 /// Stop-message verdict.
 ///

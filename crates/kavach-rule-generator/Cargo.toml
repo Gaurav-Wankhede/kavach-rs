@@ -1,13 +1,14 @@
 [dependencies.kavach-patterns]
 path = "../kavach-patterns"
 
-[dependencies.kavach-rule-ast]
-path = "../kavach-rule-ast"
+[dependencies.kavach-rule-engine]
+path = "../kavach-rule-engine"
 
 [lints]
 workspace = true
 
 [package]
+readme = "README.md"
 name = "kavach-rule-generator"
 publish = false
 

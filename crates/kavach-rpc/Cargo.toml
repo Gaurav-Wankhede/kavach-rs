@@ -38,6 +38,7 @@ workspace = true
 workspace = true
 
 [package]
+readme = "README.md"
 name = "kavach-rpc"
 publish = false
 

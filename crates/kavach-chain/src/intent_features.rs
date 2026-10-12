@@ -1,5 +1,5 @@
 // SOURCE: https://docs.rs/linfa-trees/ — feature extraction for classification
-use kavach_dtree::FeatureSet;
+use crate::dtree::FeatureSet;
 /// Extract boolean features from a prompt for decision tree classification.
 #[must_use]
 pub fn extract_features(prompt: &str) -> FeatureSet {

@@ -9,7 +9,7 @@ pub(crate) fn check_file_pattern_skills(
 ) -> Option<String> {
     let cache_path = kavach_config::registry_cache_path();
     let skills_dir = kavach_config::skills_dir();
-    let registry = kavach_rule_storage::load_or_rebuild(&cache_path, &skills_dir).ok()?;
+    let registry = kavach_rule_engine::load_or_rebuild(&cache_path, &skills_dir).ok()?;
     let mut matches = kavach_rule_engine::file_matcher::match_file(file_path, &registry.skills);
     if !matches.has_matches() {
         return None;
