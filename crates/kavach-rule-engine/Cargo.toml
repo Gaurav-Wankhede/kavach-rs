@@ -1,17 +1,39 @@
-[package]
-name = "kavach-rule-engine"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.glob-match]
+workspace = true
 
-[dependencies]
-kavach-rule-ast = { path = "../kavach-rule-ast" }
-kavach-rule-parser = { path = "../kavach-rule-parser" }
-kavach-rule-storage = { path = "../kavach-rule-storage" }
-kavach-patterns = { path = "../kavach-patterns" }
-kavach-config = { path = "../kavach-config" }
-serde = { workspace = true }
-glob-match = { workspace = true }
+[dependencies.kavach-config]
+path = "../kavach-config"
+
+[dependencies.kavach-patterns]
+path = "../kavach-patterns"
+
+[dependencies.kavach-rule-ast]
+path = "../kavach-rule-ast"
+
+[dependencies.kavach-rule-parser]
+path = "../kavach-rule-parser"
+
+[dependencies.kavach-rule-storage]
+path = "../kavach-rule-storage"
+
+[dependencies.serde]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-rule-engine"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

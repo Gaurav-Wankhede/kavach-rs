@@ -1,267 +1,296 @@
+[profile.release]
+strip = true
+
 [workspace]
-resolver = "3"
-members = ["crates/*"]
 exclude = ["crates/kavach-nlm"]
-
-
-[workspace.package]
-version = "1.3.4"
-publish = false
-license = "MIT"
+members = ["crates/*"]
+resolver = "3"
 
 [workspace.dependencies]
+aho-corasick = "1"
+ast-grep-core = "0.50"
 ast-grep-language = "0.50"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-serde_yaml = "0.9"
-toml = "0.8"
-svg = "0.18"
-scraper = "0.22"
-ureq = { version = "3", features = ["json"] }
-rhai = { version = "1.19.0", default-features = false, features = ["sync", "serde"] }
-gix = { version = "0.89", default-features = false, features = ["status", "blob-diff", "revision", "index", "sha1"] }
-clap = { version = "4.5", features = ["derive"] }
-chrono = { version = "0.4", features = ["serde"] }
 blake3 = "1"
+bon = "3"
+color-eyre = "0.6"
+dashmap = "6"
+dirs = "7"
 fs2 = "0.4"
-thiserror = "2"
-regex = "1"
-# futures: Stream combinators (StreamExt, select_all) for merging SurrealDB
-# LIVE SELECT notification streams in the GUI live-update watcher.
-# SOURCE: https://docs.rs/futures/0.3 (already in tree via jsonrpsee + surrealdb)
 futures = "0.3"
+glob-match = "0.2"
+http = "1"
+ignore = "0.4"
+itertools = "0.15"
+maud = "0.27"
+native-tls = "0.2"
+parking_lot = "0.12"
 postgres = "0.19"
 postgres-native-tls = "0.5"
-native-tls = "0.2"
-tempfile = "3"
-glob-match = "0.2"
-dirs = "7"
-ignore = "0.4"
-ast-grep-core = "0.50"
-pulldown-cmark = "0.13"
-# [RCA] symptom: 9-arg positional fns risk silent-miscompile (same-type args swappable).
-# root_cause: positional API · class: contract_violation · blast_radius: 4 callers
-# fix_strategy: bon #[builder] adds compile-time typestate (eliminates arg-order errors)
-# SOURCE: https://docs.rs/bon/latest/bon/ (v3.9, 2026-03)
-dashmap = "6"
-bon = "3"
-# color-eyre: pretty panic backtraces + span traces for CLI binaries
-# [RCA] root_cause: anyhow at bin layer lacks panic hooks + ANSI rendering
-# fix_strategy: color-eyre::install() once at main() entry of each binary
-# SOURCE: https://docs.rs/color-eyre (v0.6, 2026)
-color-eyre = "0.6"
-# strum: enum ↔ string with EnumString/Display/EnumIter derives
-# [RCA] root_cause: stringly-typed status duplicated as VALID_STATUSES arrays
-# fix_strategy: single MemoryStatus enum in kavach-types with strum derives
-# SOURCE: https://docs.rs/strum (v0.28, MSRV 1.71)
-strum = { version = "0.28", features = ["derive"] }
-# itertools: combinators (chunk_by, sorted_by, group, join) over std iterators
-# SOURCE: https://docs.rs/itertools/0.13 (MSRV 1.63)
-itertools = "0.15"
-# smart-default: per-field default values via derive (vs manual impl Default)
-# SOURCE: https://docs.rs/smart-default/0.7 (2026)
-smart-default = "0.7"
-# indexmap: hashbrown-backed map preserving insertion order — for deterministic JSON
-# SOURCE: https://docs.rs/indexmap/2.13 (2026)
-indexmap = { version = "2", features = ["serde"] }
-# insta: snapshot testing for stable output formats (CLI text, JSON envelopes)
-# SOURCE: https://docs.rs/insta/1.40 (2026)
-similar = { version = "2.6", default-features = false, features = ["text"] }
-insta = { version = "1.40", features = ["json"] }
-# proptest: property-based testing — random inputs find edge cases manual tests miss
-# SOURCE: https://docs.rs/proptest/1.5 (2026)
 proptest = "1.5"
-# miette: rich diagnostic errors with source spans, clickable codes, fancy rendering
-# SOURCE: https://docs.rs/miette/7 (2026)
-miette = { version = "7", features = ["fancy"] }
-# tokio-util: CancellationToken, DropGuard, codec helpers
-# VERIFIED at: crates/kavach-rpc/src/transport/unix.rs:run
-# SOURCE: https://docs.rs/tokio-util/0.7 (2026)
-tokio-util = { version = "0.7", features = ["rt"] }
-# NOTE: moka/arc-swap/compact_str/backoff REMOVED — no real use site in current code.
-# Adding them as workspace deps without consumers is a "parallel system" (per stop-hook).
-# Re-add when a concrete trigger appears:
-#   - moka:      hot read path needs in-memory cache (kavach-surreal queries are already RocksDB-fast)
-#   - arc-swap:  dynamic config hot-reload becomes a feature
-#   - compact_str: a struct with mostly-short String fields gets cross-crate refactor
-#   - backoff:   kavach-rpc client adds retry on transient failure
-# Research row: kavach db get research/rust-2026-extension-crate-canon
-# Decision row: kavach db get decision/extension-canon-honest-audit
-parking_lot = "0.12"
-aho-corasick = "1"
-tracing = "0.1"
-# NOTE: surrealdb / surrealdb-types were REMOVED here. The DB engine is Turso
-# (libsql) embedded — `kavach-db` depends solely on `libsql`. The migration is
-# complete and documented in docs/PRD_SURREALDB_TO_TURSO_MIGRATION.md; these two
-# lines were the last residue, unreferenced by any crate (`cargo tree -i
-# surrealdb` did not resolve), so they cost nothing but kept a BUSL-1.1 license
-# carve-out alive in deny.toml for a dependency nothing used.
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "signal", "net"] }
-jsonrpsee = { version = "0.26", features = ["server", "macros"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-# kavach-web — server-rendered HTMX UI (replaces the removed Dioxus desktop GUI).
-# axum 0.8 HTTP server on 127.0.0.1:777; maud for compile-time-checked HTML
-# (no axum feature — handlers return axum::response::Html<String> via
-# Markup::into_string(), sidestepping maud<->axum version coupling).
-# SOURCE: https://docs.rs/axum/0.8 + https://docs.rs/maud/0.26
-axum = { version = "0.8", features = ["macros"] }
-maud = "0.27"
-tower-http = { version = "0.7", features = ["fs", "cors", "validate-request", "limit"] }
-# Pinned to 0.4 to match jsonrpsee 0.24's tower — set_http_middleware takes
-# jsonrpsee's tower::ServiceBuilder; a 0.5 ServiceBuilder is a distinct type.
-tower = { version = "0.4", features = ["util"] }
-http = "1"
+pulldown-cmark = "0.13"
+regex = "1"
+scraper = "0.22"
+serde_json = "1"
+serde_yaml = "0.9"
+smart-default = "0.7"
 subtle = "2"
-# temp-env: safe RAII env-var mutation for tests — wraps std::env::set_var/remove_var
-# behind an internal mutex so test code never writes `unsafe { set_var }` itself.
-# SOURCE: https://docs.rs/temp-env/0.3 (2026, Rust 2024 edition compatible)
+svg = "0.18"
 temp-env = "0.3"
-kavach-toon = { path = "crates/kavach-toon" }
+tempfile = "3"
+thiserror = "2"
+toml = "0.8"
+tracing = "0.1"
 
-[workspace.lints.rust]
-# unsafe_code is FORBID — no escape hatch, no per-site `#[allow]`. The only
-# legitimate path for FFI is a safe-wrapper crate (rustix for POSIX, ring
-# for crypto). Any future need for unsafe must add the wrapper crate, not
-# the unsafe block. SOURCE: https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-check-attributes
-unsafe_code = "forbid"
-unused_must_use = "deny"  # deny (not forbid) so the unused group can include it without E0453 conflict
-non_ascii_idents = "forbid"
-dead_code = "deny"
-unused_imports = "deny"
-unused_variables = "deny"
-unreachable_pub = "deny"
-trivial_casts = "deny"
-trivial_numeric_casts = "deny"
-missing_debug_implementations = "deny"
-unused_lifetimes = "deny"
-unused_qualifications = "deny"
-single_use_lifetimes = "warn"
-deprecated_in_future = "deny"
-elided_lifetimes_in_paths = "deny"
-explicit_outlives_requirements = "deny"
-future_incompatible = { level = "deny", priority = -1 }
-nonstandard_style = { level = "deny", priority = -1 }
-rust_2018_idioms = { level = "deny", priority = -1 }
-rust_2021_compatibility = { level = "deny", priority = -1 }
-unused = { level = "deny", priority = -1 }
+[workspace.dependencies.axum]
+features = ["macros"]
+version = "0.8"
+
+[workspace.dependencies.chrono]
+features = ["serde"]
+version = "0.4"
+
+[workspace.dependencies.clap]
+features = ["derive"]
+version = "4.5"
+
+[workspace.dependencies.gix]
+default-features = false
+features = [
+    "status",
+    "blob-diff",
+    "revision",
+    "index",
+    "sha1",
+]
+version = "0.89"
+
+[workspace.dependencies.indexmap]
+features = ["serde"]
+version = "2"
+
+[workspace.dependencies.insta]
+features = ["json"]
+version = "1.40"
+
+[workspace.dependencies.jsonrpsee]
+features = [
+    "server",
+    "macros",
+]
+version = "0.26"
+
+[workspace.dependencies.kavach-toon]
+path = "crates/kavach-toon"
+
+[workspace.dependencies.miette]
+features = ["fancy"]
+version = "7"
+
+[workspace.dependencies.rhai]
+default-features = false
+features = [
+    "sync",
+    "serde",
+]
+version = "1.19.0"
+
+[workspace.dependencies.serde]
+features = ["derive"]
+version = "1"
+
+[workspace.dependencies.similar]
+default-features = false
+features = ["text"]
+version = "2.6"
+
+[workspace.dependencies.strum]
+features = ["derive"]
+version = "0.28"
+
+[workspace.dependencies.tokio]
+features = [
+    "rt-multi-thread",
+    "macros",
+    "io-std",
+    "io-util",
+    "signal",
+    "net",
+]
+version = "1"
+
+[workspace.dependencies.tokio-util]
+features = ["rt"]
+version = "0.7"
+
+[workspace.dependencies.tower]
+features = ["util"]
+version = "0.4"
+
+[workspace.dependencies.tower-http]
+features = [
+    "fs",
+    "cors",
+    "validate-request",
+    "limit",
+]
+version = "0.7"
+
+[workspace.dependencies.tracing-subscriber]
+features = ["env-filter"]
+version = "0.3"
+
+[workspace.dependencies.ureq]
+features = ["json"]
+version = "3"
 
 [workspace.lints.clippy]
-correctness = { level = "deny", priority = -1 }
-suspicious = { level = "deny", priority = -1 }
-perf = { level = "deny", priority = -1 }
-style = { level = "deny", priority = -1 }
-complexity = { level = "deny", priority = -1 }
-pedantic = { level = "deny", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-# Cosmetic backtick-policing, not bug-bearing; overrides the denied pedantic group
-# (priority 0 > -1). See decision.engine.doc-markdown-allow.
-doc_markdown = "allow"
-
-blanket_clippy_restriction_lints = "deny"
-
-unwrap_used = "deny"
-# expect_used/panic stay DENY, not forbid: std's assert!/assert_eq! macros
-# expand with internal #[allow(clippy::expect_used)]/#[allow(clippy::panic)],
-# and E0453 rejects any allow beneath a forbid — a workspace forbid breaks
-# every test using assert macros (verified empirically, 2026-08-26). deny
-# still hard-errors on real violations in our own source.
-expect_used = "deny"
-panic = "deny"
-# deny (not forbid): clap's #[derive(Parser/Subcommand/Args)] expands to a
-# blanket `#[allow(clippy::restriction, ...)]` we don't control, which a forbid
-# cannot be overruled by (E0453). deny still hard-errors on real todo!/dbg!/exit
-# in our own source. Same rationale as unused_must_use above.
-# SOURCE: https://github.com/rust-lang/rust-clippy/issues/8180 · clap derive output.
-todo = "deny"
-unimplemented = "deny"
-unreachable = "deny"
-assertions_on_constants = "deny"
-dbg_macro = "deny"
-print_stdout = "deny"
-print_stderr = "deny"
-mem_forget = "deny"
-exit = "deny"
-indexing_slicing = "deny"
-string_slice = "deny"
-integer_division = "deny"
-float_arithmetic = "deny"
-lossy_float_literal = "deny"
-unwrap_in_result = "deny"
-unnecessary_safety_comment = "deny"
-unnecessary_safety_doc = "deny"
-mod_module_files = "deny"
-arithmetic_side_effects = "deny"
-allow_attributes_without_reason = "deny"  # deny not forbid: clap derive emits reasonless #[allow]; deny still fires on our code. SOURCE: rust-clippy#8180
 allow_attributes = "deny"
-# `let_underscore_must_use` is the lint that maps to the `handle_every_error`
-# directive: `let _ = <Result/#[must_use]>` silently drops a failure that
-# matters → denied workspace-wide. NOTE: `let_underscore_drop` is DELIBERATELY
-# NOT enabled — it over-fires on CORRECT code (`drop(guard)` lock-drops and the
-# ~116 `drop(kavach_hook::exit_*())` sites that consume a `HookAction::Done`
-# MARKER after its side effect, which is not an error). Denying it would force
-# 100+ `#[allow]`s, violating `allow_attributes = "deny"` above and making the
-# tree worse, not stricter. The genuine `drop(<real Result>)` discards are
-# audited by hand (see decision.silent-discard-global-audit). SOURCE: 2026
-# audit, kavach-rs.
-let_underscore_must_use = "deny"
-let_underscore_future = "deny"
-let_underscore_lock = "deny"
-map_err_ignore = "deny"
-mut_mut = "deny"
-match_wild_err_arm = "deny"
-multiple_unsafe_ops_per_block = "deny"
-undocumented_unsafe_blocks = "deny"
-ref_as_ptr = "deny"
-str_to_string = "deny"
-# REASON: clippy removed string_to_string (folded into implicit_clone). SOURCE: https://rust-lang.github.io/rust-clippy/master/index.html#string_to_string
-implicit_clone = "deny"
-shadow_unrelated = "deny"
-needless_pass_by_value = "deny"
-manual_let_else = "deny"
-redundant_clone = "deny"
-inefficient_to_string = "deny"
-large_stack_arrays = "deny"
-large_types_passed_by_value = "deny"
+allow_attributes_without_reason = "deny"
+arithmetic_side_effects = "deny"
+assertions_on_constants = "deny"
+blanket_clippy_restriction_lints = "deny"
 clone_on_ref_ptr = "deny"
+dbg_macro = "deny"
+doc_markdown = "allow"
 empty_drop = "deny"
 empty_structs_with_brackets = "deny"
 exhaustive_enums = "deny"
 exhaustive_structs = "deny"
+exit = "deny"
+expect_used = "deny"
+field_reassign_with_default = "allow"
 filetype_is_file = "deny"
+float_arithmetic = "deny"
 get_unwrap = "deny"
 if_then_some_else_none = "deny"
+implicit_clone = "deny"
+indexing_slicing = "deny"
+inefficient_to_string = "deny"
 infinite_loop = "deny"
+integer_division = "deny"
 large_include_file = "deny"
+large_stack_arrays = "deny"
+large_types_passed_by_value = "deny"
+let_underscore_future = "deny"
+let_underscore_lock = "deny"
+let_underscore_must_use = "deny"
+lossy_float_literal = "deny"
+manual_let_else = "deny"
+map_err_ignore = "deny"
+match_wild_err_arm = "deny"
+mem_forget = "deny"
 mixed_read_write_in_expression = "deny"
+mod_module_files = "deny"
 multiple_inherent_impl = "deny"
+multiple_unsafe_ops_per_block = "deny"
+mut_mut = "deny"
 mutex_atomic = "deny"
+needless_pass_by_value = "deny"
+panic = "deny"
 panic_in_result_fn = "deny"
 partial_pub_fields = "deny"
+print_stderr = "deny"
+print_stdout = "deny"
 rc_buffer = "deny"
 rc_mutex = "deny"
+redundant_clone = "deny"
+ref_as_ptr = "deny"
 rest_pat_in_fully_bound_structs = "deny"
 same_name_method = "deny"
-self_named_module_files = "allow"  # REASON: contradicts mod_module_files (foo.rs sibling). SOURCE: https://github.com/rust-lang/rust-clippy/blob/master/clippy_lints/src/module_style.rs
+self_named_module_files = "allow"
 semicolon_inside_block = "deny"
+shadow_unrelated = "deny"
 str_split_at_newline = "deny"
+str_to_string = "deny"
 string_add = "deny"
 string_lit_chars_any = "deny"
+string_slice = "deny"
 suspicious_xor_used_as_pow = "deny"
+todo = "deny"
 try_err = "deny"
+undocumented_unsafe_blocks = "deny"
+unimplemented = "deny"
+unnecessary_safety_comment = "deny"
+unnecessary_safety_doc = "deny"
 unnecessary_self_imports = "deny"
 unneeded_field_pattern = "deny"
+unreachable = "deny"
+unwrap_in_result = "deny"
+unwrap_used = "deny"
 verbose_file_reads = "deny"
 
-field_reassign_with_default = "allow"  # REASON: team decision — 43 benign sites; see commit header above
+[workspace.lints.clippy.complexity]
+level = "deny"
+priority = -1
 
-[profile.release]
-# NO `lto` / `codegen-units = 1` ON PURPOSE. Those buy whole-program/cross-crate
-# optimization that only pays off for compute-bound hot loops. kavach is the
-# opposite: each gate runs for a few ms per hook event and is dominated by process
-# startup + the DB RPC round-trip (IO-bound), and kavach-app is event-driven UI —
-# neither is codegen-bound, so LTO's runtime win is unmeasurable while its build
-# cost is huge (it was forcing a ~4-min fat-LTO relink on every local reinstall).
-# Release defaults (opt-level=3, lto=false=thin-local, codegen-units=16) are right.
-# `strip` stays: smaller shipped binary, zero build cost.
-# SOURCE: <https://nnethercote.github.io/perf-book/build-configuration.html>
-strip = true
+[workspace.lints.clippy.correctness]
+level = "deny"
+priority = -1
+
+[workspace.lints.clippy.nursery]
+level = "warn"
+priority = -1
+
+[workspace.lints.clippy.pedantic]
+level = "deny"
+priority = -1
+
+[workspace.lints.clippy.perf]
+level = "deny"
+priority = -1
+
+[workspace.lints.clippy.style]
+level = "deny"
+priority = -1
+
+[workspace.lints.clippy.suspicious]
+level = "deny"
+priority = -1
+
+[workspace.lints.rust]
+dead_code = "deny"
+deprecated_in_future = "deny"
+elided_lifetimes_in_paths = "deny"
+explicit_outlives_requirements = "deny"
+missing_debug_implementations = "deny"
+non_ascii_idents = "forbid"
+single_use_lifetimes = "warn"
+trivial_casts = "deny"
+trivial_numeric_casts = "deny"
+unreachable_pub = "deny"
+unsafe_code = "forbid"
+unused_imports = "deny"
+unused_lifetimes = "deny"
+unused_must_use = "deny"
+unused_qualifications = "deny"
+unused_variables = "deny"
+
+[workspace.lints.rust.future_incompatible]
+level = "deny"
+priority = -1
+
+[workspace.lints.rust.nonstandard_style]
+level = "deny"
+priority = -1
+
+[workspace.lints.rust.rust_2018_idioms]
+level = "deny"
+priority = -1
+
+[workspace.lints.rust.rust_2021_compatibility]
+level = "deny"
+priority = -1
+
+[workspace.lints.rust.unused]
+level = "deny"
+priority = -1
+
+[workspace.package]
+authors = ["Gaurav-Wankhede <gauravanilwankhede2002@gmail.com>"]
+edition = "2024"
+homepage = "https://github.com/Gaurav-Wankhede/kavach-rs"
+license = "MIT"
+publish = false
+repository = "https://github.com/Gaurav-Wankhede/kavach-rs"
+rust-version = "1.95.0"
+version = "1.3.4"

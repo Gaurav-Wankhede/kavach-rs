@@ -1,14 +1,28 @@
-[package]
-name = "kavach-rule-parser"
-version = "1.1.0"
-edition = "2021"
-publish = false
-
 [dependencies]
-kavach-toon = { path = "../kavach-toon" }
-serde = { workspace = true }
 serde_yaml = "0.9"
 thiserror = "2.0"
 
+[dependencies.kavach-toon]
+path = "../kavach-toon"
+
+[dependencies.serde]
+workspace = true
+
 [lints]
+workspace = true
+
+[package]
+name = "kavach-rule-parser"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

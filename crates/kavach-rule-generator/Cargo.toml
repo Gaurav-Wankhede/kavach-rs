@@ -1,12 +1,24 @@
-[package]
-name = "kavach-rule-generator"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.kavach-patterns]
+path = "../kavach-patterns"
 
-[dependencies]
-kavach-rule-ast = { path = "../kavach-rule-ast" }
-kavach-patterns = { path = "../kavach-patterns" }
+[dependencies.kavach-rule-ast]
+path = "../kavach-rule-ast"
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-rule-generator"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

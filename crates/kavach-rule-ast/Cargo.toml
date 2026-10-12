@@ -1,11 +1,21 @@
-[package]
-name = "kavach-rule-ast"
-version = "1.1.0"
-edition = "2021"
-publish = false
-
-[dependencies]
-serde = { workspace = true }
+[dependencies.serde]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-rule-ast"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

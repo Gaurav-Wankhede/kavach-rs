@@ -1,24 +1,48 @@
-[package]
-name = "kavach-session"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.blake3]
+workspace = true
+
+[dependencies.chrono]
+workspace = true
+
+[dependencies.fs2]
+workspace = true
+
+[dependencies.kavach-config]
+path = "../kavach-config"
+
+[dependencies.kavach-db]
+path = "../kavach-db"
+
+[dependencies.kavach-rpc]
+path = "../kavach-rpc"
+
+[dependencies.serde]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.tracing]
+workspace = true
+
+[features]
+test-support = []
 
 [lints]
 workspace = true
 
-[features]
-# Exposes `paths::set_test_state_dir` to downstream crates so their tests can
-# redirect the spool/state dir to a temp path (engine spool-glue tests).
-test-support = []
+[package]
+name = "kavach-session"
+publish = false
 
-[dependencies]
-kavach-config = { path = "../kavach-config" }
-kavach-rpc = { path = "../kavach-rpc" }
-kavach-db = { path = "../kavach-db" }
-serde = { workspace = true }
-serde_json = { workspace = true }
-blake3 = { workspace = true }
-chrono = { workspace = true }
-fs2 = { workspace = true }
-tracing = { workspace = true }
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
+workspace = true

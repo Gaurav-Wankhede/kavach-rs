@@ -1,15 +1,21 @@
-[package]
-name = "kavach-ope"
-version = "1.1.0"
-edition = "2024"
-publish = false
-
-# Layer B of the harness-rl design: offline off-policy evaluation over logged
-# bandit_log rows. Pure estimators (IPS / Direct-Method / Doubly-Robust) + CIs;
-# no DB or RPC dependency — callers pass in deserialized rows.
-
-[dependencies]
-serde = { workspace = true }
+[dependencies.serde]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-ope"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

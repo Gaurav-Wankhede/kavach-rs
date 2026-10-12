@@ -1,21 +1,42 @@
-[package]
-name = "kavach-hook"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.chrono]
+workspace = true
 
-[dependencies]
-kavach-types = { path = "../kavach-types" }
-kavach-session = { path = "../kavach-session" }
-kavach-toon = { workspace = true }
-itertools = { workspace = true }
-serde_json = { workspace = true }
-chrono = { workspace = true }
-serde = { workspace = true }
-# toon-format = "0.4.5"  # HELD: 58 unvetted transitive deps. Re-add when TOON encoding is actively used.
+[dependencies.itertools]
+workspace = true
 
-[dev-dependencies]
-insta = { workspace = true }
+[dependencies.kavach-session]
+path = "../kavach-session"
+
+[dependencies.kavach-toon]
+workspace = true
+
+[dependencies.kavach-types]
+path = "../kavach-types"
+
+[dependencies.serde]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dev-dependencies.insta]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-hook"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

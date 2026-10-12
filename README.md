@@ -12,6 +12,36 @@
 
 ---
 
+## Kavach in 30 Seconds (TL;DR)
+
+> **The Problem:**
+> When AI coding agents (Claude, Cursor, Devin, Gemini CLI) interact with codebases, they dump multi-thousand-line files into their context window (`cat src/main.rs`). This burns expensive API tokens, slows down responses, causes the model to hallucinate or contradict itself (**Context Rot**), and wipe previous architectural decisions across restarts (**Context Amnesia**).
+>
+> **The Solution:**
+> **Kavach** (`kavach-rs`) acts as a deterministic bodyguard and firewall between the AI agent and your machine:
+> 1. **99% Token Savings:** Extracts exact AST code slices (`kavach grep`) instead of reading whole files.
+> 2. **Persistent Cognitive Memory:** Stores tasks, decisions, and anti-pattern mistakes in an embedded Turso/libSQL database (`kavach db`) so agents never forget context.
+> 3. **Live Web Grounding:** Enforces live truth with **[Webfind](https://github.com/Gaurav-Wankhede/webfind)** so agents never guess external APIs from stale training weights.
+
+### 60-Second Quickstart
+
+```bash
+# 1. Install Kavach directly to ~/.cargo/bin
+cargo install --path crates/kavach-cli --locked
+cargo clean
+
+# 2. Register your project
+kavach db register --slug my-app --path $(pwd)
+
+# 3. Inspect code surgically (extract only the function you need — zero bloat)
+kavach grep "pub fn dispatch" src/
+
+# 4. Search live web documentation without stale hallucinations
+webfind search --live "axum 0.8 routing $(date +%Y)"
+```
+
+---
+
 ## Table of Contents
 
 - [The Crisis in AI Coding Agents](#the-crisis-in-ai-coding-agents)

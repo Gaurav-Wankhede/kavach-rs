@@ -1,12 +1,24 @@
-[package]
-name = "kavach-toon"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.serde_json]
+workspace = true
 
-[dependencies]
-thiserror = { workspace = true }
-serde_json = { workspace = true }
+[dependencies.thiserror]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-toon"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

@@ -1,23 +1,51 @@
-[package]
-name = "kavach-rule-storage"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.blake3]
+workspace = true
 
-[dependencies]
-kavach-rule-ast = { path = "../kavach-rule-ast" }
-kavach-rule-parser = { path = "../kavach-rule-parser" }
-kavach-toon = { path = "../kavach-toon" }
-serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-blake3 = { workspace = true }
-chrono = { workspace = true }
-fs2 = { workspace = true }
-tracing = { workspace = true }
+[dependencies.chrono]
+workspace = true
 
-[dev-dependencies]
-tempfile = { workspace = true }
+[dependencies.fs2]
+workspace = true
+
+[dependencies.kavach-rule-ast]
+path = "../kavach-rule-ast"
+
+[dependencies.kavach-rule-parser]
+path = "../kavach-rule-parser"
+
+[dependencies.kavach-toon]
+path = "../kavach-toon"
+
+[dependencies.serde]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.thiserror]
+workspace = true
+
+[dependencies.tracing]
+workspace = true
+
+[dev-dependencies.tempfile]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-rule-storage"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

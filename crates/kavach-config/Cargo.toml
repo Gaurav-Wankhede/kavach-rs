@@ -1,18 +1,42 @@
-[package]
-name = "kavach-config"
-version = "1.1.0"
-edition = "2024"
-publish = false
-
 [dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
-dirs = { workspace = true }
-indexmap = { workspace = true }
-parking_lot = { workspace = true }
 regex = "1"
-smart-default = { workspace = true }
-tracing = { workspace = true }
+
+[dependencies.dirs]
+workspace = true
+
+[dependencies.indexmap]
+workspace = true
+
+[dependencies.parking_lot]
+workspace = true
+
+[dependencies.serde]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.smart-default]
+workspace = true
+
+[dependencies.tracing]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-config"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

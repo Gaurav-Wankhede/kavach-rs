@@ -1,14 +1,30 @@
-[package]
-name = "kavach-advisor"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.serde]
+workspace = true
 
-[dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
-ureq = { workspace = true }
-thiserror = { workspace = true }
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.thiserror]
+workspace = true
+
+[dependencies.ureq]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-advisor"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

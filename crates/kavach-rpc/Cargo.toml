@@ -1,29 +1,54 @@
-[package]
-name = "kavach-rpc"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.chrono]
+workspace = true
 
-# Library-only crate. The RPC coordinator is invoked via the single
-# `kavach` binary's `rpc` subcommand (kavach-cli/src/cmd/rpc.rs →
-# kavach_rpc::run). A standalone [[bin]] used to exist here but produced a
-# duplicate binary that drifted from the CLI on deploy (CLI/daemon version
-# skew). One binary, one deployed file. SOURCE: rocksdb#908/#1780 — the
-# DB coordinator must be a single process, but need not be a second binary.
+[dependencies.dirs]
+workspace = true
 
-[dependencies]
-kavach-db = { path = "../kavach-db" }
-kavach-patterns = { path = "../kavach-patterns" }
-kavach-ope = { path = "../kavach-ope" }
-kavach-types = { path = "../kavach-types" }
-jsonrpsee = { workspace = true }
-tokio = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-chrono = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-dirs = { workspace = true }
+[dependencies.jsonrpsee]
+workspace = true
+
+[dependencies.kavach-db]
+path = "../kavach-db"
+
+[dependencies.kavach-ope]
+path = "../kavach-ope"
+
+[dependencies.kavach-patterns]
+path = "../kavach-patterns"
+
+[dependencies.kavach-types]
+path = "../kavach-types"
+
+[dependencies.serde]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.thiserror]
+workspace = true
+
+[dependencies.tokio]
+workspace = true
+
+[dependencies.tracing]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+name = "kavach-rpc"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

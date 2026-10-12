@@ -1,40 +1,101 @@
-[package]
-name = "kavach-engine"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies]
+memchr = "2.7"
+which = "7.0"
+
+[dependencies.ast-grep-core]
+workspace = true
+
+[dependencies.ast-grep-language]
+workspace = true
+
+[dependencies.blake3]
+workspace = true
+
+[dependencies.dirs]
+workspace = true
+
+[dependencies.fs2]
+workspace = true
+
+[dependencies.ignore]
+workspace = true
+
+[dependencies.kavach-advisor]
+path = "../kavach-advisor"
+
+[dependencies.kavach-chain]
+path = "../kavach-chain"
+
+[dependencies.kavach-config]
+path = "../kavach-config"
+
+[dependencies.kavach-db]
+path = "../kavach-db"
+
+[dependencies.kavach-hook]
+path = "../kavach-hook"
+
+[dependencies.kavach-ope]
+path = "../kavach-ope"
+
+[dependencies.kavach-patterns]
+path = "../kavach-patterns"
+
+[dependencies.kavach-rpc]
+path = "../kavach-rpc"
+
+[dependencies.kavach-rule-engine]
+path = "../kavach-rule-engine"
+
+[dependencies.kavach-rule-storage]
+path = "../kavach-rule-storage"
+
+[dependencies.kavach-session]
+path = "../kavach-session"
+
+[dependencies.kavach-types]
+path = "../kavach-types"
+
+[dependencies.miette]
+workspace = true
+
+[dependencies.regex]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
+[dependencies.thiserror]
+workspace = true
+
+[dependencies.tokio]
+workspace = true
+
+[dev-dependencies.kavach-session]
+features = ["test-support"]
+path = "../kavach-session"
+
+[dev-dependencies.temp-env]
+workspace = true
+
+[dev-dependencies.tempfile]
+workspace = true
 
 [lints]
 workspace = true
 
-[dependencies]
-ast-grep-core = { workspace = true }
-ast-grep-language = { workspace = true }
-ignore = { workspace = true }
-kavach-types = { path = "../kavach-types" }
-kavach-hook = { path = "../kavach-hook" }
-kavach-session = { path = "../kavach-session" }
-kavach-patterns = { path = "../kavach-patterns" }
-kavach-ope = { path = "../kavach-ope" }
-kavach-chain = { path = "../kavach-chain" }
-kavach-config = { path = "../kavach-config" }
-kavach-rule-engine = { path = "../kavach-rule-engine" }
-kavach-rule-storage = { path = "../kavach-rule-storage" }
-kavach-rpc = { path = "../kavach-rpc" }
-kavach-advisor = { path = "../kavach-advisor" }
-kavach-db = { path = "../kavach-db" }
-miette = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-blake3 = { workspace = true }
-memchr = "2.7"
-fs2 = { workspace = true }
-regex = { workspace = true }
-tokio = { workspace = true }
-which = "7.0"
-dirs = { workspace = true }
+[package]
+name = "kavach-engine"
+publish = false
 
-[dev-dependencies]
-temp-env = { workspace = true }
-tempfile = { workspace = true }
-kavach-session = { path = "../kavach-session", features = ["test-support"] }
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
+workspace = true

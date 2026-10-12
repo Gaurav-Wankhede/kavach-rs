@@ -1,18 +1,42 @@
-[package]
-name = "kavach-chain"
-version = "1.1.0"
-edition = "2024"
-publish = false
-
 [dependencies]
-kavach-patterns = { path = "../kavach-patterns" }
-kavach-config = { path = "../kavach-config" }
-kavach-dtree = { path = "../kavach-dtree" }
-chrono = { workspace = true }
-dashmap = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 regex = "1"
 
+[dependencies.chrono]
+workspace = true
+
+[dependencies.dashmap]
+workspace = true
+
+[dependencies.kavach-config]
+path = "../kavach-config"
+
+[dependencies.kavach-dtree]
+path = "../kavach-dtree"
+
+[dependencies.kavach-patterns]
+path = "../kavach-patterns"
+
+[dependencies.serde]
+workspace = true
+
+[dependencies.serde_json]
+workspace = true
+
 [lints]
+workspace = true
+
+[package]
+name = "kavach-chain"
+publish = false
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true

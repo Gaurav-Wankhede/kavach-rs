@@ -1,16 +1,30 @@
-[package]
-name = "kavach-types"
-version = "1.1.0"
-edition = "2024"
-publish = false
+[dependencies.serde]
+workspace = true
 
-[dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
-strum = { workspace = true }
+[dependencies.serde_json]
+workspace = true
 
-[dev-dependencies]
-proptest = { workspace = true }
+[dependencies.strum]
+workspace = true
+
+[dev-dependencies.proptest]
+workspace = true
 
 [lints]
+workspace = true
+
+[package]
+description = "Core domain types, AST models, and error schemas for Kavach"
+name = "kavach-types"
+
+[package.edition]
+workspace = true
+
+[package.license]
+workspace = true
+
+[package.repository]
+workspace = true
+
+[package.version]
 workspace = true
