@@ -129,7 +129,7 @@ Kavach replaces the brittle, bloated POSIX and runtime tools that cause AI agent
 | Legacy Tool | Failure Mode in AI Agents | Allowed Kavach / Sovereign Command | Advantage |
 | :--- | :--- | :--- | :--- |
 | **`cat` / `bat`** | Dumps entire files, burning 5k–30k tokens per read. | `kavach grep` / slice projections | Zero whole-file reads; sub-slice AST extraction only. |
-| **`jq`** | Brittle syntax; shell quoting errors; unindexed scans. | `jaq` / `dasel` / `kavach script` | Rust-native, schema-validated projection. |
+| **`jq`** | Brittle syntax; shell quoting errors; unindexed scans. | `kavach json "<query>" <file>` | Rust-native schema projection with zero-bloat TOON output. |
 | **`grep` / `rg`** | Unbounded text hits with noisy context lines. | `kavach grep "<pattern>" <path> -C 2` | AST-aware code pattern matching with bounded context. |
 | **`find` / `fd`** | Unbounded directory walks pollute context. | `kavach glob "<pattern>" <path> --max-depth 4` | Strict depth limits, deterministic sorted output. |
 | **`curl` / `wget`** | Unformatted HTML blobs pollute context with noise. | `webfind fetch --compact "<url>"` | Clean semantic markdown extraction for agents. |
@@ -182,7 +182,7 @@ Comparing standard developer actions performed via legacy POSIX tools vs Kavach 
 
 | Action / Query | Legacy Command | Legacy Tokens | Kavach Command | Kavach Tokens | Context Window Savings |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Inspect single JSON key** | `cat AGENTS.json` (42 KB) | 9,299 tokens | `jaq -r '.witnesses' AGENTS.json` | 66 tokens | **99.28% reduction** |
+| **Inspect single JSON key** | `cat AGENTS.json` (42 KB) | 9,299 tokens | `kavach json -j .witnesses AGENTS.json` | 66 tokens | **99.28% reduction** |
 | **Locate Rust function signature** | `cat src/main.rs` (38 KB) | 8,450 tokens | `kavach grep "fn main" src/ -C 2` | 42 tokens | **99.50% reduction** |
 | **Find symbol caller network** | `grep -rn "execute_task" .` | 1,820 tokens | `kavach trace "execute_task" .` | 58 tokens | **96.81% reduction** |
 | **Evaluate math / array logic** | `python3 -c "print([...])"` | 185 tokens | `kavach script -e "[...].len()"` | 12 tokens | **93.51% reduction** |
@@ -315,7 +315,7 @@ Here is the exact lifecycle of how an autonomous AI coding agent interacts with 
        |
        +---> kavach glob "*.rs" src/ --max-depth 3               (Local Codebase Discovery)
        +---> webfind search --live "<API/Crate> $(date +%Y)"       (Live External Grounding)
-       +---> jaq -r '.subsystems' config.json                    (Surgical Schema Projection)
+       +---> kavach json .subsystems config.json                 (Surgical Schema Projection)
        |
 [ PHASE 2: SURGICAL INSPECTION & BLAST RADIUS ]
        |
@@ -362,8 +362,8 @@ webfind fetch --compact "https://docs.rs/axum/latest/axum/"
 
 The agent inspects configuration and caller networks surgically without whole-file reads:
 ```bash
-# Surgical JSON inspection
-jaq -r '.universal_behaviour.imperatives[] | .id' prompts/AGENTS.json
+# Surgical JSON inspection (zero whole-file reads)
+kavach json -k .universal_behaviour.imperatives prompts/AGENTS.json
 
 # AST caller network & blast-radius analysis before mutating symbols
 kavach trace "handle_request" src/ --callers
@@ -420,7 +420,7 @@ kavach db parallel-run --project my-app --max-parallel 3 --verify-cmd "cargo tes
 Kavach includes battle-tested prompt specifications designed for production agent harnesses in the [`prompts/`](prompts/) directory:
 
 - [`prompts/AGENTS.json`](prompts/AGENTS.json): **Single Source of Truth (SSOT).** Schema-validated machine configuration declaring toolbelt mappings, domain witnesses, universal imperatives, and allowlists.
-- [`prompts/AGENTS.md`](prompts/AGENTS.md): **Human-Readable Action Imperative Index.** Markdown interface pointing directly into `AGENTS.json` via `jaq` projections.
+- [`prompts/AGENTS.md`](prompts/AGENTS.md): **Human-Readable Action Imperative Index.** Markdown interface pointing directly into `AGENTS.json` via `kavach json` projections.
 - [`prompts/CLAUDE.md`](prompts/CLAUDE.md): Dedicated harness instruction file for Claude Code and Anthropic agent runners.
 - [`prompts/SOUL.md`](prompts/SOUL.md): Core agent persona, immutable safety boundaries, and operational directives.
 
