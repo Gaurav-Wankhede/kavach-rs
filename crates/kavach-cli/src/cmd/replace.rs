@@ -58,8 +58,15 @@ pub(crate) fn run(
         return 1;
     }
 
+    // High quality location & indentation telemetry
+    let occurrences = find_occurrences(&original, find, use_regex && !fixed_strings);
+
     if dry_run {
-        println!("[DRY RUN] Found {} occurrence(s) in {}", count, path);
+        println!("[DRY RUN] Found {} occurrence(s) in {}:", count, path);
+        for occ in occurrences.iter().take(20) {
+            println!("  -> Line {}:{} (indent: {})", occ.line, occ.col, occ.indent_desc);
+            println!("     {}", occ.line_preview);
+        }
         return 0;
     }
 
@@ -87,6 +94,69 @@ pub(crate) fn run(
         return 1;
     }
 
-    println!("[REPLACE] Successfully replaced {} occurrence(s) in {}", count, path);
+    println!("[REPLACE] Successfully replaced {} occurrence(s) in {}:", count, path);
+    for occ in occurrences.iter().take(20) {
+        println!("  -> Line {}:{} (indent: {})", occ.line, occ.col, occ.indent_desc);
+        println!("     - {}", occ.line_preview);
+    }
     0
+}
+
+struct Occurrence {
+    line: usize,
+    col: usize,
+    indent_desc: String,
+    line_preview: String,
+}
+
+fn find_occurrences(source: &str, find: &str, is_regex: bool) -> Vec<Occurrence> {
+    let mut results = Vec::new();
+
+    if is_regex {
+        if let Ok(re) = Regex::new(find) {
+            for m in re.find_iter(source) {
+                results.push(compute_telemetry(source, m.start()));
+            }
+        }
+    } else if let Ok(ac) = AhoCorasick::new([find]) {
+        for m in ac.find_iter(source) {
+            results.push(compute_telemetry(source, m.start()));
+        }
+    }
+
+    results
+}
+
+fn compute_telemetry(source: &str, byte_offset: usize) -> Occurrence {
+    let prefix = &source[..byte_offset];
+    let line_number = prefix.lines().count().max(1);
+    
+    let line_start = prefix.rfind('\n').map(|idx| idx + 1).unwrap_or(0);
+    let line_end = source[byte_offset..].find('\n').map(|idx| byte_offset + idx).unwrap_or(source.len());
+    let full_line = &source[line_start..line_end];
+
+    let col_number = byte_offset.saturating_sub(line_start) + 1;
+
+    // Detect indentation
+    let indent_chars: String = full_line.chars().take_while(|c| c.is_whitespace()).collect();
+    let indent_desc = if indent_chars.is_empty() {
+        "0 (flush left)".to_string()
+    } else {
+        let spaces = indent_chars.chars().filter(|&c| c == ' ').count();
+        let tabs = indent_chars.chars().filter(|&c| c == '\t').count();
+        if tabs > 0 && spaces > 0 {
+            format!("{} tabs, {} spaces (mixed)", tabs, spaces)
+        } else if tabs > 0 {
+            format!("{} tab{}", tabs, if tabs == 1 { "" } else { "s" })
+        } else {
+            format!("{} spaces", spaces)
+        }
+    };
+
+    Occurrence {
+        line: line_number,
+        col: col_number,
+        indent_desc,
+        line_preview: full_line.trim_end().to_string(),
+    }
 }

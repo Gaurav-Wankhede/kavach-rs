@@ -2,21 +2,10 @@ use std::process::{Command, Stdio};
 use std::io::{BufRead, BufReader};
 
 pub(crate) fn run(subcommand: &str, args: &[String]) -> i32 {
-    let mut actual_subcommand = subcommand.to_string();
-    let mut actual_args: Vec<String> = args.to_vec();
+    let actual_subcommand = subcommand.to_string();
+    let actual_args: Vec<String> = args.to_vec();
 
-    // Map "test" or "nextest" directly to cargo nextest run
-    let is_test = if subcommand == "test" {
-        actual_subcommand = "nextest".to_string();
-        if actual_args.is_empty() || actual_args[0] != "run" {
-            actual_args.insert(0, "run".to_string());
-        }
-        true
-    } else if subcommand == "nextest" {
-        true
-    } else {
-        false
-    };
+    let is_test = subcommand == "test" || subcommand == "nextest";
 
     let mut cmd = Command::new("cargo");
     cmd.arg(&actual_subcommand);
@@ -24,7 +13,7 @@ pub(crate) fn run(subcommand: &str, args: &[String]) -> i32 {
 
     if is_test {
         cmd.env("CI", "1");
-        cmd.env("NEXTEST_COLOR", "never");
+        cmd.env("CARGO_TERM_COLOR", "never");
     }
 
     cmd.stdout(Stdio::piped());
@@ -90,38 +79,65 @@ pub(crate) fn run(subcommand: &str, args: &[String]) -> i32 {
 fn render_test_output(success: bool, stdout_lines: &[String], stderr_lines: &[String]) {
     let mut passed_count = 0usize;
     let mut failed_count = 0usize;
-    let mut summary_line = None;
+    let mut ignored_count = 0usize;
+    let mut suites_passed = 0usize;
     let mut failures = Vec::new();
+    let mut capturing_failure_block = false;
 
-    let all_lines = stderr_lines.iter().chain(stdout_lines.iter());
-    for line in all_lines {
+    let all_lines: Vec<&String> = stdout_lines.iter().chain(stderr_lines.iter()).collect();
+    for line in &all_lines {
         let trimmed = line.trim();
-        if trimmed.starts_with("PASS") {
+
+        // Standard cargo test summary: "test result: ok. 243 passed; 0 failed; 0 ignored; ..."
+        if trimmed.starts_with("test result:") {
+            if let Some(passed_str) = trimmed.split(" passed").next().and_then(|s| s.split_whitespace().last()) {
+                if let Ok(p) = passed_str.parse::<usize>() {
+                    passed_count += p;
+                }
+            }
+            if let Some(failed_str) = trimmed.split(" failed").next().and_then(|s| s.split_whitespace().last()) {
+                if let Ok(f) = failed_str.parse::<usize>() {
+                    failed_count += f;
+                }
+            }
+            if let Some(ignored_str) = trimmed.split(" ignored").next().and_then(|s| s.split_whitespace().last()) {
+                if let Ok(i) = ignored_str.parse::<usize>() {
+                    ignored_count += i;
+                }
+            }
+            if trimmed.contains("ok.") {
+                suites_passed += 1;
+            }
+        } else if trimmed.starts_with("PASS") {
+            // Nextest fallback format
             passed_count += 1;
         } else if trimmed.starts_with("FAIL") {
             failed_count += 1;
             failures.push(trimmed.to_string());
-        } else if trimmed.contains("Summary [") {
-            summary_line = Some(trimmed.to_string());
-        } else if trimmed.starts_with("error:") || trimmed.starts_with("failures:") {
+        } else if trimmed.starts_with("failures:") || trimmed.starts_with("---- ") {
+            capturing_failure_block = true;
+            failures.push(line.to_string());
+        } else if capturing_failure_block {
+            if trimmed.starts_with("test result:") {
+                capturing_failure_block = false;
+            } else {
+                failures.push(line.to_string());
+            }
+        } else if trimmed.starts_with("error:") {
             failures.push(trimmed.to_string());
         }
     }
-    let _ = failed_count;
 
-    if success {
-        if let Some(s) = summary_line {
-            println!("[CARGO:NEXTEST] ok: {}", s);
+    if success && failed_count == 0 {
+        if ignored_count > 0 {
+            println!("[CARGO:TEST] ok: {} passed; {} ignored (across {} test suites)", passed_count, ignored_count, suites_passed);
         } else {
-            println!("[CARGO:NEXTEST] ok: {} passed", passed_count);
+            println!("[CARGO:TEST] ok: {} passed (across {} test suites)", passed_count, suites_passed);
         }
     } else {
-        println!("[CARGO:NEXTEST] FAILED:");
-        for f in failures.iter().take(20) {
+        println!("[CARGO:TEST] FAILED: {} failed, {} passed:", failed_count, passed_count);
+        for f in failures.iter().take(40) {
             println!("    {}", f);
-        }
-        if let Some(s) = summary_line {
-            println!("  {}", s);
         }
     }
 }
