@@ -1,5 +1,0 @@
-[research] research.premium-motion-params — Premium motion-graphics parameters (AE/Material/Apple) (status: todo, access: 0)
-[research] research.ae-resolve-param-catalog — AE/Resolve full parameter catalog for engine schema (status: todo, access: 0)
-[research] research.lint-autofix-rules — Composition lint + auto-fix detection algorithms (status: todo, access: 0)
-[research] research.video-storytelling-principles — Video storytelling + cinema + trailer + editing principles (status: todo, access: 0)
-[research] motion-design-12-principles — 12 motion-design principles -> enforceable schema rules (4 sources corroborated) (status: todo, access: 0)

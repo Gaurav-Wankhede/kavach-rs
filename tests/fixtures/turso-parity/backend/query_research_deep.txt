@@ -1,2 +1,0 @@
-[research] research.lint-sweep-misc-warnings — Misc clippy warnings sweep (status: todo, access: 0)
-    14 warn-level clippy lints remain after deny-level cleared. Fix mechanically: type aliases (5 sites), doc reflow (1), slice::from_ref (1), if-collapse (1), expectation pragma cleanup (1). SOURCE: https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity

@@ -1,3 +1,0 @@
-[pattern] lens.dos.bound-everything — DoS lens: bound every allocation, loop, and read from untrusted size (status: verified)
-[pattern] lens.injection.parameterize — Injection lens: parameterize, never format, untrusted into SQL/shell/template (status: verified)
-[pattern] lens.deser.untrusted-bound — Deserialization lens: bound + type-gate untrusted input before deserialize (status: verified)

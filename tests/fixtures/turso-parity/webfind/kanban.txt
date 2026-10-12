@@ -1,3 +1,0 @@
-[KANBAN DAG] 1 node(s), 0 edge(s)
-TIER 0 — ready now
-  [todo] surrealdb-graph-store — Implement SurrealDB graph-memory backend  ✓READY

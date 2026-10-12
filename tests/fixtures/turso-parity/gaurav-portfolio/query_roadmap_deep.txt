@@ -1,2 +1,0 @@
-[roadmap] ROADMAP-005 — Execute Phase 3: Dashboard Migration to Astro (status: done, access: 0)
-    Migrate admin dashboard from Next.js to Astro with proper authentication and admin functionality.

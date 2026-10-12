@@ -1,2 +1,0 @@
-[roadmap] roadmap.rust-takumi-engine — PLAN authored: Rust/Takumi engine to replace Remotion (impl deferred to roadmap.rust-takumi-engine-impl) (status: verified)
-[decision] gate.dispatch_directive — Dispatch directive: rust-takumi-engine is USER-DEFERRED — do not auto-build (status: verified)

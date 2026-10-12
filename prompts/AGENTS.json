@@ -1,0 +1,658 @@
+{
+  "action_imperatives": {
+    "context_discipline": "CONTEXT SHIELD: Piping sg into jaq is strictly BANNED. jaq only operates on structured JSON, never on raw text or AST output, and must not use -r/-c to dump full files. sg only targets parameters to return line coordinates for surgical edit, never dumping line ranges.",
+    "direct_to_edit": "compiler/linter gives path+line -> mutate via edit (patch/replace_file_content) directly. No exploratory queries.",
+    "harness_self_edit": "edit ONLY the harness file currently loaded (runtime-resolved). Never hardcode its path. Mirrors byte-identical or deleted.",
+    "json_slicing": "never dump whole JSON. jaq -r \".<SELECTOR>\" < <FILE> for surgical slices. No whole-file reads, no head/tail.",
+    "origin_bound": "kavach origin only from a registered project dir with --path <DIR>; unbounded runs scan the whole home (>60s). Ad-hoc: sg with explicit paths.",
+    "pattern_first_workflow": "ZERO WHOLE-FILE READS. The ONLY sovereign workflow: (1) kavach glob to locate paths, (2) kavach grep <PATTERN> [PATH] (or --scope) to locate exact line:col:indentation without context spam, (3) kavach trace <SYMBOL> to inspect callers and callees, (4) webfind search --live to ground external research, (5) kavach replace <FIND> <REPLACE> <PATH> for surgical in-place mutations, (6) kavach verify / kavach audit to gate and verify.",
+    "persistence_stores": "SEPARATION OF CONCERNS, ONE DOMAIN PER STORE. Each registered store owns exactly ONE domain and never accepts another domain's data. Routing and store OWNERSHIP is global law; the CONTENT schema and write rules for any store are domain law owned by the subgraph that uses it. A write whose data does not belong to the store's declared domain is rejected, never silently accepted.",
+    "pipe_elimination_protocol": "NEVER use the pipe character (|) in run_command. Execute single, focused CLI binaries using their native parameters (--limit, -o json, -m, -d, -F). If a multi-stage data transformation is required, write a typed rust-script invocation that operates atomically.",
+    "silent_witness": "query matches intent_classification_engine -> fire its dispatch immediately. Never ask the user which tool to run.",
+    "single_funnel": "discovery tools (sg, kavach origin) only while the target is unlocated; stop the moment it is located.",
+    "state_badge": "consume and discard raw output; restate [STATE] target= band=<IN_DIST|QUARANTINE|BLOCK> witness= next= on the first reasoning line.",
+    "tabula_rasa_research": "EVERY factual claim requires a webfind witness IN THE SAME TURN. Sequence: claim -> webfind search --live -> webfind fetch --compact -> cite -> assert. Training weights are NEVER a source of fact. If webfind yields nothing, say so explicitly; never fill the gap from memory.",
+    "time_awareness": "TODAY=$(date -u +%Y-%m-%d). Every webfind query MUST include the current year. Every result MUST pass the date guard: crawled_at >= TODAY. Results older than 30 days are STALE - discard. If no fresh results exist, state the gap. Never assert from stale sources. The date guard is: webfind search --live --depth deep --hybrid --limit 6 -o json '<QUERY>' | jaq --arg today \"$TODAY\" '.results[] | select(.crawled_at >= $today)'",
+    "webfind_truth": "always --live --depth deep --hybrid -o json. Never spawn project-level databases. Always run the date guard after every search."
+  },
+  "dependency_graph": "DAG EXECUTION ORDER. Topological sort resolves leaves -> routers -> execution. Fail closed on cycles. Prune unrelated subgraphs. Cache unchanged nodes in their owning store. The graph SHAPE is domain law owned by each subgraph; only the ordering contract and cycle policy are global.",
+  "enforcement": {
+    "banned_scripting": "No ad-hoc python/bash scripts. jaq slices JSON; rhai-run evaluates dynamic logic (<1ms); rust-script compiles typed batch operations. python3 is strictly blocked except pre-registered CLI entrypoints.",
+    "banned_tools": [
+      "cat",
+      "head",
+      "tail",
+      "bat",
+      "rg",
+      "grep",
+      "jq",
+      "nu",
+      "sed",
+      "awk",
+      "curl",
+      "wget",
+      "read_url_content",
+      "view_file",
+      "read_file",
+      "python",
+      "python3",
+      "py",
+      "pip",
+      "pip3",
+      "node",
+      "npm",
+      "ls",
+      "find",
+      "du",
+      "stat",
+      "cp",
+      "mv",
+      "rm",
+      "mkdir",
+      "touch",
+      "echo",
+      "printf",
+      "dasel"
+    ],
+    "banned_tools_law": "EVERYTHING NOT ON THE ALLOWLIST IS BANNED. Explicitly banned includes but is not limited to: cat, head, tail, bat, rg, grep, jq, jaq, nu, sed, awk, curl, wget, read_url_content, view_file, read_file, python, python3, py, pip, pip3, node, npm, ls, find, du, stat, cp, mv, rm, mkdir, touch, echo, printf, and all ad-hoc scripting.",
+    "context_bloat_prevention": "STRICT PROJECTION AXIOM: Every jaq query MUST specify exact leaf keys or an explicit projection object. If an array is queried, it must use slice/head or specific key map (.array[0] or [.[] | .id]).",
+    "jaq_bloat_guard": "STRICT PROJECTION BOUND: If an output exceeds 15 lines or contains unprojected nested objects, the query was improperly scoped. Always drill down to the exact string, number, or sliced array of strings before executing.",
+    "json_filter_law": "SCALAR-AND-SLICED-PROJECTION LAW. jaq is strictly for structured JSON files and structured tool output. Piping sg into jaq is strictly BANNED. jaq must never use unprojected dumps (-r or -c for whole files), and sg only targets AST coordinates to extract line numbers, NEVER reading or dumping line ranges.",
+    "mutation_law": "ALWAYS PATCH, NEVER PUT. Never overwrite an entire file with write_to_file or put semantics. Surgical in-place line replacement (replace_file_content) or structural AST transforms (sg) are the ONLY permitted code mutation paths.",
+    "research_first_sequence": "CLAIM -> webfind search --live -> webfind fetch --compact -> cite the source -> THEN assert. Never assert -> then optionally verify. The order is enforced, not advisory.",
+    "scripting_split": {
+      "jaq": "Surgical JSON/YAML slicing, leaf mutation, schema filtering. Zero overhead, 2.7ms cold extraction.",
+      "python3_block": "Inline bash python3 execution is completely banned. Python execution is permitted ONLY via existing, pre-registered project CLI entrypoints (e.g. tools/voice_engine.py).",
+      "rhai-run": "Dynamic, lightweight (<1ms interpreted) evaluation for mathematical transformations, timeline calculations, and runtime glue without compilation overhead.",
+      "rust-script": "Strongly typed, deterministic script execution with Cargo dependencies (whisper, audio codecs, ffmpeg, ndarray) when native Rust performance is required."
+    },
+    "strict_pipe_ban_law": "HARD BAN ON SHELL PIPING (|). Piping between commands is strictly forbidden. Every task must be solved via the native flags of a single tool. Piping invites head, tail, grep, and awk slop which truncates data, hides exit codes, and causes context amnesia. Permitted tools have native limits: rg uses -m/--max-count, fd uses --max-results, jaq uses native slices (.[0:N]), sg uses --json=compact, dust uses -n/-d, tokei uses -C. Never pipe.",
+    "tabula_rasa_law": "MANDATORY LIVE RESEARCH BEFORE ANY FACTUAL CLAIM. Every claim of fact — numbers, versions, names, dates, quotes, benchmarks, specs, 'best practice', historical events — MUST be grounded in a webfind live search or fetch IN THE SAME TURN it is asserted. No claim may rest on training weights alone. If webfind returns nothing, state the gap explicitly rather than filling it from memory. Applies to research, doctrine authoring, code decisions, and recommendations alike.",
+    "tool_allowlist": [
+      "kavach",
+      "webfind",
+      "yt-dlp",
+      "tubeforge",
+      "pitchforge",
+      "rtk",
+      "rg",
+      "fd",
+      "bat",
+      "eza",
+      "erd",
+      "sd",
+      "sg",
+      "rnr",
+      "difft",
+      "delta",
+      "tokei",
+      "just",
+      "watchexec",
+      "hyperfine",
+      "jaq",
+      "gron",
+      "dasel",
+      "dust",
+      "procs",
+      "xh",
+      "atuin",
+      "bun",
+      "cargo",
+      "rustc",
+      "rust-script",
+      "rhai-run"
+    ],
+    "tool_allowlist_law": "THE TOOL SURFACE IS: 5 DOMAIN CLIs + THE RUST TOOLBELT + BUILD RUNTIME + THE EDIT PATH. (1) DOMAIN CLIs: kavach, webfind, yt-dlp, tubeforge, pitchforge. (2) RUST TOOLBELT (24, canonical intent mapping in rust_toolbelt.mapping): rtk, rg, fd, bat, eza, erd, sd, sg, rnr, difft, delta, tokei, just, watchexec, hyperfine, jaq, gron, dasel, dust, procs, xh, atuin, bun. (3) BUILD/EVAL RUNTIME: cargo, rustc, rust-script, rhai-run. (4) MUTATION PATH: edit (patch / replace_file_content) — a harness operation, not a shell binary. BANNED: all legacy POSIX (cat, head, tail, sed, awk, curl, wget, python, pip, node, npm, ls, find, du, stat, cp, mv, rm, mkdir, touch, echo, printf) and ad-hoc shell scripting. NOTE: this list is the CANONICAL SURFACE; whether a given binary is executable in the active session is governed separately by harness_capability_profiles.",
+    "tool_allowlist_note": "Binary-name precision: the dynamic-eval binary is rhai-run, NOT rhai. An earlier revision listed 'rhai', which does not resolve on disk and would fail closed at dispatch. Every allowlist entry MUST be verified with command -v before it is trusted.",
+    "zero_trust_axiom": "TABULA RASA. Never trust pre-trained weights for ANY factual claim — not APIs, crate versions, syntax, flags, benchmarks, statistics, dates, quotes, or system state. Treat every unverified weight-memory as hallucination until witnessed. Ground every decision on a live runtime witness (--help, webfind fetch, kavach)."
+  },
+  "universal_behaviour": {
+    "scope": "Cross-cutting contract for EVERY task in EVERY subgraph at EVERY level. Subgraph and domain doctrine may EXTEND these but MUST NOT relax or redefine them. Where a lower rule conflicts with this block, this block wins.",
+    "precedence_position": "Level 0 Global. Ranks directly beneath schema and above all enforcement, subgraph, and production-lifecycle keys.",
+    "imperatives": [
+      {
+        "id": "pure_json_only",
+        "rule": "JSON-Only Schema Law",
+        "action": "All configuration, manifests, doctrines, storyboards, and router state MUST be valid JSON. Reading, generating, or persisting YAML (.yaml/.yml) is an existential system violation.",
+        "pointer": "serialization.static"
+      },
+      {
+        "id": "webfind_first",
+        "rule": "Tabula Rasa / Zero Training-Weight Facts Law",
+        "action": "External facts (APIs, flags, versions, algorithms, formats, platform behaviour) MUST be witnessed live via webfind IN THE SAME TURN they are asserted: claim -> webfind search --live -> webfind fetch --compact -> cite -> assert. Recalled training weights are never admissible evidence. Local facts cite file:line.",
+        "supersedes": "enforcement.tabula_rasa_law and enforcement.zero_trust_axiom are the same law and remain in force",
+        "verification": "Every external claim carries its URL or file:line witness. If webfind yields nothing, state the gap; never fill it from memory."
+      },
+      {
+        "id": "toolbelt_first",
+        "rule": "Rust-CLI-First Law",
+        "action": "Shell commands MUST be drawn from rust_toolbelt before any legacy POSIX fallback. A legacy command (git/ls/cat/grep/find/sed/awk/head/tail/tree/du/ps/curl/jq/diff/make/time/history) is non-compliant unless the toolbelt genuinely cannot satisfy the use case AND the fallback is documented inline as `toolbelt: <name> unavailable`.",
+        "pointer": "rust_toolbelt"
+      },
+      {
+        "id": "harness_capability_aware",
+        "rule": "Capability-Profile-Aware Command Law",
+        "action": "A binary may be installed on the machine and still be DENIED by the active harness permission profile. Resolve every emitted command against harness_capability_profiles first. A recommended-but-denied binary is a GOVERNANCE DEFECT, not a harness limitation: fix the pointer, do not retry the command.",
+        "pointer": "harness_capability_profiles"
+      },
+      {
+        "id": "no_shell_pipes",
+        "rule": "Strict Shell Pipe Ban & Native Flag Supremacy Law",
+        "action": "100% HARD BAN ON SHELL PIPING (|). Solve every task with the native flags of a single tool. Permitted native limiters: kavach grep, kavach glob, kavach json, dust -n/-d, tokei -C, hyperfine --export-json.",
+        "pointer": "enforcement.strict_pipe_ban_law",
+        "self_compliance_requirement": "No command example stored anywhere in this file may contain a pipe character. Examples using | are themselves violations."
+      },
+      {
+        "id": "surgical_context",
+        "rule": "Zero-Read In-Place Mutation Protocol",
+        "action": "Never read an entire file into context. (1) Locate exact lines via kavach grep. (2) Ground external facts via webfind search --live. (3) Mutate in-place via kavach replace or sovereign tools (kavach json/yaml/toml/env/svg). (4) Verify. Nothing else.",
+        "pointer": "action_imperatives.pattern_first_workflow"
+      },
+      {
+        "id": "ssot_no_restatement",
+        "rule": "Single-Source-of-Truth & No-Restatement Law",
+        "action": "A law lives in exactly one JSON key. Markdown and sibling files carry a POINTER, never a restatement. If a pointer's target key does not resolve, that is a DEFECT: repair the target before shipping the pointer. A restated law silently diverges, and divergence is precisely how doctrine reaches zero implementations.",
+        "pointer": "zero_redundancy_ssot_governance"
+      },
+      {
+        "id": "pointer_liveness",
+        "rule": "Pointer Liveness Gate",
+        "action": "Every canonical_pointer, doctrine_pointer, and AGENTS.md -> AGENTS.json pointer MUST resolve to a live JSON key. Before shipping any edit that adds, renames, or removes a pointer, resolve every pointer in the affected file and fail closed on any dead reference."
+      },
+      {
+        "id": "search_before_write",
+        "rule": "Search-Before-Write / Anti-Duplication Law",
+        "action": "Before authoring any law, manifest, scene, or advisory, query the corpus for an authoritative owner of that concern. Extend the existing key rather than creating a sibling. Two sources for one law is a defect regardless of how consistent they currently are."
+      },
+      {
+        "id": "minimal_action",
+        "rule": "Minimal-Action Law",
+        "action": "Prefer the laziest solution that actually works: stdlib and native platform features before dependencies, one line before fifty. No speculative abstraction and no parallel taxonomy that adds no capability."
+      },
+      {
+        "id": "verify_before_done",
+        "rule": "Three-Witness Verification Law",
+        "action": "A task is not done until all three witnesses land: (1) the artifact exists at the expected path, (2) the intended diff landed, (3) the verification command passes. Two of three is not done."
+      },
+      {
+        "id": "anti_repetition",
+        "rule": "Anti-Repetition Law",
+        "action": "NEVER retry the same command unchanged after a failure. Diagnose the exact error, switch the tool, flags, or pattern, and resolve live truth via webfind if blocked."
+      },
+      {
+        "id": "fail_closed",
+        "rule": "Fail-Closed Default",
+        "action": "On missing input, an unresolved pointer, cycle detection, or an unmapped requirement: STOP and surface the blocker. Never silently degrade to a guess, a legacy default, or a plausible-looking approximation.",
+        "pointer": "dependency_graph"
+      },
+      {
+        "id": "no_deletion_without_survivor",
+        "rule": "No-Deletion-Without-Survivor Law",
+        "action": "Before deleting or thinning any source of law text, confirm every unique statement in it has a live survivor elsewhere. A pointer that resolves to nothing is a silent deletion. Materializing an orphaned law into its canonical home precedes any thinning of the file that referenced it."
+      }
+    ]
+  },
+  "rust_toolbelt": {
+    "policy": "Rust CLI replaces legacy POSIX. Availability was verified on the canonical machine via command -v. PERMISSION to execute is a separate axis governed by harness_capability_profiles.",
+    "relationship_to_allowlist": "rust_toolbelt.mapping is the CANONICAL naming and intent mapping for the Rust CLI surface. enforcement.tool_allowlist remains the narrower set of domain CLIs this project harness dispatches to. A tool absent from tool_allowlist is still the correct replacement for its legacy counterpart when the use case is local tooling.",
+    "verified_on_machine": "All 24 binaries resolved via command -v during the governance audit.",
+    "mapping": [
+      {
+        "tool": "webfind",
+        "replaces": "training memory / web search / curl",
+        "why": "Self-hosted Rust search engine: live indexing, URL fetch, zero training hallucination",
+        "use": "webfind search --live \"query\" ; webfind fetch --compact URL"
+      },
+      {
+        "tool": "kavach glob",
+        "replaces": "fd / find",
+        "why": "Zero-heap, gitignore-aware path and file search with normalized path matching",
+        "use": "kavach glob \"<pattern>\" [path]"
+      },
+      {
+        "tool": "kavach grep",
+        "replaces": "rg / grep / ast-grep",
+        "why": "Strict AST code search (--def, --call, --type, --scope). Refuses arbitrary text in code; routes data/config to sovereign tools",
+        "use": "kavach grep --def <symbol> [path] ; kavach grep \"<pattern>\" <doc_path>"
+      },
+      {
+        "tool": "kavach trace",
+        "replaces": "manual grep loops / LSP callers",
+        "why": "AST symbol definitions, incoming callers, and outgoing callees dependency network with zero truncation",
+        "use": "kavach trace \"<symbol>\" [path] [--callers] [--callees] [--json]"
+      },
+      {
+        "tool": "kavach json",
+        "replaces": "jq / jaq / gron / cat",
+        "why": "Zero-bloat JSON dot-path projection to TOON v4.4, bare keys (-k), raw (-r)",
+        "use": "kavach json \"<query>\" <file.json>"
+      },
+      {
+        "tool": "kavach yaml",
+        "replaces": "yq / dasel / cat",
+        "why": "YAML dot-path projection to TOON v4.4, bare keys (-k), raw (-r)",
+        "use": "kavach yaml \"<query>\" <file.yaml>"
+      },
+      {
+        "tool": "kavach toml",
+        "replaces": "taplo / dasel / cat",
+        "why": "TOML table projection to TOON v4.4, bare keys (-k), raw (-r)",
+        "use": "kavach toml \"<query>\" <file.toml>"
+      },
+      {
+        "tool": "kavach env",
+        "replaces": "dotenv / sed / cat / bat",
+        "why": "Zero-secret leakage environment variable manager. Masked [SET], bare keys (-k), AST code drift (--diff), in-place rename (--rename)",
+        "use": "kavach env <file.env> ; kavach env -k <file.env> ; kavach env --rename OLD:NEW <file.env>"
+      },
+      {
+        "tool": "kavach html",
+        "replaces": "htmlq / pup / cat",
+        "why": "High-precision HTML DOM extraction using CSS Selectors (--attr, -t text, -c count)",
+        "use": "kavach html \"<selector>\" <file.html> [--attr href] [-t]"
+      },
+      {
+        "tool": "kavach svg",
+        "replaces": "manual regex / cat",
+        "why": "2D vector graphic DOM inspection, path coordinate extraction (--paths)",
+        "use": "kavach svg <file.svg> ; kavach svg --paths <file.svg>"
+      },
+      {
+        "tool": "kavach replace",
+        "replaces": "sd / sed / whole-file write",
+        "why": "Atomic in-place text and regex replacement via tempfile and aho-corasick; zero risk of file corruption",
+        "use": "kavach replace \"<find>\" \"<replace>\" <path> [--dry-run]"
+      },
+      {
+        "tool": "eza",
+        "replaces": "ls",
+        "why": "Icons, git status, tree view",
+        "use": "eza -la --git"
+      },
+      {
+        "tool": "erd",
+        "replaces": "tree + du",
+        "why": "Combined tree and disk usage",
+        "use": "erd -L 3"
+      },
+      {
+        "tool": "dust",
+        "replaces": "du",
+        "why": "Visual bars, sorted",
+        "use": "dust -n -d 2"
+      },
+      {
+        "tool": "procs",
+        "replaces": "ps",
+        "why": "Colored, searchable, tree view",
+        "use": "procs --tree"
+      },
+      {
+        "tool": "kavach diff",
+        "replaces": "diff",
+        "why": "In-process file-to-file comparison with AST symbol diff and zero terminal paging",
+        "use": "kavach diff a.rs b.rs [--stat] [--symbols] [--brief] [-C 3]"
+      },
+      {
+        "tool": "kavach git diff",
+      "replaces_legacy_git": "kavach git log, kavach git show, kavach git diff, kavach git status, kavach git branch, kavach git commit",
+        "replaces": "git diff",
+        "why": "In-process git working tree diff telemetry and semantic AST symbol mapping",
+        "use": "kavach git diff [--stat] [--files] [--symbols]"
+      },
+      {
+        "tool": "tokei",
+        "replaces": "cloc",
+        "why": "10x faster line counting",
+        "use": "tokei path/"
+      },
+      {
+        "tool": "just",
+        "replaces": "make",
+        "why": "Better errors, modern syntax",
+        "use": "just recipe"
+      },
+      {
+        "tool": "watchexec",
+        "replaces": "fswatch",
+        "why": "Cross-platform, gitignore-aware",
+        "use": "watchexec -e rs \"cargo test\""
+      },
+      {
+        "tool": "hyperfine",
+        "replaces": "time",
+        "why": "Statistical benchmarking",
+        "use": "hyperfine \"cargo test\""
+      },
+      {
+        "tool": "bun",
+        "replaces": "npm / node / python3 (inline scripting)",
+        "why": "20x faster; built-in TS runtime replaces banned inline python",
+        "use": "kavach script -e \"<expr>\""
+      }
+    ],
+    "forbidden": [
+      "Recommending grep/find/cat/curl without a toolbelt mention",
+      "Assuming a flag exists without a --help check",
+      "Substring-matching tool names (rg must not match merge)",
+      "Dumping full multi-hundred-line files when a targeted line range or filtered output suffices",
+      "Declaring 'POSIX is fine' without a documented toolbelt-unavailable note (this is config drift)"
+    ],
+    "verified_flag_errata": [
+      {
+        "tool": "procs",
+        "wrong": "procs --tcp",
+        "right": "procs --insert TcpPort <port>",
+        "reason": "--tcp does not exist"
+      },
+      {
+        "tool": "xh",
+        "wrong": "xh HEAD --print=h",
+        "right": "xh HEAD --check-status",
+        "reason": "--print=h parses differently under HTTP/2; exit code is the reliable signal"
+      }
+    ],
+    "stop_conditions": [
+      "Tool unavailable on the machine -> use the toolbelt-legal equivalent, or POSIX with an explicit `toolbelt: <name> unavailable` note",
+      "Tool installed but denied by the harness -> check harness_capability_profiles for a permitted equivalent before falling back",
+      "Use case requires a POSIX-only flag -> document why the toolbelt cannot replace it"
+    ]
+  },
+  "harness_capability_profiles": {
+    "policy": "Installation is not permission. Every emitted command MUST resolve against the active profile before execution. A profile is harness-specific and MUST be re-derived from live denials, never assumed.",
+    "observed_profile": {
+      "id": "antigravity_tool_permission_profile",
+      "derivation": "Observed from live permission denials during the governance audit.",
+      "denied": [
+        "ls",
+        "dir",
+        "vdir",
+        "eza",
+        "exa",
+        "tree",
+        "cat",
+        "head",
+        "tail",
+        "bat",
+        "less",
+        "more",
+        "rg",
+        "grep",
+        "ag",
+        "ack",
+        "curl",
+        "wget",
+        "sed",
+        "awk",
+        "find",
+        "python",
+        "python3",
+        "pip",
+        "npm",
+        "npx",
+        "yarn",
+        "pnpm",
+        "sort",
+        "uniq",
+        "cut",
+        "tr",
+        "tee",
+        "wc",
+        "tac",
+        "xxd",
+        "od",
+        "hexdump",
+        "strings",
+        "nl",
+        "xargs",
+        "locate",
+        "rtk read",
+        "rtk grep",
+        "rtk rg",
+        "rtk curl",
+        "rtk wget",
+        "rtk run"
+      ],
+      "permitted": [
+        "rtk ls",
+        "rtk tree",
+        "rtk find",
+        "rtk git",
+        "rtk diff",
+        "rtk test",
+        "rtk err",
+        "rtk cargo",
+        "rtk rewrite",
+        "rtk hook",
+        "jaq",
+        "gron",
+        "dasel",
+        "bun",
+        "bunx",
+        "sd",
+        "dust",
+        "procs",
+        "tokei",
+        "just",
+        "watchexec",
+        "hyperfine",
+        "cargo",
+        "rustc",
+        "hyperframes",
+        "webfind",
+        "kavach",
+        "rnr",
+        "xh",
+        "atuin"
+      ],
+      "legacy_to_permitted_substitutions": {
+        "ls / eza / exa / dir": "rtk ls -la",
+        "cat / head / tail / bat / nl / wc": "the Read tool, or jaq for JSON, or rtk ls for inventory",
+        "grep / rg / ag / ack": "the Grep tool, or sg for AST-aware structural search",
+        "find / locate": "fd, or rtk find, or the Glob tool",
+        "sed": "sd -F, or the Edit tool",
+        "python / python3": "bun for scripting and JSON manipulation",
+        "npm / npx / yarn / pnpm": "bun install / bunx / bun run",
+        "curl / wget": "xh, or webfind fetch for research extraction",
+        "sort / uniq / cut / tr / tee / tac": "a typed bun transformation, executed in-process",
+        "tree": "rtk tree -L 2, or erd -L 3 when sizes are needed",
+        "du": "dust -n -d 2",
+        "ps": "procs --tree",
+        "diff": "difft, or rtk diff for the ultra-compact form",
+        "jq": "kavach json",
+        "xxd / od / hexdump / strings": "bun in-process binary read",
+        "xargs": "bun in-process fan-out"
+      }
+    },
+    "known_governance_conflicts": [
+      "RESOLVED: witnesses.toolbelt_law said 'NINE TOOLS. NO OTHERS' while the surface is 5 domain CLIs + 24 rust-toolbelt binaries + build runtime + the edit path. toolbelt_law now resolves to enforcement.tool_allowlist instead of restating a count.",
+      "RESOLVED: enforcement.tool_allowlist listed the bare binary 'rhai', which does not resolve on disk. The installed binary is 'rhai-run' (a dispatch in intent_classification_engine would have failed closed).",
+      "OPEN: enforcement.banned_tools lists 'nu' and 'dasel', but harness_capability_profiles PERMITS both and both are installed. Either drop them from banned_tools or accept the runtime refusal.",
+      "OPEN: enforcement.banned_tools_law prose names 'jaq' as banned while tool_allowlist, witnesses.toolbelt, and every dispatch example permit it. tool_allowlist wins; the prose sentence is wrong and should be edited.",
+      "OPEN: enforcement.banned_tools also lists read_file, view_file, and read_url_content. These are harness-tool names, not shell binaries; if the harness still PROVIDES Read/Grep/Glob, banning them in the shell allowlist is a category error.",
+      "OPEN: enforcement.tool_allowlist_law bans 'node' and 'npm' but permits 'bun'. That is intentional (bun is the replacement), and should be stated explicitly so it is not read as an oversight."
+    ],
+    "enforcement": "Before emitting a command, match it against observed_profile.denied. On a hit, rewrite it using legacy_to_permitted_substitutions. If no permitted equivalent exists, state the blocker instead of emitting a denied command."
+  },
+  "id": "global-system-harness",
+  "intent_classification_engine": {
+    "internet_interaction_intent": {
+      "dispatch": {
+        "live_grounding_eval": "webfind search --live -o json '${QUERY}' | rhai-run -e '...'",
+        "sitemap_to_index": "rust-script -d ureq=2.9 -d regex=1.10 -e '...' | webfind index"
+      },
+      "triggers": [
+        "scrape internet/deep web crawl",
+        "parse sitemap/extract web entities",
+        "typed internet fetching with cargo",
+        "rhai dynamic web transform"
+      ]
+    },
+    "kavach_intent": {
+      "dispatch": {
+        "code_audit": "kavach audit",
+        "memory_recall": "kavach think --project ${PROJECT} '${QUERY}'",
+        "phase_gating": "kavach status && kavach verify --project ${PROJECT} --key ${UNIT}",
+        "self_healing": "kavach loophole sweep || kavach heal capture",
+        "symbol_lookup": "kavach origin ${SYMBOL}",
+        "file_location_discovery": "kavach glob <PATTERN> [PATH]",
+        "code_pattern_search": "kavach grep <PATTERN> [PATH] [--scope] [-i] [-w]",
+        "context_network_and_blast_radius": "kavach trace <SYMBOL> [PATH] [--callers] [--callees]",
+        "atomic_code_replacement": "kavach replace <FIND> <REPLACE> <PATH> [--dry-run]"
+      },
+      "triggers": [
+        "where is declared/defined/who calls",
+        "audit bugs/vulnerabilities/scan",
+        "verify card/phase/compile",
+        "what did we decide/think/past context",
+        "loopholes/self heal",
+        "where is file/find file/path hunt -> kavach glob",
+        "search code/find pattern/how is implemented -> kavach grep",
+        "who calls/who uses/what does this touch/blast radius -> kavach trace",
+        "replace/change/patch in-place -> kavach replace",
+        "vague prompt disambiguation -> route through glob -> trace -> grep -> replace sequence"
+      ]
+    },
+    "pitchforge_intent": {
+      "dispatch": {
+        "bridge": "pitchforge tubeforge ${TICKET_ID}",
+        "ingest": "pitchforge ingest <x|reddit|hn|github> ${URL}",
+        "synth": "pitchforge social || pitchforge blog || pitchforge pitch"
+      },
+      "triggers": [
+        "post to LinkedIn/X/Substack",
+        "distribute video/bridge ticket to social",
+        "scrape Reddit/HackerNews/GitHub",
+        "draft proposal/pitch"
+      ]
+    },
+    "tubeforge_intent": {
+      "dispatch": {
+        "demand_mining": "tubeforge gaps || tubeforge outliers || tubeforge forecast",
+        "retention_intel": "tubeforge transcript ${URL} || tubeforge metadata ${URL}",
+        "roadmap": "tubeforge kanban <list|show|move> ${TICKET_ID}",
+        "script_scoring": "tubeforge score ${SCRIPT} || tubeforge playbook score",
+        "store": "tubeforge db <write|query|status-update> --project ${P} --category ${C} --key ${K} [--title <T>] [--status <S>]"
+      },
+      "triggers": [
+        "content gaps/search demand",
+        "outliers/viral/competitor analysis",
+        "retention/drop-off curves",
+        "kanban ticket status",
+        "score script/SEO/hook"
+      ]
+    },
+    "webfind_intent": {
+      "dispatch": {
+        "compact_fetch": "webfind fetch --compact '${URL}'",
+        "date_guard": "TODAY=$(date -u +%Y-%m-%d); webfind search --live --depth deep --hybrid --limit 6 -o json '${QUERY}' | jaq --arg today \"$TODAY\" '.results[] | select(.crawled_at >= $today) | {title, url, crawled_at, freshness: .scores.freshness}'",
+        "live_search": "webfind search --live --depth deep --hybrid --limit 6 -o json '${QUERY}'"
+      },
+      "mandate": "FIRE ON EVERY FACTUAL CLAIM. This is not a fallback for when search is unavailable — it is the FIRST action on any assertion of fact. Training weights are never a source.",
+      "time_awareness_law": "TODAY is the date from $(date -u +%Y-%m-%d). Every webfind query MUST include the current year in the query string. Every result MUST be filtered by crawled_at >= TODAY. Results older than 30 days are STALE — discard them. If no fresh results exist, state the gap explicitly. Never assert from stale sources.",
+      "triggers": [
+        "search internet/live search/latest docs",
+        "verify RFC/crate version/2026 specs",
+        "fetch URL/read webpage",
+        "ANY factual claim",
+        "ANY number/date/name/quote/benchmark",
+        "tabula rasa grounding"
+      ]
+    },
+    "ytdlp_intent": {
+      "dispatch": {
+        "channel_audit": "yt-dlp --flat-playlist --dump-json ${CHANNEL_URL} | jaq '[.[] | {title,url,view_count,duration}]'",
+        "content_hunt": "yt-dlp --flat-playlist --dump-json 'ytsearch${N}:${QUERY}' | jaq '[.[] | select(.view_count >= ${MIN_VIEWS}) | {title,url,view_count,duration}]'",
+        "metadata_extract": "yt-dlp --dump-json ${URL} | jaq '{title,view_count,channel_follower_count,duration,upload_date,tags,description}'",
+        "thumbnail_fetch": "yt-dlp --write-thumbnail --skip-download ${URL}",
+        "weekly_million_view_trend": "yt-dlp --flat-playlist --dateafter now-7days --dump-json 'ytsearch50:${QUERY}' | jaq '[.[] | select(.view_count >= 1000000) | {title,url,view_count,channel,channel_url}]'"
+      },
+      "schema_note": "Flat/video JSON truth: subscribers = channel_follower_count (NOT subscriber_count); flat entries have NO upload_date, use timestamp.",
+      "triggers": [
+        "youtube metadata/thumbnail/view count/subscriber count",
+        "content hunting high-view videos",
+        "channel audit/video catalog",
+        "weekly million-view trend hunt"
+      ]
+    }
+  },
+  "kind": "GlobalSystemHarness",
+  "metadata": {
+    "budget_char": 32514,
+    "canonical_json": "/Users/gauravwankhede/.gemini/AGENTS.json",
+    "compressed": true,
+    "deduplicated": true,
+    "harness": "global-root-governance",
+    "protocol": "single-funnel",
+    "research_mandate": "every-factual-claim",
+    "tabula_rasa": true,
+    "webfind_first": true,
+    "zero_trust": true,
+    "scope": "project-agnostic; no domain law"
+  },
+  "pattern_governance": {
+    "bands": "IN_DIST (S<tau_low) => fast-path sd/dasel; QUARANTINE (tau_low<=S<tau_high) => canary test; BLOCK (S>=tau_high) => fail closed on banned tool/script.",
+    "false_negative": "external crate/CLI flag/API is unverified until witnessed (${BINARY} --help | webfind fetch ${URL} | webfind search --live '${QUERY}'); mutation without witness fails closed.",
+    "false_positive": "witness kavach origin ${SYMBOL} || cargo check --message-format=json; if semantically equivalent and reachable, route tests/canary_${HASH:8}.rs -> cargo test, then whitelist."
+  },
+  "schema": "global-system-harness-action-imperative-metaprompting",
+  "serialization": {
+    "dynamic_egress": "TOON for bulk metrics, time-series, AST dumps",
+    "static": "JSON only. Governing state is JSON (.json) exclusively: AGENTS.json, doctrine registries, manifests, and storyboards. Each subgraph names its own manifest schema; the global system does not."
+  },
+  "version": "8.0",
+  "witnesses": {
+    "internet_interaction_triad": {
+      "contract": "webfind (discovery/indexing/live grounding) <-> rust-script (typed crawling/DOM scraping/Cargo dependencies) <-> rhai-run (embedded evaluation/math/transforms)",
+      "pipeline": "1. webfind search --live / crawl -> URL targets\n2. rust-script -d <CRATES> -e <SCRAPER> -> typed structured JSON\n3. rhai-run -e <EVAL> -> in-memory AST calculation / decision\n4. webfind index / graph-store / jaq -> persisted grounding & surgical extraction",
+      "role": "Typed internet acquisition, deep scraping, and embedded computation triad"
+    },
+    "kavach": {
+      "amnesia": "kavach working-state <set|get|clear|inject>",
+      "gates": "kavach gates <pre-tool|post-tool|intent|stop|session-start> --hook --vendor antigravity",
+      "intel": "kavach origin <SYMBOL> --path <DIR> | kavach audit [PATH]",
+      "kanban_db": "kavach db kanban --project <P> [--limit N] [--status S] [--json] | kavach db write --project <P> --category <C> --key <K> --title <T> (--new | --update-key <K>) [--depends-on <K>] [--exec-prompt <P>] | kavach db status-update --project <P> --category <C> --key <K> --status <S> [--verify-cmd <CMD>]",
+      "lint": "kavach lint audit [--path <DIR>] | kavach lint scan --dir <DIR> [--threshold N] [--format text|json] | kavach lint rules <list|check|generate|show>",
+      "loop": "kavach loop start --target <phase:TEST|kanban:empty|goal> [--max N] | kavach loop status | kavach loop stop",
+      "memory": "kavach think --project <P> '<Q>' | kavach db query --project <P> [--category <C>] [--all] [--depth <N>] [--compact] | kavach db get --project <P> --category <C> --key <K> [--full] | kavach db next-prompt --project <P> | kavach db query-raw --query '<SELECT>'",
+      "pipeline": "kavach pipeline plan --project <P> --spec-key <K> | kavach pipeline status --project <P>",
+      "role": "Runtime engine governor, SDLC phase gates, memory bank.",
+      "sdlc": "kavach status && kavach verify --project <P> --key <UNIT>",
+      "security": "kavach security scan --path <DIR> [--output <F>] | kavach security report [--format markdown|json]",
+      "self_heal": "kavach loophole loop --project <P> [--run-id <ID>] [--dry-rounds N] [--max-rounds N] | kavach loophole sweep --project <P> [--round N] | kavach heal capture --project <P> --incident <ID> --summary <S>",
+      "servers": "kavach servers up | kavach servers status | kavach servers down",
+      "session": "kavach session init | kavach session end | kavach session state <set <K> <V>|get <K>|clear|inject>",
+      "proxy": "kavach glob <PATTERN> [PATH] | kavach grep <PATTERN> [PATH] [-C N] | kavach trace <SYMBOL> [PATH] | kavach replace <FIND> <REPLACE> <PATH>"
+    },
+    "roles": {
+      "pitchforge": "PERSISTENT STORE for social media content (posts, threads, distribution state, audience ingestion). Multi-platform distribution + technical copywriting.",
+      "tubeforge": "PERSISTENT STORE for YouTube data (analytics, kanban, contracts, enriched metadata). Never collects YouTube data — yt-dlp collects, tubeforge stores.",
+      "webfind": "TABULA RASA SOURCE OF TRUTH. The ONLY permitted origin for factual claims. canonical_db /Users/gauravwankhede/.webfind/webfind.db; project-level dbs banned. Fire on every assertion of fact — never a fallback, always the first action.",
+      "ytdlp": "SOLE collector of YouTube metadata/thumbnails/hunting. Feeds Tubeforge; pipeline is unidirectional yt-dlp -> tubeforge -> analytics, no bypass."
+    },
+    "toolbelt": {
+      "edit": "patch (mode=replace|patch) | replace_file_content  # surgical in-place mutation; the ONLY write path",
+      "jaq": "jaq -r \".<KEY_PATH>\" <FILE>  # surgical JSON slice; the ONLY structured reader",
+      "kavach": "kavach glob | kavach grep | kavach trace | kavach replace | kavach think --project <P> | kavach verify --project <P> --key <K> | kavach db | kavach commands",
+      "pitchforge": "pitchforge ingest <x|reddit|hn|github> <URL> | pitchforge tubeforge <TICKET_ID> | pitchforge social | pitchforge blog | pitchforge pitch  # distribution, audience ingestion, copywriting",
+      "rhai_run": "rhai-run -e \"<SCRIPT>\" | rhai-run <FILE.rhai>  # zero-compilation lightweight dynamic scripting; AST interpretation; safe embedded evaluation",
+      "rtk": "rtk tree <DIR> | rtk wc <FILE> | rtk test cargo nextest run -p <CRATE>  # tree/word-count/test runner. NO rtk read — reading is pattern-first, never whole-file",
+      "rust_script": "rust-script (in-place patching only; NEVER direct file creation or whole-file writes) | sd | sg | replace_file_content  # strictly for patching/surgical transforms | rust-script <FILE.rs>  # typed deterministic execution; compiled Cargo dependencies; zero context bloat",
+      "sg": "sg run -p '<PATTERN>' -l <LANG> --json=compact <PATH>  # ast-grep; structural/AST pattern targeting",
+      "tubeforge": "tubeforge gaps | tubeforge outliers | tubeforge forecast | tubeforge transcript <URL> | tubeforge metadata <URL> | tubeforge score <SCRIPT> | tubeforge kanban <list|show|move> <ID> | tubeforge db <write|query|status-update>  # PERSISTENT STORE ONLY; never collects YouTube data",
+      "webfind": "webfind search --graph-store turso --turso-path /Users/gauravwankhede/.webfind/webfind.db --live '<QUERY>' | webfind fetch --compact '<URL>' | webfind deep-search '<QUERY>'  # TABULA RASA source of truth; fires on every factual claim",
+      "yt_dlp": "yt-dlp --dump-json <URL> | yt-dlp --flat-playlist --dump-json 'ytsearch<N>:<QUERY>' | yt-dlp --write-thumbnail --skip-download <URL>  # SOLE collector of YouTube metadata/thumbnails/hunting",
+      "bun": "bun <FILE.ts> | bunx hyperframes  # TS/JS ecosystem runtime (inline scripting via bun -e is banned; use kavach script -e)"
+    },
+    "toolbelt_law": "THE TOOL SURFACE, STATED ONCE. 5 DOMAIN CLIs (kavach, webfind, yt-dlp, tubeforge, pitchforge) + THE RUST TOOLBELT (24 binaries, intent mapping in rust_toolbelt.mapping) + BUILD/EVAL RUNTIME (cargo, rustc, rust-script, rhai-run) + THE EDIT PATH (patch / replace_file_content). RESOLVES TO: enforcement.tool_allowlist. This law supersedes the earlier 'NINE TOOLS. NO OTHERS.' formulation, which was both numerically wrong and too narrow — it omitted the rust toolbelt that replaced the banned POSIX surface. NEVER restate a tool count in prose; resolve the list from enforcement.tool_allowlist so the two cannot drift."
+  },
+  "subgraph_registry": {
+    "youtube_production_pipeline": {
+      "router": "/Users/gauravwankhede/YouTube/AGENTS.json",
+      "schema_metadata": "/Users/gauravwankhede/YouTube/AGENTS.md",
+      "description": "Root production harness for high-density YouTube technical and narrative video production.",
+      "domain_law_location": "/Users/gauravwankhede/YouTube/AGENTS.json — ALL YouTube domain law (production_lifecycle, cinematics, camera rig, depth ladder, ELIF, voiceover, GSAP engine, doctrine key registry) lives in the subgraph. The global system holds none of it and never restates it."
+    },
+    "policy": "The global system is PROJECT-AGNOSTIC. It carries only universal behaviour, tool governance, and routing. All project-specific domain law belongs in the subgraph AGENTS.json registered here. Adding project law to the global system is a layering defect."
+  }
+}

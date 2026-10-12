@@ -1,2 +1,0 @@
-[roadmap] engine-p0-export-config — P0: render/export config (motionBlur shutter-angle/samples, exportCodec/bitrate/quality, exportTransparency/format) on VideoSpec (status: verified)
-[decision] export-config-shipped — Render/export config added to VideoSpec (motionBlur shutter/samples, codec/bitrate/quality, transparency/format) (status: todo)

@@ -125,3 +125,10 @@ No. The core memory bank, AST engines, git suite, and gate policies run 100% off
 ## License
 
 MIT License. Copyright (c) 2026 Wankhede Brothers.
+---
+
+## Recommended Agent Prompt Templates (`prompts/`)
+
+For autonomous AI coding agents (Antigravity, Claude Code, Cursor, Codex), canonical SSOT prompt templates are provided in [`prompts/`](prompts/):
+- **`AGENTS.md`** / **`CLAUDE.md`** / **`SOUL.md`**: Lean Action Imperative Router (Zero law text, pure pointers).
+- **`AGENTS.json`**: Machine-Executable Single Source of Truth schema containing universal imperatives, toolbelt mappings, and domain sovereignty laws.

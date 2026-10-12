@@ -1,3 +1,0 @@
-# kavach gate latency baseline (SurrealDB backend), 2026-08-26 15:12:23, N=50
-pre-tool_ms p50=36 p95=55 p99=199 min=32 max=199
-intent_ms p50=70 p95=898 p99=1125 min=61 max=1125

@@ -1,2 +1,0 @@
-[roadmap] surrealdb-graph-store — Implement SurrealDB graph-memory backend (status: todo, access: 0)
-    Implement SurrealStore as a CrawlGraphStore backend so BulkDomainCrawler persists discovered URLs, discovery sources, and link edges into SurrealDB. Schema: url_node (url, domain, source, priority, lastmod, changefreq, discovered_at, crawled), link_edge relation (anchor_text). Support memory:// for tests and ws:// for production. Add init_schema(), upsert nodes, and RELATE edges. Expose via BulkDomainCrawler::with_graph_store.

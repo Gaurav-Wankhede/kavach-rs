@@ -1,9 +1,0 @@
-{
-  "date": "2026-07-06 02:14:08",
-  "operations": [
-    {
-      "source": "crates/kavach-toon/src/compact.rs",
-      "target": "crates/kavach-toon/src/compact.rs"
-    }
-  ]
-}

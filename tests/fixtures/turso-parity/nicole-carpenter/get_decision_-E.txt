@@ -1,5 +1,0 @@
-error: unexpected argument '-E' found
-
-Usage: kavach db get [OPTIONS] --project <PROJECT> --category <CATEGORY> --key <KEY>
-
-For more information, try '--help'.

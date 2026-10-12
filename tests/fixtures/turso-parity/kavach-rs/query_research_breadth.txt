@@ -1,2 +1,0 @@
-[research] research.kavach-cursor-hook-fix-deployed-2026-06-12 — Kavach Cursor hook fix deployed via just bundle (2026-06-12) (status: todo, access: 0)
-[research] research.gate-tabula-rasa-falsepos-sdui-renderer-2026-05-29 — TABULA_RASA false-positive: new SDUI renderer blocked on error/danger domain tokens (status: todo, access: 0)
