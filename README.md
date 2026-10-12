@@ -282,7 +282,7 @@ cd kavach-rs
 cargo build --release
 
 # Install binary to system PATH
-cp target/release/kavach /usr/local/bin/kavach
+cp target/release/kavach ~/.cargo/bin/kavach
 ```
 
 ### Companion CLI: Webfind
@@ -293,7 +293,7 @@ Install [Webfind](https://github.com/Gaurav-Wankhede/webfind) for live, zero-cos
 git clone https://github.com/Gaurav-Wankhede/webfind.git
 cd webfind
 cargo build --release
-cp target/release/webfind /usr/local/bin/webfind
+cp target/release/webfind ~/.cargo/bin/webfind
 ```
 
 ### Verification
