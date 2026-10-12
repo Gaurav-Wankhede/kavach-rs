@@ -278,11 +278,9 @@ Ensure you have Rust 1.95+ installed:
 git clone https://github.com/Gaurav-Wankhede/kavach-rs.git
 cd kavach-rs
 
-# Compile with maximum release optimizations
-cargo build --release
-
-# Install binary to system PATH
-cp target/release/kavach ~/.cargo/bin/kavach
+# Install directly to ~/.cargo/bin and clean build artifacts
+cargo install --path crates/kavach-cli --locked
+cargo clean
 ```
 
 ### Companion CLI: Webfind
@@ -292,8 +290,8 @@ Install [Webfind](https://github.com/Gaurav-Wankhede/webfind) for live, zero-cos
 ```bash
 git clone https://github.com/Gaurav-Wankhede/webfind.git
 cd webfind
-cargo build --release
-cp target/release/webfind ~/.cargo/bin/webfind
+cargo install --path . --locked
+cargo clean
 ```
 
 ### Verification
