@@ -29,7 +29,7 @@
 - [Core Architecture & Capabilities](#core-architecture--capabilities)
   - [1. Surgical Extraction Engine (`kavach grep`, `kavach glob`)](#1-surgical-extraction-engine)
   - [2. Deterministic Sandboxed Scripting (`kavach script`)](#2-deterministic-sandboxed-scripting)
-  - [3. Embedded Turso & SQLite Memory Bank (`kavach db`)](#3-embedded-turso--sqlite-memory-bank)
+  - [3. Embedded Turso & Knowledge Graph Memory Substrate (`kavach db`)](#3-embedded-turso--knowledge-graph-memory-substrate)
   - [4. Atomic AST Code Patching (`kavach replace`)](#4-atomic-ast-code-patching)
   - [5. Codebase Lineage & Blast-Radius Tracing (`kavach trace`, `kavach origin`)](#5-codebase-lineage--blast-radius-tracing)
   - [6. Phase-Gated SDLC Engine Governance (`kavach verify`)](#6-phase-gated-sdlc-engine-governance)
@@ -38,7 +38,7 @@
   - [Phase 1: Discovery & Live Grounding (Kavach + Webfind)](#phase-1-discovery--live-grounding-kavach--webfind)
   - [Phase 2: Surgical State Inspection & Caller Tracing](#phase-2-surgical-state-inspection--caller-tracing)
   - [Phase 3: Deterministic Scripting & Atomic Mutation](#phase-3-deterministic-scripting--atomic-mutation)
-  - [Phase 4: SDLC Verification & Cognitive Memory Checkpoint](#phase-4-sdlc-verification--cognitive-memory-checkpoint)
+  - [Phase 4: SDLC Verification, Knowledge Graph & Memory Checkpoint](#phase-4-sdlc-verification-knowledge-graph--memory-checkpoint)
 - [Canonical Multi-Agent Governance (`prompts/`)](#canonical-multi-agent-governance-prompts)
 - [Configuration Reference](#configuration-reference)
 - [Author & Maintenance](#author--maintenance)
@@ -83,7 +83,7 @@ Kavach acts as a deterministic firewall between the LLM and the operating system
 
 ### 3. Context Amnesia (Stateless Session Death)
 - **The Failure:** When a shell session ends or the agent hits context compaction, all intermediate reasoning, verified architecture decisions, test states, and task roadmaps evaporate. The agent starts from scratch on the next turn.
-- **The Kavach Solution:** An embedded **Turso / libSQL SQLite engine** (`kavach db`) with vector embeddings and typed schema memory stores kanban cards, architectural decisions, and session states locally on disk.
+- **The Kavach Solution:** An embedded **Turso / libSQL SQLite engine** (`kavach db`) with a complete **Dependency Graph Database**, **Roadmap DAG Scheduler**, **Mistakes Ledger**, and **Ontology Knowledge Graph** preserves state across all sessions.
 
 ### 4. "Lost in the Middle" (U-Curve Attention Degradation)
 - **The Failure:** Empirical research (*Liu et al., Stanford/Berkeley*) proves that LLM retrieval accuracy degrades severely when relevant instructions or facts are buried in the middle of long contexts (the U-shaped attention curve).
@@ -111,7 +111,7 @@ Autonomous agents operate under strict non-overlapping domain sovereignty:
 |                     v                                   v                 |
 |   * Zero whole-file reads                 * Live search engine (zero cost)|
 |   * AST grep & atomic replace             * Tabula Rasa external grounding|
-|   * Embedded Turso memory substrate       * Time Awareness date guards    |
+|   * Turso DAG & Mistakes Ledger           * Time Awareness date guards    |
 |   * SDLC phase-gate enforcement           * Compact markdown web fetch    |
 |   * Blast-radius symbol tracing           * Knowledge graph indexing      |
 +---------------------------------------------------------------------------+
@@ -137,7 +137,7 @@ Kavach replaces the brittle, bloated POSIX and runtime tools that cause AI agent
 | **`python3 -c`** | 57 ms cold-start; environment/version drift; GIL overhead. | `kavach script -e "<expr>"` | **12x faster**; deterministic sandbox; no virtualenvs. |
 | **`bun -e`** | 7.4 ms startup; unvetted external runtime in production environments. | `kavach script -e "<expr>"` | Pure Rust in-process runtime with memory safety. |
 | **`sed` / `awk`** | Destructive regex failures, macOS vs GNU dialect bugs. | `kavach replace '<old>' '<new>' <file>` | Atomic Aho-Corasick replacement with automatic backup. |
-| **`sqlite3`** | External process spawn; no vector search; brittle schemas. | `kavach db query "<sql>"` | Embedded Turso/libSQL engine with schema migrations. |
+| **`sqlite3`** | External process spawn; no DAG or vector search; fragile schemas. | `kavach db [write|kanban|parallel-run]` | Embedded Turso engine with DAG scheduling and vector search. |
 | **`git log`** | Dumps unbounded commit histories and diff noise. | `kavach trace "<symbol>" <path>` | Symbol-level caller network and semantic blast radius. |
 | **`make` / `bash`** | Non-deterministic scripts, untracked SDLC phase gates. | `kavach verify --phase <gate>` | Deterministic, audited phase gate validation. |
 
@@ -186,33 +186,33 @@ Comparing standard developer actions performed via legacy POSIX tools vs Kavach 
 | **Locate Rust function signature** | `cat src/main.rs` (38 KB) | 8,450 tokens | `kavach grep "fn main" src/ -C 2` | 42 tokens | **99.50% reduction** |
 | **Find symbol caller network** | `grep -rn "execute_task" .` | 1,820 tokens | `kavach trace "execute_task" .` | 58 tokens | **96.81% reduction** |
 | **Evaluate math / array logic** | `python3 -c "print([...])"` | 185 tokens | `kavach script -e "[...].len()"` | 12 tokens | **93.51% reduction** |
-| **Read project task queue** | `cat ROADMAP.md` (full file) | 3,400 tokens | `kavach db kanban --todo` | 110 tokens | **96.76% reduction** |
+| **Read project task queue** | `cat ROADMAP.md` (full file) | 3,400 tokens | `kavach db kanban --project my-app` | 110 tokens | **96.76% reduction** |
 
 ---
 
 ## Core Architecture & Capabilities
 
 ```
-+-------------------------------------------------------------------------+
-|                           KAVACH-RS ARCHITECTURE                        |
-|                                                                         |
-|  +--------------------+  +--------------------+  +-------------------+  |
-|  |   kavach grep      |  |   kavach script    |  |     kavach db     |  |
-|  | AST / regex filter |  | Rhai in-memory VM  |  |  Turso / libSQL   |  |
-|  +---------+----------+  +---------+----------+  +---------+---------+  |
-|            |                       |                       |            |
-|            +-----------------------+-----------------------+            |
-|                                    |                                    |
-|                                    v                                    |
-|                      [ DETERMINISTIC DISPATCH ENGINE ]                  |
-|                                    |                                    |
-|            +-----------------------+-----------------------+            |
-|            |                       |                       |            |
-|  +---------+----------+  +---------+----------+  +---------+---------+  |
-|  |   kavach replace   |  |    kavach trace    |  |   kavach verify   |  |
-|  | Aho-Corasick atomic|  | Symbol blast-radius|  |  SDLC phase gates |  |
-|  +--------------------+  +--------------------+  +-------------------+  |
-+-------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------+
+|                                KAVACH-RS ARCHITECTURE                                 |
+|                                                                                       |
+|  +--------------------+  +--------------------+  +---------------------------------+  |
+|  |   kavach grep      |  |   kavach script    |  |            kavach db            |  |
+|  | AST / regex filter |  | Rhai in-memory VM  |  |   Turso Embedded libSQL Engine  |  |
+|  +---------+----------+  +---------+----------+  +----------------+----------------+  |
+|            |                       |                              |                   |
+|            +-----------------------+------------------------------+                   |
+|                                    |                                                  |
+|                                    v                                                  |
+|                      [ DETERMINISTIC DISPATCH ENGINE ]                                |
+|                                    |                                                  |
+|            +-----------------------+------------------------------+                   |
+|            |                       |                              |                   |
+|  +---------+----------+  +---------+----------+  +----------------+----------------+  |
+|  |   kavach replace   |  |    kavach trace    |  |          kavach verify          |  |
+|  | Aho-Corasick atomic|  | Symbol blast-radius|  |   SDLC Quality Phase Gates      |  |
+|  +--------------------+  +--------------------+  +---------------------------------+  |
++---------------------------------------------------------------------------------------+
 ```
 
 ### 1. Surgical Extraction Engine
@@ -224,13 +224,33 @@ Comparing standard developer actions performed via legacy POSIX tools vs Kavach 
 - **Command:** `kavach script -e "<rhai-expression>"`
 - **Design:** Powered by the embedded [Rhai](https://rhai.rs) engine. Executes in **4.7 ms** with pure memory isolation. Eliminates external interpreter dependencies (`node`, `bun`, `python`) and prevents sub-process zombie spawning.
 
-### 3. Embedded Turso & SQLite Memory Bank
-- **Command:** `kavach db [query|kanban|memory]`
-- **Design:** Local SQLite / Turso storage engine backing agent cognitive memory.
-- **Capabilities:**
-  - `kavach db kanban`: Persistent roadmap and task card tracking.
-  - `kavach db memory`: Key-value cognitive store storing verified architectural decisions across session boundaries.
-  - `kavach working-state`: Checkpoints active memory state so agents never experience context amnesia between restarts.
+### 3. Embedded Turso & Knowledge Graph Memory Substrate
+- **Command:** `kavach db <COMMAND>`
+- **Design:** Embedded Turso / libSQL SQLite engine storing project states, dependency graphs, decisions, and anti-patterns directly on disk (`~/.kavach/kavach.db`).
+- **Core Subsystems:**
+  - **Topological Roadmap DAG (`RoadmapDag`):** Manages kanban task cards with declarative dependency edges (`--depends-on <key>`). The DAG scheduler prevents race conditions, detects dependency cycles, and dispatches concurrent tasks via `parallel-run`.
+  - **Mistakes & Anti-Pattern Ledger (`kavach db mistakes`):** Automatically files errant agent actions and stop-gate violations into a persistent ledger. Recurring mistakes are injected into session starts so past failures are never repeated.
+  - **Cross-Project Concept Ontology (`kavach db concept-*`):** Links concepts across projects via semantic edges (`is_a`, `part_of`, `prerequisite_of`, `alternative_to`, `mitigates`) backed by full-text BM25 search.
+  - **Research & Live Documentation Citations (`kavach db citation-*`):** Anchors research entries directly to live official documentation URLs.
+
+```
+       +-----------------------------------------------------------------+
+       |                  KAVACH MEMORY KNOWLEDGE GRAPH                  |
+       |                                                                 |
+       |     [ RESEARCH ]  ======>  [ DECISION (ADR) ]                   |
+       |          ||                       ||                            |
+       |     (citation-add)           (depends_on)                       |
+       |          ||                       ||                            |
+       |          \/                       \/                            |
+       |   [ OFFICIAL DOCS ]        [ ROADMAP DAG CARD ]                 |
+       |                                   ||                            |
+       |                             (parallel-run)                      |
+       |                                   ||                            |
+       |                                   \/                            |
+       |                        [ MISTAKES ANTI-PATTERN ]                |
+       |                         (Self-Filing / Hit Count)               |
+       +-----------------------------------------------------------------+
+```
 
 ### 4. Atomic AST Code Patching
 - **Command:** `kavach replace '<target_string>' '<replacement_string>' <file>`
@@ -307,10 +327,11 @@ Here is the exact lifecycle of how an autonomous AI coding agent interacts with 
        +---> kavach script -e "compute_weights([1, 2, 3])"
        +---> kavach replace 'let timeout = 5;' 'let timeout = 10;' src/config.rs
        |
-[ PHASE 4: VERIFICATION & COGNITIVE MEMORY ]
+[ PHASE 4: SDLC VERIFICATION & KNOWLEDGE PERSISTENCE ]
        |
        +---> kavach verify --phase unit-tests
-       +---> kavach db memory --record "Set dispatch timeout to 10s"
+       +---> kavach db write --category roadmap --depends-on ... (DAG Dependency Link)
+       +---> kavach db mistakes record                           (Anti-Pattern Self-Report)
 ```
 
 ### Phase 1: Discovery & Live Grounding (Kavach + Webfind)
@@ -359,15 +380,37 @@ kavach script -e "let arr = [10, 20, 30]; arr.map(|x| x * 2)"
 kavach replace 'let max_retries = 3;' 'let max_retries = 5;' src/engine.rs
 ```
 
-### Phase 4: SDLC Verification & Cognitive Memory Checkpoint
+### Phase 4: SDLC Verification, Knowledge Graph & Memory Checkpoint
 
-The agent enforces the SDLC phase gate and commits decisions to the persistent memory bank:
+The agent enforces the SDLC phase gate and commits decisions and dependency graph edges:
+
 ```bash
-# Phase verification gate
+# 1. Enforce SDLC phase gate
 kavach verify --phase pre-commit
 
-# Record decision to embedded Turso database to cure context amnesia
-kavach db memory --set "engine.max_retries=5" --reason "Mitigate API rate limit transients"
+# 2. Persist Architectural Decision Record (ADR)
+kavach db write --project my-app --category decision --key paseto_auth \
+  --title "Adopt PASETO v4 over JWT" --new \
+  --content "Stateless security tokens with authenticated symmetric encryption."
+
+# 3. Create dependent roadmap card linked in the DAG
+kavach db write --project my-app --category roadmap --key impl_auth_middleware \
+  --title "Implement Auth Middleware" --priority 1 \
+  --depends-on paseto_auth --new \
+  --exec-prompt "Wire PASETO validator into Axum router with zero-copy decoding"
+
+# 4. Relate concepts in the cross-project knowledge graph
+kavach db concept-add --name paseto_v4 --display "PASETO v4" --desc "Secure tokens"
+kavach db concept-link --from paseto_v4 --edge alternative_to --to jwt
+
+# 5. Self-report any errant behavior into the Mistakes Ledger
+kavach db mistakes record \
+  --gate assumed_without_verifying \
+  --banned "Guessed crate flag without checking --help" \
+  --instead "Always run --help or webfind live search first"
+
+# 6. Execute unblocked roadmap cards in parallel
+kavach db parallel-run --project my-app --max-parallel 3 --verify-cmd "cargo test"
 ```
 
 ---
@@ -401,7 +444,8 @@ Kavach stores project-level memory and telemetry in `.kavach/` within the reposi
   },
   "memory": {
     "engine": "turso_embedded",
-    "db_path": ".kavach/kavach.db"
+    "db_path": ".kavach/kavach.db",
+    "categories": ["decision", "research", "roadmap", "pattern", "app_spec"]
   },
   "phases": {
     "lint": "cargo clippy -- -D warnings",
