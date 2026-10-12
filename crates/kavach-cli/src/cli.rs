@@ -314,18 +314,7 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: DbAction,
     },
-    /// Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…).
-    #[command(
-        after_help = "EXAMPLES:\n  kavach install --vendor all --dry-run\n  kavach install --vendor cursor\n\nWHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent."
-    )]
-    Install {
-        /// Which tool(s): cc | cursor | codex | gemini | pi | all.
-        #[arg(long)]
-        vendor: String,
-        /// Preview the would-be action without writing any file.
-        #[arg(long)]
-        dry_run: bool,
-    },
+
     #[command(hide = true)]
     Heal {
         #[command(subcommand)]

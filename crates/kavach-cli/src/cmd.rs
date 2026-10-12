@@ -25,7 +25,7 @@ pub(crate) mod diff;
 pub(crate) mod harness_loop;
 mod heal;
 
-mod install;
+
 pub(crate) mod io_safe;
 mod lint;
 mod loophole;
@@ -205,7 +205,7 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
         } => gates::run(&gate_name, hook, verify, vendor.as_deref()),
         Commands::Session { action } => session::run(&action),
         Commands::Db { action } => db::run(action),
-        Commands::Install { vendor, dry_run } => install::run(&vendor, dry_run),
+        
         Commands::Heal { action } => match action {
             crate::cli::HealAction::Capture {
                 project,
