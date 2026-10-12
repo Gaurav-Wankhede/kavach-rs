@@ -59,13 +59,18 @@ pub(crate) fn run(
     }
 
     // High quality location & indentation telemetry
-    let occurrences = find_occurrences(&original, find, use_regex && !fixed_strings);
+    let occurrences = find_occurrences(&original, find, replace, use_regex && !fixed_strings);
 
     if dry_run {
         println!("[DRY RUN] Found {} occurrence(s) in {}:", count, path);
         for occ in occurrences.iter().take(20) {
-            println!("  -> Line {}:{} (indent: {})", occ.line, occ.col, occ.indent_desc);
-            println!("     {}", occ.line_preview);
+            println!("  @@ Line {}:{} (indent: {}) @@", occ.line, occ.col, occ.indent_desc);
+            for old_l in &occ.old_lines {
+                println!("\x1b[31m-   {}\x1b[0m", old_l);
+            }
+            for new_l in &occ.new_lines {
+                println!("\x1b[32m+   {}\x1b[0m", new_l);
+            }
         }
         return 0;
     }
@@ -96,8 +101,13 @@ pub(crate) fn run(
 
     println!("[REPLACE] Successfully replaced {} occurrence(s) in {}:", count, path);
     for occ in occurrences.iter().take(20) {
-        println!("  -> Line {}:{} (indent: {})", occ.line, occ.col, occ.indent_desc);
-        println!("     - {}", occ.line_preview);
+        println!("  @@ Line {}:{} (indent: {}) @@", occ.line, occ.col, occ.indent_desc);
+        for old_l in &occ.old_lines {
+            println!("\x1b[31m-   {}\x1b[0m", old_l);
+        }
+        for new_l in &occ.new_lines {
+            println!("\x1b[32m+   {}\x1b[0m", new_l);
+        }
     }
     0
 }
@@ -106,39 +116,43 @@ struct Occurrence {
     line: usize,
     col: usize,
     indent_desc: String,
-    line_preview: String,
+    old_lines: Vec<String>,
+    new_lines: Vec<String>,
 }
 
-fn find_occurrences(source: &str, find: &str, is_regex: bool) -> Vec<Occurrence> {
+fn find_occurrences(source: &str, find: &str, replace: &str, is_regex: bool) -> Vec<Occurrence> {
     let mut results = Vec::new();
 
     if is_regex {
         if let Ok(re) = Regex::new(find) {
             for m in re.find_iter(source) {
-                results.push(compute_telemetry(source, m.start()));
+                let replaced_segment = re.replace(m.as_str(), replace).to_string();
+                results.push(compute_telemetry(source, m.start(), m.end(), &replaced_segment));
             }
         }
     } else if let Ok(ac) = AhoCorasick::new([find]) {
         for m in ac.find_iter(source) {
-            results.push(compute_telemetry(source, m.start()));
+            results.push(compute_telemetry(source, m.start(), m.end(), replace));
         }
     }
 
     results
 }
 
-fn compute_telemetry(source: &str, byte_offset: usize) -> Occurrence {
-    let prefix = &source[..byte_offset];
+fn compute_telemetry(source: &str, start_offset: usize, end_offset: usize, replacement: &str) -> Occurrence {
+    let prefix = &source[..start_offset];
     let line_number = prefix.lines().count().max(1);
-    
+
     let line_start = prefix.rfind('\n').map(|idx| idx + 1).unwrap_or(0);
-    let line_end = source[byte_offset..].find('\n').map(|idx| byte_offset + idx).unwrap_or(source.len());
-    let full_line = &source[line_start..line_end];
+    let line_end = source[end_offset..].find('\n').map(|idx| end_offset + idx).unwrap_or(source.len());
 
-    let col_number = byte_offset.saturating_sub(line_start) + 1;
+    let old_block = &source[line_start..line_end];
+    let new_block = format!("{}{}{}", &source[line_start..start_offset], replacement, &source[end_offset..line_end]);
 
-    // Detect indentation
-    let indent_chars: String = full_line.chars().take_while(|c| c.is_whitespace()).collect();
+    let col_number = start_offset.saturating_sub(line_start) + 1;
+
+    let first_line = old_block.lines().next().unwrap_or("");
+    let indent_chars: String = first_line.chars().take_while(|c| c.is_whitespace()).collect();
     let indent_desc = if indent_chars.is_empty() {
         "0 (flush left)".to_string()
     } else {
@@ -153,10 +167,14 @@ fn compute_telemetry(source: &str, byte_offset: usize) -> Occurrence {
         }
     };
 
+    let old_lines = old_block.lines().map(|s| s.to_string()).collect();
+    let new_lines = new_block.lines().map(|s| s.to_string()).collect();
+
     Occurrence {
         line: line_number,
         col: col_number,
         indent_desc,
-        line_preview: full_line.trim_end().to_string(),
+        old_lines,
+        new_lines,
     }
 }
