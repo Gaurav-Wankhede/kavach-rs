@@ -65,14 +65,14 @@ other = { version = "1", features = ["full"] }
 
 ## Part of the Kavach Sovereign Engine
 
-This crate is the persistent memory substrate of **[kavach-rs](https://github.com/Gaurov-Wankhede/kavach-rs)**, the sovereign context firewall and cognitive memory substrate for AI coding agents.
+This crate is the persistent memory substrate of **[kavach-rs](https://github.com/Gaurav-Wankhede/kavach-rs)**, the sovereign context firewall and cognitive memory substrate for AI coding agents.
 
-- Companion Web Search: **[webfind](https://github.com/Gaurov-Wankhede/webfind)**
-- Canonical Repository: [https://github.com/Gaurov-Wankhede/kavach-rs](https://github.com/Gaurov-Wankhede/webfind)
+- Companion Web Search: **[webfind](https://github.com/Gaurav-Wankhede/webfind)**
+- Canonical Repository: [https://github.com/Gaurav-Wankhede/kavach-rs](https://github.com/Gaurav-Wankhede/webfind)
 
 ---
 
 ## Author & License
 
-- **Author & Architect:** [Gaurov Wankhede](https://github.com/Gaurov-Wankhede) (`gauravanilwankhede2002@gmail.com`)
+- **Author & Architect:** [Gaurav Wankhede](https://github.com/Gaurav-Wankhede) (`gauravanilwankhede2002@gmail.com`)
 - **License:** MIT License
