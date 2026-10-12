@@ -892,23 +892,6 @@ High-precision HTML DOM extraction using CSS selectors (powered by scraper)
 | `--text` | Strip inner HTML tags and emit plain text only |  |
 | `--count` | Output count of matched elements only |  |
 
-## `kavach install`
-
-Install Kavach's OFFICIAL hook config into a native tool (CC/Cursor/Codex/…)
-
-| Flag | Description | Default |
-|---|---|---|
-| `--vendor` | Which tool(s): cc \| cursor \| codex \| gemini \| pi \| all |  |
-| `--dry-run` | Preview the would-be action without writing any file |  |
-
-```
-EXAMPLES:
-  kavach install --vendor all --dry-run
-  kavach install --vendor cursor
-
-WHEN: one-time onboarding — makes each tool load Kavach via its OWN official hook mechanism. Backs up + idempotent.
-```
-
 ## `kavach json`
 
 Start/stop/inspect the background servers (Turso DB store + web UI). Query and project JSON state with zero-bloat TOON tabular formatting
