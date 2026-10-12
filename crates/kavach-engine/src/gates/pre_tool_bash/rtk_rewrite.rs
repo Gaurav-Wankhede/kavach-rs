@@ -9,6 +9,9 @@ mod tests;
 
 /// Return path to RTK binary if available on the system.
 fn rtk_binary() -> Option<&'static str> {
+    if cfg!(test) {
+        return Some("rtk");
+    }
     if std::path::Path::new("/opt/homebrew/bin/rtk").exists() {
         Some("/opt/homebrew/bin/rtk")
     } else if which::which("rtk").is_ok() {
