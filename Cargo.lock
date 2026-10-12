@@ -3106,52 +3106,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kavach-cli"
-version = "1.3.5"
-dependencies = [
- "aho-corasick",
- "ast-grep-core 0.50.0",
- "ast-grep-language",
- "blake3",
- "chrono",
- "clap",
- "color-eyre",
- "dirs 7.0.0",
- "gix",
- "glob-match",
- "ignore",
- "kavach-config",
- "kavach-db",
- "kavach-engine",
- "kavach-hook",
- "kavach-patterns",
- "kavach-rpc",
- "kavach-rule-engine",
- "kavach-rule-generator",
- "kavach-session",
- "kavach-toon",
- "kavach-types",
- "kavach-web",
- "native-tls",
- "postgres",
- "postgres-native-tls",
- "pulldown-cmark",
- "regex",
- "rhai",
- "scraper",
- "serde",
- "serde_json",
- "serde_yaml",
- "similar",
- "svg",
- "tempfile",
- "thiserror 2.0.21",
- "tokio",
- "toml",
- "ureq",
-]
-
-[[package]]
 name = "kavach-config"
 version = "1.3.5"
 dependencies = [
@@ -3284,6 +3238,52 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "kavach-rs"
+version = "1.3.5"
+dependencies = [
+ "aho-corasick",
+ "ast-grep-core 0.50.0",
+ "ast-grep-language",
+ "blake3",
+ "chrono",
+ "clap",
+ "color-eyre",
+ "dirs 7.0.0",
+ "gix",
+ "glob-match",
+ "ignore",
+ "kavach-config",
+ "kavach-db",
+ "kavach-engine",
+ "kavach-hook",
+ "kavach-patterns",
+ "kavach-rpc",
+ "kavach-rule-engine",
+ "kavach-rule-generator",
+ "kavach-session",
+ "kavach-toon",
+ "kavach-types",
+ "kavach-web",
+ "native-tls",
+ "postgres",
+ "postgres-native-tls",
+ "pulldown-cmark",
+ "regex",
+ "rhai",
+ "scraper",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "similar",
+ "svg",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tokio",
+ "toml",
+ "ureq",
 ]
 
 [[package]]
