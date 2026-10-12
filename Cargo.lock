@@ -3093,7 +3093,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-chain"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "chrono",
  "dashmap",
@@ -3107,7 +3107,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-cli"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "aho-corasick",
  "ast-grep-core 0.50.0",
@@ -3153,7 +3153,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-config"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "dirs 7.0.0",
  "indexmap",
@@ -3167,7 +3167,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-db"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "ast-grep-core 0.45.3",
  "blake3",
@@ -3201,7 +3201,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-engine"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "ast-grep-core 0.50.0",
  "ast-grep-language",
@@ -3233,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-hook"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "chrono",
  "insta",
@@ -3247,14 +3247,14 @@ dependencies = [
 
 [[package]]
 name = "kavach-ope"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "kavach-patterns"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "aho-corasick",
  "dirs 7.0.0",
@@ -3270,7 +3270,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rpc"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "chrono",
  "dirs 7.0.0",
@@ -3288,7 +3288,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rule-engine"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "blake3",
  "chrono",
@@ -3307,7 +3307,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-rule-generator"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "kavach-patterns",
  "kavach-rule-engine",
@@ -3315,7 +3315,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-session"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "blake3",
  "chrono",
@@ -3330,7 +3330,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-toon"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "serde_json",
  "thiserror 2.0.21",
@@ -3338,7 +3338,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-types"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "proptest",
  "serde",
@@ -3348,7 +3348,7 @@ dependencies = [
 
 [[package]]
 name = "kavach-web"
-version = "1.3.4"
+version = "1.3.5"
 dependencies = [
  "axum",
  "futures",

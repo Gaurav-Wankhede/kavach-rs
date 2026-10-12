@@ -4,6 +4,16 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach follows **Semantic Versioning** (`MAJOR.MINOR.PATCH` — e.g. `1.3.4`), matching Cargo package versions and release tags.
 
+## [1.3.5] - 2026-10-12
+
+### Added
+- **`kavach replace` Git-Style Unified Diff Telemetry**: In-place replacement now renders standard `-` (red) and `+` (green) lines with 1-indexed line and column coordinates, whitespace indentation analysis (`indent: 4 spaces`, `1 tab`, etc.), and visual multi-line context blocks for both live executions and `--dry-run`.
+- **`kavach cargo test` Output Defense**: Clean non-interactive testing that reports clean success summaries with passed/ignored counts and test-suite totals (`[CARGO:TEST] ok: X passed (across Y test suites)`), selectively isolating only failing test blocks and errors on failure.
+
+### Removed
+- **`crates/kavach-cli/templates`**: Completely excised all legacy harness template files and dead template integration tests.
+- **`kavach install` Subcommand**: Removed obsolete install command in favor of standard single-command installation via `cargo install kavach-cli`.
+
 ## [1.3.4] - 2026-10-12
 
 ### Added
