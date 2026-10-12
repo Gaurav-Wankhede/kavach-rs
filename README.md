@@ -1,12 +1,13 @@
 # Kavach (`kavach-rs`)
 
 > **The Sovereign Engine Governor, Deterministic Context Firewall & In-Memory Memory Substrate for Autonomous AI Coding Agents.**
-> Stop Context Rot. Eliminate Context Bloat. Cure Context Amnesia. Defeat "Lost in the Middle".
+> Stop Context Rot. Eliminate Context Bloat. Cure Context Amnesia. Defeat "Lost in the Middle". Ground Live Truth with Webfind.
 
 [![Crates.io](https://img.shields.io/crates/v/kavach.svg)](https://crates.io/crates/kavach)
 [![Documentation](https://docs.rs/kavach/badge.svg)](https://docs.rs/kavach)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Gaurav-Wankhede/kavach-rs)](https://github.com/Gaurav-Wankhede/kavach-rs/releases)
+[![Companion: Webfind](https://img.shields.io/badge/Companion-Webfind%20(Live%20Search)-emerald.svg)](https://github.com/Gaurav-Wankhede/webfind)
 [![Rust 1.95+](https://img.shields.io/badge/rust-1.95%2B-orange.svg)](https://www.rust-lang.org)
 
 ---
@@ -18,7 +19,9 @@
   - [2. Context Bloat (Token Inflation & Noise Flooding)](#2-context-bloat-token-inflation--noise-flooding)
   - [3. Context Amnesia (Stateless Session Death)](#3-context-amnesia-stateless-session-death)
   - [4. "Lost in the Middle" (U-Curve Degradation)](#4-lost-in-the-middle-u-curve-attention-degradation)
+  - [5. Stale Training Weights & Hallucination (External Grounding Failure)](#5-stale-training-weights--hallucination-external-grounding-failure)
 - [What is Kavach?](#what-is-kavach)
+- [The Sovereign Tool Ecosystem: Kavach & Webfind](#the-sovereign-tool-ecosystem-kavach--webfind)
 - [The 12 Legacy Replacements](#the-12-legacy-replacements)
 - [Empirical Telemetry & Benchmarks](#empirical-telemetry--benchmarks)
   - [1,000-Run Execution Benchmark (Hyperfine Statistical Analysis)](#1000-run-execution-benchmark-hyperfine-statistical-analysis)
@@ -32,6 +35,10 @@
   - [6. Phase-Gated SDLC Engine Governance (`kavach verify`)](#6-phase-gated-sdlc-engine-governance)
 - [Installation](#installation)
 - [Day-in-the-Life Operational Runbook](#day-in-the-life-operational-runbook)
+  - [Phase 1: Discovery & Live Grounding (Kavach + Webfind)](#phase-1-discovery--live-grounding-kavach--webfind)
+  - [Phase 2: Surgical State Inspection & Caller Tracing](#phase-2-surgical-state-inspection--caller-tracing)
+  - [Phase 3: Deterministic Scripting & Atomic Mutation](#phase-3-deterministic-scripting--atomic-mutation)
+  - [Phase 4: SDLC Verification & Cognitive Memory Checkpoint](#phase-4-sdlc-verification--cognitive-memory-checkpoint)
 - [Canonical Multi-Agent Governance (`prompts/`)](#canonical-multi-agent-governance-prompts)
 - [Configuration Reference](#configuration-reference)
 - [Author & Maintenance](#author--maintenance)
@@ -40,9 +47,9 @@
 
 ## The Crisis in AI Coding Agents
 
-Modern Large Language Model (LLM) coding agents—Claude Code, Gemini CLI, Cursor, Windsurf, Devin, and Aider—suffer from four systemic architectural failures caused by relying on legacy POSIX CLI tools (`cat`, `find`, `grep`, `sed`, `node -e`, `python -c`). 
+Modern Large Language Model (LLM) coding agents—Claude Code, Gemini CLI, Cursor, Windsurf, Devin, and Aider—suffer from systemic architectural failures caused by relying on legacy POSIX CLI tools (`cat`, `find`, `grep`, `sed`, `node -e`, `python -c`) and ungrounded pre-trained weights.
 
-Kavach acts as a deterministic firewall between the LLM and your operating system, eliminating these pathologies at the syscall level.
+Kavach acts as a deterministic firewall between the LLM and the operating system, eliminating these pathologies at the syscall level.
 
 ```
 +-------------------------------------------------------------------------+
@@ -57,12 +64,12 @@ Kavach acts as a deterministic firewall between the LLM and your operating syste
 |   ===================================================================   |
 |   |                  KAVACH DETERMINISTIC FIREWALL                  |   |
 |   ===================================================================   |
-|             ^                                           ^               |
-|             |                                           |               |
-|   +---------+---------+                     +-----------+-----------+   |
-|   | 3. CONTEXT AMNESIA|                     | 4. LOST IN THE MIDDLE |   |
-|   | Wipe between runs |                     | U-curve retrieval drop|   |
-|   +-------------------+                     +-----------------------+   |
+|             ^                         ^                 ^               |
+|             |                         |                 |               |
+|   +---------+---------+     +---------+---------+     +-+-------------+ |
+|   | 3. CONTEXT AMNESIA|     | 4. LOST IN MIDDLE |     | 5. STALE WEIGHTS|
+|   | Wipe between runs |     | U-curve drop      |     | Hallucinations| |
+|   +-------------------+     +-------------------+     +---------------+ |
 +-------------------------------------------------------------------------+
 ```
 
@@ -82,18 +89,36 @@ Kavach acts as a deterministic firewall between the LLM and your operating syste
 - **The Failure:** Empirical research (*Liu et al., Stanford/Berkeley*) proves that LLM retrieval accuracy degrades severely when relevant instructions or facts are buried in the middle of long contexts (the U-shaped attention curve).
 - **The Kavach Solution:** Kavach's surgical context slices place exact facts directly adjacent to the immediate prompt turn, completely bypassing the degraded middle of the attention window.
 
+### 5. Stale Training Weights & Hallucination (External Grounding Failure)
+- **The Failure:** LLM agents inherently default to their frozen pre-trained weights for external library versions, API signatures, CLI flags, security CVEs, and breaking changes. Training weights are inherently stale from day one. When an agent guesses an API based on frozen memory, code generation fails or introduces subtle runtime bugs.
+- **The Kavach Solution:** Kavach strictly mandates the **Tabula Rasa Law** during discovery: pre-trained memory is never admissible evidence for external facts. External APIs and technical claims must be grounded live via **[Webfind](https://github.com/Gaurav-Wankhede/webfind)** with explicit **Time Awareness** (`TODAY=$(date -u +%Y-%m-%d)`).
+
 ---
 
-## What is Kavach?
+## The Sovereign Tool Ecosystem: Kavach & Webfind
 
-**Kavach** (Sanskrit for *Armor / Shield*) is a high-performance Rust binary (`kavach-rs`) engineered specifically for AI developer agents and autonomous agent harnesses. 
+Autonomous agents operate under strict non-overlapping domain sovereignty:
 
-It provides:
-1. **Surgical Context Extraction:** Native AST grep, bounded globbing, and line-range extraction.
-2. **Zero-Overhead Scripting:** In-process Rhai AST evaluation (`kavach script -e`) executing in **4.7 ms** with **zero shell spawning**.
-3. **Persistent Cognitive Memory:** Embedded Turso / libSQL vector database (`kavach db`) for session continuity.
-4. **Deterministic Gate Governance:** Enforces SDLC verification phases (`kavach verify`) before code mutations can be finalized.
-5. **Atomic In-Place Patching:** Aho-Corasick multiline search-and-replace (`kavach replace`) with tempfile safety and zero whole-file rewrites.
+```
++---------------------------------------------------------------------------+
+|                          AUTONOMOUS AGENT HARNESS                         |
+|                                                                           |
+|   +-----------------------------------+   +---------------------------+   |
+|   |         KAVACH (`kavach-rs`)      |   |   WEBFIND (`webfind`)     |   |
+|   |     LOCAL CODEBASE SOVEREIGNTY    |   |  LIVE INTERNET GROUNDING  |   |
+|   +-----------------+-----------------+   +-------------+-------------+   |
+|                     |                                   |                 |
+|                     v                                   v                 |
+|   * Zero whole-file reads                 * Live search engine (zero cost)|
+|   * AST grep & atomic replace             * Tabula Rasa external grounding|
+|   * Embedded Turso memory substrate       * Time Awareness date guards    |
+|   * SDLC phase-gate enforcement           * Compact markdown web fetch    |
+|   * Blast-radius symbol tracing           * Knowledge graph indexing      |
++---------------------------------------------------------------------------+
+```
+
+- **[Kavach (`kavach-rs`)](https://github.com/Gaurav-Wankhede/kavach-rs):** Governs local codebase state, AST mutations, context firewalls, and persistent session memory.
+- **[Webfind (`webfind`)](https://github.com/Gaurav-Wankhede/webfind):** Governs external web search, live documentation grounding, and URL extraction. It guarantees agents never rely on frozen training weights.
 
 ---
 
@@ -101,19 +126,19 @@ It provides:
 
 Kavach replaces the brittle, bloated POSIX and runtime tools that cause AI agent degradation:
 
-| Legacy Tool | Failure Mode in AI Agents | Allowed Kavach Command | Kavach Advantage |
+| Legacy Tool | Failure Mode in AI Agents | Allowed Kavach / Sovereign Command | Advantage |
 | :--- | :--- | :--- | :--- |
 | **`cat` / `bat`** | Dumps entire files, burning 5k–30k tokens per read. | `kavach grep` / slice projections | Zero whole-file reads; sub-slice AST extraction only. |
 | **`jq`** | Brittle syntax; shell quoting errors; unindexed scans. | `jaq` / `dasel` / `kavach script` | Rust-native, schema-validated projection. |
 | **`grep` / `rg`** | Unbounded text hits with noisy context lines. | `kavach grep "<pattern>" <path> -C 2` | AST-aware code pattern matching with bounded context. |
 | **`find` / `fd`** | Unbounded directory walks pollute context. | `kavach glob "<pattern>" <path> --max-depth 4` | Strict depth limits, deterministic sorted output. |
+| **`curl` / `wget`** | Unformatted HTML blobs pollute context with noise. | `webfind fetch --compact "<url>"` | Clean semantic markdown extraction for agents. |
 | **`node -e`** | 118 ms startup latency; V8 heap overhead; Node dependency. | `kavach script -e "<expr>"` | **4.7 ms** instant Rhai AST evaluation; zero dependencies. |
 | **`python3 -c`** | 57 ms cold-start; environment/version drift; GIL overhead. | `kavach script -e "<expr>"` | **12x faster**; deterministic sandbox; no virtualenvs. |
 | **`bun -e`** | 7.4 ms startup; unvetted external runtime in production environments. | `kavach script -e "<expr>"` | Pure Rust in-process runtime with memory safety. |
 | **`sed` / `awk`** | Destructive regex failures, macOS vs GNU dialect bugs. | `kavach replace '<old>' '<new>' <file>` | Atomic Aho-Corasick replacement with automatic backup. |
 | **`sqlite3`** | External process spawn; no vector search; brittle schemas. | `kavach db query "<sql>"` | Embedded Turso/libSQL engine with schema migrations. |
 | **`git log`** | Dumps unbounded commit histories and diff noise. | `kavach trace "<symbol>" <path>` | Symbol-level caller network and semantic blast radius. |
-| **`tree` / `ls -R`** | Massive directory trees flood agent token windows. | `rtk tree -L 2 <dir>` / `erd -L 3 <dir>` | Compact token-efficient visual hierarchy. |
 | **`make` / `bash`** | Non-deterministic scripts, untracked SDLC phase gates. | `kavach verify --phase <gate>` | Deterministic, audited phase gate validation. |
 
 ---
@@ -240,77 +265,108 @@ cargo build --release
 cp target/release/kavach /usr/local/bin/kavach
 ```
 
-### Cargo Crates.io (Upcoming)
+### Companion CLI: Webfind
+
+Install [Webfind](https://github.com/Gaurav-Wankhede/webfind) for live, zero-cost external research grounding:
 
 ```bash
-cargo install kavach
+git clone https://github.com/Gaurav-Wankhede/webfind.git
+cd webfind
+cargo build --release
+cp target/release/webfind /usr/local/bin/webfind
 ```
 
 ### Verification
 
-Verify that Kavach is operational:
-
 ```bash
 kavach --version
 kavach script -e "print('Kavach Sovereign Engine Online');"
+webfind --version
 ```
 
 ---
 
 ## Day-in-the-Life Operational Runbook
 
-Here is the exact lifecycle of how an autonomous AI coding agent interacts with a project governed by Kavach:
+Here is the exact lifecycle of how an autonomous AI coding agent interacts with a project governed by Kavach and grounded by [Webfind](https://github.com/Gaurav-Wankhede/webfind):
 
 ```
-[ PHASE 1: DISCOVERY ]
+[ PHASE 1: DISCOVERY & LIVE GROUNDING ]
        |
-       +---> kavach glob "*.rs" src/ --max-depth 3
-       +---> jaq -r '.subsystems' config.json
+       +---> kavach glob "*.rs" src/ --max-depth 3               (Local Codebase Discovery)
+       +---> webfind search --live "<API/Crate> $(date +%Y)"       (Live External Grounding)
+       +---> jaq -r '.subsystems' config.json                    (Surgical Schema Projection)
        |
-[ PHASE 2: INSPECTION ]
+[ PHASE 2: SURGICAL INSPECTION & BLAST RADIUS ]
        |
        +---> kavach grep "pub fn dispatch" src/ -C 2
        +---> kavach trace "dispatch" src/ --callers
        |
-[ PHASE 3: EXECUTION ]
+[ PHASE 3: EXECUTION & ATOMIC MUTATION ]
        |
        +---> kavach script -e "compute_weights([1, 2, 3])"
        +---> kavach replace 'let timeout = 5;' 'let timeout = 10;' src/config.rs
        |
-[ PHASE 4: VERIFICATION & MEMORY ]
+[ PHASE 4: VERIFICATION & COGNITIVE MEMORY ]
        |
        +---> kavach verify --phase unit-tests
        +---> kavach db memory --record "Set dispatch timeout to 10s"
 ```
 
-### Step 1: Zero-Guessing Discovery
+### Phase 1: Discovery & Live Grounding (Kavach + Webfind)
+
+#### 1. Local Codebase Discovery (Zero Guessing)
 Before touching any code, the agent discovers project structure without probing blindly:
 ```bash
 kavach glob "*.rs" src/ --max-depth 3
 ```
 
-### Step 2: Surgical State Inspection
-The agent reads specific configuration keys without reading whole files:
+#### 2. External Live Grounding with Time Awareness ([Webfind](https://github.com/Gaurav-Wankhede/webfind))
+> **The Tabula Rasa Law:** Pre-trained weights are **NEVER** admissible as evidence for external APIs, crate versions, CLI flags, or platform behaviors.
+> Every factual claim must be witnessed live via **[Webfind](https://github.com/Gaurav-Wankhede/webfind)** in the exact turn it is made.
+
+The agent enforces **Time Awareness** using the system date guard:
 ```bash
-jaq -r '.universal_behaviour.imperatives[] | .id' prompts/AGENTS.json
+# Anchor search to the current year to reject stale documentation
+CURRENT_YEAR=$(date -u +%Y)
+webfind search --live --depth deep --hybrid --limit 6 -o json "axum 0.8 routing $CURRENT_YEAR"
 ```
 
-### Step 3: Blast-Radius & Caller Tracing
-Before refactoring a symbol, the agent inspects all inbound callers:
+To inspect official documentation without dumping unformatted HTML:
 ```bash
+webfind fetch --compact "https://docs.rs/axum/latest/axum/"
+```
+
+### Phase 2: Surgical State Inspection & Caller Tracing
+
+The agent inspects configuration and caller networks surgically without whole-file reads:
+```bash
+# Surgical JSON inspection
+jaq -r '.universal_behaviour.imperatives[] | .id' prompts/AGENTS.json
+
+# AST caller network & blast-radius analysis before mutating symbols
 kavach trace "handle_request" src/ --callers
 ```
 
-### Step 4: Atomic Mutation
-The agent patches code surgically:
+### Phase 3: Deterministic Scripting & Atomic Mutation
+
+Calculations and data transformations execute inside the in-process Rhai VM in **4.7 ms**, followed by atomic patching:
 ```bash
+# In-process AST logic (replaces python3 -c and node -e)
+kavach script -e "let arr = [10, 20, 30]; arr.map(|x| x * 2)"
+
+# Atomic Aho-Corasick replacement (zero file destruction)
 kavach replace 'let max_retries = 3;' 'let max_retries = 5;' src/engine.rs
 ```
 
-### Step 5: Verification & Memory Persistence
-The agent runs the verification gate and commits the architectural decision to the persistent memory bank:
+### Phase 4: SDLC Verification & Cognitive Memory Checkpoint
+
+The agent enforces the SDLC phase gate and commits decisions to the persistent memory bank:
 ```bash
+# Phase verification gate
 kavach verify --phase pre-commit
+
+# Record decision to embedded Turso database to cure context amnesia
 kavach db memory --set "engine.max_retries=5" --reason "Mitigate API rate limit transients"
 ```
 
@@ -336,7 +392,12 @@ Kavach stores project-level memory and telemetry in `.kavach/` within the reposi
   "governance": {
     "zero_whole_file_reads": true,
     "banned_interpreters": ["node -e", "python -c", "bun -e"],
-    "max_context_lines": 100
+    "max_context_lines": 100,
+    "tabula_rasa_grounding": {
+      "enforced": true,
+      "provider": "webfind",
+      "live_flag": "--live"
+    }
   },
   "memory": {
     "engine": "turso_embedded",
@@ -355,7 +416,9 @@ Kavach stores project-level memory and telemetry in `.kavach/` within the reposi
 ## Author & Maintenance
 
 - **Author & Architect:** [Gaurav Wankhede](https://github.com/Gaurav-Wankhede) (`gauravanilwankhede2002@gmail.com`)
-- **Repository:** [`Gaurav-Wankhede/kavach-rs`](https://github.com/Gaurav-Wankhede/kavach-rs)
+- **Repositories:**
+  - Kavach Engine: [`Gaurav-Wankhede/kavach-rs`](https://github.com/Gaurav-Wankhede/kavach-rs)
+  - Live Search Grounding: [`Gaurav-Wankhede/webfind`](https://github.com/Gaurav-Wankhede/webfind)
 - **License:** MIT License
 
-*Designed and engineered for zero context rot, zero token waste, and deterministic AI agent governance.*
+*Designed and engineered for zero context rot, zero token waste, live web grounding, and deterministic AI agent governance.*
