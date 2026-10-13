@@ -13,27 +13,27 @@ use super::inspect;
 #[test]
 fn denies_bare_legacy_tools() {
     for (cmd, tool, repl) in [
-        ("grep -n foo src/", "grep", "rg"),
-        ("egrep pat f", "egrep", "rg"),
-        ("cat Cargo.toml", "cat", "bat"),
-        ("find . -name '*.rs'", "find", "fd"),
-        ("sed 's/a/b/' f.txt", "sed", "sd"),
-        ("jq '.x' data.json", "jq", "jaq"),
-        ("curl https://example.com", "curl", "xh"),
+        ("grep -n foo src/", "grep", "kavach grep"),
+        ("egrep pat f", "egrep", "kavach grep"),
+        ("cat Cargo.toml", "cat", "kavach grep (or sovereign AST/JSON tools; whole-file reads permanently denied)"),
+        ("find . -name '*.rs'", "find", "kavach glob"),
+        ("sed 's/a/b/' f.txt", "sed", "kavach replace"),
+        ("jq '.x' data.json", "jq", "kavach json"),
+        ("curl https://example.com", "curl", "webfind fetch"),
         ("du -sh target", "du", "dust"),
-        ("tree -L 2", "tree", "erd"),
+        ("tree -L 2", "tree", "kavach glob"),
         ("ps aux", "ps", "procs"),
         ("diff a.rs b.rs", "diff", "difft"),
-        ("ls -R src", "ls", "eza"),
+        ("ls -R src", "ls", "kavach glob"),
         (
             "head -n 10 src/lib.rs",
             "head",
-            "bat -p -r <start>:<end> (after rtk rg -n / sg)",
+            "kavach grep --scope",
         ),
         (
             "tail -n 20 src/lib.rs",
             "tail",
-            "bat -p -r <start>:<end> (after rtk rg -n / sg)",
+            "kavach grep --scope",
         ),
     ] {
         let hit = inspect(cmd).unwrap_or_else(|| panic!("must deny: {cmd}"));
