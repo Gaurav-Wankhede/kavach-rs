@@ -98,14 +98,14 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 
 
         Commands::Replace {
-            path,
-            find,
-            replace,
+            arg1,
+            arg2,
+            arg3,
             pairs,
             fixed_strings,
             regex,
             dry_run,
-        } => replace::run(path, find, replace, pairs, fixed_strings, regex, dry_run),
+        } => replace::run(arg1, arg2, arg3, pairs, fixed_strings, regex, dry_run),
         Commands::Trace {
             symbol,
             path,

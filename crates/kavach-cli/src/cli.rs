@@ -130,13 +130,12 @@ pub(crate) enum Commands {
 
     /// Surgical in-place file text/regex replacement (replaces sd).
     Replace {
-        /// Target file path
-        #[arg(trailing_var_arg = false)]
-        path: String,
-        /// Positional search pattern (when not using --pair)
-        find: Option<String>,
-        /// Positional replacement string (when not using --pair)
-        replace: Option<String>,
+        /// Positional search pattern (or target file path when using --pair)
+        arg1: Option<String>,
+        /// Positional replacement string (optional when using --pair)
+        arg2: Option<String>,
+        /// Positional target file path (optional when using --pair)
+        arg3: Option<String>,
         /// Multiple search and replace pairs: --pair <FIND> <REPLACE>
         #[arg(
             long = "pair",

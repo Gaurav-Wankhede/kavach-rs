@@ -1,6 +1,9 @@
 //! Surgical in-place file text/regex replacement using `aho-corasick` / `regex` and `tempfile`.
 //! Atomic replacement with zero risk of partial file corruptions.
-//! Supports single replacements as well as multi-pair simultaneous replacements.
+//! Supports:
+//!   1. Positional legacy format: `kavach replace <FIND> <REPLACE> <PATH>`
+//!   2. Single or multi-pair format: `kavach replace --pair <FIND> <REPLACE> <PATH>`
+//!   3. Inverted path format: `kavach replace <PATH> --pair <FIND> <REPLACE>`
 
 use aho_corasick::{AhoCorasick, MatchKind};
 use regex::Regex;
@@ -15,9 +18,9 @@ struct SubPair {
 }
 
 pub(crate) fn run(
-    path: String,
-    find: Option<String>,
-    replace: Option<String>,
+    arg1: Option<String>,
+    arg2: Option<String>,
+    arg3: Option<String>,
     pairs_raw: Vec<String>,
     fixed_strings: bool,
     use_regex: bool,
@@ -35,26 +38,48 @@ pub(crate) fn run(
         i += 2;
     }
 
-    // If positional arguments find & replace are provided, prepend them
-    if let (Some(f), Some(r)) = (find, replace) {
-        pairs.insert(0, SubPair { find: f, replace: r });
-    }
+    // Determine target path and any positional pairs
+    let target_path = if !pairs.is_empty() {
+        // When using --pair:
+        // Either arg1 or arg3 is the file path
+        if let Some(p) = arg1 {
+            p
+        } else if let Some(p) = arg3 {
+            p
+        } else {
+            eprintln!("[ERROR] No target file path specified. Usage: `kavach replace --pair <FIND> <REPLACE> <PATH>`");
+            return 2;
+        }
+    } else {
+        // When NOT using --pair:
+        // Must have arg1 (<FIND>), arg2 (<REPLACE>), arg3 (<PATH>)
+        match (arg1, arg2, arg3) {
+            (Some(f), Some(r), Some(p)) => {
+                pairs.push(SubPair { find: f, replace: r });
+                p
+            }
+            (Some(_p), Some(_f), None) => {
+                // If user wrote `kavach replace <PATH> <FIND>` by mistake
+                eprintln!("[ERROR] Missing replacement argument. Usage: `kavach replace <FIND> <REPLACE> <PATH>`");
+                return 2;
+            }
+            _ => {
+                eprintln!("[ERROR] Invalid arguments. Usage: `kavach replace <FIND> <REPLACE> <PATH>` or `kavach replace --pair <FIND> <REPLACE> <PATH>`");
+                return 2;
+            }
+        }
+    };
 
-    if pairs.is_empty() {
-        eprintln!("[ERROR] No replacement patterns provided. Use `kavach replace <FIND> <REPLACE> <PATH>` or `kavach replace --pair <FIND> <REPLACE> <PATH>`");
-        return 2;
-    }
-
-    let target = Path::new(&path);
+    let target = Path::new(&target_path);
     if !target.exists() {
-        eprintln!("[ERROR] Target file does not exist: {}", path);
+        eprintln!("[ERROR] Target file does not exist: {}", target_path);
         return 1;
     }
 
     let original = match fs::read_to_string(target) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[ERROR] Failed to read {}: {}", path, e);
+            eprintln!("[ERROR] Failed to read {}: {}", target_path, e);
             return 1;
         }
     };
@@ -75,7 +100,8 @@ pub(crate) fn run(
             let match_count = re.find_iter(&curr).count();
             if match_count > 0 {
                 count += match_count;
-                for m in re.find_iter(&curr) {
+                // Only build up to 20 telemetry entries for display performance
+                for m in re.find_iter(&curr).take(20) {
                     let replaced_segment = re.replace(m.as_str(), &p.replace).to_string();
                     occs.push(compute_telemetry(&curr, m.start(), m.end(), &replaced_segment));
                 }
@@ -99,24 +125,27 @@ pub(crate) fn run(
         };
 
         let mut occs = Vec::new();
+        let mut count = 0;
         for m in ac.find_iter(&original) {
-            let pat_idx = m.pattern().as_usize();
-            let rep_str = replacements[pat_idx];
-            occs.push(compute_telemetry(&original, m.start(), m.end(), rep_str));
+            count += 1;
+            if occs.len() < 20 {
+                let pat_idx = m.pattern().as_usize();
+                let rep_str = replacements[pat_idx];
+                occs.push(compute_telemetry(&original, m.start(), m.end(), rep_str));
+            }
         }
 
-        let count = occs.len();
         let mod_str = ac.replace_all(&original, &replacements);
         (mod_str, count, occs)
     };
 
     if count == 0 {
-        eprintln!("[REPLACE] No occurrences of pattern found in {}", path);
+        eprintln!("[REPLACE] No occurrences of pattern found in {}", target_path);
         return 1;
     }
 
     if dry_run {
-        println!("[DRY RUN] Found {} occurrence(s) in {}:", count, path);
+        println!("[DRY RUN] Found {} occurrence(s) in {}:", count, target_path);
         for occ in occurrences.iter().take(20) {
             println!("  @@ Line {}:{} (indent: {}) @@", occ.line, occ.col, occ.indent_desc);
             for old_l in &occ.old_lines {
@@ -149,11 +178,11 @@ pub(crate) fn run(
     }
 
     if let Err(e) = temp.persist(target) {
-        eprintln!("[ERROR] Failed to atomic persist to {}: {}", path, e);
+        eprintln!("[ERROR] Failed to atomic persist to {}: {}", target_path, e);
         return 1;
     }
 
-    println!("[REPLACE] Successfully replaced {} occurrence(s) in {}:", count, path);
+    println!("[REPLACE] Successfully replaced {} occurrence(s) in {}:", count, target_path);
     for occ in occurrences.iter().take(20) {
         println!("  @@ Line {}:{} (indent: {}) @@", occ.line, occ.col, occ.indent_desc);
         for old_l in &occ.old_lines {

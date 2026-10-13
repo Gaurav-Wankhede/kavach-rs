@@ -6,7 +6,6 @@
 
 use crate::cli::TodosAction;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use regex::Regex;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -170,29 +169,27 @@ fn list_existing_todo_keys(project: &str) -> Vec<String> {
 
 fn walk_and_count(root: &Path, dir: &Path, hits: &mut HashMap<String, TodoHit>) -> usize {
     let mut count = 0usize;
-    let Ok(entries) = fs::read_dir(dir) else {
-        return count;
-    };
-    for entry in entries.flatten() {
-        let Ok(ft) = entry.file_type() else { continue };
+    let mut builder = ignore::WalkBuilder::new(dir);
+    builder
+        .hidden(true)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true);
+
+    for entry in builder.build().flatten() {
         let path = entry.path();
-        let Some(name) = path.file_name().and_then(|s| s.to_str()) else {
-            continue;
-        };
-        if name.starts_with('.') || SKIP_DIRS.contains(&name) {
-            continue;
-        }
-        if ft.is_dir() {
-            count = count.saturating_add(walk_and_count(root, &path, hits));
-        } else if !ft.is_dir() && path.extension().is_some_and(|e| e == "rs") {
+        if path.is_file() && path.extension().is_some_and(|e| e == "rs") {
             count = count.saturating_add(1);
-            scan_file(root, &path, hits);
+            scan_file(root, path, hits);
         }
     }
     count
 }
 
 fn scan_file(root: &Path, path: &Path, hits: &mut HashMap<String, TodoHit>) {
+    use ast_grep_core::AstGrep;
+    use ast_grep_language::SupportLang;
+
     let Ok(content) = fs::read_to_string(path) else {
         return;
     };
@@ -201,20 +198,33 @@ fn scan_file(root: &Path, path: &Path, hits: &mut HashMap<String, TodoHit>) {
         .unwrap_or(path)
         .to_string_lossy()
         .to_string();
-    // Multi-line regex on full content; line number computed from match start byte offset.
-    let Ok(regex) = todo_regex() else { return };
-    for caps in regex.captures_iter(&content) {
-        let Some(m) = caps.get(0) else { continue };
-        let Some(desc) = caps.get(1) else { continue };
-        let line_no = content
-            .get(..m.start())
-            .map_or(0, |s| s.matches('\n').count())
-            .saturating_add(1);
-        let hit = TodoHit {
-            file: rel.clone(),
-            line: line_no,
-            description: desc.as_str().to_owned(),
-        };
-        hits.insert(key_for(&hit), hit);
+
+    let grep = AstGrep::new(&content, SupportLang::Rust);
+    let root_node = grep.root();
+
+    for node in root_node.dfs() {
+        if node.kind() == "macro_invocation" {
+            let Some(macro_name) = node.field("macro") else { continue };
+            if macro_name.text() != "kavach_todo" {
+                continue;
+            }
+            let Some(token_tree) = node.children().find(|c| c.kind() == "token_tree") else { continue };
+            let Some(str_lit) = token_tree.children().find(|c| c.kind() == "string_literal") else { continue };
+
+            let raw = str_lit.text();
+            let unquoted = raw.strip_prefix('"\).and_then(|s| s.strip_suffix('"\)).unwrap_or(&raw);
+            let start_byte = node.range().start;
+            let line_no = content
+                .get(..start_byte)
+                .map_or(0, |s| s.matches('\n').count())
+                .saturating_add(1);
+
+            let hit = TodoHit {
+                file: rel.clone(),
+                line: line_no,
+                description: unquoted.to_owned(),
+            };
+            hits.insert(key_for(&hit), hit);
+        }
     }
 }

@@ -1095,9 +1095,9 @@ Surgical in-place file text/regex replacement (replaces sd)
 
 | Flag | Description | Default |
 |---|---|---|
-| `<path>` | Target file path |  |
-| `<find>` | Positional search pattern (when not using --pair) |  |
-| `<replace>` | Positional replacement string (when not using --pair) |  |
+| `<arg1>` | Positional search pattern (or target file path when using --pair) |  |
+| `<arg2>` | Positional replacement string (optional when using --pair) |  |
+| `<arg3>` | Positional target file path (optional when using --pair) |  |
 | `--pair` | Search and replace pair: --pair <FIND> <REPLACE> (can be repeated) |  |
 | `--fixed-strings` | Treat pattern as literal fixed string (default: true) | true |
 | `--regex` | Treat pattern as regular expression |  |
