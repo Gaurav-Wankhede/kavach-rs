@@ -13,13 +13,13 @@ pub(super) fn get_patterns() -> &'static Vec<Regex> {
     static PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
     PATTERNS.get_or_init(|| {
         vec![
-            compile_regex(r"(?s)\b(?:for|while)\b[^{]{0,200}\{[^}]{0,800}?\.contains\s*\(\s*&"),
+            compile_regex(r"\.contains\s*\("),
             compile_regex(r"(?s)\.contains_key\s*\([^)]+\)[^;]{0,200};?[^}]{0,400}?\.insert\s*\("),
             compile_regex(r"\.insert\s*\(\s*0\s*,"),
             compile_regex(r"\.remove\s*\(\s*0\s*\)"),
-            compile_regex(r"(?s)\b(?:for|while)\b[^{]{0,200}\{[^}]{0,800}?\.sort(?:_by|_unstable|_unstable_by)?\s*\("),
-            compile_regex(r"(?s)\b(?:for|while)\b[^{]{0,200}\{[^}]{0,400}?\b\w+\s*\+=\s*&?[^;]*\.to_string\(\)"),
-            compile_regex(r"(?s)\b(?:for|while)\b.{0,600}?format!\s*\("),
+            compile_regex(r"\.sort(?:_by|_unstable|_unstable_by)?\s*\("),
+            compile_regex(r"\+=\s*&?[^;]*\.to_string\(\)"),
+            compile_regex(r"format!\s*\("),
             compile_regex(r"(?s)Vec::new\s*\(\s*\).{0,800}?\b(?:for|while)\b.{0,400}?\.push\s*\("),
             compile_regex(r"(?s)HashMap::new\(\).{0,800}?(?:for|while).{0,400}?\.insert\("),
             compile_regex(r"\bLinkedList\s*<"),

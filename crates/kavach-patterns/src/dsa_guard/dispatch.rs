@@ -17,7 +17,23 @@ pub fn detect(file_path: &str, content: &str) -> Vec<DsaViolation> {
     let mut v = Vec::new();
     let patterns = get_patterns();
 
-    if patterns.first().is_some_and(|p| p.is_match(content)) {
+    let mut contains_flagged = false;
+    if let Some(inspector) = crate::ast_engine::AstInspector::new(file_path, content) {
+        for loop_node in inspector.find_loops() {
+            if let Some(span) = crate::ast_engine::AstInspector::has_call_to(&loop_node, &["contains", "includes", "indexOf"]) {
+                v.push(DsaViolation {
+                    severity: DsaSeverity::P1Advisory,
+                    class: DsaClass::Lookup,
+                    pattern: "vec-contains-in-loop",
+                    fix: "Linear membership search inside a loop is O(n^2). Construct a Set once before the loop for O(1) membership checks.",
+                    line: span.line,
+                });
+                contains_flagged = true;
+                break;
+            }
+        }
+    }
+    if !contains_flagged && patterns.first().is_some_and(|p| p.is_match(content)) {
         v.push(DsaViolation { severity: DsaSeverity::P1Advisory, class: DsaClass::Lookup,
             pattern: "vec-contains-in-loop",
             fix: "Vec::contains is O(n); calling it inside a loop = O(n^2). Build a HashSet once, then check membership in O(1).",
@@ -44,19 +60,65 @@ pub fn detect(file_path: &str, content: &str) -> Vec<DsaViolation> {
             line: 0,
         });
     }
-    if patterns.get(4).is_some_and(|p| p.is_match(content)) {
+    let mut sort_flagged = false;
+    if let Some(inspector) = crate::ast_engine::AstInspector::new(file_path, content) {
+        for loop_node in inspector.find_loops() {
+            if let Some(span) = crate::ast_engine::AstInspector::has_call_to(&loop_node, &["sort", "sort_by", "sort_unstable", "sort_by_key"]) {
+                v.push(DsaViolation {
+                    severity: DsaSeverity::P1Advisory,
+                    class: DsaClass::Sort,
+                    pattern: "sort-in-loop",
+                    fix: "Sorting inside a loop is O(n^2 log n). Sort once before the loop, or maintain a BinaryHeap / BTreeSet for incremental ordering.",
+                    line: span.line,
+                });
+                sort_flagged = true;
+                break;
+            }
+        }
+    }
+    if !sort_flagged && patterns.get(4).is_some_and(|p| p.is_match(content)) {
         v.push(DsaViolation { severity: DsaSeverity::P1Advisory, class: DsaClass::Sort,
             pattern: "sort-in-loop",
             fix: "Sorting inside a loop is O(n^2 log n). Sort once before the loop, or maintain a BinaryHeap / BTreeSet for incremental ordering.",
             line: 0 });
     }
-    if patterns.get(5).is_some_and(|p| p.is_match(content)) {
+    let mut append_flagged = false;
+    let mut format_flagged = false;
+    if let Some(inspector) = crate::ast_engine::AstInspector::new(file_path, content) {
+        for loop_node in inspector.find_loops() {
+            if !append_flagged {
+                if let Some(span) = crate::ast_engine::AstInspector::has_compound_assignment(&loop_node) {
+                    v.push(DsaViolation {
+                        severity: DsaSeverity::P1Advisory,
+                        class: DsaClass::Allocation,
+                        pattern: "string-append-in-loop",
+                        fix: "String += in a loop reallocates per iteration (O(n^2)). Use String::with_capacity(n) + push_str, or write! into a writer.",
+                        line: span.line,
+                    });
+                    append_flagged = true;
+                }
+            }
+            if !format_flagged {
+                if let Some(span) = crate::ast_engine::AstInspector::has_macro_call(&loop_node, "format!") {
+                    v.push(DsaViolation {
+                        severity: DsaSeverity::P2Warning,
+                        class: DsaClass::Allocation,
+                        pattern: "format-in-loop",
+                        fix: "format!() in a loop allocates a fresh String per iteration. Use write!() into a pre-allocated buffer.",
+                        line: span.line,
+                    });
+                    format_flagged = true;
+                }
+            }
+        }
+    }
+    if !append_flagged && patterns.get(5).is_some_and(|p| p.is_match(content)) {
         v.push(DsaViolation { severity: DsaSeverity::P1Advisory, class: DsaClass::Allocation,
             pattern: "string-append-in-loop",
             fix: "String += in a loop reallocates per iteration (O(n^2)). Use String::with_capacity(n) + push_str, or write! into a writer.",
             line: 0 });
     }
-    if patterns.get(6).is_some_and(|p| p.is_match(content)) {
+    if !format_flagged && patterns.get(6).is_some_and(|p| p.is_match(content)) {
         v.push(DsaViolation { severity: DsaSeverity::P2Warning, class: DsaClass::Allocation,
             pattern: "format-in-loop",
             fix: "format!() in a loop allocates a fresh String per iteration. Use write!() into a pre-allocated buffer.",

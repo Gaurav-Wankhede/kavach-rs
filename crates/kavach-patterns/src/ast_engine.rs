@@ -93,4 +93,37 @@ impl AstInspector {
         }
         None
     }
+
+    /// Check if an AST subtree contains a macro invocation matching target prefix.
+    #[must_use]
+    pub fn has_macro_call(node: &AstNode<'_>, name: &str) -> Option<AstSpan> {
+        for child in node.dfs() {
+            if child.kind() == "macro_invocation" {
+                let text = child.text();
+                if text.starts_with(name) {
+                    let pos = child.start_pos();
+                    return Some(AstSpan {
+                        line: pos.line().saturating_add(1),
+                        column: pos.column(&child).saturating_add(1),
+                    });
+                }
+            }
+        }
+        None
+    }
+
+    /// Check if an AST subtree contains a compound assignment.
+    #[must_use]
+    pub fn has_compound_assignment(node: &AstNode<'_>) -> Option<AstSpan> {
+        for child in node.dfs() {
+            if child.kind() == "compound_assignment_expr" {
+                let pos = child.start_pos();
+                return Some(AstSpan {
+                    line: pos.line().saturating_add(1),
+                    column: pos.column(&child).saturating_add(1),
+                });
+            }
+        }
+        None
+    }
 }
