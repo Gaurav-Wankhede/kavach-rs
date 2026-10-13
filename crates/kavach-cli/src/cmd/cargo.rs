@@ -166,20 +166,122 @@ fn render_compiler_output(subcommand: &str, success: bool, stdout_lines: &[Strin
         }
     }
 
+    let target_summary = finished_line.unwrap_or_else(|| "Done".to_string());
+    render_diagnostic_summary(subcommand, success, compiled_count, &target_summary, &warnings_and_errors);
+}
+
+struct DiagnosticItem {
+    file: String,
+    line: usize,
+    level: String,
+    code: String,
+    message: String,
+}
+
+fn parse_diagnostics(lines: &[String]) -> Vec<DiagnosticItem> {
+    let mut diags = Vec::new();
+    let mut current_header: Option<(String, String, String)> = None;
+
+    for l in lines {
+        let trimmed = l.trim();
+        if trimmed.starts_with("error") || trimmed.starts_with("warning") {
+            let (level, rest) = if let Some(r) = trimmed.strip_prefix("error") {
+                ("error", r)
+            } else if let Some(r) = trimmed.strip_prefix("warning") {
+                ("warning", r)
+            } else {
+                continue;
+            };
+            let rest = rest.trim_start_matches(':').trim();
+            let (code, msg) = if rest.starts_with('[') && rest.contains(']') {
+                if let Some(end) = rest.find(']') {
+                    let c = &rest[1..end];
+                    let m = rest[end + 1..].trim_start_matches(':').trim();
+                    (c.to_string(), m.to_string())
+                } else {
+                    ("lint".to_string(), rest.to_string())
+                }
+            } else {
+                ("lint".to_string(), rest.to_string())
+            };
+            current_header = Some((level.to_string(), code, msg));
+        } else if trimmed.starts_with("--> ") {
+            if let Some((level, code, msg)) = current_header.take() {
+                if let Some(loc_str) = trimmed.strip_prefix("--> ") {
+                    let parts: Vec<&str> = loc_str.split(':').collect();
+                    if parts.len() >= 2 {
+                        let file = parts[0].to_string();
+                        let line = parts[1].parse::<usize>().unwrap_or(0);
+                        diags.push(DiagnosticItem {
+                            file,
+                            line,
+                            level,
+                            code,
+                            message: msg,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    diags
+}
+
+fn render_diagnostic_summary(
+    subcommand: &str,
+    success: bool,
+    compiled_count: usize,
+    target_summary: &str,
+    warnings_and_errors: &[String],
+) {
+    let diags = parse_diagnostics(warnings_and_errors);
+
     if success {
-        let target_summary = finished_line.unwrap_or_else(|| "Done".to_string());
         if warnings_and_errors.is_empty() {
-            println!("[CARGO:{}] ok ({} crates processed) - {}", subcommand.to_uppercase(), compiled_count, target_summary);
+            println!(
+                "[CARGO:{}] ok ({} crates processed) - {}",
+                subcommand.to_uppercase(), compiled_count, target_summary
+            );
         } else {
-            println!("[CARGO:{}] ok with warnings ({} crates processed) - {}", subcommand.to_uppercase(), compiled_count, target_summary);
-            for w in warnings_and_errors.iter().take(30) {
-                println!("{}", w);
+            println!(
+                "[CARGO:{}] ok with warnings ({} crates processed) - {}",
+                subcommand.to_uppercase(), compiled_count, target_summary
+            );
+            if !diags.is_empty() {
+                let entries: Vec<(&str, Option<String>)> = diags
+                    .iter()
+                    .map(|d| {
+                        let status = format!("L{} [{}] {}", d.line, d.code, d.message);
+                        (d.file.as_str(), Some(status))
+                    })
+                    .collect();
+                let tree = kavach_toon::encode_path_tree(entries.iter().map(|(p, s)| (*p, s.as_deref())));
+                print!("{}", tree);
+            } else {
+                for w in warnings_and_errors.iter().take(20) {
+                    println!("{}", w);
+                }
             }
         }
     } else {
-        println!("[CARGO:{}] FAILED ({} crates processed):", subcommand.to_uppercase(), compiled_count);
-        for e in warnings_and_errors.iter().take(40) {
-            println!("{}", e);
+        println!(
+            "[CARGO:{}] FAILED ({} crates processed):",
+            subcommand.to_uppercase(), compiled_count
+        );
+        if !diags.is_empty() {
+            let entries: Vec<(&str, Option<String>)> = diags
+                .iter()
+                .map(|d| {
+                    let status = format!("L{} [{}:{}] {}", d.line, d.level, d.code, d.message);
+                    (d.file.as_str(), Some(status))
+                })
+                .collect();
+            let tree = kavach_toon::encode_path_tree(entries.iter().map(|(p, s)| (*p, s.as_deref())));
+            print!("{}", tree);
+        } else {
+            for e in warnings_and_errors.iter().take(30) {
+                println!("{}", e);
+            }
         }
     }
 }

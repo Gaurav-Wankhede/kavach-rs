@@ -11,7 +11,7 @@ use std::fmt::Write as _;
 #[derive(Default)]
 struct PathNode {
     children: BTreeMap<String, PathNode>,
-    status: Option<String>,
+    statuses: Vec<String>,
 }
 
 impl PathNode {
@@ -23,7 +23,7 @@ impl PathNode {
             let is_last = idx + 1 == segments.len();
             curr = curr.children.entry((*seg).to_string()).or_default();
             if is_last {
-                curr.status = status.clone().or_else(|| curr.status.clone());
+                if let Some(s) = status.clone() { curr.statuses.push(s); }
             }
         }
     }
@@ -39,15 +39,21 @@ impl PathNode {
     fn render_node(name: &str, node: &PathNode, depth: usize, out: &mut String) {
         let indent = "  ".repeat(depth);
         if node.children.is_empty() {
-            if let Some(status) = &node.status {
-                let _ = writeln!(out, "{indent}{status} {name}");
+            if node.statuses.is_empty() {
+                let _ = writeln!(out, "{indent}{name}");
+            } else if node.statuses.len() == 1 {
+                let _ = writeln!(out, "{indent}{} {name}", node.statuses[0]);
             } else {
                 let _ = writeln!(out, "{indent}{name}");
+                let sub_indent = "  ".repeat(depth + 1);
+                for st in &node.statuses {
+                    let _ = writeln!(out, "{sub_indent}{st}");
+                }
             }
         } else {
             let mut prefix = name.to_string();
             let mut curr = node;
-            while curr.children.len() == 1 && curr.status.is_none() {
+            while curr.children.len() == 1 && curr.statuses.is_empty() {
                 let (next_name, next_node) = match curr.children.iter().next() {
                     Some(pair) => pair,
                     None => break,
@@ -59,11 +65,7 @@ impl PathNode {
                 curr = next_node;
             }
 
-            if let Some(status) = &curr.status {
-                let _ = writeln!(out, "{indent}{status} {prefix}/");
-            } else {
-                let _ = writeln!(out, "{indent}{prefix}/");
-            }
+            let _ = writeln!(out, "{indent}{prefix}/");
 
             for (c_name, c_node) in &curr.children {
                 Self::render_node(c_name, c_node, depth + 1, out);
