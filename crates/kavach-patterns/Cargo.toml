@@ -2,6 +2,8 @@
 regex = "1"
 shell-words = "1.1"
 sqlparser = { workspace = true }
+ast-grep-core = { workspace = true }
+ast-grep-language = { workspace = true }
 strsim = "0.11"
 
 [dependencies.aho-corasick]

@@ -3190,6 +3190,8 @@ name = "kavach-patterns"
 version = "1.3.5"
 dependencies = [
  "aho-corasick",
+ "ast-grep-core",
+ "ast-grep-language",
  "dirs 7.0.0",
  "kavach-types",
  "proptest",

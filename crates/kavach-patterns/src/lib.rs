@@ -7,6 +7,7 @@
 //! testable. Adding a module: implement detector → wire in `kavach-engine/src/gates/`
 //! → add a regression test exercising the engine entry point → update the wiring map.
 
+pub mod ast_engine;
 pub mod bloatware_guard;
 mod checks;
 mod config;

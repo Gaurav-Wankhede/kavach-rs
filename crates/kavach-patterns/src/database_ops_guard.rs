@@ -51,7 +51,20 @@ pub fn detect(file_path: &str, content: &str) -> Vec<DbOpsViolation> {
         cf_kv_d1::detect(content, &mut violations);
         cf_compute::detect(content, &mut violations);
     }
-    if hit(13, content) {
+    if let Some(inspector) = crate::ast_engine::AstInspector::new(file_path, content) {
+        for loop_node in inspector.find_loops() {
+            if let Some(span) = crate::ast_engine::AstInspector::has_call_to(&loop_node, &["fetch_one", "fetch_all", "fetch_optional", "find_one", "query"]) {
+                violations.push(DbOpsViolation {
+                    severity: DbOpsSeverity::P0Block,
+                    store,
+                    pattern: "n-plus-one",
+                    fix: "Query inside loop = N+1. Batch with WHERE id = ANY($1::uuid[]).",
+                    line: span.line,
+                });
+                break;
+            }
+        }
+    } else if hit(13, content) {
         violations.push(DbOpsViolation {
             severity: DbOpsSeverity::P0Block,
             store,

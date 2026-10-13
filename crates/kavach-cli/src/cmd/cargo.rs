@@ -173,6 +173,7 @@ fn render_compiler_output(subcommand: &str, success: bool, stdout_lines: &[Strin
 struct DiagnosticItem {
     file: String,
     line: usize,
+    column: usize,
     level: String,
     code: String,
     message: String,
@@ -210,11 +211,13 @@ fn parse_diagnostics(lines: &[String]) -> Vec<DiagnosticItem> {
                 if let Some(loc_str) = trimmed.strip_prefix("--> ") {
                     let parts: Vec<&str> = loc_str.split(':').collect();
                     if parts.len() >= 2 {
-                        let file = parts[0].to_string();
-                        let line = parts[1].parse::<usize>().unwrap_or(0);
+                        let file = parts.first().copied().unwrap_or_default().to_string();
+                        let line = parts.get(1).and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
+                        let column = parts.get(2).and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
                         diags.push(DiagnosticItem {
                             file,
                             line,
+                            column,
                             level,
                             code,
                             message: msg,
@@ -251,7 +254,8 @@ fn render_diagnostic_summary(
                 let entries: Vec<(&str, Option<String>)> = diags
                     .iter()
                     .map(|d| {
-                        let status = format!("L{} [{}] {}", d.line, d.code, d.message);
+                        let loc = if d.column > 0 { format!("L{}:{}", d.line, d.column) } else { format!("L{}", d.line) };
+                        let status = format!("{} [{}] {}", loc, d.code, d.message);
                         (d.file.as_str(), Some(status))
                     })
                     .collect();
@@ -272,7 +276,8 @@ fn render_diagnostic_summary(
             let entries: Vec<(&str, Option<String>)> = diags
                 .iter()
                 .map(|d| {
-                    let status = format!("L{} [{}:{}] {}", d.line, d.level, d.code, d.message);
+                    let loc = if d.column > 0 { format!("L{}:{}", d.line, d.column) } else { format!("L{}", d.line) };
+                    let status = format!("{} [{}:{}] {}", loc, d.level, d.code, d.message);
                     (d.file.as_str(), Some(status))
                 })
                 .collect();

@@ -13,7 +13,23 @@ pub(super) fn detect(content: &str, violations: &mut Vec<DbOpsViolation>) {
             line: 0,
         });
     }
-    if hit(17, content) {
+    let mut kv_in_loop = false;
+    if let Some(inspector) = crate::ast_engine::AstInspector::new("worker.ts", content) {
+        for loop_node in inspector.find_loops() {
+            if let Some(span) = crate::ast_engine::AstInspector::has_call_to(&loop_node, &["put"]) {
+                violations.push(DbOpsViolation {
+                    severity: DbOpsSeverity::P0Block,
+                    store: Store::Cloudflare,
+                    pattern: "cf-kv-write-in-loop",
+                    fix: "KV is limited to 1 write/sec per key. Batch into Queue or use Durable Object SQLite.",
+                    line: span.line,
+                });
+                kv_in_loop = true;
+                break;
+            }
+        }
+    }
+    if !kv_in_loop && hit(17, content) {
         violations.push(DbOpsViolation {
             severity: DbOpsSeverity::P0Block,
             store: Store::Cloudflare,
