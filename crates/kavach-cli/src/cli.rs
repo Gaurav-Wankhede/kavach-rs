@@ -78,6 +78,9 @@ pub(crate) enum Commands {
         /// Max results to emit (default: 100)
         #[arg(short = 'm', long = "max-count", default_value_t = 100)]
         max_count: usize,
+        /// Emit legacy flat paths instead of TOON indented hierarchy
+        #[arg(long)]
+        flat: bool,
     },
 
     /// High-precision polyglot AST and structural code search (replaces sg/rg).
@@ -127,12 +130,22 @@ pub(crate) enum Commands {
 
     /// Surgical in-place file text/regex replacement (replaces sd).
     Replace {
-        /// String or regex pattern to search for
-        find: String,
-        /// Replacement content
-        replace: String,
         /// Target file path
+        #[arg(trailing_var_arg = false)]
         path: String,
+        /// Positional search pattern (when not using --pair)
+        find: Option<String>,
+        /// Positional replacement string (when not using --pair)
+        replace: Option<String>,
+        /// Multiple search and replace pairs: --pair <FIND> <REPLACE>
+        #[arg(
+            long = "pair",
+            num_args = 2,
+            value_names = ["FIND", "REPLACE"],
+            action = clap::ArgAction::Append,
+            help = "Search and replace pair: --pair <FIND> <REPLACE> (can be repeated)"
+        )]
+        pairs: Vec<String>,
         /// Treat pattern as literal fixed string (default: true)
         #[arg(short = 'F', long = "fixed-strings", default_value_t = true)]
         fixed_strings: bool,

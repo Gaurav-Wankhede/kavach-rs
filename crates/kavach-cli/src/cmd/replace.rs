@@ -1,21 +1,51 @@
 //! Surgical in-place file text/regex replacement using `aho-corasick` / `regex` and `tempfile`.
 //! Atomic replacement with zero risk of partial file corruptions.
+//! Supports single replacements as well as multi-pair simultaneous replacements.
 
-use aho_corasick::AhoCorasick;
+use aho_corasick::{AhoCorasick, MatchKind};
 use regex::Regex;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 
+#[derive(Debug)]
+struct SubPair {
+    find: String,
+    replace: String,
+}
+
 pub(crate) fn run(
-    find: &str,
-    replace: &str,
-    path: &str,
+    path: String,
+    find: Option<String>,
+    replace: Option<String>,
+    pairs_raw: Vec<String>,
     fixed_strings: bool,
     use_regex: bool,
     dry_run: bool,
 ) -> i32 {
-    let target = Path::new(path);
+    let mut pairs: Vec<SubPair> = Vec::new();
+
+    // Parse repeated --pair <FIND> <REPLACE>
+    let mut i = 0;
+    while i + 1 < pairs_raw.len() {
+        pairs.push(SubPair {
+            find: pairs_raw[i].clone(),
+            replace: pairs_raw[i + 1].clone(),
+        });
+        i += 2;
+    }
+
+    // If positional arguments find & replace are provided, prepend them
+    if let (Some(f), Some(r)) = (find, replace) {
+        pairs.insert(0, SubPair { find: f, replace: r });
+    }
+
+    if pairs.is_empty() {
+        eprintln!("[ERROR] No replacement patterns provided. Use `kavach replace <FIND> <REPLACE> <PATH>` or `kavach replace --pair <FIND> <REPLACE> <PATH>`");
+        return 2;
+    }
+
+    let target = Path::new(&path);
     if !target.exists() {
         eprintln!("[ERROR] Target file does not exist: {}", path);
         return 1;
@@ -29,37 +59,61 @@ pub(crate) fn run(
         }
     };
 
-    let (modified, count) = if use_regex && !fixed_strings {
-        let re = match Regex::new(find) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("[ERROR] Invalid regex {}: {}", find, e);
-                return 1;
+    let (modified, count, occurrences) = if use_regex && !fixed_strings {
+        let mut count = 0;
+        let mut curr = original.clone();
+        let mut occs = Vec::new();
+
+        for p in &pairs {
+            let re = match Regex::new(&p.find) {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("[ERROR] Invalid regex {}: {}", p.find, e);
+                    return 1;
+                }
+            };
+            let match_count = re.find_iter(&curr).count();
+            if match_count > 0 {
+                count += match_count;
+                for m in re.find_iter(&curr) {
+                    let replaced_segment = re.replace(m.as_str(), &p.replace).to_string();
+                    occs.push(compute_telemetry(&curr, m.start(), m.end(), &replaced_segment));
+                }
+                curr = re.replace_all(&curr, &p.replace).to_string();
             }
-        };
-        let count = re.find_iter(&original).count();
-        let mod_str = re.replace_all(&original, replace).to_string();
-        (mod_str, count)
+        }
+        (curr, count, occs)
     } else {
-        let ac = match AhoCorasick::new([find]) {
+        let patterns: Vec<&str> = pairs.iter().map(|p| p.find.as_str()).collect();
+        let replacements: Vec<&str> = pairs.iter().map(|p| p.replace.as_str()).collect();
+
+        let ac = match AhoCorasick::builder()
+            .match_kind(MatchKind::LeftmostFirst)
+            .build(&patterns)
+        {
             Ok(a) => a,
             Err(e) => {
                 eprintln!("[ERROR] Failed to build matcher: {}", e);
                 return 1;
             }
         };
-        let count = ac.find_iter(&original).count();
-        let mod_str = ac.replace_all(&original, &[replace]);
-        (mod_str, count)
+
+        let mut occs = Vec::new();
+        for m in ac.find_iter(&original) {
+            let pat_idx = m.pattern().as_usize();
+            let rep_str = replacements[pat_idx];
+            occs.push(compute_telemetry(&original, m.start(), m.end(), rep_str));
+        }
+
+        let count = occs.len();
+        let mod_str = ac.replace_all(&original, &replacements);
+        (mod_str, count, occs)
     };
 
     if count == 0 {
         eprintln!("[REPLACE] No occurrences of pattern found in {}", path);
         return 1;
     }
-
-    // High quality location & indentation telemetry
-    let occurrences = find_occurrences(&original, find, replace, use_regex && !fixed_strings);
 
     if dry_run {
         println!("[DRY RUN] Found {} occurrence(s) in {}:", count, path);
@@ -120,59 +174,35 @@ struct Occurrence {
     new_lines: Vec<String>,
 }
 
-fn find_occurrences(source: &str, find: &str, replace: &str, is_regex: bool) -> Vec<Occurrence> {
-    let mut results = Vec::new();
-
-    if is_regex {
-        if let Ok(re) = Regex::new(find) {
-            for m in re.find_iter(source) {
-                let replaced_segment = re.replace(m.as_str(), replace).to_string();
-                results.push(compute_telemetry(source, m.start(), m.end(), &replaced_segment));
-            }
-        }
-    } else if let Ok(ac) = AhoCorasick::new([find]) {
-        for m in ac.find_iter(source) {
-            results.push(compute_telemetry(source, m.start(), m.end(), replace));
-        }
-    }
-
-    results
-}
-
 fn compute_telemetry(source: &str, start_offset: usize, end_offset: usize, replacement: &str) -> Occurrence {
     let prefix = &source[..start_offset];
-    let line_number = prefix.lines().count().max(1);
+    let line = prefix.lines().count().max(1);
+    
+    let last_nl = prefix.rfind('\n').map(|idx| idx + 1).unwrap_or(0);
+    let next_nl = source[end_offset..].find('\n').map(|idx| end_offset + idx).unwrap_or(source.len());
+    let col = start_offset.saturating_sub(last_nl) + 1;
 
-    let line_start = prefix.rfind('\n').map(|idx| idx + 1).unwrap_or(0);
-    let line_end = source[end_offset..].find('\n').map(|idx| end_offset + idx).unwrap_or(source.len());
-
-    let old_block = &source[line_start..line_end];
-    let new_block = format!("{}{}{}", &source[line_start..start_offset], replacement, &source[end_offset..line_end]);
-
-    let col_number = start_offset.saturating_sub(line_start) + 1;
-
-    let first_line = old_block.lines().next().unwrap_or("");
-    let indent_chars: String = first_line.chars().take_while(|c| c.is_whitespace()).collect();
-    let indent_desc = if indent_chars.is_empty() {
+    let full_line = &source[last_nl..next_nl];
+    let leading_ws: String = full_line.chars().take_while(|c| c.is_whitespace()).collect();
+    let indent_desc = if leading_ws.is_empty() {
         "0 (flush left)".to_string()
     } else {
-        let spaces = indent_chars.chars().filter(|&c| c == ' ').count();
-        let tabs = indent_chars.chars().filter(|&c| c == '\t').count();
-        if tabs > 0 && spaces > 0 {
-            format!("{} tabs, {} spaces (mixed)", tabs, spaces)
-        } else if tabs > 0 {
-            format!("{} tab{}", tabs, if tabs == 1 { "" } else { "s" })
+        let spaces = leading_ws.chars().filter(|c| *c == ' ').count();
+        let tabs = leading_ws.chars().filter(|c| *c == '\t').count();
+        if tabs > 0 {
+            format!("{} tabs, {} spaces", tabs, spaces)
         } else {
             format!("{} spaces", spaces)
         }
     };
 
-    let old_lines = old_block.lines().map(|s| s.to_string()).collect();
-    let new_lines = new_block.lines().map(|s| s.to_string()).collect();
+    let old_match = &source[start_offset..end_offset];
+    let old_lines: Vec<String> = old_match.lines().map(|s| s.to_string()).collect();
+    let new_lines: Vec<String> = replacement.lines().map(|s| s.to_string()).collect();
 
     Occurrence {
-        line: line_number,
-        col: col_number,
+        line,
+        col,
         indent_desc,
         old_lines,
         new_lines,

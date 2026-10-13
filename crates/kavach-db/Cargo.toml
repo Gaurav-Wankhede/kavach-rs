@@ -1,7 +1,9 @@
+[dependencies]
+tree-sitter-sequel-tsql = "0.4.2"
 [dependencies.ast-grep-core]
 default-features = false
 features = ["tree-sitter"]
-version = "0.45.3"
+version = "0.50.0"
 
 [dependencies.blake3]
 workspace = true
@@ -21,7 +23,7 @@ features = [
     "hf-hub-native-tls",
     "ort-download-binaries-native-tls",
 ]
-version = "6.0.2"
+version = "7.1.1"
 
 [dependencies.itertools]
 workspace = true
@@ -60,7 +62,7 @@ version = "0.25"
 
 [dependencies.tree-sitter-javascript]
 default-features = false
-version = "0.23.1"
+version = "0.25.0"
 
 [dependencies.tree-sitter-json]
 default-features = false
@@ -78,13 +80,7 @@ version = "0.25.0"
 default-features = false
 version = "0.24.2"
 
-[dependencies.tree-sitter-sequel]
-default-features = false
-version = "0.3"
 
-[dependencies.tree-sitter-sql]
-default-features = false
-version = "0.0"
 
 [dependencies.tree-sitter-toml-ng]
 default-features = false

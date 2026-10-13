@@ -42,18 +42,20 @@ pub struct Hit {
 /// legacy command word → toolbelt replacement (§TOOLBELT canonical map).
 fn replacement_for(cmd: &str) -> Option<&'static str> {
     Some(match cmd {
-        "grep" | "egrep" | "fgrep" => "rg",
-        "find" => "fd",
-        "cat" => "bat",
-        "head" | "tail" => "bat -p -r <start>:<end> (after rtk rg -n / sg)",
-        "sed" => "sd",
-        "ls" => "eza",
-        "jq" => "jaq",
-        "curl" => "xh",
+        "grep" | "egrep" | "fgrep" => "kavach grep",
+        "find" => "kavach glob",
+        "cat" => "kavach grep (or sovereign AST/JSON tools; whole-file reads permanently denied)",
+        "head" | "tail" => "kavach grep --scope",
+        "sed" => "kavach replace",
+        "ls" => "kavach glob",
+        "jq" => "kavach json",
+        "curl" => "webfind fetch",
         "du" => "dust",
-        "tree" => "erd",
+        "tree" => "kavach glob",
         "ps" => "procs",
         "diff" => "difft",
+        "node" | "python" | "python3" | "ruby" | "perl" => "Sovereign kavach tools (arbitrary scripting strictly forbidden)",
+        "rust-script" | "rhai-run" => "Sovereign kavach tools (kavach trace, kavach grep, kavach replace)",
         _ => return None,
     })
 }

@@ -47,8 +47,15 @@ pub(crate) fn run() -> i32 {
     if changed.is_empty() {
         println!("working tree clean");
     } else {
-        let v = json!(changed);
-        let toon = kavach_toon::encode_toon(&v);
+        let tree_input: Vec<(&str, Option<&str>)> = changed
+            .iter()
+            .filter_map(|item| {
+                let p = item.get("path")?.as_str()?;
+                let s = item.get("status")?.as_str()?;
+                Some((p, Some(s)))
+            })
+            .collect();
+        let toon = kavach_toon::encode_path_tree(tree_input);
         println!("{}", toon.trim_end());
     }
 

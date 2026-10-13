@@ -8,7 +8,7 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 
 pub(crate) fn run(dir: &str, threshold: u32, format: OversizedFormat) -> i32 {
     let out = match Command::new("tokei")
-        .args(["--types", "Rust", "--output", "json", dir])
+        .args(["--output", "json", dir])
         .output()
     {
         Ok(o) if o.status.success() => o.stdout,
@@ -29,10 +29,17 @@ pub(crate) fn run(dir: &str, threshold: u32, format: OversizedFormat) -> i32 {
         Ok(v) => v,
         Err(e) => return emit_err(&format!("tokei json parse: {e}")),
     };
-    let Some(reports) = v.pointer("/Rust/reports").and_then(|r| r.as_array()) else {
-        return emit_err("tokei output missing /Rust/reports");
-    };
-    let offenders = collect_offenders(reports, threshold);
+
+    let mut all_reports = Vec::new();
+    if let Some(map) = v.as_object() {
+        for (_lang, val) in map {
+            if let Some(reports) = val.get("reports").and_then(|r| r.as_array()) {
+                all_reports.extend(reports.clone());
+            }
+        }
+    }
+
+    let offenders = collect_offenders(&all_reports, threshold);
     match format {
         OversizedFormat::Text => emit_text(&offenders, threshold),
         OversizedFormat::Json => emit_json(&offenders, threshold),

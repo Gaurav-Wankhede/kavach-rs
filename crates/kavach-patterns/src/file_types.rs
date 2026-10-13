@@ -68,15 +68,25 @@ pub fn is_shell_file(p: &str) -> bool {
 #[must_use]
 pub fn is_test_file(p: &str) -> bool {
     let l = p.to_lowercase();
+    let file_name = Path::new(&l)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
     // Compound suffixes (`.test.ts`) are NOT a single `Path::extension()` — suffix-match them directly.
-    l.contains("_test.go")
+    l.ends_with("_test.go")
         || l.ends_with("_test.rs")
         || l.ends_with("_tests.rs")
-        || l.contains("test_")
+        || file_name.starts_with("test_")
+        || file_name.ends_with("_test.py")
         || l.ends_with(".test.ts")
         || l.ends_with(".test.tsx")
+        || l.ends_with(".test.js")
+        || l.ends_with(".test.jsx")
         || l.ends_with(".spec.ts")
         || l.ends_with(".spec.tsx")
+        || l.ends_with(".spec.js")
+        || l.ends_with(".spec.jsx")
         || l.contains("/tests/")
         || l.contains("/test/")
         || l.starts_with("tests/")

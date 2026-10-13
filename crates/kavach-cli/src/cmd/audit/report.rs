@@ -16,17 +16,24 @@ pub(super) fn report(findings: &[Finding], files_scanned: usize) -> i32 {
         "  result: {} finding(s) — {block} BLOCK · {warn} WARN · {adv} ADVISORY",
         findings.len()
     );
+    use std::collections::BTreeMap;
+    let mut by_file: BTreeMap<&str, Vec<&Finding>> = BTreeMap::new();
     for f in findings {
-        println!(
-            "  [{}] {}:{} {}/{} — {} ({})",
-            f.severity.label(),
-            f.file,
-            f.line,
-            f.lens.slug(),
-            f.detector,
-            f.hint,
-            f.fix
-        );
+        by_file.entry(&f.file).or_default().push(f);
+    }
+    for (fpath, file_findings) in by_file {
+        println!("  {fpath}:");
+        for f in file_findings {
+            println!(
+                "    [{}] {}: {}/{} — {} ({})",
+                f.severity.label(),
+                f.line,
+                f.lens.slug(),
+                f.detector,
+                f.hint,
+                f.fix
+            );
+        }
     }
     1
 }

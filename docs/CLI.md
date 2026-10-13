@@ -820,6 +820,7 @@ Fast, gitignore-aware path and file search (zero-LLM, replaces fd/find/origin)
 | `--hidden` | Search hidden files |  |
 | `--max-depth` | Maximum directory depth |  |
 | `--max-count` | Max results to emit (default: 100) | 100 |
+| `--flat` | Emit legacy flat paths instead of TOON indented hierarchy |  |
 
 ## `kavach grep`
 
@@ -1094,9 +1095,10 @@ Surgical in-place file text/regex replacement (replaces sd)
 
 | Flag | Description | Default |
 |---|---|---|
-| `<find>` | String or regex pattern to search for |  |
-| `<replace>` | Replacement content |  |
 | `<path>` | Target file path |  |
+| `<find>` | Positional search pattern (when not using --pair) |  |
+| `<replace>` | Positional replacement string (when not using --pair) |  |
+| `--pair` | Search and replace pair: --pair <FIND> <REPLACE> (can be repeated) |  |
 | `--fixed-strings` | Treat pattern as literal fixed string (default: true) | true |
 | `--regex` | Treat pattern as regular expression |  |
 | `--dry-run` | Show diff without modifying file |  |

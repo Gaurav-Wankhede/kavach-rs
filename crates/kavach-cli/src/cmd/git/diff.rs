@@ -31,9 +31,12 @@ pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 
     }
 
     if files_only {
-        for f in &modified_files {
-            println!("{}", f);
-        }
+        let tree_input: Vec<(&str, Option<&str>)> = modified_files
+            .iter()
+            .map(|f| (f.as_str(), None))
+            .collect();
+        let toon = kavach_toon::encode_path_tree(tree_input);
+        println!("{}", toon.trim_end());
         return 0;
     }
 
@@ -82,17 +85,12 @@ pub(crate) fn run(stat_only: bool, files_only: bool, symbols_only: bool) -> i32 
         return 0;
     }
 
-    let mut deltas = Vec::new();
-    for f in &modified_files {
-        deltas.push(json!({
-            "status": "M",
-            "path": f,
-        }));
-    }
-
-    if !deltas.is_empty() {
-        let v = json!(deltas);
-        let toon = kavach_toon::encode_toon(&v);
+    if !modified_files.is_empty() {
+        let tree_input: Vec<(&str, Option<&str>)> = modified_files
+            .iter()
+            .map(|f| (f.as_str(), Some("M")))
+            .collect();
+        let toon = kavach_toon::encode_path_tree(tree_input);
         println!("{}", toon.trim_end());
     }
     println!("── Summary: {} files modified ──", modified_files.len());

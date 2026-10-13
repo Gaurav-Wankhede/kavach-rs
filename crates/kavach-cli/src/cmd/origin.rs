@@ -73,30 +73,20 @@ fn collect_sites(name: &str, root: &Path) -> Vec<Site> {
     out
 }
 
-const ORIGIN_EXTENSIONS: &[&str] = &[
-    // Modern Code
-    "rs", "ts", "tsx", "js", "jsx", "py", "go", "java", "c", "cpp", "h", "hpp", "cs", "swift", "kt", "rb", "php", "zig", "lua",
-    // Config & Secrets
-    "env", "toml", "yaml", "yml", "json", "jsonc", "ini", "properties", "conf", "cfg",
-    // Schemas & Databases
-    "sql", "ddl", "surql", "prisma", "proto", "graphql", "gql",
-    // Documentation & Specs
-    "md", "markdown", "mdx", "adoc", "org",
-    // Web & Markup
-    "html", "xml", "svg", "vue", "svelte", "astro", "css", "scss",
-    // Infra & Toolchains
-    "tf", "hcl", "dockerfile", "containerfile", "makefile", "justfile",
-];
 
 fn is_origin_indexable(path: &Path) -> bool {
+    use ast_grep_core::Language;
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
     if name == "dockerfile" || name == "containerfile" || name == "makefile" || name == "justfile" || name.starts_with(".env") {
         return true;
     }
-    path.extension()
-        .and_then(|e| e.to_str())
-        .map(str::to_lowercase)
-        .is_some_and(|e| ORIGIN_EXTENSIONS.contains(&e.as_str()))
+    let ext = path.extension().and_then(|e| e.to_str()).map(str::to_lowercase);
+    if let Some(ref e) = ext {
+        if matches!(e.as_str(), "md" | "markdown" | "json" | "yaml" | "yml" | "toml" | "sql" | "env") {
+            return true;
+        }
+    }
+    ast_grep_language::SupportLang::from_path(path).is_some()
 }
 
 fn source_files(root: &Path) -> Vec<PathBuf> {

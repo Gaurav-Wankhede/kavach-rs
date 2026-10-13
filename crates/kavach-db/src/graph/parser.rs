@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use tree_sitter::{Language, Parser, Tree};
 use tree_sitter_markdown_fork;
-use tree_sitter_sequel;
+use tree_sitter_sequel_tsql;
 use tree_sitter_toml_ng;
 
 /// Supported languages for parsing.
@@ -43,7 +43,7 @@ impl SupportedLanguage {
             Self::TOML => tree_sitter_toml_ng::LANGUAGE.into(),
             Self::JSON => tree_sitter_json::LANGUAGE.into(),
             Self::Bash => tree_sitter_bash::LANGUAGE.into(),
-            Self::SQL => tree_sitter_sequel::LANGUAGE.into(),
+            Self::SQL => tree_sitter_sequel_tsql::LANGUAGE.into(),
         }
     }
 

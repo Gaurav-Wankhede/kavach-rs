@@ -6,18 +6,15 @@ fn is_executable_code_file(path_str: &str, lang_opt: Option<&str>) -> bool {
         if matches!(e.as_str(), "json" | "yaml" | "yml" | "toml" | "xml" | "md" | "txt" | "markdown" | "rst" | "adoc" | "log" | "csv" | "tsv") {
             return false;
         }
-        // Known programming languages
-        if matches!(e.as_str(), "rs" | "ts" | "tsx" | "js" | "jsx" | "py" | "go" | "c" | "cpp" | "cc" | "cxx" | "h" | "hpp" | "cs" | "java" | "sh" | "bash" | "swift" | "kt" | "kts" | "lua" | "rb" | "php" | "sol" | "ex" | "exs" | "dart" | "scala" | "hs") {
-            return true;
-        }
     }
     if let Some(l) = lang_opt {
         let l_low = l.to_lowercase();
-        if !matches!(l_low.as_str(), "json" | "yaml" | "yml" | "toml" | "markdown" | "text") {
-            return resolve_lang(path_str, Some(l)).is_some();
+        if matches!(l_low.as_str(), "json" | "yaml" | "yml" | "toml" | "markdown" | "text") {
+            return false;
         }
     }
-    false
+    // Directly delegate to ast-grep-language grammar registry
+    resolve_lang(path_str, lang_opt).is_some()
 }
 
 use ast_grep_core::{AstGrep, Node};
@@ -200,34 +197,10 @@ pub(crate) fn run(
 
 fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
     use ast_grep_language::Language;
+    use std::str::FromStr;
     if let Some(l) = lang_opt {
-        match l.to_lowercase().as_str() {
-            "rs" | "rust" => return Some(SupportLang::Rust),
-            "ts" | "typescript" => return Some(SupportLang::TypeScript),
-            "tsx" => return Some(SupportLang::Tsx),
-            "js" | "javascript" => return Some(SupportLang::JavaScript),
-            "py" | "python" => return Some(SupportLang::Python),
-            "go" => return Some(SupportLang::Go),
-            "c" => return Some(SupportLang::C),
-            "cpp" | "c++" => return Some(SupportLang::Cpp),
-            "cs" | "csharp" => return Some(SupportLang::CSharp),
-            "java" => return Some(SupportLang::Java),
-            "sh" | "bash" => return Some(SupportLang::Bash),
-            "json" => return Some(SupportLang::Json),
-            "yaml" | "yml" => return Some(SupportLang::Yaml),
-            "html" => return Some(SupportLang::Html),
-            "css" => return Some(SupportLang::Css),
-            "swift" => return Some(SupportLang::Swift),
-            "kotlin" => return Some(SupportLang::Kotlin),
-            "lua" => return Some(SupportLang::Lua),
-            "ruby" | "rb" => return Some(SupportLang::Ruby),
-            "php" => return Some(SupportLang::Php),
-            "solidity" | "sol" => return Some(SupportLang::Solidity),
-            "elixir" | "ex" => return Some(SupportLang::Elixir),
-            "dart" => return Some(SupportLang::Dart),
-            "scala" => return Some(SupportLang::Scala),
-            "haskell" | "hs" => return Some(SupportLang::Haskell),
-            _ => return None,
+        if let Ok(lang) = SupportLang::from_str(l) {
+            return Some(lang);
         }
     }
     SupportLang::from_path(Path::new(path))
@@ -258,24 +231,15 @@ fn find_enclosing_declaration(node: &Node<'_, StrDoc<SupportLang>>) -> Option<(u
     let mut current = Some(node.clone());
     while let Some(curr) = current {
         let kind = curr.kind();
-        if matches!(
-            kind.as_ref(),
-            "function_item"
-                | "struct_item"
-                | "enum_item"
-                | "impl_item"
-                | "trait_item"
-                | "type_item"
-                | "const_item"
-                | "static_item"
-                | "function_declaration"
-                | "class_declaration"
-                | "interface_declaration"
-                | "type_alias_declaration"
-                | "method_definition"
-                | "function_definition"
-                | "class_definition"
-        ) {
+        let is_decl = kind.contains("declaration")
+            || kind.contains("definition")
+            || kind.contains("item")
+            || kind.contains("spec")
+            || kind.contains("clause")
+            || kind == "variable_declarator"
+            || kind == "lexical_declaration"
+            || kind == "short_var_declaration";
+        if is_decl {
             let range = curr.range();
             return Some((range.start, range.end));
         }
@@ -343,20 +307,17 @@ fn process_file(
 
         if let Some(def_sym) = def_opt {
             for node in root.dfs() {
-                let k = node.kind();
-                if k.contains("declaration") || k.contains("definition") || k.ends_with("_item") || k.contains("type_spec") {
-                    if let Some(name_node) = node.field("name").or_else(|| node.field("identifier")) {
-                        if def_sym == "$NAME" || def_sym == "*" || name_node.text() == def_sym {
-                            let range = name_node.range();
-                            let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                            let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                            matches.push((s_line, s_col, e_line, e_col));
-                            if scope {
-                                let decl_range = node.range();
-                                let (sc_s_line, _) = offset_to_line_and_col(&content, decl_range.start);
-                                let (sc_e_line, _) = offset_to_line_and_col(&content, decl_range.end);
-                                scopes.push((sc_s_line, sc_e_line));
-                            }
+                if let Some((_kind, name)) = crate::cmd::trace::any_definition_node(&node) {
+                    if def_sym == "$NAME" || def_sym == "*" || name == def_sym {
+                        let range = node.field("name").map(|n| n.range()).unwrap_or_else(|| node.range());
+                        let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
+                        let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
+                        matches.push((s_line, s_col, e_line, e_col));
+                        if scope {
+                            let decl_range = node.range();
+                            let (sc_s_line, _) = offset_to_line_and_col(&content, decl_range.start);
+                            let (sc_e_line, _) = offset_to_line_and_col(&content, decl_range.end);
+                            scopes.push((sc_s_line, sc_e_line));
                         }
                     }
                 }
@@ -365,9 +326,10 @@ fn process_file(
             for node in root.dfs() {
                 let k = node.kind();
                 if k == "call_expression" || k == "method_call_expression" || k == "call" {
-                    if let Some(fn_node) = node.field("function") {
+                    if let Some(fn_node) = node.field("function").or_else(|| node.field("callee")) {
                         let fn_txt = fn_node.text();
-                        if call_sym == "$NAME" || call_sym == "*" || fn_txt == call_sym || fn_txt.ends_with(&format!(".{}", call_sym)) || fn_txt.ends_with(&format!("::{}", call_sym)) {
+                        let clean_sym = crate::cmd::trace::extract_symbol_name(&fn_txt);
+                        if call_sym == "$NAME" || call_sym == "*" || fn_txt == call_sym || clean_sym == call_sym || fn_txt.ends_with(&format!(".{}", call_sym)) || fn_txt.ends_with(&format!("::{}", call_sym)) {
                             let range = fn_node.range();
                             let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
                             let (e_line, e_col) = offset_to_line_and_col(&content, range.end);

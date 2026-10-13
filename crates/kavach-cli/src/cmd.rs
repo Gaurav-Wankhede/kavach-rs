@@ -63,7 +63,8 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
             hidden,
             max_depth,
             max_count,
-        } => glob::run(&pattern, &path, entry_type, hidden, max_depth, max_count),
+            flat,
+        } => glob::run(&pattern, &path, entry_type, hidden, max_depth, max_count, flat),
 
         Commands::Grep {
             pattern,
@@ -97,13 +98,14 @@ pub(crate) fn dispatch(command: Commands) -> i32 {
 
 
         Commands::Replace {
+            path,
             find,
             replace,
-            path,
+            pairs,
             fixed_strings,
             regex,
             dry_run,
-        } => replace::run(&find, &replace, &path, fixed_strings, regex, dry_run),
+        } => replace::run(path, find, replace, pairs, fixed_strings, regex, dry_run),
         Commands::Trace {
             symbol,
             path,

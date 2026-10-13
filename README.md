@@ -1,42 +1,92 @@
+<p align="center">
+  <img src="docs/assets/banner.png" alt="Kavach Banner" width="100%" onerror="this.style.display='none'">
+</p>
+
 # Kavach (`kavach-rs`)
 
-> **The Sovereign Engine Governor, Deterministic Context Firewall & In-Memory Memory Substrate for Autonomous AI Coding Agents.**
-> Stop Context Rot. Eliminate Context Bloat. Cure Context Amnesia. Defeat "Lost in the Middle". Ground Live Truth with Webfind.
+<p align="center">
+  <b>Stop burning $15/day feeding whole files and bloated MCP schemas to AI agents.</b><br>
+  The Sovereign Engine Governor, Deterministic Context Firewall & Persistent Memory Substrate for Autonomous AI Coding Agents.
+</p>
 
-[![Crates.io](https://img.shields.io/crates/v/kavach.svg)](https://crates.io/crates/kavach)
-[![Documentation](https://docs.rs/kavach/badge.svg)](https://docs.rs/kavach)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/Gaurav-Wankhede/kavach-rs)](https://github.com/Gaurav-Wankhede/kavach-rs/releases)
-[![Companion: Webfind](https://img.shields.io/badge/Companion-Webfind%20(Live%20Search)-emerald.svg)](https://github.com/Gaurav-Wankhede/webfind)
-[![Rust 1.95+](https://img.shields.io/badge/rust-1.95%2B-orange.svg)](https://www.rust-lang.org)
+<p align="center">
+  <a href="https://crates.io/crates/kavach"><img src="https://img.shields.io/crates/v/kavach.svg" alt="Crates.io"></a>
+  <a href="https://docs.rs/kavach"><img src="https://docs.rs/kavach/badge.svg" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/Gaurav-Wankhede/kavach-rs/releases"><img src="https://img.shields.io/github/v/release/Gaurav-Wankhede/kavach-rs" alt="Release"></a>
+  <a href="https://github.com/Gaurav-Wankhede/webfind"><img src="https://img.shields.io/badge/Companion-Webfind%20(Live%20Search)-emerald.svg" alt="Webfind Companion"></a>
+  <img src="https://img.shields.io/badge/rust-1.95%2B-orange.svg" alt="Rust 1.95+">
+  <img src="https://img.shields.io/badge/MCP%20Schema%20Tax-0%20Tokens-brightgreen.svg" alt="Zero MCP Schema Tax">
+</p>
 
 ---
 
-## Kavach in 30 Seconds (TL;DR)
+## The Crisis in AI Coding Agents (Why Your Bills Explode)
 
-> **The Problem:**
-> When AI coding agents (Claude, Cursor, Devin, Gemini CLI) interact with codebases, they dump multi-thousand-line files into their context window (`cat src/main.rs`). This burns expensive API tokens, slows down responses, causes the model to hallucinate or contradict itself (**Context Rot**), and wipe previous architectural decisions across restarts (**Context Amnesia**).
->
-> **The Solution:**
-> **Kavach** (`kavach-rs`) acts as a deterministic bodyguard and firewall between the AI agent and your machine:
-> 1. **99% Token Savings:** Extracts exact AST code slices (`kavach grep`) instead of reading whole files.
-> 2. **Persistent Cognitive Memory:** Stores tasks, decisions, and anti-pattern mistakes in an embedded Turso/libSQL database (`kavach db`) so agents never forget context.
-> 3. **Live Web Grounding:** Enforces live truth with **[Webfind](https://github.com/Gaurav-Wankhede/webfind)** so agents never guess external APIs from stale training weights.
+When coding agents (Claude Code, Cursor, Windsurf, Gemini CLI, Devin) operate in your codebase, two compounding silent killers drain your token budget and degrade reasoning:
 
-### 60-Second Quickstart
+1. **The MCP Schema Tax (+8,000 to 20,000 tokens/turn):** Model Context Protocol (MCP) servers inject massive JSON-Schema definitions into the agent's system prompt on **every single turn** before the user even types a character.
+2. **Whole-File Dumps (`cat src/lib.rs`):** Agents read entire 2,000-line files to inspect single functions, quickly consuming 100k+ tokens, slowing down responses, and causing catastrophic **Context Rot** and **"Lost in the Middle"** retrieval failure.
 
+**Kavach** (`kavach-rs`) is a single, blazing-fast static Rust binary that sits between the agent and your machine. It enforces **Zero Whole-File Reads** and **Zero Schema Tax**:
+
+```
++---------------------------------------------------------------------------------------------------+
+|                                     AGENT CONTEXT WINDOW TURNS                                    |
+|                                                                                                   |
+|   [ MCP Approach ]       [ 15k Tokens JSON-Schema Overhead ] + [ 50k Tokens Raw File Dump ]       |
+|                          ===================================================================>     |
+|                          Result: 65,000+ tokens burned per turn, attention diluted, high latency  |
+|                                                                                                   |
+|   [ Kavach Approach ]    [ 0 Tokens Schema Tax ] + [ 42 Tokens Exact AST Function Slice ]         |
+|                          ===================================================================>     |
+|                          Result: 42 tokens, sub-millisecond AST extraction, zero amnesia          |
++---------------------------------------------------------------------------------------------------+
+```
+
+---
+
+## Telemetry: Kavach vs MCP vs Legacy Tools
+
+Measured on an Apple Silicon M-Series workstation running release-optimized binaries:
+
+| Scenario / Operation | Legacy Tool (`cat`, `node`, `grep`) | Standard MCP Server | **Kavach (`kavach-rs`)** | Win Factor |
+| :--- | :--- | :--- | :--- | :--- |
+| **System Prompt Tax** | 0 tokens | **8,000 – 18,000 tokens / turn** | **0 tokens / turn** | **100% Tax Eliminated** |
+| **Inspect Rust Function** | `cat src/main.rs` (8,450 tokens) | ~8,450 tokens (raw file payload) | `kavach grep "fn main" src/ -C 2` (**42 tokens**) | **99.50% Savings** |
+| **Inspect JSON Configuration** | `cat AGENTS.json` (9,299 tokens) | 9,299 tokens | `kavach json -j .witnesses AGENTS.json` (**66 tokens**) | **99.28% Savings** |
+| **Caller Network Analysis** | `grep -rn` (1,820 tokens) | Variable / Unstructured | `kavach trace "dispatch" .` (**58 tokens**) | **96.81% Savings** |
+| **Inline Scripting Latency** | `node -e` (118.7 ms) | IPC Roundtrip (~40-80 ms) | `kavach script -e` (**4.7 ms**, Rhai AST) | **25.2× Faster** |
+| **State Memory Across Turns** | None (Context Amnesia) | Ephemeral / Non-relational | **Embedded Turso / libSQL SQLite** | **Zero Amnesia** |
+
+---
+
+## 60-Second Quickstart
+
+### 1. Install Kavach
 ```bash
-# 1. Install Kavach directly to ~/.cargo/bin
+# Install directly from source or via cargo
 cargo install --path crates/kavach-cli --locked
 cargo clean
+```
 
-# 2. Register your project
+### 2. Register Your Project & Initialize Memory
+```bash
 kavach db register --slug my-app --path $(pwd)
+```
 
-# 3. Inspect code surgically (extract only the function you need — zero bloat)
+### 3. Surgical Code Extraction (Extract Only What You Need)
+```bash
+# Search AST functions with zero file dumps
 kavach grep "pub fn dispatch" src/
 
-# 4. Search live web documentation without stale hallucinations
+# Trace symbol caller networks and blast radius
+kavach trace "dispatch" src/ --callers
+```
+
+### 4. Zero-Cost Live Web Grounding ([Webfind](https://github.com/Gaurav-Wankhede/webfind))
+```bash
+# Ground external documentation live without stale training hallucinations
 webfind search --live "axum 0.8 routing $(date +%Y)"
 ```
 
@@ -44,72 +94,34 @@ webfind search --live "axum 0.8 routing $(date +%Y)"
 
 ## Table of Contents
 
-- [The Crisis in AI Coding Agents](#the-crisis-in-ai-coding-agents)
-  - [1. Context Rot (Drift & Contradiction)](#1-context-rot-drift--contradiction)
-  - [2. Context Bloat (Token Inflation & Noise Flooding)](#2-context-bloat-token-inflation--noise-flooding)
-  - [3. Context Amnesia (Stateless Session Death)](#3-context-amnesia-stateless-session-death)
-  - [4. "Lost in the Middle" (U-Curve Degradation)](#4-lost-in-the-middle-u-curve-attention-degradation)
-  - [5. Stale Training Weights & Hallucination (External Grounding Failure)](#5-stale-training-weights--hallucination-external-grounding-failure)
-- [What is Kavach?](#what-is-kavach)
+- [The 5 Pathologies of AI Coding Agents](#the-5-pathologies-of-ai-coding-agents)
 - [The Sovereign Tool Ecosystem: Kavach & Webfind](#the-sovereign-tool-ecosystem-kavach--webfind)
 - [The 12 Legacy Replacements](#the-12-legacy-replacements)
 - [Empirical Telemetry & Benchmarks](#empirical-telemetry--benchmarks)
   - [1,000-Run Execution Benchmark (Hyperfine Statistical Analysis)](#1000-run-execution-benchmark-hyperfine-statistical-analysis)
   - [Token Consumption & Window Compression Matrix](#token-consumption--window-compression-matrix)
 - [Core Architecture & Capabilities](#core-architecture--capabilities)
-  - [1. Surgical Extraction Engine (`kavach grep`, `kavach glob`)](#1-surgical-extraction-engine)
-  - [2. Deterministic Sandboxed Scripting (`kavach script`)](#2-deterministic-sandboxed-scripting)
-  - [3. Embedded Turso & Knowledge Graph Memory Substrate (`kavach db`)](#3-embedded-turso--knowledge-graph-memory-substrate)
-  - [4. Atomic AST Code Patching (`kavach replace`)](#4-atomic-ast-code-patching)
-  - [5. Codebase Lineage & Blast-Radius Tracing (`kavach trace`, `kavach origin`)](#5-codebase-lineage--blast-radius-tracing)
-  - [6. Phase-Gated SDLC Engine Governance (`kavach verify`)](#6-phase-gated-sdlc-engine-governance)
 - [Installation](#installation)
 - [Day-in-the-Life Operational Runbook](#day-in-the-life-operational-runbook)
-  - [Phase 1: Discovery & Live Grounding (Kavach + Webfind)](#phase-1-discovery--live-grounding-kavach--webfind)
-  - [Phase 2: Surgical State Inspection & Caller Tracing](#phase-2-surgical-state-inspection--caller-tracing)
-  - [Phase 3: Deterministic Scripting & Atomic Mutation](#phase-3-deterministic-scripting--atomic-mutation)
-  - [Phase 4: SDLC Verification, Knowledge Graph & Memory Checkpoint](#phase-4-sdlc-verification-knowledge-graph--memory-checkpoint)
 - [Canonical Multi-Agent Governance (`prompts/`)](#canonical-multi-agent-governance-prompts)
 - [Configuration Reference](#configuration-reference)
 - [Author & Maintenance](#author--maintenance)
 
 ---
 
-## The Crisis in AI Coding Agents
+## The 5 Pathologies of AI Coding Agents
 
-Modern Large Language Model (LLM) coding agents—Claude Code, Gemini CLI, Cursor, Windsurf, Devin, and Aider—suffer from systemic architectural failures caused by relying on legacy POSIX CLI tools (`cat`, `find`, `grep`, `sed`, `node -e`, `python -c`) and ungrounded pre-trained weights.
+Modern Large Language Model (LLM) coding agents—Claude Code, Gemini CLI, Cursor, Windsurf, Devin, and Aider—suffer from systemic architectural failures caused by relying on legacy POSIX CLI tools (`cat`, `find`, `grep`, `sed`, `node -e`, `python -c`), ungrounded pre-trained weights, and heavy MCP schemas.
 
 Kavach acts as a deterministic firewall between the LLM and the operating system, eliminating these pathologies at the syscall level.
-
-```
-+-------------------------------------------------------------------------+
-|                         LLM AGENT CONTEXT WINDOW                        |
-|                                                                         |
-|   +-------------------+                     +-----------------------+   |
-|   | 1. CONTEXT ROT    |                     | 2. CONTEXT BLOAT      |   |
-|   | Drift across turns|                     | 40k tokens from `cat` |   |
-|   +---------+---------+                     +-----------+-----------+   |
-|             |                                           |               |
-|             v                                           v               |
-|   ===================================================================   |
-|   |                  KAVACH DETERMINISTIC FIREWALL                  |   |
-|   ===================================================================   |
-|             ^                         ^                 ^               |
-|             |                         |                 |               |
-|   +---------+---------+     +---------+---------+     +-+-------------+ |
-|   | 3. CONTEXT AMNESIA|     | 4. LOST IN MIDDLE |     | 5. STALE WEIGHTS|
-|   | Wipe between runs |     | U-curve drop      |     | Hallucinations| |
-|   +-------------------+     +-------------------+     +---------------+ |
-+-------------------------------------------------------------------------+
-```
 
 ### 1. Context Rot (Drift & Contradiction)
 - **The Failure:** As agents execute across multiple turns, context accumulates stale directory listings, outdated file versions, and dead diffs. The model begins hallucinating nonexistent APIs, using deleted imports, and contradicting its own architectural decisions.
 - **The Kavach Solution:** `kavach working-state` and `kavach origin` maintain deterministic, point-in-time ground truth. Instead of re-reading mutated files, Kavach validates file hashes and origin states on every mutation.
 
-### 2. Context Bloat (Token Inflation & Noise Flooding)
-- **The Failure:** When an agent inspects a 2,000-line file or runs `cat package.json` / `find .`, it dumps thousands of tokens into the context window. Within 5-10 turns, the context reaches 100k+ tokens, skyrocketing API costs and causing the agent to slow down exponentially.
-- **The Kavach Solution:** Kavach permanently enforces **Zero Whole-File Reads**. Tools like `kavach grep` (AST-aware pattern extraction), `kavach glob` (bounded search), and structured field projections extract only the exact AST slice or JSON key needed—reducing token consumption by up to **99.28%**.
+### 2. Context Bloat & The Hidden "MCP Schema Tax"
+- **The Failure (File Dumps & MCP Overhead):** When an agent inspects a 2,000-line file with `cat` or connects multiple Model Context Protocol (MCP) servers, token overhead explodes. MCP servers inject 8,000 to 20,000+ tokens of heavy JSON Schema definitions into the system prompt on **every single turn** before the user even types, diluting model routing attention. Then, whole-file tools dump entire source trees, causing 100k+ token saturation in 5 turns.
+- **The Kavach Solution (Zero-Schema Overhead + AST Slicing):** Kavach permanently enforces **Zero Whole-File Reads & Zero-Schema Overhead**. As a native Rust static binary CLI, Kavach incurs **0 system-prompt schema tokens**. Tools like `kavach grep` (AST-aware pattern extraction), `kavach glob` (bounded search), and structured field projections extract only the exact AST slice needed—reducing active context consumption by up to **99.50%**.
 
 ### 3. Context Amnesia (Stateless Session Death)
 - **The Failure:** When a shell session ends or the agent hits context compaction, all intermediate reasoning, verified architecture decisions, test states, and task roadmaps evaporate. The agent starts from scratch on the next turn.
@@ -154,22 +166,22 @@ Autonomous agents operate under strict non-overlapping domain sovereignty:
 
 ## The 12 Legacy Replacements
 
-Kavach replaces the brittle, bloated POSIX and runtime tools that cause AI agent degradation:
+Kavach replaces the brittle, bloated POSIX and runtime tools commonly used by autonomous coding agents with fast, secure Rust implementations:
 
-| Legacy Tool | Failure Mode in AI Agents | Allowed Kavach / Sovereign Command | Advantage |
+| Need / Intent | Legacy Tool (Banned) | Kavach Replacement | Architectural Guarantee |
 | :--- | :--- | :--- | :--- |
-| **`cat` / `bat`** | Dumps entire files, burning 5k–30k tokens per read. | `kavach grep` / slice projections | Zero whole-file reads; sub-slice AST extraction only. |
-| **`jq`** | Brittle syntax; shell quoting errors; unindexed scans. | `kavach json "<query>" <file>` | Rust-native schema projection with zero-bloat TOON output. |
-| **`grep` / `rg`** | Unbounded text hits with noisy context lines. | `kavach grep "<pattern>" <path> -C 2` | AST-aware code pattern matching with bounded context. |
-| **`find` / `fd`** | Unbounded directory walks pollute context. | `kavach glob "<pattern>" <path> --max-depth 4` | Strict depth limits, deterministic sorted output. |
-| **`curl` / `wget`** | Unformatted HTML blobs pollute context with noise. | `webfind fetch --compact "<url>"` | Clean semantic markdown extraction for agents. |
-| **`node -e`** | 118 ms startup latency; V8 heap overhead; Node dependency. | `kavach script -e "<expr>"` | **4.7 ms** instant Rhai AST evaluation; zero dependencies. |
-| **`python3 -c`** | 57 ms cold-start; environment/version drift; GIL overhead. | `kavach script -e "<expr>"` | **12x faster**; deterministic sandbox; no virtualenvs. |
-| **`bun -e`** | 7.4 ms startup; unvetted external runtime in production environments. | `kavach script -e "<expr>"` | Pure Rust in-process runtime with memory safety. |
-| **`sed` / `awk`** | Destructive regex failures, macOS vs GNU dialect bugs. | `kavach replace '<old>' '<new>' <file>` | Atomic Aho-Corasick replacement with automatic backup. |
-| **`sqlite3`** | External process spawn; no DAG or vector search; fragile schemas. | `kavach db [write|kanban|parallel-run]` | Embedded Turso engine with DAG scheduling and vector search. |
-| **`git log`** | Dumps unbounded commit histories and diff noise. | `kavach trace "<symbol>" <path>` | Symbol-level caller network and semantic blast radius. |
-| **`make` / `bash`** | Non-deterministic scripts, untracked SDLC phase gates. | `kavach verify --phase <gate>` | Deterministic, audited phase gate validation. |
+| **Extract code slice** | `cat`, `head`, `tail` | `kavach grep "<symbol>" <path>` | **Zero whole-file reads; exact AST pattern match** |
+| **Locate files** | `find`, `fd` | `kavach glob "<pattern>" <path>` | **Bounded depth search; avoids directory flood** |
+| **Patch code / text** | `sed`, `awk`, whole-file write | `kavach replace '<old>' '<new>' <file>` | **Atomic Aho-Corasick replacement via tempfile** |
+| **Read JSON state** | `cat`, `jq` | `kavach json -j '.<path>' <file>` | **Field projection only; never loads raw JSON** |
+| **Scripting / Math** | `python3 -c`, `node -e` | `kavach script -e "<expr>"` | **In-process Rhai AST; 4.7ms vs 118ms (Node)** |
+| **Symbol callers** | Manual grep loops | `kavach trace "<symbol>" <path>` | **Inbound & outbound call graph extraction** |
+| **Code provenance** | `git blame` parsing | `kavach origin "<symbol>" <path>` | **Tracks author, commit, and intent for symbol** |
+| **Task / Roadmap** | `cat ROADMAP.md` | `kavach db kanban --project <slug>` | **Relational DAG stored in embedded Turso DB** |
+| **Quality gates** | Loose bash test scripts | `kavach verify [--phase <name>]` | **SDLC phase-gated enforcement engine** |
+| **Working state** | Stale agent memory | `kavach working-state` | **Tracks open edits, modified files & dirty state** |
+| **Mistakes ledger** | Lost agent history | `kavach db mistakes record` | **Anti-pattern store prevents repeating errors** |
+| **Live Web Search** | Unchecked LLM memory | `webfind search --live "<query>"` | **Zero-cost live truth grounding with date awareness** |
 
 ---
 
@@ -208,10 +220,11 @@ Benchmark 4: node -e "const x = 10; console.log(x * 2)"  (1,000 runs)
 
 ### Token Consumption & Window Compression Matrix
 
-Comparing standard developer actions performed via legacy POSIX tools vs Kavach surgical extraction:
+Comparing standard developer actions performed via legacy POSIX tools, MCP servers, and Kavach surgical CLI extraction:
 
-| Action / Query | Legacy Command | Legacy Tokens | Kavach Command | Kavach Tokens | Context Window Savings |
+| Action / Query | Legacy / MCP Baseline | Baseline Tokens | Kavach Command | Kavach Tokens | Context Window Savings |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Tool Definition (Schema Overhead)** | MCP Server (JSON-Schema injected every turn) | 8,000–18,000 tokens / turn | Native Rust CLI Binary | **0 tokens / turn** | **100% Tax Elimination** |
 | **Inspect single JSON key** | `cat AGENTS.json` (42 KB) | 9,299 tokens | `kavach json -j .witnesses AGENTS.json` | 66 tokens | **99.28% reduction** |
 | **Locate Rust function signature** | `cat src/main.rs` (38 KB) | 8,450 tokens | `kavach grep "fn main" src/ -C 2` | 42 tokens | **99.50% reduction** |
 | **Find symbol caller network** | `grep -rn "execute_task" .` | 1,820 tokens | `kavach trace "execute_task" .` | 58 tokens | **96.81% reduction** |
@@ -238,54 +251,32 @@ Comparing standard developer actions performed via legacy POSIX tools vs Kavach 
 |                                    |                                                  |
 |            +-----------------------+------------------------------+                   |
 |            |                       |                              |                   |
-|  +---------+----------+  +---------+----------+  +----------------+----------------+  |
-|  |   kavach replace   |  |    kavach trace    |  |          kavach verify          |  |
-|  | Aho-Corasick atomic|  | Symbol blast-radius|  |   SDLC Quality Phase Gates      |  |
+|            v                       v                              v                   |
+|  +--------------------+  +--------------------+  +---------------------------------+  |
+|  |  kavach replace    |  |   kavach trace     |  |          kavach verify          |  |
+|  | Atomic Aho-Corasick|  | Call graph lineage |  |      SDLC Phase-Gate Engine     |  |
 |  +--------------------+  +--------------------+  +---------------------------------+  |
 +---------------------------------------------------------------------------------------+
 ```
 
 ### 1. Surgical Extraction Engine
-- **Command:** `kavach grep "<pattern>" <path> [-C <lines>]`
-- **Design:** Zero whole-file dumps. Searches polyglot source trees using AST structural matching or regular expressions, returning bounded context slices directly consumable by LLM prompts.
-- **Token Impact:** Drops average search context cost from 2,000+ tokens to <50 tokens.
+- **Command:** `kavach grep "<pattern>" [path]` / `kavach glob "<pattern>" [path]`
+- **Design:** Slices specific AST functions, traits, or types out of source files with bounded context (`-C 2`). Prevents agents from reading entire files into memory.
 
 ### 2. Deterministic Sandboxed Scripting
-- **Command:** `kavach script -e "<rhai-expression>"`
-- **Design:** Powered by the embedded [Rhai](https://rhai.rs) engine. Executes in **4.7 ms** with pure memory isolation. Eliminates external interpreter dependencies (`node`, `bun`, `python`) and prevents sub-process zombie spawning.
+- **Command:** `kavach script -e "<rhai_code>"` / `kavach script <file.rhai>`
+- **Design:** Rhai in-memory scripting engine compiled directly into the binary. Zero subprocess fork overhead, executing arbitrary array and mathematical logic in **4.7 ms** with zero dependencies.
 
 ### 3. Embedded Turso & Knowledge Graph Memory Substrate
-- **Command:** `kavach db <COMMAND>`
-- **Design:** Embedded Turso / libSQL SQLite engine storing project states, dependency graphs, decisions, and anti-patterns directly on disk (`~/.kavach/kavach.db`).
-- **Core Subsystems:**
-  - **Topological Roadmap DAG (`RoadmapDag`):** Manages kanban task cards with declarative dependency edges (`--depends-on <key>`). The DAG scheduler prevents race conditions, detects dependency cycles, and dispatches concurrent tasks via `parallel-run`.
-  - **Mistakes & Anti-Pattern Ledger (`kavach db mistakes`):** Automatically files errant agent actions and stop-gate violations into a persistent ledger. Recurring mistakes are injected into session starts so past failures are never repeated.
-  - **Cross-Project Concept Ontology (`kavach db concept-*`):** Links concepts across projects via semantic edges (`is_a`, `part_of`, `prerequisite_of`, `alternative_to`, `mitigates`) backed by full-text BM25 search.
-  - **Research & Live Documentation Citations (`kavach db citation-*`):** Anchors research entries directly to live official documentation URLs.
-
-```
-       +-----------------------------------------------------------------+
-       |                  KAVACH MEMORY KNOWLEDGE GRAPH                  |
-       |                                                                 |
-       |     [ RESEARCH ]  ======>  [ DECISION (ADR) ]                   |
-       |          ||                       ||                            |
-       |     (citation-add)           (depends_on)                       |
-       |          ||                       ||                            |
-       |          \/                       \/                            |
-       |   [ OFFICIAL DOCS ]        [ ROADMAP DAG CARD ]                 |
-       |                                   ||                            |
-       |                             (parallel-run)                      |
-       |                                   ||                            |
-       |                                   \/                            |
-       |                        [ MISTAKES ANTI-PATTERN ]                |
-       |                         (Self-Filing / Hit Count)               |
-       +-----------------------------------------------------------------+
-```
+- **Command:** `kavach db write`, `kavach db read`, `kavach db kanban`
+- **Design:** Powered by Turso's embedded `libSQL` engine. Maintains structured session memory across agent disconnects:
+  - **Memory Entries:** Ephemeral and permanent keys across categories (`decision`, `roadmap`, `research`, `pattern`).
+  - **Dependency DAG:** Task cards linked with `--depends-on` edges, enforcing topological ordering.
+  - **Mistakes Ledger:** Self-reported agent anti-patterns stored with `--gate`, `--banned`, and `--instead` flags.
 
 ### 4. Atomic AST Code Patching
-- **Command:** `kavach replace '<target_string>' '<replacement_string>' <file>`
-- **Design:** Uses `aho_corasick` search and atomic temporary files. Guarantees that files are never partially written or corrupted during LLM generation aborts.
-- **Safety:** Automatically creates safety backups and verifies file integrity before atomic rename.
+- **Command:** `kavach replace '<old_content>' '<new_content>' <file_path>`
+- **Design:** Multi-pattern atomic string replacement using the `aho_corasick` algorithm writing through `tempfile`. Eliminates accidental file truncation from broken sed or python scripts.
 
 ### 5. Codebase Lineage & Blast-Radius Tracing
 - **Command:** `kavach trace "<symbol>" <path> [--callers]`

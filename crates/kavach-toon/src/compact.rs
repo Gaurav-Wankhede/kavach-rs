@@ -2,6 +2,7 @@
 mod preserve;
 mod rules;
 pub mod tabular;
+pub mod tree;
 mod verify;
 
 use thiserror::Error;

@@ -3,27 +3,19 @@
 //! in doc comments, string literals, and generic test bodies.
 
 use super::site::{Kind, Site};
-use ast_grep_core::AstGrep;
+use ast_grep_core::{AstGrep, Language};
 use ast_grep_language::SupportLang;
 use std::path::Path;
 
 /// Detect the programming language from file extension.
 pub(super) fn detect_lang(file: &str) -> Option<SupportLang> {
-    let ext = Path::new(file).extension()?.to_str()?.to_ascii_lowercase();
-    match ext.as_str() {
-        "rs" => Some(SupportLang::Rust),
-        "ts" | "mts" | "cts" => Some(SupportLang::TypeScript),
-        "tsx" => Some(SupportLang::Tsx),
-        "js" | "mjs" | "cjs" | "jsx" => Some(SupportLang::JavaScript),
-        "py" | "pyi" => Some(SupportLang::Python),
-        "go" => Some(SupportLang::Go),
-        "c" | "h" => Some(SupportLang::C),
-        "cpp" | "cc" | "cxx" | "hpp" => Some(SupportLang::Cpp),
-        "cs" => Some(SupportLang::CSharp),
-        "java" => Some(SupportLang::Java),
-        "sh" | "bash" => Some(SupportLang::Bash),
-        _ => None,
+    let path = Path::new(file);
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+    // YAML and JSON are data files, handled by schema/config field regex matchers
+    if ext.eq_ignore_ascii_case("json") || ext.eq_ignore_ascii_case("yaml") || ext.eq_ignore_ascii_case("yml") || ext.eq_ignore_ascii_case("toml") {
+        return None;
     }
+    SupportLang::from_path(path)
 }
 
 const fn query_patterns(lang: SupportLang) -> &'static [(Kind, &'static str)] {
@@ -119,7 +111,7 @@ const fn query_patterns(lang: SupportLang) -> &'static [(Kind, &'static str)] {
     }
 }
 
-fn offset_to_line(content: &str, byte_offset: usize) -> usize {
+pub(super) fn offset_to_line(content: &str, byte_offset: usize) -> usize {
     let mut line = 1usize;
     for (idx, b) in content.bytes().enumerate() {
         if idx >= byte_offset {
@@ -148,6 +140,29 @@ pub(super) fn scan_ast(name: &str, file: &str, content: &str, lang: SupportLang)
                     let line = offset_to_line(content, start_offset);
                     sites.push(Site {
                         kind: *kind,
+                        file: file.to_owned(),
+                        line,
+                    });
+                }
+            }
+        }
+    }
+
+    for node in root.dfs() {
+        if let Some((kind_str, sym)) = crate::cmd::trace::any_definition_node(&node) {
+            if sym == name {
+                let line = offset_to_line(content, node.range().start);
+                let mapped_kind = match kind_str.as_str() {
+                    "function" => Kind::Function,
+                    "class" | "struct" | "interface" | "type" => Kind::Type,
+                    "enum" => Kind::Type,
+                    "const" => Kind::Const,
+                    "variable" | "assignment" => Kind::LetBinding,
+                    _ => Kind::Type,
+                };
+                if !sites.iter().any(|s| s.line == line && s.kind == mapped_kind) {
+                    sites.push(Site {
+                        kind: mapped_kind,
                         file: file.to_owned(),
                         line,
                     });

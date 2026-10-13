@@ -11,6 +11,7 @@ use std::path::Path;
     reason = "line index i+1 for 1-based display; bounded by file line count"
 )]
 pub(super) fn walk(root: &Path) -> Vec<Candidate> {
+    use ast_grep_core::{AstGrep, Language};
     let mut out = Vec::new();
     for path in source_files(root) {
         let Ok(src) = std::fs::read_to_string(&path) else {
@@ -23,6 +24,38 @@ pub(super) fn walk(root: &Path) -> Vec<Candidate> {
             .filter(|r| !r.as_os_str().is_empty())
             .map_or_else(|| path.clone(), Path::to_path_buf);
         let rel = rel_path.to_string_lossy().into_owned();
+
+        // 1. Dynamic AST extraction if supported programming language
+        if let Some(lang) = ast_grep_language::SupportLang::from_path(&path) {
+            let grep = AstGrep::new(&src, lang);
+            let lines: Vec<&str> = src.lines().collect();
+            for node in grep.root().dfs() {
+                if let Some((kind_str, sym)) = crate::cmd::trace::any_definition_node(&node) {
+                    let line_no = super::ast_scan::offset_to_line(&src, node.range().start);
+                    let line_text = lines.get(line_no.saturating_sub(1)).copied().unwrap_or("");
+                    let secret = is_secret(&sym);
+                    let value = capture_value(line_text);
+                    let mapped_kind = match kind_str.as_str() {
+                        "function" => super::site::Kind::Function,
+                        "class" | "struct" | "interface" | "type" => super::site::Kind::Type,
+                        "enum" => super::site::Kind::Type,
+                        "const" => super::site::Kind::Const,
+                        "variable" | "assignment" => super::site::Kind::LetBinding,
+                        _ => super::site::Kind::Type,
+                    };
+                    out.push(Candidate {
+                        name: sym,
+                        kind: mapped_kind,
+                        file: rel.clone(),
+                        line: line_no,
+                        value,
+                        is_secret: secret,
+                    });
+                }
+            }
+        }
+
+        // 2. Line-by-line fallback for config/env/legacy matches
         for (i, line) in src.lines().enumerate() {
             out.extend(candidates_on_line(line, &rel, i + 1));
         }

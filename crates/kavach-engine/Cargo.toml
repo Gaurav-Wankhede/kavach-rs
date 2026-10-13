@@ -2,7 +2,7 @@
 path = "../kavach-rule-engine"
 [dependencies]
 memchr = "2.7"
-which = "7.0"
+which = "8.0"
 
 [dependencies.ast-grep-core]
 workspace = true

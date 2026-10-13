@@ -42,20 +42,8 @@ pub(crate) struct TraceReport {
 }
 
 pub(crate) fn resolve_lang(path: &str) -> Option<SupportLang> {
-    let ext = Path::new(path).extension()?.to_str()?;
-    match ext {
-        "rs" => Some(SupportLang::Rust),
-        "ts" | "mts" | "cts" => Some(SupportLang::TypeScript),
-        "tsx" => Some(SupportLang::Tsx),
-        "js" | "mjs" | "cjs" => Some(SupportLang::JavaScript),
-        "py" => Some(SupportLang::Python),
-        "go" => Some(SupportLang::Go),
-        "c" | "h" => Some(SupportLang::C),
-        "cpp" | "cc" | "cxx" | "hpp" => Some(SupportLang::Cpp),
-        "cs" => Some(SupportLang::CSharp),
-        "java" => Some(SupportLang::Java),
-        _ => None,
-    }
+    use ast_grep_language::Language;
+    SupportLang::from_path(Path::new(path))
 }
 
 pub(crate) fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
@@ -75,70 +63,90 @@ pub(crate) fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usiz
     (line, col)
 }
 
-pub(crate) fn is_definition_node(node: &Node<'_, StrDoc<SupportLang>>, symbol: &str) -> Option<String> {
-    let kind = node.kind();
-    
-    // Rust definitions
-    if kind == "function_item" || kind == "struct_item" || kind == "enum_item" || kind == "trait_item" || kind == "type_item" || kind == "const_item" {
-        if let Some(id_node) = node.field("name") {
-            if id_node.text() == symbol {
-                return Some(kind.to_string());
-            }
-        }
+/// Clean a callee expression or function identifier down to its base symbol name
+pub(crate) fn extract_symbol_name(text: &str) -> String {
+    let trimmed = text.trim();
+    // Handle path or member separators (e.g. obj.method, Mod::func, a->b)
+    if let Some(last) = trimmed.split(|c| c == '.' || c == ':').filter(|s| !s.is_empty()).last() {
+        // Strip trailing parentheses or call arguments if present
+        let clean = last.split('(').next().unwrap_or(last).trim();
+        clean.to_string()
+    } else {
+        trimmed.to_string()
     }
-    // TypeScript / JS
-    if kind == "function_declaration" || kind == "class_declaration" || kind == "interface_declaration" || kind == "type_alias_declaration" || kind == "method_definition" {
-        if let Some(id_node) = node.field("name") {
-            if id_node.text() == symbol {
-                return Some(kind.to_string());
-            }
-        }
-    }
-    // Python
-    if kind == "function_definition" || kind == "class_definition" {
-        if let Some(id_node) = node.field("name") {
-            if id_node.text() == symbol {
-                return Some(kind.to_string());
-            }
-        }
-    }
-    // Go
-    if kind == "function_declaration" || kind == "method_declaration" || kind == "type_spec" {
-        if let Some(id_node) = node.field("name") {
-            if id_node.text() == symbol {
-                return Some(kind.to_string());
-            }
-        }
-    }
+}
 
-    None
+pub(crate) fn is_definition_node(node: &Node<'_, StrDoc<SupportLang>>, symbol: &str) -> Option<String> {
+    let (kind, name) = any_definition_node(node)?;
+    if name == symbol {
+        Some(kind)
+    } else {
+        None
+    }
 }
 
 pub(crate) fn any_definition_node(node: &Node<'_, StrDoc<SupportLang>>) -> Option<(String, String)> {
     let kind = node.kind();
     
-    // Rust definitions
-    if kind == "function_item" || kind == "struct_item" || kind == "enum_item" || kind == "trait_item" || kind == "type_item" || kind == "const_item" {
+    // 1. Direct declaration name field (Rust, TS/JS, Python, Go, C/C++, Java, C#)
+    let is_decl_kind = kind.contains("item")
+        || kind.contains("declaration")
+        || kind.contains("definition")
+        || kind.contains("spec")
+        || kind.contains("clause");
+
+    if is_decl_kind {
         if let Some(id_node) = node.field("name") {
-            return Some((kind.to_string(), id_node.text().to_string()));
+            let sym = id_node.text().to_string();
+            if !sym.is_empty() {
+                if kind.contains("function") || kind.contains("method") || kind.contains("fn") {
+                    return Some(("function".to_string(), sym));
+                }
+                if kind.contains("class") || kind.contains("struct") {
+                    return Some(("class".to_string(), sym));
+                }
+                if kind.contains("interface") || kind.contains("trait") {
+                    return Some(("interface".to_string(), sym));
+                }
+                if kind.contains("type") {
+                    return Some(("type".to_string(), sym));
+                }
+                if kind.contains("enum") {
+                    return Some(("enum".to_string(), sym));
+                }
+                if kind.contains("const") {
+                    return Some(("const".to_string(), sym));
+                }
+                return Some((kind.to_string(), sym));
+            }
         }
     }
-    // TypeScript / JS
-    if kind == "function_declaration" || kind == "class_declaration" || kind == "interface_declaration" || kind == "type_alias_declaration" || kind == "method_definition" {
+
+    // 2. Variable declarators / Arrow functions (JS/TS/Go)
+    // const foo = () => {}, let bar = function()
+    if kind == "variable_declarator" || kind == "lexical_declaration" || kind == "short_var_declaration" {
         if let Some(id_node) = node.field("name") {
-            return Some((kind.to_string(), id_node.text().to_string()));
+            let sym = id_node.text().to_string();
+            if let Some(val_node) = node.field("value") {
+                let vk = val_node.kind();
+                if vk == "arrow_function" || vk == "function_expression" || vk == "function" {
+                    return Some(("function".to_string(), sym));
+                }
+            }
+            return Some(("variable".to_string(), sym));
         }
     }
-    // Python
-    if kind == "function_definition" || kind == "class_definition" {
-        if let Some(id_node) = node.field("name") {
-            return Some((kind.to_string(), id_node.text().to_string()));
-        }
-    }
-    // Go
-    if kind == "function_declaration" || kind == "method_declaration" || kind == "type_spec" {
-        if let Some(id_node) = node.field("name") {
-            return Some((kind.to_string(), id_node.text().to_string()));
+
+    // 3. Python assignment / lambda (foo = lambda x: ...)
+    if kind == "assignment" {
+        if let Some(left) = node.field("left") {
+            let sym = left.text().to_string();
+            if let Some(right) = node.field("right") {
+                if right.kind() == "lambda" {
+                    return Some(("function".to_string(), sym));
+                }
+            }
+            return Some(("assignment".to_string(), sym));
         }
     }
 
@@ -148,16 +156,43 @@ pub(crate) fn any_definition_node(node: &Node<'_, StrDoc<SupportLang>>) -> Optio
 fn find_enclosing_scope(node: &Node<'_, StrDoc<SupportLang>>) -> String {
     let mut current = node.parent();
     while let Some(p) = current {
-        let k = p.kind();
-        if k == "function_item" || k == "function_declaration" || k == "function_definition" || k == "method_declaration" || k == "method_definition" {
-            if let Some(name_node) = p.field("name") {
-                return name_node.text().to_string();
+        if let Some((kind, name)) = any_definition_node(&p) {
+            // Only functional/callable scopes should count as enclosing caller scope
+            if kind == "function" || kind.contains("fn") || kind.contains("method") {
+                return name;
             }
-            return k.to_string();
         }
         current = p.parent();
     }
     "<top-level>".to_string()
+}
+
+/// Check if a node is an invoked callee expression (function being called)
+pub(crate) fn is_callee_expression(node: &Node<'_, StrDoc<SupportLang>>, symbol: &str) -> bool {
+    let mut curr = Some(node.clone());
+    while let Some(c) = curr {
+        if let Some(parent) = c.parent() {
+            let pk = parent.kind();
+            if pk == "call_expression" || pk == "method_call_expression" || pk == "call" {
+                // If the parent is a call, check if c is the invoked function/method (field name 'function' or 'callee')
+                if let Some(fn_node) = parent.field("function").or_else(|| parent.field("callee")) {
+                    let fn_text = fn_node.text();
+                    let extracted = extract_symbol_name(&fn_text);
+                    if extracted == symbol {
+                        return true;
+                    }
+                }
+            }
+            curr = Some(parent);
+        } else {
+            break;
+        }
+        // Limit upward traversal to avoid escaping statement/expression context
+        if curr.as_ref().map_or(false, |n| n.kind().contains("statement")) {
+            break;
+        }
+    }
+    false
 }
 
 pub(crate) fn run(
@@ -205,11 +240,11 @@ pub(crate) fn run(
             Err(_) => continue,
         };
 
+        files_scanned += 1;
+
         if !content.contains(symbol) {
             continue;
         }
-
-        files_scanned += 1;
         let grep = AstGrep::new(&content, lang);
         let root = grep.root();
         let all_lines: Vec<&str> = content.lines().collect();
@@ -236,7 +271,8 @@ pub(crate) fn run(
                         let c_kind = child.kind();
                         if c_kind == "call_expression" || c_kind == "method_call_expression" {
                             if let Some(fn_node) = child.field("function") {
-                                let c_sym = fn_node.text().to_string();
+                                let raw_fn = fn_node.text().to_string();
+                                let c_sym = extract_symbol_name(&raw_fn);
                                 if c_sym != symbol && !c_sym.is_empty() {
                                     let c_range = child.range();
                                     let (c_line, c_col) = offset_to_line_and_col(&content, c_range.start);
@@ -266,19 +302,22 @@ pub(crate) fn run(
                         continue;
                     }
 
-                    let scope = find_enclosing_scope(&node);
-                    let range = node.range();
-                    let (line, col) = offset_to_line_and_col(&content, range.start);
-                    let line_idx = line.saturating_sub(1);
-                    let snippet = all_lines.get(line_idx).copied().unwrap_or("").trim().to_string();
+                    // Check if this identifier is invoked as a function/method call
+                    if is_callee_expression(&node, symbol) {
+                        let scope = find_enclosing_scope(&node);
+                        let range = node.range();
+                        let (line, col) = offset_to_line_and_col(&content, range.start);
+                        let line_idx = line.saturating_sub(1);
+                        let snippet = all_lines.get(line_idx).copied().unwrap_or("").trim().to_string();
 
-                    callers.push(SymbolCaller {
-                        path: p_str.to_string(),
-                        line,
-                        col,
-                        caller_scope: scope,
-                        snippet,
-                    });
+                        callers.push(SymbolCaller {
+                            path: p_str.to_string(),
+                            line,
+                            col,
+                            caller_scope: scope,
+                            snippet,
+                        });
+                    }
                 }
             }
         }
@@ -337,24 +376,53 @@ pub(crate) fn run(
     println!("\tsymbol: {}", symbol);
     println!("\tscanned: {}", files_scanned);
     
+    let total_matches = definitions.len() + callers.len() + callees.len();
+    if total_matches == 0 {
+        println!("\tstatus: not_found (0 definitions, 0 callers, 0 callees found across {} scanned files)", files_scanned);
+        return 1;
+    }
+
+    use std::collections::BTreeMap;
+
     if !callees_only {
         println!("\tdefinitions[{}]{{kind,loc,snippet}}:", definitions.len());
+        let mut defs_by_file: BTreeMap<&str, Vec<&SymbolDef>> = BTreeMap::new();
         for def in &definitions {
-            println!("\t\t{}\t{}:{}:{}\t{}", def.kind, def.path, def.line, def.col, def.snippet);
+            defs_by_file.entry(&def.path).or_default().push(def);
+        }
+        for (fpath, file_defs) in defs_by_file {
+            println!("\t  {}:", fpath);
+            for def in file_defs {
+                println!("\t    {}:{}\t{}\t{}", def.line, def.col, def.kind, def.snippet);
+            }
         }
     }
 
-    if !callees_only {
+    if !callers_only && !callees_only {
         println!("\tcallers[{}]{{caller_scope,loc,snippet}}:", callers.len());
+        let mut callers_by_file: BTreeMap<&str, Vec<&SymbolCaller>> = BTreeMap::new();
         for caller in &callers {
-            println!("\t\t{}\t{}:{}:{}\t{}", caller.caller_scope, caller.path, caller.line, caller.col, caller.snippet);
+            callers_by_file.entry(&caller.path).or_default().push(caller);
+        }
+        for (fpath, file_callers) in callers_by_file {
+            println!("\t  {}:", fpath);
+            for caller in file_callers {
+                println!("\t    {}:{}\t{}\t{}", caller.line, caller.col, caller.caller_scope, caller.snippet);
+            }
         }
     }
 
-    if !callers_only {
+    if !callers_only && !callees_only || callees_only {
         println!("\tcallees[{}]{{symbol,loc}}:", callees.len());
+        let mut callees_by_file: BTreeMap<&str, Vec<&SymbolCallee>> = BTreeMap::new();
         for callee in &callees {
-            println!("\t\t{}\t{}:{}:{}", callee.symbol, callee.path, callee.line, callee.col);
+            callees_by_file.entry(&callee.path).or_default().push(callee);
+        }
+        for (fpath, file_callees) in callees_by_file {
+            println!("\t  {}:", fpath);
+            for callee in file_callees {
+                println!("\t    {}:{}\t{}", callee.line, callee.col, callee.symbol);
+            }
         }
     }
 

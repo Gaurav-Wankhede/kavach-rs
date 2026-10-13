@@ -12,6 +12,7 @@ pub(crate) fn run(
     hidden: bool,
     max_depth: Option<usize>,
     max_count: usize,
+    flat: bool,
 ) -> i32 {
     let target_path = std::path::Path::new(path);
     if !target_path.exists() {
@@ -30,9 +31,7 @@ pub(crate) fn run(
     }
 
     let walker = builder.build();
-    let stdout = io::stdout();
-    let mut out = BufWriter::new(stdout.lock());
-    let mut count = 0usize;
+    let mut matches = Vec::new();
 
     for entry in walker {
         let entry = match entry {
@@ -58,22 +57,32 @@ pub(crate) fn run(
         }
 
         let p = entry.path();
-        let path_str = p.to_string_lossy();
+        let path_str = p.to_string_lossy().to_string();
         let file_name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-        // Match against normalized path (without leading ./) or file name
         let clean_path = path_str.strip_prefix("./").unwrap_or(&path_str);
         let matched = glob_match(pattern, clean_path) || glob_match(pattern, &path_str) || glob_match(pattern, file_name);
 
         if matched {
-            let _ = writeln!(out, "{}", path_str);
-            count = count.saturating_add(1);
-            if count >= max_count {
+            matches.push(path_str);
+            if matches.len() >= max_count {
                 break;
             }
         }
     }
 
-    let _ = out.flush();
+    if flat {
+        let stdout = io::stdout();
+        let mut out = BufWriter::new(stdout.lock());
+        for m in &matches {
+            let _ = writeln!(out, "{}", m);
+        }
+        let _ = out.flush();
+        return 0;
+    }
+
+    let tree_input: Vec<(&str, Option<&str>)> = matches.iter().map(|p| (p.as_str(), None)).collect();
+    let toon = kavach_toon::encode_path_tree(tree_input);
+    print!("{}", toon);
     0
 }
