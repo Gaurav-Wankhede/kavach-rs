@@ -109,3 +109,81 @@ pub async fn upsert_entry_full(
     })
     .await
 }
+
+/// Batch upsert: multiple tasks in a single transaction.
+/// Atomic: all succeed or all fail. Returns Vec of (entry_key, title) for successful upserts.
+#[must_use]
+pub async fn upsert_entries_batch(
+    db: &DbStore,
+    project_id: &str,
+    category: &str,
+    tasks: &[(String, String, String, String, Vec<String>)], // (entry_key, title, content, qualified_name, references)
+) -> Result<Vec<(String, String)>> {
+    match category {
+        "decision" | "research" | "roadmap" | "pattern" | "app_spec" => {}
+        other => {
+            return Err(crate::error::Error::Migration(format!(
+                "unknown category: {other}"
+            )));
+        }
+    }
+    let now = crate::db::now_rfc3339();
+    let project_name = crate::key_str::project_key_str(project_id);
+    let initial_lane: Option<String> = (category == "roadmap").then(|| "todo".to_owned());
+
+    crate::retry::with_retry(|| async {
+        let txn = db.conn.transaction().await?;
+        let mut written = Vec::new();
+
+        for (entry_key, title, content, qualified_name, references) in tasks {
+            txn.execute(
+                "INSERT INTO memories (project, category, entry_key, title, content, status, entry_status, priority, exec_prompt, created_at, updated_at)                  VALUES (?1, ?2, ?3, ?4, ?5, 'active', ?6, NULL, NULL, ?7, ?7)                  ON CONFLICT(project, category, entry_key) DO UPDATE SET                      title = excluded.title, content = excluded.content,                      status = 'active',                      entry_status = COALESCE(memories.entry_status, excluded.entry_status),                      priority = COALESCE(excluded.priority, excluded.priority),                      exec_prompt = COALESCE(excluded.exec_prompt, excluded.exec_prompt),                      updated_at = excluded.updated_at",
+                libsql::params![
+                    project_id.to_owned(),
+                    category.to_owned(),
+                    entry_key.to_owned(),
+                    title.to_owned(),
+                    content.to_owned(),
+                    initial_lane.clone(),
+                    now.clone()
+                ],
+            )
+            .await?;
+            txn.execute(
+                "DELETE FROM memories_fts WHERE project=?1 AND category=?2 AND entry_key=?3",
+                libsql::params![
+                    project_id.to_owned(),
+                    category.to_owned(),
+                    entry_key.to_owned()
+                ],
+            )
+            .await?;
+            txn.execute(
+                "INSERT INTO memories_fts (entry_key, project, category, title, content)                  VALUES (?1,?2,?3,?4,?5)",
+                libsql::params![
+                    entry_key.to_owned(),
+                    project_id.to_owned(),
+                    category.to_owned(),
+                    title.to_owned(),
+                    content.to_owned()
+                ],
+            )
+            .await?;
+            txn.execute(
+                "INSERT INTO events (project, kind, payload, created_at)                  VALUES (?1, 'memory_write', ?2, ?3)",
+                libsql::params![
+                    project_id.to_owned(),
+                    format!("{{\"category\":\"{category}\",\"entry_key\":\"{entry_key}\"}}"),
+                    now.clone()
+                ],
+            )
+            .await?;
+            append_entity_graph(&txn, qualified_name, &project_name, references).await?;
+            written.push((entry_key.clone(), title.clone()));
+        }
+
+        txn.commit().await?;
+        Ok(written)
+    })
+    .await
+}

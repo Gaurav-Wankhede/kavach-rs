@@ -17,11 +17,6 @@ fi
 # keep rustup current; the repo's rust-toolchain.toml pins the exact channel on build
 command -v rustup >/dev/null 2>&1 && rustup update >/dev/null 2>&1 || true
 
-if ! command -v surreal >/dev/null 2>&1; then
-  echo "kavach: installing SurrealDB 3.1.4 ..."
-  curl -fsSL https://install.surrealdb.com | sh -s -- --version 3.1.4
-fi
-
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -47,7 +42,7 @@ case "$(uname -s)" in
   Linux)  datadir="${XDG_DATA_HOME:-$HOME/.local/share}/shared-ai" ;;
   *)      datadir="$HOME/.local/share/shared-ai" ;;
 esac
-echo "kavach: memory store will live in ${datadir} (SurrealDB 3.1.4)"
+echo "kavach: memory store will live in ${datadir} (embedded Database)"
 echo "kavach: installed to ${DEST}/kavach"
 case ":$PATH:" in *":$DEST:"*) ;; *) echo "kavach: add ${DEST} to PATH -> export PATH=\"${DEST}:\$PATH\"" ;; esac
 "$DEST/kavach" --version || true

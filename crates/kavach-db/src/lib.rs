@@ -48,6 +48,8 @@ pub mod schema_engine;
 pub mod schema_v2;
 pub mod session_store;
 pub mod db;
+
+pub use db::DbStore;
 pub mod wipe;
 pub mod write;
 
@@ -165,5 +167,5 @@ pub use wipe::{WipeReport, preview_wipe, wipe_project};
 pub use write::{
     ExpireReport, append_event, expire_stale, rotate_events, set_lane, set_priority,
     update_feedback, update_status, update_status_cas, upsert_entry, upsert_entry_full,
-    upsert_entry_with_event,
+    upsert_entry_with_event, upsert_entries_batch,
 };

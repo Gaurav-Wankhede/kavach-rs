@@ -150,7 +150,7 @@ fn add_form(project: &str) -> Markup {
         form.add-citation hx-post="/citations/add" hx-target="#citation-list" hx-swap="innerHTML" {
             input type="hidden" name="project" value=(project);
             input type="text" name="entry_key" placeholder="entry key (slug)" required;
-            input type="text" name="name" placeholder="display name (e.g. SurrealDB)" required;
+            input type="text" name="name" placeholder="display name (e.g. Database)" required;
             input type="text" name="slug" placeholder="metadata slug (e.g. records)" required;
             input type="url" name="url" placeholder="official-docs URL" required;
             button type="submit" { "Add citation" }
