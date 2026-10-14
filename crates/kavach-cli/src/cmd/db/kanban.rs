@@ -1,9 +1,9 @@
-// hub: `kavach db kanban` / `kavach db kanban-close` — SurrealDB-backed kanban
-// view. SurrealDB stores entry_status directly on roadmap rows (no kanban_cards
+// hub: `kavach db kanban` / `kavach db kanban-close` — Database-backed kanban
+// view. Database stores entry_status directly on roadmap rows (no kanban_cards
 // table). Pure status/key helpers live here; the close path and the render path
 // are leaves (close.rs, render.rs) to keep each file ≤100 LOC.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code};
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 use kavach_types::MemoryStatus;
 mod close;
 mod dag_render;
@@ -86,7 +86,7 @@ pub(super) fn run(
     runtime.block_on(run_async(project_slug, limit, &filters))
 }
 async fn run_async(project_slug: &str, limit: usize, filters: &KanbanFilters<'_>) -> i32 {
-    // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+    // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
     let store = match super::rpc_client::open_turso_resilient().await {
         Ok(s) => s,
         Err(e) => {

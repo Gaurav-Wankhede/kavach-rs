@@ -33,7 +33,7 @@ fn call_or_spool_enqueues_when_daemon_is_down() {
 fn call_or_spool_returns_promptly_never_blocking_the_stop_hook() {
     isolate("prompt");
     // The Stop hook's fire-and-forget contract: even if a live daemon / running
-    // SurrealDB makes the RPC round-trip block, call_or_spool MUST return within a
+    // Database makes the RPC round-trip block, call_or_spool MUST return within a
     // bounded wall-clock. Pre-fix this blocked ~60s against a running server (the
     // reward_backfill timeouts); post-fix it is bounded and spools on timeout.
     let start = std::time::Instant::now();

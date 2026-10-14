@@ -201,7 +201,7 @@ fn phase_e_research_fires_without_source() {
 
 #[test]
 fn phase_e_research_fires_on_syntax_claim_from_memory() {
-    // The SurrealQL/serde class of error: asserting a tool's syntax/contract from
+    // The DatabaseQL/serde class of error: asserting a tool's syntax/contract from
     // memory with no source. This is the widened claim shape (research-gate teeth).
     assert!(detect_claim_without_research("the correct syntax is ORDER BY with ASC").unwrap());
     assert!(detect_claim_without_research("serde fills the attribute from Default").unwrap());

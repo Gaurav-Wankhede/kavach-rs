@@ -2,7 +2,7 @@
 //!
 //! A "kanban UNREACHABLE" stop has TWO root causes that demand opposite
 //! responses: a plain RPC/daemon outage (restart the daemon) versus a FULL DISK
-//! (the `SurrealDB` WAL cannot append, so the DB is structurally unwritable). The
+//! (the `Database` WAL cannot append, so the DB is structurally unwritable). The
 //! transcript that motivated this gate showed the model treat the second as an
 //! owner-handback ("Owner — run `rm -rf ~/.cache/cargo-target`") and then spin
 //! ~40 identical hold turns. That is the abolished surrender pattern wearing an
@@ -11,7 +11,7 @@
 //! This module probes free bytes on the kavach DB volume and, when critically
 //! low, returns an ACT-driven self-heal directive instead of the neutral
 //! source-down text — never an `rm` command handed to the operator.
-/// Below this many free bytes the `SurrealDB` WAL cannot reliably commit, so a
+/// Below this many free bytes the `Database` WAL cannot reliably commit, so a
 /// source-down is almost certainly disk-caused. 512 MiB: the transcript showed
 /// the WAL append still ENOSPC at ~130 MB free, so the band is set well above
 /// the observed failure point to catch the pressure BEFORE the DB wedges.

@@ -6,11 +6,11 @@
 // NOT a direct `open_default()`. The previous direct-open implementation was
 // the root cause of the silently-empty mistake ledger: `record_mistake` runs
 // inside an ephemeral hook child, and `open_default()` on RocksDB LOCK
-// contention contends the SurrealDB server connection — from a
+// contention contends the Database server connection — from a
 // short-lived child that exits before the race resolves, so nothing landed
 // (proven by execution: live gate fired but the row count never moved, 2 -> 2).
 // Routing the embed+append+cluster through `mistake.record` runs it inside the
-// the one process that holds the SurrealDB connection.
+// the one process that holds the Database connection.
 // SOURCE: rca.mistake-ledger-dark-via-direct-open · CLAUDE.md single_writer.
 use crate::Mistake;
 use kavach_rpc::methods::mistake::{RecordParams, RecordResult};

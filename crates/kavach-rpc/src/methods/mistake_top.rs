@@ -7,7 +7,7 @@
 //   to kavach_db::graph_top_anti_patterns (see that module's ALGO note:
 //   bounded in-memory sort). Here we only clamp the page size and map rows to the
 //   wire DTO. TIME: O(N) map over the already-ranked slice. YEAR: 2026.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::graph_top_anti_patterns;
@@ -62,7 +62,7 @@ pub async fn top(state: &AppState, p: TopParams) -> Result<TopResult, ErrorObjec
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let rows = graph_top_anti_patterns(&state.db, limit)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let patterns = rows
         .into_iter()
         .map(|r| AntiPatternDto {

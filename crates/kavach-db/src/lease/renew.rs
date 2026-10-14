@@ -3,7 +3,7 @@
 // SOURCE: https://medium.com/@Modexa/7-lease-based-locks-that-dont-deadlock-d6de4a0562c9
 use super::types::LEASE_TTL_SECS;
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use chrono::{Duration, Utc};
 /// The leased tables a renewal sweep covers. Mirrors `recovery::LEASED_TABLES`;
 /// any table whose cards carry the `occupied_*` lease columns belongs here.
@@ -40,9 +40,9 @@ pub const RENEW_INTERVAL_SECS: u64 = (LEASE_TTL_SECS as u64) / 3;
 ///   to life under the old holder).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when a table's UPDATE fails, or `Error::Migration`
+/// Propagates `Error::Database` when a table's UPDATE fails, or `Error::Migration`
 /// on expiry arithmetic overflow.
-pub async fn renew_active_leases(db: &TursoStore) -> Result<usize> {
+pub async fn renew_active_leases(db: &DbStore) -> Result<usize> {
     let now = Utc::now();
     let expires = now
         .checked_add_signed(Duration::seconds(LEASE_TTL_SECS))
@@ -55,7 +55,7 @@ pub async fn renew_active_leases(db: &TursoStore) -> Result<usize> {
 }
 /// Renew the live leases of a single table. Counts the rows actually extended.
 async fn renew_table(
-    db: &TursoStore,
+    db: &DbStore,
     table: &str,
     now: chrono::DateTime<Utc>,
     expires: chrono::DateTime<Utc>,

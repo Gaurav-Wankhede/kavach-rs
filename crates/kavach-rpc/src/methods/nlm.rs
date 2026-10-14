@@ -1,6 +1,6 @@
 // RPC method namespace for the NanoLM live-doc corpus: store one fetched chunk,
 // query the vectorless BM25 index. Mirrors methods/concept.rs (DTO-at-boundary).
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{NlmHit, nlm_query_docs, nlm_upsert_doc};
@@ -39,7 +39,7 @@ pub async fn store(state: &AppState, p: StoreParams) -> Result<&'static str, Err
         &p.captured_at,
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     Ok("ok")
 }
 
@@ -61,5 +61,5 @@ pub async fn query(state: &AppState, p: QueryParams) -> Result<Vec<NlmHit>, Erro
     let limit = p.limit.unwrap_or(20);
     nlm_query_docs(&state.db, &p.terms, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }

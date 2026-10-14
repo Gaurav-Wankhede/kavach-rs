@@ -201,7 +201,7 @@ pub(crate) fn compress_hook_context(context: &str) -> String {
     compress(&deduped, None)
 }
 
-// SOURCE: kavach decision.context-rot-surrealdb-pipeline
+// SOURCE: kavach decision.context-rot-database-pipeline
 const DB_NOISE_KEYS: &[&str] = &[
     "id",
     "created_at",

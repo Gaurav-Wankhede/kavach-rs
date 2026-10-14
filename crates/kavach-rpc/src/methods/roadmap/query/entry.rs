@@ -1,5 +1,5 @@
 use super::super::types::{EntryStatusParams, EntryStatusResult};
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
@@ -13,7 +13,7 @@ pub async fn entry_status(
 ) -> Result<Option<EntryStatusResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -22,7 +22,7 @@ pub async fn entry_status(
     };
     let entry = kavach_db::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(entry.map(|e| EntryStatusResult {
         status: e.entry_status_str().to_owned(),
     }))

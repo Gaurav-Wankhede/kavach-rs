@@ -6,7 +6,7 @@
 
 /// Sentinel key returned when the kanban source-of-truth is unreachable. The
 /// caller BLOCKS the stop (fail-closed) rather than reading a phantom "empty".
-/// Fail-closed only when RPC **and** direct `SurrealDB` both miss (see
+/// Fail-closed only when RPC **and** direct `Database` both miss (see
 /// `daemon::direct`). A wrong "no work" answer is worse than an error.
 pub(crate) const SOURCE_DOWN_KEY: &str = "__kanban_source_unreachable__";
 

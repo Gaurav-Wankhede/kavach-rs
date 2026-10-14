@@ -1,12 +1,12 @@
-//! RUNTIME WITNESS for the three Turso-only capabilities the graph architecture
-//! depends on. Docs (docs.turso.tech) describe the hosted product; this proves
+//! RUNTIME WITNESS for the three Database-only capabilities the graph architecture
+//! depends on. Docs (docs.database.tech) describe the hosted product; this proves
 //! what the EMBEDDED `libsql` build we actually ship actually accepts.
 //!
 //! Sources:
-//!   https://docs.turso.tech/sql-reference/extensions
-//!   https://docs.turso.tech/sql-reference/pragmas
-//!   https://docs.turso.tech/sql-reference/statements/transactions
-//!   https://docs.turso.tech/sql-reference/functions/vector
+//!   https://docs.database.tech/sql-reference/extensions
+//!   https://docs.database.tech/sql-reference/pragmas
+//!   https://docs.database.tech/sql-reference/statements/transactions
+//!   https://docs.database.tech/sql-reference/functions/vector
 //!
 //! The assertions are deliberately TOLERANT of absence: a missing feature is a
 //! real answer that must be recorded, not a test failure. This test's job is to
@@ -14,12 +14,12 @@
 //! suite fail the day a feature disappears, which is the opposite of what a
 //! witness should do. Run with `--nocapture`.
 
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Run one statement and render the outcome as a capability string. Any error is
 /// an ANSWER (the feature is absent), not a failure — a witness must survive the
 /// feature disappearing.
-async fn try_exec(conn: &TursoStore, sql: &str) -> String {
+async fn try_exec(conn: &DbStore, sql: &str) -> String {
     match conn.exec(sql).await {
         Ok(_) => "YES".to_owned(),
         Err(e) => format!("NO ({})", e.to_string().chars().take(70).collect::<String>()),
@@ -35,8 +35,8 @@ async fn try_exec(conn: &TursoStore, sql: &str) -> String {
 /// for f64). So `row.get::<f64>(0)` on a `count(*)` column aborts the process,
 /// which is exactly the defect class fixed in `write/events.rs` and `runs.rs`.
 /// `get_value` is the only non-panicking read. SOURCE:
-/// <https://github.com/tursodatabase/libsql/blob/v0.9.30/src/rows.rs>
-async fn try_scalar(conn: &TursoStore, sql: &str) -> String {
+/// <https://github.com/databasedatabase/libsql/blob/v0.9.30/src/rows.rs>
+async fn try_scalar(conn: &DbStore, sql: &str) -> String {
     match conn.exec_params(sql, ()).await {
         Ok(mut rows) => match rows.next().await.unwrap_or(None) {
             None => "YES (no row)".to_owned(),
@@ -55,7 +55,7 @@ async fn try_scalar(conn: &TursoStore, sql: &str) -> String {
 
 #[tokio::test]
 async fn turso_embedded_capability_matrix() {
-    let conn = match TursoStore::open_memory().await {
+    let conn = match DbStore::open_memory().await {
         Ok(c) => c,
         Err(e) => {
             println!("PROBE: could not open a store — inconclusive: {e}");
@@ -72,7 +72,7 @@ async fn turso_embedded_capability_matrix() {
     let begin_concurrent = try_exec(&conn, "BEGIN CONCURRENT").await;
     let _ = conn.exec("COMMIT").await;
 
-    // 3. Native vector functions — Turso's built-in, vs the hand-rolled ranker.
+    // 3. Native vector functions — Database's built-in, vs the hand-rolled ranker.
     let vec_cos = try_scalar(
         &conn,
         "SELECT vector_distance_cos(vector32('[0.1,0.2,0.3]'), vector32('[0.1,0.2,0.3]'))",

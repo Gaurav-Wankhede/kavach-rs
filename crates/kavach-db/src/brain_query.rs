@@ -7,8 +7,8 @@
 //! concept-graph rank ARE the two signals.
 use crate::brain::{BrainHit, GapReport, hybrid_search};
 use crate::error::Result;
-use crate::turso::TursoStore;
-use crate::turso::search::fts5_query;
+use crate::db::DbStore;
+use crate::db::search::fts5_query;
 
 /// Typed memory categories carrying the g1a `title`+`content` FTS index.
 const CORPUS_TABLES: [&str; 5] = ["decision", "roadmap", "research", "pattern", "app_spec"];
@@ -19,7 +19,7 @@ const CORPUS_TABLES: [&str; 5] = ["decision", "roadmap", "research", "pattern", 
 /// (with BM25 ranking), followed by relevant matches across other projects
 /// to preserve hybrid cross-project knowledge recall without drowning out local context.
 async fn fts_rank_one(
-    db: &TursoStore,
+    db: &DbStore,
     table: &str,
     safe_q: &str,
     project: Option<&str>,
@@ -63,7 +63,7 @@ async fn fts_rank_one(
 /// fields, most-relevant first. Shares the matcher with `concept search`, so
 /// `think` no longer substring-matches raw JSON (`LIKE '%auth%'` hitting
 /// "author" or the `"desc"` key itself).
-async fn concept_rank_one(db: &TursoStore, q: &str) -> Result<Vec<String>> {
+async fn concept_rank_one(db: &DbStore, q: &str) -> Result<Vec<String>> {
     let entities = crate::graph::concepts::search_concepts_fts(db, q, 25).await?;
     Ok(entities.into_iter().filter_map(|e| e.id).collect())
 }
@@ -72,8 +72,8 @@ async fn concept_rank_one(db: &TursoStore, q: &str) -> Result<Vec<String>> {
 /// fused by RRF and truncated to `limit`. Empty query yields no hits.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when any corpus query fails.
-pub async fn search_corpus(db: &TursoStore, query: &str, limit: usize) -> Result<Vec<BrainHit>> {
+/// Propagates `Error::Database` when any corpus query fails.
+pub async fn search_corpus(db: &DbStore, query: &str, limit: usize) -> Result<Vec<BrainHit>> {
     search_corpus_project(db, None, query, limit).await
 }
 
@@ -83,9 +83,9 @@ pub async fn search_corpus(db: &TursoStore, query: &str, limit: usize) -> Result
 /// are prioritized at the top of category lists before cross-project matches.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when any corpus query fails.
+/// Propagates `Error::Database` when any corpus query fails.
 pub async fn search_corpus_project(
-    db: &TursoStore,
+    db: &DbStore,
     project: Option<&str>,
     query: &str,
     limit: usize,
@@ -117,17 +117,17 @@ pub async fn search_corpus_project(
 /// — `think` auto-files it as a research card. No LLM judgment in this slice.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the underlying retrieval.
-pub async fn gap_for(db: &TursoStore, query: &str, floor: usize) -> Result<GapReport> {
+/// Propagates `Error::Database` from the underlying retrieval.
+pub async fn gap_for(db: &DbStore, query: &str, floor: usize) -> Result<GapReport> {
     gap_for_project(db, None, query, floor).await
 }
 
 /// Deterministic gap signal scoped to an optional project.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the underlying retrieval.
+/// Propagates `Error::Database` from the underlying retrieval.
 pub async fn gap_for_project(
-    db: &TursoStore,
+    db: &DbStore,
     project: Option<&str>,
     query: &str,
     floor: usize,

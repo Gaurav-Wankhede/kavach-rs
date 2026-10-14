@@ -1,7 +1,7 @@
 //! kavach-web — server-rendered HTMX UI for the Kavach memory store.
 //!
 //! Runs an axum server on `127.0.0.1:<port>` (default 7777, unprivileged). It is
-//! a thin ws client of the standalone `surreal start` server; it never opens the
+//! a thin ws client of the standalone `database start` server; it never opens the
 //! `RocksDB` store directly. Replaces the removed Dioxus desktop GUI.
 
 pub mod error;

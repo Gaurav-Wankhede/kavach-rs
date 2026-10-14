@@ -1,5 +1,5 @@
 // split: intentional - single command handler for granular delete
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 use kavach_rpc::methods::db::delete_confirm_phrase;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_line_or_exit};
@@ -105,7 +105,7 @@ pub(super) fn run(
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {

@@ -1,6 +1,6 @@
-//! Graph storage — `GraphStore` extension trait over `TursoStore`.
+//! Graph storage — `GraphStore` extension trait over `DatabaseStore`.
 //!
-//! Phase 3 parity with graph/dynamic.rs: TursoStoreDB kept entities in the
+//! Phase 3 parity with graph/dynamic.rs: DatabaseStoreDB kept entities in the
 //! `entity` table and relationships as per-type edge tables created by RELATE.
 //! libSQL models this as two plain tables (`entities`, `entity_edges`) with
 //! recursive-CTE traversal. Edge identity is `(from_id, rel_type, to_id)`.
@@ -8,7 +8,7 @@
 use std::fmt::Write as _;
 use std::future::Future;
 
-use super::{TursoError, TursoResult, TursoStore};
+use super::{DbError, DbResult, DbStore};
 
 /// Entity types seen in the wild (fixture parity list — not a CHECK constraint;
 /// dynamic.rs never constrained it either).
@@ -63,12 +63,12 @@ pub const ALLOWED_RELS: &[&str] = &[
 /// Validate a relation name against the allowlist (typo-guard).
 ///
 /// # Errors
-/// Returns [`TursoError::Mapping`] for unknown relations.
-pub fn validate_rel(rel_type: &str) -> TursoResult<()> {
+/// Returns [`DatabaseError::Mapping`] for unknown relations.
+pub fn validate_rel(rel_type: &str) -> DbResult<()> {
     if ALLOWED_RELS.contains(&rel_type) {
         Ok(())
     } else {
-        Err(TursoError::Mapping(format!(
+        Err(DbError::Mapping(format!(
             "unknown relationship type: {rel_type}"
         )))
     }
@@ -168,119 +168,119 @@ pub trait GraphStore {
     /// for migration parity).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    fn upsert_entity(&self, e: &GraphEntity) -> impl Future<Output = TursoResult<()>> + Send;
+    /// Returns [`DatabaseError`] on SQL failure.
+    fn upsert_entity(&self, e: &GraphEntity) -> impl Future<Output = DbResult<()>> + Send;
 
     /// Fetch one entity by id.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn get_entity(&self, id: &str)
-    -> impl Future<Output = TursoResult<Option<GraphEntity>>> + Send;
+    -> impl Future<Output = DbResult<Option<GraphEntity>>> + Send;
 
     /// List entities, optionally filtered by type (parity of `list_entities`).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn list_entities(
         &self,
         entity_type: Option<&str>,
-    ) -> impl Future<Output = TursoResult<Vec<GraphEntity>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<GraphEntity>>> + Send;
 
     /// Find one entity by (type, exact name).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn find_entity(
         &self,
         entity_type: &str,
         name: &str,
-    ) -> impl Future<Output = TursoResult<Option<GraphEntity>>> + Send;
+    ) -> impl Future<Output = DbResult<Option<GraphEntity>>> + Send;
 
     /// Add a relationship between two entities by allowlisted `rel_type`.
     /// Parity of `relate_dynamic`: unknown rels error; weight defaults to 1.0.
     ///
     /// # Errors
-    /// Returns [`TursoError::Mapping`] on unknown rel; SQL errors otherwise.
+    /// Returns [`DatabaseError::Mapping`] on unknown rel; SQL errors otherwise.
     fn relate_dynamic(
         &self,
         from: &str,
         to: &str,
         rel_type: &str,
         weight: f64,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    ) -> impl Future<Output = DbResult<()>> + Send;
 
     /// Delete one edge; returns rows removed.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn delete_edge(
         &self,
         from: &str,
         rel_type: &str,
         to: &str,
-    ) -> impl Future<Output = TursoResult<u64>> + Send;
+    ) -> impl Future<Output = DbResult<u64>> + Send;
 
     /// Outgoing neighbors across ALL relation types.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn related_forward(
         &self,
         from_id: &str,
-    ) -> impl Future<Output = TursoResult<Vec<GraphEdge>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<GraphEdge>>> + Send;
 
     /// Incoming neighbors (reverse hop).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn related_backward(
         &self,
         to_id: &str,
-    ) -> impl Future<Output = TursoResult<Vec<GraphEdge>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<GraphEdge>>> + Send;
 
     /// Depth-capped transitive closure via recursive CTE (outgoing).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn traverse_closure(
         &self,
         start: &str,
         max_depth: u32,
-    ) -> impl std::future::Future<Output = TursoResult<Vec<String>>> + Send;
+    ) -> impl std::future::Future<Output = DbResult<Vec<String>>> + Send;
 
     /// Outgoing relations with resolved target entities — parity of
     /// `graph::dynamic::get_related` (drives the named graph-query renderer).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn get_related(
         &self,
         from_id: &str,
         limit: usize,
-    ) -> impl std::future::Future<Output = TursoResult<Vec<RelatedRow>>> + Send;
+    ) -> impl std::future::Future<Output = DbResult<Vec<RelatedRow>>> + Send;
 
     /// Edges whose BOTH endpoints fall inside `node_ids` — parity of
     /// `graph::dynamic::list_edges_among` (drives the KG renderer).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn list_edges_among(
         &self,
         node_ids: &[String],
-    ) -> impl std::future::Future<Output = TursoResult<Vec<EdgeRow>>> + Send;
+    ) -> impl std::future::Future<Output = DbResult<Vec<EdgeRow>>> + Send;
 
     /// Every edge in the graph (migration validation + doctor).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn all_edges_raw(
         &self,
-    ) -> impl std::future::Future<Output = TursoResult<Vec<(String, String, String)>>> + Send;
+    ) -> impl std::future::Future<Output = DbResult<Vec<(String, String, String)>>> + Send;
 }
 
-impl GraphStore for TursoStore {
-    async fn upsert_entity(&self, e: &GraphEntity) -> TursoResult<()> {
+impl GraphStore for DbStore {
+    async fn upsert_entity(&self, e: &GraphEntity) -> DbResult<()> {
         self.conn
             .execute(
                 "INSERT INTO entities (id, entity_type, name, properties, content_hash, project) \
@@ -299,11 +299,11 @@ impl GraphStore for TursoStore {
                 ],
             )
             .await
-            .map_err(TursoError::from)?;
+            .map_err(DbError::from)?;
         Ok(())
     }
 
-    async fn get_entity(&self, id: &str) -> TursoResult<Option<GraphEntity>> {
+    async fn get_entity(&self, id: &str) -> DbResult<Option<GraphEntity>> {
         let mut rows = self
             .exec_params(
                 "SELECT id, entity_type, name, properties, content_hash, project \
@@ -311,13 +311,13 @@ impl GraphStore for TursoStore {
                 libsql::params![id],
             )
             .await?;
-        match rows.next().await.map_err(TursoError::from)? {
+        match rows.next().await.map_err(DbError::from)? {
             Some(row) => Ok(Some(entity_from_row(&row)?)),
             None => Ok(None),
         }
     }
 
-    async fn list_entities(&self, entity_type: Option<&str>) -> TursoResult<Vec<GraphEntity>> {
+    async fn list_entities(&self, entity_type: Option<&str>) -> DbResult<Vec<GraphEntity>> {
         let sql = match entity_type {
             Some(_) => {
                 "SELECT id, entity_type, name, properties, content_hash, project \
@@ -332,13 +332,13 @@ impl GraphStore for TursoStore {
             entity_type.map_or_else(Vec::new, |et| vec![libsql::Value::Text(et.to_owned())]);
         let mut rows = self.exec_params(sql, params).await?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
             out.push(entity_from_row(&row)?);
         }
         Ok(out)
     }
 
-    async fn find_entity(&self, entity_type: &str, name: &str) -> TursoResult<Option<GraphEntity>> {
+    async fn find_entity(&self, entity_type: &str, name: &str) -> DbResult<Option<GraphEntity>> {
         let mut rows = self
             .exec_params(
                 "SELECT id, entity_type, name, properties, content_hash, project \
@@ -346,7 +346,7 @@ impl GraphStore for TursoStore {
                 libsql::params![entity_type, name],
             )
             .await?;
-        match rows.next().await.map_err(TursoError::from)? {
+        match rows.next().await.map_err(DbError::from)? {
             Some(row) => Ok(Some(entity_from_row(&row)?)),
             None => Ok(None),
         }
@@ -358,7 +358,7 @@ impl GraphStore for TursoStore {
         to: &str,
         rel_type: &str,
         weight: f64,
-    ) -> TursoResult<()> {
+    ) -> DbResult<()> {
         validate_rel(rel_type)?;
         self.conn
             .execute(
@@ -368,21 +368,21 @@ impl GraphStore for TursoStore {
                 libsql::params![from, rel_type, to, weight, super::now_rfc3339()],
             )
             .await
-            .map_err(TursoError::from)?;
+            .map_err(DbError::from)?;
         Ok(())
     }
 
-    async fn delete_edge(&self, from: &str, rel_type: &str, to: &str) -> TursoResult<u64> {
+    async fn delete_edge(&self, from: &str, rel_type: &str, to: &str) -> DbResult<u64> {
         self.conn
             .execute(
                 "DELETE FROM entity_edges WHERE from_id=?1 AND rel_type=?2 AND to_id=?3",
                 libsql::params![from, rel_type, to],
             )
             .await
-            .map_err(TursoError::from)
+            .map_err(DbError::from)
     }
 
-    async fn related_forward(&self, from_id: &str) -> TursoResult<Vec<GraphEdge>> {
+    async fn related_forward(&self, from_id: &str) -> DbResult<Vec<GraphEdge>> {
         edges_query(
             self,
             "SELECT from_id, rel_type, to_id, weight FROM entity_edges WHERE from_id = ?1",
@@ -391,7 +391,7 @@ impl GraphStore for TursoStore {
         .await
     }
 
-    async fn related_backward(&self, to_id: &str) -> TursoResult<Vec<GraphEdge>> {
+    async fn related_backward(&self, to_id: &str) -> DbResult<Vec<GraphEdge>> {
         edges_query(
             self,
             "SELECT from_id, rel_type, to_id, weight FROM entity_edges WHERE to_id = ?1",
@@ -400,7 +400,7 @@ impl GraphStore for TursoStore {
         .await
     }
 
-    async fn traverse_closure(&self, start: &str, max_depth: u32) -> TursoResult<Vec<String>> {
+    async fn traverse_closure(&self, start: &str, max_depth: u32) -> DbResult<Vec<String>> {
         let sql = format!(
             "WITH RECURSIVE reach(node, depth) AS ( \
                SELECT ?1, 0 \
@@ -412,8 +412,8 @@ impl GraphStore for TursoStore {
         );
         let mut rows = self.exec_params(&sql, libsql::params![start]).await?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-            out.push(row.get::<String>(0).map_err(TursoError::from)?);
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
+            out.push(row.get::<String>(0).map_err(DbError::from)?);
         }
         Ok(out)
     }
@@ -422,14 +422,14 @@ impl GraphStore for TursoStore {
     /// `graph::dynamic::get_related` (drives the named graph-query renderer).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    async fn get_related(&self, from_id: &str, limit: usize) -> TursoResult<Vec<RelatedRow>> {
+    /// Returns [`DatabaseError`] on SQL failure.
+    async fn get_related(&self, from_id: &str, limit: usize) -> DbResult<Vec<RelatedRow>> {
         #[expect(
             clippy::cast_possible_wrap,
             reason = "limit is a bounded search cap; far below i64::MAX"
         )]
         let limit64 = limit as i64;
-        // Single join over ALL rel types (TursoStoreDB needed one query per
+        // Single join over ALL rel types (DatabaseStoreDB needed one query per
         // ALLOWED_RELS entry; libSQL stores rel_type as a column).
         let sql = "SELECT e.rel_type, e.weight, \
                    t.id, t.entity_type, t.name, t.properties, t.content_hash, t.project \
@@ -439,10 +439,10 @@ impl GraphStore for TursoStore {
             .exec_params(sql, libsql::params![from_id, limit64])
             .await?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
             out.push(RelatedRow {
-                rel_type: row.get::<String>(0).map_err(TursoError::from)?,
-                weight: row.get::<f64>(1).map_err(TursoError::from)?,
+                rel_type: row.get::<String>(0).map_err(DbError::from)?,
+                weight: row.get::<f64>(1).map_err(DbError::from)?,
                 target: entity_from_row_offset(&row, 2)?,
             });
         }
@@ -453,8 +453,8 @@ impl GraphStore for TursoStore {
     /// `graph::dynamic::list_edges_among` (drives the KG renderer).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    async fn list_edges_among(&self, node_ids: &[String]) -> TursoResult<Vec<EdgeRow>> {
+    /// Returns [`DatabaseError`] on SQL failure.
+    async fn list_edges_among(&self, node_ids: &[String]) -> DbResult<Vec<EdgeRow>> {
         if node_ids.len() < 2 {
             return Ok(Vec::new());
         }
@@ -480,17 +480,17 @@ impl GraphStore for TursoStore {
         params.extend(node_ids.iter().map(|id| libsql::Value::Text(id.clone())));
         let mut rows = self.exec_params(&sql, params).await?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
             out.push(EdgeRow {
-                from: row.get::<String>(0).map_err(TursoError::from)?,
-                rel_type: row.get::<String>(1).map_err(TursoError::from)?,
-                to: row.get::<String>(2).map_err(TursoError::from)?,
+                from: row.get::<String>(0).map_err(DbError::from)?,
+                rel_type: row.get::<String>(1).map_err(DbError::from)?,
+                to: row.get::<String>(2).map_err(DbError::from)?,
             });
         }
         Ok(out)
     }
 
-    async fn all_edges_raw(&self) -> TursoResult<Vec<(String, String, String)>> {
+    async fn all_edges_raw(&self) -> DbResult<Vec<(String, String, String)>> {
         let mut rows = self
             .exec_params(
                 "SELECT from_id, rel_type, to_id FROM entity_edges ORDER BY from_id",
@@ -498,38 +498,38 @@ impl GraphStore for TursoStore {
             )
             .await?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
             out.push((
-                row.get::<String>(0).map_err(TursoError::from)?,
-                row.get::<String>(1).map_err(TursoError::from)?,
-                row.get::<String>(2).map_err(TursoError::from)?,
+                row.get::<String>(0).map_err(DbError::from)?,
+                row.get::<String>(1).map_err(DbError::from)?,
+                row.get::<String>(2).map_err(DbError::from)?,
             ));
         }
         Ok(out)
     }
 }
 
-async fn edges_query(store: &TursoStore, sql: &str, id: &str) -> TursoResult<Vec<GraphEdge>> {
+async fn edges_query(store: &DbStore, sql: &str, id: &str) -> DbResult<Vec<GraphEdge>> {
     let mut rows = store.exec_params(sql, libsql::params![id]).await?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
         out.push(GraphEdge {
-            from: row.get::<String>(0).map_err(TursoError::from)?,
-            rel_type: row.get::<String>(1).map_err(TursoError::from)?,
-            to: row.get::<String>(2).map_err(TursoError::from)?,
-            weight: row.get::<f64>(3).map_err(TursoError::from)?,
+            from: row.get::<String>(0).map_err(DbError::from)?,
+            rel_type: row.get::<String>(1).map_err(DbError::from)?,
+            to: row.get::<String>(2).map_err(DbError::from)?,
+            weight: row.get::<f64>(3).map_err(DbError::from)?,
         });
     }
     Ok(out)
 }
 
-fn entity_from_row(row: &libsql::Row) -> TursoResult<GraphEntity> {
+fn entity_from_row(row: &libsql::Row) -> DbResult<GraphEntity> {
     entity_from_row_offset(row, 0)
 }
 
 /// Entity mapping starting at column `base` (for joined rows where entity
 /// columns don't start at 0).
-fn entity_from_row_offset(row: &libsql::Row, base: i32) -> TursoResult<GraphEntity> {
+fn entity_from_row_offset(row: &libsql::Row, base: i32) -> DbResult<GraphEntity> {
     // Column indices are `base` plus compile-time constants 0..=5; base is a
     // literal (0 or 2) at every call site, so the adds cannot overflow.
     #[expect(
@@ -539,7 +539,7 @@ fn entity_from_row_offset(row: &libsql::Row, base: i32) -> TursoResult<GraphEnti
     let cols = (0..6)
         .map(|k| {
             row.get::<Option<String>>(base + k)
-                .map_err(TursoError::from)
+                .map_err(DbError::from)
         })
         .collect::<Result<Vec<_>, _>>()?;
     let mut it = cols.into_iter();

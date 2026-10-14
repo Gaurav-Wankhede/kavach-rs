@@ -6,10 +6,10 @@ use thiserror::Error;
     reason = "matched exhaustively in kavach-rpc surreal_to_rpc; non_exhaustive forces a catch-all that drops new-variant context"
 )]
 pub enum Error {
-    #[error("Turso error: {0}")]
-    Turso(#[from] crate::turso::TursoError),
+    #[error("Database error: {0}")]
+    Db(#[from] crate::db::DbError),
 
-    #[error("libsql error: {0}")]
+    #[error("database error: {0}")]
     Libsql(#[from] libsql::Error),
 
     #[error("IO error: {0}")]

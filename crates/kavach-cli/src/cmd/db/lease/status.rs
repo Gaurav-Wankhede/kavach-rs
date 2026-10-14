@@ -1,6 +1,6 @@
 // SPEC: docs/architecture/session-occupancy-lease.md
 // `kavach db lease status --table T --key K` — read lease state.
-// SOURCE: https://surrealdb.com/3.0
+// SOURCE: https://database.com/3.0
 // SOURCE: https://docs.rs/jsonrpsee/0.24
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_rpc::client::call;

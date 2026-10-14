@@ -108,7 +108,7 @@ async fn run_async(project_slug: &str, query: &str, limit: usize, session_weight
 
 /// File the unanswered query as a `research` card so the gap is tracked work.
 /// A missing project is non-fatal: we still report the hits, just unfiled.
-async fn file_gap(db: &kavach_db::turso::TursoStore, project_slug: &str, query: &str) -> bool {
+async fn file_gap(db: &kavach_db::db::DbStore, project_slug: &str, query: &str) -> bool {
     let Ok(Some(project)) = kavach_db::project_get_by_slug(db, project_slug).await else {
         return false;
     };

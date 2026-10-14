@@ -46,7 +46,7 @@ pub(crate) fn run(input: &HookInput) -> Result<(), EngineError> {
     // runs; only the expensive registry refresh is bypassed.
     if !cfg!(test) && std::env::var("KAVACH_SKIP_HEAVY_BOOT").as_deref() != Ok("1") {
         boot::build_skill_registry();
-        // Bring up the GUI (:7777) + SurrealDB at session start, autonomously —
+        // Bring up the GUI (:7777) + Database at session start, autonomously —
         // idempotent + detached, so the dashboard is live without a manual command.
         gui::ensure_gui_up();
     }

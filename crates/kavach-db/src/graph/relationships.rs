@@ -1,4 +1,4 @@
-// Project typed cross-entry relationships into the Turso graph.
+// Project typed cross-entry relationships into the Database graph.
 //
 // [RCA]
 // symptom:    The entity graph has 4235 nodes but ~0 semantic edges between them.
@@ -23,9 +23,9 @@
 //
 // TIME: O(r) | SPACE: O(r)
 // YEAR: 2026 | SEARCHED: 2026-05
-// SOURCE: https://surrealdb.com/docs/learn/data-models/graph/overview
+// SOURCE: https://database.com/docs/learn/data-models/graph/overview
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Allowed inter-entry relationship types. Subset of `graph::dynamic::ALLOWED_RELS`
 /// that makes semantic sense between memory rows (not skill/algorithm/project).
@@ -44,7 +44,7 @@ const ALLOWED_INTER_ENTRY_RELS: &[&str] = &[
 ///
 /// Propagates `Result::Err` when the query transaction fails.
 pub async fn upsert_relationships(
-    db: &TursoStore,
+    db: &DbStore,
     source_qname: &str,
     rels: &[(String, String)],
 ) -> Result<usize> {
@@ -92,7 +92,7 @@ pub async fn upsert_relationships(
                 source_qname.to_owned(),
                 rel.to_owned(),
                 target.to_owned(),
-                crate::turso::now_rfc3339()
+                crate::db::now_rfc3339()
             ],
         )
         .await?;

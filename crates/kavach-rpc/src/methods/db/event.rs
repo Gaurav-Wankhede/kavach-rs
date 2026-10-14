@@ -69,7 +69,7 @@ pub async fn event(ctx: &AppState, params: EventParams) -> Result<EventResult, E
 #[expect(clippy::exhaustive_structs, reason = "RPC DTO at boundary")]
 pub struct BanditRowParams {
     /// The serialized `kavach_patterns::bandit_log::BanditRow` (RLVR tuple) JSON.
-    /// Stored opaquely so kavach-surreal stays decoupled from the patterns crate.
+    /// Stored opaquely so kavach-database stays decoupled from the patterns crate.
     pub payload: String,
 }
 

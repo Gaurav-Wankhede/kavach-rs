@@ -16,7 +16,7 @@ pub(super) async fn append_entity_graph(
     if qualified_name.is_empty() {
         return Ok(());
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     // `Connection::query` defers statement errors into the returned Rows (they
     // surface only on `next()`); these are INSERTs, so use `execute`, which
     // returns the error immediately (§no_silent_failure).

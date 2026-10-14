@@ -47,7 +47,7 @@ pub mod schema;
 pub mod schema_engine;
 pub mod schema_v2;
 pub mod session_store;
-pub mod turso;
+pub mod db;
 pub mod wipe;
 pub mod write;
 

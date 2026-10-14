@@ -1,7 +1,7 @@
-//! Turso-backed citation store for official-docs context.
+//! Database-backed citation store for official-docs context.
 use crate::error::Result;
 pub use crate::graph::{citations_cited_by, traverse_with_citations as traverse};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 /// Non-destructively merge an existing learning-tier node (mistake / anti-pattern
 /// / decision / roadmap) into the citation DAG by relating it `->cite->` the
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 /// # Errors
 /// Propagates the `relate_citation` error (rejects a non-`cite`/`parent`/
 /// `depends_on` edge, or a DB failure).
-pub async fn merge_node_into_citation(db: &TursoStore, node: &str, citation: &str) -> Result<()> {
+pub async fn merge_node_into_citation(db: &DbStore, node: &str, citation: &str) -> Result<()> {
     let mut response = db
         .exec_params(
             "SELECT from_id FROM entity_edges WHERE from_id = $node AND rel_type = 'cite' AND to_id = $cit",
@@ -42,8 +42,8 @@ pub async fn merge_node_into_citation(db: &TursoStore, node: &str, citation: &st
 /// model sees the official-docs context the decision rested on.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the traversal.
-pub async fn citations_for_nodes(db: &TursoStore, nodes: &[String]) -> Result<Vec<String>> {
+/// Propagates `Error::Database` from the traversal.
+pub async fn citations_for_nodes(db: &DbStore, nodes: &[String]) -> Result<Vec<String>> {
     if nodes.is_empty() {
         return Ok(Vec::new());
     }
@@ -71,8 +71,8 @@ pub async fn citations_for_nodes(db: &TursoStore, nodes: &[String]) -> Result<Ve
 /// helping climbs in recall ranking — the self-improving loop closes here.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPDATE.
-pub async fn reward_citation_edges(db: &TursoStore, citation: &str, delta: f64) -> Result<usize> {
+/// Propagates `Error::Database` from the UPDATE.
+pub async fn reward_citation_edges(db: &DbStore, citation: &str, delta: f64) -> Result<usize> {
     let mut response = db
         .exec_params(
             "UPDATE entity_edges SET weight = weight + $delta WHERE rel_type = 'cite' AND to_id = $cit RETURNING from_id",
@@ -287,16 +287,16 @@ pub(crate) fn merge_metadata(
 /// different inserts — a silently WRONG citation, worse than a missing one.
 ///
 /// # Errors
-/// Returns `Error::Turso` on query failure, `Error::Migration` when the CREATE
+/// Returns `Error::Database` on query failure, `Error::Migration` when the CREATE
 /// yields no id row, `Error::Validation` when a metadata URL is empty (the
 /// evidence-gate invariant: a citation must cite a real source).
-pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<String> {
+pub async fn upsert_citation(db: &DbStore, c: &UpsertCitation<'_>) -> Result<String> {
     if c.metadata.iter().any(|m| m.url.trim().is_empty()) {
         return Err(crate::error::Error::Validation(
             "citation metadata URL must not be empty".to_owned(),
         ));
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let find = "SELECT entry_key, metadata FROM citations \
                 WHERE project = $project AND entry_key = $key LIMIT 1";
     let mut response = db
@@ -375,9 +375,9 @@ pub async fn upsert_citation(db: &TursoStore, c: &UpsertCitation<'_>) -> Result<
 /// Fetch one citation by (`project`, `entry_key`), bumping `access_count`.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT/UPDATE.
+/// Propagates `Error::Database` from the SELECT/UPDATE.
 pub async fn get_citation(
-    db: &TursoStore,
+    db: &DbStore,
     project: &str,
     entry_key: &str,
 ) -> Result<Option<Citation>> {
@@ -397,8 +397,8 @@ pub async fn get_citation(
 /// List every citation row for `project`, newest-updated first.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list_citations_by_project(db: &TursoStore, project: &str) -> Result<Vec<Citation>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list_citations_by_project(db: &DbStore, project: &str) -> Result<Vec<Citation>> {
     let q = format!(
         "SELECT {COLS} FROM citations \
          WHERE project = $project ORDER BY updated_at DESC"

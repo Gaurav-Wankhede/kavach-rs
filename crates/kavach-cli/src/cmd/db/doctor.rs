@@ -14,7 +14,7 @@
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_db::repair_dep_lines::{repair_dep_lines, strip_prose_deps};
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 fn fetch_roadmap(project: &str) -> Result<Vec<kavach_db::MemoryEntry>, String> {
     let rt = tokio::runtime::Builder::new_current_thread()

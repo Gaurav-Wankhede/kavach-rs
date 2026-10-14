@@ -1,7 +1,7 @@
 // Read side of the autonomous mistake loop: recurrence-ranked anti_pattern
 // listing + practice-delta renderer. See decision/mistake-loop-close-read-graph.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use std::fmt::Write as _;
 
 /// One recurrence-ranked anti-pattern: the clustered behavioral lesson plus how
@@ -23,8 +23,8 @@ pub struct AntiPatternRanked {
 /// stable tie-break.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
-pub async fn top_anti_patterns(db: &TursoStore, limit: usize) -> Result<Vec<AntiPatternRanked>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn top_anti_patterns(db: &DbStore, limit: usize) -> Result<Vec<AntiPatternRanked>> {
     // gate + correct_action are non-optional: upsert_anti_pattern always sets
     // both. Reading as String (not Option) fails closed on a malformed node
     // rather than silently defaulting to "" — the caller then falls back to the

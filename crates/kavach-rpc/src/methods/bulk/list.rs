@@ -1,6 +1,6 @@
 // bulk.sweep_list_active — list active manifests for a project. Used by
 // `kavach bulk status` + stop-gate (refuses clean stop while sweep in-flight).
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::methods::bulk::get::GetResult;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
@@ -23,14 +23,14 @@ pub struct ListActiveResult {
 ///
 /// # Errors
 ///
-/// Returns an error if the `SurrealDB` query fails or the project does not exist.
+/// Returns an error if the `Database` query fails or the project does not exist.
 pub async fn list_active_rpc(
     state: &AppState,
     p: ListActiveParams,
 ) -> Result<ListActiveResult, ErrorObjectOwned> {
     let rows = list_active(&state.db, &p.project)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(ListActiveResult {
         manifests: rows.into_iter().map(Into::into).collect(),
     })

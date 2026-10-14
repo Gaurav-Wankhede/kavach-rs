@@ -2,7 +2,7 @@
 // ALLOWED_ONTOLOGY_RELS, then bound as a parameter (never interpolated).
 use crate::error::{Error, Result};
 use crate::graph::dynamic::{ALLOWED_ONTOLOGY_RELS, is_bridge_rel};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 fn validate_ontology(rel: &str) -> Result<()> {
     if ALLOWED_ONTOLOGY_RELS.contains(&rel) {
@@ -27,7 +27,7 @@ fn validate_ontology(rel: &str) -> Result<()> {
 /// # Errors
 /// Propagates `Error::Migration` if the edge is not an ontology edge or if concept names are empty.
 pub async fn relate_concepts(
-    db: &TursoStore,
+    db: &DbStore,
     from_name: &str,
     edge: &str,
     to_name: &str,
@@ -59,7 +59,7 @@ pub async fn relate_concepts(
         "INSERT INTO entity_edges (from_id, rel_type, to_id, weight, created_at) \
          VALUES (?1, ?2, ?3, 1.0, ?4) \
          ON CONFLICT(from_id, rel_type, to_id) DO UPDATE SET weight = 1.0",
-        libsql::params![src_id, edge.to_owned(), tgt_id, crate::turso::now_rfc3339()],
+        libsql::params![src_id, edge.to_owned(), tgt_id, crate::db::now_rfc3339()],
     )
     .await?;
     txn.commit().await?;

@@ -1,9 +1,9 @@
 //! `kavach db concept {add,link,search}` — global L0 concept graph (cross-project).
 //! L0 concepts are canon; L1 entities bridge to them via `bridge-create`.
-//! SOURCE: <https://surrealdb.com/docs/surrealql/statements/define/table>
+//! SOURCE: <https://database.com/docs/databaseql/statements/define/table>
 use super::rpc_client;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_db::turso::graph::GraphStore;
+use kavach_db::db::graph::GraphStore;
 
 /// Insert or update a global L0 concept.
 pub(super) fn add(
@@ -49,7 +49,7 @@ pub(super) fn add(
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {
@@ -64,7 +64,7 @@ pub(super) fn add(
         let properties = format!(
             "{{\"desc\": \"{desc}\", \"tags\": {tags_vec:?}, \"sources\": {sources_vec:?}}}"
         );
-        let entity = kavach_db::turso::graph::GraphEntity::new(
+        let entity = kavach_db::db::graph::GraphEntity::new(
             name,
             "concept",
             display,
@@ -118,7 +118,7 @@ pub(super) fn link(from: &str, edge: &str, to: &str) -> i32 {
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {
@@ -224,7 +224,7 @@ pub(super) fn search(query: &str, limit: usize) -> i32 {
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {

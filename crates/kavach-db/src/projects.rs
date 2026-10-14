@@ -1,7 +1,7 @@
 // split: intentional - project lookup helpers (find_by_path, get_by_slug, list_all)
 // sql-safe: queries use static literals + .bind() for params, no user input concatenation
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
@@ -24,8 +24,8 @@ const ANCESTRY_MAX_DEPTH: usize = 7;
 /// up to `ANCESTRY_MAX_DEPTH` (7) levels. Iterative — no recursive CTE needed.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from any per-step SELECT.
-pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project>> {
+/// Propagates `Error::Database` from any per-step SELECT.
+pub async fn get_ancestry(db: &DbStore, start_id: &str) -> Result<Vec<Project>> {
     let mut chain: Vec<Project> = Vec::new();
     let mut cursor: Option<String> = Some(start_id.to_owned());
     for _ in 0..ANCESTRY_MAX_DEPTH {
@@ -34,8 +34,8 @@ pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project
         let mut rows = db
             .exec_params(q, [id.clone()])
             .await
-            .map_err(Error::Turso)?;
-        let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+            .map_err(Error::Db)?;
+        let Some(row) = rows.next().await.map_err(|e| Error::Db(e.into()))? else {
             break;
         };
         let proj = project_from_row(&row);
@@ -48,14 +48,14 @@ pub async fn get_ancestry(db: &TursoStore, start_id: &str) -> Result<Vec<Project
 /// Fetch a project row by its unique slug.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn get_by_slug(db: &DbStore, slug: &str) -> Result<Option<Project>> {
     let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects WHERE slug = ? LIMIT 1";
     let mut rows = db
         .exec_params(q, [slug.to_owned()])
         .await
-        .map_err(Error::Turso)?;
-    let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+        .map_err(Error::Db)?;
+    let Some(row) = rows.next().await.map_err(|e| Error::Db(e.into()))? else {
         return Ok(None);
     };
     Ok(Some(project_from_row(&row)))
@@ -65,14 +65,14 @@ pub async fn get_by_slug(db: &TursoStore, slug: &str) -> Result<Option<Project>>
 /// Both path columns are checked: pre-K-6 rows may carry only one of them.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn find_by_path(db: &DbStore, path: &str) -> Result<Option<Project>> {
     let q = "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects WHERE workdir = ? OR path = ? OR aliases LIKE '%' || ? || '%' LIMIT 1";
     let mut rows = db
         .exec_params(q, [path.to_owned(), path.to_owned(), path.to_owned()])
         .await
-        .map_err(Error::Turso)?;
-    let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+        .map_err(Error::Db)?;
+    let Some(row) = rows.next().await.map_err(|e| Error::Db(e.into()))? else {
         return Ok(None);
     };
     Ok(Some(project_from_row(&row)))
@@ -81,13 +81,13 @@ pub async fn find_by_path(db: &TursoStore, path: &str) -> Result<Option<Project>
 /// List all projects ordered by slug.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list_all(db: &TursoStore) -> Result<Vec<Project>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list_all(db: &DbStore) -> Result<Vec<Project>> {
     let q =
         "SELECT slug, display, workdir, path, stack, aliases, parent FROM projects ORDER BY slug";
-    let mut rows = db.exec_params(q, ()).await.map_err(Error::Turso)?;
+    let mut rows = db.exec_params(q, ()).await.map_err(Error::Db)?;
     let mut projects = Vec::new();
-    while let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? {
+    while let Some(row) = rows.next().await.map_err(|e| Error::Db(e.into()))? {
         projects.push(project_from_row(&row));
     }
     Ok(projects)
@@ -101,9 +101,9 @@ pub async fn list_all(db: &TursoStore) -> Result<Vec<Project>> {
 /// # Errors
 /// - `Error::RecordNotFound` if either slug is unknown.
 /// - `Error::InvalidHierarchy` if the link would create a self-loop or cycle.
-/// - `Error::Turso` on the UPDATE.
+/// - `Error::Database` on the UPDATE.
 pub async fn set_parent(
-    db: &TursoStore,
+    db: &DbStore,
     child_slug: &str,
     parent_slug: Option<&str>,
 ) -> Result<()> {
@@ -139,7 +139,7 @@ pub async fn set_parent(
     let q = "UPDATE projects SET parent = ?, updated_at = datetime('now') WHERE slug = ?";
     db.exec_params(q, [parent_id.clone().unwrap_or_default(), child_id])
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     Ok(())
 }
 
@@ -204,8 +204,8 @@ fn build_node(
 /// Orphans (parent set to a missing id) are surfaced as roots so nothing is hidden.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from `list_all`.
-pub async fn build_forest(db: &TursoStore) -> Result<Vec<ProjectNode>> {
+/// Propagates `Error::Database` from `list_all`.
+pub async fn build_forest(db: &DbStore) -> Result<Vec<ProjectNode>> {
     let projects = list_all(db).await?;
     Ok(assemble_forest(&projects))
 }
@@ -266,9 +266,9 @@ pub fn relative_to_parent(parent_workdir: &str, child_workdir: &str) -> Option<S
 /// New rows are parentless (NULL); the old self-parent default is gone.
 ///
 /// # Errors
-/// `Error::Turso` on UPSERT failure.
+/// `Error::Database` on UPSERT failure.
 pub async fn register(
-    db: &TursoStore,
+    db: &DbStore,
     slug: &str,
     display: &str,
     workdir: &str,
@@ -287,7 +287,7 @@ pub async fn register(
         ],
     )
     .await
-    .map_err(Error::Turso)?;
+    .map_err(Error::Db)?;
     Ok(slug.to_owned())
 }
 
@@ -354,7 +354,7 @@ mod tests {
     async fn register_persists_path_and_workdir_together() {
         // K-6: both register paths must leave `path` AND `workdir` populated
         // so slug lookups and path lookups agree.
-        let db = crate::turso::TursoStore::open_memory()
+        let db = crate::db::DbStore::open_memory()
             .await
             .expect("mem db");
         super::register(&db, "proj", "proj", "/tmp/proj", None)
@@ -388,7 +388,7 @@ mod tests {
     async fn register_leaves_no_self_parent() {
         // K-6: the old default wrote `parent = slug`, a self-loop that makes
         // forest assembly recurse forever. New rows are parentless roots.
-        let db = crate::turso::TursoStore::open_memory()
+        let db = crate::db::DbStore::open_memory()
             .await
             .expect("mem db");
         super::register(&db, "solo", "solo", "/tmp/solo", None)
@@ -407,8 +407,8 @@ mod tests {
     async fn entry_store_register_is_path_compatible() {
         // The direct CLI fallback (`EntryStore::register_project`) must produce
         // rows the slug/path readers resolve identically.
-        use crate::turso::entries::EntryStore;
-        let db = crate::turso::TursoStore::open_memory()
+        use crate::db::entries::EntryStore;
+        let db = crate::db::DbStore::open_memory()
             .await
             .expect("mem db");
         db.register_project("direct", "/tmp/direct", None)

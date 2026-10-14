@@ -9,13 +9,13 @@
 
 use super::reclaim_orphaned_in_progress;
 use crate::open_memory;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use chrono::{Duration, Utc};
 
 /// Seed one roadmap card. `until_offset_secs` is relative to now; pass `None`
 /// for `occupied_by` to leave the lease columns unset (the CAS-claim shape).
 async fn seed_card(
-    db: &TursoStore,
+    db: &DbStore,
     id: &str,
     occupied_by: Option<&str>,
     until_offset_secs: i64,
@@ -32,7 +32,7 @@ async fn seed_card(
             id.to_owned(),
             occupied_by.map(ToOwned::to_owned),
             until.map(|u| u.to_rfc3339()),
-            crate::turso::now_rfc3339(),
+            crate::db::now_rfc3339(),
             status.to_owned()
         ],
     )
@@ -40,7 +40,7 @@ async fn seed_card(
     .expect("seed card");
 }
 
-async fn status_of(db: &TursoStore, id: &str) -> String {
+async fn status_of(db: &DbStore, id: &str) -> String {
     let mut rows = db
         .exec_params(
             "SELECT entry_status FROM memories \

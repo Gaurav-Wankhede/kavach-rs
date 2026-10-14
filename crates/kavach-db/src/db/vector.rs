@@ -7,10 +7,10 @@
 use std::future::Future;
 use std::sync::OnceLock;
 
-use super::{TursoError, TursoResult, TursoStore};
+use super::{DbError, DbResult, DbStore};
 use crate::brain::BrainHit;
 use crate::rrf::{RRF_K, rrf_fuse};
-use crate::turso::search::{CORPUS_CATEGORIES, SearchStore};
+use crate::db::search::{CORPUS_CATEGORIES, SearchStore};
 
 /// Canonical embedding dimension.
 ///
@@ -165,12 +165,12 @@ pub fn fallback_embed(text: &str) -> Vec<f32> {
 /// back to [`fallback_embed`]). The `OnceLock` avoids re-initialization cost.
 ///
 /// # Errors
-/// Returns [`TursoError`] when the model is unavailable or embed fails.
+/// Returns [`DatabaseError`] when the model is unavailable or embed fails.
 #[expect(
     clippy::significant_drop_tightening,
     reason = "model borrows from guard; drop(guard) after as_mut() fails borrow check"
 )]
-fn try_fastembed_batch(texts: &[String]) -> TursoResult<Vec<Vec<f32>>> {
+fn try_fastembed_batch(texts: &[String]) -> DbResult<Vec<Vec<f32>>> {
     use fastembed::{EmbeddingModel, InitOptionsWithLength, TextEmbedding};
     // Mutex<Option<TextEmbedding>>: guard held across init AND embed
     // because TextEmbedding::embed takes &mut self. kavach:intentional
@@ -193,17 +193,17 @@ fn try_fastembed_batch(texts: &[String]) -> TursoResult<Vec<Vec<f32>>> {
         match TextEmbedding::try_new(opts) {
             Ok(model) => *guard = Some(model),
             Err(_) => {
-                return Err(TursoError::Mapping("fastembed model not available".into()));
+                return Err(DbError::Mapping("fastembed model not available".into()));
             }
         }
     }
     let model = guard
         .as_mut()
-        .ok_or_else(|| TursoError::Mapping("fastembed unavailable".into()))?;
+        .ok_or_else(|| DbError::Mapping("fastembed unavailable".into()))?;
     let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
     model
         .embed(refs, None)
-        .map_err(|e| TursoError::Mapping(format!("fastembed embed: {e}")))
+        .map_err(|e| DbError::Mapping(format!("fastembed embed: {e}")))
 }
 
 /// Embed `texts` — fastembed when cached, deterministic fallback otherwise.
@@ -211,8 +211,8 @@ fn try_fastembed_batch(texts: &[String]) -> TursoResult<Vec<Vec<f32>>> {
 /// Always returns `EMBEDDING_DIMS`-wide vectors, normalized for cosine.
 ///
 /// # Errors
-/// Returns [`TursoError`] only on internal logic failures (not model absence).
-pub fn embed_texts(texts: &[String]) -> TursoResult<Vec<Vec<f32>>> {
+/// Returns [`DatabaseError`] only on internal logic failures (not model absence).
+pub fn embed_texts(texts: &[String]) -> DbResult<Vec<Vec<f32>>> {
     if texts.is_empty() {
         return Ok(Vec::new());
     }
@@ -224,7 +224,7 @@ pub fn embed_texts(texts: &[String]) -> TursoResult<Vec<Vec<f32>>> {
 ///
 /// # Errors
 /// Propagates from [`embed_texts`].
-pub fn embed_one(title: &str, content: &str) -> TursoResult<Vec<f32>> {
+pub fn embed_one(title: &str, content: &str) -> DbResult<Vec<f32>> {
     let joined = if content.is_empty() {
         title.to_owned()
     } else {
@@ -234,12 +234,12 @@ pub fn embed_one(title: &str, content: &str) -> TursoResult<Vec<f32>> {
     batch
         .into_iter()
         .next()
-        .ok_or_else(|| TursoError::Mapping("embed_one empty".into()))
+        .ok_or_else(|| DbError::Mapping("embed_one empty".into()))
 }
 
 /// Execute `sql` but swallow the error when the libsql build lacks the vector
 /// extension (error string contains `libsql_vector_idx` / `vector_top_k`).
-pub(crate) async fn exec_vector_ddl_best_effort(store: &TursoStore, ddl: &str) -> TursoResult<()> {
+pub(crate) async fn exec_vector_ddl_best_effort(store: &DbStore, ddl: &str) -> DbResult<()> {
     match store.conn.execute(ddl, ()).await {
         Ok(_) => Ok(()),
         Err(e) => {
@@ -251,7 +251,7 @@ pub(crate) async fn exec_vector_ddl_best_effort(store: &TursoStore, ddl: &str) -
             {
                 Ok(())
             } else {
-                Err(TursoError::from(e))
+                Err(DbError::from(e))
             }
         }
     }
@@ -260,11 +260,11 @@ pub(crate) async fn exec_vector_ddl_best_effort(store: &TursoStore, ddl: &str) -
 /// Brute-force vector ranking — scans `memories.embedding` rows for `project`,
 /// scores each against `query_vec` with cosine, sorts descending.
 async fn brute_rank(
-    store: &TursoStore,
+    store: &DbStore,
     project: &str,
     query_vec: &[f32],
     limit: usize,
-) -> TursoResult<Vec<String>> {
+) -> DbResult<Vec<String>> {
     let mut rows = store
         .exec_params(
             "SELECT entry_key, embedding FROM memories WHERE project = ?1 AND embedding IS NOT NULL",
@@ -272,9 +272,9 @@ async fn brute_rank(
         )
         .await?;
     let mut scored: Vec<(String, f32)> = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-        let key = row.get::<String>(0).map_err(TursoError::from)?;
-        let blob = row.get::<Vec<u8>>(1).map_err(TursoError::from)?;
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
+        let key = row.get::<String>(0).map_err(DbError::from)?;
+        let blob = row.get::<Vec<u8>>(1).map_err(DbError::from)?;
         let vec = deserialize_embedding(&blob);
         if vec.len() != EMBEDDING_DIMS || vec.len() != query_vec.len() {
             continue;
@@ -289,11 +289,11 @@ async fn brute_rank(
 
 /// Graph-expansion signal — 1-hop/2-hop closure over the `edges` memory DAG.
 async fn graph_expand(
-    store: &TursoStore,
+    store: &DbStore,
     project: &str,
     seeds: &[String],
     depth: u32,
-) -> TursoResult<Vec<String>> {
+) -> DbResult<Vec<String>> {
     if seeds.is_empty() {
         return Ok(Vec::new());
     }
@@ -312,8 +312,8 @@ async fn graph_expand(
         let mut rows = store
             .exec_params(&sql, libsql::params![project, seed.clone()])
             .await?;
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-            let key = row.get::<String>(0).map_err(TursoError::from)?;
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
+            let key = row.get::<String>(0).map_err(DbError::from)?;
             if seen.insert(key.clone()) {
                 out.push(key);
             }
@@ -329,48 +329,48 @@ pub trait VectorStore {
     /// Empty query returns no hits.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn vector_rank(
         &self,
         project: &str,
         query: &str,
         limit: usize,
-    ) -> impl Future<Output = TursoResult<Vec<String>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<String>>> + Send;
 
     /// 3-signal hybrid recall: `FTS5-BM25 ∪ vector ∪ graph → RRF`.
     ///
     /// Seeds graph expansion from the top vector+FTS hits (depth 2).
     ///
     /// # Errors
-    /// Returns [`TursoError`] when any signal query fails.
+    /// Returns [`DatabaseError`] when any signal query fails.
     fn search_hybrid(
         &self,
         project: &str,
         query: &str,
         limit: usize,
-    ) -> impl Future<Output = TursoResult<Vec<BrainHit>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<BrainHit>>> + Send;
 
     /// Backfill NULL embeddings in batches; returns rows updated.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    fn backfill_embeddings(&self, batch: usize) -> impl Future<Output = TursoResult<usize>> + Send;
+    /// Returns [`DatabaseError`] on SQL failure.
+    fn backfill_embeddings(&self, batch: usize) -> impl Future<Output = DbResult<usize>> + Send;
 }
 
-impl VectorStore for TursoStore {
+impl VectorStore for DbStore {
     async fn vector_rank(
         &self,
         project: &str,
         query: &str,
         limit: usize,
-    ) -> TursoResult<Vec<String>> {
+    ) -> DbResult<Vec<String>> {
         if query.trim().is_empty() {
             return Ok(Vec::new());
         }
         let qv = embed_texts(&[query.to_owned()])?
             .into_iter()
             .next()
-            .ok_or_else(|| TursoError::Mapping("vector_rank empty query vec".into()))?;
+            .ok_or_else(|| DbError::Mapping("vector_rank empty query vec".into()))?;
 
         // Prefer libsql ANN — fallback to brute scan if extension absent.
         let ann_sql = "SELECT entry_key FROM vector_top_k('idx_memories_embedding', vector32(?1), ?2) JOIN memories ON memories.rowid = id WHERE project = ?3";
@@ -394,7 +394,7 @@ impl VectorStore for TursoStore {
             .await;
         if let Ok(mut rows) = attempt {
             let mut ann_out = Vec::new();
-            while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+            while let Some(row) = rows.next().await.map_err(DbError::from)? {
                 if let Ok(key) = row.get::<String>(0) {
                     ann_out.push(key);
                 }
@@ -411,7 +411,7 @@ impl VectorStore for TursoStore {
         project: &str,
         query: &str,
         limit: usize,
-    ) -> TursoResult<Vec<BrainHit>> {
+    ) -> DbResult<Vec<BrainHit>> {
         if query.trim().is_empty() {
             return Ok(Vec::new());
         }
@@ -448,7 +448,7 @@ impl VectorStore for TursoStore {
             .collect())
     }
 
-    async fn backfill_embeddings(&self, batch: usize) -> TursoResult<usize> {
+    async fn backfill_embeddings(&self, batch: usize) -> DbResult<usize> {
         let batch = if batch == 0 { 50 } else { batch };
         let mut total = 0usize;
         loop {
@@ -458,12 +458,12 @@ impl VectorStore for TursoStore {
             );
             let mut rows = self.exec_params(&sql, ()).await?;
             let mut chunk: Vec<(String, String, String, String, String)> = Vec::new();
-            while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-                let proj: String = row.get(0).map_err(TursoError::from)?;
-                let cat: String = row.get(1).map_err(TursoError::from)?;
-                let ekey: String = row.get(2).map_err(TursoError::from)?;
-                let title: String = row.get(3).map_err(TursoError::from)?;
-                let content: String = row.get(4).map_err(TursoError::from)?;
+            while let Some(row) = rows.next().await.map_err(DbError::from)? {
+                let proj: String = row.get(0).map_err(DbError::from)?;
+                let cat: String = row.get(1).map_err(DbError::from)?;
+                let ekey: String = row.get(2).map_err(DbError::from)?;
+                let title: String = row.get(3).map_err(DbError::from)?;
+                let content: String = row.get(4).map_err(DbError::from)?;
                 chunk.push((proj, cat, ekey, title, content));
             }
             if chunk.is_empty() {
@@ -491,7 +491,7 @@ impl VectorStore for TursoStore {
                         libsql::params![blob, proj, cat, ekey],
                     )
                     .await
-                    .map_err(TursoError::from)?;
+                    .map_err(DbError::from)?;
                 total = total.saturating_add(1);
             }
             if chunk_len < batch {

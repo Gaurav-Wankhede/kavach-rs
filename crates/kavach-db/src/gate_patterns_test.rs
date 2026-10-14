@@ -5,10 +5,10 @@
 // proven in k_pri's own tests; here we prove the SQL feeds it correctly.
 use super::list_hot;
 use crate::open_memory;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// INSERT one autonomous-tier `gate_pattern` with an explicit `occurrence_count`.
-async fn seed(db: &TursoStore, proj: &str, tokens: &str, count: i64) {
+async fn seed(db: &DbStore, proj: &str, tokens: &str, count: i64) {
     db.exec_params(
         "INSERT INTO gate_pattern \
          (id, project, tool_name, gate_name, error_tokens, fix_strategy, \
@@ -19,7 +19,7 @@ async fn seed(db: &TursoStore, proj: &str, tokens: &str, count: i64) {
             proj.to_owned(),
             tokens.to_owned(),
             count,
-            crate::turso::now_rfc3339()
+            crate::db::now_rfc3339()
         ],
     )
     .await
@@ -79,7 +79,7 @@ async fn list_hot_excludes_non_autonomous_tier() {
         libsql::params![
             format!("{proj}:x"),
             proj.to_owned(),
-            crate::turso::now_rfc3339()
+            crate::db::now_rfc3339()
         ],
     )
     .await

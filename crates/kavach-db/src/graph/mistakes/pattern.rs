@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// The two anti-pattern families that share this graph tier (the umbrella):
 /// a committed error (`mistake`) and a predicted risk surface (`loophole`).
@@ -16,7 +16,7 @@ pub const FAMILY_LOOPHOLE: &str = "loophole";
 /// # Errors
 /// Returns `Error::Migration` if the name is empty, or `Error::RecordNotFound` if the upsert query returns no rows.
 pub async fn upsert_anti_pattern(
-    db: &TursoStore,
+    db: &DbStore,
     name: &str,
     gate: &str,
     correct_action: &str,
@@ -30,7 +30,7 @@ pub async fn upsert_anti_pattern(
 /// # Errors
 /// Returns `Error::Migration` if the name is empty, or `Error::RecordNotFound` if the upsert query returns no rows.
 pub async fn upsert_anti_pattern_with_family(
-    db: &TursoStore,
+    db: &DbStore,
     name: &str,
     gate: &str,
     correct_action: &str,

@@ -1,11 +1,11 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Queries the hit count for an anti-pattern (inbound `instance_of` edges).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
-pub async fn query_anti_pattern_hit_count(db: &TursoStore, anti_pattern_name: &str) -> Result<i64> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn query_anti_pattern_hit_count(db: &DbStore, anti_pattern_name: &str) -> Result<i64> {
     let mut resp = db
         .exec_params(
             "SELECT COUNT(*) FROM entity_edges ed \

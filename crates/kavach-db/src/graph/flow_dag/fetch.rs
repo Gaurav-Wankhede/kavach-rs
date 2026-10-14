@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 use super::model::{FlowDag, FlowStep};
 use super::shape::NodeShape;
@@ -22,8 +22,8 @@ fn props_from_row(r: &libsql::Row, idx: i32) -> Option<serde_json::Value> {
 ///
 /// # Errors
 /// - `Error::RecordNotFound` if the project or the flow does not exist.
-/// - `Error::Turso` on query failure.
-pub async fn fetch_flow(db: &TursoStore, project_slug: &str, flow_key: &str) -> Result<FlowDag> {
+/// - `Error::Database` on query failure.
+pub async fn fetch_flow(db: &DbStore, project_slug: &str, flow_key: &str) -> Result<FlowDag> {
     let anchor_name = format!("{project_slug}/{flow_key}");
     let mut aresp = db
         .exec_params(
@@ -108,8 +108,8 @@ pub async fn fetch_flow(db: &TursoStore, project_slug: &str, flow_key: &str) -> 
 /// List the flow keys + titles defined for a project (for awareness injection).
 ///
 /// # Errors
-/// `Error::Turso` on query failure.
-pub async fn list_flows(db: &TursoStore, project_slug: &str) -> Result<Vec<(String, String)>> {
+/// `Error::Database` on query failure.
+pub async fn list_flows(db: &DbStore, project_slug: &str) -> Result<Vec<(String, String)>> {
     let prefix = format!("{project_slug}/");
     let mut resp = db
         .exec_params(

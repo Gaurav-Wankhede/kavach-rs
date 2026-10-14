@@ -6,8 +6,8 @@
 // repro:      crates/kavach-app/src/pages/{roadmap,kanban,decisions}.rs:35
 //             all end with kavach_db::list_by_project(...) — flat SELECT,
 //             no graph traversal.
-// why5:       Dashboard treats one TursoStoreDB as if it were 4 isolated DBs.
-//             The TursoStoreDB value-prop (multi-model joins in one query) is
+// why5:       Dashboard treats one DatabaseStoreDB as if it were 4 isolated DBs.
+//             The DatabaseStoreDB value-prop (multi-model joins in one query) is
 //             unused at the read path.
 // root_cause: No row-with-neighbourhood fetch fn over per-category tables.
 // fix:        This module. ONE SQL block: SELECT rows from memories,
@@ -27,11 +27,11 @@
 //
 // TIME: O(n + e) | SPACE: O(n + e)
 // YEAR: 2026 | SEARCHED: 2026-05
-// SOURCE: https://github.com/tursodatabase/libSQL
+// SOURCE: https://github.com/databasedatabase/libSQL
 use crate::dual_write::MemoryEntry;
 use crate::error::Result;
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -64,9 +64,9 @@ struct EdgeRow {
 /// Fetch category rows with their inbound and outbound graph neighbours.
 ///
 /// # Errors
-/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
+/// Returns [`Error::Database`](crate::error::Error::Database) on SQL failure.
 pub async fn list_with_links(
-    store: &TursoStore,
+    store: &DbStore,
     category: &str,
     project_slug: &str,
 ) -> Result<Vec<LinkedRow>> {
@@ -74,7 +74,7 @@ pub async fn list_with_links(
     let entries = store
         .list_by_category(project_slug, category)
         .await
-        .map_err(crate::error::Error::Turso)?;
+        .map_err(crate::error::Error::Db)?;
 
     if entries.is_empty() {
         return Ok(Vec::new());
@@ -130,7 +130,7 @@ pub async fn list_with_links(
 /// Fetch edges involving the given keys. Direction `out` returns edges where
 /// the key is `src_key`; `in` returns edges where the key is `dst_key`.
 async fn edges_for_keys(
-    store: &TursoStore,
+    store: &DbStore,
     project: &str,
     category: &str,
     keys: &[String],
@@ -150,12 +150,12 @@ async fn edges_for_keys(
     let mut rows = store
         .exec_params(&sql, params)
         .await
-        .map_err(crate::error::Error::Turso)?;
+        .map_err(crate::error::Error::Db)?;
     let mut result = Vec::new();
     while let Some(row) = rows
         .next()
         .await
-        .map_err(|e| crate::error::Error::Turso(e.into()))?
+        .map_err(|e| crate::error::Error::Db(e.into()))?
     {
         result.push(EdgeRow {
             src_key: row.get::<String>(0).unwrap_or_default(),

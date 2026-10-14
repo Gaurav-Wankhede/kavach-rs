@@ -13,18 +13,18 @@
 )]
 
 use kavach_db::graph::{populate_fts, populate_nodes};
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 use kavach_db::open_memory;
 
 /// Helper: execute a SQL statement (INSERT/UPDATE/DELETE) via query_with_params.
-async fn exec_sql(db: &TursoStore, sql: &str) {
+async fn exec_sql(db: &DbStore, sql: &str) {
     db.query_with_params(sql, ())
         .await
         .unwrap_or_else(|e| panic!("SQL failed: {e}\nSQL: {sql}"));
 }
 
 /// Helper: query rows and collect into a Vec.
-async fn query_rows(db: &TursoStore, sql: &str) -> Vec<Vec<libsql::Value>> {
+async fn query_rows(db: &DbStore, sql: &str) -> Vec<Vec<libsql::Value>> {
     let mut rows = db.query_with_params(sql, ()).await.expect("query");
     let mut out = Vec::new();
     while let Some(row) = rows.next().await.expect("row") {

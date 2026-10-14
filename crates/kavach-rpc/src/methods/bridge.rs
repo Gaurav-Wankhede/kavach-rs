@@ -1,5 +1,5 @@
 // RPC methods for L1->L0 bridge edges + cross-project queries.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -43,7 +43,7 @@ pub struct IdResult {
 pub async fn create(state: &AppState, p: CreateParams) -> Result<IdResult, ErrorObjectOwned> {
     let id = graph_bridge_to_concept(&state.db, &p.src_table, &p.src_key, &p.edge, &p.concept)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(IdResult {
         id: format!("{id:?}"),
     })
@@ -73,7 +73,7 @@ pub async fn concepts_for(
 ) -> Result<Vec<BridgeHit>, ErrorObjectOwned> {
     graph_concepts_for_project(&state.db, &p.project)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[non_exhaustive]
@@ -100,5 +100,5 @@ pub async fn projects_for(
 ) -> Result<Vec<ProjectHit>, ErrorObjectOwned> {
     graph_projects_for_concept(&state.db, &p.concept)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }

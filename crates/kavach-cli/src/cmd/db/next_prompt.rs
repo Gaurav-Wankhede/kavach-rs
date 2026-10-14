@@ -1,7 +1,7 @@
 // `kavach db next-prompt` — serve the top-priority todo card's exec_prompt to stdout.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_db::dual_write::MemoryEntry;
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 #[cfg(test)]
 #[path = "next_prompt/next_prompt_test.rs"]
 mod tests;
@@ -40,7 +40,7 @@ pub(crate) fn run(project: &str) -> i32 {
         Err(e) => return render_err(&format!("error: tokio runtime: {e}")),
     };
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => return render_err(&format!("error: open kavach.db: {e}")),

@@ -1,6 +1,6 @@
 // split: intentional - cohesive project lookup RPC group (find/get/list/ancestry)
 // JSON-RPC method handlers for project lookups.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::Project;
@@ -23,7 +23,7 @@ pub async fn ancestry(
 ) -> Result<Vec<Project>, ErrorObjectOwned> {
     let Some(proj) = kavach_db::project_get_by_slug(&state.db, &params.slug)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -32,7 +32,7 @@ pub async fn ancestry(
     };
     kavach_db::project_get_ancestry(&state.db, &id)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,7 +58,7 @@ pub async fn find_by_path(
 ) -> Result<Option<Project>, ErrorObjectOwned> {
     kavach_db::project_find_by_path(&state.db, &params.path)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 /// Get a project by its slug.
@@ -72,5 +72,5 @@ pub async fn get_by_slug(
 ) -> Result<Option<Project>, ErrorObjectOwned> {
     kavach_db::project_get_by_slug(&state.db, &params.slug)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }

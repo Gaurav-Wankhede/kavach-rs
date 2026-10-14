@@ -1,11 +1,11 @@
 use crate::error::Result;
 use crate::graph::types::{Entity, RelateParams};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the entity creation fails or the
 /// returned record lacks an ID.
-pub async fn create_entity(db: &TursoStore, entity: Entity) -> Result<String> {
+pub async fn create_entity(db: &DbStore, entity: Entity) -> Result<String> {
     let id = entity
         .id
         .clone()
@@ -37,7 +37,7 @@ pub async fn create_entity(db: &TursoStore, entity: Entity) -> Result<String> {
 
 /// # Errors
 /// Propagates `Error` if the query fails.
-pub async fn get_entity(db: &TursoStore, table: &str, id: &str) -> Result<Option<Entity>> {
+pub async fn get_entity(db: &DbStore, table: &str, id: &str) -> Result<Option<Entity>> {
     let _ = table; // entities is the single entity table; `table` kept for API parity.
     let mut rows = db
         .exec_params(
@@ -64,10 +64,10 @@ pub async fn get_entity(db: &TursoStore, table: &str, id: &str) -> Result<Option
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the edge creation fails or the
 /// returned record lacks an ID.
-pub async fn relate(db: &TursoStore, params: &RelateParams) -> Result<String> {
+pub async fn relate(db: &DbStore, params: &RelateParams) -> Result<String> {
     let weight = params.weight.unwrap_or(1.0);
     let rel_name = params.rel_type.as_str();
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO entity_edges (from_id, rel_type, to_id, weight, created_at) \
          VALUES ($from, $rel, $to, $weight, $now) \
@@ -86,7 +86,7 @@ pub async fn relate(db: &TursoStore, params: &RelateParams) -> Result<String> {
 
 /// # Errors
 /// Propagates `Error` if the deletion query fails.
-pub async fn delete_edge(db: &TursoStore, table: &str, id: &str) -> Result<()> {
+pub async fn delete_edge(db: &DbStore, table: &str, id: &str) -> Result<()> {
     let _ = table; // entity_edges is the single edge table; `table` kept for API parity.
     db.exec_params(
         "DELETE FROM entity_edges WHERE from_id = $id OR to_id = $id",

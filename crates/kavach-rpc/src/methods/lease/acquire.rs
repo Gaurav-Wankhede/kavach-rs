@@ -1,7 +1,7 @@
 // SPEC: docs/architecture/session-occupancy-lease.md
-// Lease acquire RPC handler — CAS via SurrealDB OCC.
+// Lease acquire RPC handler — CAS via Database OCC.
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
@@ -25,17 +25,17 @@ pub struct AcquireResult {
     pub expires_at: DateTime<Utc>,
 }
 
-/// Acquires a lease via optimistic concurrency control (OCC) on the `SurrealDB` backend.
+/// Acquires a lease via optimistic concurrency control (OCC) on the `Database` backend.
 ///
 /// # Errors
-/// Returns `Err` if the `SurrealDB` operation fails (e.g., connection loss, transaction conflict).
+/// Returns `Err` if the `Database` operation fails (e.g., connection loss, transaction conflict).
 pub async fn acquire(
     state: &AppState,
     p: AcquireParams,
 ) -> Result<AcquireResult, ErrorObjectOwned> {
     let outcome = lease_acquire(&state.db, &p.table, &p.key, &p.session_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(match outcome {
         AcquireOutcome::Acquired(l) => AcquireResult {
             acquired: true,

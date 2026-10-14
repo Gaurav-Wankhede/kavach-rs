@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,8 +46,8 @@ fn run_from_row(r: &libsql::Row) -> Result<RunRecord> {
 /// Insert a new run record.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the INSERT.
-pub async fn run_insert(db: &TursoStore, run: &RunRecord) -> Result<String> {
+/// Propagates `Error::Database` from the INSERT.
+pub async fn run_insert(db: &DbStore, run: &RunRecord) -> Result<String> {
     let mut response = db
         .exec_params(
             "INSERT INTO run \
@@ -79,8 +79,8 @@ pub async fn run_insert(db: &TursoStore, run: &RunRecord) -> Result<String> {
 /// List all runs for a project, ordered by `started_at` descending.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn run_list_by_project(db: &TursoStore, project_id: &str) -> Result<Vec<RunRecord>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn run_list_by_project(db: &DbStore, project_id: &str) -> Result<Vec<RunRecord>> {
     let mut rows = db
         .exec_params(
             "SELECT id, project, entry_key, branch, status, command, pid, started_at, \
@@ -100,8 +100,8 @@ pub async fn run_list_by_project(db: &TursoStore, project_id: &str) -> Result<Ve
 /// Get a single run by ID.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn run_get(db: &TursoStore, id: &str) -> Result<Option<RunRecord>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn run_get(db: &DbStore, id: &str) -> Result<Option<RunRecord>> {
     let mut rows = db
         .exec_params(
             "SELECT id, project, entry_key, branch, status, command, pid, started_at, \
@@ -118,9 +118,9 @@ pub async fn run_get(db: &TursoStore, id: &str) -> Result<Option<RunRecord>> {
 /// Update a run's status and optionally its finish time and exit code.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPDATE.
+/// Propagates `Error::Database` from the UPDATE.
 pub async fn run_update_status(
-    db: &TursoStore,
+    db: &DbStore,
     id: &str,
     status: &str,
     finished_at: Option<String>,
@@ -139,8 +139,8 @@ pub async fn run_update_status(
 /// Called once during server initialization before serving requests.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPDATE.
-pub async fn run_reconcile_orphans(db: &TursoStore) -> Result<u64> {
+/// Propagates `Error::Database` from the UPDATE.
+pub async fn run_reconcile_orphans(db: &DbStore) -> Result<u64> {
     let now = chrono::Utc::now().to_rfc3339();
     let mut resp = db
         .exec_params(

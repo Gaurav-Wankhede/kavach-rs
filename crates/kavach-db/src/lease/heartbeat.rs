@@ -1,4 +1,4 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // SPEC: docs/architecture/session-occupancy-lease.md §Heartbeat (epoch-guarded fencing-token check)
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
 use chrono::{Duration, Utc};
@@ -9,8 +9,8 @@ use crate::error::{Error, Result};
 /// Refreshes a lease heartbeat and expiration time if the epoch and session match.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails, or `Error::Migration` if the lease was preempted by another session.
-pub async fn heartbeat(db: &TursoStore, table: &str, key: &str, lease: &Lease) -> Result<Lease> {
+/// Propagates `Error::Database` when the query fails, or `Error::Migration` if the lease was preempted by another session.
+pub async fn heartbeat(db: &DbStore, table: &str, key: &str, lease: &Lease) -> Result<Lease> {
     let now = Utc::now();
     let expires = now
         .checked_add_signed(Duration::seconds(LEASE_TTL_SECS))

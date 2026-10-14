@@ -1,7 +1,7 @@
 //! Server-Sent Events bridge over the daemon's `change.wait` long-poll.
 //!
 //! The browser opens one `EventSource` to `/events`. This handler loops on
-//! `change.wait(since)` — which parks server-side until the SurrealDB change
+//! `change.wait(since)` — which parks server-side until the Database change
 //! version advances — and emits a `refresh` event each time it does. HTMX
 //! elements carrying `hx-trigger="sse:refresh from:body"` re-fetch their
 //! fragment in response. This is the server-side replacement for the removed

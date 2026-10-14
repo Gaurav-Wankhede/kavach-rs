@@ -1,6 +1,6 @@
 // SOURCE: relocated from write/upsert.rs — roadmap.upsert-microfile-split (kavach:relocated)
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use kavach_types::Priority;
 
 use super::graph_stmts::append_entity_graph;
@@ -8,7 +8,7 @@ use super::graph_stmts::append_entity_graph;
 /// Atomic upsert: entry + event + graph in one txn.
 #[bon::builder(finish_fn = build_for_call)]
 pub async fn upsert_entry_full(
-    db: &TursoStore,
+    db: &DbStore,
     category: &str,
     project_id: &str,
     entry_key: &str,
@@ -28,7 +28,7 @@ pub async fn upsert_entry_full(
             )));
         }
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let priority_i64 = priority.map(Priority::get);
     let project_name = crate::key_str::project_key_str(project_id);
     let rid_returned = format!("{project_name}:{entry_key}");

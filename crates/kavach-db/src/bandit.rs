@@ -9,7 +9,7 @@
 //! decoupled from `kavach-patterns`: the typed `BanditRow` is serialized by the
 //! caller and stored opaquely as JSON.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 #[cfg(test)]
 #[path = "bandit_test.rs"]
 mod tests;
@@ -23,9 +23,9 @@ mod tests;
 ///
 /// # Errors
 /// Returns an error if the `bandit_log` insert fails.
-pub async fn append_bandit_row(db: &TursoStore, payload: &str) -> Result<String> {
+pub async fn append_bandit_row(db: &DbStore, payload: &str) -> Result<String> {
     let row_key = content_key(payload);
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO bandit_log (key, payload, created_at) VALUES ($k, $p, $now) \
          ON CONFLICT(key) DO NOTHING",
@@ -41,7 +41,7 @@ pub async fn append_bandit_row(db: &TursoStore, payload: &str) -> Result<String>
 ///
 /// # Errors
 /// Returns an error if the `SELECT` fails or a stored payload is malformed.
-pub async fn list_bandit_rows(db: &TursoStore, limit: u32) -> Result<Vec<String>> {
+pub async fn list_bandit_rows(db: &DbStore, limit: u32) -> Result<Vec<String>> {
     let mut rows = db
         .exec_params(
             "SELECT payload FROM bandit_log ORDER BY created_at DESC LIMIT $limit",
@@ -65,7 +65,7 @@ pub async fn list_bandit_rows(db: &TursoStore, limit: u32) -> Result<Vec<String>
 ///
 /// # Errors
 /// Returns an error if the `SELECT` fails or a stored payload is malformed.
-pub async fn list_unrewarded_bandit_rows(db: &TursoStore, limit: u32) -> Result<Vec<String>> {
+pub async fn list_unrewarded_bandit_rows(db: &DbStore, limit: u32) -> Result<Vec<String>> {
     // Filter "un-rewarded" in Rust, not SQL: a pending row stores `reward` as
     // JSON null. Reading the payload back as plain JSON and testing `is_null()`
     // is version-proof. `limit` is applied AFTER the filter so it bounds candidates.
@@ -91,7 +91,7 @@ pub async fn list_unrewarded_bandit_rows(db: &TursoStore, limit: u32) -> Result<
 /// # Errors
 /// Returns an error if the `SELECT` fails or a stored payload is malformed.
 pub async fn list_unrewarded_bandit_rows_for_session(
-    db: &TursoStore,
+    db: &DbStore,
     session_id: &str,
     limit: u32,
 ) -> Result<Vec<String>> {
@@ -119,7 +119,7 @@ pub async fn list_unrewarded_bandit_rows_for_session(
 ///
 /// # Errors
 /// Returns an error if the `UPDATE` fails or no row matches the derived key.
-pub async fn update_bandit_reward(db: &TursoStore, payload: &str, reward: &str) -> Result<()> {
+pub async fn update_bandit_reward(db: &DbStore, payload: &str, reward: &str) -> Result<()> {
     let row_key = content_key(payload);
     let mut payload_value: serde_json::Value =
         serde_json::from_str(payload).map_err(crate::error::Error::Json)?;
@@ -132,7 +132,7 @@ pub async fn update_bandit_reward(db: &TursoStore, payload: &str, reward: &str) 
     );
     let updated_payload =
         serde_json::to_string(&payload_value).map_err(crate::error::Error::Json)?;
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut resp = db
         .exec_params(
             "UPDATE bandit_log SET payload = $p, created_at = $now WHERE key = $k \
@@ -160,7 +160,7 @@ fn content_key(payload: &str) -> String {
 }
 /// Fetch every stored payload as JSON, newest first (unbounded — callers filter
 /// then `take`). The shared read both un-rewarded listers build on.
-async fn select_all_payloads(db: &TursoStore) -> Result<Vec<Result<String>>> {
+async fn select_all_payloads(db: &DbStore) -> Result<Vec<Result<String>>> {
     let mut rows = db
         .exec_params(
             "SELECT payload FROM bandit_log ORDER BY created_at DESC",

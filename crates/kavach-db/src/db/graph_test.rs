@@ -1,6 +1,6 @@
 //! GraphStore tests — Phase 3 acceptance (PRD §4 Phase 3).
 
-use super::TursoStore;
+use super::DbStore;
 use super::graph::{
     EdgeRow, GraphEntity, GraphStore, render_entity_fixture, render_entity_line,
     render_named_lines, validate_rel,
@@ -20,7 +20,7 @@ fn entity(id: &str, etype: &str, name: &str) -> GraphEntity {
 #[tokio::test]
 async fn entity_upsert_get_roundtrip() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("g1.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("g1.db")).await.unwrap();
     s.upsert_entity(&entity("e1", "concept", "reciprocal-rank-fusion"))
         .await
         .unwrap();
@@ -45,7 +45,7 @@ async fn entity_upsert_get_roundtrip() {
 #[tokio::test]
 async fn edges_relate_traverse_delete() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("g2.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("g2.db")).await.unwrap();
     for (id, etype, name) in [
         ("a", "roadmap", "card-a"),
         ("b", "decision", "decision-b"),
@@ -113,7 +113,7 @@ fn rel_allowlist_guards_typos() {
 #[tokio::test]
 async fn get_related_resolves_targets() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("g3.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("g3.db")).await.unwrap();
     s.upsert_entity(&entity("n1", "decision", "source-decision"))
         .await
         .unwrap();
@@ -137,7 +137,7 @@ async fn get_related_resolves_targets() {
 #[tokio::test]
 async fn list_edges_among_filters_to_set_and_short_circuits() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("g4.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("g4.db")).await.unwrap();
     for id in ["a", "b", "c"] {
         s.upsert_entity(&entity(id, "file", &format!("f-{id}")))
             .await

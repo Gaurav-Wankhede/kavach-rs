@@ -110,7 +110,7 @@ pub(super) fn run(
     compact: bool,
 ) -> i32 {
     use super::kanban::is_done_title;
-    use kavach_db::turso::entries::EntryStore;
+    use kavach_db::db::entries::EntryStore;
     let depth = resolve_depth(
         depth_flag,
         std::env::var("KAVACH_NO_TRUNCATE").as_deref() == Ok("1"),
@@ -163,7 +163,7 @@ pub(super) fn run(
         }
     };
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {

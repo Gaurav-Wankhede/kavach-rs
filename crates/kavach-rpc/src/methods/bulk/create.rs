@@ -1,6 +1,6 @@
 // bulk.sweep_create — register a new manifest binding N edits to one RCA.
 // SOURCE: roadmap.unit.kavach-bulk-mode; pattern: methods/lease/acquire.rs.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
@@ -57,7 +57,7 @@ pub async fn create(
         },
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     Ok(CreateResult {
         sweep_id: m.sweep_id,
         project: m.project,

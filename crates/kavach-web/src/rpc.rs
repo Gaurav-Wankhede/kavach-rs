@@ -3,7 +3,7 @@
 //! `kavach_rpc::client::call` is synchronous (blocking unix socket read), so
 //! every call is moved onto a blocking thread with `spawn_blocking` to keep the
 //! axum async runtime unblocked. The web server is a pure RPC consumer — it
-//! never opens SurrealDB (RocksDB is single-process; the daemon owns it).
+//! never opens Database (RocksDB is single-process; the daemon owns it).
 
 use kavach_rpc::client::{ClientError, call as raw_call};
 use serde::Serialize;

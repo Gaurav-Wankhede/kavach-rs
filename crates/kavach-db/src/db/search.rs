@@ -1,13 +1,13 @@
-//! FTS5 search — `SearchStore` extension trait over `TursoStore`.
+//! FTS5 search — `SearchStore` extension trait over `DatabaseStore`.
 //!
-//! Phase 2 parity with brain_query.rs: TursoStoreDB ran one BM25 query per
+//! Phase 2 parity with brain_query.rs: DatabaseStoreDB ran one BM25 query per
 //! category table and produced one rank list per table. libSQL keeps all
 //! categories in ONE fts5 table with a `category` column, so the equivalent is
 //! one filtered query per category: bm25() ranks rows, RRF consumes order.
 
 use std::future::Future;
 
-use super::{TursoError, TursoResult, TursoStore};
+use super::{DbError, DbResult, DbStore};
 use crate::brain::BrainHit;
 use crate::query_lex::{Lexer, TokenKind};
 use crate::rrf::{RRF_K, rrf_fuse};
@@ -23,7 +23,7 @@ pub const DDL: &[&str] = &[
 
 /// Convert a user query string to FTS5 MATCH syntax, injection-safe.
 ///
-/// TursoStoreDB `@0@` treats terms as an implicit AND of prefixes; FTS5 needs
+/// DatabaseStoreDB `@0@` treats terms as an implicit AND of prefixes; FTS5 needs
 /// explicit quoting so user punctuation can't break the expression. Each word
 /// is a lexer token (quoted, embedded quotes doubled) — the same term stream
 /// the old `split_whitespace` + per-word `format!` produced, but decoded in
@@ -77,36 +77,36 @@ pub trait SearchStore {
     /// most-relevant first. Parity of `brain_query::fts_rank_one`.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn fts_rank_category(
         &self,
         project: &str,
         category: &str,
         query: &str,
         limit: usize,
-    ) -> impl Future<Output = TursoResult<Vec<String>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<String>>> + Send;
 
     /// Hybrid retrieval parity of `brain_query::search_corpus`: one rank list
     /// per corpus category, fused by RRF into [`BrainHit`]s.
     ///
     /// # Errors
-    /// Returns [`TursoError`] when any category query fails.
+    /// Returns [`DatabaseError`] when any category query fails.
     fn search_corpus(
         &self,
         project: &str,
         query: &str,
         limit: usize,
-    ) -> impl Future<Output = TursoResult<Vec<BrainHit>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<BrainHit>>> + Send;
 }
 
-impl SearchStore for TursoStore {
+impl SearchStore for DbStore {
     async fn fts_rank_category(
         &self,
         project: &str,
         category: &str,
         query: &str,
         limit: usize,
-    ) -> TursoResult<Vec<String>> {
+    ) -> DbResult<Vec<String>> {
         // bm25() lower = better; ORDER BY bm25(memories_fts) ascending.
         let mut rows = self
             .exec_params(
@@ -117,8 +117,8 @@ impl SearchStore for TursoStore {
             )
             .await?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-            out.push(row.get::<String>(0).map_err(TursoError::from)?);
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
+            out.push(row.get::<String>(0).map_err(DbError::from)?);
         }
         Ok(out)
     }
@@ -128,7 +128,7 @@ impl SearchStore for TursoStore {
         project: &str,
         query: &str,
         limit: usize,
-    ) -> TursoResult<Vec<BrainHit>> {
+    ) -> DbResult<Vec<BrainHit>> {
         if query.trim().is_empty() {
             return Ok(Vec::new());
         }

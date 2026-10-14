@@ -14,7 +14,7 @@ pub(in crate::gates::rag_router) fn rpc_entity_find(
     };
     v.get("id").and_then(|id_val| {
         // RecordId serialized as {"tb": "entity", "id": {"String": "..."}}
-        // or as plain string depending on SurrealDB version. Try string first.
+        // or as plain string depending on Database version. Try string first.
         id_val.as_str().map(ToOwned::to_owned).or_else(|| {
             let tb = id_val.get("tb").and_then(|tb_val| tb_val.as_str())?;
             let key = id_val.get("id").and_then(|inner| {

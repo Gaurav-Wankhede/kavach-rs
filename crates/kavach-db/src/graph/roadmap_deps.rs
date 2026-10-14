@@ -13,7 +13,7 @@
 //! dep list, so re-running on an edited card converges (last-writer wins)
 //! without duplicate edges.
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// `entity_type` tag for a kanban card node in the shared `entities` table.
 /// Distinct from `concept`/`flow_step` so a card's edges never collide with the
@@ -49,15 +49,15 @@ fn validate_key(key: &str) -> Result<()> {
 /// blocks" tolerance of the text path.
 ///
 /// # Errors
-/// Propagates `Error::Migration` on an invalid key and `Error::Turso` on any
+/// Propagates `Error::Migration` on an invalid key and `Error::Database` on any
 /// query failure. Runs in one transaction so a mid-op crash leaves no partial
 /// edge set.
-pub async fn mirror_card_deps(db: &TursoStore, card_key: &str, deps: &[String]) -> Result<()> {
+pub async fn mirror_card_deps(db: &DbStore, card_key: &str, deps: &[String]) -> Result<()> {
     validate_key(card_key)?;
     for d in deps {
         validate_key(d)?;
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let txn = db.conn.transaction().await?;
     // `execute` (not `query`) so a failed INSERT/DELETE surfaces immediately
     // instead of being deferred into unconsumed Rows (§no_silent_failure).
@@ -103,9 +103,9 @@ pub async fn mirror_card_deps(db: &TursoStore, card_key: &str, deps: &[String]) 
 /// — including the self-dependency boundary case (`A` depends on `A`).
 ///
 /// # Errors
-/// Propagates `Error::Migration` on an invalid key, `Error::Turso` on query
+/// Propagates `Error::Migration` on an invalid key, `Error::Database` on query
 /// failure.
-pub async fn is_in_cycle_sql(db: &TursoStore, card_key: &str) -> Result<bool> {
+pub async fn is_in_cycle_sql(db: &DbStore, card_key: &str) -> Result<bool> {
     validate_key(card_key)?;
     let start = format!("roadmap_card:{card_key}");
     let mut res = db

@@ -1,5 +1,5 @@
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_db::Error as SurrealError;
+use kavach_db::Error as DbError;
 
 pub const CODE_INVALID_PARAMS: i32 = -32602;
 pub const CODE_INTERNAL: i32 = -32603;
@@ -16,28 +16,28 @@ pub const CODE_DB_TURSO: i32 = -32010;
 #[must_use]
 #[expect(
     clippy::needless_pass_by_value,
-    reason = "consumed at .map_err(surreal_to_rpc) call sites across 68 handlers; by-value avoids a borrow at every caller"
+    reason = "consumed at .map_err(db_to_rpc) call sites across 68 handlers; by-value avoids a borrow at every caller"
 )]
-pub fn surreal_to_rpc(err: SurrealError) -> ErrorObjectOwned {
+pub fn db_to_rpc(err: DbError) -> ErrorObjectOwned {
     let (code, msg) = match &err {
-        SurrealError::ProjectNotFound(p) => {
+        DbError::ProjectNotFound(p) => {
             (CODE_DB_PROJECT_NOT_FOUND, format!("project not found: {p}"))
         }
-        SurrealError::RecordNotFound(r) => {
+        DbError::RecordNotFound(r) => {
             (CODE_DB_RECORD_NOT_FOUND, format!("record not found: {r}"))
         }
-        SurrealError::Migration(m) => (CODE_DB_MIGRATION, format!("migration error: {m}")),
-        SurrealError::Io(e) => (CODE_DB_IO, format!("io error: {e}")),
-        SurrealError::Json(e) => (CODE_DB_JSON, format!("json error: {e}")),
-        SurrealError::InvalidHierarchy(h) => {
+        DbError::Migration(m) => (CODE_DB_MIGRATION, format!("migration error: {m}")),
+        DbError::Io(e) => (CODE_DB_IO, format!("io error: {e}")),
+        DbError::Json(e) => (CODE_DB_JSON, format!("json error: {e}")),
+        DbError::InvalidHierarchy(h) => {
             (CODE_DB_INVALID_HIERARCHY, format!("invalid hierarchy: {h}"))
         }
-        SurrealError::SchemaViolation(v) => {
+        DbError::SchemaViolation(v) => {
             (CODE_DB_SCHEMA_VIOLATION, format!("schema violation: {v}"))
         }
-        SurrealError::Validation(v) => (CODE_DB_VALIDATION, format!("validation error: {v}")),
-        SurrealError::Turso(e) => (CODE_DB_TURSO, format!("turso error: {e}")),
-        SurrealError::Libsql(e) => (CODE_DB_TURSO, format!("libsql error: {e}")),
+        DbError::Validation(v) => (CODE_DB_VALIDATION, format!("validation error: {v}")),
+        DbError::Db(e) => (CODE_DB_TURSO, format!("turso error: {e}")),
+        DbError::Libsql(e) => (CODE_DB_TURSO, format!("libsql error: {e}")),
     };
     ErrorObjectOwned::owned(code, msg, None::<()>)
 }

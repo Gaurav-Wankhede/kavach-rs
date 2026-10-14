@@ -1,6 +1,6 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // split: intentional - cohesive gate_pattern store (struct + 3 async DB ops + pure helpers)
-// Turso-backed gate_pattern store. Mirrors kavach-db::gate_patterns API.
+// Database-backed gate_pattern store. Mirrors kavach-db::gate_patterns API.
 // Tokenization, bloom filter, and TF-IDF scoring are pure-fn ports.
 // sql-safe: explicit column list; bound params only; no string concat.
 use crate::error::{Error, Result};
@@ -149,9 +149,9 @@ fn is_missing_table(e: &libsql::Error) -> bool {
 /// (project, `error_tokens`) pair or creates a new row in `research` tier.
 ///
 /// # Errors
-/// Returns `Error::Turso` when the SELECT/UPDATE/CREATE query fails, and
+/// Returns `Error::Database` when the SELECT/UPDATE/CREATE query fails, and
 /// `Error::Migration` when the CREATE response yields no id row.
-pub async fn upsert(db: &TursoStore, p: &UpsertParams<'_>) -> Result<String> {
+pub async fn upsert(db: &DbStore, p: &UpsertParams<'_>) -> Result<String> {
     let tokens = tokenize(p.error_tokens);
     let mut response = db
         .exec_params(
@@ -174,7 +174,7 @@ pub async fn upsert(db: &TursoStore, p: &UpsertParams<'_>) -> Result<String> {
         } else {
             (TIER_RESEARCH, None)
         };
-        let now = crate::turso::now_rfc3339();
+        let now = crate::db::now_rfc3339();
         db.exec_params(
             "UPDATE gate_pattern SET \
                occurrence_count = $count, fix_strategy = $fix, \
@@ -196,7 +196,7 @@ pub async fn upsert(db: &TursoStore, p: &UpsertParams<'_>) -> Result<String> {
         Ok(row.id)
     } else {
         let id = crate::decisions::hash_keyed("gate_pattern", &p.project, &tokens, p.tool_name);
-        let now = crate::turso::now_rfc3339();
+        let now = crate::db::now_rfc3339();
         let mut resp = db
             .exec_params(
                 "INSERT INTO gate_pattern \
@@ -230,10 +230,10 @@ pub async fn upsert(db: &TursoStore, p: &UpsertParams<'_>) -> Result<String> {
 /// TF-IDF scored against the candidate set scoped to `project`.
 ///
 /// # Errors
-/// Returns `Error::Turso` when the candidate SELECT fails to execute or
+/// Returns `Error::Database` when the candidate SELECT fails to execute or
 /// deserialize.
 pub async fn find_autonomous(
-    db: &TursoStore,
+    db: &DbStore,
     project: &str,
     error: &str,
     tool_name: &str,
@@ -350,8 +350,8 @@ fn tfidf_best_match(
 /// List the hottest (highest `occurrence_count`) `gate_pattern` rows for a project.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list_hot(db: &TursoStore, project: &str, limit: usize) -> Result<Vec<GatePattern>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list_hot(db: &DbStore, project: &str, limit: usize) -> Result<Vec<GatePattern>> {
     let limit_i64 = i64::try_from(limit).unwrap_or(i64::MAX);
     let mut response = db
         .exec_params(

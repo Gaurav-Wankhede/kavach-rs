@@ -21,7 +21,7 @@ use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_db::microticket::{
     Change, MicroTicket, Modality, Op, Source, SourceKind, TicketKind, VerifyMethod, VerifyStep,
 };
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 /// Flags as parsed by clap, kept as strings and narrowed HERE so the enum
 /// narrowing errors are reported with the same shape as every other validation

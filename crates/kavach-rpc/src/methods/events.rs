@@ -1,7 +1,7 @@
 // JSON-RPC method handler for event.append.
 // Used by kavach-engine event_log helpers to record gate-emitted events
 // without spawning tokio per call.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use serde::{Deserialize, Serialize};
@@ -34,7 +34,7 @@ pub async fn append(
         Some(slug) if !slug.is_empty() => {
             let proj = kavach_db::project_get_by_slug(&state.db, slug)
                 .await
-                .map_err(surreal_to_rpc)?;
+                .map_err(db_to_rpc)?;
             proj.and_then(|p| p.id)
         }
         Some(_) | None => None,
@@ -47,7 +47,7 @@ pub async fn append(
         params.payload.as_deref(),
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     Ok(Some(AppendResult {
         id: format!("{id:?}"),
     }))

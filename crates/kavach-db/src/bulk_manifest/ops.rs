@@ -1,14 +1,14 @@
 // split: intentional - cohesive bulk_manifest CRUD surface (create/get/bump/close/list)
 // Async DB ops for bulk_manifest. I/O surface only — types in `types.rs`,
 // SQL in `sql.rs`. All params arrive via positional `?N` binds; no format!.
-// Errors propagate via `?` through `Error::Turso` (#[from]) and
+// Errors propagate via `?` through `Error::Database` (#[from]) and
 // `Error::RecordNotFound` for the create-returned-no-row case.
 use crate::bulk_manifest::sql;
 use crate::bulk_manifest::types::{
     BulkManifest, ConformanceField, CreateParams, STATUS_ACTIVE, STATUS_CLOSED, STATUS_EXPIRED,
 };
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use chrono::{DateTime, Duration, Utc};
 
 /// Map a `bulk_manifest` row to its typed form. Column order MUST stay in sync
@@ -52,9 +52,9 @@ fn manifest_from_row(row: &libsql::Row) -> Result<BulkManifest> {
 /// Create active `bulk_manifest`. UNIQUE index on `sweep_id` refuses dupes.
 ///
 /// # Errors
-/// `Error::Turso` from the INSERT query (including UNIQUE violation);
+/// `Error::Database` from the INSERT query (including UNIQUE violation);
 /// `Error::RecordNotFound` if INSERT returns zero rows.
-pub async fn create(db: &TursoStore, params: CreateParams<'_>) -> Result<BulkManifest> {
+pub async fn create(db: &DbStore, params: CreateParams<'_>) -> Result<BulkManifest> {
     let now = Utc::now();
     // `DateTime + Duration` is what clippy::arithmetic_side_effects flags;
     // `checked_add_signed` is the explicit-overflow form. Failure propagates
@@ -99,8 +99,8 @@ pub async fn create(db: &TursoStore, params: CreateParams<'_>) -> Result<BulkMan
 /// Fetch manifest by `sweep_id`. Ok(None) on miss.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT query.
-pub async fn get(db: &TursoStore, sweep_id: &str) -> Result<Option<BulkManifest>> {
+/// Propagates `Error::Database` from the SELECT query.
+pub async fn get(db: &DbStore, sweep_id: &str) -> Result<Option<BulkManifest>> {
     let mut r = db
         .exec_params(sql::SQL_GET, libsql::params![sweep_id.to_owned()])
         .await?;
@@ -112,9 +112,9 @@ pub async fn get(db: &TursoStore, sweep_id: &str) -> Result<Option<BulkManifest>
 /// Increment a conformance counter atomically. Column whitelist via enum.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPDATE query.
+/// Propagates `Error::Database` from the UPDATE query.
 pub async fn bump_conformance(
-    db: &TursoStore,
+    db: &DbStore,
     sweep_id: &str,
     field: ConformanceField,
 ) -> Result<()> {
@@ -131,8 +131,8 @@ pub async fn bump_conformance(
 /// Close manifest (agent finished). status=closed + `closed_at`=now.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPDATE query.
-pub async fn close(db: &TursoStore, sweep_id: &str) -> Result<()> {
+/// Propagates `Error::Database` from the UPDATE query.
+pub async fn close(db: &DbStore, sweep_id: &str) -> Result<()> {
     set_terminal(db, sweep_id, STATUS_CLOSED).await
 }
 
@@ -140,12 +140,12 @@ pub async fn close(db: &TursoStore, sweep_id: &str) -> Result<()> {
 /// "agent finished" vs "clock ran out".
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPDATE query.
-pub async fn mark_expired(db: &TursoStore, sweep_id: &str) -> Result<()> {
+/// Propagates `Error::Database` from the UPDATE query.
+pub async fn mark_expired(db: &DbStore, sweep_id: &str) -> Result<()> {
     set_terminal(db, sweep_id, STATUS_EXPIRED).await
 }
 
-async fn set_terminal(db: &TursoStore, sid: &str, new_status: &str) -> Result<()> {
+async fn set_terminal(db: &DbStore, sid: &str, new_status: &str) -> Result<()> {
     db.exec_params(
         sql::SQL_CLOSE,
         libsql::params![
@@ -163,8 +163,8 @@ async fn set_terminal(db: &TursoStore, sid: &str, new_status: &str) -> Result<()
 /// stop-gate (refuses clean stop while sweep is in-flight).
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT query.
-pub async fn list_active(db: &TursoStore, project: &str) -> Result<Vec<BulkManifest>> {
+/// Propagates `Error::Database` from the SELECT query.
+pub async fn list_active(db: &DbStore, project: &str) -> Result<Vec<BulkManifest>> {
     let mut r = db
         .exec_params(
             sql::SQL_LIST_ACTIVE,

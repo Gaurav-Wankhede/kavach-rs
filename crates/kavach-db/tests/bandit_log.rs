@@ -1,7 +1,7 @@
 //! Integration proof for the Layer-A bandit-log store (harness-rl Wave P2).
 //!
 //! The store is the durable substrate for the RLVR `(x, a, p, r)` tuple. These
-//! tests prove against a real (in-memory) `TursoStore` that a row persists and
+//! tests prove against a real (in-memory) `DatabaseStore` that a row persists and
 //! that a replayed identical decision behaves as the store's doc claims —
 //! content addressing must not silently double-count training signal.
 #![allow(
@@ -10,7 +10,7 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 use kavach_db::{
     append_bandit_row, list_bandit_rows, list_unrewarded_bandit_rows,
     list_unrewarded_bandit_rows_for_session, open_memory, update_bandit_reward,
@@ -19,7 +19,7 @@ use kavach_db::{
 /// Open an in-memory db with the production schema applied — `open_memory`
 /// bootstraps the schema, so a read of a never-written `bandit_log` must see a
 /// *defined, empty* table, not a "no such table" error.
-async fn open_with_schema() -> TursoStore {
+async fn open_with_schema() -> DbStore {
     open_memory().await.expect("memory db")
 }
 

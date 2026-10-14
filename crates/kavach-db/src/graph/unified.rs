@@ -18,7 +18,7 @@
 )]
 
 use crate::error::Result;
-use crate::turso::{TursoError, TursoStore};
+use crate::db::{DbError, DbStore};
 
 /// Populate unified_nodes from existing memories (read-only copy).
 ///
@@ -27,7 +27,7 @@ use crate::turso::{TursoError, TursoStore};
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn populate_nodes(db: &TursoStore) -> Result<usize> {
+pub async fn populate_nodes(db: &DbStore) -> Result<usize> {
     let sql = r"
         INSERT OR IGNORE INTO unified_nodes (id, project, category, entry_key, title, status, content, embedding, metadata, created_at, updated_at)
         SELECT
@@ -58,7 +58,7 @@ pub async fn populate_nodes(db: &TursoStore) -> Result<usize> {
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn extract_depends_on(db: &TursoStore) -> Result<usize> {
+pub async fn extract_depends_on(db: &DbStore) -> Result<usize> {
     // Query all roadmap entries with DEPENDS_ON lines
     let sql = r"
         SELECT m.project, m.entry_key, m.content
@@ -68,10 +68,10 @@ pub async fn extract_depends_on(db: &TursoStore) -> Result<usize> {
     ";
     let mut rows = db.exec_params(sql, ()).await?;
     let mut entries = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-        let project: String = row.get::<String>(0).map_err(|e| TursoError::Mapping(e.to_string()))?;
-        let entry_key: String = row.get::<String>(1).map_err(|e| TursoError::Mapping(e.to_string()))?;
-        let content: String = row.get::<String>(2).map_err(|e| TursoError::Mapping(e.to_string()))?;
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
+        let project: String = row.get::<String>(0).map_err(|e| DbError::Mapping(e.to_string()))?;
+        let entry_key: String = row.get::<String>(1).map_err(|e| DbError::Mapping(e.to_string()))?;
+        let content: String = row.get::<String>(2).map_err(|e| DbError::Mapping(e.to_string()))?;
         entries.push((project, entry_key, content));
     }
 
@@ -107,7 +107,7 @@ pub async fn extract_depends_on(db: &TursoStore) -> Result<usize> {
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn create_cross_category_edges(db: &TursoStore) -> Result<usize> {
+pub async fn create_cross_category_edges(db: &DbStore) -> Result<usize> {
     let mut total = 0_usize;
 
     // Research informs roadmap
@@ -171,7 +171,7 @@ pub async fn create_cross_category_edges(db: &TursoStore) -> Result<usize> {
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn build_transitive_closure(db: &TursoStore) -> Result<usize> {
+pub async fn build_transitive_closure(db: &DbStore) -> Result<usize> {
     // Clear existing closure
     db.exec("DELETE FROM unified_closure").await?;
 
@@ -206,7 +206,7 @@ pub async fn build_transitive_closure(db: &TursoStore) -> Result<usize> {
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn populate_fts(db: &TursoStore) -> Result<usize> {
+pub async fn populate_fts(db: &DbStore) -> Result<usize> {
     let sql = r"
         INSERT OR IGNORE INTO unified_nodes_fts(rowid, title, content)
         SELECT rowid, title, content FROM unified_nodes
@@ -223,7 +223,7 @@ pub async fn populate_fts(db: &TursoStore) -> Result<usize> {
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn populate_vector_index(db: &TursoStore) -> Result<usize> {
+pub async fn populate_vector_index(db: &DbStore) -> Result<usize> {
     // Create vector index on unified_nodes.embedding
     let ddl = "CREATE INDEX IF NOT EXISTS idx_unified_nodes_embedding ON unified_nodes(libsql_vector_idx(embedding, 'metric=cosine'))";
     db.exec(ddl).await?;
@@ -233,8 +233,8 @@ pub async fn populate_vector_index(db: &TursoStore) -> Result<usize> {
         SELECT COUNT(*) FROM unified_nodes WHERE embedding IS NOT NULL
     ";
     let mut rows = db.exec_params(sql, ()).await?;
-    let count = if let Some(row) = rows.next().await.map_err(TursoError::from)? {
-        row.get::<i64>(0).map_err(|e| TursoError::Mapping(e.to_string()))?
+    let count = if let Some(row) = rows.next().await.map_err(DbError::from)? {
+        row.get::<i64>(0).map_err(|e| DbError::Mapping(e.to_string()))?
     } else {
         0
     };
@@ -248,11 +248,11 @@ pub async fn populate_vector_index(db: &TursoStore) -> Result<usize> {
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
 pub async fn vector_search(
-    db: &TursoStore,
+    db: &DbStore,
     query_embedding: &[f32],
     limit: usize,
 ) -> Result<Vec<(String, f32)>> {
-    use crate::turso::vector::deserialize_embedding;
+    use crate::db::vector::deserialize_embedding;
 
     // Try libsql ANN first
     let ann_sql = r"
@@ -275,11 +275,11 @@ pub async fn vector_search(
         .exec_params(ann_sql, libsql::params![vec_json, limit_i])
         .await
     {
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-            let id: String = row.get::<String>(0).map_err(|e| TursoError::Mapping(e.to_string()))?;
-            let blob: Vec<u8> = row.get::<Vec<u8>>(1).map_err(|e| TursoError::Mapping(e.to_string()))?;
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
+            let id: String = row.get::<String>(0).map_err(|e| DbError::Mapping(e.to_string()))?;
+            let blob: Vec<u8> = row.get::<Vec<u8>>(1).map_err(|e| DbError::Mapping(e.to_string()))?;
             let stored_vec = deserialize_embedding(&blob);
-            let sim = crate::turso::vector::cosine_similarity(query_embedding, &stored_vec);
+            let sim = crate::db::vector::cosine_similarity(query_embedding, &stored_vec);
             results.push((id, sim));
         }
     }
@@ -291,11 +291,11 @@ pub async fn vector_search(
         ";
         let mut rows = db.exec_params(sql, ()).await?;
         let mut scored: Vec<(String, f32)> = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-            let id: String = row.get::<String>(0).map_err(|e| TursoError::Mapping(e.to_string()))?;
-            let blob: Vec<u8> = row.get::<Vec<u8>>(1).map_err(|e| TursoError::Mapping(e.to_string()))?;
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
+            let id: String = row.get::<String>(0).map_err(|e| DbError::Mapping(e.to_string()))?;
+            let blob: Vec<u8> = row.get::<Vec<u8>>(1).map_err(|e| DbError::Mapping(e.to_string()))?;
             let stored_vec = deserialize_embedding(&blob);
-            let sim = crate::turso::vector::cosine_similarity(query_embedding, &stored_vec);
+            let sim = crate::db::vector::cosine_similarity(query_embedding, &stored_vec);
             scored.push((id, sim));
         }
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -311,7 +311,7 @@ pub async fn vector_search(
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn get_ancestors(db: &TursoStore, node_id: &str) -> Result<Vec<(String, i64)>> {
+pub async fn get_ancestors(db: &DbStore, node_id: &str) -> Result<Vec<(String, i64)>> {
     let sql = r"
         SELECT ancestor_id, depth FROM unified_closure
         WHERE descendant_id = ?1
@@ -319,13 +319,13 @@ pub async fn get_ancestors(db: &TursoStore, node_id: &str) -> Result<Vec<(String
     ";
     let mut rows = db.exec_params(sql, libsql::params![node_id]).await?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
         let id: String = row
             .get::<String>(0)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         let depth: i64 = row
             .get::<i64>(1)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         out.push((id, depth));
     }
     Ok(out)
@@ -336,7 +336,7 @@ pub async fn get_ancestors(db: &TursoStore, node_id: &str) -> Result<Vec<(String
 ///
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
-pub async fn get_descendants(db: &TursoStore, node_id: &str) -> Result<Vec<(String, i64)>> {
+pub async fn get_descendants(db: &DbStore, node_id: &str) -> Result<Vec<(String, i64)>> {
     let sql = r"
         SELECT descendant_id, depth FROM unified_closure
         WHERE ancestor_id = ?1
@@ -344,13 +344,13 @@ pub async fn get_descendants(db: &TursoStore, node_id: &str) -> Result<Vec<(Stri
     ";
     let mut rows = db.exec_params(sql, libsql::params![node_id]).await?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
         let id: String = row
             .get::<String>(0)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         let depth: i64 = row
             .get::<i64>(1)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         out.push((id, depth));
     }
     Ok(out)
@@ -361,7 +361,7 @@ pub async fn get_descendants(db: &TursoStore, node_id: &str) -> Result<Vec<(Stri
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
 pub async fn get_cross_category_edges(
-    db: &TursoStore,
+    db: &DbStore,
     node_id: &str,
 ) -> Result<Vec<(String, String, String, f64)>> {
     let sql = r"
@@ -372,19 +372,19 @@ pub async fn get_cross_category_edges(
     ";
     let mut rows = db.exec_params(sql, libsql::params![node_id]).await?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
         let source: String = row
             .get::<String>(0)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         let target: String = row
             .get::<String>(1)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         let edge_type: String = row
             .get::<String>(2)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         let weight: f64 = row
             .get::<f64>(3)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         out.push((source, target, edge_type, weight));
     }
     Ok(out)
@@ -398,7 +398,7 @@ pub async fn get_cross_category_edges(
 /// # Errors
 /// Returns [`crate::error::Error`] on SQL failure.
 pub async fn hybrid_search(
-    db: &TursoStore,
+    db: &DbStore,
     query_text: &str,
     query_embedding: Option<&[f32]>,
     limit: usize,
@@ -421,10 +421,10 @@ pub async fn hybrid_search(
             .exec_params(bm25_sql, libsql::params![query_text, limit as i64])
             .await?;
         let mut rank = 1_usize;
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-            let id: String = row.get::<String>(0).map_err(|e| TursoError::Mapping(e.to_string()))?;
-            let title: String = row.get::<String>(1).map_err(|e| TursoError::Mapping(e.to_string()))?;
-            let category: String = row.get::<String>(2).map_err(|e| TursoError::Mapping(e.to_string()))?;
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
+            let id: String = row.get::<String>(0).map_err(|e| DbError::Mapping(e.to_string()))?;
+            let title: String = row.get::<String>(1).map_err(|e| DbError::Mapping(e.to_string()))?;
+            let category: String = row.get::<String>(2).map_err(|e| DbError::Mapping(e.to_string()))?;
             let rrf_score = 1.0 / (60.0 + rank as f64);
             scores.entry(id).or_insert((title, category, 0.0)).2 += rrf_score;
             rank += 1;
@@ -454,9 +454,9 @@ pub async fn hybrid_search(
             let mut rows = db
                 .exec_params(graph_sql, libsql::params![seed.clone()])
                 .await?;
-            while let Some(row) = rows.next().await.map_err(TursoError::from)? {
-                let target_id: String = row.get::<String>(0).map_err(|e| TursoError::Mapping(e.to_string()))?;
-                let weight: f64 = row.get::<f64>(1).map_err(|e| TursoError::Mapping(e.to_string()))?;
+            while let Some(row) = rows.next().await.map_err(DbError::from)? {
+                let target_id: String = row.get::<String>(0).map_err(|e| DbError::Mapping(e.to_string()))?;
+                let weight: f64 = row.get::<f64>(1).map_err(|e| DbError::Mapping(e.to_string()))?;
                 let entry = scores.entry(target_id).or_default();
                 entry.2 += weight;
             }

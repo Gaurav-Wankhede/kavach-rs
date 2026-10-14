@@ -1,6 +1,6 @@
 use super::super::readiness::{deps_satisfied, is_runnable_status};
 use super::super::types::{NextOpenTaskParams, NextTaskResult};
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
@@ -15,7 +15,7 @@ pub async fn next_open_hunt(
 ) -> Result<Option<NextTaskResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -24,10 +24,10 @@ pub async fn next_open_hunt(
     };
     let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let hunt = entries
         .iter()
         .find(|e| {

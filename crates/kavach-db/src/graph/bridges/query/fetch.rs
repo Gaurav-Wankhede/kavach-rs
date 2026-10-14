@@ -2,7 +2,7 @@ use super::consts::{QUERIES_CONCEPTS_FOR_PROJECT, QUERIES_PROJECTS_FOR_CONCEPT};
 use super::types::{BRIDGE_QUERY_LIMIT, BridgeHit, ProjectHit};
 use crate::error::Result;
 use crate::graph::types::Entity;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Map a joined `(entry_key, entity...)` row to a concept `Entity`.
 fn entity_from_row(row: &libsql::Row) -> Result<Entity> {
@@ -25,7 +25,7 @@ fn entity_from_row(row: &libsql::Row) -> Result<Entity> {
 ///
 /// # Errors
 /// Propagates `Error` when the database query fails.
-pub async fn concepts_for_project(db: &TursoStore, project_slug: &str) -> Result<Vec<BridgeHit>> {
+pub async fn concepts_for_project(db: &DbStore, project_slug: &str) -> Result<Vec<BridgeHit>> {
     let mut out: Vec<BridgeHit> =
         Vec::with_capacity(QUERIES_CONCEPTS_FOR_PROJECT.len().saturating_mul(8));
     for (table, edge, q) in QUERIES_CONCEPTS_FOR_PROJECT {
@@ -58,7 +58,7 @@ pub async fn concepts_for_project(db: &TursoStore, project_slug: &str) -> Result
 ///
 /// # Errors
 /// Propagates `Error` when the database query fails.
-pub async fn projects_for_concept(db: &TursoStore, concept_name: &str) -> Result<Vec<ProjectHit>> {
+pub async fn projects_for_concept(db: &DbStore, concept_name: &str) -> Result<Vec<ProjectHit>> {
     let mut out: Vec<ProjectHit> =
         Vec::with_capacity(QUERIES_PROJECTS_FOR_CONCEPT.len().saturating_mul(16));
     for (edge, q) in QUERIES_PROJECTS_FOR_CONCEPT {

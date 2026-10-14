@@ -1,5 +1,5 @@
 use super::super::types::{ClaimCardParams, VerifyCardResult};
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
@@ -13,7 +13,7 @@ pub async fn verify_card(
 ) -> Result<VerifyCardResult, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(VerifyCardResult {
             key: params.key,
@@ -41,7 +41,7 @@ pub async fn verify_card(
         "verified",
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     if updated > 0 {
         return Ok(VerifyCardResult {
             key: params.key,
@@ -52,7 +52,7 @@ pub async fn verify_card(
     // CAS missed: report the real current status (absent, or not yet `done`).
     let current = kavach_db::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let current_status = current
         .as_ref()
         .map_or("", |e| e.entry_status_str())

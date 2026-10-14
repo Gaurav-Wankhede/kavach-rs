@@ -1,8 +1,8 @@
 //! RPC primitives for event logging + graph projection. All go through
-//! `kavach_rpc` to the SurrealDB-backed daemon; every call is fire-and-forget
+//! `kavach_rpc` to the Database-backed daemon; every call is fire-and-forget
 //! so a gate never fails because the daemon is down.
 
-/// Log an event row via kavach-rpc daemon (`SurrealDB`). Silently drops on
+/// Log an event row via kavach-rpc daemon (`Database`). Silently drops on
 /// daemon-unavailable; callers must not depend on the row existing.
 pub(super) fn log_raw_rpc(
     session_id: &str,

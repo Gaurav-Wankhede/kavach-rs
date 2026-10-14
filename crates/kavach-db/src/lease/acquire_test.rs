@@ -4,7 +4,7 @@
 //! resuming a hung holder's card. These tests pin the three load-bearing
 //! guarantees — single-winner under contention, fence-epoch monotonicity, and
 //! TTL-expiry reclaimability — at the primitive level, with a real in-memory
-//! `TursoStore` so the WHERE-clause CAS is exercised, not mocked.
+//! `DatabaseStore` so the WHERE-clause CAS is exercised, not mocked.
 #![allow(
     clippy::expect_used,
     clippy::unwrap_in_result,
@@ -15,17 +15,17 @@ use super::acquire;
 use crate::lease::status;
 use crate::lease::types::AcquireOutcome;
 use crate::open_memory;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use chrono::{Duration, Utc};
 
 /// Seed a roadmap card with an UNHELD lease (the fresh-claim shape: no holder,
 /// no `occupied_until`), so the first `acquire` must win it.
-async fn seed_unheld(db: &TursoStore, id: &str) {
+async fn seed_unheld(db: &DbStore, id: &str) {
     db.exec_params(
         "INSERT INTO memories \
          (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
          VALUES ('p', 'roadmap', ?1, 't', 'c', 'in_progress', ?2, ?2)",
-        libsql::params![id.to_owned(), crate::turso::now_rfc3339()],
+        libsql::params![id.to_owned(), crate::db::now_rfc3339()],
     )
     .await
     .expect("seed unheld card");
@@ -99,7 +99,7 @@ async fn expired_lease_is_reacquirable_by_foreign_session() {
         libsql::params![
             "card-exp".to_owned(),
             past.to_rfc3339(),
-            crate::turso::now_rfc3339()
+            crate::db::now_rfc3339()
         ],
     )
     .await

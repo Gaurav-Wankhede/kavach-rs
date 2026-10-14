@@ -9,7 +9,7 @@
 //! and a pattern-list can never hold a number (illegal cross-kind states are
 //! unrepresentable past `set`). `project = "*"` is the global row.
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 /// The global (project-agnostic) row sentinel. A per-project lookup falls back
 /// to this when no project-scoped row exists.
@@ -177,9 +177,9 @@ const fn kind_of(value: &GateConfigValue) -> GateConfigKind {
 /// One exact lookup — the caller orders any project-then-global fallback.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
+/// Propagates `Error::Database` when the query fails.
 pub async fn gate_config_get(
-    db: &TursoStore,
+    db: &DbStore,
     project: &str,
     gate_key: &str,
 ) -> Result<Option<GateConfigValue>> {
@@ -202,9 +202,9 @@ pub async fn gate_config_get(
 /// `None` (caller falls through to file/compiled default).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when either query fails.
+/// Propagates `Error::Database` when either query fails.
 pub async fn gate_config_resolve(
-    db: &TursoStore,
+    db: &DbStore,
     project: &str,
     gate_key: &str,
 ) -> Result<Option<GateConfigValue>> {
@@ -223,9 +223,9 @@ pub async fn gate_config_resolve(
 /// [`set_with_kind`] so it reads back as `Severity`.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the write fails.
+/// Propagates `Error::Database` when the write fails.
 pub async fn gate_config_set(
-    db: &TursoStore,
+    db: &DbStore,
     project: &str,
     gate_key: &str,
     value: &GateConfigValue,
@@ -239,10 +239,10 @@ pub async fn gate_config_set(
 /// value is rejected before it can poison a reader.
 ///
 /// # Errors
-/// `Error::Migration` on a kind/value shape mismatch; `Error::Turso` on write
+/// `Error::Migration` on a kind/value shape mismatch; `Error::Database` on write
 /// failure.
 pub async fn set_with_kind(
-    db: &TursoStore,
+    db: &DbStore,
     project: &str,
     gate_key: &str,
     value: &GateConfigValue,
@@ -265,7 +265,7 @@ pub async fn set_with_kind(
     }
     let cols = Columns::for_value(value);
     let list_json = cols.list.map(serde_json::to_string).transpose()?;
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO gate_config \
              (project, gate_key, kind, value_num, value_bool, value_list, value_text, updated_at) \
@@ -294,8 +294,8 @@ pub async fn set_with_kind(
 /// key is a no-op success (the post-condition — "no override exists" — holds).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the delete fails.
-pub async fn gate_config_delete(db: &TursoStore, project: &str, gate_key: &str) -> Result<()> {
+/// Propagates `Error::Database` when the delete fails.
+pub async fn gate_config_delete(db: &DbStore, project: &str, gate_key: &str) -> Result<()> {
     db.exec_params(
         "DELETE FROM gate_config WHERE project = $p AND gate_key = $k",
         libsql::params![project.to_owned(), gate_key.to_owned()],
@@ -318,8 +318,8 @@ pub struct GateConfigEntry {
 /// List every override for `project` (pass [`GLOBAL_PROJECT`] for the globals).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
-pub async fn gate_config_list(db: &TursoStore, project: &str) -> Result<Vec<GateConfigEntry>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn gate_config_list(db: &DbStore, project: &str) -> Result<Vec<GateConfigEntry>> {
     let mut rows = db
         .exec_params(
             "SELECT project, gate_key, kind FROM gate_config WHERE project = $p",

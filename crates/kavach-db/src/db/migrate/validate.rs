@@ -2,17 +2,17 @@
 use std::collections::HashSet;
 
 use super::types::{SourceCounts, ValidateReport};
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
-use crate::turso::graph::GraphStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
+use crate::db::graph::GraphStore;
 
-/// Validate a populated TursoStore against source counts and graph integrity rules.
+/// Validate a populated DatabaseStore against source counts and graph integrity rules.
 #[expect(
     clippy::missing_errors_doc,
     reason = "comment_noise_guard single-line ceiling"
 )]
 pub async fn validate_store(
-    store: &TursoStore,
+    store: &DbStore,
     expected: &SourceCounts,
 ) -> Result<ValidateReport, String> {
     let mut report = ValidateReport::default();
@@ -62,7 +62,7 @@ pub async fn validate_store(
 }
 
 /// Load all valid endpoint IDs from entities, memories, and projects tables.
-async fn load_valid_nodes(store: &TursoStore) -> Result<HashSet<String>, String> {
+async fn load_valid_nodes(store: &DbStore) -> Result<HashSet<String>, String> {
     let mut nodes = HashSet::new();
     let mut ent_rows = store
         .exec_params("SELECT id FROM entities", ())
@@ -115,7 +115,7 @@ async fn load_valid_nodes(store: &TursoStore) -> Result<HashSet<String>, String>
 }
 
 /// Fetch row count from memories_fts virtual table.
-async fn get_fts_count(store: &TursoStore) -> Result<usize, String> {
+async fn get_fts_count(store: &DbStore) -> Result<usize, String> {
     let mut rows = store
         .exec_params("SELECT count(*) FROM memories_fts", ())
         .await

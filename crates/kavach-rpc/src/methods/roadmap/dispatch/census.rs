@@ -2,7 +2,7 @@ use super::super::readiness::{
     dep_index, deps_satisfied, is_in_cycle, is_runnable_status, is_umbrella,
 };
 use super::super::types::{NextOpenTaskParams, OpenSetCensus};
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
@@ -29,7 +29,7 @@ pub async fn open_set_census(
 ) -> Result<OpenSetCensus, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(OpenSetCensus::default());
     };
@@ -38,10 +38,10 @@ pub async fn open_set_census(
     };
     let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     // Index the GLOBAL dep pool once: cycle detection follows declared-dep edges
     // across every project (dep keys are a global key space, per `deps_satisfied`).
     let by_key = dep_index(&dep_pool);

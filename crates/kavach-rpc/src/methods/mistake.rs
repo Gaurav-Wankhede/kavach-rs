@@ -11,7 +11,7 @@
 // is text-clustered to its anti_pattern by a deterministic content key, recurrence
 // is counted via inbound instance_of edges, and RLAIF grades the node. The former
 // ONNX embedder + cosine retrieval were removed — decision/onnx-removal-dag-rlaif-only.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::graph::mistakes::{append_mistake_event, cluster_event_to_pattern};
@@ -49,7 +49,7 @@ pub async fn hit_count(
 ) -> Result<HitCountResult, ErrorObjectOwned> {
     let n = graph_query_anti_pattern_hit_count(&state.db, &p.name)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(HitCountResult {
         name: p.name,
         hit_count: n,
@@ -120,10 +120,10 @@ pub async fn record(state: &AppState, p: RecordParams) -> Result<RecordResult, E
         p.turn,
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     let pattern_id = cluster_event_to_pattern(&state.db, &event_id, &p.gate, &p.correct_action)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(RecordResult {
         ids: format!("{event_id:?} -> {pattern_id:?}"),
     })
@@ -162,6 +162,6 @@ pub struct PurgeResult {
 pub async fn purge(state: &AppState, p: PurgeParams) -> Result<PurgeResult, ErrorObjectOwned> {
     let removed = graph_delete_anti_patterns_by_gate(&state.db, &p.gate)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(PurgeResult { removed })
 }

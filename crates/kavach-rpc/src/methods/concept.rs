@@ -1,6 +1,6 @@
 // split: intentional — RPC method namespace for L0 concept verbs (add/link/find/search/list) + evidence gate; mirrors methods/graph.rs pattern (5 verbs, 1 file).
 // jsonrpsee 0.24 — see https://docs.rs/jsonrpsee/0.24
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -67,7 +67,7 @@ pub async fn add(state: &AppState, p: AddParams) -> Result<IdResult, ErrorObject
     require_evidence(&p.desc, &sources, &tags)?;
     let id = graph_upsert_concept(&state.db, &p.name, &p.display, &p.desc, &tags, &sources)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(IdResult {
         id: format!("{id:?}"),
     })
@@ -92,7 +92,7 @@ pub struct LinkParams {
 pub async fn link(state: &AppState, p: LinkParams) -> Result<&'static str, ErrorObjectOwned> {
     graph_relate_concepts(&state.db, &p.from, &p.edge, &p.to)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok("ok")
 }
 
@@ -115,7 +115,7 @@ pub async fn search(state: &AppState, p: SearchParams) -> Result<Vec<Entity>, Er
     let limit = p.limit.unwrap_or(20);
     graph_search_concepts_fts(&state.db, &p.query, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -136,7 +136,7 @@ pub async fn list(state: &AppState, p: ListParams) -> Result<Vec<Entity>, ErrorO
     let limit = p.limit.unwrap_or(50);
     graph_list_concepts(&state.db, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -165,7 +165,7 @@ pub struct DeleteResult {
 pub async fn delete(state: &AppState, p: DeleteParams) -> Result<DeleteResult, ErrorObjectOwned> {
     let n = graph_delete_concept(&state.db, &p.name)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(DeleteResult { removed: n })
 }
 
@@ -197,6 +197,6 @@ pub async fn delete_by_prefix(
     }
     let n = graph_delete_concepts_by_prefix(&state.db, &p.prefix)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(DeleteResult { removed: n })
 }

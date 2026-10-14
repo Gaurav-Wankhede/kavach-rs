@@ -8,7 +8,7 @@
 //! the gate never fails because rag is unavailable.
 //!
 //! A per-process `OnceLock` cache per label (see `cache`) avoids re-opening the
-//! `SurrealDB` connection and re-parsing the tree JSON when multiple gates fire
+//! `Database` connection and re-parsing the tree JSON when multiple gates fire
 //! within the same hook invocation.
 //!
 //! hub: re-exports the advisory + skill-routing entry points; the cache, RPC

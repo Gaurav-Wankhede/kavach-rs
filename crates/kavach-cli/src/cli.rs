@@ -173,7 +173,7 @@ pub(crate) enum Commands {
         after_help = "EXAMPLES:\n  kavach status\n\nWHEN: session-start sanity check; confirms project slug and pending gates."
     )]
     Status,
-    /// Start/stop/inspect the background servers (Turso DB store + web UI).
+    /// Start/stop/inspect the background servers (Database DB store + web UI).
     #[command(
         after_help = "EXAMPLES:\n  kavach servers up        # ensure DB + GUI running, print URL\n  kavach servers status\n  kavach servers down\n\nWHEN: bring the GUI online, or check why pages show the offline panel."
     )]
@@ -306,7 +306,7 @@ pub(crate) enum Commands {
         #[command(subcommand)]
         action: SessionAction,
     },
-    /// Manage the embedded Turso memory store (projects, kanban, decisions, graph).
+    /// Manage the embedded Database memory store (projects, kanban, decisions, graph).
     #[command(
         after_help = "EXAMPLES:\n  kavach db kanban --project nicole-carpenter --limit 10\n  kavach db get --project P --category roadmap --key K --full\n  kavach db write --project P --category roadmap --key K --title T --new\n\nWHEN: All kanban/roadmap truth lives here. Prefer `db kanban` over RPC for health checks."
     )]
@@ -528,19 +528,19 @@ only on pass. SOURCE: 42-pattern catalog §3.5.",
 
 #[derive(Subcommand)]
 pub(crate) enum ServersAction {
-    /// Ensure the Turso DB store + web UI are running; print the URL.
+    /// Ensure the Database DB store + web UI are running; print the URL.
     Up {
         /// Web UI port (loopback). Default 7777 (unprivileged).
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
     },
-    /// Stop the web UI (the launchd-owned Turso store is embedded — no separate server).
+    /// Stop the web UI (the launchd-owned Database store is embedded — no separate server).
     Down {
         /// Web UI port to stop. Default 7777.
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]
         port: u16,
     },
-    /// Report up/down for the Turso DB store + web UI.
+    /// Report up/down for the Database DB store + web UI.
     Status {
         /// Web UI port to probe. Default 7777.
         #[arg(long, default_value_t = kavach_web::DEFAULT_PORT)]

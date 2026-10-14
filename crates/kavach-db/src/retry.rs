@@ -1,4 +1,4 @@
-//! Operation-scoped transient-fault retry for `TursoStoreDB` queries.
+//! Operation-scoped transient-fault retry for `DatabaseStoreDB` queries.
 //!
 //! Connection-level recovery (`connection::open_default_held`) heals the
 //! server at OPEN time. This module heals an individual query that hits a
@@ -12,7 +12,7 @@
 //! permanent error (parse error, type mismatch, missing field, record-not-found,
 //! migration failure) fails FAST — retrying it would mask a real defect and
 //! waste the budget. SOURCE: rocksdb#3114 (transient LOCK on concurrent access),
-//! surrealdb-core 3.1.4 `err` variants; CWE-703 (proper handling of transient
+//! database-core 3.1.4 `err` variants; CWE-703 (proper handling of transient
 //! exceptional conditions).
 use crate::error::Error;
 use std::future::Future;
@@ -24,7 +24,7 @@ use std::time::Duration;
 /// that outlives the budget is NOT transient — surface it, never spin forever.
 const MAX_ATTEMPTS: u32 = 5;
 const BASE_BACKOFF_MS: u64 = 25;
-/// True when a `TursoStoreDB` error is a TRANSIENT fault worth retrying.
+/// True when a `DatabaseStoreDB` error is a TRANSIENT fault worth retrying.
 ///
 /// Transient = `RocksDB` lock/busy contention, a timeout, or a
 /// dropped/unavailable connection. Matched on the rendered message because the
@@ -36,10 +36,10 @@ const BASE_BACKOFF_MS: u64 = 25;
 /// surfaced error; a false "transient" would mask a real defect AND burn budget.
 #[must_use]
 pub fn is_transient(err: &Error) -> bool {
-    // Only raw TursoStoreDB errors can be transient at the engine layer; our own
+    // Only raw DatabaseStoreDB errors can be transient at the engine layer; our own
     // typed variants (RecordNotFound, ProjectNotFound, Migration, InvalidHierarchy,
     // Json) are deterministic and never retryable.
-    let Error::Turso(e) = err else {
+    let Error::Db(e) = err else {
         return false;
     };
     let msg = e.to_string().to_lowercase();

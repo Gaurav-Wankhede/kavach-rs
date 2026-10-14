@@ -8,12 +8,12 @@
 
 use super::renew_active_leases;
 use crate::open_memory;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use chrono::{Duration, Utc};
 
 /// Seed one roadmap card with explicit lease columns + status.
 async fn seed_card(
-    db: &TursoStore,
+    db: &DbStore,
     id: &str,
     occupied_by: Option<&str>,
     until_offset_secs: i64,
@@ -30,7 +30,7 @@ async fn seed_card(
             id.to_owned(),
             occupied_by.map(ToOwned::to_owned),
             until.map(|u| u.to_rfc3339()),
-            crate::turso::now_rfc3339(),
+            crate::db::now_rfc3339(),
             status.to_owned()
         ],
     )
@@ -38,7 +38,7 @@ async fn seed_card(
     .expect("seed card");
 }
 
-async fn until_of(db: &TursoStore, id: &str) -> Option<chrono::DateTime<Utc>> {
+async fn until_of(db: &DbStore, id: &str) -> Option<chrono::DateTime<Utc>> {
     let mut rows = db
         .exec_params(
             "SELECT occupied_until FROM memories \

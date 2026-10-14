@@ -15,17 +15,17 @@ pub(crate) fn fallback_backoff_schedule() -> impl Iterator<Item = std::time::Dur
         .map(std::time::Duration::from_millis)
 }
 
-/// Open the Turso (libSQL) store — Phase 6 default direct-open path.
+/// Open the Database (libSQL) store — Phase 6 default direct-open path.
 ///
 /// libSQL is a local file; no lock-contention retry needed.
-pub(crate) async fn open_turso_resilient() -> Result<kavach_db::turso::TursoStore, String> {
-    kavach_db::turso::TursoStore::open_default()
+pub(crate) async fn open_turso_resilient() -> Result<kavach_db::db::DbStore, String> {
+    kavach_db::db::DbStore::open_default()
         .await
         .map_err(|e| e.to_string())
 }
 
-/// Legacy alias for `open_turso_resilient` — the SurrealDB RocksDB retry loop
+/// Legacy alias for `open_database_resilient` — the Database RocksDB retry loop
 /// is obsolete; libSQL opens are local-file and non-contended.
-pub(crate) async fn open_direct_resilient() -> Result<kavach_db::turso::TursoStore, String> {
+pub(crate) async fn open_direct_resilient() -> Result<kavach_db::db::DbStore, String> {
     open_turso_resilient().await
 }

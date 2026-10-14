@@ -1,6 +1,6 @@
 use crate::error::internal;
 use jsonrpsee::types::ErrorObjectOwned;
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 
 pub(super) const ROADMAP_TABLE: &str = "roadmap";
 
@@ -14,7 +14,7 @@ pub(super) const fn or_str<'a>(opt: Option<&'a str>, default: &'a str) -> &'a st
 }
 
 pub(super) async fn resolve_project_id(
-    db: &TursoStore,
+    db: &DbStore,
     slug: &str,
 ) -> Result<String, ErrorObjectOwned> {
     let project = kavach_db::project_get_by_slug(db, slug)

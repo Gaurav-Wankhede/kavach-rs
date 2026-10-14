@@ -1,4 +1,4 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // SPEC: docs/architecture/session-occupancy-lease.md §Reclaim (crash-orphan recovery)
 // Closes harness-loop loophole L1: a session that CLAIMS a card (todo->in_progress)
 // then CRASHES leaves the card stuck `in_progress` forever — `clear_stale_for_session`
@@ -27,8 +27,8 @@ const LEASED_TABLES: &[&str] = &["roadmap", "decision", "app_spec"];
 /// skips them (the `entry_status = 'in_progress'` guard no longer matches).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when a table's UPDATE fails.
-pub async fn reclaim_orphaned_in_progress(db: &TursoStore) -> Result<usize> {
+/// Propagates `Error::Database` when a table's UPDATE fails.
+pub async fn reclaim_orphaned_in_progress(db: &DbStore) -> Result<usize> {
     let now = Utc::now();
     let mut reclaimed = 0_usize;
     for table in LEASED_TABLES {
@@ -37,7 +37,7 @@ pub async fn reclaim_orphaned_in_progress(db: &TursoStore) -> Result<usize> {
     Ok(reclaimed)
 }
 /// Reclaim orphaned cards in one table. Counts the rows actually reset.
-async fn reclaim_table(db: &TursoStore, table: &str, now: chrono::DateTime<Utc>) -> Result<usize> {
+async fn reclaim_table(db: &DbStore, table: &str, now: chrono::DateTime<Utc>) -> Result<usize> {
     // The lapsed-OR-absent lease test is the crux: `occupied_until IS NULL`
     // catches a card claimed via the pure status-CAS path (`claim_card`), which
     // never writes a lease at all — without this arm such a card could never be

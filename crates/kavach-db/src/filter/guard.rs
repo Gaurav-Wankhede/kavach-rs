@@ -1,6 +1,6 @@
-// Security allowlists and validation guards for TursoStoreQL injection prevention.
-// SECURITY: All field/edge/table names are allow-listed to prevent TursoStoreQL injection.
-// SOURCE: https://github.com/orgs/surrealdb/discussions/1330 (TursoStoreQL injection guidance)
+// Security allowlists and validation guards for DatabaseStoreQL injection prevention.
+// SECURITY: All field/edge/table names are allow-listed to prevent DatabaseStoreQL injection.
+// SOURCE: https://github.com/orgs/database/discussions/1330 (DatabaseStoreQL injection guidance)
 
 const ALLOWED_FIELDS: &[&str] = &[
     "project",

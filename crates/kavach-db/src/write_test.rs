@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use crate::{apply_schema, open_memory, update_status, upsert_entry_full};
 
 struct StatusRow {
@@ -8,7 +8,7 @@ struct StatusRow {
     access_count: i64,
 }
 
-async fn read_card(db: &TursoStore, key: &str) -> Result<StatusRow> {
+async fn read_card(db: &DbStore, key: &str) -> Result<StatusRow> {
     let mut resp = db
         .exec_params(
             "SELECT entry_status, content, access_count FROM memories \
@@ -25,7 +25,7 @@ async fn read_card(db: &TursoStore, key: &str) -> Result<StatusRow> {
     })
 }
 
-async fn upsert(db: &TursoStore, proj: &str, key: &str, content: &str) {
+async fn upsert(db: &DbStore, proj: &str, key: &str, content: &str) {
     upsert_entry_full()
         .db(db)
         .category("roadmap")

@@ -1,8 +1,8 @@
 // split: RPC namespace for implementation-flow DAG verbs (flow.upsert / flow.render).
-// Mirrors methods/concept.rs: DTOs at the boundary, delegate to kavach_surreal
-// graph_* helpers, map errors via surreal_to_rpc. The DAG is the store; Mermaid
+// Mirrors methods/concept.rs: DTOs at the boundary, delegate to kavach_database
+// graph_* helpers, map errors via database_to_rpc. The DAG is the store; Mermaid
 // is rendered on read by walking it.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -91,7 +91,7 @@ pub async fn upsert(state: &AppState, p: UpsertParams) -> Result<UpsertResult, E
     };
     let id = graph_upsert_flow(&state.db, &p.project_slug, &spec)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(UpsertResult {
         flow_id: format!("{id:?}"),
         step_count,
@@ -129,7 +129,7 @@ pub struct FlowSummary {
 pub async fn list(state: &AppState, p: ListParams) -> Result<Vec<FlowSummary>, ErrorObjectOwned> {
     let flows = graph_list_flows(&state.db, &p.project_slug)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(flows
         .into_iter()
         .map(|(flow_key, flow_title)| FlowSummary {
@@ -147,7 +147,7 @@ pub async fn list(state: &AppState, p: ListParams) -> Result<Vec<FlowSummary>, E
 pub async fn render(state: &AppState, p: RenderParams) -> Result<RenderResult, ErrorObjectOwned> {
     let dag = graph_fetch_flow(&state.db, &p.project_slug, &p.flow_key)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let fmt = p.format.as_deref().unwrap_or("mermaid");
     if fmt == "json" {
         Ok(RenderResult {
@@ -206,7 +206,7 @@ pub async fn decision_render(
 ) -> Result<DecisionRenderResult, ErrorObjectOwned> {
     let dag = kavach_db::roadmap_dag_fetch(&state.db, &p.project_slug)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let cap = p.max_nodes.unwrap_or(DECISION_MAP_DEFAULT_CAP);
     Ok(DecisionRenderResult {
         mermaid: dag.decision_mermaid(&p.focus, cap),
@@ -267,7 +267,7 @@ pub async fn practice_render(
     };
     let ranked = kavach_db::graph_top_anti_patterns(&state.db, pool)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let mut focused = kavach_db::graph_practice_delta_focus_filter(ranked, &p.focus);
     focused.truncate(cap);
     Ok(PracticeRenderResult {
@@ -309,7 +309,7 @@ pub async fn stack_render(
 ) -> Result<StackRenderResult, ErrorObjectOwned> {
     let invariants = kavach_db::stack_invariants(&state.db, &p.project_slug)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(StackRenderResult {
         mermaid: kavach_db::stack_fit_mermaid(&invariants),
     })
@@ -359,7 +359,7 @@ pub async fn pattern_render(
 ) -> Result<PatternRenderResult, ErrorObjectOwned> {
     let dag = kavach_db::roadmap_dag_fetch(&state.db, &p.project_slug)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let cap = p.max_nodes.unwrap_or(PATTERN_DAG_DEFAULT_CAP);
     Ok(PatternRenderResult {
         mermaid: dag.pattern_dag_mermaid(&p.focus, cap),
@@ -400,7 +400,7 @@ pub async fn retired_patterns(
 ) -> Result<Vec<RetiredPattern>, ErrorObjectOwned> {
     let dag = kavach_db::roadmap_dag_fetch(&state.db, &p.project_slug)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(dag
         .retired_patterns()
         .into_iter()

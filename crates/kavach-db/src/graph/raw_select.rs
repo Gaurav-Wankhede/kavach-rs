@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Statement verbs this read path permits. Anything else (UPDATE/DELETE/CREATE/
 /// REMOVE/DEFINE/INSERT/RELATE/BEGIN/…) is rejected before execution so a raw
@@ -23,18 +23,18 @@ const READ_PRAGMAS: [&str; 2] = ["table_info", "table_list"];
 ///
 /// # Errors
 /// `Error::Validation` if the query is empty or contains a non-read statement;
-/// `Error::Turso` on a real query failure.
-pub async fn raw_select(db: &TursoStore, sql: &str) -> Result<String> {
+/// `Error::Database` on a real query failure.
+pub async fn raw_select(db: &DbStore, sql: &str) -> Result<String> {
     assert_read_only(sql)?;
     let mut resp = match db.exec_params(sql, ()).await {
         Ok(resp) => resp,
         // A missing table is the brand-new graph, not a failure: return `[]`.
-        Err(crate::turso::TursoError::Libsql(libsql::Error::SqliteFailure(_, msg)))
+        Err(crate::db::DbError::Libsql(libsql::Error::SqliteFailure(_, msg)))
             if msg.contains("no such table") =>
         {
             return Ok("[]".to_owned());
         }
-        Err(e) => return Err(Error::Turso(e)),
+        Err(e) => return Err(Error::Db(e)),
     };
     // Collect every row into one JSON array. Values are decoded via the
     // untyped `get_value` accessor (K-2): the old typed `get::<String/i64/f64>`

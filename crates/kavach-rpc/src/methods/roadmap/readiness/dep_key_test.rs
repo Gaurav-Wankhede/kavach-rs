@@ -107,7 +107,7 @@ fn prose_tokens_are_rejected() {
 #[test]
 fn depends_on_line_drops_markup_prose_that_wedged_the_dag() {
     // Regression for the loop-wedge: the markup-bearing fragments that became
-    // phantom DAG nodes (`Surreal<Db>`, `(a)`, `ArcSwap<...>`, `SCOPE:`) must
+    // phantom DAG nodes (`Database<Db>`, `(a)`, `ArcSwap<...>`, `SCOPE:`) must
     // NOT survive. Bare words can't be told apart from bare keys (u1/ghost), so
     // the guard targets markup; clean keys-only authoring is the pattern.
     let content = "DEPENDS_ON: &Surreal<Db>, Arc<ArcSwap<Surreal<Db>>>) SCOPE: (a)";

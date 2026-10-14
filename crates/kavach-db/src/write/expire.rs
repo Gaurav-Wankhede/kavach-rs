@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 const TYPED_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
 
@@ -12,13 +12,13 @@ pub struct ExpireReport {
 
 /// Archive entries past their `expires_at` timestamp across all typed memory tables.
 ///
-/// Mirrors `kavach_db::memory::expire_stale` behavior over `TursoStoreDB`.
+/// Mirrors `kavach_db::memory::expire_stale` behavior over `DatabaseStoreDB`.
 /// Counts rows via `RETURNING` (SQLite has no native affected-rows count on
 /// UPDATE without RETURNING).
 ///
 /// # Errors
-/// Propagates `Error::Turso` from any failed per-table UPDATE.
-pub async fn expire_stale(db: &TursoStore) -> Result<ExpireReport> {
+/// Propagates `Error::Database` from any failed per-table UPDATE.
+pub async fn expire_stale(db: &DbStore) -> Result<ExpireReport> {
     let mut report = ExpireReport::default();
     for table in TYPED_TABLES {
         let count = expire_table(db, table).await?;
@@ -30,11 +30,11 @@ pub async fn expire_stale(db: &TursoStore) -> Result<ExpireReport> {
     Ok(report)
 }
 
-async fn expire_table(db: &TursoStore, table: &str) -> Result<usize> {
+async fn expire_table(db: &DbStore, table: &str) -> Result<usize> {
     if !TYPED_TABLES.contains(&table) {
         return Ok(0);
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut rows = db
         .exec_params(
             "UPDATE memories SET status = 'archived', updated_at = $now \

@@ -6,9 +6,9 @@ use super::{
 };
 use crate::error::Result;
 use crate::open_memory;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
-async fn family_of(db: &TursoStore, entity_type: &str) -> Result<Option<String>> {
+async fn family_of(db: &DbStore, entity_type: &str) -> Result<Option<String>> {
     let mut resp = db
         .exec_params(
             "SELECT json_extract(properties, '$.family') AS family \

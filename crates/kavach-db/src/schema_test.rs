@@ -1,8 +1,8 @@
 //! Schema apply + citation evidence-gate tests.
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use crate::{apply_schema, open_memory};
 
-async fn db_with_project() -> TursoStore {
+async fn db_with_project() -> DbStore {
     let db = open_memory().await.expect("mem db");
     apply_schema(&db)
         .await
@@ -18,8 +18,8 @@ async fn citation_with_url_is_accepted() {
     let db = db_with_project().await;
     db.exec_params(
         "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at) \
-         VALUES ('p', 'c1', 'TursoStoreDB', 'records', 'https://surrealdb.com/docs', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+         VALUES ('p', 'c1', 'DbStoreDB', 'records', 'https://surrealdb.com/docs', ?1, ?1)",
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("a citation with a non-empty url is accepted");
@@ -33,7 +33,7 @@ async fn roadmap_exec_prompt_persists_and_reads_back() {
          (project, category, entry_key, title, content, exec_prompt, created_at, updated_at) \
          VALUES ('p', 'roadmap', 'r1', 't', 'c', \
                  'You are implementing X. Files: a.rs. Done when tests pass.', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("a roadmap row with exec_prompt is accepted");
@@ -59,7 +59,7 @@ async fn roadmap_without_exec_prompt_is_accepted_as_none() {
         "INSERT INTO memories \
          (project, category, entry_key, title, content, created_at, updated_at) \
          VALUES ('p', 'roadmap', 'r2', 't', 'c', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("exec_prompt is optional — a row without it is valid");

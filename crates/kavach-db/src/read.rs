@@ -1,20 +1,20 @@
-//! Memory-entry read operations via TursoStore (embedded libSQL).
+//! Memory-entry read operations via DatabaseStore (embedded libSQL).
 //!
-//! These functions replaced the TursoStoreDB `kavach::read` path in Phase 6.
-//! They use `TursoStore` + `EntryStore` instead of `TursoStore` queries.
+//! These functions replaced the DatabaseStoreDB `kavach::read` path in Phase 6.
+//! They use `DatabaseStore` + `EntryStore` instead of `DatabaseStore` queries.
 
 use crate::dual_write::MemoryEntry;
 use crate::error::Result;
 use crate::filter::FilterExpr;
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
 
 /// Fetch a memory entry by (project, `entry_key`) from the store.
 ///
 /// # Errors
-/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
+/// Returns [`Error::Database`](crate::error::Error::Database) on SQL failure.
 pub async fn get_by_key(
-    store: &TursoStore,
+    store: &DbStore,
     table: &str,
     project: &str,
     key: &str,
@@ -22,7 +22,7 @@ pub async fn get_by_key(
     let entry = store
         .get_by_key(project, table, key)
         .await
-        .map_err(crate::error::Error::Turso)?;
+        .map_err(crate::error::Error::Db)?;
     Ok(entry)
 }
 
@@ -30,16 +30,16 @@ pub async fn get_by_key(
 /// then `created_at` (dispatch order).
 ///
 /// # Errors
-/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
+/// Returns [`Error::Database`](crate::error::Error::Database) on SQL failure.
 pub async fn list_by_project(
-    store: &TursoStore,
+    store: &DbStore,
     table: &str,
     project: &str,
 ) -> Result<Vec<MemoryEntry>> {
     let entries = store
         .list_by_category(project, table)
         .await
-        .map_err(crate::error::Error::Turso)?;
+        .map_err(crate::error::Error::Db)?;
     Ok(entries)
 }
 
@@ -52,9 +52,9 @@ pub async fn list_by_project(
 /// resolver's row set so a verified prerequisite counts regardless of project.
 ///
 /// # Errors
-/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
-pub async fn list_all_by_table(store: &TursoStore, table: &str) -> Result<Vec<MemoryEntry>> {
-    let entries = store.list_all().await.map_err(crate::error::Error::Turso)?;
+/// Returns [`Error::Database`](crate::error::Error::Database) on SQL failure.
+pub async fn list_all_by_table(store: &DbStore, table: &str) -> Result<Vec<MemoryEntry>> {
+    let entries = store.list_all().await.map_err(crate::error::Error::Db)?;
     // Filter by category since list_all returns all entries across all categories
     let filtered: Vec<MemoryEntry> = entries
         .into_iter()
@@ -67,9 +67,9 @@ pub async fn list_all_by_table(store: &TursoStore, table: &str) -> Result<Vec<Me
 /// `created_at`.
 ///
 /// # Errors
-/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
+/// Returns [`Error::Database`](crate::error::Error::Database) on SQL failure.
 pub async fn list_by_status(
-    store: &TursoStore,
+    store: &DbStore,
     table: &str,
     project: &str,
     status: &str,
@@ -77,7 +77,7 @@ pub async fn list_by_status(
     let entries = store
         .list_by_category(project, table)
         .await
-        .map_err(crate::error::Error::Turso)?;
+        .map_err(crate::error::Error::Db)?;
     let filtered: Vec<MemoryEntry> = entries
         .into_iter()
         .filter(|e| e.entry_status.as_deref() == Some(status))
@@ -88,9 +88,9 @@ pub async fn list_by_status(
 /// Query entries with metadata filtering, ordered by `updated_at` desc.
 ///
 /// # Errors
-/// Returns [`Error::Turso`](crate::error::Error::Turso) on SQL failure.
+/// Returns [`Error::Database`](crate::error::Error::Database) on SQL failure.
 pub async fn list_with_filter(
-    store: &TursoStore,
+    store: &DbStore,
     table: &str,
     project: &str,
     _filter: Option<&FilterExpr>,
@@ -103,7 +103,7 @@ pub async fn list_with_filter(
     let entries = store
         .list_with_filter(project, filter_cat, status, contains, limit_i64)
         .await
-        .map_err(crate::error::Error::Turso)?;
+        .map_err(crate::error::Error::Db)?;
     Ok(entries)
 }
 

@@ -1,13 +1,13 @@
 // SOURCE: relocated from write/upsert.rs — roadmap.upsert-microfile-split (kavach:relocated)
 use super::full::upsert_entry_full;
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use kavach_types::Priority;
 
 /// Upsert entry + event log in one txn (no entity graph).
 #[bon::builder]
 pub async fn upsert_entry_with_event(
-    db: &TursoStore,
+    db: &DbStore,
     category: &str,
     project_id: &str,
     entry_key: &str,

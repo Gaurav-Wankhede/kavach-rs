@@ -3,7 +3,7 @@
 //! `db.search` RPC method — filtered multi-table entry search.
 //!
 //! Read routed through the single-writer daemon. The `FilterBuilder` lives in
-//! `kavach-surreal` (daemon-visible), so the daemon builds the filter from raw
+//! `kavach-database` (daemon-visible), so the daemon builds the filter from raw
 //! `status`/`since`/`contains` params — the CLI passes strings, not a built expr.
 //! SOURCE: <https://github.com/facebook/rocksdb/issues/1780>
 

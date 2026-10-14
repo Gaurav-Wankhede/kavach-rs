@@ -3,8 +3,8 @@
 //! validation + strict-mode dedup + atomic upsert + edge projection are a
 //! single transaction-shaped flow; splitting fragments the handler with no
 //! reuse gain. Pure helpers (similarity, protected-closure) already factored.
-// `kavach db write` — SurrealDB-backed entry upsert.
-// kanban_cards table dropped: SurrealDB stores entry_status directly on roadmap rows.
+// `kavach db write` — Database-backed entry upsert.
+// kanban_cards table dropped: Database stores entry_status directly on roadmap rows.
 //
 // STRICT MODE (--new vs --update-key) prevents stale-row proliferation:
 // writes against {decision,research,roadmap,pattern,app_spec} must declare
@@ -14,14 +14,14 @@
 // SOURCE: docs.rs/clap/latest/clap/_derive/_tutorial/index.html
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, read_stdin_body_or_exit};
 use kavach_db::dual_write::MemoryEntry;
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 use kavach_types::Priority;
 use std::fmt::Write as _;
 const ROADMAP_CATEGORY: &str = "roadmap";
 /// THE single source of truth for the valid memory-entry category vocabulary.
 ///
 /// Categories that require explicit `--new` or `--update-key` intent AND the
-/// complete accepted set (verified == the `kavach-surreal` write match arm).
+/// complete accepted set (verified == the `kavach-database` write match arm).
 /// `pub(crate)` so the clap `--category` args reference `CATEGORY_HELP`
 /// (below) instead of re-typing the list — eliminating the doc-string drift
 /// class (rca.kavach-db-write-category-enum-inconsistent: 4 help strings had
@@ -428,7 +428,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
         }
     };
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {
@@ -601,7 +601,7 @@ pub(crate) fn run(req: &super::rpc_client::WriteRequest<'_>) -> i32 {
                     (r.rel, tgt)
                 })
                 .collect();
-            // TODO: Implement graph edge upsert in TursoStore (GraphStore::relate_dynamic)
+            // TODO: Implement graph edge upsert in DatabaseStore (GraphStore::relate_dynamic)
             // For now, skip graph edges in direct fallback path.
             let _ = normalised;
         }

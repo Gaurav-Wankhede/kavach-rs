@@ -1,9 +1,9 @@
 //! `kavach db citation {add,list}` — official-docs context pinned to a
 //! (project, entry-key) for research-consumption guard and citation graph.
-//! SOURCE: <https://surrealdb.com/docs/surrealql/statements/define/table>
+//! SOURCE: <https://database.com/docs/databaseql/statements/define/table>
 use super::rpc_client;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 /// Pin an official-docs citation to a (project, entry-key).
 pub(super) fn add(project: &str, entry_key: &str, name: &str, slug: &str, url: &str) -> i32 {
@@ -42,7 +42,7 @@ pub(super) fn add(project: &str, entry_key: &str, name: &str, slug: &str, url: &
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {
@@ -116,7 +116,7 @@ pub(super) fn list(project: &str) -> i32 {
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {

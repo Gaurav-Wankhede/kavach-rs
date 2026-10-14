@@ -3,8 +3,8 @@ use super::types::{
     EdgeRecord, EntityRecord, ImportOpts, MemoryRecord, NormalizedRecord, SourceCounts,
 };
 use super::{import_records, normalize_record, validate_store};
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
 
 #[test]
 fn test_normalize_record_memory() {
@@ -56,7 +56,7 @@ fn test_normalize_record_edge() {
 async fn test_import_and_validate_roundtrip() {
     let dir = tempfile::TempDir::new().unwrap();
     let db_path = dir.path().join("mig_test.db");
-    let store = TursoStore::open(&db_path).await.unwrap();
+    let store = DbStore::open(&db_path).await.unwrap();
     let records = vec![
         NormalizedRecord::Memory(Box::new(MemoryRecord {
             project: "p1".to_owned(),
@@ -127,7 +127,7 @@ async fn test_import_and_validate_roundtrip() {
 async fn test_dangling_edge_detected() {
     let dir = tempfile::TempDir::new().unwrap();
     let db_path = dir.path().join("dangling.db");
-    let store = TursoStore::open(&db_path).await.unwrap();
+    let store = DbStore::open(&db_path).await.unwrap();
     let records = vec![
         NormalizedRecord::Entity(EntityRecord {
             id: "e1".to_owned(),
@@ -167,7 +167,7 @@ async fn test_dangling_edge_detected() {
 async fn test_quote_injection_safe() {
     let dir = tempfile::TempDir::new().unwrap();
     let db_path = dir.path().join("injection.db");
-    let store = TursoStore::open(&db_path).await.unwrap();
+    let store = DbStore::open(&db_path).await.unwrap();
     let records = vec![NormalizedRecord::Memory(Box::new(MemoryRecord {
         project: "inject_p".to_owned(),
         category: "decision".to_owned(),
@@ -233,7 +233,7 @@ fn test_normalize_endpoint_formats() {
 async fn test_validate_store_with_memory_and_project_endpoints() {
     let dir = tempfile::TempDir::new().unwrap();
     let db_path = dir.path().join("mem_edge.db");
-    let store = TursoStore::open(&db_path).await.unwrap();
+    let store = DbStore::open(&db_path).await.unwrap();
     let records = vec![
         NormalizedRecord::Memory(Box::new(MemoryRecord {
             project: "proj1".to_owned(),

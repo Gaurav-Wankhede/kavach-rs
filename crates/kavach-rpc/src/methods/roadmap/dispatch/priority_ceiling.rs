@@ -1,7 +1,7 @@
 //! Priority-ceiling: a dependency-blocker inherits the urgency of its most
 //! urgent dependent (E3).
 //!
-//! PRIORITY SEMANTICS (`kavach-surreal::read`): priority is sorted ASC, LOWER =
+//! PRIORITY SEMANTICS (`kavach-database::read`): priority is sorted ASC, LOWER =
 //! MORE URGENT (pri-1 beats pri-9); absent priority sorts last (999999). So
 //! "inherit `max(priority)` of dependents" in URGENCY terms is the NUMERIC MIN of
 //! the dependents' priorities — the blocker rises to the rank of the hungriest

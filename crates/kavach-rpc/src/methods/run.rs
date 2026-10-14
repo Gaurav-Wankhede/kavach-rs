@@ -1,4 +1,4 @@
-use crate::error::{internal, invalid_params, surreal_to_rpc};
+use crate::error::{internal, invalid_params, db_to_rpc};
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{RunRecord, run_get, run_insert, run_list_by_project, run_update_status};
@@ -64,7 +64,7 @@ pub struct IdResult {
 
 /// A run row with a flat, JSON-friendly `table:key` string id.
 ///
-/// The web/CLI clients consume this — the Turso `run` table keys by a plain
+/// The web/CLI clients consume this — the Database `run` table keys by a plain
 /// string id, so no RecordId conversion is needed.
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize)]
@@ -102,14 +102,14 @@ pub struct SuccessResult {
 }
 
 /// Resolve a project SLUG (e.g. "kavach-rs") to its project id string (the
-/// slug itself — the Turso `projects` table keys by slug). The web UI and CLI
+/// slug itself — the Database `projects` table keys by slug). The web UI and CLI
 /// pass slugs, not pre-formatted record ids — mirrors the `db.*` methods'
 /// `resolve_project_id`. Use this for the `project` field; `parse_record_id`
 /// stays for run-id strings (`run:…`) returned by `run.list`.
 async fn resolve_project(state: &AppState, slug: &str) -> Result<String, ErrorObjectOwned> {
     let project = kavach_db::project_get_by_slug(&state.db, slug)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     project
         .and_then(|p| p.id)
         .ok_or_else(|| invalid_params(format!("project not found: {slug}")))
@@ -134,7 +134,7 @@ pub async fn list(state: &AppState, params: ListParams) -> Result<Vec<RunDto>, E
     let project_id = resolve_project(state, &params.project).await?;
     let runs = run_list_by_project(&state.db, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(runs.into_iter().map(run_to_dto).collect())
 }
 
@@ -158,7 +158,7 @@ pub async fn record(state: &AppState, params: RecordParams) -> Result<IdResult, 
         exit_code: None,
         cost_usd: None,
     };
-    let id = run_insert(&state.db, &run).await.map_err(surreal_to_rpc)?;
+    let id = run_insert(&state.db, &run).await.map_err(db_to_rpc)?;
     Ok(IdResult { id })
 }
 
@@ -180,7 +180,7 @@ pub async fn update_status(
         params.exit_code,
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     Ok(SuccessResult {
         success: true,
         error: None,
@@ -197,7 +197,7 @@ pub async fn cancel(
     params: CancelParams,
 ) -> Result<SuccessResult, ErrorObjectOwned> {
     let id = parse_record_id(&params.id)?;
-    let run = run_get(&state.db, &id).await.map_err(surreal_to_rpc)?;
+    let run = run_get(&state.db, &id).await.map_err(db_to_rpc)?;
 
     let Some(run) = run else {
         return Ok(SuccessResult {
@@ -220,7 +220,7 @@ pub async fn cancel(
         Ok(_) => {
             run_update_status(&state.db, &id, "cancelled", None, None)
                 .await
-                .map_err(surreal_to_rpc)?;
+                .map_err(db_to_rpc)?;
             Ok(SuccessResult {
                 success: true,
                 error: None,
@@ -276,7 +276,7 @@ pub async fn spawn(state: &AppState, params: SpawnParams) -> Result<SpawnResult,
         cost_usd: None,
     };
 
-    let record_id = run_insert(&state.db, &run).await.map_err(surreal_to_rpc)?;
+    let record_id = run_insert(&state.db, &run).await.map_err(db_to_rpc)?;
 
     let db = std::sync::Arc::clone(&state.db);
     let record_id_clone = record_id.clone();

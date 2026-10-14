@@ -1,13 +1,13 @@
-//! Streaming batch importer from NDJSON records into TursoStore.
+//! Streaming batch importer from NDJSON records into DatabaseStore.
 use std::io::BufRead;
 
 use chrono::{DateTime, Utc};
 
 use super::types::{ImportOpts, MigrateReport, NormalizedRecord};
 use crate::dual_write::MemoryEntry;
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
-use crate::turso::graph::{GraphEntity, GraphStore};
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
+use crate::db::graph::{GraphEntity, GraphStore};
 
 /// Parse an RFC3339 timestamp string into UTC DateTime.
 fn parse_ts(s: &str) -> Option<DateTime<Utc>> {
@@ -16,13 +16,13 @@ fn parse_ts(s: &str) -> Option<DateTime<Utc>> {
         .map(DateTime::<Utc>::from)
 }
 
-/// Execute import of NDJSON records into TursoStore with batch transactions.
+/// Execute import of NDJSON records into DatabaseStore with batch transactions.
 #[expect(
     clippy::missing_errors_doc,
     reason = "comment_noise_guard single-line ceiling"
 )]
 pub async fn import_records(
-    store: &TursoStore,
+    store: &DbStore,
     records: &[NormalizedRecord],
     opts: ImportOpts,
 ) -> Result<MigrateReport, String> {
@@ -91,7 +91,7 @@ const fn count_record(record: &NormalizedRecord, report: &mut MigrateReport) {
     reason = "one record kind per match arm; splitting would scatter the migration contract"
 )]
 async fn import_pass_one(
-    store: &TursoStore,
+    store: &DbStore,
     records: &[NormalizedRecord],
     batch_size: usize,
     report: &mut MigrateReport,
@@ -209,7 +209,7 @@ async fn import_pass_one(
 
 /// Pass 2 relates edges now that all endpoints are guaranteed to exist.
 async fn import_pass_two(
-    store: &TursoStore,
+    store: &DbStore,
     records: &[NormalizedRecord],
     batch_size: usize,
     report: &mut MigrateReport,

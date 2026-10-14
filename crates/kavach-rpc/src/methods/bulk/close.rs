@@ -1,7 +1,7 @@
 // bulk.sweep_close — terminal status for a manifest. `reason` chooses between
 // `closed` (agent finished) and `expired` (TTL fired). Audit trail preserves
 // the distinction; stop-gate refuses clean stop while any active manifest remains.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
 use kavach_db::bulk_manifest::{close as bm_close, mark_expired};
@@ -29,13 +29,13 @@ pub async fn close(state: &AppState, p: CloseParams) -> Result<CloseResult, Erro
         "closed" => {
             bm_close(&state.db, &p.sweep_id)
                 .await
-                .map_err(surreal_to_rpc)?;
+                .map_err(db_to_rpc)?;
             "closed".to_owned()
         }
         "expired" => {
             mark_expired(&state.db, &p.sweep_id)
                 .await
-                .map_err(surreal_to_rpc)?;
+                .map_err(db_to_rpc)?;
             "expired".to_owned()
         }
         other => {

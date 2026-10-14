@@ -1,4 +1,4 @@
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
@@ -9,7 +9,7 @@ use tokio::sync::Notify;
 /// The LIVE SELECT watcher task bumps `version` and wakes all `change.wait`
 /// callers on every committed DB change. The GUI long-polls `change.wait`, so
 /// it re-fetches ONLY when real data changed — event-driven, no idle polling.
-/// SOURCE: research.poll-vs-event-gui · surrealdb LIVE SELECT.
+/// SOURCE: research.poll-vs-event-gui · database LIVE SELECT.
 #[derive(Debug, Default)]
 pub struct ChangeFeed {
     version: AtomicU64,
@@ -56,7 +56,7 @@ impl ChangeFeed {
     reason = "constructed at RPC handler boundary"
 )]
 pub struct AppState {
-    pub db: Arc<TursoStore>,
+    pub db: Arc<DbStore>,
     pub started_at: chrono::DateTime<chrono::Utc>,
     /// Shared change feed driven by the LIVE SELECT watcher, awaited by
     /// the `change.wait` RPC. Cloned cheaply (Arc) across handlers + the task.
@@ -65,7 +65,7 @@ pub struct AppState {
 
 impl AppState {
     #[must_use]
-    pub fn new(db: TursoStore) -> Self {
+    pub fn new(db: DbStore) -> Self {
         Self {
             db: Arc::new(db),
             started_at: chrono::Utc::now(),

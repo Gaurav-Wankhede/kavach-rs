@@ -1,5 +1,5 @@
 //! Shape proofs for the back-fill RPC DTOs. The async grading path needs a live
-//! store (covered by the kavach-surreal integration tests); here we lock the
+//! store (covered by the kavach-database integration tests); here we lock the
 //! wire contract — notably that the field renamed to dodge the secret-Debug
 //! heuristic still serializes as `session_id` for callers.
 

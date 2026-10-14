@@ -3,7 +3,7 @@
 //
 // Removed 2026-05 (no callers):
 //   - `DualWriter` struct + `new`/`write_decision`/`write_research`/
-//     `write_roadmap`/`write_entity`/`log_write` (SQLite→TursoStore dual-write
+//     `write_roadmap`/`write_entity`/`log_write` (SQLite→DatabaseStore dual-write
 //     bridge that ran during the one-shot migration).
 //   - `migrate_memory_entry` (one-shot per-category insert helper).
 //
@@ -20,8 +20,8 @@ use serde::{Deserialize, Serialize};
 pub struct MemoryEntry {
     pub id: Option<String>,
     pub project: String,
-    // TursoStoreDB 3.0 deserializes query results via `TursoStoreValue`, which does
-    // NOT honor `#[serde(default)]` and has no `#[surreal(default)]` knob — the
+    // DatabaseStoreDB 3.0 deserializes query results via `DatabaseStoreValue`, which does
+    // NOT honor `#[serde(default)]` and has no `#[database(default)]` knob — the
     // ONLY missing-field tolerance it supports is `Option<T>`. SCHEMAFULL
     // per-category tables don't all define every legacy field, so a
     // cross-category SELECT hands back `none` for a field a different category
@@ -52,7 +52,7 @@ pub struct MemoryEntry {
     // via NULLS LAST in read.rs::list_by_project). Defined on roadmap +
     // decision tables only; selected as `priority` in MEMORY_FIELDS, the
     // cross-category SELECT yields NONE for tables without the column.
-    // Stored as i64 to satisfy TursoStoreValue derive; callers wrap in Priority
+    // Stored as i64 to satisfy DatabaseStoreValue derive; callers wrap in Priority
     // newtype at the boundary for validation bounds [0, 1000].
     #[serde(default)]
     pub priority: Option<i64>,

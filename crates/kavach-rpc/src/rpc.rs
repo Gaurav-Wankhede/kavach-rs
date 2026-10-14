@@ -659,7 +659,7 @@ pub fn build_module(state: AppState) -> Result<RpcModule<AppState>, ErrorObjectO
         })
         .map_err(|e| internal(format!("register trust.classify: {e}")))?;
 
-    // db.* namespace — CLI command equivalents (parameterized queries in kavach_surreal)
+    // db.* namespace — CLI command equivalents (parameterized queries in kavach_database)
     module
         .register_async_method("db.kanban", |params, ctx, _ext| async move {
             let p: db::KanbanParams = params.parse().map_err(|e| invalid_params(e.to_string()))?;

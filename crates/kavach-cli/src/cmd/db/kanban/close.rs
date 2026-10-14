@@ -1,8 +1,8 @@
 // Close leaf for `kavach db kanban-close` — marks a roadmap entry verified.
-// Tries the RPC daemon first; falls back to a direct resilient SurrealDB open
+// Tries the RPC daemon first; falls back to a direct resilient Database open
 // only when the daemon is provably down (no competing RocksDB lock holder).
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
     // EVIDENCE GATE: kanban-close promotes roadmap→verified — run the workspace
@@ -43,7 +43,7 @@ pub(in crate::cmd::db) fn close(project_slug: &str, key: &str) -> i32 {
         }
         Err(e) if super::super::rpc_client::should_fallback_to_direct(&e) => {
             // Daemon down → no competing RocksDB lock holder → safe to fall
-            // through to the direct SurrealDB path below.
+            // through to the direct Database path below.
         }
         Err(e) => return write_err(&format!("rpc error: {e}")),
     }

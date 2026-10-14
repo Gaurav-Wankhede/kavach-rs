@@ -2,8 +2,8 @@
 //! respecting dependency DAG and max concurrency.
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_db::dual_write::MemoryEntry;
-use kavach_db::turso::entries::EntryStore;
-use kavach_db::turso::TursoStore;
+use kavach_db::db::entries::EntryStore;
+use kavach_db::db::DbStore;
 use std::collections::{HashMap, VecDeque};
 use std::process::Command;
 use std::sync::Arc;
@@ -18,7 +18,7 @@ enum Pick<'a> {
 }
 
 /// Pick all `todo` roadmap cards whose dependencies are satisfied.
-fn pick_ready<'a>(rows: &'a [MemoryEntry], _store: &TursoStore) -> Pick<'a> {
+fn pick_ready<'a>(rows: &'a [MemoryEntry], _store: &DbStore) -> Pick<'a> {
     let mut ready = Vec::new();
     let mut key_to_row = HashMap::new();
 
@@ -85,7 +85,7 @@ fn pick_ready<'a>(rows: &'a [MemoryEntry], _store: &TursoStore) -> Pick<'a> {
 }
 
 /// Run a single card: mark in_progress, execute verification, mark done/verified.
-async fn run_card(store: &TursoStore, card: &MemoryEntry, verify_cmd: Option<&str>) -> Result<(), String> {
+async fn run_card(store: &DbStore, card: &MemoryEntry, verify_cmd: Option<&str>) -> Result<(), String> {
     // Mark in_progress
     store
         .upsert_entry(&MemoryEntry {
@@ -135,7 +135,7 @@ async fn run_card(store: &TursoStore, card: &MemoryEntry, verify_cmd: Option<&st
 
 /// Run parallel execution of ready cards.
 async fn run_parallel(
-    store: &TursoStore,
+    store: &DbStore,
     project: &str,
     max_parallel: usize,
     verify_cmd: Option<String>,

@@ -13,7 +13,7 @@ pub use types::{GraphQueryParams, GraphQueryResult};
 const DEFAULT_ETYPE: &str = "skill";
 
 /// # Errors
-/// Returns an RPC `ErrorObjectOwned` when the underlying `SurrealDB` query fails.
+/// Returns an RPC `ErrorObjectOwned` when the underlying `Database` query fails.
 pub async fn graph_query(
     ctx: &AppState,
     params: GraphQueryParams,

@@ -15,18 +15,18 @@
     reason = "test assertions: a panic on the Err/None path IS the failure signal"
 )]
 
-use kavach_db::turso::TursoStore;
-use kavach_db::turso::search::SearchStore;
+use kavach_db::db::DbStore;
+use kavach_db::db::search::SearchStore;
 use kavach_db::{open_memory, upsert_entry_full};
 
 /// In-memory db with the production schema (incl. the FTS5 index) applied.
-async fn db_with_schema() -> TursoStore {
+async fn db_with_schema() -> DbStore {
     open_memory().await.expect("memory db")
 }
 
 /// Seed a decision row through the PRODUCTION write path, so the FTS proof runs
 /// over rows shaped exactly as `kavach db write` produces them.
-async fn seed_decision(db: &TursoStore, key: &str, title: &str, content: &str) {
+async fn seed_decision(db: &DbStore, key: &str, title: &str, content: &str) {
     let proj = "fts-test".to_owned();
     upsert_entry_full()
         .db(db)

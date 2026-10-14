@@ -1,4 +1,4 @@
-//! Exporter and record normalizer for TursoStore to NDJSON migration stream.
+//! Exporter and record normalizer for DatabaseStore to NDJSON migration stream.
 use serde_json::Value;
 use std::collections::HashSet;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
@@ -7,9 +7,9 @@ use super::types::{
     EdgeRecord, EntityRecord, EventRecord, MemoryRecord, MigrateReport, NormalizedRecord,
     PartRecord, ProjectRecord,
 };
-use crate::turso::CATEGORIES;
-use crate::turso::TursoStore;
-use crate::turso::graph::ALLOWED_RELS;
+use crate::db::CATEGORIES;
+use crate::db::DbStore;
+use crate::db::graph::ALLOWED_RELS;
 
 /// Strip table prefix from a record ID string (e.g. "project:foo" -> "foo").
 fn strip_prefix(raw: &str, table: &str) -> String {
@@ -29,7 +29,7 @@ fn normalize_tags(val: Option<&Value>) -> Vec<String> {
     })
 }
 
-/// Normalize an untyped JSON record from a TursoStore query into a typed migration record.
+/// Normalize an untyped JSON record from a DatabaseStore query into a typed migration record.
 #[expect(
     clippy::missing_errors_doc,
     reason = "comment_noise_guard single-line ceiling"
@@ -85,7 +85,7 @@ fn is_edge_shape(val: &Value) -> bool {
     val.get("in").is_some() && val.get("out").is_some()
 }
 
-/// Normalize an endpoint ID string, stripping TursoStore Debug wrappers and backticks.
+/// Normalize an endpoint ID string, stripping DatabaseStore Debug wrappers and backticks.
 #[must_use]
 pub fn normalize_endpoint(raw: &str) -> String {
     let s = raw.trim().trim_matches('`');
@@ -457,7 +457,7 @@ fn part_row_to_value(row: &libsql::Row) -> Result<Value, String> {
     Ok(serde_json::json!({ "project": project, "part": part, "path": path }))
 }
 
-/// Stream export of all memory rows, graph elements, and registries from TursoStore to writer.
+/// Stream export of all memory rows, graph elements, and registries from DatabaseStore to writer.
 #[expect(
     clippy::missing_errors_doc,
     reason = "comment_noise_guard single-line ceiling"
@@ -467,7 +467,7 @@ fn part_row_to_value(row: &libsql::Row) -> Result<Value, String> {
     reason = "one table per loop iteration; splitting would scatter the migration contract"
 )]
 pub async fn export_from_surreal<W: AsyncWrite + Unpin>(
-    db: &TursoStore,
+    db: &DbStore,
     writer: &mut W,
 ) -> Result<MigrateReport, String> {
     let mut report = MigrateReport::default();

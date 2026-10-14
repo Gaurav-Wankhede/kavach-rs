@@ -1,4 +1,4 @@
-//! Architecture decision recording — RPC-backed (`SurrealDB` via kavach-rpc daemon).
+//! Architecture decision recording — RPC-backed (`Database` via kavach-rpc daemon).
 
 use super::extract::extract_arch_comment;
 use std::path::Path;

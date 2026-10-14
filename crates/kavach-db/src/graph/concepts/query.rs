@@ -2,7 +2,7 @@
 use crate::error::Result;
 use crate::graph::types::Entity;
 use crate::query_lex::{Lexer, QueryAst, TokenKind};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 pub(crate) const SEARCH_LIMIT_MAX: i64 = 200;
 
@@ -35,8 +35,8 @@ fn entity_from_row(row: &libsql::Row) -> Result<Entity> {
 ///
 /// # Errors
 ///
-/// Propagates `Error::Turso` when the query fails.
-pub async fn find_concept(db: &TursoStore, name: &str) -> Result<Option<Entity>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn find_concept(db: &DbStore, name: &str) -> Result<Option<Entity>> {
     let mut resp = db
         .exec_params(
             "SELECT id, entity_type, name, properties, content_hash, project FROM entities \
@@ -97,9 +97,9 @@ fn trim_word(word: &str) -> &str {
 ///
 /// # Errors
 ///
-/// Propagates `Error::Turso` when the query fails.
+/// Propagates `Error::Database` when the query fails.
 pub async fn search_concepts_fts(
-    db: &TursoStore,
+    db: &DbStore,
     query: &str,
     limit: usize,
 ) -> Result<Vec<Entity>> {
@@ -177,8 +177,8 @@ fn concept_search_text(entity: &Entity) -> String {
 ///
 /// # Errors
 ///
-/// Propagates `Error::Turso` when the query fails.
-pub async fn list_concepts(db: &TursoStore, limit: usize) -> Result<Vec<Entity>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn list_concepts(db: &DbStore, limit: usize) -> Result<Vec<Entity>> {
     let limit = clamp_limit(limit);
     let mut resp = db
         .exec_params(

@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 /// The global (project-agnostic) row sentinel.
 ///
-/// Mirrors `kavach-surreal`'s `GLOBAL_PROJECT`. A gate with no project in scope
+/// Mirrors `kavach-database`'s `GLOBAL_PROJECT`. A gate with no project in scope
 /// (e.g. a pre-write content scanner) resolves its overlay under this key.
 pub const GLOBAL_PROJECT_KEY: &str = "*";
 

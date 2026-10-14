@@ -2,7 +2,7 @@ use super::fetch::fetch_flow;
 use super::model::{FlowDag, FlowEdgeInput, FlowSpec, FlowStep, FlowStepInput};
 use super::shape::NodeShape;
 use super::upsert::upsert_flow;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 fn sample() -> FlowDag {
     FlowDag {
@@ -93,7 +93,7 @@ fn spec() -> FlowSpec {
     }
 }
 
-async fn db_with_project() -> TursoStore {
+async fn db_with_project() -> DbStore {
     let db = crate::open_memory().await.expect("open in-memory db");
     crate::apply_schema(&db).await.expect("schema");
     db.exec_params(

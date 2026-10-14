@@ -1,7 +1,7 @@
-//! TursoStore — embedded libSQL storage backend (PRD_SURREALDB_TO_TURSO_MIGRATION §3).
+//! DatabaseStore — embedded libSQL storage backend (PRD_SURREALDB_TO_TURSO_MIGRATION §3).
 //!
 //! One SQLite-compatible file at `~/.kavach/kavach.db` (WAL mode), replacing
-//! the standalone TursoStoreDB server. Layout (one domain per submodule, tests as
+//! the standalone DatabaseStoreDB server. Layout (one domain per submodule, tests as
 //! `<file>_test.rs` siblings):
 //!
 //! - [`connection`] — open/close lifecycle + schema bootstrap
@@ -20,34 +20,34 @@ pub mod search;
 pub mod vector;
 
 #[cfg(test)]
-#[path = "turso/probe_test.rs"]
+#[path = "db/probe_test.rs"]
 mod probe_test;
 
 #[cfg(test)]
-#[path = "turso/entries_test.rs"]
+#[path = "db/entries_test.rs"]
 mod entries_test;
 
 #[cfg(test)]
-#[path = "turso/search_test.rs"]
+#[path = "db/search_test.rs"]
 mod search_test;
 
 #[cfg(test)]
-#[path = "turso/graph_test.rs"]
+#[path = "db/graph_test.rs"]
 mod graph_test;
 
 #[cfg(test)]
-#[path = "turso/vector_test.rs"]
+#[path = "db/vector_test.rs"]
 mod vector_test;
 
 pub const DEFAULT_DB_FILENAME: &str = "kavach.db";
 
-/// Categories mirror the TursoStoreDB SCHEMAFULL per-category tables. A single
+/// Categories mirror the DatabaseStoreDB SCHEMAFULL per-category tables. A single
 /// table + category discriminator replaces them; CHECK keeps garbage out.
 pub const CATEGORIES: [&str; 5] = ["decision", "research", "roadmap", "pattern", "app_spec"];
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-pub enum TursoError {
+pub enum DbError {
     #[error("libsql: {0}")]
     Libsql(#[from] libsql::Error),
     #[error("row mapping: {0}")]
@@ -56,18 +56,18 @@ pub enum TursoError {
     Migrate(String),
 }
 
-pub type TursoResult<T> = Result<T, TursoError>;
+pub type DbResult<T> = Result<T, DbError>;
 
 /// Embedded handle. Cloneable; each clone opens its own libSQL connection to
 /// the same file (WAL allows concurrent readers + single writer w/ timeout).
 #[derive(Clone)]
-pub struct TursoStore {
+pub struct DbStore {
     pub(crate) conn: libsql::Connection,
 }
 
-impl std::fmt::Debug for TursoStore {
+impl std::fmt::Debug for DbStore {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TursoStore").finish_non_exhaustive()
+        f.debug_struct("DbStore").finish_non_exhaustive()
     }
 }
 

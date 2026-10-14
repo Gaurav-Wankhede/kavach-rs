@@ -1,14 +1,14 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // split: intentional - dynamic graph ops (string rel_type, upsert-by-name) for engine gates
 // SQL-backed dynamic graph helpers — delegate to the `GraphStore` trait
-// (turso/graph.rs) which models entities + edges as plain tables. The fixed
+// (database/graph.rs) which models entities + edges as plain tables. The fixed
 // RelationType enum in graph::types::RelationType is preferred for new code;
 // this module exists to migrate engine gates that use dynamic rel_types like
 // "uses_skill", "cross_invoke", "INVOKE" without expanding the typed enum.
 // sql-safe: bound params; rel_type validated against an allowlist before use.
 use crate::error::{Error, Result};
 use crate::graph::types::Entity;
-use crate::turso::graph::{GraphEntity, GraphStore};
+use crate::db::graph::{GraphEntity, GraphStore};
 use serde::{Deserialize, Serialize};
 
 /// Allowlist of relation names accepted by dynamic helpers.
@@ -125,8 +125,8 @@ fn entity_from_graph(e: GraphEntity) -> Entity {
 /// of the same (type, name) converges to one row (idempotent upsert).
 ///
 /// # Errors
-/// `Error::Turso` on SELECT or INSERT failure.
-pub async fn upsert_entity(db: &TursoStore, entity_type: &str, name: &str) -> Result<String> {
+/// `Error::Database` on SELECT or INSERT failure.
+pub async fn upsert_entity(db: &DbStore, entity_type: &str, name: &str) -> Result<String> {
     if let Some(e) = db.find_entity(entity_type, name).await? {
         return Ok(e.id);
     }
@@ -146,8 +146,8 @@ pub async fn upsert_entity(db: &TursoStore, entity_type: &str, name: &str) -> Re
 /// List entities, optionally filtered by `entity_type`. Capped at 5_000 rows.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list_entities(db: &TursoStore, entity_type: Option<&str>) -> Result<Vec<Entity>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list_entities(db: &DbStore, entity_type: Option<&str>) -> Result<Vec<Entity>> {
     let rows = db.list_entities(entity_type).await?;
     Ok(rows.into_iter().map(entity_from_graph).collect())
 }
@@ -155,8 +155,8 @@ pub async fn list_entities(db: &TursoStore, entity_type: Option<&str>) -> Result
 /// Find an entity by (`entity_type`, name). Returns None if absent.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn find_entity(db: &TursoStore, entity_type: &str, name: &str) -> Result<Option<Entity>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn find_entity(db: &DbStore, entity_type: &str, name: &str) -> Result<Option<Entity>> {
     Ok(db
         .find_entity(entity_type, name)
         .await?
@@ -168,9 +168,9 @@ pub async fn find_entity(db: &TursoStore, entity_type: &str, name: &str) -> Resu
 ///
 /// # Errors
 /// `Error::Migration` when `rel_type` is not in `ALLOWED_RELS`;
-/// `Error::Turso` from the INSERT.
+/// `Error::Database` from the INSERT.
 pub async fn relate_dynamic(
-    db: &TursoStore,
+    db: &DbStore,
     from: &str,
     to: &str,
     rel_type: &str,
@@ -186,10 +186,10 @@ pub async fn relate_dynamic(
 /// cannot leak into the citation DAG.
 ///
 /// # Errors
-/// `Error::Migration` when `rel_type` is not a citation edge; `Error::Turso`
+/// `Error::Migration` when `rel_type` is not a citation edge; `Error::Database`
 /// from the INSERT.
 pub async fn relate_citation(
-    db: &TursoStore,
+    db: &DbStore,
     from: &str,
     to: &str,
     rel_type: &str,
@@ -207,8 +207,8 @@ pub async fn relate_citation(
 /// `citation` (incoming `cite` edges) — no N+1.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the query.
-pub async fn traverse_with_citations(db: &TursoStore, citation: &str) -> Result<Vec<String>> {
+/// Propagates `Error::Database` from the query.
+pub async fn traverse_with_citations(db: &DbStore, citation: &str) -> Result<Vec<String>> {
     let edges = db.related_backward(citation).await?;
     Ok(edges
         .into_iter()
@@ -224,8 +224,8 @@ pub async fn traverse_with_citations(db: &TursoStore, citation: &str) -> Result<
 /// second query — the read half of the non-destructive C6 merge.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the query.
-pub async fn citations_cited_by(db: &TursoStore, node: &str) -> Result<Vec<String>> {
+/// Propagates `Error::Database` from the query.
+pub async fn citations_cited_by(db: &DbStore, node: &str) -> Result<Vec<String>> {
     let edges = db.related_forward(node).await?;
     Ok(edges
         .into_iter()
@@ -259,8 +259,8 @@ pub struct EdgeRow {
 /// draws a line to an off-canvas node.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list_edges_among(db: &TursoStore, node_ids: &[String]) -> Result<Vec<EdgeRow>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list_edges_among(db: &DbStore, node_ids: &[String]) -> Result<Vec<EdgeRow>> {
     let edges = db.list_edges_among(node_ids).await?;
     Ok(edges
         .into_iter()
@@ -276,8 +276,8 @@ pub async fn list_edges_among(db: &TursoStore, node_ids: &[String]) -> Result<Ve
 /// the target entity. Limit caps the fan-out.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn get_related(db: &TursoStore, from: &str, limit: usize) -> Result<Vec<RelatedRow>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn get_related(db: &DbStore, from: &str, limit: usize) -> Result<Vec<RelatedRow>> {
     let rows = db.get_related(from, limit).await?;
     Ok(rows
         .into_iter()

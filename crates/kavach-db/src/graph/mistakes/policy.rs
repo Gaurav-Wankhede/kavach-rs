@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// The promoted advisory policy distribution plus the OPE evidence that won it.
 ///
@@ -57,7 +57,7 @@ impl DeployedPolicyProps {
 /// `Error::Migration` if `name` is empty; `Error::RecordNotFound` if the upsert
 /// returns no row.
 pub async fn upsert_deployed_policy(
-    db: &TursoStore,
+    db: &DbStore,
     name: &str,
     props: &DeployedPolicyProps,
 ) -> Result<String> {

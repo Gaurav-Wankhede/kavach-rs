@@ -1,6 +1,6 @@
 //! Proof of the all-or-nothing batch lease-set (E8): a session reserves a Vec of
 //! keys steal-proof, and a single conflict ROLLS BACK every partial win so no
-//! orphaned half-set is left holding cards. Real in-memory `TursoStoreDB` so the CAS
+//! orphaned half-set is left holding cards. Real in-memory `DatabaseStoreDB` so the CAS
 //! WHERE-clause is exercised, not mocked.
 #![allow(
     clippy::expect_used,
@@ -12,14 +12,14 @@ use super::{AcquireSetOutcome, acquire_set};
 use crate::lease::types::AcquireOutcome;
 use crate::lease::{Lease, acquire, status, unlock};
 use crate::open_memory;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
-async fn seed_unheld(db: &TursoStore, id: &str) {
+async fn seed_unheld(db: &DbStore, id: &str) {
     db.exec_params(
         "INSERT INTO memories \
          (project, category, entry_key, title, content, entry_status, created_at, updated_at) \
          VALUES ('p', 'roadmap', ?1, 't', 'c', 'in_progress', ?2, ?2)",
-        libsql::params![id.to_owned(), crate::turso::now_rfc3339()],
+        libsql::params![id.to_owned(), crate::db::now_rfc3339()],
     )
     .await
     .expect("seed unheld card");

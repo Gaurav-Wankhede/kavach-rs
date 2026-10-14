@@ -1,7 +1,7 @@
 // Compile-time dispatch over (table, edge) pairs — 20 const queries.
 // Same pattern as `fix-Bash-sql-guard-format-on-validated-arrow`.
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Bridge edge names allowed between a memory row and a concept.
 const ALLOWED_EDGES: &[&str] = &["implements", "discusses", "references_concept", "violates"];
@@ -20,7 +20,7 @@ const ALLOWED_TABLES: &[&str] = &["roadmap", "decision", "research", "pattern", 
 /// Propagates `Error::Migration` when inputs are empty or the (table, edge) pair is invalid.
 /// Propagates `Error::RecordNotFound` when the source memory row does not exist.
 pub async fn bridge_to_concept(
-    db: &TursoStore,
+    db: &DbStore,
     src_table: &str,
     src_key: &str,
     edge: &str,
@@ -67,7 +67,7 @@ pub async fn bridge_to_concept(
             src_qname.clone(),
             edge.to_owned(),
             concept_id.clone(),
-            crate::turso::now_rfc3339()
+            crate::db::now_rfc3339()
         ],
     )
     .await?;

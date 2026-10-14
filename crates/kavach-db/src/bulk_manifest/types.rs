@@ -1,5 +1,5 @@
 // Types + pure helpers for bulk_manifest. No I/O — keeps the DB ops files
-// small and the type surface unit-testable without a live TursoStore handle.
+// small and the type surface unit-testable without a live DatabaseStore handle.
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 

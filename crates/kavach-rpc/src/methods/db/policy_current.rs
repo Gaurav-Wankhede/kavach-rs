@@ -4,7 +4,7 @@
 //
 //   kavach_db::graph_top_deployed_policies (see its ALGO note). Here we only
 //   clamp the page size and map rows to the wire DTO. TIME: O(N) map. YEAR: 2026.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::graph_top_deployed_policies;
@@ -68,7 +68,7 @@ pub async fn policy_current(
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let rows = graph_top_deployed_policies(&state.db, limit)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let policies = rows
         .into_iter()
         .map(|r| PolicyDto {

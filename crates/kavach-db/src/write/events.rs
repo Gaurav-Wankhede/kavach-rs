@@ -1,11 +1,11 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Delete events older than `days` days. Returns count deleted.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the DELETE query.
-pub async fn rotate_events(db: &TursoStore, days: i64) -> Result<usize> {
+/// Propagates `Error::Database` from the DELETE query.
+pub async fn rotate_events(db: &DbStore, days: i64) -> Result<usize> {
     let floor_secs = days.saturating_mul(86_400);
     let floor_ts = chrono::Utc::now()
         .checked_sub_signed(chrono::Duration::seconds(floor_secs))
@@ -27,15 +27,15 @@ pub async fn rotate_events(db: &TursoStore, days: i64) -> Result<usize> {
 /// Append an event row.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the INSERT query.
+/// Propagates `Error::Database` from the INSERT query.
 pub async fn append_event(
-    db: &TursoStore,
+    db: &DbStore,
     event_type: &str,
     _source: &str,
     project: Option<String>,
     payload: Option<&str>,
 ) -> Result<String> {
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "INSERT INTO events (project, kind, payload, created_at) \

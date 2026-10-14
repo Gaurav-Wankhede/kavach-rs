@@ -16,7 +16,7 @@ pub(crate) fn run(action: LoopAction) -> i32 {
     }
 }
 
-/// Log loop lifecycle event via kavach-rpc daemon (`SurrealDB`).
+/// Log loop lifecycle event via kavach-rpc daemon (`Database`).
 /// Failure to log is non-fatal — loop state lives primarily in session.toml.
 fn log_loop_event(session_id: &str, event_type: &str, payload: &str) {
     let payload_with_session = format!(r#"{{"sid":"{session_id}","data":{payload}}}"#);

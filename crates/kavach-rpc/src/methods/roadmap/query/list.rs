@@ -1,7 +1,7 @@
 use super::super::types::{
     InProgressCardRow, ListTitlesParams, NextOpenTaskParams, NextTaskResult, TitleRow,
 };
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
@@ -26,7 +26,7 @@ pub async fn list_titles(
     };
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -35,7 +35,7 @@ pub async fn list_titles(
     };
     let entries = kavach_db::list_by_project(&state.db, category, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let mut rows: Vec<TitleRow> = entries
         .into_iter()
         .map(|e| TitleRow {
@@ -57,7 +57,7 @@ pub async fn list_done_cards(
 ) -> Result<Vec<NextTaskResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -66,7 +66,7 @@ pub async fn list_done_cards(
     };
     let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let done = entries
         .iter()
         .filter(|e| e.entry_status_str() == "done")
@@ -94,7 +94,7 @@ pub async fn list_in_progress_cards(
 ) -> Result<Vec<InProgressCardRow>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -103,7 +103,7 @@ pub async fn list_in_progress_cards(
     };
     let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let in_progress = entries
         .iter()
         .filter(|e| e.entry_status_str() == "in_progress")

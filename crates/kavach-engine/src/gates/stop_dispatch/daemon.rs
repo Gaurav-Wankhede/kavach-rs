@@ -1,6 +1,6 @@
 //! RPC daemon self-heal: launchd respawn (`spawn`) + bounded poll-retry probe.
 //! When RPC stays unreachable (e.g. Cursor hook sandbox blocks the Unix socket),
-//! fall back to direct `SurrealDB` — same resilient open as session-start.
+//! fall back to direct `Database` — same resilient open as session-start.
 mod direct;
 mod directive;
 mod spawn;
@@ -13,7 +13,7 @@ use spawn::try_spawn_rpc_daemon;
 ///
 /// SELF-HEAL: on the first transport error, attempt a one-shot daemon respawn
 /// and poll-retry (bounded 20×500ms) while `RocksDB` cold-opens. When spawn is
-/// blocked (hook sandbox) or retries exhaust, fall back to direct `SurrealDB`.
+/// blocked (hook sandbox) or retries exhaust, fall back to direct `Database`.
 #[expect(
     clippy::print_stderr,
     reason = "hook engine has no tracing dep; stderr is the hook log channel"

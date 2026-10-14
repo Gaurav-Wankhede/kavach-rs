@@ -4,7 +4,7 @@
 // Events with zero graph anchors AND age > floor_days are candidates for archival.
 // Status: events get status='archived' (never DELETE — preserves audit trail).
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 #[derive(Debug, Default)]
 #[non_exhaustive]
@@ -23,9 +23,9 @@ pub struct ArchiveReport {
 /// Always uses status='archived' (never DELETE) to preserve audit trail.
 ///
 /// # Errors
-/// Propagates `Error::Turso` if any database query fails.
+/// Propagates `Error::Database` if any database query fails.
 pub async fn archive_irrelevant(
-    db: &TursoStore,
+    db: &DbStore,
     floor_days: i64,
     dry_run: bool,
 ) -> Result<ArchiveReport> {
@@ -91,7 +91,7 @@ pub async fn archive_irrelevant(
 
 /// Returns true if the event has any outgoing 'references' edge to a roadmap
 /// entry whose `entry_status` is non-terminal.
-async fn has_active_anchor(db: &TursoStore, event_id: i64) -> Result<bool> {
+async fn has_active_anchor(db: &DbStore, event_id: i64) -> Result<bool> {
     let mut rows = db
         .exec_params(
             "SELECT 1 FROM entity_edges e \

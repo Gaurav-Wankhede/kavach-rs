@@ -1,5 +1,5 @@
 //! `kavach servers {up,down,status}` — lifecycle for the two background servers
-//! the GUI/CLI depend on: the `SurrealDB` store (launchd `ai.shared.kavach-surreal`,
+//! the GUI/CLI depend on: the `Database` store (launchd `ai.shared.kavach-database`,
 //! ws on `127.0.0.1:7710`) and the HTMX web UI (`kavach web`).
 //!
 //! The DB server is launchd-owned (`kickstart`/`bootstrap`); the web UI is a
@@ -25,9 +25,9 @@ fn err(msg: &str) -> i32 {
     }
 }
 
-/// Retained for call-site compatibility. Turso is embedded — no server autostart needed.
+/// Retained for call-site compatibility. Database is embedded — no server autostart needed.
 pub(crate) const fn ensure_db_up() {
-    // Turso DB is embedded (libsql in-process). No server autostart needed.
+    // Database DB is embedded (libsql in-process). No server autostart needed.
 }
 
 pub(crate) fn run(action: &ServersAction) -> i32 {

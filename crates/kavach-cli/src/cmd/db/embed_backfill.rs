@@ -1,7 +1,7 @@
 //! `kavach db embed-backfill` — populate `memories.embedding` for NULL rows (Phase 5).
 
-use kavach_db::turso::TursoStore;
-use kavach_db::turso::vector::VectorStore as _;
+use kavach_db::db::DbStore;
+use kavach_db::db::vector::VectorStore as _;
 
 /// Run the backfill. Returns process exit code.
 pub(crate) fn run(batch: usize, json: bool) -> i32 {
@@ -16,7 +16,7 @@ pub(crate) fn run(batch: usize, json: bool) -> i32 {
 }
 
 async fn async_run(batch: usize, json: bool) -> i32 {
-    let store = match TursoStore::open_default().await {
+    let store = match DbStore::open_default().await {
         Ok(s) => s,
         Err(e) => {
             eprintln!("error: open turso store: {e}");

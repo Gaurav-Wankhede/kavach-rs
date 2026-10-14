@@ -5,7 +5,7 @@
 //! undetected until they bit (see decision.kavach-self-watchdog-design). This is
 //! Layer 3 of that design — kavach running a silent-failure audit ON kavach.
 //!
-//! It scans the engine/session/rpc/surreal crate sources for four classes and
+//! It scans the engine/session/rpc/database crate sources for four classes and
 //! returns findings (read-only — no DB writes, human triage per the design).
 
 pub(crate) mod detect;

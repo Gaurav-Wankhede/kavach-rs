@@ -381,7 +381,7 @@ Open lanes: todo, in_progress, done. Use --include-verified for terminal verifie
         /// Stable entry key (`snake_case`)
         #[arg(long = "entry-key")]
         entry_key: String,
-        /// Display name (e.g. `Turso`)
+        /// Display name (e.g. `Database`)
         #[arg(long)]
         name: String,
         /// One metadata slug (e.g. "records")

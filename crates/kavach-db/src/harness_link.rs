@@ -1,4 +1,4 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // Autonomous harness loop — write/read the harness link on a roadmap card.
 //
 // L2 of the DB-driven harness loop: a card carries the dynamic-workflow
@@ -28,15 +28,15 @@ pub struct GoalAttempt {
 ///
 /// # Errors
 /// `RecordNotFound` if the (project, key) row is absent or category isn't
-/// roadmap; propagates `Error::Turso` from the UPDATE.
+/// roadmap; propagates `Error::Database` from the UPDATE.
 pub async fn set_harness(
-    db: &TursoStore,
+    db: &DbStore,
     project_id: &str,
     entry_key: &str,
     harness: Option<&str>,
     workflow_path: Option<&str>,
 ) -> Result<String> {
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "UPDATE memories SET harness = $harness, workflow_path = $wf, updated_at = $now \
@@ -63,8 +63,8 @@ pub async fn set_harness(
 /// Returns `None` when no attempt has been recorded yet (the loop hasn't run).
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn latest_goal_attempt(db: &TursoStore, project_id: &str) -> Result<Option<GoalAttempt>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn latest_goal_attempt(db: &DbStore, project_id: &str) -> Result<Option<GoalAttempt>> {
     let mut rows = db
         .exec_params(
             "SELECT id, payload FROM events \
@@ -101,9 +101,9 @@ pub struct HarnessLink {
 /// `None` when the (project, key) row is absent.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
+/// Propagates `Error::Database` from the SELECT.
 pub async fn get_harness_link(
-    db: &TursoStore,
+    db: &DbStore,
     project_id: &str,
     entry_key: &str,
 ) -> Result<Option<HarnessLink>> {

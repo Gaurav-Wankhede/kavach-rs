@@ -1,7 +1,7 @@
 // split: intentional - cohesive gate_pattern RPC group (find_autonomous + upsert + list_hot)
 // JSON-RPC method handlers for gate_pattern store.
 // Used by kavach-engine post_tool_failure gate (find/upsert) and session_start (list_hot).
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -59,7 +59,7 @@ pub async fn list_hot(
     let limit = params.limit.unwrap_or(5);
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -68,7 +68,7 @@ pub async fn list_hot(
     };
     gate_pattern_list_hot(&state.db, &project_id, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 /// Find an autonomous gate pattern matching the given error signature.
@@ -82,7 +82,7 @@ pub async fn find_autonomous(
 ) -> Result<Option<GatePattern>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -91,7 +91,7 @@ pub async fn find_autonomous(
     };
     gate_pattern_find_autonomous(&state.db, &project_id, &params.error, &params.tool_name)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 /// Upsert a gate pattern with the given error tokens and fix strategy.
@@ -105,7 +105,7 @@ pub async fn upsert(
 ) -> Result<Option<UpsertResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -123,7 +123,7 @@ pub async fn upsert(
     };
     let id = gate_pattern_upsert(&state.db, &upsert_params)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(Some(UpsertResult {
         id: format!("{id:?}"),
     }))

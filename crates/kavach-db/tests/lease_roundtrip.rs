@@ -2,7 +2,7 @@
 //!
 //! These functions build their queries as `&str`, so `cargo check` cannot see a
 //! dead SQL builtin inside them — only execution against a real DB can. The
-//! lease subsystem shipped on SurrealDB `type::thing(...)`, which SurrealDB 3.0
+//! lease subsystem shipped on Database `type::thing(...)`, which Database 3.0
 //! renamed to `type::record(...)`; every `lease.*` RPC parse-errored at runtime
 //! with zero test coverage to catch it. This drives the full
 //! acquire → status → heartbeat → unlock cycle against an in-memory DB so the
@@ -15,7 +15,7 @@
 
 use kavach_db::lease::{AcquireOutcome, acquire, heartbeat, status, unlock};
 use kavach_db::open_memory;
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 
 const TABLE: &str = "roadmap";
 const KEY: &str = "session-occupancy:proj-x";
@@ -24,7 +24,7 @@ const SESSION: &str = "sess_abc";
 /// Seed the lease row the way the live system does before a first acquire
 /// (acquire itself returns `RecordNotFound` on a missing record). The lease
 /// lives on the `memories` row keyed by (category, entry_key).
-async fn seed(db: &TursoStore) {
+async fn seed(db: &DbStore) {
     let mut rows = db
         .query_with_params(
             "INSERT INTO memories \

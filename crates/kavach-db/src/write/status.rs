@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 const STATUS_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
 const FEEDBACK_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern", "app_spec"];
@@ -7,10 +7,10 @@ const FEEDBACK_TABLES: &[&str] = &["decision", "research", "roadmap", "pattern",
 /// Update `entry_status` for a memory entry by category + `entry_key`.
 ///
 /// # Errors
-/// `Error::Migration` when `table` is not in `STATUS_TABLES`; `Error::Turso`
+/// `Error::Migration` when `table` is not in `STATUS_TABLES`; `Error::Database`
 /// when the UPDATE itself fails.
 pub async fn update_status(
-    db: &TursoStore,
+    db: &DbStore,
     table: &str,
     project_id: &str,
     entry_key: &str,
@@ -21,7 +21,7 @@ pub async fn update_status(
             "update_status: unsupported table '{table}'; allowed: {STATUS_TABLES:?}"
         )));
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "UPDATE memories SET entry_status = $status, updated_at = $now \
@@ -56,10 +56,10 @@ pub async fn update_status(
 /// for any contended transition.
 ///
 /// # Errors
-/// `Error::Migration` when `table` is not in `STATUS_TABLES`; `Error::Turso`
+/// `Error::Migration` when `table` is not in `STATUS_TABLES`; `Error::Database`
 /// when the UPDATE itself fails.
 pub async fn update_status_cas(
-    db: &TursoStore,
+    db: &DbStore,
     table: &str,
     project_id: &str,
     entry_key: &str,
@@ -71,7 +71,7 @@ pub async fn update_status_cas(
             "update_status_cas: unsupported table '{table}'; allowed: {STATUS_TABLES:?}"
         )));
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "UPDATE memories SET entry_status = $status, updated_at = $now \
@@ -98,10 +98,10 @@ pub async fn update_status_cas(
 /// Update the `feedback` field for a memory entry.
 ///
 /// # Errors
-/// `Error::Migration` when `table` is not in `FEEDBACK_TABLES`; `Error::Turso`
+/// `Error::Migration` when `table` is not in `FEEDBACK_TABLES`; `Error::Database`
 /// when the UPDATE fails.
 pub async fn update_feedback(
-    db: &TursoStore,
+    db: &DbStore,
     table: &str,
     project_id: &str,
     entry_key: &str,
@@ -112,7 +112,7 @@ pub async fn update_feedback(
             "update_feedback: unsupported table '{table}'"
         )));
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "UPDATE memories SET feedback = $feedback, updated_at = $now \

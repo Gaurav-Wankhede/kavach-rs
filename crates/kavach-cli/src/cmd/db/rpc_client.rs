@@ -1,4 +1,4 @@
-// Pre-existing WIP (not from the Turso migration): dispatcher arms for several
+// Pre-existing WIP (not from the Database migration): dispatcher arms for several
 // RPC wrappers below were removed in an uncommitted working-tree refactor,
 // leaving them dead. Allowed so Phase 4 (migrate) compiles alongside that WIP.
 #![expect(

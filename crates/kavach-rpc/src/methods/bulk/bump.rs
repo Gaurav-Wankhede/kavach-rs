@@ -1,7 +1,7 @@
 // bulk.sweep_apply_event — increment one of the three conformance counters.
 // Wire-format `field` is a string; map to closed Rust enum at the boundary
 // so the column whitelist is never user-derived.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
 use kavach_db::bulk_manifest::{ConformanceField, bump_conformance};
@@ -42,6 +42,6 @@ pub async fn bump(state: &AppState, p: BumpParams) -> Result<BumpResult, ErrorOb
     };
     bump_conformance(&state.db, &p.sweep_id, field)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(BumpResult { ok: true })
 }

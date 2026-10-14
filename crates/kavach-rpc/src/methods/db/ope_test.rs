@@ -1,5 +1,5 @@
 //! Proofs for the `ope.evaluate` payload→sample projection and the report
-//! shape. The DB-bound `ope_evaluate` itself is covered by the kavach-surreal
+//! shape. The DB-bound `ope_evaluate` itself is covered by the kavach-database
 //! integration roundtrip; here we pin the pure mapping logic that turns a stored
 //! `BanditRow` JSON into a usable `LoggedSample`, which is where the silent bugs
 //! (un-rewarded rows leaking in, a tagged-enum mis-parse) would hide.

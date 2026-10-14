@@ -37,7 +37,7 @@ pub fn dep_key_satisfied(dep_key: &str, all: &[kavach_db::MemoryEntry]) -> bool 
 /// A card key is key-safe chars only (alnum / `-` `_` `.` `/`); an absent-but-real
 /// key (incl. cross-project, no category prefix) is KEPT so the dependent
 /// waits on the global pool. Prose that ran onto a `DEPENDS_ON:` line
-/// (`SCOPE:`, `(a)`, `&Surreal<Db>`) carries markup/`:` and is rejected, so it
+/// (`SCOPE:`, `(a)`, `&Database<Db>`) carries markup/`:` and is rejected, so it
 /// can't wedge the dispatch DAG with a phantom node. Trailing `.` = a sentence,
 /// not a key.
 #[must_use]

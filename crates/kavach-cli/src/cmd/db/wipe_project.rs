@@ -1,5 +1,5 @@
 // split: intentional - single command handler for wipe-project
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 use kavach_rpc::methods::db::wipe_confirm_phrase;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit, prompt_line_or_exit};
@@ -95,7 +95,7 @@ pub(super) fn run(project: &str, confirm: bool, dry_run: bool) -> i32 {
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {
@@ -205,8 +205,8 @@ async fn wipe_project_turso(
         }
     }
 
-    // TODO: Also wipe events, projects, parts tables (need TursoStore methods)
-    // For now, we skip these as they require additional TursoStore methods
+    // TODO: Also wipe events, projects, parts tables (need DatabaseStore methods)
+    // For now, we skip these as they require additional DatabaseStore methods
 
     // Project registry deletion would go here
     // project_deleted would be set to true after deleting from projects table

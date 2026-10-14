@@ -2,7 +2,7 @@
 //
 // kavach-engine gates run synchronously inside Claude Code hooks. Previously this
 // client did a sync Unix-socket round-trip to a long-running daemon. The daemon
-// is retired: the DB now lives in a `surreal start` server, and every kavach
+// is retired: the DB now lives in a `database start` server, and every kavach
 // process is a thin ws client. So `call` opens a ws connection to the server,
 // builds the SAME `RpcModule` the server used, and dispatches the request
 // in-process via `raw_json_request` — byte-identical to the old daemon transport
@@ -78,7 +78,7 @@ fn inproc() -> Result<&'static InProc, ClientError> {
     }
 }
 
-/// Dispatch a JSON-RPC method in-process against the surreal-server-backed
+/// Dispatch a JSON-RPC method in-process against the database-server-backed
 /// module. Drop-in replacement for the former Unix-socket call.
 ///
 /// # Errors

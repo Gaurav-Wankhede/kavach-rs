@@ -104,7 +104,7 @@ const RESEARCH_POS: &str = concat!(
     r"|\bas\s+of\s+(?:the\s+)?(?:latest|current|now)\b",
     r"|\bthe\s+(?:API|crate|library|docs?)\s+(?:says?|states?|requires?|exposes?)\b",
     // syntax/contract claim shape: asserting how a named tool's syntax/flag/method
-    // behaves from memory (the SurrealQL/serde class of error). Low-FP: the NEG arm
+    // behaves from memory (the DatabaseQL/serde class of error). Low-FP: the NEG arm
     // still exempts it when a source URL / --help / docs marker is present.
     r"|\bthe\s+(?:correct|right|proper)\s+(?:syntax|form|flag|idiom|signature)\s+(?:is|for)\b",
     r"|\b(?:SurrealQL|SurrealDB|serde|tokio|axum|clippy|cargo)\b[\w\W]{0,30}?\b(?:syntax|idiom|flag|attribute|method|takes?|expects?)\b",

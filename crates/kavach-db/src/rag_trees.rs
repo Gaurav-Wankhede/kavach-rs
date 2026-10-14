@@ -2,7 +2,7 @@
 // SQL-backed rag_tree store. Mirrors kavach-db::rag_trees read API.
 // sql-safe: explicit column list; bound params only; no string concat.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,8 +25,8 @@ pub struct RagTreeLabel {
 /// Fetch a `rag_tree` row by source label.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn get(db: &TursoStore, source: &str) -> Result<Option<RagTreeRow>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn get(db: &DbStore, source: &str) -> Result<Option<RagTreeRow>> {
     let mut rows = db
         .exec_params(
             "SELECT source, built_at, tree_json, source_hash FROM rag_tree \
@@ -48,8 +48,8 @@ pub async fn get(db: &TursoStore, source: &str) -> Result<Option<RagTreeRow>> {
 /// List all `rag_tree` rows (label-only projection).
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list(db: &TursoStore) -> Result<Vec<RagTreeLabel>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list(db: &DbStore) -> Result<Vec<RagTreeLabel>> {
     let mut rows = db
         .exec_params("SELECT source, built_at, source_hash FROM rag_tree", ())
         .await?;
@@ -74,8 +74,8 @@ pub struct RagTreeRefreshable {
 /// List all `rag_tree` labels with non-empty `source_dir`, for stale-refresh.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
-pub async fn list_refreshable(db: &TursoStore) -> Result<Vec<RagTreeRefreshable>> {
+/// Propagates `Error::Database` from the SELECT.
+pub async fn list_refreshable(db: &DbStore) -> Result<Vec<RagTreeRefreshable>> {
     let mut rows = db
         .exec_params(
             "SELECT source, source_dir FROM rag_tree WHERE source_dir != ''",
@@ -99,16 +99,16 @@ pub async fn list_refreshable(db: &TursoStore) -> Result<Vec<RagTreeRefreshable>
 /// `source` primary key.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the UPSERT.
+/// Propagates `Error::Database` from the UPSERT.
 pub async fn upsert_with_dir(
-    db: &TursoStore,
+    db: &DbStore,
     source: &str,
     built_at: &str,
     tree_json: &[u8],
     source_hash: &str,
     source_dir: &str,
 ) -> Result<()> {
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO rag_tree (source, built_at, tree_json, source_hash, source_dir, updated_at) \
          VALUES ($source, $built_at, $tree_json, $source_hash, $source_dir, $now) \

@@ -6,7 +6,7 @@
 //! entirely from the project's own `app_spec`.
 //! SOURCE: roadmap.unit.mermaid-decision-architecture.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use std::fmt::Write as _;
 
 /// One stack component and the non-negotiable boundary it imposes.
@@ -22,10 +22,10 @@ pub struct StackInvariant {
 /// Fetch the project's `stack.*` `app_spec` rows as ordered invariants.
 ///
 /// # Errors
-/// Propagates `Error::Turso` on query failure. A project with no `stack.*`
+/// Propagates `Error::Database` on query failure. A project with no `stack.*`
 /// rows (or no project record) yields an empty vec — the fail-soft "nothing to
 /// inject" case, not an error.
-pub async fn stack_invariants(db: &TursoStore, project_slug: &str) -> Result<Vec<StackInvariant>> {
+pub async fn stack_invariants(db: &DbStore, project_slug: &str) -> Result<Vec<StackInvariant>> {
     let proj_q = "SELECT slug FROM projects WHERE slug = $slug LIMIT 1";
     let mut p_resp = db
         .exec_params(proj_q, libsql::params![project_slug.to_owned()])

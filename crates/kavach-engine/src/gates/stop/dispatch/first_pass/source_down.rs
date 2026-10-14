@@ -2,7 +2,7 @@
 //! held open (an outage must never silently disable the loop).
 //!
 //! A source-down has two root causes with OPPOSITE responses: a plain daemon
-//! outage (restart `kavach rpc`) versus a FULL DISK (the `SurrealDB` WAL cannot
+//! outage (restart `kavach rpc`) versus a FULL DISK (the `Database` WAL cannot
 //! append). For the latter the agent must self-heal — free its own regenerable
 //! build scratch and complete the write — NOT hand `rm` to the operator and
 //! spin hold turns. `disk::maybe_self_heal` discriminates and emits the

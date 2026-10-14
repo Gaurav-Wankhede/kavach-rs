@@ -7,11 +7,11 @@
 // the canonical worker-side copy; this is the daemon-side serving copy.
 use std::sync::Arc;
 
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::nlm_query_docs;
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 use serde::{Deserialize, Serialize};
 
 /// The expert-policies the serving path fans out — external Kavach skills.
@@ -113,14 +113,14 @@ pub struct AdviseResult {
     reason = "hit counts are tiny; f32 precision is ample for a confidence ratio"
 )]
 async fn run_expert(
-    db: &TursoStore,
+    db: &DbStore,
     policy: ExpertPolicy,
     query: &str,
     limit: usize,
 ) -> Result<ScoredAdvice, ErrorObjectOwned> {
     let hits = nlm_query_docs(db, query, limit)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let advice = hits.first().map_or_else(
         || format!("{policy:?}: no cited source — refuse to advise from weights, fetch first"),
         |h| format!("{policy:?}: per {}, {}", h.source_url, h.heading),
@@ -153,7 +153,7 @@ pub async fn advise(state: &AppState, p: AdviseParams) -> Result<AdviseResult, E
 
     let mut set = tokio::task::JoinSet::new();
     for policy in ExpertPolicy::ALL {
-        let db: Arc<TursoStore> = Arc::clone(&state.db);
+        let db: Arc<DbStore> = Arc::clone(&state.db);
         let q = query.clone();
         set.spawn(async move { run_expert(&db, policy, &q, limit).await });
     }

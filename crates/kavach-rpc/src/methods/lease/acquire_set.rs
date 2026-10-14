@@ -1,5 +1,5 @@
 // SPEC: docs/architecture/session-occupancy-lease.md — batch all-or-nothing acquire.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
@@ -36,7 +36,7 @@ pub struct AcquireSetResult {
 /// Atomically reserve a SET of keys for one session (all-or-nothing).
 ///
 /// # Errors
-/// Returns `Err` if the `SurrealDB` operation fails.
+/// Returns `Err` if the `Database` operation fails.
 pub async fn acquire_set(
     state: &AppState,
     p: AcquireSetParams,
@@ -44,7 +44,7 @@ pub async fn acquire_set(
     let refs: Vec<&str> = p.keys.iter().map(String::as_str).collect();
     let outcome = lease_acquire_set(&state.db, &p.table, &refs, &p.session_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(match outcome {
         AcquireSetOutcome::AllAcquired(leases) => AcquireSetResult {
             all_acquired: true,

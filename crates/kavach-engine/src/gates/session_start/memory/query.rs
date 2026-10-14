@@ -1,4 +1,4 @@
-// SOURCE: kavach decision.context-rot-surrealdb-pipeline
+// SOURCE: kavach decision.context-rot-database-pipeline
 //! kavach-db lookups feeding the memory-bank context: ancestry chain + titles.
 use crate::gates::context_compress;
 

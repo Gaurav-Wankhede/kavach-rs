@@ -1,4 +1,4 @@
-//! Memory-entry storage — `EntryStore` extension trait over `TursoStore`.
+//! Memory-entry storage — `EntryStore` extension trait over `DatabaseStore`.
 //!
 //! Parity surface of `read.rs` / `write.rs` / `delete.rs`: upsert (with FTS
 //! sync via [`super::search`]), keyed get, list variants, status CAS,
@@ -8,15 +8,15 @@ use std::future::Future;
 
 use chrono::{DateTime, Utc};
 
-use super::{TursoError, TursoResult, TursoStore};
+use super::{DbError, DbResult, DbStore};
 use crate::dual_write::MemoryEntry;
 
 /// DDL owned by this domain, executed by `connection::init_schema`.
 pub const DDL: &[&str] =
     &["CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project, category)"];
 
-pub(crate) fn map_err<E: std::fmt::Display>(e: E) -> TursoError {
-    TursoError::Mapping(format!("{e}"))
+pub(crate) fn map_err<E: std::fmt::Display>(e: E) -> DbError {
+    DbError::Mapping(format!("{e}"))
 }
 
 /// Column order MUST stay in sync with [`entry_from_row`] indices.
@@ -24,7 +24,7 @@ pub(crate) const ENTRY_COLS: &str = "project, category, entry_key, title, conten
          tags, decay_score, access_count, entry_status, priority, lane, \
          exec_prompt, occupied_by, occupied_until, created_at, updated_at";
 
-pub(crate) fn entry_from_row(row: &libsql::Row) -> TursoResult<MemoryEntry> {
+pub(crate) fn entry_from_row(row: &libsql::Row) -> DbResult<MemoryEntry> {
     let get_s = |i: i32| -> Option<String> { row.get::<Option<String>>(i).ok().flatten() };
     let get_dt = |i: i32| -> Option<DateTime<Utc>> {
         get_s(i)
@@ -32,7 +32,7 @@ pub(crate) fn entry_from_row(row: &libsql::Row) -> TursoResult<MemoryEntry> {
             .map(|d| d.with_timezone(&Utc))
     };
     let project: String =
-        get_s(0).ok_or_else(|| TursoError::Mapping("memory row missing `project`".into()))?;
+        get_s(0).ok_or_else(|| DbError::Mapping("memory row missing `project`".into()))?;
     let tags_json: String = get_s(6).unwrap_or_else(|| "[]".into());
     Ok(MemoryEntry {
         id: None,
@@ -62,49 +62,49 @@ pub trait EntryStore {
     /// updated_at bumped; FTS kept in sync).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    fn upsert_entry(&self, e: &MemoryEntry) -> impl Future<Output = TursoResult<()>> + Send;
+    /// Returns [`DatabaseError`] on SQL failure.
+    fn upsert_entry(&self, e: &MemoryEntry) -> impl Future<Output = DbResult<()>> + Send;
 
     /// Fetch one entry by composite key.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn get_by_key(
         &self,
         project: &str,
         category: &str,
         key: &str,
-    ) -> impl Future<Output = TursoResult<Option<MemoryEntry>>> + Send;
+    ) -> impl Future<Output = DbResult<Option<MemoryEntry>>> + Send;
 
     /// All entries for a project, dispatch-ordered.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn list_by_project(
         &self,
         project: &str,
-    ) -> impl Future<Output = TursoResult<Vec<MemoryEntry>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<MemoryEntry>>> + Send;
 
     /// Every entry across projects.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    fn list_all(&self) -> impl Future<Output = TursoResult<Vec<MemoryEntry>>> + Send;
+    /// Returns [`DatabaseError`] on SQL failure.
+    fn list_all(&self) -> impl Future<Output = DbResult<Vec<MemoryEntry>>> + Send;
 
     /// Entries in one category.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn list_by_category(
         &self,
         project: &str,
         category: &str,
-    ) -> impl Future<Output = TursoResult<Vec<MemoryEntry>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<MemoryEntry>>> + Send;
 
     /// Filtered list mirroring `read.rs::list_with_filter`.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn list_with_filter(
         &self,
         project: &str,
@@ -112,24 +112,24 @@ pub trait EntryStore {
         status: Option<&str>,
         contains: Option<&str>,
         limit: i64,
-    ) -> impl Future<Output = TursoResult<Vec<MemoryEntry>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<MemoryEntry>>> + Send;
 
     /// Update `status` + `entry_status` on one entry; returns rows affected.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn update_status(
         &self,
         project: &str,
         category: &str,
         key: &str,
         status: &str,
-    ) -> impl Future<Output = TursoResult<u64>> + Send;
+    ) -> impl Future<Output = DbResult<u64>> + Send;
 
     /// Compare-and-set status transition (port of `update_status_cas`).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn update_status_cas(
         &self,
         project: &str,
@@ -137,74 +137,74 @@ pub trait EntryStore {
         key: &str,
         expect: &str,
         new: &str,
-    ) -> impl Future<Output = TursoResult<bool>> + Send;
+    ) -> impl Future<Output = DbResult<bool>> + Send;
 
     /// Set (or clear) dispatch priority.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn set_priority(
         &self,
         project: &str,
         category: &str,
         key: &str,
         priority: Option<i64>,
-    ) -> impl Future<Output = TursoResult<u64>> + Send;
+    ) -> impl Future<Output = DbResult<u64>> + Send;
 
     /// Set (or clear) the roadmap dispatch lane.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn set_lane(
         &self,
         project: &str,
         key: &str,
         lane: Option<String>,
-    ) -> impl Future<Output = TursoResult<u64>> + Send;
+    ) -> impl Future<Output = DbResult<u64>> + Send;
 
     /// Append an event row.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn append_event(
         &self,
         project: &str,
         kind: &str,
         payload: &str,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    ) -> impl Future<Output = DbResult<()>> + Send;
 
     /// Delete events older than `days`; returns rows removed.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    fn rotate_events(&self, days: i64) -> impl Future<Output = TursoResult<u64>> + Send;
+    /// Returns [`DatabaseError`] on SQL failure.
+    fn rotate_events(&self, days: i64) -> impl Future<Output = DbResult<u64>> + Send;
 
     /// Delete one entry; also removes its FTS row.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn delete_by_key(
         &self,
         project: &str,
         category: &str,
         key: &str,
-    ) -> impl Future<Output = TursoResult<u64>> + Send;
+    ) -> impl Future<Output = DbResult<u64>> + Send;
 
     /// Register or update a project in the projects table.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn register_project(
         &self,
         slug: &str,
         path: &str,
         tags: Option<&str>,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    ) -> impl Future<Output = DbResult<()>> + Send;
 
     /// Add or update a citation for a project/entry_key.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn upsert_citation(
         &self,
         project: &str,
@@ -212,31 +212,31 @@ pub trait EntryStore {
         name: &str,
         slug: &str,
         url: &str,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    ) -> impl Future<Output = DbResult<()>> + Send;
 
     /// List all citations for a project, newest-updated first.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn list_citations(
         &self,
         project: &str,
-    ) -> impl Future<Output = TursoResult<Vec<CitationRow>>> + Send;
+    ) -> impl Future<Output = DbResult<Vec<CitationRow>>> + Send;
 
     /// Get a gate config override.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     fn gate_config_get(
         &self,
         project: &str,
         gate_key: &str,
-    ) -> impl Future<Output = TursoResult<Option<GateConfigRow>>> + Send;
+    ) -> impl Future<Output = DbResult<Option<GateConfigRow>>> + Send;
 
     /// Set a gate config override.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
+    /// Returns [`DatabaseError`] on SQL failure.
     #[expect(
         clippy::too_many_arguments,
         reason = "gate config has exactly 5 typed value columns; bundling them would obscure the SQL mapping"
@@ -250,7 +250,7 @@ pub trait EntryStore {
         boolean: Option<bool>,
         list: Option<&str>,
         text: Option<&str>,
-    ) -> impl Future<Output = TursoResult<()>> + Send;
+    ) -> impl Future<Output = DbResult<()>> + Send;
 }
 
 /// A citation row for CLI display.
@@ -278,8 +278,8 @@ pub struct GateConfigRow {
     pub updated_at: String,
 }
 
-impl EntryStore for TursoStore {
-    async fn upsert_entry(&self, e: &MemoryEntry) -> TursoResult<()> {
+impl EntryStore for DbStore {
+    async fn upsert_entry(&self, e: &MemoryEntry) -> DbResult<()> {
         let now = super::now_rfc3339();
         let project = e.project.clone();
         let project_ref = project.clone();
@@ -357,13 +357,13 @@ impl EntryStore for TursoStore {
         let title_for_embed = e.title.clone();
         let content_for_embed = e.content.clone();
         let embed_res = tokio::task::spawn_blocking(move || {
-            crate::turso::vector::embed_one(&title_for_embed, &content_for_embed)
+            crate::db::vector::embed_one(&title_for_embed, &content_for_embed)
         })
         .await;
         if let Ok(Ok(vec)) = embed_res
-            && vec.len() == crate::turso::vector::EMBEDDING_DIMS
+            && vec.len() == crate::db::vector::EMBEDDING_DIMS
         {
-            let blob = crate::turso::vector::serialize_embedding(&vec);
+            let blob = crate::db::vector::serialize_embedding(&vec);
             self.conn
                 .execute(
                     "UPDATE memories SET embedding = ?1 WHERE project = ?2 AND category = ?3 AND entry_key = ?4",
@@ -380,7 +380,7 @@ impl EntryStore for TursoStore {
         project: &str,
         category: &str,
         key: &str,
-    ) -> TursoResult<Option<MemoryEntry>> {
+    ) -> DbResult<Option<MemoryEntry>> {
         let sql = format!(
             "SELECT {ENTRY_COLS} FROM memories WHERE project=?1 AND category=?2 AND entry_key=?3"
         );
@@ -390,7 +390,7 @@ impl EntryStore for TursoStore {
         take_first(&mut rows).await
     }
 
-    async fn list_by_project(&self, project: &str) -> TursoResult<Vec<MemoryEntry>> {
+    async fn list_by_project(&self, project: &str) -> DbResult<Vec<MemoryEntry>> {
         let sql = format!(
             "SELECT {ENTRY_COLS} FROM memories WHERE project=?1 \
              ORDER BY priority ASC NULLS LAST, created_at ASC"
@@ -398,7 +398,7 @@ impl EntryStore for TursoStore {
         collect(&mut self.exec_params(&sql, libsql::params![project]).await?).await
     }
 
-    async fn list_all(&self) -> TursoResult<Vec<MemoryEntry>> {
+    async fn list_all(&self) -> DbResult<Vec<MemoryEntry>> {
         let sql = format!("SELECT {ENTRY_COLS} FROM memories");
         collect(&mut self.exec_params(&sql, ()).await?).await
     }
@@ -407,7 +407,7 @@ impl EntryStore for TursoStore {
         &self,
         project: &str,
         category: &str,
-    ) -> TursoResult<Vec<MemoryEntry>> {
+    ) -> DbResult<Vec<MemoryEntry>> {
         let sql = format!(
             "SELECT {ENTRY_COLS} FROM memories WHERE project=?1 AND category=?2 \
              ORDER BY priority ASC NULLS LAST, created_at ASC"
@@ -427,7 +427,7 @@ impl EntryStore for TursoStore {
         status: Option<&str>,
         contains: Option<&str>,
         limit: i64,
-    ) -> TursoResult<Vec<MemoryEntry>> {
+    ) -> DbResult<Vec<MemoryEntry>> {
         // Build the positional arg list dynamically.
         use libsql::Value;
         fn text_args(project: &str, opts: [Option<&str>; 3]) -> Vec<Value> {
@@ -460,7 +460,7 @@ impl EntryStore for TursoStore {
         category: &str,
         key: &str,
         status: &str,
-    ) -> TursoResult<u64> {
+    ) -> DbResult<u64> {
         self.conn
             .execute(
                 "UPDATE memories SET status=?4, entry_status=?4, updated_at=?5 \
@@ -478,7 +478,7 @@ impl EntryStore for TursoStore {
         key: &str,
         expect: &str,
         new: &str,
-    ) -> TursoResult<bool> {
+    ) -> DbResult<bool> {
         let n = self
             .conn
             .execute(
@@ -497,7 +497,7 @@ impl EntryStore for TursoStore {
         category: &str,
         key: &str,
         priority: Option<i64>,
-    ) -> TursoResult<u64> {
+    ) -> DbResult<u64> {
         self.conn
             .execute(
                 "UPDATE memories SET priority=?4 WHERE project=?1 AND category=?2 AND entry_key=?3",
@@ -507,7 +507,7 @@ impl EntryStore for TursoStore {
             .map_err(map_err)
     }
 
-    async fn set_lane(&self, project: &str, key: &str, lane: Option<String>) -> TursoResult<u64> {
+    async fn set_lane(&self, project: &str, key: &str, lane: Option<String>) -> DbResult<u64> {
         self.conn
             .execute(
                 "UPDATE memories SET lane=?3 WHERE project=?1 AND category='roadmap' AND entry_key=?2",
@@ -517,7 +517,7 @@ impl EntryStore for TursoStore {
             .map_err(map_err)
     }
 
-    async fn append_event(&self, project: &str, kind: &str, payload: &str) -> TursoResult<()> {
+    async fn append_event(&self, project: &str, kind: &str, payload: &str) -> DbResult<()> {
         self.conn
             .execute(
                 "INSERT INTO events (project, kind, payload, created_at) VALUES (?1,?2,?3,?4)",
@@ -528,7 +528,7 @@ impl EntryStore for TursoStore {
         Ok(())
     }
 
-    async fn rotate_events(&self, days: i64) -> TursoResult<u64> {
+    async fn rotate_events(&self, days: i64) -> DbResult<u64> {
         #[expect(
             clippy::arithmetic_side_effects,
             reason = "days comes from the CLI; negative values simply archive nothing"
@@ -546,7 +546,7 @@ impl EntryStore for TursoStore {
             .map_err(map_err)
     }
 
-    async fn delete_by_key(&self, project: &str, category: &str, key: &str) -> TursoResult<u64> {
+    async fn delete_by_key(&self, project: &str, category: &str, key: &str) -> DbResult<u64> {
         let n = self
             .conn
             .execute(
@@ -570,7 +570,7 @@ impl EntryStore for TursoStore {
         slug: &str,
         path: &str,
         tags: Option<&str>,
-    ) -> TursoResult<()> {
+    ) -> DbResult<()> {
         // K-6 unification: write BOTH `path` (canonical) and `workdir`/`display`
         // (legacy readers) so slug lookups and path lookups agree no matter
         // which register path wrote the row.
@@ -601,9 +601,9 @@ impl EntryStore for TursoStore {
         name: &str,
         slug: &str,
         url: &str,
-    ) -> TursoResult<()> {
+    ) -> DbResult<()> {
         if url.trim().is_empty() {
-            return Err(TursoError::Mapping(
+            return Err(DbError::Mapping(
                 "citation metadata URL must not be empty".to_owned(),
             ));
         }
@@ -621,7 +621,7 @@ impl EntryStore for TursoStore {
                 )
                 .await
                 .map_err(map_err)?;
-            match rows.next().await.map_err(TursoError::from)? {
+            match rows.next().await.map_err(DbError::from)? {
                 Some(row) => serde_json::from_str(
                     &row.get::<Option<String>>(0)
                         .map_err(map_err)?
@@ -633,7 +633,7 @@ impl EntryStore for TursoStore {
         };
         let merged = crate::citation::merge_metadata(&prior, std::slice::from_ref(&incoming));
         let metadata_json = serde_json::to_string(&merged)
-            .map_err(|e| TursoError::Mapping(e.to_string()))?;
+            .map_err(|e| DbError::Mapping(e.to_string()))?;
         let primary_slug = merged.first().map_or("", |m| m.slug.as_str());
         let primary_url = merged.first().map_or("", |m| m.url.as_str());
 
@@ -653,7 +653,7 @@ impl EntryStore for TursoStore {
         Ok(())
     }
 
-    async fn list_citations(&self, project: &str) -> TursoResult<Vec<CitationRow>> {
+    async fn list_citations(&self, project: &str) -> DbResult<Vec<CitationRow>> {
         let mut rows = self
             .conn
             .query(
@@ -663,7 +663,7 @@ impl EntryStore for TursoStore {
             .await
             .map_err(map_err)?;
         let mut out = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
             out.push(CitationRow {
                 entry_key: row.get::<String>(0).map_err(map_err)?,
                 name: row.get::<String>(1).map_err(map_err)?,
@@ -679,7 +679,7 @@ impl EntryStore for TursoStore {
         &self,
         project: &str,
         gate_key: &str,
-    ) -> TursoResult<Option<GateConfigRow>> {
+    ) -> DbResult<Option<GateConfigRow>> {
         let mut rows = self
             .conn
             .query(
@@ -689,7 +689,7 @@ impl EntryStore for TursoStore {
             )
             .await
             .map_err(map_err)?;
-        if let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        if let Some(row) = rows.next().await.map_err(DbError::from)? {
             let value_num: Option<f64> = row.get(3).map_err(map_err).ok().flatten();
             let value_bool: Option<bool> = row
                 .get::<Option<i64>>(4)
@@ -721,7 +721,7 @@ impl EntryStore for TursoStore {
         boolean: Option<bool>,
         list: Option<&str>,
         text: Option<&str>,
-    ) -> TursoResult<()> {
+    ) -> DbResult<()> {
         let now = super::now_rfc3339();
         let value_bool = boolean.map(i64::from);
         self.conn
@@ -739,16 +739,16 @@ impl EntryStore for TursoStore {
     }
 }
 
-async fn collect(rows: &mut libsql::Rows) -> TursoResult<Vec<MemoryEntry>> {
+async fn collect(rows: &mut libsql::Rows) -> DbResult<Vec<MemoryEntry>> {
     let mut out = Vec::new();
-    while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+    while let Some(row) = rows.next().await.map_err(DbError::from)? {
         out.push(entry_from_row(&row)?);
     }
     Ok(out)
 }
 
-async fn take_first(rows: &mut libsql::Rows) -> TursoResult<Option<MemoryEntry>> {
-    match rows.next().await.map_err(TursoError::from)? {
+async fn take_first(rows: &mut libsql::Rows) -> DbResult<Option<MemoryEntry>> {
+    match rows.next().await.map_err(DbError::from)? {
         Some(row) => Ok(Some(entry_from_row(&row)?)),
         None => Ok(None),
     }

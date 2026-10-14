@@ -37,7 +37,7 @@ async fn run_async(
 
     // DB connection. Resilient open: this runs inside a hook child, so a daemon
     // mid-restart can transiently hold the RocksDB lock — wait it out rather than
-    // race-and-fail (rca-stop-hook-surreal-lock-direct-open-bypasses-rpc).
+    // race-and-fail (rca-stop-hook-database-lock-direct-open-bypasses-rpc).
     let db = match kavach_db::open_default_resilient().await {
         Ok(d) => d,
         Err(e) => {

@@ -2,7 +2,7 @@
 // anti_pattern cluster + its mistake_event observations by gate.
 // SOURCE: decision.mistake-ledger-purge-cli
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Delete an `anti_pattern` cluster by gate, returning the node count removed.
 ///
@@ -13,8 +13,8 @@ use crate::turso::TursoStore;
 /// Idempotent: a `gate` with no rows deletes nothing and returns `Ok(0)`.
 ///
 /// # Errors
-/// Propagates `Error::Turso` on a real query failure.
-pub async fn delete_anti_patterns_by_gate(db: &TursoStore, gate: &str) -> Result<usize> {
+/// Propagates `Error::Database` on a real query failure.
+pub async fn delete_anti_patterns_by_gate(db: &DbStore, gate: &str) -> Result<usize> {
     if gate.is_empty() {
         return Ok(0);
     }

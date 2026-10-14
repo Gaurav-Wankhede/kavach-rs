@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::graph::types::{Entity, RelationType};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 fn entity_from_row(r: &libsql::Row) -> Result<Entity> {
     Ok(Entity {
@@ -16,8 +16,8 @@ fn entity_from_row(r: &libsql::Row) -> Result<Entity> {
 }
 
 /// # Errors
-/// Propagates `Error::Turso` when the database query fails.
-pub async fn forward(db: &TursoStore, from: &str, rel_type: RelationType) -> Result<Vec<Entity>> {
+/// Propagates `Error::Database` when the database query fails.
+pub async fn forward(db: &DbStore, from: &str, rel_type: RelationType) -> Result<Vec<Entity>> {
     let mut rows = db
         .exec_params(
             "SELECT e.id, e.entity_type, e.name, e.properties, e.content_hash, e.project \
@@ -36,8 +36,8 @@ pub async fn forward(db: &TursoStore, from: &str, rel_type: RelationType) -> Res
 }
 
 /// # Errors
-/// Propagates `Error::Turso` when the database query fails.
-pub async fn backward(db: &TursoStore, to: &str, rel_type: RelationType) -> Result<Vec<Entity>> {
+/// Propagates `Error::Database` when the database query fails.
+pub async fn backward(db: &DbStore, to: &str, rel_type: RelationType) -> Result<Vec<Entity>> {
     let mut rows = db
         .exec_params(
             "SELECT e.id, e.entity_type, e.name, e.properties, e.content_hash, e.project \

@@ -1,7 +1,7 @@
 // JSON-RPC handlers for durable harness runtime state (session_runtime table).
 // Used by kavach-session load/save so SessionState survives /clear + context
 // compaction, keyed by session_id — no cross-session rehydration drift.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,7 @@ pub async fn get(
 ) -> Result<Option<SessionGetResult>, ErrorObjectOwned> {
     let row = kavach_db::session_get_by_id(&state.db, &params.session_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(row.map(|r| SessionGetResult {
         session_id: r.session_id,
         workdir: r.workdir,
@@ -67,6 +67,6 @@ pub async fn upsert(
         &params.state_blob,
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     Ok(true)
 }

@@ -1,5 +1,5 @@
 use super::super::types::{ClaimCardParams, ClaimCardResult};
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::lease::AcquireOutcome;
@@ -14,7 +14,7 @@ pub async fn claim_card(
 ) -> Result<ClaimCardResult, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(not_claimed(params.key, String::new()));
     };
@@ -24,7 +24,7 @@ pub async fn claim_card(
     // ATOMIC claim: a single conditional UPDATE (todo -> in_progress) is the
     // compare-and-set. The previous read-then-write was a TOCTOU race — two
     // sessions could both read "todo", both pass the check, and both write
-    // in_progress, each believing it owned the card. With the CAS, SurrealDB
+    // in_progress, each believing it owned the card. With the CAS, Database
     // evaluates `entry_status = 'todo'` at write time, so exactly ONE racer
     // matches; the loser gets 0 rows updated and `claimed: false`.
     let updated = kavach_db::update_status_cas(
@@ -36,7 +36,7 @@ pub async fn claim_card(
         "in_progress",
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     if updated > 0 {
         return claim_won(state, &project_id, params).await;
     }
@@ -45,7 +45,7 @@ pub async fn claim_card(
     // "already claimed" from "gone".
     let current = kavach_db::get_by_key(&state.db, TABLE_ROADMAP, &project_id, &params.key)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let current_status = current
         .as_ref()
         .map_or("", |e| e.entry_status_str())
@@ -74,7 +74,7 @@ async fn claim_won(
     };
     match kavach_db::lease::acquire(&state.db, TABLE_ROADMAP, &params.key, session_id)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     {
         AcquireOutcome::Acquired(lease) => Ok(claimed(params.key, Some(lease.epoch))),
         // We won the status flip but a live lease is held by ANOTHER session — an

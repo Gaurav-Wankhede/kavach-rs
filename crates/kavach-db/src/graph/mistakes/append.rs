@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Derives the stable, deterministic event name from its semantic identity.
 /// Same shape as `cluster::derive_pattern_name` — first 8 hex chars of blake3.
@@ -17,7 +17,7 @@ fn event_key(prefix: &str, parts: &[&str], session_id: &str, turn: i32) -> Strin
 ///
 /// Returns an error if `gate` is empty, the query fails, or the database returns no record.
 pub async fn append_mistake_event(
-    db: &TursoStore,
+    db: &DbStore,
     gate: &str,
     correct_action: &str,
     banned_sample: &str,
@@ -57,7 +57,7 @@ pub async fn append_mistake_event(
 /// # Errors
 /// Returns an error if `dimension` is empty, the query fails, or no record returns.
 pub async fn append_loophole_event(
-    db: &TursoStore,
+    db: &DbStore,
     dimension: &str,
     site: &str,
     session_id: &str,
@@ -82,7 +82,7 @@ pub async fn append_loophole_event(
 
 /// Shared idempotent event upsert keyed by `name`, so a re-file converges.
 async fn create_event(
-    db: &TursoStore,
+    db: &DbStore,
     entity_type: &str,
     name: &str,
     props: serde_json::Value,

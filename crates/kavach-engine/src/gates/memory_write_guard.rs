@@ -2,7 +2,7 @@
 //!
 //! When the agent writes to memory files (MEMORY.md, /memory/*.md),
 //! this guard blocks the write and directs to kavach db commands.
-//! kavach-db (`SurrealDB`) is the permanent store — MEMORY.md is session cache.
+//! kavach-db (`Database`) is the permanent store — MEMORY.md is session cache.
 
 /// Check if a file path is a memory file that should use kavach-db.
 /// Returns false for agent-memory paths — subagents write structured

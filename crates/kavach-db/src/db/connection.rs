@@ -1,6 +1,6 @@
-//! Connection lifecycle + schema bootstrap for [`TursoStore`].
+//! Connection lifecycle + schema bootstrap for [`DatabaseStore`].
 //!
-//! The ONE inherent impl block for `TursoStore` lives here (repo law); all
+//! The ONE inherent impl block for `DatabaseStore` lives here (repo law); all
 //! domain behavior is provided by extension traits in sibling modules
 //! (`entries::EntryStore`, `search::SearchStore`, `graph::GraphStore`).
 
@@ -8,11 +8,11 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-use super::{SCHEMA_DDL, TursoError, TursoResult, TursoStore};
+use super::{SCHEMA_DDL, DbError, DbResult, DbStore};
 
 #[derive(Debug)]
 pub struct QueryBuilder {
-    store: TursoStore,
+    store: DbStore,
     sql: String,
     params: Vec<libsql::Value>,
 }
@@ -26,7 +26,7 @@ impl QueryBuilder {
 }
 
 impl IntoFuture for QueryBuilder {
-    type Output = TursoResult<libsql::Rows>;
+    type Output = DbResult<libsql::Rows>;
     type IntoFuture = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
     fn into_future(self) -> Self::IntoFuture {
@@ -40,7 +40,7 @@ impl IntoFuture for QueryBuilder {
     }
 }
 
-impl TursoStore {
+impl DbStore {
     pub fn query(&self, sql: impl AsRef<str>) -> QueryBuilder {
         QueryBuilder {
             store: self.clone(),
@@ -52,25 +52,25 @@ impl TursoStore {
     /// Run a parameterized query, returning the raw `libsql::Rows`.
     ///
     /// # Errors
-    /// Returns `TursoError` when the statement fails to prepare or execute.
+    /// Returns `DatabaseError` when the statement fails to prepare or execute.
     pub async fn query_with_params(
         &self,
         sql: &str,
         params: impl libsql::params::IntoParams,
-    ) -> TursoResult<libsql::Rows> {
+    ) -> DbResult<libsql::Rows> {
         self.conn.query(sql, params).await.map_err(Into::into)
     }
 
-    /// Open (or create) a local Turso database at `path`, applying the schema.
+    /// Open (or create) a local Database database at `path`, applying the schema.
     ///
     /// # Errors
-    /// Returns `TursoError` when the file cannot be created, the connection
+    /// Returns `DatabaseError` when the file cannot be created, the connection
     /// cannot be established, or schema bootstrap fails.
-    pub async fn open(path: impl AsRef<Path>) -> TursoResult<Self> {
+    pub async fn open(path: impl AsRef<Path>) -> DbResult<Self> {
         let path = path.as_ref();
         if let Some(dir) = path.parent() {
             tokio::fs::create_dir_all(dir).await.map_err(|e| {
-                TursoError::Mapping(format!("create_dir_all {}: {e}", dir.display()))
+                DbError::Mapping(format!("create_dir_all {}: {e}", dir.display()))
             })?;
         }
         let db = libsql::Builder::new_local(path.display().to_string())
@@ -85,8 +85,8 @@ impl TursoStore {
     /// Default location: `$KAVACH_HOME/kavach.db`, else `~/.kavach/kavach.db`.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on filesystem or SQL failure.
-    pub async fn open_default() -> TursoResult<Self> {
+    /// Returns [`DatabaseError`] on filesystem or SQL failure.
+    pub async fn open_default() -> DbResult<Self> {
         let base = std::env::var_os("KAVACH_HOME").map_or_else(
             || {
                 dirs::home_dir()
@@ -102,8 +102,8 @@ impl TursoStore {
     /// `:memory:` database alive for the store's lifetime.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    pub async fn open_memory() -> TursoResult<Self> {
+    /// Returns [`DatabaseError`] on SQL failure.
+    pub async fn open_memory() -> DbResult<Self> {
         let db = libsql::Builder::new_local(":memory:").build().await?;
         let conn = db.connect()?;
         let store = Self { conn };
@@ -114,16 +114,16 @@ impl TursoStore {
     /// Re-apply the schema idempotently (all DDL uses `IF NOT EXISTS`).
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    pub async fn apply_schema(&self) -> TursoResult<()> {
+    /// Returns [`DatabaseError`] on SQL failure.
+    pub async fn apply_schema(&self) -> DbResult<()> {
         self.init_schema().await
     }
 
     /// Run WAL checkpoint on the database.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure.
-    pub async fn wal_checkpoint(&self, truncate: bool) -> TursoResult<()> {
+    /// Returns [`DatabaseError`] on SQL failure.
+    pub async fn wal_checkpoint(&self, truncate: bool) -> DbResult<()> {
         let sql = if truncate {
             "PRAGMA wal_checkpoint(TRUNCATE);"
         } else {
@@ -135,15 +135,15 @@ impl TursoStore {
     /// Run PRAGMA integrity_check on the database.
     ///
     /// # Errors
-    /// Returns [`TursoError`] on SQL failure or if integrity check fails.
-    pub async fn integrity_check(&self) -> TursoResult<Vec<String>> {
+    /// Returns [`DatabaseError`] on SQL failure or if integrity check fails.
+    pub async fn integrity_check(&self) -> DbResult<Vec<String>> {
         let mut rows = self
             .conn
             .query("PRAGMA integrity_check;", ())
             .await
-            .map_err(TursoError::from)?;
+            .map_err(DbError::from)?;
         let mut results = Vec::new();
-        while let Some(row) = rows.next().await.map_err(TursoError::from)? {
+        while let Some(row) = rows.next().await.map_err(DbError::from)? {
             if let Ok(msg) = row.get::<String>(0) {
                 results.push(msg);
             }
@@ -151,7 +151,7 @@ impl TursoStore {
         Ok(results)
     }
 
-    pub(crate) async fn exec(&self, sql: &str) -> TursoResult<u64> {
+    pub(crate) async fn exec(&self, sql: &str) -> DbResult<u64> {
         self.conn.execute(sql, ()).await.map_err(Into::into)
     }
 
@@ -159,7 +159,7 @@ impl TursoStore {
         &self,
         sql: impl AsRef<str>,
         params: impl libsql::params::IntoParams,
-    ) -> TursoResult<libsql::Rows> {
+    ) -> DbResult<libsql::Rows> {
         self.conn
             .query(sql.as_ref(), params)
             .await
@@ -168,13 +168,13 @@ impl TursoStore {
 
     /// Execute statements that may return rows (e.g. `PRAGMA journal_mode`)
     /// by draining the result set.
-    async fn exec_drain(&self, sql: &str) -> TursoResult<()> {
-        let mut rows = self.conn.query(sql, ()).await.map_err(TursoError::from)?;
-        while rows.next().await.map_err(TursoError::from)?.is_some() {}
+    async fn exec_drain(&self, sql: &str) -> DbResult<()> {
+        let mut rows = self.conn.query(sql, ()).await.map_err(DbError::from)?;
+        while rows.next().await.map_err(DbError::from)?.is_some() {}
         Ok(())
     }
 
-    async fn init_schema(&self) -> TursoResult<()> {
+    async fn init_schema(&self) -> DbResult<()> {
         // K-4 concurrency triad (Handbook §4): WAL + NORMAL sync + 5s busy
         // timeout, applied on EVERY open so concurrent CLI/hook/daemon readers
         // never hit `database is locked`.
@@ -189,7 +189,7 @@ impl TursoStore {
             self.exec(stmt).await?;
         }
         for stmt in vector_ddl() {
-            crate::turso::vector::exec_vector_ddl_best_effort(self, stmt).await?;
+            crate::db::vector::exec_vector_ddl_best_effort(self, stmt).await?;
         }
         Ok(())
     }

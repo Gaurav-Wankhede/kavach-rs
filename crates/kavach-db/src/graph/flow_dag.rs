@@ -11,7 +11,7 @@
 // CONSISTENCY: upsert idempotent on (project, flow_key) + qualified step name
 // FAILURE_MODE: cyclic depends_on -> rejected (fail closed); project missing -> NotFound
 //
-// SOURCE: https://surrealdb.com/docs/surrealql/statements/relate
+// SOURCE: https://database.com/docs/databaseql/statements/relate
 // SOURCE: https://mermaid.js.org/syntax/flowchart.html
 mod fetch;
 mod model;

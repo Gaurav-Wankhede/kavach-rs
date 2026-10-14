@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use kavach_types::Priority;
 
 /// Surgical priority mutation — partial UPDATE of `priority` + `updated_at` only.
@@ -12,10 +12,10 @@ use kavach_types::Priority;
 /// (FIFO tail in the dispatch sort).
 ///
 /// # Errors
-/// `Error::RecordNotFound` when no row matches (project, key); `Error::Turso`
+/// `Error::RecordNotFound` when no row matches (project, key); `Error::Database`
 /// when the UPDATE itself fails.
 pub async fn set_priority(
-    db: &TursoStore,
+    db: &DbStore,
     category: &str,
     project_id: &str,
     entry_key: &str,
@@ -26,7 +26,7 @@ pub async fn set_priority(
             "priority is only defined on roadmap and decision tables, got: {category}"
         )));
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "UPDATE memories SET priority = $priority, updated_at = $now \
@@ -57,9 +57,9 @@ pub async fn set_priority(
 ///
 /// # Errors
 /// `Error::RecordNotFound` when no row matches (project, key) or the category is
-/// not `roadmap`; `Error::Turso` when the UPDATE itself fails.
+/// not `roadmap`; `Error::Database` when the UPDATE itself fails.
 pub async fn set_lane(
-    db: &TursoStore,
+    db: &DbStore,
     category: &str,
     project_id: &str,
     entry_key: &str,
@@ -70,7 +70,7 @@ pub async fn set_lane(
             "lane is only defined on the roadmap table, got: {category}"
         )));
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut response = db
         .exec_params(
             "UPDATE memories SET lane = $lane, updated_at = $now \

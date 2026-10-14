@@ -2,7 +2,7 @@
 // Kept in its own module to isolate from arch-guard pattern matching on the
 // main schema string.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 const ENGINE_DDL: &str = include_str!("schema_engine.surql");
 
@@ -10,8 +10,8 @@ const ENGINE_DDL: &str = include_str!("schema_engine.surql");
 ///
 /// # Errors
 ///
-/// Propagates errors from the underlying `Turso` query execution.
-pub async fn apply(db: &TursoStore) -> Result<()> {
+/// Propagates errors from the underlying `Database` query execution.
+pub async fn apply(db: &DbStore) -> Result<()> {
     db.exec_params(ENGINE_DDL, ()).await?;
     Ok(())
 }

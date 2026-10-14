@@ -3,7 +3,7 @@
 // Used by kavach-engine rag_router (and forthcoming session_start) to record
 // session→skill, skill→skill cross_invoke, file→skill INVOKE edges
 // without spawning tokio per call.
-use crate::error::{invalid_params, surreal_to_rpc};
+use crate::error::{invalid_params, db_to_rpc};
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -54,7 +54,7 @@ pub struct GetRelatedParams {
 }
 
 /// Validate the `table:key` record-id shape and return it unchanged — the
-/// Turso layer keys entities and edges by the full string id.
+/// Database layer keys entities and edges by the full string id.
 fn parse_record_id(s: &str) -> Result<String, ErrorObjectOwned> {
     match s.split_once(':') {
         Some((table, key)) if !table.is_empty() && !key.is_empty() => Ok(s.to_owned()),
@@ -75,7 +75,7 @@ pub async fn entity_upsert(
 ) -> Result<EntityIdResult, ErrorObjectOwned> {
     let id = graph_upsert_entity(&state.db, &params.entity_type, &params.name)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(EntityIdResult { id })
 }
 
@@ -90,7 +90,7 @@ pub async fn entity_find(
 ) -> Result<Option<Entity>, ErrorObjectOwned> {
     graph_find_entity(&state.db, &params.entity_type, &params.name)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 /// Add a relationship between two graph entities.
@@ -107,7 +107,7 @@ pub async fn add_relationship(
     let weight = params.weight.unwrap_or(1.0);
     graph_relate_dynamic(&state.db, &from, &to, &params.rel_type, weight)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok("ok")
 }
 
@@ -124,5 +124,5 @@ pub async fn get_related(
     let limit = params.limit.unwrap_or(50);
     graph_get_related(&state.db, &from, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }

@@ -1,4 +1,4 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // SPEC: docs/architecture/session-occupancy-lease.md — read current lease state.
 use chrono::Utc;
 
@@ -6,8 +6,8 @@ use super::types::{Lease, LeaseRow};
 use crate::error::Result;
 
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
-pub async fn status(db: &TursoStore, table: &str, key: &str) -> Result<Option<Lease>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn status(db: &DbStore, table: &str, key: &str) -> Result<Option<Lease>> {
     let mut rows = db
         .exec_params(
             "SELECT occupied_by, occupied_until, occupied_epoch FROM memories \

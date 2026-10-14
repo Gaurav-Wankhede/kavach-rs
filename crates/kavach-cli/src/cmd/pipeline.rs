@@ -1,7 +1,7 @@
 // split: intentional - cohesive pipeline subcommand (plan + status share the project resolver)
 // ARCH: see kavach db get --category decision --key arch.decision.silent_io_guard_shipped
 // `kavach pipeline` — initializer→subagent pipeline (planner only).
-// SurrealDB-backed: app_spec → roadmap items via kavach_db::upsert_entry_full
+// Database-backed: app_spec → roadmap items via kavach_db::upsert_entry_full
 // (atomic memory entry + event + entity + graph edges in one transaction).
 use crate::cli::PipelineAction;
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};

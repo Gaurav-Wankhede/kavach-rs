@@ -17,7 +17,7 @@ const STATUS_TODO: &str = "todo";
 const ACCESS_COUNT_DEFAULT: i64 = 0;
 
 /// # Errors
-/// Returns an RPC `ErrorObjectOwned` when the underlying `SurrealDB` query fails.
+/// Returns an RPC `ErrorObjectOwned` when the underlying `Database` query fails.
 pub async fn query(ctx: &AppState, params: QueryParams) -> Result<QueryResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let table = or_str(params.category.as_deref(), ROADMAP_TABLE);

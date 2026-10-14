@@ -1,8 +1,8 @@
 // split: intentional - granular delete operations (single key or category-wide)
 // Preferred over wipe_project for surgical record removal.
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -26,13 +26,13 @@ fn validate_category(category: &str) -> Result<()> {
     }
 }
 
-async fn get_project(db: &TursoStore, project_slug: &str) -> Result<String> {
+async fn get_project(db: &DbStore, project_slug: &str) -> Result<String> {
     let q = "SELECT slug FROM projects WHERE slug = ? LIMIT 1";
     let mut rows = db
         .exec_params(q, [project_slug.to_owned()])
         .await
-        .map_err(Error::Turso)?;
-    let Some(row) = rows.next().await.map_err(|e| Error::Turso(e.into()))? else {
+        .map_err(Error::Db)?;
+    let Some(row) = rows.next().await.map_err(|e| Error::Db(e.into()))? else {
         return Err(Error::RecordNotFound(format!("project '{project_slug}'")));
     };
     Ok(row.get::<String>(0).unwrap_or_default())
@@ -45,7 +45,7 @@ async fn get_project(db: &TursoStore, project_slug: &str) -> Result<String> {
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
 pub async fn delete_by_key(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
     key: &str,
@@ -55,7 +55,7 @@ pub async fn delete_by_key(
     let count = db
         .delete_by_key(project_slug, category, key)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
         category: category.to_owned(),
@@ -69,7 +69,7 @@ pub async fn delete_by_key(
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
 pub async fn preview_delete_by_key(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
     key: &str,
@@ -79,7 +79,7 @@ pub async fn preview_delete_by_key(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     let count = entries.iter().filter(|e| e.entry_key == key).count();
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
@@ -94,7 +94,7 @@ pub async fn preview_delete_by_key(
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
 pub async fn delete_category(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
 ) -> Result<DeleteReport> {
@@ -103,12 +103,12 @@ pub async fn delete_category(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     let count = entries.len();
     for entry in entries {
         db.delete_by_key(project_slug, category, &entry.entry_key)
             .await
-            .map_err(Error::Turso)?;
+            .map_err(Error::Db)?;
     }
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
@@ -121,7 +121,7 @@ pub async fn delete_category(
 /// Count records in `category` whose `entry_key` starts with `key_prefix`, for the
 /// shared count step of both the preview and the apply path.
 async fn count_by_key_prefix(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
     key_prefix: &str,
@@ -129,7 +129,7 @@ async fn count_by_key_prefix(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     Ok(entries
         .iter()
         .filter(|e| e.entry_key.starts_with(key_prefix))
@@ -142,7 +142,7 @@ async fn count_by_key_prefix(
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
 pub async fn preview_delete_by_key_prefix(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
     key_prefix: &str,
@@ -166,7 +166,7 @@ pub async fn preview_delete_by_key_prefix(
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
 pub async fn delete_by_key_prefix(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
     key_prefix: &str,
@@ -177,12 +177,12 @@ pub async fn delete_by_key_prefix(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     for entry in entries {
         if entry.entry_key.starts_with(key_prefix) {
             db.delete_by_key(project_slug, category, &entry.entry_key)
                 .await
-                .map_err(Error::Turso)?;
+                .map_err(Error::Db)?;
         }
     }
     Ok(DeleteReport {
@@ -198,7 +198,7 @@ pub async fn delete_by_key_prefix(
 /// # Errors
 /// Propagates `Error::RecordNotFound` if the category is invalid or the project is not found.
 pub async fn preview_delete_category(
-    db: &TursoStore,
+    db: &DbStore,
     project_slug: &str,
     category: &str,
 ) -> Result<DeleteReport> {
@@ -207,7 +207,7 @@ pub async fn preview_delete_category(
     let entries = db
         .list_by_category(project_slug, category)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     Ok(DeleteReport {
         project_slug: project_slug.to_owned(),
         category: category.to_owned(),

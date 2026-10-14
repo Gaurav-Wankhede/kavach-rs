@@ -2,7 +2,7 @@
 //! relationship split.
 //!
 //! Extraction is the CLI's job (it depends on `kavach-engine`; the daemon cannot
-//! — that would cycle); projection is the daemon's (`kavach-surreal`), so the two
+//! — that would cycle); projection is the daemon's (`kavach-database`), so the two
 //! never both hold a `RocksDB` handle. SOURCE: <https://github.com/facebook/rocksdb/issues/1780>
 
 use super::WriteParams;

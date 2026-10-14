@@ -1,6 +1,6 @@
 // split: intentional — RPC namespace for citation verbs (add/get/list/link/traverse/refresh); mirrors methods/concept.rs.
 // jsonrpsee 0.24 — see https://docs.rs/jsonrpsee/0.24
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -42,7 +42,7 @@ pub async fn add(state: &AppState, p: AddParams) -> Result<IdResult, ErrorObject
         },
     )
     .await
-    .map_err(surreal_to_rpc)?;
+    .map_err(db_to_rpc)?;
     Ok(IdResult { id })
 }
 
@@ -60,7 +60,7 @@ pub struct GetParams {
 pub async fn get(state: &AppState, p: GetParams) -> Result<Option<Citation>, ErrorObjectOwned> {
     citation_get(&state.db, &p.project, &p.entry_key)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -76,7 +76,7 @@ pub struct ListParams {
 pub async fn list(state: &AppState, p: ListParams) -> Result<Vec<Citation>, ErrorObjectOwned> {
     citation_list(&state.db, &p.project)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,7 +87,7 @@ pub struct LinkParams {
 }
 
 /// Validate the `table:key` record-id shape and return it unchanged — the
-/// Turso layer keys edges by the full string id, not a parsed record.
+/// Database layer keys edges by the full string id, not a parsed record.
 fn parse_record(s: &str) -> Result<String, ErrorObjectOwned> {
     match s.split_once(':') {
         Some((table, key)) if !table.is_empty() && !key.is_empty() => Ok(format!("{table}:{key}")),
@@ -108,7 +108,7 @@ pub async fn link(state: &AppState, p: LinkParams) -> Result<&'static str, Error
     let citation = parse_record(&p.citation)?;
     citation_merge_node(&state.db, &node, &citation)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok("ok")
 }
 
@@ -138,7 +138,7 @@ pub async fn traverse(
     let citation = parse_record(&p.citation)?;
     let citers = citation_traverse(&state.db, &citation)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(CitersResult { citers })
 }
 
@@ -166,7 +166,7 @@ pub async fn refresh(state: &AppState, p: RefreshParams) -> Result<RewardResult,
     let citation = parse_record(&p.citation)?;
     let rewarded = citation_reward(&state.db, &citation, p.delta)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(RewardResult { rewarded })
 }
 
@@ -192,6 +192,6 @@ pub async fn for_nodes(
         .collect::<Result<_, _>>()?;
     let cites = citation_citations_for_nodes(&state.db, &nodes)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(CitersResult { citers: cites })
 }

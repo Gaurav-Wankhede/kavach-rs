@@ -1,7 +1,7 @@
 //! Claude Code `TaskList` store reader — the SECOND census source.
 //!
 //! The stop-gate census ([`super::census`]) historically counted only the
-//! `SurrealDB` `roadmap` table. But the live work backlog is also kept in the
+//! `Database` `roadmap` table. But the live work backlog is also kept in the
 //! Claude Code `TaskList` store on disk (`~/.claude/tasks/<scope>/<id>.json`),
 //! and those two stores were never reconciled: a board with 30 open `TaskList`
 //! items but zero runnable `roadmap` rows reported `runnable: 0` and the gate

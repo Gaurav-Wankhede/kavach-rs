@@ -16,18 +16,18 @@
 use kavach_db::graph::{
     build_transitive_closure, create_cross_category_edges, extract_depends_on, populate_nodes,
 };
-use kavach_db::turso::TursoStore;
+use kavach_db::db::DbStore;
 use kavach_db::open_memory;
 
 /// Helper: execute a SQL statement (INSERT/UPDATE/DELETE) via query_with_params.
-async fn exec_sql(db: &TursoStore, sql: &str) {
+async fn exec_sql(db: &DbStore, sql: &str) {
     db.query_with_params(sql, ())
         .await
         .unwrap_or_else(|e| panic!("SQL failed: {e}\nSQL: {sql}"));
 }
 
 /// Helper: query rows and collect into a Vec.
-async fn query_rows(db: &TursoStore, sql: &str) -> Vec<Vec<libsql::Value>> {
+async fn query_rows(db: &DbStore, sql: &str) -> Vec<Vec<libsql::Value>> {
     let mut rows = db.query_with_params(sql, ()).await.expect("query");
     let mut out = Vec::new();
     while let Some(row) = rows.next().await.expect("row") {
@@ -41,7 +41,7 @@ async fn query_rows(db: &TursoStore, sql: &str) -> Vec<Vec<libsql::Value>> {
 }
 
 /// Helper: get a single string value from a query.
-async fn query_string(db: &TursoStore, sql: &str) -> String {
+async fn query_string(db: &DbStore, sql: &str) -> String {
     let rows = query_rows(db, sql).await;
     rows.first()
         .and_then(|r| r.first())
@@ -53,7 +53,7 @@ async fn query_string(db: &TursoStore, sql: &str) -> String {
 }
 
 /// Helper: get a single i64 value from a query.
-async fn query_i64(db: &TursoStore, sql: &str) -> i64 {
+async fn query_i64(db: &DbStore, sql: &str) -> i64 {
     let rows = query_rows(db, sql).await;
     rows.first()
         .and_then(|r| r.first())

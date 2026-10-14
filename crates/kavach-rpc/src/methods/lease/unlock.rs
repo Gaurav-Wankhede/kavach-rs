@@ -1,7 +1,7 @@
 // SPEC: docs/architecture/session-occupancy-lease.md
 // Lease unlock RPC — clear lease fields when holder is done.
 // SOURCE: https://medium.com/@Modexa/7-lease-based-locks-that-dont-deadlock-d6de4a0562c9
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
@@ -50,6 +50,6 @@ pub async fn unlock(state: &AppState, p: UnlockParams) -> Result<UnlockResult, E
     };
     lease_unlock(&state.db, &p.table, &p.key, &lease)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(UnlockResult { ok: true })
 }

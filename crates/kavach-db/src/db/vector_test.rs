@@ -4,7 +4,7 @@
 //! (offline) so `embed_texts` falls back to `fallback_embed` (blake3 hash),
 //! ensuring cosine scores are reproducible without a 120 MB model cache.
 
-use super::TursoStore;
+use super::DbStore;
 use super::entries::EntryStore;
 use super::vector::{
     EMBEDDING_DIMS, VectorStore, cosine_similarity, deserialize_embedding, embed_texts,
@@ -135,7 +135,7 @@ fn embed_texts_produces_correct_dimension() {
 #[tokio::test]
 async fn upsert_entry_writes_embedding() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_embed.db"))
+    let s = DbStore::open(dir.path().join("vec_embed.db"))
         .await
         .unwrap();
     s.upsert_entry(&entry(
@@ -173,7 +173,7 @@ async fn upsert_entry_writes_embedding() {
 #[tokio::test]
 async fn vector_rank_returns_hits() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_rank.db"))
+    let s = DbStore::open(dir.path().join("vec_rank.db"))
         .await
         .unwrap();
 
@@ -201,7 +201,7 @@ async fn vector_rank_returns_hits() {
 #[tokio::test]
 async fn vector_rank_empty_query_returns_empty() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_empty.db"))
+    let s = DbStore::open(dir.path().join("vec_empty.db"))
         .await
         .unwrap();
     let hits = s.vector_rank("proj", "  ", 5).await.unwrap();
@@ -213,7 +213,7 @@ async fn vector_rank_empty_query_returns_empty() {
 #[tokio::test]
 async fn search_hybrid_returns_fused_results() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_hybrid.db"))
+    let s = DbStore::open(dir.path().join("vec_hybrid.db"))
         .await
         .unwrap();
 
@@ -272,7 +272,7 @@ async fn search_hybrid_returns_fused_results() {
 #[tokio::test]
 async fn backfill_fills_null_embeddings() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("vec_backfill.db"))
+    let s = DbStore::open(dir.path().join("vec_backfill.db"))
         .await
         .unwrap();
 

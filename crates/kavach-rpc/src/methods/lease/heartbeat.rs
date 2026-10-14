@@ -1,7 +1,7 @@
 // SPEC: docs/architecture/session-occupancy-lease.md
 // Lease heartbeat RPC — epoch-guarded TTL renewal (fencing-token check).
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
@@ -41,7 +41,7 @@ pub async fn heartbeat(
     };
     let renewed = lease_heartbeat(&state.db, &p.table, &p.key, &lease)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(HeartbeatResult {
         renewed: true,
         expires_at: renewed.expires_at,

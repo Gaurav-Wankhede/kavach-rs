@@ -9,7 +9,7 @@ mod types;
 pub use types::{GraphEdge, GraphFetchParams, GraphFetchResult, GraphNode};
 
 /// # Errors
-/// Returns an RPC `ErrorObjectOwned` when the underlying `SurrealDB` query fails.
+/// Returns an RPC `ErrorObjectOwned` when the underlying `Database` query fails.
 pub async fn graph_fetch(
     ctx: &AppState,
     params: GraphFetchParams,

@@ -1,6 +1,6 @@
 //! EntryStore tests — Phase 1 acceptance (PRD §4 Phase 1) + proptests.
 
-use super::TursoStore;
+use super::DbStore;
 use super::entries::EntryStore;
 use crate::dual_write::MemoryEntry;
 use proptest::prop_assert;
@@ -32,7 +32,7 @@ fn entry(project: &str, category: &str, key: &str, title: &str) -> MemoryEntry {
 #[tokio::test]
 async fn upsert_get_roundtrip_preserves_fields() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("rt.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("rt.db")).await.unwrap();
     let e = entry("demo", "decision", "use-turso", "Adopt embedded storage");
     s.upsert_entry(&e).await.unwrap();
     let got = s
@@ -52,7 +52,7 @@ async fn upsert_get_roundtrip_preserves_fields() {
 #[tokio::test]
 async fn upsert_twice_updates_not_duplicates() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("dedup.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("dedup.db")).await.unwrap();
     s.upsert_entry(&entry("p", "research", "k1", "v1"))
         .await
         .unwrap();
@@ -67,7 +67,7 @@ async fn upsert_twice_updates_not_duplicates() {
 #[tokio::test]
 async fn status_cas_transitions_only_from_expected() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("cas.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("cas.db")).await.unwrap();
     s.upsert_entry(&entry("p", "roadmap", "card", "A card"))
         .await
         .unwrap();
@@ -89,7 +89,7 @@ async fn status_cas_transitions_only_from_expected() {
 #[tokio::test]
 async fn delete_removes_row_and_fts() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("del.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("del.db")).await.unwrap();
     s.upsert_entry(&entry("p", "pattern", "pat1", "Unique pattern name"))
         .await
         .unwrap();
@@ -115,7 +115,7 @@ proptest::proptest! {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let dir = tempfile::TempDir::new().unwrap();
-            let s = TursoStore::open(dir.path().join("prop.db")).await.unwrap();
+            let s = DbStore::open(dir.path().join("prop.db")).await.unwrap();
             let n = keys.len();
             for k in &keys {
                 s.upsert_entry(&entry("pp", "app_spec", k, k)).await.unwrap();
@@ -135,7 +135,7 @@ proptest::proptest! {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let dir = tempfile::TempDir::new().unwrap();
-            let s = TursoStore::open(dir.path().join("lww.db")).await.unwrap();
+            let s = DbStore::open(dir.path().join("lww.db")).await.unwrap();
             let last = titles.last().unwrap().clone();
             for t in &titles {
                 s.upsert_entry(&entry("q", "decision", &key, t)).await.unwrap();

@@ -1,7 +1,7 @@
 // split: intentional - cohesive arch/algo decision RPC group (list + upsert)
 // JSON-RPC method handlers for arch/algo decision lookups + recording.
 // Used by kavach-engine pre-write guards (read) and post-tool recorders (write).
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{
@@ -23,7 +23,7 @@ pub struct ListParams {
 /// List recent algorithm decisions for a project.
 ///
 /// # Errors
-/// Returns `surreal_to_rpc` error if the project lookup fails.
+/// Returns `database_to_rpc` error if the project lookup fails.
 pub async fn algo_list(
     state: &AppState,
     params: ListParams,
@@ -31,7 +31,7 @@ pub async fn algo_list(
     let limit = params.limit.unwrap_or(5);
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -40,7 +40,7 @@ pub async fn algo_list(
     };
     algo_list_recent(&state.db, &project_id, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }
 
 #[derive(Debug, Deserialize)]
@@ -88,14 +88,14 @@ pub struct UpsertResult {
 /// Upsert an architecture decision.
 ///
 /// # Errors
-/// Returns `surreal_to_rpc` error if the project lookup or upsert fails.
+/// Returns `database_to_rpc` error if the project lookup or upsert fails.
 pub async fn arch_upsert_rpc(
     state: &AppState,
     params: ArchUpsertRpcParams,
 ) -> Result<Option<UpsertResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -115,7 +115,7 @@ pub async fn arch_upsert_rpc(
     };
     let id = arch_upsert(&state.db, &upsert_params)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(Some(UpsertResult {
         id: format!("{id:?}"),
     }))
@@ -124,14 +124,14 @@ pub async fn arch_upsert_rpc(
 /// Upsert an algorithm decision.
 ///
 /// # Errors
-/// Returns `surreal_to_rpc` error if the project lookup or upsert fails.
+/// Returns `database_to_rpc` error if the project lookup or upsert fails.
 pub async fn algo_upsert_rpc(
     state: &AppState,
     params: AlgoUpsertRpcParams,
 ) -> Result<Option<UpsertResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -150,7 +150,7 @@ pub async fn algo_upsert_rpc(
     };
     let id = algo_upsert(&state.db, &upsert_params)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(Some(UpsertResult {
         id: format!("{id:?}"),
     }))
@@ -159,7 +159,7 @@ pub async fn algo_upsert_rpc(
 /// List recent architecture decisions for a project.
 ///
 /// # Errors
-/// Returns `surreal_to_rpc` error if the project lookup fails.
+/// Returns `database_to_rpc` error if the project lookup fails.
 pub async fn arch_list(
     state: &AppState,
     params: ListParams,
@@ -167,7 +167,7 @@ pub async fn arch_list(
     let limit = params.limit.unwrap_or(5);
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(Vec::new());
     };
@@ -176,5 +176,5 @@ pub async fn arch_list(
     };
     arch_list_recent(&state.db, &project_id, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }

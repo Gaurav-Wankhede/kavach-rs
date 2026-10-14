@@ -8,7 +8,7 @@
 //   versions; a partial sort gives no measurable win at N≈scopes.
 //   TIME: O(N log N), N = deployed_policy count. SPACE: O(N). YEAR: 2026.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// One deployed advisory policy: the promoted action distribution plus the
 /// coverage/sample evidence, surfaced for reinjection (highest `lcb` first).
@@ -35,9 +35,9 @@ pub struct DeployedPolicyRow {
 /// stable tie-break.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
+/// Propagates `Error::Database` when the query fails.
 pub async fn top_deployed_policies(
-    db: &TursoStore,
+    db: &DbStore,
     limit: usize,
 ) -> Result<Vec<DeployedPolicyRow>> {
     let mut resp = db

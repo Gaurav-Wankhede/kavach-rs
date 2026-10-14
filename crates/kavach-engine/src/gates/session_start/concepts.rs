@@ -110,7 +110,7 @@ mod tests {
     }
 
     // The provenance logic is tested against `source_from_props` directly:
-    // `BridgeHit`/`Entity` are `#[non_exhaustive]` in kavach-surreal and cannot be
+    // `BridgeHit`/`Entity` are `#[non_exhaustive]` in kavach-database and cannot be
     // built with a cross-crate struct literal. `concept_source` is a thin
     // Option-unwrap over this pure parser, so testing the parser covers the logic.
 

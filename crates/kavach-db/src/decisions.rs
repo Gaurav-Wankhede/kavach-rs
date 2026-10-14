@@ -1,7 +1,7 @@
 // split: intentional - read helpers for algo_decision and arch_decision tables
 // sql-safe: queries use static literals + params; no user input concatenated.
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,9 +36,9 @@ pub struct ArchDecision {
 /// List up to `limit` recent `algo_decision` rows for `project_id`.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
+/// Propagates `Error::Database` from the SELECT.
 pub async fn algo_list_recent(
-    db: &TursoStore,
+    db: &DbStore,
     project_id: &str,
     limit: usize,
 ) -> Result<Vec<AlgoDecision>> {
@@ -104,9 +104,9 @@ pub struct AlgoUpsertParams<'a> {
 /// Upsert an `arch_decision` row keyed by (project, pattern, `file_path`).
 ///
 /// # Errors
-/// `Error::Turso` on query failure; `Error::RecordNotFound` if the upsert
+/// `Error::Database` on query failure; `Error::RecordNotFound` if the upsert
 /// yields no id row.
-pub async fn arch_upsert(db: &TursoStore, p: &ArchUpsertParams<'_>) -> Result<String> {
+pub async fn arch_upsert(db: &DbStore, p: &ArchUpsertParams<'_>) -> Result<String> {
     // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (sibling of
     // algo_upsert). SOURCE: decision.algo-upsert-idempotent-keyed.
     let key = arch_record_key(&p.project, p.pattern, p.file_path);
@@ -150,9 +150,9 @@ pub async fn arch_upsert(db: &TursoStore, p: &ArchUpsertParams<'_>) -> Result<St
 /// `file_path`).
 ///
 /// # Errors
-/// `Error::Turso` on query failure; `Error::RecordNotFound` if the upsert
+/// `Error::Database` on query failure; `Error::RecordNotFound` if the upsert
 /// yields no id row.
-pub async fn algo_upsert(db: &TursoStore, p: &AlgoUpsertParams<'_>) -> Result<String> {
+pub async fn algo_upsert(db: &DbStore, p: &AlgoUpsertParams<'_>) -> Result<String> {
     // Single-statement keyed UPSERT, NOT racy DELETE;CREATE (two concurrent
     // recorders -> double row; reader mid-swap -> zero rows).
     // SOURCE: decision.algo-upsert-idempotent-keyed.
@@ -225,9 +225,9 @@ pub(crate) fn hash_keyed(table: &str, a: &str, b: &str, c: &str) -> String {
 /// List up to `limit` recent `arch_decision` rows for `project_id`.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the SELECT.
+/// Propagates `Error::Database` from the SELECT.
 pub async fn arch_list_recent(
-    db: &TursoStore,
+    db: &DbStore,
     project_id: &str,
     limit: usize,
 ) -> Result<Vec<ArchDecision>> {

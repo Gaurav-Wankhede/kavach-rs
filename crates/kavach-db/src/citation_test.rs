@@ -14,8 +14,8 @@ use super::{
     mark_if_stale, merge_metadata, merge_node_into_citation, plan_refresh,
     reward_citation_edges, upsert_citation,
 };
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
 use crate::{apply_schema, open_memory};
 
 /// `merge_metadata` is the pure core of the accumulate-not-replace fix; pin its
@@ -42,7 +42,7 @@ fn merge_metadata_accumulates_by_slug_and_refreshes_in_place() {
     );
 }
 
-async fn seed() -> TursoStore {
+async fn seed() -> DbStore {
     let db = open_memory().await.expect("mem db");
     apply_schema(&db).await.expect("schema");
     db
@@ -70,7 +70,7 @@ async fn upsert_creates_then_updates_on_same_key() {
         &UpsertCitation {
             project: project.clone(),
             entry_key: "surreal",
-            name: "TursoStoreDB",
+            name: "DbStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
@@ -82,7 +82,7 @@ async fn upsert_creates_then_updates_on_same_key() {
         &UpsertCitation {
             project: project.clone(),
             entry_key: "surreal",
-            name: "TursoStoreDB v3",
+            name: "DbStoreDB v3",
             metadata: vec![meta("graph", "https://surrealdb.com/docs/graph")],
         },
     )
@@ -97,7 +97,7 @@ async fn upsert_creates_then_updates_on_same_key() {
         .await
         .expect("list");
     assert_eq!(rows.len(), 1, "the UNIQUE index kept exactly one row");
-    assert_eq!(rows[0].name, "TursoStoreDB v3", "name refreshed on update");
+    assert_eq!(rows[0].name, "DbStoreDB v3", "name refreshed on update");
     // MERGE by slug, not replace: pinning a second source to the same entry_key
     // must ACCUMULATE. Replace-semantics silently discarded every previously
     // pinned source (`r-kavach-citation-add-upsert-by-entry-key`: six `citation-add`
@@ -256,7 +256,7 @@ async fn traverse_reexport_finds_a_citer() {
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "TursoStoreDB",
+            name: "DbStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
@@ -266,7 +266,7 @@ async fn traverse_reexport_finds_a_citer() {
         "INSERT INTO memories \
          (project, category, entry_key, title, content, created_at, updated_at) \
          VALUES ('p', 'decision', 'use-surreal', 't', 'c', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("decision");
@@ -360,7 +360,7 @@ fn plan_refresh_partitions_stale_and_serves_all() {
     let fresh = cite("axum", "Axum", "https://docs.rs/axum", Some(now));
     let stale = cite(
         "surreal",
-        "TursoStoreDB",
+        "DbStoreDB",
         "https://surrealdb.com/docs",
         Some(now - FRESHNESS_WINDOW_SECS - 1),
     );
@@ -411,7 +411,7 @@ async fn merge_node_wires_cite_edge_non_destructively() {
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "TursoStoreDB",
+            name: "DbStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
@@ -474,7 +474,7 @@ async fn citations_for_nodes_dedupes_across_recalled_rows() {
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "TursoStoreDB",
+            name: "DbStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
@@ -485,7 +485,7 @@ async fn citations_for_nodes_dedupes_across_recalled_rows() {
         "INSERT INTO memories \
          (project, category, entry_key, title, content, created_at, updated_at) \
          VALUES ('p', 'decision', 'k1', 't', 'c', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("decision");
@@ -493,7 +493,7 @@ async fn citations_for_nodes_dedupes_across_recalled_rows() {
         "INSERT INTO memories \
          (project, category, entry_key, title, content, created_at, updated_at) \
          VALUES ('p', 'roadmap', 'k2', 't', 'c', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("roadmap");
@@ -528,7 +528,7 @@ async fn reward_flows_along_cite_edges() {
         &UpsertCitation {
             project,
             entry_key: "surreal",
-            name: "TursoStoreDB",
+            name: "DbStoreDB",
             metadata: vec![meta("records", "https://surrealdb.com/docs")],
         },
     )
@@ -539,7 +539,7 @@ async fn reward_flows_along_cite_edges() {
         "INSERT INTO memories \
          (project, category, entry_key, title, content, created_at, updated_at) \
          VALUES ('p', 'decision', 'k', 't', 'c', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("decision");

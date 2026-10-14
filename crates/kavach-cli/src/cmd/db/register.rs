@@ -1,5 +1,5 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
     if !abs_path.starts_with('/') {
@@ -32,7 +32,7 @@ pub(super) fn run(slug: &str, abs_path: &str, stack: Option<&str>) -> i32 {
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {

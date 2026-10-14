@@ -1,6 +1,6 @@
 // SOURCE: relocated from write/upsert.rs — roadmap.upsert-microfile-split (kavach:relocated)
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use kavach_types::Priority;
 
 /// Idempotent upsert on (project, category, `entry_key`).
@@ -8,7 +8,7 @@ use kavach_types::Priority;
 /// # Errors
 /// Unknown category or query failure.
 pub async fn upsert_entry(
-    db: &TursoStore,
+    db: &DbStore,
     category: &str,
     project_id: &str,
     entry_key: &str,
@@ -24,7 +24,7 @@ pub async fn upsert_entry(
             )));
         }
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let priority_i64 = priority.map(Priority::get);
     // Same K-1 creation rule as `full.rs`: seed the roadmap lane, fill nulls
     // only, never clobber a lane a status transition already set.

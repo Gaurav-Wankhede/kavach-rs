@@ -1,6 +1,6 @@
 // Concept upsert — insert-or-update a global concept row in `entities`.
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Insert-or-update a global concept. `name` is the canonical id (`snake_case`).
 /// `properties` is FLEXIBLE JSON: {display, description, tags[], sources[]}.
@@ -8,7 +8,7 @@ use crate::turso::TursoStore;
 /// # Errors
 /// Propagates `Error::Migration` if name is empty, or `Error::RecordNotFound` if the query returns no row.
 pub async fn upsert_concept(
-    db: &TursoStore,
+    db: &DbStore,
     name: &str,
     display: &str,
     description: &str,

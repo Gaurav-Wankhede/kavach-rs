@@ -2,8 +2,8 @@
 // Wipe all data for a project — surgical delete across all project-scoped tables.
 // Preserves other projects. Requires explicit --confirm flag for safety.
 use crate::error::{Error, Result};
-use crate::turso::TursoStore;
-use crate::turso::entries::EntryStore;
+use crate::db::DbStore;
+use crate::db::entries::EntryStore;
 
 /// Result of wiping a project.
 #[derive(Debug, Default)]
@@ -30,7 +30,7 @@ fn is_wipeable_table(table: &str) -> bool {
 /// is asserted zero; a non-zero residual is a hard `Error`, not a swallowed
 /// success, so a partial wipe surfaces to the caller instead of reporting clean.
 async fn verified_delete(
-    db: &TursoStore,
+    db: &DbStore,
     table: &'static str,
     project_slug: &str,
 ) -> Result<usize> {
@@ -40,17 +40,17 @@ async fn verified_delete(
     let entries = db
         .list_by_category(project_slug, table)
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     let before = entries.len();
     for entry in entries {
         db.delete_by_key(project_slug, table, &entry.entry_key)
             .await
-            .map_err(Error::Turso)?;
+            .map_err(Error::Db)?;
     }
     let after = db
         .list_by_category(project_slug, table)
         .await
-        .map_err(Error::Turso)?
+        .map_err(Error::Db)?
         .len();
     if after != 0 {
         return Err(Error::RecordNotFound(format!(
@@ -81,8 +81,8 @@ const PROJECT_SCOPED_TABLES: &[&str] = &[
 ///
 /// # Errors
 /// Returns `Error::RecordNotFound` when `slug` does not match any project.
-/// Propagates `Error::Turso` from the underlying queries.
-pub async fn wipe_project(db: &TursoStore, slug: &str) -> Result<WipeReport> {
+/// Propagates `Error::Database` from the underlying queries.
+pub async fn wipe_project(db: &DbStore, slug: &str) -> Result<WipeReport> {
     let project = crate::projects::get_by_slug(db, slug).await?;
     let project = project.ok_or_else(|| Error::RecordNotFound(format!("project '{slug}'")))?;
     let project_slug = project.slug;
@@ -100,7 +100,7 @@ pub async fn wipe_project(db: &TursoStore, slug: &str) -> Result<WipeReport> {
 
     db.exec("DELETE FROM projects WHERE slug = ?")
         .await
-        .map_err(Error::Turso)?;
+        .map_err(Error::Db)?;
     report.project_deleted = true;
 
     Ok(report)
@@ -110,8 +110,8 @@ pub async fn wipe_project(db: &TursoStore, slug: &str) -> Result<WipeReport> {
 ///
 /// # Errors
 /// Returns `Error::RecordNotFound` for an unknown slug or missing project id.
-/// Propagates `Error::Turso` from the underlying count queries.
-pub async fn preview_wipe(db: &TursoStore, slug: &str) -> Result<WipeReport> {
+/// Propagates `Error::Database` from the underlying count queries.
+pub async fn preview_wipe(db: &DbStore, slug: &str) -> Result<WipeReport> {
     let project = crate::projects::get_by_slug(db, slug).await?;
     let project = project.ok_or_else(|| Error::RecordNotFound(format!("project '{slug}'")))?;
     let project_slug = project.slug;
@@ -126,7 +126,7 @@ pub async fn preview_wipe(db: &TursoStore, slug: &str) -> Result<WipeReport> {
         let entries = db
             .list_by_category(&project_slug, table)
             .await
-            .map_err(Error::Turso)?;
+            .map_err(Error::Db)?;
         report.tables.push((table, entries.len()));
     }
 

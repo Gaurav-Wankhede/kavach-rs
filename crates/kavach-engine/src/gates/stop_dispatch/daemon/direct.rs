@@ -1,4 +1,4 @@
-//! Direct `SurrealDB` fallback when the RPC Unix socket is unreachable.
+//! Direct `Database` fallback when the RPC Unix socket is unreachable.
 //!
 //! Cursor hook subprocesses run sandboxed and cannot connect to
 //! `~/Library/Application Support/SharedAI/kavach-rpc.sock` even while the
@@ -37,7 +37,7 @@ async fn open_state() -> Result<AppState, String> {
     Ok(AppState::new(db))
 }
 
-/// Same selectors as [`super::rpc_next`], via embedded `SurrealDB`.
+/// Same selectors as [`super::rpc_next`], via embedded `Database`.
 pub(super) fn next(method: &str, project_slug: &str) -> Result<Option<serde_json::Value>, String> {
     let rt = tokio::runtime::Runtime::new().map_err(|e| format!("runtime build failed: {e}"))?;
     rt.block_on(async {

@@ -60,7 +60,7 @@ impl SessionState {
     //   is logged, never propagated — it must not break a gate's save().
     // SOURCE: https://aws.amazon.com/caching/best-practices/
     //
-    /// Best-effort durable mirror to the `session_runtime` `SurrealDB` table,
+    /// Best-effort durable mirror to the `session_runtime` `Database` table,
     /// keyed by `session_id`. The INI file write above already committed and is
     /// the local hot-path cache; this makes the DB the durable + queryable
     /// truth so state survives `/clear` (a new `session_id` reads its OWN row,

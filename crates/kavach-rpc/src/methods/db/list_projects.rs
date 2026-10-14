@@ -39,7 +39,7 @@ pub struct ProjectRow {
 }
 
 /// # Errors
-/// Returns an RPC `ErrorObjectOwned` when the underlying `SurrealDB` read fails.
+/// Returns an RPC `ErrorObjectOwned` when the underlying `Database` read fails.
 pub async fn list_projects(
     ctx: &AppState,
     _params: ListProjectsParams,

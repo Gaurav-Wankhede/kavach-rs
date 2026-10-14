@@ -1,16 +1,16 @@
-// ARCH: AgentMemorySchema — Turso 3.0 patterns for self-improving agents
+// ARCH: AgentMemorySchema — Database 3.0 patterns for self-improving agents
 // SEARCHED: 2026-05
 // SOURCE: https://arxiv.org/html/2603.10600v1 (Trajectory-Informed Memory)
 // SOURCE: https://arxiv.org/html/2512.18950v1 (MACLA hierarchical procedural memory)
-// SOURCE: https://github.com/surrealdb/agent-memory (official agent-memory schema)
+// SOURCE: https://github.com/database/agent-memory (official agent-memory schema)
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Applies the agent memory schema v2 to the database.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the schema definition query fails.
-pub async fn apply_agent_memory_schema(db: &TursoStore) -> Result<()> {
+/// Propagates `Error::Database` when the schema definition query fails.
+pub async fn apply_agent_memory_schema(db: &DbStore) -> Result<()> {
     db.exec_params(AGENT_MEMORY_DDL, ()).await?;
     Ok(())
 }

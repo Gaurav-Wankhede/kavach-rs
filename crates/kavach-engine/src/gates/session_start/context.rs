@@ -1,4 +1,4 @@
-// SOURCE: kavach decision.context-rot-surrealdb-pipeline
+// SOURCE: kavach decision.context-rot-database-pipeline
 //! Assemble the `[SESSION_START]` injected context from session + DB sources.
 use std::fmt::Write as _;
 

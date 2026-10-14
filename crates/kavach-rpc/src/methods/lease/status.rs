@@ -1,9 +1,9 @@
 // SPEC: docs/architecture/session-occupancy-lease.md
 // RPC handler exposing the lease-state read primitive.
-// SOURCE: https://surrealdb.com/3.0
+// SOURCE: https://database.com/3.0
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
 // SOURCE: https://medium.com/@Modexa/7-lease-based-locks-that-dont-deadlock-d6de4a0562c9
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use jsonrpsee::types::ErrorObjectOwned;
@@ -34,7 +34,7 @@ pub struct StatusResult {
 pub async fn status(state: &AppState, p: StatusParams) -> Result<StatusResult, ErrorObjectOwned> {
     let lease = lease_status(&state.db, &p.table, &p.key)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     Ok(match lease {
         Some(l) => StatusResult {
             held: true,

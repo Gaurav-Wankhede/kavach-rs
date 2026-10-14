@@ -1,6 +1,6 @@
 use super::readiness::{deps_satisfied, is_needs_decomposition, is_runnable_status, is_umbrella};
 use super::types::{NextOpenTaskParams, NextTaskResult};
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
@@ -27,7 +27,7 @@ pub async fn promote_next_backlog(
 ) -> Result<Option<NextTaskResult>, ErrorObjectOwned> {
     let Some(project) = kavach_db::project_get_by_slug(&state.db, &params.project)
         .await
-        .map_err(surreal_to_rpc)?
+        .map_err(db_to_rpc)?
     else {
         return Ok(None);
     };
@@ -36,10 +36,10 @@ pub async fn promote_next_backlog(
     };
     let entries = kavach_db::list_by_project(&state.db, TABLE_ROADMAP, &project_id)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     let dep_pool = kavach_db::list_all_by_table(&state.db, TABLE_ROADMAP)
         .await
-        .map_err(surreal_to_rpc)?;
+        .map_err(db_to_rpc)?;
     // Backlog tier applies the SAME umbrella/decomp exclusions as the primary
     // selectors. A `GATE:`-titled card is ordinary runnable work the agent builds.
     let mut ready: Vec<_> = entries

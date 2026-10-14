@@ -1,13 +1,13 @@
 use crate::error::{Error, Result};
 use crate::graph::dynamic::relate_dynamic;
-use crate::turso::TursoStore;
-use crate::turso::graph::{GraphEntity, GraphStore};
+use crate::db::DbStore;
+use crate::db::graph::{GraphEntity, GraphStore};
 
 use super::model::{FlowDag, FlowSpec, FlowStep};
 use super::shape::NodeShape;
 
 /// Resolve a project slug to its record id, or `Err(RecordNotFound)`.
-async fn project_id(db: &TursoStore, project_slug: &str) -> Result<String> {
+async fn project_id(db: &DbStore, project_slug: &str) -> Result<String> {
     let mut resp = db
         .exec_params(
             "SELECT slug FROM projects WHERE slug = $slug LIMIT 1",
@@ -26,7 +26,7 @@ async fn project_id(db: &TursoStore, project_slug: &str) -> Result<String> {
 /// (`entity_type`, `name`). Updates the row in place if it exists so re-ingest
 /// of the same flow is idempotent. Returns the entity id.
 async fn upsert_entity_props(
-    db: &TursoStore,
+    db: &DbStore,
     entity_type: &str,
     name: &str,
     project: &str,
@@ -75,8 +75,8 @@ fn flow_name(project_slug: &str, flow_key: &str) -> String {
 /// - `Error::RecordNotFound` if the project is not registered.
 /// - `Error::Migration` if the supplied edges form a cycle, or reference an
 ///   unknown `step_id`.
-/// - `Error::TursoStore` on any underlying query failure.
-pub async fn upsert_flow(db: &TursoStore, project_slug: &str, spec: &FlowSpec) -> Result<String> {
+/// - `Error::DatabaseStore` on any underlying query failure.
+pub async fn upsert_flow(db: &DbStore, project_slug: &str, spec: &FlowSpec) -> Result<String> {
     let known: std::collections::HashSet<&str> =
         spec.steps.iter().map(|s| s.step_id.as_str()).collect();
     for e in &spec.edges {
@@ -133,7 +133,7 @@ pub async fn upsert_flow(db: &TursoStore, project_slug: &str, spec: &FlowSpec) -
 
     // Remove the previous step set: delete the anchor's `contains` edges and
     // every `depends_on` edge among its steps, then re-create below. The old
-    // SurrealQL `LET $steps = (SELECT VALUE out FROM $anchor->contains)` +
+    // DatabaseQL `LET $steps = (SELECT VALUE out FROM $anchor->contains)` +
     // `DELETE depends_on WHERE in IN $steps` is a two-statement sweep; SQL
     // does it with two DELETE statements keyed on the anchor id.
     db.exec_params(

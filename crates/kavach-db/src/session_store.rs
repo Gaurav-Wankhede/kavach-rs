@@ -1,7 +1,7 @@
 // split: intentional - durable harness runtime-state store (session_runtime table)
 // sql-safe: queries use static literals + params, no user input concatenation
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use serde::{Deserialize, Serialize};
 
 /// One `session_runtime` row: the full `SessionState` serialized into `state_blob`.
@@ -22,9 +22,9 @@ pub struct SessionRuntimeRow {
 /// another session's state.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the database query fails.
+/// Propagates `Error::Database` when the database query fails.
 pub async fn session_get_by_id(
-    db: &TursoStore,
+    db: &DbStore,
     session_id: &str,
 ) -> Result<Option<SessionRuntimeRow>> {
     let mut rows = db
@@ -50,14 +50,14 @@ pub async fn session_get_by_id(
 /// session and refreshes `updated_at` on every write-through.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the database query fails.
+/// Propagates `Error::Database` when the database query fails.
 pub async fn session_upsert(
-    db: &TursoStore,
+    db: &DbStore,
     session_id: &str,
     workdir: &str,
     state_blob: &str,
 ) -> Result<()> {
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO session_runtime (session_id, workdir, state_blob, updated_at) \
          VALUES ($sid, $workdir, $state_blob, $now) \

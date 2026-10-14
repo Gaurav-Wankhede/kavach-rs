@@ -1,7 +1,7 @@
 //! `kavach-web` binary — launches the HTMX UI server.
 //!
 //! Usage: `kavach-web [PORT]` (default 7777). Thin ws client of the standalone
-//! `surreal start` server; start it via `kavach servers up` if pages show the
+//! `database start` server; start it via `kavach servers up` if pages show the
 //! offline panel.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

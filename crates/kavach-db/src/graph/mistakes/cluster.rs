@@ -1,4 +1,4 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // split: utility graph clustering module, not a handler
 //
 // Vector-free clustering: a mistake_event is mapped to its anti_pattern by a
@@ -14,9 +14,9 @@ use crate::error::{Error, Result};
 /// Maps an event to a clustered anti-pattern by content key (no vectors).
 ///
 /// # Errors
-/// Propagates `Error::Turso` when database queries fail.
+/// Propagates `Error::Database` when database queries fail.
 pub async fn cluster_event_to_pattern(
-    db: &TursoStore,
+    db: &DbStore,
     event_id: &str,
     gate: &str,
     correct_action: &str,
@@ -38,7 +38,7 @@ pub async fn cluster_event_to_pattern(
     if existing_resp.next().await?.is_some() {
         return Ok(pattern_id);
     }
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     let mut resp = db
         .exec_params(
             "INSERT INTO entity_edges (from_id, rel_type, to_id, weight, created_at) \

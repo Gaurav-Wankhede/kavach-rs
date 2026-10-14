@@ -1,6 +1,6 @@
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
 use kavach_db::key_str::project_key_str;
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
     // RPC-first: route through the daemon so the CLI never opens a competing
@@ -51,7 +51,7 @@ pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {
@@ -66,7 +66,7 @@ pub(super) fn run(event_type: &str, payload: Option<&str>) -> i32 {
         let project_slug = if session_db.work_dir.is_empty() {
             "default".to_owned()
         } else {
-            // Try to find project by path in Turso
+            // Try to find project by path in Database
             match store.list_all().await {
                 Ok(entries) => {
                     let mut found = None;

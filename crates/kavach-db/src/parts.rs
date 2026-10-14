@@ -1,7 +1,7 @@
 // split: intentional - project-part lookup helpers (find_by_path, list_by_project, upsert)
 // sql-safe: queries use static literals + params, no user input concatenation
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -37,8 +37,8 @@ fn part_from_row(r: &libsql::Row) -> Result<Part> {
 ///
 /// # Errors
 ///
-/// Propagates `Error::Turso` when the query fails.
-pub async fn find_by_path(db: &TursoStore, file_path: &str) -> Result<Option<Part>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn find_by_path(db: &DbStore, file_path: &str) -> Result<Option<Part>> {
     let mut rows = db
         .exec_params(
             "SELECT project, part_name, part_path, part_type, stack, description \
@@ -57,8 +57,8 @@ pub async fn find_by_path(db: &TursoStore, file_path: &str) -> Result<Option<Par
 
 /// # Errors
 ///
-/// Propagates `Error::Turso` when the query fails.
-pub async fn list_by_project(db: &TursoStore, project_id: &str) -> Result<Vec<Part>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn list_by_project(db: &DbStore, project_id: &str) -> Result<Vec<Part>> {
     let mut rows = db
         .exec_params(
             "SELECT project, part_name, part_path, part_type, stack, description \
@@ -77,9 +77,9 @@ pub async fn list_by_project(db: &TursoStore, project_id: &str) -> Result<Vec<Pa
 ///
 /// # Errors
 ///
-/// Propagates `Error::Turso` when the query fails.
+/// Propagates `Error::Database` when the query fails.
 pub async fn upsert(
-    db: &TursoStore,
+    db: &DbStore,
     project_id: &str,
     part_name: &str,
     part_path: &str,
@@ -87,7 +87,7 @@ pub async fn upsert(
     stack: Option<&str>,
     description: Option<&str>,
 ) -> Result<String> {
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO parts (project, part_name, part_path, part_type, stack, description, updated_at) \
          VALUES ($project, $part_name, $part_path, $part_type, $stack, $description, $now) \

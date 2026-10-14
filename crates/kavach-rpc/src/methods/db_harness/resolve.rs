@@ -3,7 +3,7 @@ use crate::error::internal;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 
-/// Resolve a project slug to its id string (the slug itself — the Turso
+/// Resolve a project slug to its id string (the slug itself — the Database
 /// `projects` table keys by slug), mirroring `db::resolve_project_id`.
 ///
 /// # Errors

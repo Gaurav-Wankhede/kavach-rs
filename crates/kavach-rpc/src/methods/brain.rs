@@ -3,7 +3,7 @@
 // can consult memory through the single-writer server, never opening the DB
 // directly. Mirrors methods/concept.rs (search verb, 1 file).
 // SOURCE: roadmap.unit.harness.brain-os.g2-think-mode + g3 auto-recall.
-use crate::error::surreal_to_rpc;
+use crate::error::db_to_rpc;
 use crate::state::AppState;
 use jsonrpsee::types::ErrorObjectOwned;
 use kavach_db::{BrainHit, search_corpus_project};
@@ -30,11 +30,11 @@ pub struct ThinkParams {
 /// Hybrid keyword+graph retrieval over the memory corpus, RRF-ranked.
 ///
 /// # Errors
-/// Propagates `surreal_to_rpc` when any underlying corpus query fails. An empty
+/// Propagates `database_to_rpc` when any underlying corpus query fails. An empty
 /// query yields an empty list (not an error) — the caller injects nothing.
 pub async fn think(state: &AppState, p: ThinkParams) -> Result<Vec<BrainHit>, ErrorObjectOwned> {
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT);
     search_corpus_project(&state.db, p.project.as_deref(), &p.query, limit)
         .await
-        .map_err(surreal_to_rpc)
+        .map_err(db_to_rpc)
 }

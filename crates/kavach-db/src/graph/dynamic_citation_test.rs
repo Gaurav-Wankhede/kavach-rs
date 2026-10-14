@@ -7,16 +7,16 @@
 )]
 
 use super::{is_citation_rel, relate_citation, traverse_with_citations};
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 use crate::{apply_schema, open_memory};
 
-async fn seed() -> TursoStore {
+async fn seed() -> DbStore {
     let db = open_memory().await.expect("mem db");
     apply_schema(&db).await.expect("schema");
     db.exec_params(
         "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at) \
-         VALUES ('p', 'surreal', 'TursoStoreDB', 'records', 'https://surrealdb.com/docs', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+         VALUES ('p', 'surreal', 'DbStoreDB', 'records', 'https://surrealdb.com/docs', ?1, ?1)",
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("citation");
@@ -24,7 +24,7 @@ async fn seed() -> TursoStore {
         "INSERT INTO memories \
          (project, category, entry_key, title, content, created_at, updated_at) \
          VALUES ('p', 'decision', 'use-surreal', 't', 'c', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("decision");
@@ -87,7 +87,7 @@ async fn citation_parent_edge_links_citations() {
     db.exec_params(
         "INSERT INTO citations (project, entry_key, name, slug, url, created_at, updated_at) \
          VALUES ('p', 'child', 'Child', 'c', 'https://surrealdb.com/docs/child', ?1, ?1)",
-        libsql::params![crate::turso::now_rfc3339()],
+        libsql::params![crate::db::now_rfc3339()],
     )
     .await
     .expect("child citation");

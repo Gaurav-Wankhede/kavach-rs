@@ -1,6 +1,6 @@
 //! SearchStore tests — Phase 2 acceptance (PRD §4 Phase 2).
 
-use super::TursoStore;
+use super::DbStore;
 use super::entries::EntryStore;
 use super::search::{SearchStore, fts5_query};
 use crate::dual_write::MemoryEntry;
@@ -32,13 +32,13 @@ fn entry(project: &str, category: &str, key: &str, title: &str, content: &str) -
 #[tokio::test]
 async fn fts_finds_title_and_content_matches() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("fts.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("fts.db")).await.unwrap();
     s.upsert_entry(&entry(
         "p",
         "decision",
         "decision.use-turso",
         "Adopt embedded Turso",
-        "libSQL storage replaces the TursoStoreDB server hop",
+        "libSQL storage replaces the DbStoreDB server hop",
     ))
     .await
     .unwrap();
@@ -77,7 +77,7 @@ async fn fts_finds_title_and_content_matches() {
 #[tokio::test]
 async fn fts_orders_by_relevance_not_insertion() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("fts2.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("fts2.db")).await.unwrap();
     // Inserted FIRST but mentions the term once; the second entry is denser.
     s.upsert_entry(&entry(
         "p",
@@ -107,7 +107,7 @@ async fn fts_orders_by_relevance_not_insertion() {
 #[tokio::test]
 async fn search_corpus_fuses_across_categories() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("fts3.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("fts3.db")).await.unwrap();
     s.upsert_entry(&entry(
         "p",
         "decision",
@@ -153,7 +153,7 @@ async fn search_corpus_fuses_across_categories() {
 #[tokio::test]
 async fn empty_query_yields_no_hits() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("fts4.db")).await.unwrap();
+    let s = DbStore::open(dir.path().join("fts4.db")).await.unwrap();
     let fused = s.search_corpus("p", "   ", 5).await.unwrap();
     assert!(fused.is_empty());
 }
@@ -161,7 +161,7 @@ async fn empty_query_yields_no_hits() {
 #[tokio::test]
 async fn search_corpus_project_prioritizes_scoped_project_and_handles_hyphens() {
     let dir = tempfile::TempDir::new().unwrap();
-    let s = TursoStore::open(dir.path().join("fts_project.db"))
+    let s = DbStore::open(dir.path().join("fts_project.db"))
         .await
         .unwrap();
     s.upsert_entry(&entry(

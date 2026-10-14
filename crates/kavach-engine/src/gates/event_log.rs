@@ -2,7 +2,7 @@
 //!
 //! Wraps the `event.append` RPC with silent failure, then fires graph
 //! projections (file→skill, session→project, gate→memory, session→skill). All
-//! paths go through `kavach_rpc` to the SurrealDB-backed daemon — gates must
+//! paths go through `kavach_rpc` to the Database-backed daemon — gates must
 //! never fail because event logging is unavailable.
 //!
 //! Decomposed by responsibility: `rpc` (RPC primitives), `refs` (content/file

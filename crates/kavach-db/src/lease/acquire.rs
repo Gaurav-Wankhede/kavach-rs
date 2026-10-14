@@ -1,4 +1,4 @@
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 // SPEC: docs/architecture/session-occupancy-lease.md §Acquire (CAS via SQL UPDATE)
 // SOURCE: https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
 // SOURCE: https://medium.com/@Modexa/7-lease-based-locks-that-dont-deadlock-d6de4a0562c9
@@ -8,9 +8,9 @@ use chrono::{Duration, Utc};
 /// Attempt to acquire a lease on the given key for the session.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the database query fails or `Error::RecordNotFound` if the record does not exist.
+/// Propagates `Error::Database` when the database query fails or `Error::RecordNotFound` if the record does not exist.
 pub async fn acquire(
-    db: &TursoStore,
+    db: &DbStore,
     table: &str,
     key: &str,
     session_id: &str,

@@ -1,11 +1,11 @@
 // `kavach db status-update` — set strict entry_status for a memory entry.
-// SurrealDB-backed: routes through kavach_db::update_status with table name.
+// Database-backed: routes through kavach_db::update_status with table name.
 // SOURCE: https://docs.rs/strum/0.28 — MemoryStatus uses strum EnumString + EnumIter.
 use kavach_types::MemoryStatus;
 use std::str::FromStr as _;
 
 use crate::cmd::io_safe::{ewrite_or_exit, into_exit_code, print_or_exit};
-use kavach_db::turso::entries::EntryStore;
+use kavach_db::db::entries::EntryStore;
 
 #[expect(
     clippy::too_many_lines,
@@ -108,7 +108,7 @@ pub(super) fn run(
     };
 
     runtime.block_on(async {
-        // Phase 6: direct open via TursoStore (libSQL file — no lock contention).
+        // Phase 6: direct open via DatabaseStore (libSQL file — no lock contention).
         let store = match super::rpc_client::open_turso_resilient().await {
             Ok(s) => s,
             Err(e) => {

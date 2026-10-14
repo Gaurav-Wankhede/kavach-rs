@@ -46,7 +46,7 @@ pub struct GetEntry {
 }
 
 /// # Errors
-/// Returns an RPC `ErrorObjectOwned` when the underlying `SurrealDB` query fails.
+/// Returns an RPC `ErrorObjectOwned` when the underlying `Database` query fails.
 pub async fn get(ctx: &AppState, params: GetParams) -> Result<GetResult, ErrorObjectOwned> {
     let pid = resolve_project_id(&ctx.db, &params.project).await?;
     let entry = kavach_db::read::get_by_key(&ctx.db, &params.category, &pid, &params.key)

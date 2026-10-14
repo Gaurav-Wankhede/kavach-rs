@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// One BM25-ranked chunk returned from the `nlm_doc` corpus.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,15 +21,15 @@ pub struct NlmHit {
 /// page never duplicates rows. Keeps the FTS index in sync with the base row.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the upsert query fails.
+/// Propagates `Error::Database` when the upsert query fails.
 pub async fn upsert_doc(
-    db: &TursoStore,
+    db: &DbStore,
     source_url: &str,
     heading: &str,
     body: &str,
     captured_at: &str,
 ) -> Result<()> {
-    let now = crate::turso::now_rfc3339();
+    let now = crate::db::now_rfc3339();
     db.exec_params(
         "INSERT INTO nlm_doc (source_url, heading, body, captured_at, updated_at) \
          VALUES ($url, $heading, $body, $captured_at, $now) \
@@ -64,8 +64,8 @@ pub async fn upsert_doc(
 /// better), negated for a positive score.
 ///
 /// # Errors
-/// Propagates `Error::Turso` when the query fails.
-pub async fn query_docs(db: &TursoStore, terms: &str, limit: usize) -> Result<Vec<NlmHit>> {
+/// Propagates `Error::Database` when the query fails.
+pub async fn query_docs(db: &DbStore, terms: &str, limit: usize) -> Result<Vec<NlmHit>> {
     if terms.trim().is_empty() {
         return Ok(Vec::new());
     }

@@ -1,15 +1,15 @@
 use super::model::{DagEdge, DagNode, RoadmapDag};
 use crate::error::Result;
-use crate::turso::TursoStore;
+use crate::db::DbStore;
 
 /// Fetch the roadmap DAG (nodes + typed edges) for `project_slug`.
 ///
 /// Returns an empty `RoadmapDag` when the project does not exist.
 ///
 /// # Errors
-/// Propagates `Error::Turso` from the project lookup, per-category meta
+/// Propagates `Error::Database` from the project lookup, per-category meta
 /// SELECT, or the edge SELECT.
-pub async fn fetch(db: &TursoStore, project_slug: &str) -> Result<RoadmapDag> {
+pub async fn fetch(db: &DbStore, project_slug: &str) -> Result<RoadmapDag> {
     let prefix = format!("{project_slug}/");
 
     let proj_q = "SELECT slug FROM projects WHERE slug = $slug LIMIT 1";
