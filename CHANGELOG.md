@@ -4,12 +4,6 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach follows **Semantic Versioning** (`MAJOR.MINOR.PATCH` — e.g. `1.3.4`), matching Cargo package versions and release tags.
 
-## [1.3.7] - 2026-10-14
-### Changed
-- **`kavach grep`: structural flags removed** (`--def`, `--call`, `--type`, `--scope`, `--no-split`, `--ast`). Dynamic split preserved: text files use ripgrep; language files use AST-grep. Output format: plain `file:line:col:line_text`. See `crates/kavach-cli/src/cmd/grep.rs`.
-- CLI contract simplified: `Grep` variant reduced from 15 to 8 fields in `cli.rs`; dispatch simplified in `cmd.rs`.
-- Verified: 13 production iterations against rebuilt binary (`target/debug/kavach`), `exit=0` for all; `--help` confirms flags removed; dynamic split confirmed automatically by file extension.
-
 ## [1.3.8] - 2026-10-14
 
 ### Changed
@@ -29,6 +23,12 @@ and Kavach follows **Semantic Versioning** (`MAJOR.MINOR.PATCH` — e.g. `1.3.4`
 ### Verification
 - `cargo check --workspace`: passes
 - `cargo test --workspace`: passes (all tests green)
+
+## [1.3.7] - 2026-10-14
+### Changed
+- **`kavach grep`: structural flags removed** (`--def`, `--call`, `--type`, `--scope`, `--no-split`, `--ast`). Dynamic split preserved: text files use ripgrep; language files use AST-grep. Output format: plain `file:line:col:line_text`. See `crates/kavach-cli/src/cmd/grep.rs`.
+- CLI contract simplified: `Grep` variant reduced from 15 to 8 fields in `cli.rs`; dispatch simplified in `cmd.rs`.
+- Verified: 13 production iterations against rebuilt binary (`target/debug/kavach`), `exit=0` for all; `--help` confirms flags removed; dynamic split confirmed automatically by file extension.
 
 ## [1.3.6] - 2026-10-14
 
