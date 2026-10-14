@@ -7,11 +7,12 @@ fn dedup_key_is_lens_detector_file_line() {
         detector: "yagni".to_owned(),
         file: "a.rs".to_owned(),
         line: 7,
+        column: 0,
         severity: Severity::Advisory,
         hint: "h".to_owned(),
         fix: "f".to_owned(),
     };
-    assert_eq!(f.dedup_key(), "yagni|yagni|a.rs|7");
+    assert_eq!(f.dedup_key(), "yagni|yagni|a.rs|7|0");
 }
 
 #[test]

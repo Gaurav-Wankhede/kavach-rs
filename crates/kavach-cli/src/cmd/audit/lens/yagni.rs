@@ -11,6 +11,7 @@ pub(crate) fn scan(file: &str, content: &str) -> Vec<Finding> {
                 detector: "yagni".to_owned(),
                 file: file.to_owned(),
                 line: i.saturating_add(1),
+                column: 0,
                 severity: Severity::Advisory,
                 hint: what.to_owned(),
                 fix: fix.to_owned(),

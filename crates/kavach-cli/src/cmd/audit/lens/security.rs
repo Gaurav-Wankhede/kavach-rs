@@ -11,6 +11,7 @@ pub(crate) fn scan(file: &str, content: &str) -> Vec<Finding> {
             detector: format!("loophole:{}", f.lens.slug()),
             file: file.to_owned(),
             line: f.line,
+            column: 0,
             severity: Severity::Warn,
             hint: f.hint.to_owned(),
             fix: "root-cause via the named attack lens; fix at source or prove N/A".to_owned(),

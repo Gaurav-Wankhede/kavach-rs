@@ -2,6 +2,7 @@
 path = "../kavach-rule-engine"
 [dependencies]
 memchr = "2.7"
+mime_guess = "2.0.5"  # verified via docs.rs (https://docs.rs/mime_guess/latest, 2026-10-14) — extension-to-language mapping for language dynamics
 which = "8.0"
 
 [dependencies.ast-grep-core]

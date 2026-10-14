@@ -16,25 +16,27 @@ pub(super) fn report(findings: &[Finding], files_scanned: usize) -> i32 {
         "  result: {} finding(s) — {block} BLOCK · {warn} WARN · {adv} ADVISORY",
         findings.len()
     );
-    use std::collections::BTreeMap;
-    let mut by_file: BTreeMap<&str, Vec<&Finding>> = BTreeMap::new();
-    for f in findings {
-        by_file.entry(&f.file).or_default().push(f);
-    }
-    for (fpath, file_findings) in by_file {
-        println!("  {fpath}:");
-        for f in file_findings {
-            println!(
-                "    [{}] {}: {}/{} — {} ({})",
+    let entries: Vec<(&str, Option<String>)> = findings
+        .iter()
+        .map(|f| {
+            let loc = if f.column > 0 {
+                format!("L{}:{}", f.line, f.column)
+            } else {
+                format!("L{}", f.line)
+            };
+            let status = format!(
+                "{} [{}:{}] {} ({})",
+                loc,
                 f.severity.label(),
-                f.line,
-                f.lens.slug(),
                 f.detector,
                 f.hint,
                 f.fix
             );
-        }
-    }
+            (f.file.as_str(), Some(status))
+        })
+        .collect();
+    let tree = kavach_toon::encode_path_tree(entries.iter().map(|(p, s)| (*p, s.as_deref())));
+    print!("{}", tree);
     1
 }
 

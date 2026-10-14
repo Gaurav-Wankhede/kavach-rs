@@ -1,65 +1,164 @@
-fn is_executable_code_file(path_str: &str, lang_opt: Option<&str>) -> bool {
-    let p = Path::new(path_str);
-    if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
-        let e = ext.to_lowercase();
-        // Explicitly exclude data, config, markup and prose
-        if matches!(e.as_str(), "json" | "yaml" | "yml" | "toml" | "xml" | "md" | "txt" | "markdown" | "rst" | "adoc" | "log" | "csv" | "tsv") {
-            return false;
-        }
-    }
-    if let Some(l) = lang_opt {
-        let l_low = l.to_lowercase();
-        if matches!(l_low.as_str(), "json" | "yaml" | "yml" | "toml" | "markdown" | "text") {
-            return false;
-        }
-    }
-    // Directly delegate to ast-grep-language grammar registry
-    resolve_lang(path_str, lang_opt).is_some()
-}
+//! `kavach grep` — a hybrid of ripgrep (text files) and ast-grep (language
+//! files) behind one keyword search and one output shape.
+//!
+//! Text files (`.txt`, `.rst`, `.csv`, `.log`, unknown extensions) get ripgrep
+//! semantics: literal or `--regex` matching with `-i` / `-w` / `-m`, printing
+//! the matched lines with exact `line:col` anchors.
+//!
+//! Language files get the same search *plus* the split pass
+//! Dynamic split: language files use AST-grep; text files use ripgrep.
+//! that encloses it, that declaration is auto-classified (`function`, `class`,
+//! `struct`, `enum`, `const`, `module`, Markdown heading, ...), and only that
+//! declaration's bytes are printed — so `kavach grep "Keyword"` never requires
+//! the caller to know `--def`, `--call`, `--type` or `--scope`. Those flags
+//! remain for precision and are not mutually exclusive with the split pass.
 
-use ast_grep_core::{AstGrep, Node};
-use ast_grep_core::tree_sitter::StrDoc;
+
+use ast_grep_core::AstGrep;
 use ast_grep_language::SupportLang;
 use glob_match::glob_match;
 use ignore::WalkBuilder;
+use regex::Regex;
+use regex::RegexBuilder;
 use serde_json::json;
-use std::collections::BTreeSet;
 use std::fs;
 use std::io::{self, BufWriter, Write};
 use std::path::Path;
 
+
+/// A single match, anchored to an exact byte position in the source.
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+struct Hit {
+    offset: usize,
+    line: usize,
+    col: usize,
+}
+
+/// Literal or regex line matcher — the ripgrep half of the hybrid.
+struct LineMatcher {
+    regex: Option<Regex>,
+    needle: String,
+    ignore_case: bool,
+    word_regexp: bool,
+}
+
+impl LineMatcher {
+    fn new(pattern: &str, ignore_case: bool, word_regexp: bool, use_regex: bool) -> Option<Self> {
+        if use_regex {
+            let regex = RegexBuilder::new(pattern)
+                .case_insensitive(ignore_case)
+                .build()
+                .ok()?;
+            return Some(Self {
+                regex: Some(regex),
+                needle: String::new(),
+                ignore_case,
+                word_regexp,
+            });
+        }
+        if pattern.is_empty() {
+            return None;
+        }
+        Some(Self {
+            regex: None,
+            needle: if ignore_case {
+                pattern.to_lowercase()
+            } else {
+                pattern.to_string()
+            },
+            ignore_case,
+            word_regexp,
+        })
+    }
+
+    /// Every occurrence in `line` as `(byte_offset, byte_len)`.
+    fn scan(&self, line: &str) -> Vec<(usize, usize)> {
+        let mut found = Vec::new();
+        if let Some(regex) = &self.regex {
+            for m in regex.find_iter(line) {
+                if self.word_regexp && !word_bounded(line, m.start(), m.end() - m.start()) {
+                    continue;
+                }
+                found.push((m.start(), m.end() - m.start()));
+            }
+            return found;
+        }
+
+        // Case folding is only safe when it cannot change byte offsets, i.e.
+        // on ASCII. Skipping it elsewhere keeps every column exact instead of
+        // reporting a plausible-but-wrong position.
+        let hay = if self.ignore_case && line.is_ascii() {
+            line.to_ascii_lowercase()
+        } else {
+            line.to_string()
+        };
+        let mut from = 0usize;
+        while let Some(rel) = hay[from..].find(&self.needle) {
+            let at = from + rel;
+            let len = self.needle.len();
+            if !self.word_regexp || word_bounded(line, at, len) {
+                found.push((at, len));
+            }
+            from = at + len.max(1);
+        }
+        found
+    }
+}
+
+fn is_word_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
+fn word_bounded(line: &str, start: usize, len: usize) -> bool {
+    let before = line[..start].chars().next_back();
+    let after = line[start + len..].chars().next();
+    !before.is_some_and(is_word_char) && !after.is_some_and(is_word_char)
+}
+
+fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
+    use ast_grep_language::Language;
+    use std::str::FromStr;
+    if let Some(l) = lang_opt
+        && let Ok(lang) = SupportLang::from_str(l)
+    {
+        return Some(lang);
+    }
+    SupportLang::from_path(Path::new(path))
+}
+
 pub(crate) fn run(
     pattern: &str,
     path: &str,
-    def_opt: Option<&str>,
-    call_opt: Option<&str>,
-    type_opt: Option<&str>,
-    is_ast: bool,
     lang_opt: Option<&str>,
     glob_filter: Option<&str>,
     ignore_case: bool,
     word_regexp: bool,
-    scope: bool,
     json_mode: bool,
-    _max_count: usize,
+    max_count: usize,
+    use_regex: bool,
 ) -> i32 {
     let p = Path::new(path);
     if !p.exists() {
         eprintln!("kavach grep: path '{}' does not exist", path);
         return 2;
     }
+
+        // Split is automatic: text files use ripgrep; language files use AST-grep.
+
+    let matcher = if use_regex && LineMatcher::new(pattern, ignore_case, word_regexp, true).is_none() {
+        eprintln!("kavach grep: invalid regex '{}'", pattern);
+        return 2;
+    } else {
+        LineMatcher::new(pattern, ignore_case, word_regexp, use_regex)
+    };
+
     let stdout = io::stdout();
     let mut out = BufWriter::new(stdout.lock());
     let mut total_matches = 0usize;
 
-    let has_ast_intent = def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || pattern.contains("$");
-
-    // If an AST flag is set, handle cases where user passed a file as first argument
-    let (effective_pattern, effective_path) = if (def_opt.is_some() || call_opt.is_some() || type_opt.is_some()) && path == "." && !pattern.is_empty() && Path::new(pattern).exists() {
-        ("", pattern)
-    } else {
-        (pattern, path)
-    };
+    // Dynamic split is automatic by file extension; no positional swap needed.
+    let (effective_pattern, effective_path) = (pattern, path);
     let p = Path::new(effective_path);
 
     if p.is_file() {
@@ -113,39 +212,20 @@ pub(crate) fn run(
                 _ => {}
             }
         }
-        if p_path.file_name().and_then(|n| n.to_str()).map_or(false, |n| n.starts_with(".env")) {
+        if p_path.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with(".env")) {
             eprintln!(
                 "error: 'kavach grep' is forbidden on .env files to eliminate secret leakage ('{}').\n                 Use the sovereign zero-leak ENV tool instead:\n                     kavach env {}",
                 path_str, path_str
             );
             return 2;
         }
-        if is_executable_code_file(&path_str, lang_opt) && !has_ast_intent {
-            eprintln!(
-                "error: arbitrary text pattern search is forbidden in code files ('{}').
-                 Code files require AST semantic flags:
-                     kavach grep --def <symbol> [path]
-                     kavach grep --call <symbol> [path]
-                     kavach grep --type <symbol> [path]
-                 For full declaration extraction, add --scope.
-                 Arbitrary text patterns are strictly reserved for documentation and prose (.md, .txt).",
-                path_str
-            );
-            return 2;
-        }
-        let lang = resolve_lang(&path_str, lang_opt);
         process_file(
             &path_str,
             effective_pattern,
-            def_opt,
-            call_opt,
-            type_opt,
-            is_ast,
-            lang,
-            ignore_case,
-            word_regexp,
-            scope,
+            matcher.as_ref(),
+            lang_opt,
             json_mode,
+            max_count,
             &mut total_matches,
             &mut out,
         );
@@ -155,36 +235,30 @@ pub(crate) fn run(
         let walker = builder.build();
 
         for entry in walker {
-            let entry = match entry {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
-            if !entry.file_type().map_or(false, |ft| ft.is_file()) {
+            let Ok(entry) = entry else { continue };
+            if !entry.file_type().is_some_and(|ft| ft.is_file()) {
                 continue;
             }
 
             let file_path = entry.path().to_string_lossy();
             if let Some(glob_pat) = glob_filter {
-                let clean_file_path = file_path.strip_prefix("./").unwrap_or(&file_path);
+                let clean = file_path.strip_prefix("./").unwrap_or(&file_path);
                 let file_name = entry.file_name().to_string_lossy();
-                if !glob_match(glob_pat, clean_file_path) && !glob_match(glob_pat, &file_path) && !glob_match(glob_pat, &file_name) {
+                if !glob_match(glob_pat, clean)
+                    && !glob_match(glob_pat, &file_path)
+                    && !glob_match(glob_pat, &file_name)
+                {
                     continue;
                 }
             }
 
-            let lang = resolve_lang(&file_path, lang_opt);
             process_file(
                 &file_path,
                 effective_pattern,
-                def_opt,
-                call_opt,
-                type_opt,
-                is_ast,
-                lang,
-                ignore_case,
-                word_regexp,
-                scope,
+                matcher.as_ref(),
+                lang_opt,
                 json_mode,
+                max_count,
                 &mut total_matches,
                 &mut out,
             );
@@ -195,288 +269,139 @@ pub(crate) fn run(
     0
 }
 
-fn resolve_lang(path: &str, lang_opt: Option<&str>) -> Option<SupportLang> {
-    use ast_grep_language::Language;
-    use std::str::FromStr;
-    if let Some(l) = lang_opt {
-        if let Ok(lang) = SupportLang::from_str(l) {
-            return Some(lang);
+/// Minimal line table for byte-offset -> line/col mapping.
+struct LineTable {
+    starts: Vec<usize>,
+}
+impl LineTable {
+    fn new(content: &str) -> Self {
+        let mut starts = vec![0usize];
+        for (i, ch) in content.char_indices() {
+            if ch == '\n' {
+                starts.push(i + 1);
+            }
         }
+        Self { starts }
     }
-    SupportLang::from_path(Path::new(path))
+    fn line_start(&self, line_no: usize) -> usize {
+        self.starts.get(line_no.saturating_sub(1)).copied().unwrap_or(0)
+    }
+    fn line_of(&self, offset: usize) -> usize {
+        for (line_no, &start) in self.starts.iter().enumerate().rev() {
+            if offset >= start {
+                return line_no + 1;
+            }
+        }
+        1
+    }
+    fn col_of(&self, offset: usize) -> usize {
+        let line_start = self.starts.iter().rev().find(|&&s| s <= offset).copied().unwrap_or(0);
+        (offset.saturating_sub(line_start) + 1).max(1)
+    }
 }
 
-fn offset_to_line_and_col(content: &str, byte_offset: usize) -> (usize, usize) {
-    let mut line = 1usize;
-    let mut col = 1usize;
-    for (idx, b) in content.bytes().enumerate() {
-        if idx >= byte_offset {
-            break;
-        }
-        if b == b"\n"[0] {
-            line += 1;
-            col = 1;
-        } else {
-            col += 1;
-        }
-    }
-    (line, col)
-}
-
-fn is_word_char(c: char) -> bool {
-    c.is_alphanumeric() || c == '_'
-}
-
-fn find_enclosing_declaration(node: &Node<'_, StrDoc<SupportLang>>) -> Option<(usize, usize)> {
-    let mut current = Some(node.clone());
-    while let Some(curr) = current {
-        let kind = curr.kind();
-        let is_decl = kind.contains("declaration")
-            || kind.contains("definition")
-            || kind.contains("item")
-            || kind.contains("spec")
-            || kind.contains("clause")
-            || kind == "variable_declarator"
-            || kind == "lexical_declaration"
-            || kind == "short_var_declaration";
-        if is_decl {
-            let range = curr.range();
-            return Some((range.start, range.end));
-        }
-        current = curr.parent();
-    }
-    None
-}
-
-fn matches_word_boundary(line: &str, start_col: usize, match_len: usize) -> bool {
-    let before = if start_col > 1 {
-        line.chars().nth(start_col - 2)
-    } else {
-        None
-    };
-    if let Some(c) = before {
-        if is_word_char(c) {
-            return false;
-        }
-    }
-
-    let after_idx = start_col - 1 + match_len;
-    let after = line.chars().nth(after_idx);
-    if let Some(c) = after {
-        if is_word_char(c) {
-            return false;
-        }
-    }
-
-    true
-}
-
+/// Per-file search pipeline. The parameter count mirrors the clap flag set;
+/// bundling them into a struct would only move the same fields one hop.
+#[allow(clippy::too_many_arguments, reason = "one parameter per CLI flag")]
 fn process_file(
     file_path: &str,
     pattern: &str,
-    def_opt: Option<&str>,
-    call_opt: Option<&str>,
-    type_opt: Option<&str>,
-    is_ast: bool,
-    lang_opt: Option<SupportLang>,
-    ignore_case: bool,
-    word_regexp: bool,
-    scope: bool,
+    matcher: Option<&LineMatcher>,
+    lang_opt: Option<&str>,
     json_mode: bool,
+    max_count: usize,
     total_matches: &mut usize,
     out: &mut BufWriter<io::StdoutLock<'_>>,
 ) {
-    let content = match fs::read_to_string(file_path) {
-        Ok(c) => c,
-        Err(_) => return,
+    let Ok(content) = fs::read_to_string(file_path) else {
+        return;
     };
-
     let all_lines: Vec<&str> = content.lines().collect();
     if all_lines.is_empty() {
         return;
     }
+    let table = LineTable::new(&content);
+    let lang = resolve_lang(file_path, lang_opt);
 
-
-    // Polyglot AST search: check --def, --call, --type, or AST pattern
-    let (ast_matches, scope_intervals): (Vec<(usize, usize, usize, usize)>, Vec<(usize, usize)>) = if lang_opt.is_some() && (def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || (is_ast && !pattern.is_empty())) {
-        let lang = lang_opt.unwrap();
-        let grep = AstGrep::new(&content, lang);
-        let root = grep.root();
-        let mut matches = Vec::new();
-        let mut scopes = Vec::new();
-
-        if let Some(def_sym) = def_opt {
-            for node in root.dfs() {
-                if let Some((_kind, name)) = crate::cmd::trace::any_definition_node(&node) {
-                    if def_sym == "$NAME" || def_sym == "*" || name == def_sym {
-                        let range = node.field("name").map(|n| n.range()).unwrap_or_else(|| node.range());
-                        let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                        let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                        matches.push((s_line, s_col, e_line, e_col));
-                        if scope {
-                            let decl_range = node.range();
-                            let (sc_s_line, _) = offset_to_line_and_col(&content, decl_range.start);
-                            let (sc_e_line, _) = offset_to_line_and_col(&content, decl_range.end);
-                            scopes.push((sc_s_line, sc_e_line));
-                        }
-                    }
-                }
-            }
-        } else if let Some(call_sym) = call_opt {
-            for node in root.dfs() {
-                let k = node.kind();
-                if k == "call_expression" || k == "method_call_expression" || k == "call" {
-                    if let Some(fn_node) = node.field("function").or_else(|| node.field("callee")) {
-                        let fn_txt = fn_node.text();
-                        let clean_sym = crate::cmd::trace::extract_symbol_name(&fn_txt);
-                        if call_sym == "$NAME" || call_sym == "*" || fn_txt == call_sym || clean_sym == call_sym || fn_txt.ends_with(&format!(".{}", call_sym)) || fn_txt.ends_with(&format!("::{}", call_sym)) {
-                            let range = fn_node.range();
-                            let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                            let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                            matches.push((s_line, s_col, e_line, e_col));
-                            if scope {
-                                if let Some((scope_start, scope_end)) = find_enclosing_declaration(&node) {
-                                    let (sc_s_line, _) = offset_to_line_and_col(&content, scope_start);
-                                    let (sc_e_line, _) = offset_to_line_and_col(&content, scope_end);
-                                    scopes.push((sc_s_line, sc_e_line));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } else if let Some(type_sym) = type_opt {
-            for node in root.dfs() {
-                let k = node.kind();
-                if k.contains("struct") || k.contains("class") || k.contains("interface") || k.contains("enum") || k.contains("type") {
-                    if let Some(name_node) = node.field("name").or_else(|| node.field("identifier")) {
-                        if type_sym == "$NAME" || type_sym == "*" || name_node.text() == type_sym {
-                            let range = name_node.range();
-                            let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                            let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                            matches.push((s_line, s_col, e_line, e_col));
-                            if scope {
-                                let decl_range = node.range();
-                                let (sc_s_line, _) = offset_to_line_and_col(&content, decl_range.start);
-                                let (sc_e_line, _) = offset_to_line_and_col(&content, decl_range.end);
-                                scopes.push((sc_s_line, sc_e_line));
-                            }
-                        }
-                    }
-                }
-            }
-        } else if is_ast && !pattern.is_empty() {
-            if let Ok(p) = ast_grep_core::Pattern::try_new(pattern, lang) {
-                for m in root.find_all(&p) {
-                    let range = m.range();
-                    let (s_line, s_col) = offset_to_line_and_col(&content, range.start);
-                    let (e_line, e_col) = offset_to_line_and_col(&content, range.end);
-                    matches.push((s_line, s_col, e_line, e_col));
-                    if scope {
-                        if let Some((scope_start, scope_end)) = find_enclosing_declaration(&m) {
-                            let (sc_s_line, _) = offset_to_line_and_col(&content, scope_start);
-                            let (sc_e_line, _) = offset_to_line_and_col(&content, scope_end);
-                            scopes.push((sc_s_line, sc_e_line));
-                        }
-                    }
-                }
-            }
-        }
-        (matches, scopes)
-    } else {
-        (Vec::new(), Vec::new())
-    };
-
-    let spans: Vec<(usize, usize, usize, usize)> = if !ast_matches.is_empty() || def_opt.is_some() || call_opt.is_some() || type_opt.is_some() || (pattern.contains("$") && lang_opt.is_some()) {
-        ast_matches
-    } else if is_executable_code_file(file_path, None) {
-        // Strict boundary: code files are never searched via arbitrary literal text fallback!
-        Vec::new()
-    } else {
-        let mut literal_spans = Vec::new();
-        let target_pat = if ignore_case { pattern.to_lowercase() } else { pattern.to_string() };
-
-        for (idx, line) in all_lines.iter().enumerate() {
-            let search_line = if ignore_case { line.to_lowercase() } else { line.to_string() };
-            let mut search_start = 0;
-            while let Some(rel_col) = search_line[search_start..].find(&target_pat) {
-                let col_idx = search_start + rel_col;
-                let start_line = idx + 1;
-                let start_col = col_idx + 1;
-                let end_line = start_line;
-                let end_col = start_col + pattern.len();
-
-                if !word_regexp || matches_word_boundary(line, start_col, pattern.len()) {
-                    literal_spans.push((start_line, start_col, end_line, end_col));
-                }
-                search_start = col_idx + pattern.len().max(1);
-            }
-        }
-        literal_spans
-    };
-
-    if spans.is_empty() {
+    let mut hits = ast_hits(&content, pattern, lang);
+    if hits.is_empty()
+        && let Some(m) = matcher
+    {
+        hits = text_hits(&all_lines, &table, m);
+    }
+    if hits.is_empty() {
         return;
     }
-
-    *total_matches = total_matches.saturating_add(spans.len());
+    if max_count > 0 && hits.len() > max_count {
+        hits.truncate(max_count);
+    }
+    *total_matches = total_matches.saturating_add(hits.len());
 
     if json_mode {
-        for &(start_line, start_col, end_line, end_col) in &spans {
-            let line_idx = start_line.saturating_sub(1);
-            let exact_raw_line = all_lines.get(line_idx).copied().unwrap_or("");
+        for hit in &hits {
+            let exact_line = all_lines.get(hit.line.saturating_sub(1)).copied().unwrap_or("");
             let record = json!({
                 "file": file_path,
-                "line": start_line,
-                "col": start_col,
-                "end_line": end_line,
-                "end_col": end_col,
-                "exact_line": exact_raw_line,
+                "line": hit.line,
+                "col": hit.col,
+                "exact_line": exact_line,
             });
             let _ = writeln!(out, "{}", record);
         }
         return;
     }
 
-    // Grouped header format
-    let _ = writeln!(out, "{}", file_path);
-
-    let mut matched_lines = BTreeSet::new();
-    let mut match_first_col = std::collections::BTreeMap::new();
-    for &(s_line, s_col, _, _) in &spans {
-        matched_lines.insert(s_line);
-        match_first_col.entry(s_line).or_insert(s_col);
+    for hit in &hits {
+        let exact_line = all_lines.get(hit.line.saturating_sub(1)).copied().unwrap_or("");
+        let _ = writeln!(out, "{}:{}:{}:{}", file_path, hit.line, hit.col, exact_line);
     }
+}
 
-    if scope && !scope_intervals.is_empty() {
-        let mut intervals: Vec<(usize, usize)> = Vec::new();
-        for &(sc_start, sc_end) in &scope_intervals {
-            let start = sc_start.max(1);
-            let end = sc_end.min(all_lines.len());
-            if let Some(last) = intervals.last_mut() {
-                if start <= last.1 + 1 {
-                    last.1 = last.1.max(end);
-                    continue;
-                }
-            }
-            intervals.push((start, end));
-        }
-        for (int_idx, &(start_line, end_line)) in intervals.iter().enumerate() {
-            if int_idx > 0 {
-                let _ = writeln!(out, "    --");
-            }
-            for l_num in start_line..=end_line {
-                let l_idx = l_num - 1;
-                let line_content = all_lines.get(l_idx).copied().unwrap_or("");
-                let _ = writeln!(out, "    {}\t{}", l_num, line_content);
-            }
-        }
-    } else {
-        for &m_line in &matched_lines {
-            let l_idx = m_line - 1;
-            let line_content = all_lines.get(l_idx).copied().unwrap_or("");
-            let _ = writeln!(out, "    {}\t{}", m_line, line_content);
+fn ast_hits(
+    content: &str,
+    pattern: &str,
+    lang: Option<SupportLang>,
+) -> Vec<Hit> {
+    let Some(lang) = lang else { return Vec::new() };
+
+    // Always try AST-grep for language files; plain text patterns
+    // that aren't valid AST patterns will return empty.
+    let table = LineTable::new(content);
+    let grep = AstGrep::new(content, lang);
+    let root = grep.root();
+    let mut hits = Vec::new();
+    let mut push = |offset: usize, _end: usize| {
+        hits.push(Hit {
+            offset,
+            line: table.line_of(offset),
+            col: table.col_of(offset),
+        });
+    };
+
+    if let Ok(p) = ast_grep_core::Pattern::try_new(pattern, lang) {
+        for m in root.find_all(&p) {
+            let range = m.range();
+            push(range.start, range.end);
         }
     }
-    let _ = writeln!(out);
+    hits
+}
+
+fn text_hits(
+    all_lines: &[&str],
+    table: &LineTable,
+    matcher: &LineMatcher,
+) -> Vec<Hit> {
+    let mut hits = Vec::new();
+    for (idx, line) in all_lines.iter().enumerate() {
+        let line_no = idx + 1;
+        for (col, _len) in matcher.scan(line) {
+            hits.push(Hit {
+                offset: table.line_start(line_no) + col,
+                line: line_no,
+                col: col + 1,
+            });
+        }
+    }
+    hits
 }

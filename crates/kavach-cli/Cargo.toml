@@ -50,7 +50,9 @@ thiserror = { workspace = true }
 ignore = { workspace = true }
 ast-grep-core = { workspace = true }
 pulldown-cmark = { workspace = true }
+ast-grep-config = { workspace = true }
 ast-grep-language = { workspace = true }
+ast-grep-outline = { workspace = true }
 
 [lints]
 workspace = true

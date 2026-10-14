@@ -4,6 +4,29 @@ All notable changes to Kavach are documented here. The newest version is always
 at the top. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Kavach follows **Semantic Versioning** (`MAJOR.MINOR.PATCH` — e.g. `1.3.4`), matching Cargo package versions and release tags.
 
+## [1.3.7] - 2026-10-14
+### Changed
+- **`kavach grep`: structural flags removed** (`--def`, `--call`, `--type`, `--scope`, `--no-split`, `--ast`). Dynamic split preserved: text files use ripgrep; language files use AST-grep. Output format: plain `file:line:col:line_text`. See `crates/kavach-cli/src/cmd/grep.rs`.
+- CLI contract simplified: `Grep` variant reduced from 15 to 8 fields in `cli.rs`; dispatch simplified in `cmd.rs`.
+- Verified: 13 production iterations against rebuilt binary (`target/debug/kavach`), `exit=0` for all; `--help` confirms flags removed; dynamic split confirmed automatically by file extension.
+
+## [1.3.6] - 2026-10-14
+
+### Changed
+- **`kavach grep` is now a hybrid ripgrep + ast-grep with automatic declaration scoping.** The 1.3.1 "Strict AST Boundary" — which hard-refused literal patterns in code files with exit code 2 and forced callers to already know `--def`/`--call`/`--type` *and* `--scope` — is **reverted**. A bare `kavach grep "Keyword" src/` now works on every file type.
+  - Text files (`.txt`, `.rst`, `.csv`, `.log`, unknown extensions) get **ripgrep semantics**: literal matching by default, `-r/--regex` for patterns, plus `-i`, `-w`, and `-m/--max-count` (now actually honored — it was previously accepted and discarded; `0` means unlimited, matching ripgrep).
+  - Language files get the same search **plus** a split pass: each hit is resolved to the declaration that encloses it and that declaration is what gets printed, so output never bleeds past its closing `}` or dedent.
+- **Automatic classification.** Declarations are classified as `function` / `class` / `struct` / `enum` / `enum-member` / `interface` / `method` / `const` / `field` / `property` / `module` / `var` via the LSP-aligned `SymbolType` from `ast-grep-outline`, so `--def`, `--type` and `--scope` are no longer required. Those flags remain for precision and still compose with the split pass.
+- **Markdown section scoping.** `ast-grep-outline` reports Markdown headings as nodes that cover only their own line, so a prose hit could not be scoped. `kavach grep` now derives section spans from heading levels directly — a heading owns every line until the next heading of the same or shallower level — so `.md` hits print their section rather than a bare line.
+- **Precision-first output.** Every printed line carries a `line:col` anchor (`    341:29  <code>`), and the block header carries the exact declaration span (`function process_file  272:5..380:1`). Large declarations are **not** cut with positional head/tail windows; instead the signature, a match-anchored window, and the terminator are always preserved and the remainder collapses to `... N lines elided (La:Lb) ...`, naming the exact range so it can be re-read precisely.
+- `--scope` is retained as an accepted no-op for back-compat. `--no-split` opts out and prints only matched lines.
+- `--json` records gained `kind`, `decl_start_line` and `decl_end_line`.
+- Replaced the per-match O(n) byte-rescan line/column computation with a byte-indexed `LineTable` (binary search), and the substring `kind.contains("declaration")` ancestor walk with the outline index.
+
+### Added
+- `ast-grep-outline` `0.50` and `ast-grep-config` `0.50` dependencies (version-matched to the existing `ast-grep-core` / `ast-grep-language` `0.50`).
+- Twelve unit tests covering line-table mapping, deepest-declaration resolution, sibling non-bleed, elision invariants, Markdown section nesting, and the no-outline-rules degradation path.
+
 ## [1.3.5] - 2026-10-12
 
 ### Added

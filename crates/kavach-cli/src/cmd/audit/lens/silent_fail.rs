@@ -11,6 +11,7 @@ pub(crate) fn scan(file: &str, content: &str) -> Vec<Finding> {
             detector: "silent_fail".to_owned(),
             file: file.to_owned(),
             line: h.line,
+            column: 0,
             severity: Severity::Block,
             hint: h.category.to_owned(),
             fix: h.fix.to_owned(),

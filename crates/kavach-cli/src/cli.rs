@@ -83,18 +83,17 @@ pub(crate) enum Commands {
         flat: bool,
     },
 
-    /// High-precision polyglot AST and structural code search (replaces sg/rg).
+    /// Hybrid search: ripgrep semantics for text files, AST-grep for language
+    /// files. Dynamic split handled automatically by file extension.
     Grep {
-        /// AST or text pattern to match (optional when --def, --call, or --type is supplied)
+        /// Search pattern (literal or --regex). On code files the AST engine
+        /// is used; on text files ripgrep-style literal matching is used.
         #[arg(default_value = "")]
         pattern: String,
         /// Path to search (file or directory, defaults to current dir)
         #[arg(default_value = ".")]
         path: String,
-        /// Treat pattern as an AST-grep pattern (default: true)
-        #[arg(short = 'p', long = "ast", default_value_t = true)]
-        ast: bool,
-        /// Target language (rust, python, typescript, javascript, go, c, cpp, java, bash, etc.)
+        /// Target language override (rust, python, typescript, etc.)
         #[arg(short = 'l', long = "lang")]
         lang: Option<String>,
         /// File glob filter (e.g. "*.rs")
@@ -103,29 +102,18 @@ pub(crate) enum Commands {
         /// Emit compact JSON records instead of file:line text
         #[arg(long)]
         json: bool,
-        /// Max matches to emit (default: 50)
-        #[arg(short = 'm', long = "max-count", default_value_t = 50)]
+        /// Max matches per file (0 = unlimited)
+        #[arg(short = 'm', long = "max-count", default_value_t = 0)]
         max_count: usize,
-        /// Show NUM lines of trailing and leading context (retains exact line spacing)
+        /// Treat pattern as a regex instead of a literal
+        #[arg(short = 'r', long = "regex")]
+        regex: bool,
         /// Case-insensitive search
         #[arg(short = 'i', long = "ignore-case")]
         ignore_case: bool,
         /// Match whole words only
         #[arg(short = 'w', long = "word-regexp")]
         word_regexp: bool,
-        /// Extract full enclosing AST semantic scope (fn, struct, class) instead of raw line numbers
-        #[arg(short = 's', long = "scope")]
-        scope: bool,
-        /// Match definitions/declarations of a symbol across 28 AST languages
-        #[arg(long = "def")]
-        def: Option<String>,
-        /// Match invocation/call sites of a symbol across 28 AST languages
-        #[arg(long = "call")]
-        call: Option<String>,
-        /// Match type definitions or type annotations across 28 AST languages
-        #[arg(long = "type")]
-        type_name: Option<String>,
-
     },
 
     /// Surgical in-place file text/regex replacement (replaces sd).

@@ -28,9 +28,11 @@ Extract schema, contracts, code structures, and caller networks using **targeted
   - Universal imperatives: `kavach json ".universal_behaviour.imperatives" /Users/gauravwankhede/.gemini/AGENTS.json`
 - **Polyglot Code & Pattern Discovery (`kavach grep`):**
   Search syntax, incomplete fragments, or AST patterns without whole-file reads:
-  - `kavach grep "pattern" <path>` (precise line:col:indentation, zero context spam)
+  - `kavach grep "keyword" <path>` (DEFAULT: auto-resolves the hit to its enclosing declaration and auto-classifies it as function/class/struct/enum/const/field/method/module — NO --def/--type/--scope needed)
+  - `kavach grep "keyword" <path> --no-split` (matched lines only; plain ripgrep output)
   - `kavach grep "fn $NAME($$$)" <path>` (Tree-Sitter AST pattern matching)
-  - `kavach grep "pattern" <path> --scope` (extracts entire enclosing declaration in 1 go)
+  - `kavach grep -r "re?gex" <path>` (regex on any file; pairs with -i, -w, -m N)
+  - Output is `line:col` anchored. Oversized declarations keep the signature, a match-anchored window and the terminator, collapsing the rest to `... N lines elided (La:Lb) ...` — never bleeds past the closing `}`.
 - **Context Network & Blast Radius (`kavach trace`):**
   Inspect symbol definitions, inbound callers, and outbound dependencies before refactoring:
   - `kavach trace "<symbol>" <path> --callers`

@@ -824,20 +824,22 @@ Fast, gitignore-aware path and file search (zero-LLM, replaces fd/find/origin)
 
 ## `kavach grep`
 
-High-precision polyglot AST and structural code search (replaces sg/rg)
+Hybrid search: ripgrep semantics for text, AST scope for code
 
 | Flag | Description | Default |
 |---|---|---|
-| `<pattern>` | AST or text pattern to match (optional when --def, --call, or --type is supplied) |  |
+| `<pattern>` | Keyword, literal, or --regex pattern. On a language file the hit is auto-resolved to its enclosing declaration and auto-classified (function / class / struct / enum / const / ...), so --def, --call, --type and --scope are never required |  |
 | `<path>` | Path to search (file or directory, defaults to current dir) | . |
 | `--ast` | Treat pattern as an AST-grep pattern (default: true) | true |
 | `--lang` | Target language (rust, python, typescript, javascript, go, c, cpp, java, bash, etc.) |  |
 | `--glob` | File glob filter (e.g. "*.rs") |  |
 | `--json` | Emit compact JSON records instead of file:line text |  |
-| `--max-count` | Max matches to emit (default: 50) | 50 |
-| `--ignore-case` | Show NUM lines of trailing and leading context (retains exact line spacing) Case-insensitive search |  |
+| `--max-count` | Max matches per file (0 = unlimited) | 0 |
+| `--regex` | Treat pattern as a regex instead of a literal |  |
+| `--ignore-case` | Case-insensitive search |  |
 | `--word-regexp` | Match whole words only |  |
-| `--scope` | Extract full enclosing AST semantic scope (fn, struct, class) instead of raw line numbers |  |
+| `--no-split` | Print only matched lines instead of the enclosing declaration |  |
+| `--scope` | Deprecated: enclosing-declaration output is now the default |  |
 | `--def` | Match definitions/declarations of a symbol across 28 AST languages |  |
 | `--call` | Match invocation/call sites of a symbol across 28 AST languages |  |
 | `--type` | Match type definitions or type annotations across 28 AST languages |  |

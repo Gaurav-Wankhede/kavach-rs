@@ -45,6 +45,7 @@ pub(crate) struct Finding {
     pub detector: String,
     pub file: String,
     pub line: usize,
+    pub column: usize,
     pub severity: Severity,
     pub hint: String,
     pub fix: String,
@@ -53,11 +54,12 @@ pub(crate) struct Finding {
 impl Finding {
     pub(crate) fn dedup_key(&self) -> String {
         format!(
-            "{}|{}|{}|{}",
+            "{}|{}|{}|{}|{}",
             self.lens.slug(),
             self.detector,
             self.file,
-            self.line
+            self.line,
+            self.column
         )
     }
 }

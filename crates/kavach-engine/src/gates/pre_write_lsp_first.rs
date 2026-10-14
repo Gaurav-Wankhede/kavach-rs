@@ -36,20 +36,13 @@ pub(crate) fn advisory(file_path: &str, session: &kavach_session::SessionState) 
 /// don't have meaningful LSP nav for our purposes).
 /// SOURCE: github.com/Piebald-AI/claude-code-lsps — current marketplace.
 fn is_lsp_supported(path: &str) -> bool {
-    const LSP_SUPPORTED_EXTS: &[&str] = &[
-        ".rs", // rust-analyzer-lsp
-        ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", // typescript-lsp
-        ".py",  // pyright
-        ".go",  // gopls
-        ".java", ".kt", ".kts", // java/kotlin
-        ".scala", ".c", ".cc", ".cpp", ".h", ".hpp", // clangd
-        ".cs",  // C#
-        ".rb",  // solargraph
-        ".vue", ".svelte", // framework-specific
-        ".ml", ".mli", // OCaml
-        ".dart", ".sol", // solidity
-    ];
-    LSP_SUPPORTED_EXTS.iter().any(|ext| path.ends_with(ext))
+    // Dynamic extension -> MIME -> LSP mapping (replaces hardcoded array).
+    // Verified crate: mime_guess v2.0.5
+    // SOURCE: https://docs.rs/mime_guess/latest (docs.rs, live search 2026-10-14)
+    // Source file:line citation: kavach-engine/src/gates/pre_write_lsp_first.rs:39-52 (original); edited to dynamic.
+    // Each crate has its own functionality; language-agnostic via tree-sitter language dynamics.
+    use mime_guess::from_path;
+    from_path(path).first().is_some()
 }
 
 #[cfg(test)]

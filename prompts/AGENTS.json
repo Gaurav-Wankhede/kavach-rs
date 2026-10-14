@@ -5,7 +5,7 @@
     "harness_self_edit": "edit ONLY the harness file currently loaded (runtime-resolved). Never hardcode its path. Mirrors byte-identical or deleted.",
     "json_slicing": "never dump whole JSON. jaq -r \".<SELECTOR>\" < <FILE> for surgical slices. No whole-file reads, no head/tail.",
     "origin_bound": "kavach origin only from a registered project dir with --path <DIR>; unbounded runs scan the whole home (>60s). Ad-hoc: sg with explicit paths.",
-    "pattern_first_workflow": "ZERO WHOLE-FILE READS. The ONLY sovereign workflow: (1) kavach glob to locate paths, (2) kavach grep <PATTERN> [PATH] (or --scope) to locate exact line:col:indentation without context spam, (3) kavach trace <SYMBOL> to inspect callers and callees, (4) webfind search --live to ground external research, (5) kavach replace <FIND> <REPLACE> <PATH> for surgical in-place mutations, (6) kavach verify / kavach audit to gate and verify.",
+    "pattern_first_workflow": "ZERO WHOLE-FILE READS. The ONLY sovereign workflow: (1) kavach glob to locate paths, (2) kavach grep \"keyword\" [PATH] to locate the enclosing declaration with exact line:col:indentation and zero context spam (NO --scope needed; auto-scoped and auto-classified), (3) kavach trace <SYMBOL> to inspect callers and callees, (4) webfind search --live to ground external research, (5) kavach replace <FIND> <REPLACE> <PATH> for surgical in-place mutations, (6) kavach verify / kavach audit to gate and verify.",
     "persistence_stores": "SEPARATION OF CONCERNS, ONE DOMAIN PER STORE. Each registered store owns exactly ONE domain and never accepts another domain's data. Routing and store OWNERSHIP is global law; the CONTENT schema and write rules for any store are domain law owned by the subgraph that uses it. A write whose data does not belong to the store's declared domain is rejected, never silently accepted.",
     "pipe_elimination_protocol": "NEVER use the pipe character (|) in run_command. Execute single, focused CLI binaries using their native parameters (--limit, -o json, -m, -d, -F). If a multi-stage data transformation is required, write a typed rust-script invocation that operates atomically.",
     "silent_witness": "query matches intent_classification_engine -> fire its dispatch immediately. Never ask the user which tool to run.",
@@ -212,8 +212,8 @@
       {
         "tool": "kavach grep",
         "replaces": "rg / grep / ast-grep",
-        "why": "Strict AST code search (--def, --call, --type, --scope). Refuses arbitrary text in code; routes data/config to sovereign tools",
-        "use": "kavach grep --def <symbol> [path] ; kavach grep \"<pattern>\" <doc_path>"
+        "why": "Hybrid ripgrep + ast-grep. A bare keyword auto-resolves to the enclosing declaration and auto-classifies it (function/class/struct/enum/const/field/method/module) — --def/--type/--scope are NEVER required. Data/config still route to sovereign tools",
+        "use": "kavach grep \"keyword\" [path] [--no-split] [-r regex] [-i] [-w] [-m N] ; kavach grep --def <symbol> [path] for precision"
       },
       {
         "tool": "kavach trace",
@@ -496,7 +496,7 @@
         "self_healing": "kavach loophole sweep || kavach heal capture",
         "symbol_lookup": "kavach origin ${SYMBOL}",
         "file_location_discovery": "kavach glob <PATTERN> [PATH]",
-        "code_pattern_search": "kavach grep <PATTERN> [PATH] [--scope] [-i] [-w]",
+        "code_pattern_search": "kavach grep \"keyword\" [PATH] [--no-split] [-r] [-i] [-w] [-m N] — auto-scoped to the enclosing declaration, no --scope needed",
         "context_network_and_blast_radius": "kavach trace <SYMBOL> [PATH] [--callers] [--callees]",
         "atomic_code_replacement": "kavach replace <FIND> <REPLACE> <PATH> [--dry-run]"
       },

@@ -53,7 +53,7 @@ Measured on an Apple Silicon M-Series workstation running release-optimized bina
 | Scenario / Operation | Legacy Tool (`cat`, `node`, `grep`) | Standard MCP Server | **Kavach (`kavach-rs`)** | Win Factor |
 | :--- | :--- | :--- | :--- | :--- |
 | **System Prompt Tax** | 0 tokens | **8,000 – 18,000 tokens / turn** | **0 tokens / turn** | **100% Tax Eliminated** |
-| **Inspect Rust Function** | `cat src/main.rs` (8,450 tokens) | ~8,450 tokens (raw file payload) | `kavach grep "fn main" src/ -C 2` (**42 tokens**) | **99.50% Savings** |
+| **Inspect Rust Function** | `cat src/main.rs` (8,450 tokens) | ~8,450 tokens (raw file payload) | `kavach grep "fn main" src/` (**42 tokens**, no `-C 2` / `--def` needed) | **99.50% Savings** |
 | **Inspect JSON Configuration** | `cat AGENTS.json` (9,299 tokens) | 9,299 tokens | `kavach json -j .witnesses AGENTS.json` (**66 tokens**) | **99.28% Savings** |
 | **Caller Network Analysis** | `grep -rn` (1,820 tokens) | Variable / Unstructured | `kavach trace "dispatch" .` (**58 tokens**) | **96.81% Savings** |
 | **Inline Scripting Latency** | `node -e` (118.7 ms) | IPC Roundtrip (~40-80 ms) | `kavach script -e` (**4.7 ms**, Rhai AST) | **25.2× Faster** |
@@ -260,7 +260,7 @@ Comparing standard developer actions performed via legacy POSIX tools, MCP serve
 ```
 
 ### 1. Surgical Extraction Engine
-- **Command:** `kavach grep "<pattern>" [path]` / `kavach glob "<pattern>" [path]`
+- **Command:** `kavach grep "<pattern>" [path]` (no `--def`/`--call`/`--type`; dynamic split automatic; `-r` for regex, `-i` case-insensitive, `-w` word-regexp, `--json` for JSON) / `kavach glob "<pattern>" [path]`
 - **Design:** Slices specific AST functions, traits, or types out of source files with bounded context (`-C 2`). Prevents agents from reading entire files into memory.
 
 ### 2. Deterministic Sandboxed Scripting
