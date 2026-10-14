@@ -36,13 +36,20 @@ pub(crate) fn advisory(file_path: &str, session: &kavach_session::SessionState) 
 /// don't have meaningful LSP nav for our purposes).
 /// SOURCE: github.com/Piebald-AI/claude-code-lsps — current marketplace.
 fn is_lsp_supported(path: &str) -> bool {
-    // Dynamic extension -> MIME -> LSP mapping (replaces hardcoded array).
-    // Verified crate: mime_guess v2.0.5
-    // SOURCE: https://docs.rs/mime_guess/latest (docs.rs, live search 2026-10-14)
-    // Source file:line citation: kavach-engine/src/gates/pre_write_lsp_first.rs:39-52 (original); edited to dynamic.
-    // Each crate has its own functionality; language-agnostic via tree-sitter language dynamics.
-    use mime_guess::from_path;
-    from_path(path).first().is_some()
+    // Tree-sitter language-agnostic detection: replaces hardcoded extension array.
+    // SOURCE: https://docs.rs/crate/ast-grep-language/latest (workspace dep, verified 2026-10-14)
+    // Dynamic: 28+ languages via tree-sitter grammars; no manual extension lists.
+    use ast_grep_language::Language;
+    let Some(lang) = ast_grep_language::SupportLang::from_path(std::path::Path::new(path)) else {
+        return false;
+    };
+    // Filter out non-code languages (markdown, json, yaml, toml) that have no LSP server.
+    let lang_name = format!("{:?}", lang).to_lowercase();
+    !lang_name.contains("markdown")
+        && !lang_name.contains("plaintext")
+        && !lang_name.contains("json")
+        && !lang_name.contains("yaml")
+        && !lang_name.contains("toml")
 }
 
 #[cfg(test)]
