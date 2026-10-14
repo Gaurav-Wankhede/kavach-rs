@@ -10,6 +10,26 @@ and Kavach follows **Semantic Versioning** (`MAJOR.MINOR.PATCH` — e.g. `1.3.4`
 - CLI contract simplified: `Grep` variant reduced from 15 to 8 fields in `cli.rs`; dispatch simplified in `cmd.rs`.
 - Verified: 13 production iterations against rebuilt binary (`target/debug/kavach`), `exit=0` for all; `--help` confirms flags removed; dynamic split confirmed automatically by file extension.
 
+## [1.3.8] - 2026-10-14
+
+### Changed
+- **Database naming: SurrealDB/Turso → Database (vendor-neutral).** All code identifiers, type names, function names, and comments updated to use generic "Database" terminology instead of vendor-branded names.
+  - `SurrealError` → `DbError`, `surreal_to_rpc` → `db_to_rpc`, `TursoStore` → `DbStore`
+  - Module path: `crate::turso::` → `crate::db::`, directory `src/turso/` → `src/db/`
+  - `TursoError` → `DbError`, `TursoResult` → `DbResult`, `Error::Turso` → `Error::Db`
+  - String literals: `"error: open SurrealDB"` → `"error: open Database"`, `"SurrealQL"` → `"SQL"`
+  - User-facing: `install.sh` SurrealDB install block removed; `citations.rs` placeholder updated
+- **Pipeline optimization: batch upserts.** `kavach pipeline plan` now collects all tasks into a single `upsert_entries_batch()` transaction instead of N sequential `upsert_entry_full()` round-trips. N tasks = 1 DB transaction (was N).
+- **Pipeline optimization: shared DB connection.** `run()` now opens the database once and passes `&DbStore` to both `plan_async()` and `status_async()`, eliminating duplicate connection opens.
+
+### Added
+- `kavach_db::upsert_entries_batch()` — atomic batch upsert for multiple roadmap tasks in a single transaction
+- `DbStore` re-export from `kavach_db` crate root
+
+### Verification
+- `cargo check --workspace`: passes
+- `cargo test --workspace`: passes (all tests green)
+
 ## [1.3.6] - 2026-10-14
 
 ### Changed
