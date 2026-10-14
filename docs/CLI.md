@@ -73,7 +73,7 @@ WHEN: discover the whole surface at once, or (re)generate docs/CLI.md. Walks the
 
 ## `kavach db`
 
-Manage the embedded Turso memory store (projects, kanban, decisions, graph)
+Manage the embedded Database memory store (projects, kanban, decisions, graph)
 
 ```
 EXAMPLES:
@@ -114,7 +114,7 @@ Add or refresh a citation (official-docs context) keyed by (project, entry-key)
 |---|---|---|
 | `--project` | Project slug |  |
 | `--entry-key` | Stable entry key (`snake_case`) |  |
-| `--name` | Display name (e.g. `Turso`) |  |
+| `--name` | Display name (e.g. `Database`) |  |
 | `--slug` | One metadata slug (e.g. "records") |  |
 | `--url` | Official-docs URL (non-empty) |  |
 
@@ -824,25 +824,19 @@ Fast, gitignore-aware path and file search (zero-LLM, replaces fd/find/origin)
 
 ## `kavach grep`
 
-Hybrid search: ripgrep semantics for text, AST scope for code
+Hybrid search: ripgrep semantics for text files, AST-grep for language files. Dynamic split handled automatically by file extension
 
 | Flag | Description | Default |
 |---|---|---|
-| `<pattern>` | Keyword, literal, or --regex pattern. On a language file the hit is auto-resolved to its enclosing declaration and auto-classified (function / class / struct / enum / const / ...), so --def, --call, --type and --scope are never required |  |
+| `<pattern>` | Search pattern (literal or --regex). On code files the AST engine is used; on text files ripgrep-style literal matching is used |  |
 | `<path>` | Path to search (file or directory, defaults to current dir) | . |
-| `--ast` | Treat pattern as an AST-grep pattern (default: true) | true |
-| `--lang` | Target language (rust, python, typescript, javascript, go, c, cpp, java, bash, etc.) |  |
+| `--lang` | Target language override (rust, python, typescript, etc.) |  |
 | `--glob` | File glob filter (e.g. "*.rs") |  |
 | `--json` | Emit compact JSON records instead of file:line text |  |
 | `--max-count` | Max matches per file (0 = unlimited) | 0 |
 | `--regex` | Treat pattern as a regex instead of a literal |  |
 | `--ignore-case` | Case-insensitive search |  |
 | `--word-regexp` | Match whole words only |  |
-| `--no-split` | Print only matched lines instead of the enclosing declaration |  |
-| `--scope` | Deprecated: enclosing-declaration output is now the default |  |
-| `--def` | Match definitions/declarations of a symbol across 28 AST languages |  |
-| `--call` | Match invocation/call sites of a symbol across 28 AST languages |  |
-| `--type` | Match type definitions or type annotations across 28 AST languages |  |
 
 ## `kavach heal`
 
@@ -897,7 +891,7 @@ High-precision HTML DOM extraction using CSS selectors (powered by scraper)
 
 ## `kavach json`
 
-Start/stop/inspect the background servers (Turso DB store + web UI). Query and project JSON state with zero-bloat TOON tabular formatting
+Start/stop/inspect the background servers (Database DB store + web UI). Query and project JSON state with zero-bloat TOON tabular formatting
 
 | Flag | Description | Default |
 |---|---|---|
@@ -1180,7 +1174,7 @@ Fast regex pre-filter scan for security-sensitive patterns
 
 ## `kavach servers down`
 
-Stop the web UI (the launchd-owned Turso store is embedded — no separate server)
+Stop the web UI (the launchd-owned Database store is embedded — no separate server)
 
 | Flag | Description | Default |
 |---|---|---|
@@ -1188,7 +1182,7 @@ Stop the web UI (the launchd-owned Turso store is embedded — no separate serve
 
 ## `kavach servers status`
 
-Report up/down for the Turso DB store + web UI
+Report up/down for the Database DB store + web UI
 
 | Flag | Description | Default |
 |---|---|---|
@@ -1212,7 +1206,7 @@ WHEN: browse projects/roadmap/kanban/decisions/knowledge in a browser.
 
 ## `kavach servers up`
 
-Ensure the Turso DB store + web UI are running; print the URL
+Ensure the Database DB store + web UI are running; print the URL
 
 | Flag | Description | Default |
 |---|---|---|
